@@ -1,8 +1,12 @@
 // frontend/client-portal/src/App.test.tsx
+import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
+import App from './App'
 
 describe('App Component', () => {
   it('should render without crashing', () => {
-    expect(true).toBe(true)
+    render(<App />)
+    // Add a simple assertion - adjust based on your actual App component
+    expect(document.body).toBeTruthy()
   })
 })
