@@ -1,35 +1,88 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// frontend/admin-crm/src/App.tsx
+// Ultra simple test without any MUI dependencies
+import React from "react";
+import {
+  Route,
+  BrowserRouter as Router,
+  Routes,
+} from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
-
+// Basic HTML login form
+const SimpleLogin: React.FC = () => {
+  console.log("SimpleLogin component rendering!");
+  
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <div style={{ 
+      padding: '20px', 
+      maxWidth: '400px', 
+      margin: '50px auto',
+      border: '1px solid #ccc',
+      borderRadius: '8px'
+    }}>
+      <h1>LifePlace Login</h1>
+      <form>
+        <div style={{ marginBottom: '15px' }}>
+          <label>Email:</label>
+          <input 
+            type="email" 
+            style={{ 
+              width: '100%', 
+              padding: '8px', 
+              marginTop: '5px' 
+            }} 
+          />
+        </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label>Password:</label>
+          <input 
+            type="password" 
+            style={{ 
+              width: '100%', 
+              padding: '8px', 
+              marginTop: '5px' 
+            }} 
+          />
+        </div>
+        <button 
+          type="submit" 
+          style={{ 
+            padding: '10px 20px', 
+            backgroundColor: '#007bff', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '4px' 
+          }}
+        >
+          Login
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+      </form>
+    </div>
+  );
+};
 
-export default App
+// Test dashboard
+const TestDashboard: React.FC = () => {
+  return (
+    <div style={{ padding: '20px' }}>
+      <h1>Dashboard Works!</h1>
+      <p>If you see this, routing is working correctly.</p>
+    </div>
+  );
+};
+
+// Minimal App without any external libraries except router
+const App: React.FC = () => {
+  console.log("App component rendering!");
+  
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<SimpleLogin />} />
+        <Route path="/dashboard" element={<TestDashboard />} />
+        <Route path="*" element={<SimpleLogin />} />
+      </Routes>
+    </Router>
+  );
+};
+
+export default App;
