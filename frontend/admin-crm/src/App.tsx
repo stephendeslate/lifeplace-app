@@ -9,6 +9,15 @@ import { Login } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { AppLayout } from './components/layout';
 
+// Settings imports
+import { SettingsLayout } from './pages/settings';
+import { Settings } from './pages/settings';
+import { AccountSettings, AdminUsers } from './pages/settings/account';
+import { BookingFlow, EventTypes } from './pages/settings/booking';
+import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
+import { EmailTemplates, SMSTemplates, CommunicationNotifications } from './pages/settings/communication';
+import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
+
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -65,6 +74,17 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 };
 
+// Settings Route Component
+const SettingsRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <ProtectedRoute>
+      <SettingsLayout>
+        {children}
+      </SettingsLayout>
+    </ProtectedRoute>
+  );
+};
+
 // Main App Router Component
 const AppRouter: React.FC = () => {
   return (
@@ -89,7 +109,131 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Placeholder Protected Routes for Navigation */}
+      {/* Settings Routes */}
+      <Route
+        path="/settings"
+        element={
+          <SettingsRoute>
+            <Settings />
+          </SettingsRoute>
+        }
+      />
+      
+      {/* Account Management */}
+      <Route
+        path="/settings/account/account-settings"
+        element={
+          <SettingsRoute>
+            <AccountSettings />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/account/admin-users"
+        element={
+          <SettingsRoute>
+            <AdminUsers />
+          </SettingsRoute>
+        }
+      />
+
+      {/* Booking Configuration */}
+      <Route
+        path="/settings/booking/booking-flow"
+        element={
+          <SettingsRoute>
+            <BookingFlow />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/booking/event-types"
+        element={
+          <SettingsRoute>
+            <EventTypes />
+          </SettingsRoute>
+        }
+      />
+
+      {/* Template Management */}
+      <Route
+        path="/settings/templates/contract-templates"
+        element={
+          <SettingsRoute>
+            <ContractTemplates />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/templates/questionnaire-templates"
+        element={
+          <SettingsRoute>
+            <QuestionnaireTemplates />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/templates/workflow-templates"
+        element={
+          <SettingsRoute>
+            <WorkflowTemplates />
+          </SettingsRoute>
+        }
+      />
+
+      {/* Communication */}
+      <Route
+        path="/settings/communication/email-templates"
+        element={
+          <SettingsRoute>
+            <EmailTemplates />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/communication/sms-templates"
+        element={
+          <SettingsRoute>
+            <SMSTemplates />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/communication/notifications"
+        element={
+          <SettingsRoute>
+            <CommunicationNotifications />
+          </SettingsRoute>
+        }
+      />
+
+      {/* Commerce */}
+      <Route
+        path="/settings/commerce/products-packages"
+        element={
+          <SettingsRoute>
+            <ProductsPackages />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/commerce/payments"
+        element={
+          <SettingsRoute>
+            <Payments />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/commerce/sales"
+        element={
+          <SettingsRoute>
+            <Sales />
+          </SettingsRoute>
+        }
+      />
+
+      {/* Existing Placeholder Protected Routes */}
       <Route
         path="/users"
         element={
@@ -132,18 +276,6 @@ const AppRouter: React.FC = () => {
           <ProtectedRoute>
             <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
               <Typography variant="h4">Organizations</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Settings</Typography>
               <Typography color="text.secondary">Coming soon...</Typography>
             </Box>
           </ProtectedRoute>

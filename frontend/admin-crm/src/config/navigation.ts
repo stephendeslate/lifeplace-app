@@ -94,7 +94,6 @@ export const navigationConfig: NavigationGroup[] = [
         path: '/settings',
         icon: Settings,
         roles: ['ADMIN'],
-        disabled: true, // Coming soon
       },
       {
         id: 'notifications',
