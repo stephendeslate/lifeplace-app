@@ -46,6 +46,37 @@ export interface AdminUser {
   };
 }
 
+export interface AdminInvitation {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  invited_by: string;
+  is_accepted: boolean;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface InviteAdminFormData {
+  email: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface AcceptInvitationFormData {
+  password: string;
+  confirm_password: string;
+}
+
+export interface AcceptInvitationResponse {
+  message: string;
+  tokens: {
+    access: string;
+    refresh: string;
+  };
+  user: AdminUser;
+}
+
 export interface SettingsCardProps {
   title: string;
   description?: string;

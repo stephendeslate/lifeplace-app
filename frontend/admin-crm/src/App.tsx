@@ -6,6 +6,7 @@ import { AppProviders } from './providers/AppProviders';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
 import { Login } from './pages/auth';
+import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
 import { AppLayout } from './components/layout';
 
@@ -17,6 +18,7 @@ import { BookingFlow, EventTypes } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
 import { EmailTemplates, SMSTemplates, CommunicationNotifications } from './pages/settings/communication';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
+import { AdminUsersSimple } from './pages/settings/account/AdminUsersSimple';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -97,6 +99,12 @@ const AppRouter: React.FC = () => {
             <Login />
           </PublicRoute>
         }
+      />
+
+      {/* Accept Invitation Route - Always accessible, no auth required */}
+      <Route
+        path="/accept-invitation/:invitationId"
+        element={<AcceptInvitation />}
       />
 
       {/* Protected Routes */}
