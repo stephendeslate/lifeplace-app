@@ -123,8 +123,8 @@ export const useAdminUsers = () => {
 
   return {
     // Query data
-    adminUsers: adminUsersQuery.data || [],
-    invitations: invitationsQuery.data || [],
+    adminUsers: Array.isArray(adminUsersQuery.data) ? adminUsersQuery.data : [],
+    invitations: Array.isArray(invitationsQuery.data) ? invitationsQuery.data : [],
 
     // Loading states
     isLoadingAdminUsers: adminUsersQuery.isLoading,

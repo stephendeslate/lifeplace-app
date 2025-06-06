@@ -184,18 +184,59 @@ class AdminInvitationService:
     def _send_invitation_email(invitation):
         """Send invitation email to new admin"""
         subject = "You've been invited to join LifePlace Admin"
-        invitation_link = f"{settings.ADMIN_FRONTEND_URL}/accept-invitation/{invitation.id}"
         
-        # Create email content from template
-        # You would normally have an HTML template for this
+        # Get frontend URL from settings
+        frontend_url = getattr(settings, 'ADMIN_FRONTEND_URL', 'http://localhost:5173')
+        invitation_link = f"{frontend_url}/accept-invitation/{invitation.id}"
+        
+        # Create email content
         html_message = f"""
-        <h2>You've been invited to join LifePlace Admin</h2>
-        <p>Hello {invitation.first_name} {invitation.last_name},</p>
-        <p>{invitation.invited_by.get_full_name()} has invited you to join LifePlace as an administrator.</p>
-        <p>Please click the link below to accept the invitation:</p>
-        <a href="{invitation_link}">Accept Invitation</a>
-        <p>This invitation will expire in 7 days.</p>
-        <p>Thank you,<br>The LifePlace Team</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #1976d2; color: white; padding: 24px; text-align: center;">
+                <h1 style="margin: 0; font-size: 24px;">LifePlace Admin</h1>
+            </div>
+            
+            <div style="padding: 32px; background-color: #f5f5f5;">
+                <div style="background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h2 style="color: #333; margin-top: 0;">You've been invited to join LifePlace Admin</h2>
+                    
+                    <p style="color: #666; line-height: 1.5;">Hello <strong>{invitation.first_name} {invitation.last_name}</strong>,</p>
+                    
+                    <p style="color: #666; line-height: 1.5;">
+                        <strong>{invitation.invited_by.get_full_name()}</strong> has invited you to join LifePlace as an administrator.
+                    </p>
+                    
+                    <div style="margin: 24px 0; padding: 16px; background-color: #e3f2fd; border-left: 4px solid #1976d2; border-radius: 4px;">
+                        <p style="margin: 0; color: #1565c0;">
+                            <strong>Email:</strong> {invitation.email}<br>
+                            <strong>Role:</strong> Administrator
+                        </p>
+                    </div>
+                    
+                    <p style="color: #666; line-height: 1.5;">
+                        Click the button below to accept the invitation and set up your account:
+                    </p>
+                    
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="{invitation_link}" 
+                           style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+                            Accept Invitation
+                        </a>
+                    </div>
+                    
+                    <p style="color: #999; font-size: 14px; line-height: 1.5;">
+                        This invitation will expire on {invitation.expires_at.strftime('%B %d, %Y at %I:%M %p')}. 
+                        If you didn't expect this invitation, you can safely ignore this email.
+                    </p>
+                </div>
+            </div>
+            
+            <div style="padding: 16px; text-align: center; color: #999; font-size: 12px;">
+                <p style="margin: 0;">
+                    © 2024 LifePlace. All rights reserved.
+                </p>
+            </div>
+        </div>
         """
         
         plain_message = f"""
@@ -205,21 +246,32 @@ class AdminInvitationService:
         
         {invitation.invited_by.get_full_name()} has invited you to join LifePlace as an administrator.
         
-        Please click the link below to accept the invitation:
+        Email: {invitation.email}
+        Role: Administrator
+        
+        Please click the link below to accept the invitation and set up your account:
         {invitation_link}
         
-        This invitation will expire in 7 days.
+        This invitation will expire on {invitation.expires_at.strftime('%B %d, %Y at %I:%M %p')}.
+        
+        If you didn't expect this invitation, you can safely ignore this email.
         
         Thank you,
         The LifePlace Team
         """
         
         # Send email
-        send_mail(
-            subject=subject,
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[invitation.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                subject=subject,
+                message=plain_message,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@lifeplace.com'),
+                recipient_list=[invitation.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+        except Exception as e:
+            # Log the error but don't fail the invitation creation
+            print(f"Failed to send invitation email: {str(e)}")
+            # In production, you might want to use proper logging
+            # logger.error(f"Failed to send invitation email to {invitation.email}: {str(e)}")

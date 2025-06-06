@@ -2,7 +2,23 @@
 
 import api from '../utils/api';
 import type { User } from '../types/auth.types';
-import type { AccountSettingsFormData, PasswordChangeFormData, AdminUser } from '../types/settings.types';
+import type { 
+  AccountSettingsFormData, 
+  PasswordChangeFormData, 
+  AdminUser,
+  AdminInvitation,
+  InviteAdminFormData,
+  AcceptInvitationFormData,
+  AcceptInvitationResponse
+} from '../types/settings.types';
+
+// Define paginated response types
+interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
 
 export const settingsApi = {
   /**
@@ -22,9 +38,15 @@ export const settingsApi = {
    * Admin Users Management
    */
   getAdminUsers: async (): Promise<AdminUser[]> => {
-    const response = await api.get<AdminUser[]>('/users/');
-    // Filter admin users on the frontend since backend might not support role filtering
-    return response.data.filter((user: AdminUser) => user.role === 'ADMIN');
+    try {
+      const response = await api.get<PaginatedResponse<AdminUser>>('/users/');
+      console.log('getAdminUsers response.data:', response.data);
+      const users = Array.isArray(response.data.results) ? response.data.results : [];
+      return users.filter((user: AdminUser) => user.role === 'ADMIN');
+    } catch (error) {
+      console.error('getAdminUsers error:', error);
+      return [];
+    }
   },
 
   createAdminUser: async (data: any): Promise<AdminUser> => {
@@ -44,21 +66,39 @@ export const settingsApi = {
   /**
    * Admin Invitations
    */
-  getInvitations: async (): Promise<any[]> => {
-    const response = await api.get<any[]>('/users/invitations/');
+  getInvitations: async (): Promise<AdminInvitation[]> => {
+    try {
+      const response = await api.get<PaginatedResponse<AdminInvitation>>('/users/invitations/');
+      console.log('getInvitations response.data:', response.data);
+      return Array.isArray(response.data.results) ? response.data.results : [];
+    } catch (error) {
+      console.error('getInvitations error:', error);
+      return [];
+    }
+  },
+
+  getInvitation: async (id: string): Promise<AdminInvitation> => {
+    const response = await api.get<AdminInvitation>(`/users/invitations/${id}/`);
     return response.data;
   },
 
-  createInvitation: async (data: {
-    email: string;
-    first_name: string;
-    last_name: string;
-  }): Promise<any> => {
-    const response = await api.post('/users/invitations/', data);
+  createInvitation: async (data: InviteAdminFormData): Promise<AdminInvitation> => {
+    const response = await api.post<AdminInvitation>('/users/invitations/', data);
     return response.data;
   },
 
   deleteInvitation: async (id: string): Promise<void> => {
     await api.delete(`/users/invitations/${id}/`);
+  },
+
+  acceptInvitation: async (
+    invitationId: string, 
+    data: AcceptInvitationFormData
+  ): Promise<AcceptInvitationResponse> => {
+    const response = await api.post<AcceptInvitationResponse>(
+      `/users/invitations/${invitationId}/accept/`, 
+      data
+    );
+    return response.data;
   },
 };
