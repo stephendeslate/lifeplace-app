@@ -37,7 +37,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', width: '100vw' }}>
       {/* Header */}
       <Header />
 
@@ -58,12 +58,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           minHeight: `calc(100vh - ${headerHeight}px)`,
           backgroundColor: 'grey.50',
           position: 'relative',
+          width: 0, // Forces flexGrow to work properly
         }}
       >
         {/* Content Container */}
         <Box
           sx={{
             height: '100%',
+            width: '100%',
             overflow: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -90,4 +92,4 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       )}
     </Box>
   );
-}
+};
