@@ -1,14 +1,16 @@
 // frontend/admin-crm/src/App.tsx
 
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProviders } from './providers/AppProviders';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
+import { Login } from './pages/auth';
+import { Dashboard } from './pages/dashboard';
 
-// Placeholder for future router implementation
-const AppRouter: React.FC = () => {
-  const { isLoading, isAuthenticated, user } = useAuth();
+// Protected Route Component
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -28,7 +30,14 @@ const AppRouter: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+};
+
+// Public Route Component (redirects to dashboard if authenticated)
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
     return (
       <Box
         display="flex"
@@ -37,44 +46,48 @@ const AppRouter: React.FC = () => {
         justifyContent="center"
         minHeight="100vh"
         gap={2}
-        sx={{ p: 3 }}
       >
-        <Typography variant="h4" component="h1" gutterBottom>
-          LifePlace Admin CRM
-        </Typography>
-        <Typography variant="body1" color="text.secondary" textAlign="center">
-          Please log in to access the admin dashboard.
-        </Typography>
-        <Typography variant="caption" color="text.disabled">
-          Authentication system is ready. Login page will be implemented next.
+        <CircularProgress />
+        <Typography variant="body2" color="text.secondary">
+          Loading LifePlace Admin...
         </Typography>
       </Box>
     );
   }
 
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+};
+
+// Main App Router Component
+const AppRouter: React.FC = () => {
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      minHeight="100vh"
-      gap={2}
-      sx={{ p: 3 }}
-    >
-      <Typography variant="h4" component="h1" gutterBottom>
-        Welcome to LifePlace Admin CRM
-      </Typography>
-      <Typography variant="h6" color="text.secondary">
-        Hello, {user?.first_name || user?.email}!
-      </Typography>
-      <Typography variant="body1" textAlign="center">
-        You are successfully authenticated as an admin user.
-      </Typography>
-      <Typography variant="caption" color="text.disabled">
-        Dashboard and routing will be implemented next.
-      </Typography>
-    </Box>
+    <Routes>
+      {/* Public Routes */}
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
+      />
+
+      {/* Protected Routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Default Route */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      {/* Catch-all Route */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   );
 };
 
