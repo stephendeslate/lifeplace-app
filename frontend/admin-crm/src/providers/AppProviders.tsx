@@ -11,6 +11,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import theme from '../utils/theme';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ToastProvider } from '../contexts/ToastContext';
+import { LayoutProvider } from '../contexts/LayoutContext';
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -46,9 +47,11 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <ToastProvider>
             <AuthProvider>
-              {children}
-              {/* Only show React Query devtools in development */}
-              {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+              <LayoutProvider>
+                {children}
+                {/* Only show React Query devtools in development */}
+                {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+              </LayoutProvider>
             </AuthProvider>
           </ToastProvider>
         </LocalizationProvider>
