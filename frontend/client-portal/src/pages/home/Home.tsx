@@ -303,7 +303,7 @@ const Home: React.FC<HomeProps> = ({
               <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main' }}>
                 Our Beautiful Venues
               </Typography>
-              <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
+              <Typography variant="h6" color="text.secondary">
                 From intimate ceremonies to grand celebrations, we have the perfect space for your special occasion
               </Typography>
             </Stack>
@@ -371,7 +371,7 @@ const Home: React.FC<HomeProps> = ({
               <Typography variant="h2" sx={{ fontWeight: 600 }}>
                 Our Services
               </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.9, maxWidth: 600, mx: 'auto' }}>
+              <Typography variant="h6" sx={{ opacity: 0.9 }}>
                 We provide comprehensive packages for every type of celebration and gathering
               </Typography>
             </Stack>
