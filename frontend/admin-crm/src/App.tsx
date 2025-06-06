@@ -1,87 +1,90 @@
 // frontend/admin-crm/src/App.tsx
-// Ultra simple test without any MUI dependencies
-import React from "react";
-import {
-  Route,
-  BrowserRouter as Router,
-  Routes,
-} from "react-router-dom";
 
-// Basic HTML login form
-const SimpleLogin: React.FC = () => {
-  console.log("SimpleLogin component rendering!");
-  
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { AppProviders } from './providers/AppProviders';
+import { Box, CircularProgress, Typography } from '@mui/material';
+import { useAuth } from './contexts/AuthContext';
+
+// Placeholder for future router implementation
+const AppRouter: React.FC = () => {
+  const { isLoading, isAuthenticated, user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+        gap={2}
+      >
+        <CircularProgress />
+        <Typography variant="body2" color="text.secondary">
+          Loading LifePlace Admin...
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+        gap={2}
+        sx={{ p: 3 }}
+      >
+        <Typography variant="h4" component="h1" gutterBottom>
+          LifePlace Admin CRM
+        </Typography>
+        <Typography variant="body1" color="text.secondary" textAlign="center">
+          Please log in to access the admin dashboard.
+        </Typography>
+        <Typography variant="caption" color="text.disabled">
+          Authentication system is ready. Login page will be implemented next.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
-    <div style={{ 
-      padding: '20px', 
-      maxWidth: '400px', 
-      margin: '50px auto',
-      border: '1px solid #ccc',
-      borderRadius: '8px'
-    }}>
-      <h1>LifePlace Login</h1>
-      <form>
-        <div style={{ marginBottom: '15px' }}>
-          <label>Email:</label>
-          <input 
-            type="email" 
-            style={{ 
-              width: '100%', 
-              padding: '8px', 
-              marginTop: '5px' 
-            }} 
-          />
-        </div>
-        <div style={{ marginBottom: '15px' }}>
-          <label>Password:</label>
-          <input 
-            type="password" 
-            style={{ 
-              width: '100%', 
-              padding: '8px', 
-              marginTop: '5px' 
-            }} 
-          />
-        </div>
-        <button 
-          type="submit" 
-          style={{ 
-            padding: '10px 20px', 
-            backgroundColor: '#007bff', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '4px' 
-          }}
-        >
-          Login
-        </button>
-      </form>
-    </div>
+    <Box
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="100vh"
+      gap={2}
+      sx={{ p: 3 }}
+    >
+      <Typography variant="h4" component="h1" gutterBottom>
+        Welcome to LifePlace Admin CRM
+      </Typography>
+      <Typography variant="h6" color="text.secondary">
+        Hello, {user?.first_name || user?.email}!
+      </Typography>
+      <Typography variant="body1" textAlign="center">
+        You are successfully authenticated as an admin user.
+      </Typography>
+      <Typography variant="caption" color="text.disabled">
+        Dashboard and routing will be implemented next.
+      </Typography>
+    </Box>
   );
 };
 
-// Test dashboard
-const TestDashboard: React.FC = () => {
-  return (
-    <div style={{ padding: '20px' }}>
-      <h1>Dashboard Works!</h1>
-      <p>If you see this, routing is working correctly.</p>
-    </div>
-  );
-};
-
-// Minimal App without any external libraries except router
 const App: React.FC = () => {
-  console.log("App component rendering!");
-  
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<SimpleLogin />} />
-        <Route path="/dashboard" element={<TestDashboard />} />
-        <Route path="*" element={<SimpleLogin />} />
-      </Routes>
-    </Router>
+    <AppProviders>
+      <Router>
+        <AppRouter />
+      </Router>
+    </AppProviders>
   );
 };
 
