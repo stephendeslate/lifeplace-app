@@ -145,9 +145,33 @@ if IS_PRODUCTION:
 else:
     # Development CORS origins
     CORS_ALLOWED_ORIGINS = [
-        "http://localhost:5173",  # Vite dev server
-        "http://localhost:5174",  # Additional Vite dev server if needed
+        "http://localhost:5173",   # admin-crm
+        "http://localhost:5174",   # client-portal
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
     ]
+    CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET', 
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 # Production-specific settings
 if IS_PRODUCTION:
