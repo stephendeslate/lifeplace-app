@@ -63,20 +63,24 @@ export const Dashboard: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
+        width: '100vw',
         backgroundColor: 'grey.50',
         display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center',
-        py: 4,
+        padding: 2,
       }}
     >
       <Box
         sx={{
           width: '100%',
           maxWidth: 1200,
-          px: { xs: 2, sm: 3, md: 4 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        <Stack spacing={4}>
+        <Stack spacing={4} sx={{ width: '100%' }}>
           {/* Header */}
           <Paper
             elevation={2}
