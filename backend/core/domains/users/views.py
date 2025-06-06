@@ -3,6 +3,7 @@ from core.utils.permissions import IsAdmin, IsOwnerOrAdmin
 from django.contrib.auth import authenticate
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -18,7 +19,7 @@ from .serializers import (
 )
 from .services import AdminInvitationService, UserService
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class UserLoginAPIView(APIView):
     """
     User login API view
