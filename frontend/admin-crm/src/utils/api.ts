@@ -6,7 +6,7 @@ import { storage } from "./storage";
 // Get base URL based on environment
 const getBaseUrl = () => {
   if (import.meta.env.PROD) {
-    return "/api";
+    return import.meta.env.VITE_API_BASE_URL + "/api";
   }
   
   // In development, use the environment variable or default to localhost
