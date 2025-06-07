@@ -9,7 +9,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     # Add your API URLs here
-    # path('api/', include('your_app.urls')),
+    path('api/users/', include('core.domains.users.urls', namespace='users')),
 ]
 
 # In production, serve React apps
