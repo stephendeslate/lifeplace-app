@@ -6,9 +6,7 @@ import { storage } from "./storage";
 // Get base URL based on environment
 const getBaseUrl = () => {
   if (import.meta.env.PROD) {
-    // In production, use relative URL
-    // This works since both API and frontend are on the same domain
-    return "/api";
+    return import.meta.env.VITE_API_BASE_URL || "/api";
   }
   
   // In development, use the environment variable or default to localhost
