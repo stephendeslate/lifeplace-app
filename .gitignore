@@ -1,2 +1,2 @@
 # Ignore files and directories that should not be tracked by Git
-backend/.env
+.env
