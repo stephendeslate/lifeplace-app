@@ -6,7 +6,16 @@ import type { User, AuthContextType, LoginCredentials, AuthTokens } from '../typ
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_STORAGE_KEY = 'lifeplace_admin_tokens';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+// Get base URL based on environment - same logic as api.ts
+const getBaseUrl = () => {
+  if (import.meta.env.PROD) {
+    return import.meta.env.VITE_API_BASE_URL || "/api";
+  }
+  
+  // In development, use the environment variable or default to localhost
+  return import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+};
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -35,6 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Get current user info
   const getCurrentUser = async (accessToken: string): Promise<User | null> => {
     try {
+      const API_BASE_URL = getBaseUrl();
       const response = await fetch(`${API_BASE_URL}/users/me/`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -61,6 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     try {
+      const API_BASE_URL = getBaseUrl();
       const response = await fetch(`${API_BASE_URL}/users/token/refresh/`, {
         method: 'POST',
         headers: {
@@ -97,6 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login function
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
+      const API_BASE_URL = getBaseUrl();
       const response = await fetch(`${API_BASE_URL}/users/login/`, {
         method: 'POST',
         headers: {
