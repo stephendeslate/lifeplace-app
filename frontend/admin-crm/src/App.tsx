@@ -18,7 +18,6 @@ import { BookingFlow, EventTypes } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
 import { EmailTemplates, SMSTemplates, CommunicationNotifications } from './pages/settings/communication';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
-import { AdminUsersSimple } from './pages/settings/account/AdminUsersSimple';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
