@@ -2,20 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User, AuthContextType, LoginCredentials, AuthTokens } from '../types/auth.types';
+import { storage } from '../utils/storage';
+import { authApi } from '../apis/auth.api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const TOKEN_STORAGE_KEY = 'lifeplace_admin_tokens';
-
-// Get base URL based on environment - same logic as api.ts
-const getBaseUrl = () => {
-  if (import.meta.env.PROD) {
-    return import.meta.env.VITE_API_BASE_URL || "/api";
-  }
-  
-  // In development, use the environment variable or default to localhost
-  return import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
-};
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -25,78 +15,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Get stored tokens
-  const getStoredTokens = (): AuthTokens | null => {
-    const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  };
-
-  // Store tokens
-  const storeTokens = (tokens: AuthTokens) => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokens));
-  };
-
-  // Clear tokens
-  const clearTokens = () => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-  };
-
-  // Get current user info
-  const getCurrentUser = async (accessToken: string): Promise<User | null> => {
+  // Get current user info using API client
+  const getCurrentUser = async (): Promise<User | null> => {
     try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/users/me/`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        return userData;
-      }
-      return null;
+      const userData = await authApi.getCurrentUser();
+      return userData;
     } catch (error) {
       console.error('Error fetching current user:', error);
       return null;
     }
   };
 
-  // Refresh access token
+  // Refresh access token using API client
   const refreshToken = async (): Promise<void> => {
-    const tokens = getStoredTokens();
+    const tokens = storage.getTokens();
     if (!tokens?.refresh) {
       throw new Error('No refresh token available');
     }
 
     try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/users/token/refresh/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refresh: tokens.refresh }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const newTokens = {
-          access: data.access,
-          refresh: tokens.refresh, // Keep existing refresh token
-        };
-        storeTokens(newTokens);
-        
-        // Get updated user info
-        const userData = await getCurrentUser(newTokens.access);
-        if (userData) {
-          setUser(userData);
-        }
-      } else {
-        // Refresh token is invalid, log out
-        logout();
-        throw new Error('Token refresh failed');
+      const data = await authApi.refreshToken(tokens.refresh);
+      const newTokens: AuthTokens = {
+        access: data.access,
+        refresh: tokens.refresh, // Keep existing refresh token
+      };
+      
+      storage.setTokens(newTokens);
+      
+      // Get updated user info
+      const userData = await getCurrentUser();
+      if (userData) {
+        setUser(userData);
+        storage.setUser(userData);
       }
     } catch (error) {
       console.error('Error refreshing token:', error);
@@ -105,32 +55,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Login function
+  // Login function using API client
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/users/login/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Check if user is admin
-        if (data.user.role !== 'ADMIN') {
-          throw new Error('Access denied. Admin privileges required.');
-        }
-
-        storeTokens(data.tokens);
-        setUser(data.user);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Login failed');
+      const data = await authApi.login(credentials);
+      
+      // Check if user is admin
+      if (data.user.role !== 'ADMIN') {
+        throw new Error('Access denied. Admin privileges required.');
       }
+
+      // Store tokens and user data
+      storage.setTokens(data.tokens);
+      storage.setUser(data.user);
+      setUser(data.user);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -139,41 +77,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Logout function
   const logout = () => {
-    clearTokens();
+    storage.clearAuth();
     setUser(null);
   };
 
   // Update user data
   const updateUser = (userData: Partial<User>) => {
     if (user) {
-      setUser({ ...user, ...userData });
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      storage.setUser(updatedUser);
     }
   };
 
   // Check authentication status on mount
   useEffect(() => {
     const initializeAuth = async () => {
-      const tokens = getStoredTokens();
-      if (tokens?.access) {
-        try {
-          const userData = await getCurrentUser(tokens.access);
-          if (userData && userData.role === 'ADMIN') {
-            setUser(userData);
-          } else {
-            // User is not admin or token is invalid
-            clearTokens();
-          }
-        } catch (error) {
-          // Try to refresh token
+      try {
+        // Check if storage is available
+        if (!storage.isStorageAvailable()) {
+          console.warn('localStorage is not available');
+          setIsLoading(false);
+          return;
+        }
+
+        const tokens = storage.getTokens();
+        const storedUser = storage.getUser();
+        
+        if (tokens?.access && storedUser) {
+          // Try to get fresh user data
           try {
-            await refreshToken();
-          } catch (refreshError) {
-            console.error('Failed to refresh token:', refreshError);
-            clearTokens();
+            const userData = await getCurrentUser();
+            if (userData && userData.role === 'ADMIN') {
+              setUser(userData);
+              storage.setUser(userData);
+            } else {
+              // User is not admin or token is invalid
+              storage.clearAuth();
+            }
+          } catch (error) {
+            // Token might be expired, try to refresh
+            try {
+              await refreshToken();
+            } catch (refreshError) {
+              console.error('Failed to refresh token:', refreshError);
+              storage.clearAuth();
+            }
           }
         }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        storage.clearAuth();
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initializeAuth();
@@ -184,11 +141,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (user) {
       // Refresh token every 25 minutes (tokens expire in 30 minutes)
       const interval = setInterval(() => {
-        refreshToken().catch(console.error);
+        refreshToken().catch((error) => {
+          console.error('Background token refresh failed:', error);
+        });
       }, 25 * 60 * 1000);
 
       return () => clearInterval(interval);
     }
+  }, [user]);
+
+  // Handle storage events (for cross-tab logout)
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      // If tokens were removed in another tab, logout this tab too
+      if (event.key === 'lifeplace_admin_tokens' && event.newValue === null) {
+        setUser(null);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Handle page visibility change to refresh token when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        // Refresh token when page becomes visible after being hidden
+        refreshToken().catch((error) => {
+          console.error('Visibility refresh failed:', error);
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [user]);
 
   const value: AuthContextType = {
