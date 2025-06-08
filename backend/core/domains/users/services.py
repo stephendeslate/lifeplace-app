@@ -3,9 +3,7 @@ import uuid
 from datetime import timedelta
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db.models import Q
-from django.template.loader import render_to_string
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -139,7 +137,7 @@ class AdminInvitationService:
             expires_at=timezone.now() + timedelta(days=7)
         )
         
-        # Send invitation email
+        # Send invitation email using communications service
         AdminInvitationService._send_invitation_email(invitation)
         
         return invitation
@@ -182,14 +180,60 @@ class AdminInvitationService:
     
     @staticmethod
     def _send_invitation_email(invitation):
-        """Send invitation email to new admin"""
+        """Send invitation email using communication service"""
+        try:
+            # Import here to avoid circular imports
+            from core.domains.communications.services import CommunicationService
+            
+            communication_service = CommunicationService()
+            
+            # Get frontend URL from settings
+            frontend_url = getattr(settings, 'ADMIN_FRONTEND_URL', 'http://localhost:5173')
+            invitation_link = f"{frontend_url}/accept-invitation/{invitation.id}"
+            
+            # Prepare context data for template
+            context_data = {
+                'first_name': invitation.first_name,
+                'last_name': invitation.last_name,
+                'invited_by': invitation.invited_by.get_full_name(),
+                'invitation_link': invitation_link,
+                'expiry_date': invitation.expires_at.strftime('%B %d, %Y at %I:%M %p')
+            }
+            
+            # Send using communication service
+            record = communication_service.send_communication(
+                template_name='Admin Invitation',
+                recipient=invitation.email,
+                context_data=context_data,
+                sent_by=invitation.invited_by
+            )
+            
+            if not record:
+                # Fallback to old email system if communication service fails
+                print(f"Communication service failed, falling back to direct email for {invitation.email}")
+                AdminInvitationService._send_fallback_email(invitation)
+                
+        except ImportError:
+            # Communications domain not available, use fallback
+            print(f"Communications domain not available, using fallback email for {invitation.email}")
+            AdminInvitationService._send_fallback_email(invitation)
+        except Exception as e:
+            # Log error and use fallback
+            print(f"Failed to send invitation via communication service: {str(e)}")
+            AdminInvitationService._send_fallback_email(invitation)
+    
+    @staticmethod
+    def _send_fallback_email(invitation):
+        """Fallback email sending using Django's send_mail (original implementation)"""
+        from django.core.mail import send_mail
+        
         subject = "You've been invited to join LifePlace Admin"
         
         # Get frontend URL from settings
         frontend_url = getattr(settings, 'ADMIN_FRONTEND_URL', 'http://localhost:5173')
         invitation_link = f"{frontend_url}/accept-invitation/{invitation.id}"
         
-        # Create email content
+        # Create email content (original template)
         html_message = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background-color: #1976d2; color: white; padding: 24px; text-align: center;">
@@ -272,6 +316,6 @@ class AdminInvitationService:
             )
         except Exception as e:
             # Log the error but don't fail the invitation creation
-            print(f"Failed to send invitation email: {str(e)}")
+            print(f"Failed to send fallback invitation email: {str(e)}")
             # In production, you might want to use proper logging
             # logger.error(f"Failed to send invitation email to {invitation.email}: {str(e)}")

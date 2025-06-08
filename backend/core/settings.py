@@ -36,6 +36,7 @@ AUTH_USER_MODEL = 'users.User'
 INSTALLED_APPS = [
     'core',
     'core.domains.users',
+    'core.domains.communications',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
