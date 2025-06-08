@@ -16,7 +16,7 @@ import { Settings } from './pages/settings';
 import { AccountSettings, AdminUsers } from './pages/settings/account';
 import { BookingFlow, EventTypes } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
-import { EmailTemplates, SMSTemplates, CommunicationNotifications } from './pages/settings/communication';
+import { CommunicationTemplates, CommunicationRecords, CommunicationNotifications } from './pages/settings/communication';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 
 // Protected Route Component
@@ -190,18 +190,18 @@ const AppRouter: React.FC = () => {
 
       {/* Communication */}
       <Route
-        path="/settings/communication/email-templates"
+        path="/settings/communication/templates"
         element={
           <SettingsRoute>
-            <EmailTemplates />
+            <CommunicationTemplates />
           </SettingsRoute>
         }
       />
       <Route
-        path="/settings/communication/sms-templates"
+        path="/settings/communication/records"
         element={
           <SettingsRoute>
-            <SMSTemplates />
+            <CommunicationRecords />
           </SettingsRoute>
         }
       />

@@ -3,52 +3,61 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box,
-  Typography,
+  Button,
   Card,
   CardContent,
-  Button,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
+  Typography,
+  Chip,
+  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  IconButton,
-  Chip,
-  Alert,
   CircularProgress,
-  Stack,
+  Menu,
+  MenuItem,
+  Alert,
+  Paper,
   Divider,
-  Tooltip,
+  Stack,
+  Tooltip
 } from '@mui/material';
 import {
-  AdminPanelSettings,
-  PersonAdd,
-  Delete,
-  Email,
-  Cancel,
-  CheckCircle,
-  Schedule,
+  Add as AddIcon,
+  MoreVert as MoreVertIcon,
+  Delete as DeleteIcon,
+  Email as EmailIcon,
+  AdminPanelSettings as AdminIcon,
+  PersonAdd as PersonAddIcon,
+  Visibility as ViewIcon
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useAdminUsers } from '../../../hooks/useSettings';
-// Simple date formatter utility
-
-interface InviteAdminFormData {
-  email: string;
-  first_name: string;
-  last_name: string;
-}
+import { useCommunications } from '../../../hooks/useCommunications';
+import type { InviteAdminFormData, AdminUser, AdminInvitation } from '../../../types/settings.types';
 
 export const AdminUsers: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
-  // const { showSuccess, showError } = useToastActions();
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [viewRecordsDialogOpen, setViewRecordsDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [selectedInvitation, setSelectedInvitation] = useState<AdminInvitation | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuType, setMenuType] = useState<'user' | 'invitation'>('user');
+
+  const [inviteForm, setInviteForm] = useState<InviteAdminFormData>({
+    email: '',
+    first_name: '',
+    last_name: '',
+  });
 
   const {
     adminUsers,
@@ -61,445 +70,503 @@ export const AdminUsers: React.FC = () => {
     createInvitation,
     deleteInvitation,
     deleteAdminUser,
-    adminUsersError,
-    invitationsError,
   } = useAdminUsers();
 
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<InviteAdminFormData>({
-    email: '',
-    first_name: '',
-    last_name: '',
+  const { useRecords } = useCommunications();
+
+  // Get communication records for admin invitations
+  const { data: communicationRecords } = useRecords({
+    template_name: 'Admin Invitation'
   });
-  const [formErrors, setFormErrors] = useState<Partial<InviteAdminFormData>>({});
 
   useEffect(() => {
     setBreadcrumbs([
       { label: 'Settings', path: '/settings' },
-      { label: 'Account Management' },
+      { label: 'Account', path: '/settings/account' },
       { label: 'Admin Users' },
     ]);
   }, [setBreadcrumbs]);
 
-  const validateForm = (): boolean => {
-    const errors: Partial<InviteAdminFormData> = {};
-
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
-
-    if (!formData.first_name.trim()) {
-      errors.first_name = 'First name is required';
-    }
-
-    if (!formData.last_name.trim()) {
-      errors.last_name = 'Last name is required';
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleInviteSubmit = () => {
-    if (!validateForm()) return;
-
-    createInvitation(formData, {
+  const handleInviteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createInvitation(inviteForm, {
       onSuccess: () => {
         setInviteDialogOpen(false);
-        setFormData({ email: '', first_name: '', last_name: '' });
-        setFormErrors({});
+        setInviteForm({ email: '', first_name: '', last_name: '' });
       },
     });
   };
 
-  const handleDeleteUser = () => {
-    if (!selectedUserId) return;
-
-    deleteAdminUser(selectedUserId, {
-      onSuccess: () => {
-        setDeleteUserDialogOpen(false);
-        setSelectedUserId(null);
-      },
-    });
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    type: 'user' | 'invitation',
+    item: AdminUser | AdminInvitation
+  ) => {
+    setAnchorEl(event.currentTarget);
+    setMenuType(type);
+    if (type === 'user') {
+      setSelectedUser(item as AdminUser);
+    } else {
+      setSelectedInvitation(item as AdminInvitation);
+    }
   };
 
-  const handleDeleteInvitation = (invitationId: string) => {
-    deleteInvitation(invitationId);
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedUser(null);
+    setSelectedInvitation(null);
   };
 
-  const openDeleteUserDialog = (userId: number) => {
-    setSelectedUserId(userId);
-    setDeleteUserDialogOpen(true);
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const handleViewRecordsClick = () => {
+    setViewRecordsDialogOpen(true);
+    handleMenuClose();
   };
 
-  const getInvitationStatusChip = (invitation: any) => {
+  const handleDeleteConfirm = () => {
+    if (menuType === 'user' && selectedUser) {
+      deleteAdminUser(selectedUser.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setSelectedUser(null);
+        },
+      });
+    } else if (menuType === 'invitation' && selectedInvitation) {
+      deleteInvitation(selectedInvitation.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setSelectedInvitation(null);
+        },
+      });
+    }
+  };
+
+  const getInvitationStatus = (invitation: AdminInvitation) => {
+    const now = new Date();
+    const expiresAt = new Date(invitation.expires_at);
+    
     if (invitation.is_accepted) {
-      return (
-        <Chip
-          icon={<CheckCircle />}
-          label="Accepted"
-          color="success"
-          size="small"
-          variant="outlined"
-        />
-      );
+      return { label: 'Accepted', color: 'success' as const };
+    } else if (now > expiresAt) {
+      return { label: 'Expired', color: 'error' as const };
+    } else {
+      return { label: 'Pending', color: 'warning' as const };
     }
+  };
 
-    const isExpired = new Date(invitation.expires_at) < new Date();
-    if (isExpired) {
-      return (
-        <Chip
-          icon={<Cancel />}
-          label="Expired"
-          color="error"
-          size="small"
-          variant="outlined"
-        />
-      );
-    }
-
-    return (
-      <Chip
-        icon={<Schedule />}
-        label="Pending"
-        color="warning"
-        size="small"
-        variant="outlined"
-      />
+  const getInvitationRecord = (invitation: AdminInvitation) => {
+    return communicationRecords?.find(record => 
+      record.recipient === invitation.email && 
+      record.template_name === 'Admin Invitation'
     );
   };
 
-  if (adminUsersError || invitationsError) {
+  // Empty state when no admin users exist
+  const renderNoAdminsState = () => (
+    <Paper 
+      elevation={0} 
+      sx={{ 
+        p: 6, 
+        textAlign: 'center',
+        bgcolor: 'grey.50',
+        border: '2px dashed',
+        borderColor: 'grey.300'
+      }}
+    >
+      <AdminIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+      <Typography variant="h5" fontWeight="bold" gutterBottom>
+        No Admin Users Yet
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
+        Start building your admin team by inviting other administrators to help manage your LifePlace account.
+      </Typography>
+      
+      <Button
+        variant="contained"
+        size="large"
+        startIcon={<PersonAddIcon />}
+        onClick={() => setInviteDialogOpen(true)}
+        sx={{ mt: 2 }}
+      >
+        Invite Your First Admin
+      </Button>
+
+      <Divider sx={{ my: 3 }} />
+      
+      <Typography variant="body2" color="text.secondary">
+        💡 <strong>Tip:</strong> Invited admins will receive an email with instructions to set up their account
+      </Typography>
+    </Paper>
+  );
+
+  const isLoading = isLoadingAdminUsers || isLoadingInvitations;
+
+  if (isLoading) {
     return (
-      <Box>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          Failed to load admin users data. Please try refreshing the page.
-        </Alert>
+      <Box display="flex" justifyContent="center" p={4}>
+        <CircularProgress />
       </Box>
     );
   }
 
+  const hasAdmins = adminUsers.length > 0 || invitations.length > 0;
+
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-          <Box display="flex" alignItems="center" gap={2}>
-            <AdminPanelSettings color="primary" sx={{ fontSize: 32 }} />
-            <Box>
-              <Typography variant="h4" component="h1" fontWeight="bold">
-                Admin Users
-              </Typography>
-              <Typography variant="subtitle1" color="text.secondary">
-                Manage administrator accounts and send invitations
-              </Typography>
-            </Box>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<PersonAdd />}
-            onClick={() => setInviteDialogOpen(true)}
-            sx={{ minWidth: 160 }}
-          >
-            Invite Admin
-          </Button>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box>
+          <Typography variant="h5" fontWeight="bold">
+            Admin Users
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Manage administrator accounts and invitations
+          </Typography>
         </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setInviteDialogOpen(true)}
+        >
+          Invite Admin
+        </Button>
       </Box>
 
-      <Stack spacing={4}>
-        {/* Current Admin Users */}
-        <Card elevation={2}>
-          <CardContent sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Current Admin Users
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-
-            {isLoadingAdminUsers ? (
-              <Box display="flex" justifyContent="center" py={4}>
-                <CircularProgress />
-              </Box>
-            ) : adminUsers.length === 0 ? (
-              <Alert severity="info">
-                No admin users found.
-              </Alert>
-            ) : (
-              <TableContainer component={Paper} variant="outlined">
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Email</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Date Joined</TableCell>
-                      <TableCell align="center">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {adminUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight="medium">
-                            {user.first_name && user.last_name
-                              ? `${user.first_name} ${user.last_name}`
-                              : 'No name provided'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Email fontSize="small" color="action" />
-                            <Typography variant="body2">
-                              {user.email}
+      {!hasAdmins ? (
+        renderNoAdminsState()
+      ) : (
+        <Stack spacing={3}>
+          {/* Active Admin Users */}
+          {adminUsers.length > 0 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Active Administrators ({adminUsers.length})
+                </Typography>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell>Company</TableCell>
+                        <TableCell>Joined</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell width="50"></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {adminUsers.map((user) => (
+                        <TableRow key={user.id} hover>
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <AdminIcon color="primary" />
+                              <Typography variant="body2" fontWeight="medium">
+                                {user.first_name} {user.last_name}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{user.email}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {user.profile?.company || '-'}
                             </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={user.is_active ? 'Active' : 'Inactive'}
-                            color={user.is_active ? 'success' : 'default'}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {formatDate(user.date_joined)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="Delete User">
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {new Date(user.date_joined).toLocaleDateString()}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={user.is_active ? 'Active' : 'Inactive'} 
+                              color={user.is_active ? 'success' : 'default'}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
                             <IconButton
                               size="small"
-                              color="error"
-                              onClick={() => openDeleteUserDialog(user.id)}
-                              disabled={isDeletingUser}
+                              onClick={(e) => handleMenuOpen(e, 'user', user)}
                             >
-                              <Delete fontSize="small" />
+                              <MoreVertIcon />
                             </IconButton>
-                          </Tooltip>
-                        </TableCell>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pending Invitations */}
+          {invitations.length > 0 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Pending Invitations ({invitations.length})
+                </Typography>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell>Invited By</TableCell>
+                        <TableCell>Sent</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Email Status</TableCell>
+                        <TableCell width="50"></TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </CardContent>
-        </Card>
+                    </TableHead>
+                    <TableBody>
+                      {invitations.map((invitation) => {
+                        const status = getInvitationStatus(invitation);
+                        const record = getInvitationRecord(invitation);
+                        
+                        return (
+                          <TableRow key={invitation.id} hover>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <PersonAddIcon color="action" />
+                                <Typography variant="body2" fontWeight="medium">
+                                  {invitation.first_name} {invitation.last_name}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">{invitation.email}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary">
+                                {invitation.invited_by}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary">
+                                {new Date(invitation.created_at).toLocaleDateString()}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={status.label} 
+                                color={status.color}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {record ? (
+                                <Tooltip title={`${record.delivery_status} - Click to view details`}>
+                                  <Chip 
+                                    label={record.delivery_status}
+                                    size="small"
+                                    color={record.delivery_status === 'DELIVERED' ? 'success' : 
+                                           record.delivery_status === 'FAILED' ? 'error' : 'warning'}
+                                    variant="outlined"
+                                    clickable
+                                    onClick={() => handleViewRecordsClick()}
+                                  />
+                                </Tooltip>
+                              ) : (
+                                <Chip label="No record" size="small" variant="outlined" />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleMenuOpen(e, 'invitation', invitation)}
+                              >
+                                <MoreVertIcon />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Pending Invitations */}
-        <Card elevation={2}>
-          <CardContent sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Pending Invitations
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
+          {/* Communication Tracking Alert */}
+          {communicationRecords && communicationRecords.length > 0 && (
+            <Alert severity="info" icon={<EmailIcon />}>
+              <Typography variant="body2">
+                <strong>Email Tracking:</strong> Admin invitation emails are now tracked through the communication system. 
+                You can view delivery status and open rates for each invitation above.
+              </Typography>
+            </Alert>
+          )}
+        </Stack>
+      )}
 
-            {isLoadingInvitations ? (
-              <Box display="flex" justifyContent="center" py={4}>
-                <CircularProgress />
-              </Box>
-            ) : invitations.length === 0 ? (
-              <Alert severity="info">
-                No pending invitations.
-              </Alert>
-            ) : (
-              <TableContainer component={Paper} variant="outlined">
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Email</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Invited By</TableCell>
-                      <TableCell>Expires</TableCell>
-                      <TableCell align="center">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {invitations.map((invitation) => (
-                      <TableRow key={invitation.id}>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight="medium">
-                            {invitation.first_name} {invitation.last_name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Email fontSize="small" color="action" />
-                            <Typography variant="body2">
-                              {invitation.email}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          {getInvitationStatusChip(invitation)}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {invitation.invited_by}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {formatDate(invitation.expires_at)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="Cancel Invitation">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteInvitation(invitation.id)}
-                              disabled={isDeletingInvitation || invitation.is_accepted}
-                            >
-                              <Delete fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </CardContent>
-        </Card>
-      </Stack>
-
-      {/* Invite Admin Dialog */}
-      <Dialog
-        open={inviteDialogOpen}
-        onClose={() => !isCreatingInvitation && setInviteDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display="flex" alignItems="center" gap={2}>
-            <PersonAdd color="primary" />
-            <Typography variant="h6" fontWeight="bold">
-              Invite New Admin
-            </Typography>
-          </Box>
-        </DialogTitle>
+      {/* Invite Dialog */}
+      <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Invite Admin User</DialogTitle>
         <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            <TextField
-              label="Email Address"
-              type="email"
-              value={formData.email}
-              onChange={(e) => {
-                setFormData({ ...formData, email: e.target.value });
-                if (formErrors.email) {
-                  setFormErrors({ ...formErrors, email: undefined });
-                }
-              }}
-              error={!!formErrors.email}
-              helperText={formErrors.email}
-              fullWidth
-              disabled={isCreatingInvitation}
-            />
-            <Box display="flex" gap={2}>
+          <Box component="form" onSubmit={handleInviteSubmit} sx={{ pt: 1 }}>
+            <Stack spacing={2}>
               <TextField
                 label="First Name"
-                value={formData.first_name}
-                onChange={(e) => {
-                  setFormData({ ...formData, first_name: e.target.value });
-                  if (formErrors.first_name) {
-                    setFormErrors({ ...formErrors, first_name: undefined });
-                  }
-                }}
-                error={!!formErrors.first_name}
-                helperText={formErrors.first_name}
+                value={inviteForm.first_name}
+                onChange={(e) => setInviteForm(prev => ({ ...prev, first_name: e.target.value }))}
+                required
                 fullWidth
-                disabled={isCreatingInvitation}
               />
               <TextField
                 label="Last Name"
-                value={formData.last_name}
-                onChange={(e) => {
-                  setFormData({ ...formData, last_name: e.target.value });
-                  if (formErrors.last_name) {
-                    setFormErrors({ ...formErrors, last_name: undefined });
-                  }
-                }}
-                error={!!formErrors.last_name}
-                helperText={formErrors.last_name}
+                value={inviteForm.last_name}
+                onChange={(e) => setInviteForm(prev => ({ ...prev, last_name: e.target.value }))}
+                required
                 fullWidth
-                disabled={isCreatingInvitation}
               />
-            </Box>
-            <Alert severity="info">
-              An invitation email will be sent to the specified address. The invitation will expire in 7 days.
-            </Alert>
-          </Stack>
+              <TextField
+                label="Email Address"
+                type="email"
+                value={inviteForm.email}
+                onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                required
+                fullWidth
+              />
+              <Alert severity="info">
+                An invitation email will be sent to this address with instructions to set up their admin account.
+              </Alert>
+            </Stack>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button
-            onClick={() => setInviteDialogOpen(false)}
-            disabled={isCreatingInvitation}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
+        <DialogActions>
+          <Button onClick={() => setInviteDialogOpen(false)}>Cancel</Button>
+          <Button 
             onClick={handleInviteSubmit}
+            variant="contained" 
             disabled={isCreatingInvitation}
-            startIcon={isCreatingInvitation ? <CircularProgress size={20} /> : <Email />}
+            startIcon={isCreatingInvitation ? <CircularProgress size={20} /> : <EmailIcon />}
           >
             {isCreatingInvitation ? 'Sending...' : 'Send Invitation'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete User Confirmation Dialog */}
-      <Dialog
-        open={deleteUserDialogOpen}
-        onClose={() => !isDeletingUser && setDeleteUserDialogOpen(false)}
-        maxWidth="sm"
-      >
+      {/* Action Menu */}
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+        {menuType === 'invitation' && (
+          <MenuItem onClick={handleViewRecordsClick}>
+            <ViewIcon sx={{ mr: 1 }} />
+            View Email Status
+          </MenuItem>
+        )}
+        <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
+          <DeleteIcon sx={{ mr: 1 }} />
+          {menuType === 'user' ? 'Deactivate User' : 'Cancel Invitation'}
+        </MenuItem>
+      </Menu>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>
-          <Typography variant="h6" fontWeight="bold">
-            Confirm User Deletion
-          </Typography>
+          {menuType === 'user' ? 'Deactivate Admin User' : 'Cancel Invitation'}
         </DialogTitle>
         <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Are you sure you want to deactivate this admin user? This action cannot be undone.
-          </Alert>
-          <Typography variant="body2" color="text.secondary">
-            The user will lose admin access immediately and will no longer be able to access the admin dashboard.
+          <Typography>
+            Are you sure you want to {menuType === 'user' ? 'deactivate' : 'cancel'}{' '}
+            {menuType === 'user' 
+              ? `${selectedUser?.first_name} ${selectedUser?.last_name}`
+              : `the invitation for ${selectedInvitation?.first_name} ${selectedInvitation?.last_name}`
+            }?
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button
-            onClick={() => setDeleteUserDialogOpen(false)}
-            disabled={isDeletingUser}
-          >
-            Cancel
-          </Button>
-          <Button
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleDeleteConfirm}
+            color="error" 
             variant="contained"
-            color="error"
-            onClick={handleDeleteUser}
-            disabled={isDeletingUser}
-            startIcon={isDeletingUser ? <CircularProgress size={20} /> : <Delete />}
+            disabled={isDeletingUser || isDeletingInvitation}
           >
-            {isDeletingUser ? 'Deleting...' : 'Delete User'}
+            {(isDeletingUser || isDeletingInvitation) ? (
+              <CircularProgress size={20} />
+            ) : (
+              menuType === 'user' ? 'Deactivate' : 'Cancel Invitation'
+            )}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Communication Records Dialog */}
+      <Dialog 
+        open={viewRecordsDialogOpen} 
+        onClose={() => setViewRecordsDialogOpen(false)}
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle>Email Communication Status</DialogTitle>
+        <DialogContent>
+          {selectedInvitation && (
+            <Box>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Invitation for: {selectedInvitation.first_name} {selectedInvitation.last_name} ({selectedInvitation.email})
+              </Typography>
+              
+              {(() => {
+                const record = getInvitationRecord(selectedInvitation);
+                if (!record) {
+                  return (
+                    <Alert severity="warning">
+                      No email record found for this invitation. The invitation may have been created before the communication system was implemented.
+                    </Alert>
+                  );
+                }
+                
+                return (
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Stack spacing={2}>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography variant="body2"><strong>Status:</strong></Typography>
+                          <Chip 
+                            label={record.delivery_status}
+                            size="small"
+                            color={record.delivery_status === 'DELIVERED' ? 'success' : 
+                                   record.delivery_status === 'FAILED' ? 'error' : 'warning'}
+                          />
+                        </Box>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography variant="body2"><strong>Sent:</strong></Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {record.sent_at ? new Date(record.sent_at).toLocaleString() : 'Not sent'}
+                          </Typography>
+                        </Box>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography variant="body2"><strong>Delivered:</strong></Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {record.delivered_at ? new Date(record.delivered_at).toLocaleString() : 'Not delivered'}
+                          </Typography>
+                        </Box>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography variant="body2"><strong>Opened:</strong></Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {record.is_opened ? `Yes - ${new Date(record.opened_at!).toLocaleString()}` : 'Not opened'}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewRecordsDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>
