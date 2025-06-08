@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -198,6 +199,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,  # Default page size
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',  # This enables the browsable API
+    ],
 }
 
 # JWT settings
@@ -237,6 +242,12 @@ CLIENT_FRONTEND_URL = os.getenv('CLIENT_FRONTEND_URL', 'http://localhost:5174') 
 # Email configuration
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@lifeplace.com')
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+
+# Email configuration for development
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 
 # If using SMTP for email (production)
 if EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend':

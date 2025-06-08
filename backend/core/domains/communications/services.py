@@ -69,11 +69,35 @@ class MockProvider(CommunicationProvider):
     """Mock provider for development/testing"""
     
     def send_email(self, recipient: str, subject: str, body: str, **kwargs) -> str:
-        logger.info(f"MOCK EMAIL - To: {recipient}, Subject: {subject}")
+        # Print email details to console in a format similar to Django's console backend
+        print("\n" + "="*70)
+        print("MOCK EMAIL (via Communications Service)")
+        print("="*70)
+        print(f"Content-Type: text/html; charset=\"utf-8\"")
+        print(f"MIME-Version: 1.0")
+        print(f"Subject: {subject}")
+        print(f"From: {getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@lifeplace.com')}")
+        print(f"To: {recipient}")
+        print(f"Date: {timezone.now().strftime('%a, %d %b %Y %H:%M:%S %z')}")
+        print("")
+        print(body)
+        print("="*70)
+        
+        logger.info(f"MOCK EMAIL sent to {recipient}")
         return f"mock_email_{timezone.now().timestamp()}"
     
     def send_sms(self, recipient: str, body: str, **kwargs) -> str:
-        logger.info(f"MOCK SMS - To: {recipient}, Body: {body[:50]}...")
+        # Print SMS details to console
+        print("\n" + "="*70)
+        print("MOCK SMS (via Communications Service)")
+        print("="*70)
+        print(f"To: {recipient}")
+        print(f"Date: {timezone.now().strftime('%a, %d %b %Y %H:%M:%S %z')}")
+        print("")
+        print(body)
+        print("="*70)
+        
+        logger.info(f"MOCK SMS sent to {recipient}")
         return f"mock_sms_{timezone.now().timestamp()}"
     
     def get_delivery_status(self, message_id: str) -> str:
@@ -207,7 +231,7 @@ class CommunicationService:
         template_name: str,
         recipient: str,
         context_data: Dict[str, Any] = None,
-        client: Optional[User] = None,  # type: ignore
+        client: Optional[User] = None, # type: ignore
         sent_by: Optional[User] = None # type: ignore
     ) -> Optional[CommunicationRecord]:
         """Send a communication using a template"""
@@ -227,8 +251,8 @@ class CommunicationService:
         template: CommunicationTemplate,
         recipient: str,
         context_data: Dict[str, Any] = None,
-        client: Optional[User] = None,  # type: ignore
-        sent_by: Optional["User"] = None    # type: ignore
+        client: Optional[User] = None, # type: ignore
+        sent_by: Optional[User] = None # type: ignore
     ) -> Optional[CommunicationRecord]:
         """Send communication using template object"""
         
@@ -285,7 +309,7 @@ class CommunicationService:
         self,
         template: CommunicationTemplate,
         recipients: List[Dict[str, Any]],
-        sent_by: Optional[User] = None  # type: ignore
+        sent_by: Optional[User] = None # type: ignore
     ) -> List[CommunicationRecord]:
         """Send bulk communications"""
         
