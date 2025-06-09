@@ -43,61 +43,191 @@ class BrevoProvider(CommunicationProvider):
     
     def __init__(self):
         self.api_key = getattr(settings, 'BREVO_API_KEY', None)
+        self.api_url = 'https://api.brevo.com/v3'
         if not self.api_key:
             logger.warning("Brevo API key not configured")
     
+    def _make_request(self, endpoint: str, method: str = 'POST', data: dict = None):
+        """Make HTTP request to Brevo API"""
+        import requests
+        
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'api-key': self.api_key
+        }
+        
+        url = f"{self.api_url}/{endpoint}"
+        
+        try:
+            if method == 'POST':
+                response = requests.post(url, headers=headers, json=data, timeout=30)
+            elif method == 'GET':
+                response = requests.get(url, headers=headers, params=data, timeout=30)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+            
+            response.raise_for_status()
+            return response.json()
+        
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Brevo API request failed: {str(e)}")
+            raise CommunicationProviderError(f"Brevo API error: {str(e)}")
+    
     def send_email(self, recipient: str, subject: str, body: str, **kwargs) -> str:
         """Send email via Brevo"""
-        # This would integrate with Brevo API
-        # For now, return a mock message ID
-        logger.info(f"Sending email to {recipient}: {subject}")
-        return f"brevo_email_{timezone.now().timestamp()}"
+        sender_email = kwargs.get('sender_email', getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@lifeplace.com'))
+        sender_name = kwargs.get('sender_name', 'LifePlace')
+        
+        # Prepare email data for Brevo API
+        email_data = {
+            'sender': {
+                'name': sender_name,
+                'email': sender_email
+            },
+            'to': [
+                {
+                    'email': recipient,
+                    'name': kwargs.get('recipient_name', '')
+                }
+            ],
+            'subject': subject,
+            'htmlContent': body,
+            'textContent': self._html_to_text(body),  # Fallback plain text
+            'tags': ['transactional', 'lifeplace'],
+            'headers': {
+                'X-Mailer': 'LifePlace Communications System'
+            }
+        }
+        
+        # Add reply-to if specified
+        reply_to = kwargs.get('reply_to')
+        if reply_to:
+            email_data['replyTo'] = {'email': reply_to}
+        
+        try:
+            response = self._make_request('smtp/email', 'POST', email_data)
+            message_id = response.get('messageId')
+            
+            if message_id:
+                logger.info(f"Email sent successfully via Brevo to {recipient}, ID: {message_id}")
+                return str(message_id)
+            else:
+                logger.error(f"Brevo response missing messageId: {response}")
+                raise CommunicationProviderError("Invalid response from Brevo")
+                
+        except Exception as e:
+            logger.error(f"Failed to send email via Brevo to {recipient}: {str(e)}")
+            raise CommunicationProviderError(f"Email sending failed: {str(e)}")
     
     def send_sms(self, recipient: str, body: str, **kwargs) -> str:
         """Send SMS via Brevo"""
-        # This would integrate with Brevo SMS API
-        logger.info(f"Sending SMS to {recipient}: {body[:50]}...")
-        return f"brevo_sms_{timezone.now().timestamp()}"
+        sender = kwargs.get('sender', 'LifePlace')
+        
+        # Prepare SMS data for Brevo API
+        sms_data = {
+            'sender': sender[:11],  # SMS sender ID max 11 characters
+            'recipient': recipient,
+            'content': body,
+            'type': 'transactional',
+            'tag': 'lifeplace'
+        }
+        
+        try:
+            response = self._make_request('transactionalSMS/sms', 'POST', sms_data)
+            reference = response.get('reference')
+            
+            if reference:
+                logger.info(f"SMS sent successfully via Brevo to {recipient}, Reference: {reference}")
+                return str(reference)
+            else:
+                logger.error(f"Brevo SMS response missing reference: {response}")
+                raise CommunicationProviderError("Invalid SMS response from Brevo")
+                
+        except Exception as e:
+            logger.error(f"Failed to send SMS via Brevo to {recipient}: {str(e)}")
+            raise CommunicationProviderError(f"SMS sending failed: {str(e)}")
     
     def get_delivery_status(self, message_id: str) -> str:
-        """Get delivery status from Brevo"""
-        # This would query Brevo API
-        return 'DELIVERED'
+        """Get delivery status for a message from Brevo"""
+        try:
+            # For email messages
+            if message_id.startswith('email_') or message_id.isdigit():
+                response = self._make_request(f'emailCampaigns/{message_id}/report', 'GET')
+                # Brevo email status mapping
+                status = response.get('globalStats', {}).get('delivered', 0)
+                if status > 0:
+                    return 'DELIVERED'
+                else:
+                    return 'PENDING'
+            
+            # For SMS messages
+            else:
+                response = self._make_request(f'transactionalSMS/report/{message_id}', 'GET')
+                # Brevo SMS status mapping
+                brevo_status = response.get('status', 'unknown').lower()
+                status_mapping = {
+                    'sent': 'SENT',
+                    'delivered': 'DELIVERED',
+                    'failed': 'FAILED',
+                    'rejected': 'FAILED',
+                    'pending': 'PENDING'
+                }
+                return status_mapping.get(brevo_status, 'PENDING')
+                
+        except Exception as e:
+            logger.error(f"Failed to get delivery status from Brevo for {message_id}: {str(e)}")
+            return 'PENDING'
+    
+    def _html_to_text(self, html_content: str) -> str:
+        """Convert HTML to plain text for email fallback"""
+        try:
+            from html import unescape
+            import re
+            
+            # Remove HTML tags
+            text = re.sub(r'<[^>]+>', '', html_content)
+            # Unescape HTML entities
+            text = unescape(text)
+            # Clean up whitespace
+            text = re.sub(r'\s+', ' ', text).strip()
+            
+            return text
+        except Exception:
+            # Fallback if HTML processing fails
+            return html_content
+    
+    def verify_domain(self, domain: str) -> dict:
+        """Verify domain status in Brevo (utility method)"""
+        try:
+            response = self._make_request('senders/domains', 'GET')
+            domains = response.get('domains', [])
+            
+            for domain_info in domains:
+                if domain_info.get('domain') == domain:
+                    return {
+                        'domain': domain,
+                        'verified': domain_info.get('verified', False),
+                        'dkim_status': domain_info.get('dkim', {}),
+                        'spf_status': domain_info.get('spf', {})
+                    }
+            
+            return {'domain': domain, 'verified': False, 'message': 'Domain not found'}
+            
+        except Exception as e:
+            logger.error(f"Failed to verify domain {domain}: {str(e)}")
+            return {'domain': domain, 'verified': False, 'error': str(e)}
 
 
 class MockProvider(CommunicationProvider):
     """Mock provider for development/testing"""
     
     def send_email(self, recipient: str, subject: str, body: str, **kwargs) -> str:
-        # Print email details to console in a format similar to Django's console backend
-        print("\n" + "="*70)
-        print("MOCK EMAIL (via Communications Service)")
-        print("="*70)
-        print(f"Content-Type: text/html; charset=\"utf-8\"")
-        print(f"MIME-Version: 1.0")
-        print(f"Subject: {subject}")
-        print(f"From: {getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@lifeplace.com')}")
-        print(f"To: {recipient}")
-        print(f"Date: {timezone.now().strftime('%a, %d %b %Y %H:%M:%S %z')}")
-        print("")
-        print(body)
-        print("="*70)
-        
-        logger.info(f"MOCK EMAIL sent to {recipient}")
+        logger.info(f"MOCK EMAIL - To: {recipient}, Subject: {subject}")
         return f"mock_email_{timezone.now().timestamp()}"
     
     def send_sms(self, recipient: str, body: str, **kwargs) -> str:
-        # Print SMS details to console
-        print("\n" + "="*70)
-        print("MOCK SMS (via Communications Service)")
-        print("="*70)
-        print(f"To: {recipient}")
-        print(f"Date: {timezone.now().strftime('%a, %d %b %Y %H:%M:%S %z')}")
-        print("")
-        print(body)
-        print("="*70)
-        
-        logger.info(f"MOCK SMS sent to {recipient}")
+        logger.info(f"MOCK SMS - To: {recipient}, Body: {body[:50]}...")
         return f"mock_sms_{timezone.now().timestamp()}"
     
     def get_delivery_status(self, message_id: str) -> str:
