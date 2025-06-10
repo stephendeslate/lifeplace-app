@@ -197,7 +197,7 @@ class AdminInvitationService:
             
             # Get frontend URL from settings
             frontend_url = getattr(settings, 'ADMIN_FRONTEND_URL', 'http://localhost:5173')
-            invitation_link = f"{frontend_url}accept-invitation/{invitation.id}"
+            invitation_link = f"{frontend_url}/accept-invitation/{invitation.id}"
             
             # Prepare context data for template
             context_data = {
