@@ -21,29 +21,6 @@ const getCsrfToken = () => {
     ?.split("=")[1];
 };
 
-// List of public endpoints that don't require authentication
-const PUBLIC_ENDPOINTS = [
-  '/users/login/',
-  '/users/token/refresh/',
-  '/users/invitations/', // GET invitation details
-];
-
-// Helper function to check if an endpoint is public
-const isPublicEndpoint = (url: string): boolean => {
-  return PUBLIC_ENDPOINTS.some(endpoint => {
-    // Check for exact match or invitation-related endpoints
-    if (url === endpoint) return true;
-    
-    // Allow invitation endpoints (GET and POST accept)
-    if (url.includes('/users/invitations/') && 
-        (url.endsWith('/') || url.endsWith('/accept/'))) {
-      return true;
-    }
-    
-    return false;
-  });
-};
-
 // Create axios instance
 const api = axios.create({
   baseURL: getBaseUrl(),
@@ -56,9 +33,9 @@ const api = axios.create({
 // Add request interceptor to add authorization header and CSRF token
 api.interceptors.request.use(
   (config: any) => {
-    // Add Authorization header if token exists (except for public endpoints)
+    // Add Authorization header if token exists
     const tokens = storage.getTokens();
-    if (tokens?.access && !isPublicEndpoint(config.url)) {
+    if (tokens?.access) {
       config.headers.Authorization = `Bearer ${tokens.access}`;
     }
 
@@ -82,11 +59,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Only handle 401 errors for authenticated endpoints
-    if (error.response?.status === 401 && 
-        !originalRequest._retry && 
-        !isPublicEndpoint(originalRequest.url)) {
-      
+    // If the error is 401 and not a retry, attempt to refresh token
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
@@ -95,12 +69,7 @@ api.interceptors.response.use(
         if (!tokens?.refresh) {
           // No refresh token, clear tokens and redirect to login
           storage.clearAuth();
-          
-          // Only redirect if we're not already on a public page
-          if (!window.location.pathname.includes('/accept-invitation/') && 
-              !window.location.pathname.includes('/login')) {
-            window.location.href = "/login";
-          }
+          window.location.href = "/login";
           return Promise.reject(error);
         }
 
@@ -127,12 +96,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // If refresh fails, clear tokens and redirect to login
         storage.clearAuth();
-        
-        // Only redirect if we're not already on a public page
-        if (!window.location.pathname.includes('/accept-invitation/') && 
-            !window.location.pathname.includes('/login')) {
-          window.location.href = "/login";
-        }
+        window.location.href = "/login";
         return Promise.reject(error);
       }
     }
@@ -161,9 +125,6 @@ export const apiMethods = {
   createInvitation: (data: any) => api.post('/users/invitations/', data),
   deleteInvitation: (id: string) => api.delete(`/users/invitations/${id}/`),
   acceptInvitation: (id: string, data: any) => api.post(`/users/invitations/${id}/accept/`, data),
-  
-  // Public invitation endpoints
-  getInvitation: (id: string) => api.get(`/users/invitations/${id}/`),
 };
 
 export default api;
