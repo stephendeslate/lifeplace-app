@@ -137,8 +137,16 @@ class AdminInvitationService:
             expires_at=timezone.now() + timedelta(days=7)
         )
         
-        # Send invitation email using communications service
-        AdminInvitationService._send_invitation_email(invitation)
+        # Try to send invitation email - but don't fail if it doesn't work
+        try:
+            AdminInvitationService._send_invitation_email(invitation)
+            print(f"✅ Invitation created and email sent to {email}")
+        except Exception as e:
+            # Log the error but don't prevent invitation creation
+            print(f"⚠️ Invitation created for {email} but email sending failed: {str(e)}")
+            # You might want to set a flag on the invitation model to track email status
+            # invitation.email_sent = False
+            # invitation.save()
         
         return invitation
     
@@ -215,14 +223,13 @@ class AdminInvitationService:
                 return True
             else:
                 print(f"❌ Failed to send invitation email to {invitation.email}")
-                # DO NOT use fallback - just fail gracefully
-                raise Exception("Communication service failed to send email")
+                raise Exception("Communication service returned None - email not sent")
                 
         except ImportError:
             # Communications domain not available
             print(f"❌ Communications domain not available for {invitation.email}")
             raise Exception("Communications service not available")
         except Exception as e:
-            # Log error but don't use fallback
+            # Re-raise the exception so the caller can handle it
             print(f"❌ Failed to send invitation via communication service: {str(e)}")
-            raise Exception(f"Email sending failed: {str(e)}")
+            raise e
