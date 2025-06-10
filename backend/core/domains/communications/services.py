@@ -1,4 +1,5 @@
 # backend/core/domains/communications/services.py
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
@@ -36,6 +37,54 @@ class CommunicationProvider(ABC):
     def get_delivery_status(self, message_id: str) -> str:
         """Get delivery status for a message"""
         pass
+
+
+class MockProvider(CommunicationProvider):
+    """Mock provider for development/testing - Enhanced with console output"""
+    
+    def send_email(self, recipient: str, subject: str, body: str, **kwargs) -> str:
+        # Use both logging AND print for immediate console visibility
+        message = f"MOCK EMAIL - To: {recipient}, Subject: {subject}"
+        logger.info(message)
+        print(f"📧 {message}")  # Direct console output
+        
+        # Also use Django's email backend if configured for console
+        if getattr(settings, 'EMAIL_BACKEND', '') == 'django.core.mail.backends.console.EmailBackend':
+            try:
+                from django.core.mail import send_mail
+                send_mail(
+                    subject=subject,
+                    message=self._html_to_text(body),
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@lifeplace.com'),
+                    recipient_list=[recipient],
+                    html_message=body,
+                    fail_silently=True,
+                )
+            except Exception as e:
+                print(f"⚠️  Django email backend failed: {e}")
+        
+        return f"mock_email_{timezone.now().timestamp()}"
+    
+    def send_sms(self, recipient: str, body: str, **kwargs) -> str:
+        message = f"MOCK SMS - To: {recipient}, Body: {body[:50]}..."
+        logger.info(message)
+        print(f"📱 {message}")  # Direct console output
+        return f"mock_sms_{timezone.now().timestamp()}"
+    
+    def get_delivery_status(self, message_id: str) -> str:
+        return 'DELIVERED'
+    
+    def _html_to_text(self, html_content: str) -> str:
+        """Convert HTML to plain text"""
+        try:
+            from html import unescape
+            import re
+            text = re.sub(r'<[^>]+>', '', html_content)
+            text = unescape(text)
+            text = re.sub(r'\s+', ' ', text).strip()
+            return text
+        except Exception:
+            return html_content
 
 
 class BrevoProvider(CommunicationProvider):
@@ -219,21 +268,6 @@ class BrevoProvider(CommunicationProvider):
             return {'domain': domain, 'verified': False, 'error': str(e)}
 
 
-class MockProvider(CommunicationProvider):
-    """Mock provider for development/testing"""
-    
-    def send_email(self, recipient: str, subject: str, body: str, **kwargs) -> str:
-        logger.info(f"MOCK EMAIL - To: {recipient}, Subject: {subject}")
-        return f"mock_email_{timezone.now().timestamp()}"
-    
-    def send_sms(self, recipient: str, body: str, **kwargs) -> str:
-        logger.info(f"MOCK SMS - To: {recipient}, Body: {body[:50]}...")
-        return f"mock_sms_{timezone.now().timestamp()}"
-    
-    def get_delivery_status(self, message_id: str) -> str:
-        return 'DELIVERED'
-
-
 class CommunicationTemplateService:
     """Service for managing communication templates"""
     
@@ -350,11 +384,13 @@ class CommunicationService:
     """Service for sending and managing communications"""
     
     def __init__(self):
-        # Use mock provider in development, Brevo in production
+        # Enhanced provider selection logic
         if getattr(settings, 'DEBUG', True):
             self.provider = MockProvider()
+            print(f"🔧 CommunicationService initialized with MockProvider (DEBUG={settings.DEBUG})")
         else:
             self.provider = BrevoProvider()
+            print(f"🔧 CommunicationService initialized with BrevoProvider (DEBUG={settings.DEBUG})")
     
     def send_communication(
         self,
@@ -370,6 +406,7 @@ class CommunicationService:
             template = CommunicationTemplateService.get_template_by_name(template_name)
         except TemplateNotFound:
             logger.error(f"Template '{template_name}' not found")
+            print(f"❌ Template '{template_name}' not found")
             return None
         
         return self.send_communication_by_template(
@@ -389,6 +426,8 @@ class CommunicationService:
         if context_data is None:
             context_data = {}
         
+        print(f"🚀 Sending communication: {template.name} to {recipient}")
+        
         # Render template
         try:
             rendered = CommunicationTemplateService.preview_template(
@@ -398,6 +437,7 @@ class CommunicationService:
             body = rendered.get('body')
         except Exception as e:
             logger.error(f"Failed to render template: {str(e)}")
+            print(f"❌ Failed to render template: {str(e)}")
             return None
         
         # Create communication record
@@ -414,6 +454,8 @@ class CommunicationService:
             delivery_status='PENDING'
         )
         
+        print(f"📝 Created communication record: {record.id}")
+        
         # Send communication
         try:
             if template.channel == 'EMAIL':
@@ -427,10 +469,12 @@ class CommunicationService:
             record.sent_at = timezone.now()
             record.save()
             
+            print(f"✅ Communication sent successfully. External ID: {external_id}")
             return record
             
         except Exception as e:
             logger.error(f"Failed to send communication: {str(e)}")
+            print(f"❌ Failed to send communication: {str(e)}")
             record.delivery_status = 'FAILED'
             record.save()
             return None

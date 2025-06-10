@@ -8,6 +8,7 @@ import { useAuth } from './contexts/AuthContext';
 import { Login } from './pages/auth';
 import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
+import { ClientsOverview, ClientProfile } from './pages/clients';
 import { AppLayout } from './components/layout';
 
 // Settings imports
@@ -112,6 +113,24 @@ const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Client Management Routes */}
+      <Route
+        path="/clients"
+        element={
+          <ProtectedRoute>
+            <ClientsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clients/:id"
+        element={
+          <ProtectedRoute>
+            <ClientProfile />
           </ProtectedRoute>
         }
       />
@@ -241,18 +260,6 @@ const AppRouter: React.FC = () => {
       />
 
       {/* Existing Placeholder Protected Routes */}
-      <Route
-        path="/users"
-        element={
-          <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Users Management</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
-          </ProtectedRoute>
-        }
-      />
-      
       <Route
         path="/invitations"
         element={

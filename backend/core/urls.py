@@ -11,6 +11,8 @@ urlpatterns = [
     # Add your API URLs here
     path('api/users/', include('core.domains.users.urls', namespace='users')),
     path('api/communications/', include('core.domains.communications.urls', namespace='communications')),
+    path('api/clients/', include('core.domains.clients.urls', namespace='clients')),
+    path('api/events/', include('core.domains.events.urls', namespace='events')),
 ]
 
 # In production, serve React apps
