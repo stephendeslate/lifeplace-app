@@ -39,16 +39,15 @@ export const navigationConfig: NavigationGroup[] = [
     roles: ['ADMIN'],
   },
   {
-    id: 'user-management',
-    label: 'User Management',
+    id: 'client-management',
+    label: 'Client Management',
     items: [
       {
-        id: 'users',
-        label: 'Users',
-        path: '/users',
+        id: 'clients',
+        label: 'Clients',
+        path: '/clients',
         icon: People,
         roles: ['ADMIN'],
-        disabled: true, // Coming soon
       },
       {
         id: 'invitations',
@@ -58,6 +57,13 @@ export const navigationConfig: NavigationGroup[] = [
         roles: ['ADMIN'],
         disabled: true, // Coming soon
       },
+    ],
+    roles: ['ADMIN'],
+  },
+  {
+    id: 'user-management',
+    label: 'User Management',
+    items: [
       {
         id: 'roles',
         label: 'Roles & Permissions',

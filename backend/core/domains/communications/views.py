@@ -1,7 +1,7 @@
 # backend/core/domains/communications/views.py
-from core.utils.permissions import IsAdmin
+from core.utils.permissions import IsAdmin, IsAdminOrClient
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction, models
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,6 +15,7 @@ from .serializers import (
     BulkSendSerializer
 )
 from .services import CommunicationTemplateService, CommunicationService, AnalyticsService
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -23,7 +24,20 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
     """ViewSet for communication templates"""
     queryset = CommunicationTemplate.objects.all().order_by('-updated_at')
     serializer_class = CommunicationTemplateSerializer
-    permission_classes = [IsAdmin]
+    
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        - Admins can perform all CRUD operations
+        - Clients can only read templates (for previewing)
+        """
+        if self.action in ['list', 'retrieve', 'preview', 'variable_schemas']:
+            # Allow clients to read templates for preview purposes
+            permission_classes = [IsAdminOrClient]
+        else:
+            # Only admins can create, update, delete templates
+            permission_classes = [IsAdmin]
+        return [permission() for permission in permission_classes]
     
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -42,6 +56,11 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get('search')
         if search:
             queryset = queryset.filter(name__icontains=search)
+        
+        # If user is a client, only show non-system templates or limit what they can see
+        if self.request.user.role == 'CLIENT':
+            # Clients can see all templates for preview purposes, but this could be restricted
+            pass
         
         return queryset
     
@@ -82,7 +101,7 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def preview(self, request, pk=None):
-        """Preview a template with sample data"""
+        """Preview a template with sample data - available to both admins and clients"""
         serializer = PreviewCommunicationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
@@ -93,7 +112,7 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def variable_schemas(self, request):
-        """Get available variable schemas for templates"""
+        """Get available variable schemas for templates - available to both admins and clients"""
         schemas = {
             'client_variables': {
                 'first_name': 'Client first name',
@@ -118,17 +137,21 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
 
 
 class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for communication records (read-only)"""
+    """ViewSet for communication records"""
     queryset = CommunicationRecord.objects.all().order_by('-created_at')
     serializer_class = CommunicationRecordSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdminOrClient]  # Both admins and clients can view records
     
     def get_queryset(self):
         queryset = super().get_queryset()
         
-        # Filter by client
+        # Clients can only see their own communication records
+        if self.request.user.role == 'CLIENT':
+            queryset = queryset.filter(client=self.request.user)
+        
+        # Filter by client (admins only)
         client_id = self.request.query_params.get('client_id')
-        if client_id:
+        if client_id and self.request.user.role == 'ADMIN':
             queryset = queryset.filter(client_id=client_id)
         
         # Filter by template
@@ -146,11 +169,32 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
         if channel:
             queryset = queryset.filter(channel=channel)
         
+        # Filter by category
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        
+        # Search functionality
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                models.Q(template_name__icontains=search) |
+                models.Q(subject__icontains=search) |
+                models.Q(body__icontains=search)
+            )
+        
         return queryset
 
     @action(detail=False, methods=['post'])
     def send_manual(self, request):
-        """Send a manual communication"""
+        """Send a manual communication - restricted to admins only"""
+        # Only admins can send manual communications
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can send manual communications'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         serializer = SendCommunicationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
@@ -202,7 +246,14 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
     
     @action(detail=False, methods=['post'])
     def send_bulk(self, request):
-        """Send bulk communications"""
+        """Send bulk communications - restricted to admins only"""
+        # Only admins can send bulk communications
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can send bulk communications'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         serializer = BulkSendSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
@@ -237,5 +288,102 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
         template_name = request.query_params.get('template_name')
         days = int(request.query_params.get('days', 30))
         
-        stats = AnalyticsService.get_template_stats(template_name, days)
-        return Response(stats)
+        # If user is a client, filter analytics to their own communications
+        if request.user.role == 'CLIENT':
+            # You might want to implement client-specific analytics
+            # For now, we'll return basic stats for the client's communications
+            from django.db.models import Count, Q
+            from datetime import timedelta
+            from django.utils import timezone
+            
+            start_date = timezone.now() - timedelta(days=days)
+            queryset = CommunicationRecord.objects.filter(
+                client=request.user,
+                created_at__gte=start_date
+            )
+            
+            if template_name:
+                queryset = queryset.filter(template_name=template_name)
+            
+            stats = queryset.aggregate(
+                total_sent=Count('id'),
+                delivered=Count('id', filter=Q(delivery_status='DELIVERED')),
+                opened=Count('id', filter=Q(is_opened=True)),
+                failed=Count('id', filter=Q(delivery_status='FAILED'))
+            )
+            
+            # Calculate rates
+            total = stats['total_sent'] or 1
+            stats['delivery_rate'] = round((stats['delivered'] / total) * 100, 2)
+            stats['open_rate'] = round((stats['opened'] / total) * 100, 2)
+            stats['failure_rate'] = round((stats['failed'] / total) * 100, 2)
+            
+            return Response(stats)
+        else:
+            # Admins get full analytics
+            stats = AnalyticsService.get_template_stats(template_name, days)
+            return Response(stats)
+        
+    @action(detail=True, methods=['post'])
+    def mark_as_read(self, request, pk=None):
+        """Mark a communication record as read"""
+        try:
+            record = self.get_object()
+            
+            # Ensure clients can only mark their own messages as read
+            if request.user.role == 'CLIENT' and record.client != request.user:
+                return Response(
+                    {'error': 'You can only mark your own messages as read'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Only update if not already marked as read
+            if not record.is_opened:
+                record.is_opened = True
+                record.opened_at = timezone.now()
+                record.save(update_fields=['is_opened', 'opened_at'])
+                
+                return Response(
+                    {'message': 'Message marked as read', 'opened_at': record.opened_at},
+                    status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {'message': 'Message was already marked as read'},
+                    status=status.HTTP_200_OK
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to mark message as read: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['post'])
+    def mark_as_unread(self, request, pk=None):
+        """Mark a communication record as unread (for admins or testing)"""
+        try:
+            record = self.get_object()
+            
+            # Ensure clients can only mark their own messages as unread
+            if request.user.role == 'CLIENT' and record.client != request.user:
+                return Response(
+                    {'error': 'You can only mark your own messages as unread'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Update read status
+            record.is_opened = False
+            record.opened_at = None
+            record.save(update_fields=['is_opened', 'opened_at'])
+            
+            return Response(
+                {'message': 'Message marked as unread'},
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to mark message as unread: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )

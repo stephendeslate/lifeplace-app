@@ -9,6 +9,9 @@ import { useToastActions } from './contexts/ToastContext';
 import { PublicLayout, ClientLayout } from './components/layout';
 import { Home } from './pages/home';
 import { Login, Register } from './pages/auth';
+import { Dashboard } from './pages/dashboard';
+import { Messages } from './pages/messages';
+import AcceptInvitation from './pages/auth/AcceptInvitation';
 
 // Loading component
 const LoadingSpinner: React.FC = () => (
@@ -86,66 +89,6 @@ const PlaceholderPage: React.FC<PlaceholderPageProps> = ({ title, description })
   </Box>
 );
 
-// Client Dashboard placeholder
-const ClientDashboard: React.FC = () => (
-  <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-    <Typography variant="h4" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-      My Dashboard
-    </Typography>
-    <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-      Welcome to your client portal! Manage your bookings and events here.
-    </Typography>
-    
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', md: 'row' },
-        gap: 3,
-      }}
-    >
-      <Box sx={{ flex: 1 }}>
-        <Box
-          sx={{
-            p: 4,
-            backgroundColor: 'background.paper',
-            borderRadius: 3,
-            border: 1,
-            borderColor: 'divider',
-            textAlign: 'center',
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            My Bookings
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            No bookings yet. Start by exploring our venues and services!
-          </Typography>
-        </Box>
-      </Box>
-      
-      <Box sx={{ flex: 1 }}>
-        <Box
-          sx={{
-            p: 4,
-            backgroundColor: 'background.paper',
-            borderRadius: 3,
-            border: 1,
-            borderColor: 'divider',
-            textAlign: 'center',
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Recent Messages
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            No messages yet. We'll notify you of any updates here.
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
-  </Box>
-);
-
 // Main app router component
 const AppRouter: React.FC = () => {
   const { isLoading, isAuthenticated } = useAuth();
@@ -155,10 +98,10 @@ const AppRouter: React.FC = () => {
 
   // Handle successful login/register
   const handleAuthSuccess = () => {
-    const from = (location.state as any)?.from?.pathname || '/';
+    const from = (location.state as any)?.from?.pathname || '/dashboard';
     navigate(from, { replace: true });
     
-    if (from !== '/') {
+    if (from !== '/dashboard') {
       showInfo('Redirected', 'You have been redirected to your requested page.');
     }
   };
@@ -300,12 +243,33 @@ const AppRouter: React.FC = () => {
         } 
       />
 
+      {/* Accept Client Invitation Route - Public but redirects to dashboard after success */}
+      <Route 
+        path="/accept-invitation/:invitationId" 
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <AcceptInvitation />
+          )
+        } 
+      />
+
       {/* Protected Client Routes */}
       <Route 
         path="/dashboard" 
         element={
           <ProtectedRoute>
-            <ClientDashboard />
+            <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/messages" 
+        element={
+          <ProtectedRoute>
+            <Messages />
           </ProtectedRoute>
         } 
       />
@@ -336,6 +300,38 @@ const AppRouter: React.FC = () => {
               </Typography>
               <Typography color="text.secondary">
                 Booking management coming soon!
+              </Typography>
+            </Box>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/events" 
+        element={
+          <ProtectedRoute>
+            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                My Events
+              </Typography>
+              <Typography color="text.secondary">
+                Event management coming soon!
+              </Typography>
+            </Box>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/notifications" 
+        element={
+          <ProtectedRoute>
+            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                Notifications
+              </Typography>
+              <Typography color="text.secondary">
+                Notification center coming soon!
               </Typography>
             </Box>
           </ProtectedRoute>
