@@ -9,11 +9,11 @@ import {
   Notifications,
   Payment,
   Inventory,
-  Email,
-  Sms,
+  Message,
   AccountTree,
   TrendingUp,
   Psychology,
+  Analytics,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -90,18 +90,18 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
     label: 'Communication',
     items: [
       {
-        id: 'email-templates',
-        label: 'Email Templates',
-        path: '/settings/communication/email-templates',
-        icon: Email,
-        description: 'Manage email templates',
+        id: 'communication-templates',
+        label: 'Templates',
+        path: '/settings/communication/templates',
+        icon: Message,
+        description: 'Manage email and SMS templates',
       },
       {
-        id: 'sms-templates',
-        label: 'SMS Templates',
-        path: '/settings/communication/sms-templates',
-        icon: Sms,
-        description: 'Manage SMS templates',
+        id: 'communication-records',
+        label: 'Records',
+        path: '/settings/communication/records',
+        icon: Analytics,
+        description: 'View communication history and analytics',
       },
       {
         id: 'notifications',

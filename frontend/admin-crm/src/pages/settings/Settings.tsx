@@ -34,6 +34,10 @@ export const Settings: React.FC = () => {
       // Account Settings is ready, Admin Users is coming soon
       return { label: 'Partial', color: 'info' as const };
     }
+    if (groupId === 'communication') {
+      // Communication templates and records are ready
+      return { label: 'Ready', color: 'success' as const };
+    }
     return { label: 'Coming Soon', color: 'warning' as const };
   };
 
