@@ -1,0 +1,1 @@
+# backend/core/domains/communications/__init__.py

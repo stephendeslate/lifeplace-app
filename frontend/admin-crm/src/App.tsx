@@ -8,6 +8,7 @@ import { useAuth } from './contexts/AuthContext';
 import { Login } from './pages/auth';
 import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
+import { ClientsOverview, ClientProfile } from './pages/clients';
 import { AppLayout } from './components/layout';
 
 // Settings imports
@@ -16,7 +17,7 @@ import { Settings } from './pages/settings';
 import { AccountSettings, AdminUsers } from './pages/settings/account';
 import { BookingFlow, EventTypes } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
-import { EmailTemplates, SMSTemplates, CommunicationNotifications } from './pages/settings/communication';
+import { CommunicationTemplates, CommunicationRecords, CommunicationNotifications } from './pages/settings/communication';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 
 // Protected Route Component
@@ -116,6 +117,24 @@ const AppRouter: React.FC = () => {
         }
       />
 
+      {/* Client Management Routes */}
+      <Route
+        path="/clients"
+        element={
+          <ProtectedRoute>
+            <ClientsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clients/:id"
+        element={
+          <ProtectedRoute>
+            <ClientProfile />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Settings Routes */}
       <Route
         path="/settings"
@@ -190,18 +209,18 @@ const AppRouter: React.FC = () => {
 
       {/* Communication */}
       <Route
-        path="/settings/communication/email-templates"
+        path="/settings/communication/templates"
         element={
           <SettingsRoute>
-            <EmailTemplates />
+            <CommunicationTemplates />
           </SettingsRoute>
         }
       />
       <Route
-        path="/settings/communication/sms-templates"
+        path="/settings/communication/records"
         element={
           <SettingsRoute>
-            <SMSTemplates />
+            <CommunicationRecords />
           </SettingsRoute>
         }
       />
@@ -241,18 +260,6 @@ const AppRouter: React.FC = () => {
       />
 
       {/* Existing Placeholder Protected Routes */}
-      <Route
-        path="/users"
-        element={
-          <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Users Management</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
-          </ProtectedRoute>
-        }
-      />
-      
       <Route
         path="/invitations"
         element={

@@ -1,5 +1,5 @@
 // frontend/admin-crm/src/pages/settings/communication/index.ts
 
-export { EmailTemplates } from './EmailTemplates';
-export { SMSTemplates } from './SMSTemplates';
+export { CommunicationTemplates } from './CommunicationTemplates';
+export { CommunicationRecords } from './CommunicationRecords';
 export { CommunicationNotifications } from './Notifications';
