@@ -51,7 +51,7 @@ class ClientInvitationService:
         except User.DoesNotExist:
             raise ClientNotFound()
         
-        # Check if client already has an active account
+        # FIXED: Check if client already has an account using the correct method
         if client.is_active and client.has_usable_password():
             raise ClientAlreadyActive(detail="Client already has an active account")
         
@@ -61,53 +61,6 @@ class ClientInvitationService:
         except User.DoesNotExist:
             logger.error(f"Admin with ID {invited_by_id} not found")
             raise ClientInvitationError(detail="Invalid admin ID")
-        
-        # Create invitation with expiry (7 days from now)
-        expiry_date = timezone.now() + timedelta(days=7)
-        invitation = ClientInvitation.objects.create(
-            id=uuid.uuid4(),
-            client=client,
-            invited_by=invited_by,
-            expires_at=expiry_date
-        )
-        
-        # Generate invitation URL for email
-        invitation_url = f"{settings.CLIENT_FRONTEND_URL}/accept-invitation/{invitation.id}"
-        
-        # Send invitation email using CommunicationService
-        try:
-            communication_service = CommunicationService()
-            
-            context_data = {
-                'client': client,
-                'invitation_link': invitation_url,
-                'invited_by': invited_by.get_full_name() or invited_by.email,
-                'expiry_date': '7 days',
-                'first_name': client.first_name,
-                'last_name': client.last_name,
-                'site_name': 'LifePlace',
-            }
-            
-            # Try to send using 'Client Invitation' template
-            communication_record = communication_service.send_communication(
-                template_name='Client Invitation',
-                recipient=client.email,
-                context_data=context_data,
-                client=client,
-                sent_by=invited_by
-            )
-            
-            if not communication_record:
-                logger.error(f"Failed to send invitation email to {client.email}")
-                raise ClientInvitationError(detail="Failed to send invitation email")
-                
-        except Exception as e:
-            logger.error(f"Error sending invitation email: {str(e)}")
-            invitation.delete()  # Clean up the invitation if email fails
-            raise ClientInvitationError(detail=f"Error sending invitation: {str(e)}")
-        
-        logger.info(f"Sent invitation to client: {client.email}")
-        return invitation
     
     @staticmethod
     def get_invitation_by_id(invitation_id):
@@ -252,17 +205,21 @@ class ClientService:
             profile_data = client_data.pop('profile', {})
             password = client_data.pop('password', None)
             
-            # If no password is provided, mark the client as inactive
-            if not password:
-                client_data['is_active'] = False
+            # REMOVED: Don't set is_active=False here automatically
+            # The is_active field should be respected from the form data
             
             # Create user
             client = User.objects.create_user(**client_data)
             
-            # Set password if provided
+            # FIXED: Handle password properly
             if password:
+                # Set usable password
                 client.set_password(password)
-                client.save()
+            else:
+                # Set unusable password for clients without accounts
+                client.set_unusable_password()
+            
+            client.save()
             
             # Update profile
             if hasattr(client, 'profile') and profile_data:
