@@ -246,7 +246,7 @@ BREVO_API_KEY = os.getenv('BREVO_API_KEY')
 DEFAULT_FROM_NAME = os.getenv('DEFAULT_FROM_NAME', 'LifePlace')
 
 # Email configuration
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@lifeplace.com')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stephendeslate@gmail.com')
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 
 # Email configuration for development
