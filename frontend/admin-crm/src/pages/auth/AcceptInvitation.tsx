@@ -27,7 +27,8 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
-import api from '../../utils/api';
+import { authApi } from '../../apis/auth.api';
+import { storage } from '../../utils/storage';
 
 interface InvitationData {
   id: string;
@@ -79,8 +80,7 @@ export const AcceptInvitation: React.FC = () => {
       }
 
       try {
-        const response = await api.get(`/users/invitations/${invitationId}/`);
-        const invitationData = response.data as InvitationData;
+        const invitationData = await authApi.getInvitation(invitationId);
 
         // Check if invitation is already accepted
         if (invitationData.is_accepted) {
@@ -100,7 +100,8 @@ export const AcceptInvitation: React.FC = () => {
         setInvitation(invitationData);
       } catch (error: any) {
         console.error('Error fetching invitation:', error);
-        setError('Invalid or expired invitation link');
+        const message = error.response?.data?.detail || 'Invalid or expired invitation link';
+        setError(message);
       } finally {
         setIsLoading(false);
       }
@@ -136,34 +137,32 @@ export const AcceptInvitation: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post(`/users/invitations/${invitationId}/accept/`, {
+      const response = await authApi.acceptInvitation(invitationId, {
         password: formData.password,
         confirm_password: formData.confirm_password,
       });
+
+      // Store tokens and user data
+      if (response.tokens && response.user) {
+        storage.setTokens(response.tokens);
+        storage.setUser(response.user);
+      }
 
       showSuccess(
         'Account Created Successfully!',
         'You have been logged in and can now access the admin dashboard.'
       );
 
-      // The backend returns tokens, so we can automatically log in the user
-      const data = response.data as { tokens?: any };
-      if (data.tokens) {
-        // Store tokens
-        localStorage.setItem('lifeplace_admin_tokens', JSON.stringify(data.tokens));
-        
-        // Redirect to dashboard
-        navigate('/dashboard', { replace: true });
-        
-        // Reload to trigger auth context update
-        window.location.reload();
-      } else {
-        // Fallback: redirect to login
-        navigate('/login', { replace: true });
-      }
+      // Redirect to dashboard and reload to trigger auth context update
+      navigate('/dashboard', { replace: true });
+      window.location.reload();
+
     } catch (error: any) {
       console.error('Error accepting invitation:', error);
-      const message = error.response?.data?.detail || 'Failed to accept invitation';
+      const message = error.response?.data?.detail || 
+                     error.response?.data?.password?.[0] ||
+                     error.response?.data?.non_field_errors?.[0] ||
+                     'Failed to accept invitation';
       showError('Account Creation Failed', message);
     } finally {
       setIsSubmitting(false);
