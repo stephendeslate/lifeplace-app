@@ -26,7 +26,8 @@ class ClientListSerializer(serializers.ModelSerializer):
         
     def get_has_account(self, obj):
         # Check if the user has a valid password set
-        return bool(obj.password and obj.password != '')
+        # Use Django's built-in method to check for usable password
+        return obj.has_usable_password()
 
 
 class ClientDetailSerializer(serializers.ModelSerializer):
@@ -45,7 +46,7 @@ class ClientDetailSerializer(serializers.ModelSerializer):
     
     def get_has_account(self, obj):  # ADD THIS METHOD
         # Check if the user has a valid password set
-        return bool(obj.password and obj.password != '')
+        return obj.has_usable_password()
 
 
 class ClientCreateUpdateSerializer(serializers.ModelSerializer):
@@ -72,10 +73,15 @@ class ClientCreateUpdateSerializer(serializers.ModelSerializer):
         # Create user
         user = User.objects.create_user(**validated_data)
         
-        # Set password if provided
+        # FIXED: Handle password properly
         if password:
+            # Set usable password
             user.set_password(password)
-            user.save()
+        else:
+            # Set unusable password for clients without accounts
+            user.set_unusable_password()
+        
+        user.save()
         
         # Create or update profile
         if profile_data and hasattr(user, 'profile'):
