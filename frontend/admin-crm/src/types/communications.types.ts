@@ -54,6 +54,15 @@ export interface SendCommunicationData {
   context_data?: Record<string, any>;
 }
 
+export interface ManualSendData {
+  template_id: number;
+  recipient: string;
+  client_id?: number;
+  context_data?: Record<string, any>;
+  custom_subject?: string;
+  custom_body?: string;
+}
+
 export interface BulkSendData {
   template_id: number;
   recipients: Array<{
@@ -66,6 +75,11 @@ export interface BulkSendData {
 export interface PreviewData {
   template_id: number;
   context_data?: Record<string, any>;
+}
+
+export interface ManualPreviewData extends PreviewData {
+  custom_subject?: string;
+  custom_body?: string;
 }
 
 export interface PreviewResult {
@@ -87,6 +101,7 @@ export interface VariableSchemas {
   client_variables: Record<string, string>;
   system_variables: Record<string, string>;
   admin_invitation_variables: Record<string, string>;
+  manual_template_variables?: Record<string, string>;
 }
 
 export interface CommunicationFilters {

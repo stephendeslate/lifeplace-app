@@ -6,7 +6,6 @@ import type {
   CommunicationRecord,
   CreateTemplateData,
   UpdateTemplateData,
-  SendCommunicationData,
   BulkSendData,
   PreviewData,
   PreviewResult,
@@ -14,6 +13,22 @@ import type {
   VariableSchemas,
   CommunicationFilters
 } from '../types/communications.types';
+
+// Enhanced interface for manual message sending
+export interface ManualSendData {
+  template_id: number;
+  recipient: string;
+  client_id?: number;
+  context_data?: Record<string, any>;
+  custom_subject?: string;
+  custom_body?: string;
+}
+
+// Enhanced interface for manual message preview
+export interface ManualPreviewData extends PreviewData {
+  custom_subject?: string;
+  custom_body?: string;
+}
 
 export const communicationsApi = {
   // Templates
@@ -47,7 +62,7 @@ export const communicationsApi = {
     await api.delete(`/communications/templates/${id}/`);
   },
 
-  previewTemplate: async (id: number, data: PreviewData): Promise<PreviewResult> => {
+  previewTemplate: async (id: number, data: PreviewData | ManualPreviewData): Promise<PreviewResult> => {
     const response = await api.post<PreviewResult>(`/communications/templates/${id}/preview/`, data);
     return response.data;
   },
@@ -75,7 +90,7 @@ export const communicationsApi = {
     return response.data;
   },
 
-  sendManual: async (data: SendCommunicationData): Promise<CommunicationRecord> => {
+  sendManual: async (data: ManualSendData): Promise<CommunicationRecord> => {
     const response = await api.post<CommunicationRecord>('/communications/records/send_manual/', data);
     return response.data;
   },

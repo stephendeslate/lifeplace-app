@@ -1,47 +1,56 @@
-// frontend/admin-crm/src/pages/clients/ClientProfile.tsx
+// frontend/admin-crm/src/pages/clients/ClientProfile.tsx (Complete with tabs)
 
 import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
   Card,
   CardContent,
+  Typography,
   Chip,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Alert,
+  CircularProgress,
+  Stack,
+  Tooltip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  IconButton,
   Paper,
-  Stack,
   Tab,
-  Tabs,
-  Typography,
-  CircularProgress,
-  Alert,
-  Tooltip
+  Tabs
 } from '@mui/material';
 import {
-  ArrowBack as BackIcon,
+  ArrowBack as ArrowBackIcon,
+  MoreVert as MoreVertIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon,
-  PersonAdd as InviteIcon,
+  Send as SendIcon,
+  Block as BlockIcon,
+  PersonAdd as PersonAddIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
   Business as BusinessIcon,
   CalendarToday as CalendarIcon,
   Event as EventIcon,
   Note as NoteIcon,
-  Assignment as   ContractIcon,
+  Assignment as ContractIcon,
   AttachMoney as QuoteIcon,
-  Person as PersonIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useClients } from '../../hooks/useClients';
-import { ClientForm, CommunicationRecords, SendCommunication } from '../../components/clients';
-import { getClientRegistrationStatus, getClientActiveStatus } from '../../utils/clientStatus';
+import { getClientStatusSummary } from '../../utils/clientStatus';
+import { SendMessageDialog } from '../../components/communications/SendMessageDialog';
+import { ClientForm } from '../../components/clients/ClientForm';
+import { CommunicationRecords } from '../../components/clients/CommunicationRecords';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -62,24 +71,27 @@ export const ClientProfile: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
   
+  // State
   const [tabValue, setTabValue] = useState(0);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [sendMessageOpen, setSendMessageOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [sendCommunicationOpen, setSendCommunicationOpen] = useState(false);
-
-  const {
-    useClient,
-    useClientEvents,
+  
+  // Hooks
+  const { 
+    useClient, 
+    useClientEvents, 
+    sendInvitation, 
+    isSendingInvitation,
     updateClient,
     isUpdatingClient,
     deleteClient,
-    isDeletingClient,
-    sendInvitation,
-    isSendingInvitation
+    isDeletingClient
   } = useClients();
-
+  
   const clientId = parseInt(id || '0');
-  const { data: client, isLoading: isLoadingClient, error: clientError } = useClient(clientId);
+  const { data: client, isLoading, error } = useClient(clientId);
   const { data: events = [], isLoading: isLoadingEvents } = useClientEvents(clientId);
 
   useEffect(() => {
@@ -89,10 +101,36 @@ export const ClientProfile: React.FC = () => {
         { label: `${client.first_name} ${client.last_name}` },
       ]);
     }
-  }, [setBreadcrumbs, client]);
+  }, [client, setBreadcrumbs]);
 
-  const handleBack = () => {
-    navigate('/clients');
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleSendInvitation = () => {
+    if (client) {
+      sendInvitation(client.id);
+    }
+    handleMenuClose();
+  };
+
+  const handleSendMessage = () => {
+    setSendMessageOpen(true);
+    handleMenuClose();
+  };
+
+  const handleEditClient = () => {
+    setEditDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleDeactivateClient = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
   };
 
   const handleEdit = (data: any) => {
@@ -111,87 +149,154 @@ export const ClientProfile: React.FC = () => {
     });
   };
 
-  const handleSendInvitation = () => {
-    sendInvitation(clientId);
-  };
-
-  if (isLoadingClient) {
+  if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
         <CircularProgress />
       </Box>
     );
   }
 
-  if (clientError || !client) {
+  if (error || !client) {
     return (
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        <Alert severity="error">
-          Client not found or you don't have permission to view this client.
-        </Alert>
-        <Button startIcon={<BackIcon />} onClick={handleBack} sx={{ mt: 2 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/clients')}
+          sx={{ mb: 2 }}
+        >
           Back to Clients
         </Button>
+        <Alert severity="error">
+          {error ? 'Failed to load client information' : 'Client not found'}
+        </Alert>
       </Box>
     );
   }
 
-  const registrationStatus = getClientRegistrationStatus(client);
-  const activeStatus = getClientActiveStatus(client);
+  const statusSummary = getClientStatusSummary(client);
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box display="flex" alignItems="center" gap={2}>
-          <IconButton onClick={handleBack}>
-            <BackIcon />
+          <IconButton onClick={() => navigate('/clients')}>
+            <ArrowBackIcon />
           </IconButton>
           <Box>
             <Typography variant="h4" fontWeight="bold">
               {client.first_name} {client.last_name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Client Profile
+              {client.email}
             </Typography>
           </Box>
         </Box>
-        
-        <Stack direction="row" spacing={2}>
-          <Button
-            variant="outlined"
-            startIcon={<EmailIcon />}
-            onClick={() => setSendCommunicationOpen(true)}
+
+        <Box display="flex" alignItems="center" gap={1}>
+          {/* Quick Actions */}
+          <Tooltip title="Send Message">
+            <IconButton 
+              onClick={handleSendMessage}
+              color="primary"
+              sx={{ 
+                bgcolor: 'primary.50',
+                '&:hover': { bgcolor: 'primary.100' }
+              }}
+            >
+              <SendIcon />
+            </IconButton>
+          </Tooltip>
+
+          {statusSummary.needsInvitation && (
+            <Tooltip title="Send Account Invitation">
+              <span>
+                <IconButton
+                  onClick={handleSendInvitation}
+                  disabled={isSendingInvitation}
+                  color="secondary"
+                  sx={{ 
+                    bgcolor: 'secondary.50',
+                    '&:hover': { bgcolor: 'secondary.100' }
+                  }}
+                >
+                  {isSendingInvitation ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <PersonAddIcon />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+
+          {/* More Actions Menu */}
+          <IconButton onClick={handleMenuClick}>
+            <MoreVertIcon />
+          </IconButton>
+          
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
           >
-            Send Message
-          </Button>
-          {!client.has_account && (
-            <Button
-              variant="outlined"
-              startIcon={<InviteIcon />}
+            <MenuItem onClick={handleEditClient}>
+              <ListItemIcon>
+                <EditIcon />
+              </ListItemIcon>
+              <ListItemText>Edit Client</ListItemText>
+            </MenuItem>
+            
+            <MenuItem onClick={handleSendMessage}>
+              <ListItemIcon>
+                <SendIcon />
+              </ListItemIcon>
+              <ListItemText>Send Message</ListItemText>
+            </MenuItem>
+            
+            {statusSummary.needsInvitation && (
+              <MenuItem onClick={handleSendInvitation} disabled={isSendingInvitation}>
+                <ListItemIcon>
+                  <PersonAddIcon />
+                </ListItemIcon>
+                <ListItemText>
+                  {isSendingInvitation ? 'Sending Invitation...' : 'Send Invitation'}
+                </ListItemText>
+              </MenuItem>
+            )}
+            
+            <Divider />
+            
+            <MenuItem onClick={handleDeactivateClient} sx={{ color: 'error.main' }}>
+              <ListItemIcon>
+                <BlockIcon color="error" />
+              </ListItemIcon>
+              <ListItemText>Deactivate Client</ListItemText>
+            </MenuItem>
+          </Menu>
+        </Box>
+      </Box>
+
+      {/* Status Alerts */}
+      {statusSummary.needsInvitation && (
+        <Alert 
+          severity="info" 
+          sx={{ mb: 3 }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
               onClick={handleSendInvitation}
               disabled={isSendingInvitation}
             >
-              {isSendingInvitation ? 'Sending...' : 'Send Invitation'}
+              {isSendingInvitation ? <CircularProgress size={16} /> : 'Send Invitation'}
             </Button>
-          )}
-          <Button
-            variant="outlined"
-            startIcon={<EditIcon />}
-            onClick={() => setEditDialogOpen(true)}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<DeleteIcon />}
-            onClick={() => setDeleteDialogOpen(true)}
-          >
-            Deactivate
-          </Button>
-        </Stack>
-      </Box>
+          }
+        >
+          This client hasn't created an account yet. Send them an invitation to get started.
+        </Alert>
+      )}
 
       {/* Client Overview Cards */}
       <Box 
@@ -257,9 +362,9 @@ export const ClientProfile: React.FC = () => {
                       Status
                     </Typography>
                     <Chip
-                      icon={activeStatus.icon}
-                      label={activeStatus.label}
-                      color={activeStatus.color}
+                      icon={statusSummary.active.icon}
+                      label={statusSummary.active.label}
+                      color={statusSummary.active.color as any}
                       size="small"
                     />
                   </Box>
@@ -268,11 +373,11 @@ export const ClientProfile: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">
                       Registration
                     </Typography>
-                    <Tooltip title={registrationStatus.tooltip}>
+                    <Tooltip title={statusSummary.registration.tooltip}>
                       <Chip
-                        icon={registrationStatus.icon}
-                        label={registrationStatus.label}
-                        color={registrationStatus.color}
+                        icon={statusSummary.registration.icon}
+                        label={statusSummary.registration.label}
+                        color={statusSummary.registration.color as any}
                         size="small"
                       />
                     </Tooltip>
@@ -432,15 +537,39 @@ export const ClientProfile: React.FC = () => {
 
           {/* Other tabs - placeholder content */}
           <TabPanel value={tabValue} index={2}>
-            <Typography>Contracts management coming soon...</Typography>
+            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
+              <ContractIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Contracts Coming Soon
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Contract management functionality will be available in a future update.
+              </Typography>
+            </Paper>
           </TabPanel>
           
           <TabPanel value={tabValue} index={3}>
-            <Typography>Quotes management coming soon...</Typography>
+            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
+              <QuoteIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Quotes Coming Soon
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Quote management functionality will be available in a future update.
+              </Typography>
+            </Paper>
           </TabPanel>
           
           <TabPanel value={tabValue} index={4}>
-            <Typography>Notes management coming soon...</Typography>
+            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
+              <NoteIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Notes Coming Soon
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Client notes functionality will be available in a future update.
+              </Typography>
+            </Paper>
           </TabPanel>
         </CardContent>
       </Card>
@@ -480,11 +609,11 @@ export const ClientProfile: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Send Communication Dialog */}
-      <SendCommunication
+      {/* Send Message Dialog */}
+      <SendMessageDialog
+        open={sendMessageOpen}
+        onClose={() => setSendMessageOpen(false)}
         client={client}
-        open={sendCommunicationOpen}
-        onClose={() => setSendCommunicationOpen(false)}
       />
     </Box>
   );

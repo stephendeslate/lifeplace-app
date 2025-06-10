@@ -1,4 +1,5 @@
 # backend/core/domains/communications/serializers.py
+
 from rest_framework import serializers
 from django.template import Template, TemplateSyntaxError
 
@@ -68,25 +69,88 @@ class CommunicationRecordSerializer(serializers.ModelSerializer):
 
 
 class SendCommunicationSerializer(serializers.Serializer):
-    """Serializer for sending communications"""
+    """Serializer for sending communications - Enhanced for manual messages"""
     template_id = serializers.IntegerField()
     recipient = serializers.CharField()  # Email or phone
     client_id = serializers.IntegerField(required=False, allow_null=True)
     context_data = serializers.JSONField(required=False, default=dict)
     
+    # Fields for manual message customization
+    custom_subject = serializers.CharField(required=False, allow_blank=True)
+    custom_body = serializers.CharField(required=False, allow_blank=True)
+    
     def validate_template_id(self, value):
         """Validate template exists"""
         try:
-            CommunicationTemplate.objects.get(id=value)
+            template = CommunicationTemplate.objects.get(id=value)
+            # Store template for later validation
+            self._template = template
+            return value
         except CommunicationTemplate.DoesNotExist:
             raise serializers.ValidationError("Template does not exist.")
-        return value
+    
+    def validate(self, data):
+        """Enhanced validation for manual messages"""
+        template = getattr(self, '_template', None)
+        if not template:
+            return data
+        
+        # For manual templates, require custom subject and body
+        if template.category == 'MANUAL':
+            custom_subject = data.get('custom_subject')
+            custom_body = data.get('custom_body')
+            
+            if template.channel == 'EMAIL' and not custom_subject:
+                raise serializers.ValidationError({
+                    'custom_subject': 'Subject is required for manual email messages.'
+                })
+            
+            if not custom_body:
+                raise serializers.ValidationError({
+                    'custom_body': 'Message body is required for manual messages.'
+                })
+            
+            # Add custom content to context_data
+            context_data = data.get('context_data', {})
+            context_data.update({
+                'custom_subject': custom_subject,
+                'custom_body': custom_body,
+                'message': custom_body,  # Common template variable
+                'content': custom_body,  # Alternative template variable
+            })
+            data['context_data'] = context_data
+        
+        return data
 
 
 class PreviewCommunicationSerializer(serializers.Serializer):
-    """Serializer for previewing communications"""
+    """Serializer for previewing communications - Enhanced for manual messages"""
     template_id = serializers.IntegerField()
     context_data = serializers.JSONField(required=False, default=dict)
+    
+    # Fields for manual message preview
+    custom_subject = serializers.CharField(required=False, allow_blank=True)
+    custom_body = serializers.CharField(required=False, allow_blank=True)
+    
+    def validate(self, data):
+        """Enhanced validation for manual message previews"""
+        # If custom content is provided, add it to context_data
+        custom_subject = data.get('custom_subject')
+        custom_body = data.get('custom_body')
+        
+        if custom_subject or custom_body:
+            context_data = data.get('context_data', {})
+            if custom_subject:
+                context_data['custom_subject'] = custom_subject
+            if custom_body:
+                context_data.update({
+                    'custom_body': custom_body,
+                    'message': custom_body,
+                    'content': custom_body,
+                })
+            data['context_data'] = context_data
+        
+        return data
 
 
 class BulkSendSerializer(serializers.Serializer):
@@ -103,3 +167,17 @@ class BulkSendSerializer(serializers.Serializer):
             if 'recipient' not in recipient_data:
                 raise serializers.ValidationError("Each recipient must have a 'recipient' field.")
         return value
+    
+    def validate_template_id(self, value):
+        """Validate template exists and is not manual category"""
+        try:
+            template = CommunicationTemplate.objects.get(id=value)
+            # Prevent bulk sending with manual templates
+            if template.category == 'MANUAL':
+                raise serializers.ValidationError(
+                    "Bulk sending is not allowed with manual templates. "
+                    "Use individual sending for personalized messages."
+                )
+            return value
+        except CommunicationTemplate.DoesNotExist:
+            raise serializers.ValidationError("Template does not exist.")

@@ -366,7 +366,7 @@ class CommunicationTemplateService:
     
     @staticmethod
     def preview_template(template_id: int, context_data: Dict[str, Any] = None) -> Dict[str, str]:
-        """Preview a template with context data"""
+        """Preview a template with context data - Enhanced for manual messages"""
         template = CommunicationTemplateService.get_template_by_id(template_id)
         
         if context_data is None:
@@ -375,13 +375,66 @@ class CommunicationTemplateService:
         try:
             context = Context(context_data)
             
-            subject = None
-            if template.subject_template:
+            # Check if this is a custom/manual message with overrides
+            custom_subject = context_data.get('custom_subject')
+            custom_body = context_data.get('custom_body')
+            
+            # Handle subject
+            if custom_subject:
+                # Use custom subject for manual messages
+                subject = custom_subject
+            elif template.subject_template:
+                # Use template subject with context rendering
                 subject_template = Template(template.subject_template)
                 subject = subject_template.render(context)
+            else:
+                subject = None
             
-            body_template = Template(template.body_template)
-            body = body_template.render(context)
+            # Handle body
+            if custom_body and template.category == 'MANUAL':
+                # For manual templates, create a combined template that includes the custom content
+                base_template = template.body_template
+                
+                # Look for content placeholders in the template
+                content_placeholders = [
+                    '{{content}}',
+                    '{{message}}', 
+                    '{{body}}',
+                    '{{ content }}',
+                    '{{ message }}',
+                    '{{ body }}'
+                ]
+                
+                # Replace placeholder with custom content
+                combined_template = base_template
+                placeholder_found = False
+                
+                for placeholder in content_placeholders:
+                    if placeholder in combined_template:
+                        # Replace placeholder with user's custom content
+                        combined_template = combined_template.replace(placeholder, custom_body)
+                        placeholder_found = True
+                        break
+                
+                # If no placeholder found, inject content into template structure
+                if not placeholder_found:
+                    # Try to insert before closing body/content div
+                    if '</div>' in combined_template:
+                        # Find the main content area and insert before the last closing div
+                        parts = combined_template.rsplit('</div>', 1)
+                        if len(parts) == 2:
+                            combined_template = f"{parts[0]}<div style=\"margin: 16px 0;\">{custom_body}</div></div>{parts[1]}"
+                    else:
+                        # Fallback: append to template
+                        combined_template += f'<div style="margin: 16px 0;">{custom_body}</div>'
+                
+                # Now render the combined template with context
+                body_template = Template(combined_template)
+                body = body_template.render(context)
+            else:
+                # Use standard template rendering
+                body_template = Template(template.body_template)
+                body = body_template.render(context)
             
             return {
                 'subject': subject,
@@ -432,26 +485,62 @@ class CommunicationService:
         client: Optional[User] = None, # type: ignore
         sent_by: Optional[User] = None # type: ignore
     ) -> Optional[CommunicationRecord]:
-        """Send communication using template object"""
+        """Send communication using template object - Enhanced for manual messages"""
         
         if context_data is None:
             context_data = {}
         
         print(f"🚀 Sending communication: {template.name} to {recipient}")
         
-        # Render template
+        # Check if this is a manual message with custom content
+        is_manual_message = (
+            template.category == 'MANUAL' and 
+            ('custom_subject' in context_data or 'custom_body' in context_data)
+        )
+        
+        # Render template with enhanced support for manual messages
         try:
-            rendered = CommunicationTemplateService.preview_template(
-                template.id, context_data
-            )
-            subject = rendered.get('subject')
-            body = rendered.get('body')
+            if is_manual_message:
+                # For manual messages, handle custom subject and body
+                custom_subject = context_data.get('custom_subject', '')
+                custom_body = context_data.get('custom_body', '')
+                
+                if custom_subject and custom_body:
+                    # Create enhanced context for manual template rendering
+                    enhanced_context = {
+                        **context_data,
+                        'custom_subject': custom_subject,
+                        'custom_body': custom_body
+                    }
+                    
+                    rendered = CommunicationTemplateService.preview_template(
+                        template.id, enhanced_context
+                    )
+                    
+                    # Override with custom subject for manual messages
+                    subject = custom_subject
+                    body = rendered.get('body')
+                else:
+                    # Fallback to standard rendering
+                    rendered = CommunicationTemplateService.preview_template(
+                        template.id, context_data
+                    )
+                    subject = rendered.get('subject')
+                    body = rendered.get('body')
+            else:
+                # Standard template rendering for non-manual messages
+                rendered = CommunicationTemplateService.preview_template(
+                    template.id, context_data
+                )
+                subject = rendered.get('subject')
+                body = rendered.get('body')
+                
         except Exception as e:
             logger.error(f"Failed to render template: {str(e)}")
             print(f"❌ Failed to render template: {str(e)}")
             return None
         
-        # Create communication record
+        # Create communication record with proper subject/body
         record = CommunicationRecord.objects.create(
             template_name=template.name,
             channel=template.channel,
