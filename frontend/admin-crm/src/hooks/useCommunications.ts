@@ -1,13 +1,12 @@
 // frontend/admin-crm/src/hooks/useCommunications.ts
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { communicationsApi } from '../apis/communications.api';
+import { communicationsApi, type ManualSendData, type ManualPreviewData } from '../apis/communications.api';
 import { useToastActions } from '../contexts/ToastContext';
 import type {
   CommunicationFilters,
   CreateTemplateData,
   UpdateTemplateData,
-  SendCommunicationData,
   BulkSendData,
   PreviewData
 } from '../types/communications.types';
@@ -78,7 +77,7 @@ export const useCommunications = () => {
 
   const usePreviewTemplate = () => {
     return useMutation({
-      mutationFn: ({ id, data }: { id: number; data: PreviewData }) =>
+      mutationFn: ({ id, data }: { id: number; data: PreviewData | ManualPreviewData }) =>
         communicationsApi.previewTemplate(id, data),
       onError: (error: any) => {
         const message = error.response?.data?.detail || 'Failed to preview template';
@@ -112,13 +111,16 @@ export const useCommunications = () => {
 
   const useSendManual = () => {
     return useMutation({
-      mutationFn: (data: SendCommunicationData) => communicationsApi.sendManual(data),
+      mutationFn: (data: ManualSendData) => communicationsApi.sendManual(data),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
-        showSuccess('Communication Sent', 'Communication sent successfully');
+        showSuccess('Message Sent', 'Your message has been sent successfully');
       },
       onError: (error: any) => {
-        const message = error.response?.data?.detail || 'Failed to send communication';
+        const message = error.response?.data?.detail || 
+                       error.response?.data?.custom_subject?.[0] ||
+                       error.response?.data?.custom_body?.[0] ||
+                       'Failed to send message';
         showError('Send Failed', message);
       },
     });

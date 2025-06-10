@@ -60,6 +60,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<CommunicationTemplate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<CommunicationTemplate | null>(null);
 
   const { useTemplates, useDeleteTemplate } = useCommunications();
   const { data: templates, isLoading } = useTemplates(filters);
@@ -72,20 +73,39 @@ export const TemplateList: React.FC<TemplateListProps> = ({
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-    setSelectedTemplate(null);
+    // Don't clear selectedTemplate here if delete dialog might be opening
   };
 
   const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
+    if (selectedTemplate) {
+      setTemplateToDelete(selectedTemplate);
+      setDeleteDialogOpen(true);
+    }
     handleMenuClose();
   };
 
   const handleDeleteConfirm = () => {
-    if (selectedTemplate) {
-      deleteTemplate(selectedTemplate.id);
-      setDeleteDialogOpen(false);
-      setSelectedTemplate(null);
+    if (templateToDelete) {
+      console.log('Deleting template:', templateToDelete.id, templateToDelete.name);
+      deleteTemplate(templateToDelete.id, {
+        onSuccess: () => {
+          console.log('Template deleted successfully');
+          setDeleteDialogOpen(false);
+          setTemplateToDelete(null);
+          setSelectedTemplate(null);
+        },
+        onError: (error) => {
+          console.error('Failed to delete template:', error);
+          // Dialog will remain open so user can try again
+        }
+      });
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setTemplateToDelete(null);
+    setSelectedTemplate(null);
   };
 
   const handleFilterChange = (key: keyof CommunicationFilters, value: string) => {
@@ -364,6 +384,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
         <MenuItem onClick={() => {
           if (selectedTemplate) onPreviewClick(selectedTemplate);
           handleMenuClose();
+          setSelectedTemplate(null);
         }}>
           <PreviewIcon sx={{ mr: 1 }} />
           Preview
@@ -371,6 +392,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
         <MenuItem onClick={() => {
           if (selectedTemplate) onEditClick(selectedTemplate);
           handleMenuClose();
+          setSelectedTemplate(null);
         }}>
           <EditIcon sx={{ mr: 1 }} />
           Edit
@@ -386,16 +408,16 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={handleDeleteCancel}
       >
         <DialogTitle>Delete Template</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete "{selectedTemplate?.name}"? This action cannot be undone.
+            Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>
+          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
             Cancel
           </Button>
           <Button 
