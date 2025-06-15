@@ -1,4 +1,4 @@
-# lifeplace-app/backend/core/settings.py
+# backend/core/settings.py
 
 from datetime import timedelta
 import os
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'core.domains.communications',
     'core.domains.clients',
     'core.domains.events',
+    'core.domains.products',  # Added products domain
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -280,6 +281,10 @@ LOGGING = {
             'format': '📧 {asctime} - {message}',
             'style': '{',
         },
+        'products': {
+            'format': '🛍️ {asctime} - {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'console': {
@@ -290,6 +295,10 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'communications',
         },
+        'products_console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'products',
+        },
         'file': {
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
@@ -299,6 +308,11 @@ LOGGING = {
     'loggers': {
         'core.domains.communications': {
             'handlers': ['communications_console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'core.domains.products': {
+            'handlers': ['products_console'],
             'level': 'INFO',
             'propagate': False,
         },
@@ -323,4 +337,5 @@ LOGGING = {
 if DEBUG:
     # In development, make logging more verbose
     LOGGING['loggers']['core.domains.communications']['level'] = 'DEBUG'
+    LOGGING['loggers']['core.domains.products']['level'] = 'DEBUG'
     LOGGING['loggers']['']['level'] = 'INFO'
