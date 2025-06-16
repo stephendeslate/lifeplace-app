@@ -1,42 +1,49 @@
 // frontend/admin-crm/src/pages/settings/commerce/ProductsPackages.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
   Tabs,
   Tab,
-  Card,
-  CardContent,
   Button,
   TextField,
   InputAdornment,
-  Chip,
-  IconButton,
-  Menu,
+  FormControl,
+  InputLabel,
+  Select,
   MenuItem,
-  ListItemText,
-  Tooltip,
+  Paper,
+  Alert,
+  Chip,
+  Stack,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
   Category as CategoryIcon,
   Inventory as ProductIcon,
   LocalOffer as DiscountIcon,
+  FilterList as FilterIcon,
 } from '@mui/icons-material';
-import { useLayout } from '../../../contexts/LayoutContext';
-import { useProducts, useProductCategories, useDiscounts } from '../../../hooks/useProducts';
-import { 
-  ProductsTable,
-  CategoriesTable,
-  DiscountsTable,
-  ProductFormDialog,
-  CategoryFormDialog,
-  DiscountFormDialog
-} from '../../../components/products';
-import type { ProductFilters, CategoryFilters, DiscountFilters, ProductType, DiscountType, CreateProductData, UpdateProductData, CreateCategoryData, UpdateCategoryData, CreateDiscountData, UpdateDiscountData } from '../../../types/products.types';
+import { useProductCategories, useProducts, useDiscounts } from '../../../hooks/useProducts';
+import { CategoriesTable } from '../../../components/products/CategoriesTable';
+import { ProductsTable } from '../../../components/products/ProductsTable';
+import { DiscountsTable } from '../../../components/products/DiscountsTable';
+import { CategoryFormDialog } from '../../../components/products/CategoryFormDialog';
+import { ProductFormDialog } from '../../../components/products/ProductFormDialog';
+import { DiscountFormDialog } from '../../../components/products/DiscountFormDialog';
+import type { 
+  ProductCategory, 
+  ProductOption, 
+  Discount,
+  CreateCategoryData,
+  UpdateCategoryData,
+  CreateProductData,
+  UpdateProductData,
+  CreateDiscountData,
+  UpdateDiscountData,
+} from '../../../types/products.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -44,7 +51,7 @@ interface TabPanelProps {
   value: number;
 }
 
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
+const TabPanel = ({ children, value, index, ...other }: TabPanelProps) => {
   return (
     <div
       role="tabpanel"
@@ -59,318 +66,304 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 };
 
 export const ProductsPackages: React.FC = () => {
-  const { setBreadcrumbs } = useLayout();
-  const [tabValue, setTabValue] = useState(0);
+  const [activeTab, setActiveTab] = useState(0);
+  
+  // Search and filter states
+  const [categorySearch, setCategorySearch] = useState('');
+  const [categoryActiveFilter, setCategoryActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [productSearch, setProductSearch] = useState('');
+  const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'PRODUCT' | 'PACKAGE'>('all');
+  const [productActiveFilter, setProductActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [discountSearch, setDiscountSearch] = useState('');
+  const [discountTypeFilter, setDiscountTypeFilter] = useState<'all' | 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS'>('all');
+  const [discountValidFilter, setDiscountValidFilter] = useState<'all' | 'valid' | 'invalid'>('all');
   
   // Dialog states
-  const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
-  const [editingDiscount, setEditingDiscount] = useState<any>(null);
-  
-  // Filter states
-  const [productFilters, setProductFilters] = useState<ProductFilters>({});
-  const [categoryFilters, setCategoryFilters] = useState<CategoryFilters>({});
-  const [discountFilters, setDiscountFilters] = useState<DiscountFilters>({});
-  
-  // Filter menu state
-  const [filterMenuAnchor, setFilterMenuAnchor] = useState<null | HTMLElement>(null);
+  const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
+  const [editingProduct, setEditingProduct] = useState<ProductOption | null>(null);
+  const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
+
+  // Get filters for API calls - Note: use_pagination: false to get all results
+  const categoryFilters = useMemo(() => ({
+    search: categorySearch || undefined,
+    is_active: categoryActiveFilter === 'all' ? undefined : categoryActiveFilter === 'active',
+    use_pagination: false, // This will ensure we get all categories
+  }), [categorySearch, categoryActiveFilter]);
+
+  const productFilters = useMemo(() => ({
+    search: productSearch || undefined,
+    type: productTypeFilter === 'all' ? undefined : productTypeFilter,
+    is_active: productActiveFilter === 'all' ? undefined : productActiveFilter === 'active',
+    use_pagination: false, // This will ensure we get all products
+  }), [productSearch, productTypeFilter, productActiveFilter]);
+
+  const discountFilters = useMemo(() => ({
+    search: discountSearch || undefined,
+    discount_type: discountTypeFilter === 'all' ? undefined : discountTypeFilter,
+    is_valid: discountValidFilter === 'all' ? undefined : discountValidFilter === 'valid',
+    use_pagination: false, // This will ensure we get all discounts
+  }), [discountSearch, discountTypeFilter, discountValidFilter]);
 
   // Hooks
-  const { 
-    products, 
-    isLoadingProducts, 
-    createProduct, 
-    updateProduct, 
-    deleteProduct,
-    isCreatingProduct,
-    isUpdatingProduct,
-    isDeletingProduct
-  } = useProducts(productFilters);
-  
-  const { 
-    categories, 
-    isLoadingCategories, 
-    createCategory, 
-    updateCategory, 
+  const {
+    categories,
+    isLoadingCategories,
+    createCategory,
+    updateCategory,
     deleteCategory,
     isCreatingCategory,
     isUpdatingCategory,
-    isDeletingCategory
+    isDeletingCategory,
   } = useProductCategories(categoryFilters);
-  
-  const { 
-    discounts, 
-    isLoadingDiscounts, 
-    createDiscount, 
-    updateDiscount, 
+
+  const {
+    products,
+    isLoadingProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    isCreatingProduct,
+    isUpdatingProduct,
+    isDeletingProduct,
+  } = useProducts(productFilters);
+
+  const {
+    discounts,
+    isLoadingDiscounts,
+    createDiscount,
+    updateDiscount,
     deleteDiscount,
     isCreatingDiscount,
     isUpdatingDiscount,
-    isDeletingDiscount
+    isDeletingDiscount,
   } = useDiscounts(discountFilters);
 
-  useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Settings', path: '/settings' },
-      { label: 'Commerce' },
-      { label: 'Products & Packages' },
-    ]);
-  }, [setBreadcrumbs]);
-
-  // @ts-ignore
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-    setFilterMenuAnchor(null);
+  // Event handlers
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
-  const handleFilterMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setFilterMenuAnchor(event.currentTarget);
-  };
-
-  const handleFilterMenuClose = () => {
-    setFilterMenuAnchor(null);
-  };
-
-  const handleAddClick = () => {
-    switch (tabValue) {
-      case 0: // Products
-        setEditingProduct(null);
-        setProductDialogOpen(true);
-        break;
-      case 1: // Categories
-        setEditingCategory(null);
-        setCategoryDialogOpen(true);
-        break;
-      case 2: // Discounts
-        setEditingDiscount(null);
-        setDiscountDialogOpen(true);
-        break;
-    }
-  };
-
-  const handleEditProduct = (item: any) => {
-    setEditingProduct(item);
-    setProductDialogOpen(true);
-  };
-
-  const handleEditCategory = (item: any) => {
-    setEditingCategory(item);
+  // Category handlers
+  const handleCreateCategory = () => {
+    setEditingCategory(null);
     setCategoryDialogOpen(true);
   };
 
-  const handleEditDiscount = (item: any) => {
-    setEditingDiscount(item);
-    setDiscountDialogOpen(true);
-  };
-
-  const handleDeleteProduct = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      deleteProduct(id);
-    }
+  const handleEditCategory = (category: ProductCategory) => {
+    setEditingCategory(category);
+    setCategoryDialogOpen(true);
   };
 
   const handleDeleteCategory = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      deleteCategory(id);
+    deleteCategory(id);
+  };
+
+  const handleCategorySubmit = (data: CreateCategoryData | UpdateCategoryData) => {
+    if (editingCategory) {
+      updateCategory({ id: editingCategory.id, data: data as UpdateCategoryData });
+    } else {
+      createCategory(data as CreateCategoryData);
     }
+    setCategoryDialogOpen(false);
+  };
+
+  // Product handlers
+  const handleCreateProduct = () => {
+    setEditingProduct(null);
+    setProductDialogOpen(true);
+  };
+
+  const handleEditProduct = (product: ProductOption) => {
+    setEditingProduct(product);
+    setProductDialogOpen(true);
+  };
+
+  const handleDeleteProduct = (id: number) => {
+    deleteProduct(id);
+  };
+
+  const handleProductSubmit = (data: CreateProductData | UpdateProductData) => {
+    if (editingProduct) {
+      updateProduct({ id: editingProduct.id, data: data as UpdateProductData });
+    } else {
+      createProduct(data as CreateProductData);
+    }
+    setProductDialogOpen(false);
+  };
+
+  // Discount handlers
+  const handleCreateDiscount = () => {
+    setEditingDiscount(null);
+    setDiscountDialogOpen(true);
+  };
+
+  const handleEditDiscount = (discount: Discount) => {
+    setEditingDiscount(discount);
+    setDiscountDialogOpen(true);
   };
 
   const handleDeleteDiscount = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this discount?')) {
-      deleteDiscount(id);
-    }
+    deleteDiscount(id);
   };
 
-  const handleDialogClose = () => {
-    setProductDialogOpen(false);
-    setCategoryDialogOpen(false);
+  const handleDiscountSubmit = (data: CreateDiscountData | UpdateDiscountData) => {
+    if (editingDiscount) {
+      updateDiscount({ id: editingDiscount.id, data: data as UpdateDiscountData });
+    } else {
+      createDiscount(data as CreateDiscountData);
+    }
     setDiscountDialogOpen(false);
-    setEditingProduct(null);
-    setEditingCategory(null);
-    setEditingDiscount(null);
   };
 
-  const handleSearchChange = (value: string) => {
-    switch (tabValue) {
-      case 0: // Products
-        setProductFilters(prev => ({ ...prev, search: value || undefined }));
-        break;
-      case 1: // Categories
-        setCategoryFilters(prev => ({ ...prev, search: value || undefined }));
-        break;
-      case 2: // Discounts
-        setDiscountFilters(prev => ({ ...prev, search: value || undefined }));
-        break;
-    }
+  // Clear filters
+  const clearCategoryFilters = () => {
+    setCategorySearch('');
+    setCategoryActiveFilter('all');
   };
 
-  const handleTypeFilter = (type: ProductType | null) => {
-    setProductFilters(prev => ({ ...prev, type: type || undefined }));
-    handleFilterMenuClose();
+  const clearProductFilters = () => {
+    setProductSearch('');
+    setProductTypeFilter('all');
+    setProductActiveFilter('all');
   };
 
-  const handleDiscountTypeFilter = (type: DiscountType | null) => {
-    setDiscountFilters(prev => ({ ...prev, discount_type: type || undefined }));
-    handleFilterMenuClose();
+  const clearDiscountFilters = () => {
+    setDiscountSearch('');
+    setDiscountTypeFilter('all');
+    setDiscountValidFilter('all');
   };
-
-  const handleActiveFilter = (isActive: boolean | null) => {
-    switch (tabValue) {
-      case 0: // Products
-        setProductFilters(prev => ({ ...prev, is_active: isActive || undefined }));
-        break;
-      case 1: // Categories
-        setCategoryFilters(prev => ({ ...prev, is_active: isActive || undefined }));
-        break;
-      case 2: // Discounts
-        setDiscountFilters(prev => ({ ...prev, is_active: isActive || undefined }));
-        break;
-    }
-    handleFilterMenuClose();
-  };
-
-  const getCurrentSearchValue = () => {
-    switch (tabValue) {
-      case 0: return productFilters.search || '';
-      case 1: return categoryFilters.search || '';
-      case 2: return discountFilters.search || '';
-      default: return '';
-    }
-  };
-
-  const getTabLabel = (label: string, count: number) => (
-    <Box display="flex" alignItems="center" gap={1}>
-      {label}
-      <Chip size="small" label={count} />
-    </Box>
-  );
-
-  const renderFilterMenu = () => (
-    <Menu
-      anchorEl={filterMenuAnchor}
-      open={Boolean(filterMenuAnchor)}
-      onClose={handleFilterMenuClose}
-    >
-      {tabValue === 0 && [
-        <MenuItem key="all-types" onClick={() => handleTypeFilter(null)}>
-          <ListItemText>All Types</ListItemText>
-        </MenuItem>,
-        <MenuItem key="product" onClick={() => handleTypeFilter('PRODUCT')}>
-          <ListItemText>Products Only</ListItemText>
-        </MenuItem>,
-        <MenuItem key="package" onClick={() => handleTypeFilter('PACKAGE')}>
-          <ListItemText>Packages Only</ListItemText>
-        </MenuItem>
-      ]}
-      
-      {tabValue === 2 && [
-        <MenuItem key="all-discount-types" onClick={() => handleDiscountTypeFilter(null)}>
-          <ListItemText>All Types</ListItemText>
-        </MenuItem>,
-        <MenuItem key="percentage" onClick={() => handleDiscountTypeFilter('PERCENTAGE')}>
-          <ListItemText>Percentage</ListItemText>
-        </MenuItem>,
-        <MenuItem key="fixed" onClick={() => handleDiscountTypeFilter('FIXED')}>
-          <ListItemText>Fixed Amount</ListItemText>
-        </MenuItem>,
-        <MenuItem key="free-hours" onClick={() => handleDiscountTypeFilter('FREE_HOURS')}>
-          <ListItemText>Free Hours</ListItemText>
-        </MenuItem>
-      ]}
-      
-      <MenuItem key="all-status" onClick={() => handleActiveFilter(null)}>
-        <ListItemText>All Status</ListItemText>
-      </MenuItem>
-      <MenuItem key="active" onClick={() => handleActiveFilter(true)}>
-        <ListItemText>Active Only</ListItemText>
-      </MenuItem>
-      <MenuItem key="inactive" onClick={() => handleActiveFilter(false)}>
-        <ListItemText>Inactive Only</ListItemText>
-      </MenuItem>
-    </Menu>
-  );
 
   return (
     <Box>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Products & Packages
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage your products, packages, categories, and discounts
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddClick}
-          sx={{ minWidth: 120 }}
-        >
-          Add {tabValue === 0 ? 'Product' : tabValue === 1 ? 'Category' : 'Discount'}
-        </Button>
+      <Box mb={3}>
+        <Typography variant="h4" gutterBottom>
+          Products & Packages
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Manage your service offerings, pricing, and promotional discounts
+        </Typography>
       </Box>
 
+
+
       {/* Tabs */}
-      <Card elevation={2}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab 
-              icon={<ProductIcon />} 
-              label={getTabLabel('Products & Packages', products.length)} 
-              iconPosition="start"
-            />
-            <Tab 
-              icon={<CategoryIcon />} 
-              label={getTabLabel('Categories', categories.length)} 
-              iconPosition="start"
-            />
-            <Tab 
-              icon={<DiscountIcon />} 
-              label={getTabLabel('Discounts', discounts.length)} 
-              iconPosition="start"
-            />
-          </Tabs>
-        </Box>
+      <Paper sx={{ mb: 3 }}>
+        <Tabs 
+          value={activeTab} 
+          onChange={handleTabChange}
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Tab 
+            label={
+              <Box display="flex" alignItems="center" gap={1}>
+                <ProductIcon />
+                Products & Packages
+                <Chip label={products.length} size="small" />
+              </Box>
+            } 
+          />
+          <Tab 
+            label={
+              <Box display="flex" alignItems="center" gap={1}>
+                <CategoryIcon />
+                Categories
+                <Chip label={categories.length} size="small" />
+              </Box>
+            } 
+          />
+          <Tab 
+            label={
+              <Box display="flex" alignItems="center" gap={1}>
+                <DiscountIcon />
+                Discounts
+                <Chip label={discounts.length} size="small" />
+              </Box>
+            } 
+          />
+        </Tabs>
 
-        {/* Tab Content */}
-        <CardContent sx={{ p: 0 }}>
-          {/* Search and Filter Bar */}
-          <Box 
-            display="flex" 
-            justifyContent="space-between" 
-            alignItems="center" 
-            p={3} 
-            borderBottom={1} 
-            borderColor="divider"
-          >
-            <TextField
-              placeholder={`Search ${tabValue === 0 ? 'products and packages' : tabValue === 1 ? 'categories' : 'discounts'}...`}
-              value={getCurrentSearchValue()}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ minWidth: 300 }}
-            />
-            
-            <Tooltip title="Filter options">
-              <IconButton onClick={handleFilterMenuOpen}>
-                <FilterIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
+        {/* Products Tab */}
+        <TabPanel value={activeTab} index={0}>
+          <Box p={3}>
+            {/* Products Filters */}
+            <Box mb={3}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-end">
+                <Box flex={1}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Search products"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+                
+                <Box sx={{ minWidth: 120 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Type</InputLabel>
+                    <Select
+                      value={productTypeFilter}
+                      onChange={(e) => setProductTypeFilter(e.target.value as any)}
+                      label="Type"
+                    >
+                      <MenuItem value="all">All</MenuItem>
+                      <MenuItem value="PRODUCT">Products</MenuItem>
+                      <MenuItem value="PACKAGE">Packages</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                
+                <Box sx={{ minWidth: 120 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={productActiveFilter}
+                      onChange={(e) => setProductActiveFilter(e.target.value as any)}
+                      label="Status"
+                    >
+                      <MenuItem value="all">All</MenuItem>
+                      <MenuItem value="active">Active</MenuItem>
+                      <MenuItem value="inactive">Inactive</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                
+                <Button
+                  variant="outlined"
+                  onClick={clearProductFilters}
+                  startIcon={<FilterIcon />}
+                >
+                  Clear
+                </Button>
+                
+                <Button
+                  variant="contained"
+                  onClick={handleCreateProduct}
+                  startIcon={<AddIcon />}
+                >
+                  Add Product
+                </Button>
+              </Stack>
+            </Box>
 
-          {/* Tab Panels */}
-          <TabPanel value={tabValue} index={0}>
+            {/* Products Alert */}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Products are individual services, while packages are bundles of services. 
+              Configure pricing, timing, and booking requirements for each offering.
+            </Alert>
+
+            {/* Products Table */}
             <ProductsTable
               products={products}
               isLoading={isLoadingProducts}
@@ -378,9 +371,72 @@ export const ProductsPackages: React.FC = () => {
               onDelete={handleDeleteProduct}
               isDeleting={isDeletingProduct}
             />
-          </TabPanel>
+          </Box>
+        </TabPanel>
 
-          <TabPanel value={tabValue} index={1}>
+        {/* Categories Tab */}
+        <TabPanel value={activeTab} index={1}>
+          <Box p={3}>
+            {/* Categories Filters */}
+            <Box mb={3}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-end">
+                <Box flex={1}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Search categories"
+                    value={categorySearch}
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+                
+                <Box sx={{ minWidth: 120 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={categoryActiveFilter}
+                      onChange={(e) => setCategoryActiveFilter(e.target.value as any)}
+                      label="Status"
+                    >
+                      <MenuItem value="all">All</MenuItem>
+                      <MenuItem value="active">Active</MenuItem>
+                      <MenuItem value="inactive">Inactive</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                
+                <Button
+                  variant="outlined"
+                  onClick={clearCategoryFilters}
+                  startIcon={<FilterIcon />}
+                >
+                  Clear
+                </Button>
+                
+                <Button
+                  variant="contained"
+                  onClick={handleCreateCategory}
+                  startIcon={<AddIcon />}
+                >
+                  Add Category
+                </Button>
+              </Stack>
+            </Box>
+
+            {/* Categories Alert */}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Categories help organize your products and packages. Create a hierarchical structure 
+              that makes sense for your business offerings.
+            </Alert>
+
+            {/* Categories Table */}
             <CategoriesTable
               categories={categories}
               isLoading={isLoadingCategories}
@@ -388,9 +444,88 @@ export const ProductsPackages: React.FC = () => {
               onDelete={handleDeleteCategory}
               isDeleting={isDeletingCategory}
             />
-          </TabPanel>
+          </Box>
+        </TabPanel>
 
-          <TabPanel value={tabValue} index={2}>
+        {/* Discounts Tab */}
+        <TabPanel value={activeTab} index={2}>
+          <Box p={3}>
+            {/* Discounts Filters */}
+            <Box mb={3}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-end">
+                <Box flex={1}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Search discounts"
+                    value={discountSearch}
+                    onChange={(e) => setDiscountSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+                
+                <Box sx={{ minWidth: 120 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Type</InputLabel>
+                    <Select
+                      value={discountTypeFilter}
+                      onChange={(e) => setDiscountTypeFilter(e.target.value as any)}
+                      label="Type"
+                    >
+                      <MenuItem value="all">All</MenuItem>
+                      <MenuItem value="PERCENTAGE">Percentage</MenuItem>
+                      <MenuItem value="FIXED">Fixed Amount</MenuItem>
+                      <MenuItem value="FREE_HOURS">Free Hours</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                
+                <Box sx={{ minWidth: 120 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Validity</InputLabel>
+                    <Select
+                      value={discountValidFilter}
+                      onChange={(e) => setDiscountValidFilter(e.target.value as any)}
+                      label="Validity"
+                    >
+                      <MenuItem value="all">All</MenuItem>
+                      <MenuItem value="valid">Valid</MenuItem>
+                      <MenuItem value="invalid">Invalid</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                
+                <Button
+                  variant="outlined"
+                  onClick={clearDiscountFilters}
+                  startIcon={<FilterIcon />}
+                >
+                  Clear
+                </Button>
+                
+                <Button
+                  variant="contained"
+                  onClick={handleCreateDiscount}
+                  startIcon={<AddIcon />}
+                >
+                  Add Discount
+                </Button>
+              </Stack>
+            </Box>
+
+            {/* Discounts Alert */}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Create promotional discounts to incentivize bookings. Set validity periods, 
+              usage limits, and specific requirements for each discount.
+            </Alert>
+
+            {/* Discounts Table */}
             <DiscountsTable
               discounts={discounts}
               isLoading={isLoadingDiscounts}
@@ -398,56 +533,33 @@ export const ProductsPackages: React.FC = () => {
               onDelete={handleDeleteDiscount}
               isDeleting={isDeletingDiscount}
             />
-          </TabPanel>
-        </CardContent>
-      </Card>
-
-      {/* Filter Menu */}
-      {renderFilterMenu()}
+          </Box>
+        </TabPanel>
+      </Paper>
 
       {/* Dialogs */}
-      <ProductFormDialog
-        open={productDialogOpen}
-        onClose={handleDialogClose}
-        editingProduct={editingProduct}
-        onSubmit={(data: CreateProductData | UpdateProductData) => {
-          if (editingProduct) {
-            // For update, we know we have UpdateProductData
-            updateProduct({ id: editingProduct.id, data: data as UpdateProductData });
-          } else {
-            // For create, we know we have CreateProductData
-            createProduct(data as CreateProductData);
-          }
-        }}
-        isLoading={editingProduct ? isUpdatingProduct : isCreatingProduct}
-      />
-
       <CategoryFormDialog
         open={categoryDialogOpen}
-        onClose={handleDialogClose}
+        onClose={() => setCategoryDialogOpen(false)}
         editingCategory={editingCategory}
-        onSubmit={(data: CreateCategoryData | UpdateCategoryData) => {
-          if (editingCategory) {
-            updateCategory({ id: editingCategory.id, data: data as UpdateCategoryData });
-          } else {
-            createCategory(data as CreateCategoryData);
-          }
-        }}
-        isLoading={editingCategory ? isUpdatingCategory : isCreatingCategory}
+        onSubmit={handleCategorySubmit}
+        isLoading={isCreatingCategory || isUpdatingCategory}
+      />
+
+      <ProductFormDialog
+        open={productDialogOpen}
+        onClose={() => setProductDialogOpen(false)}
+        editingProduct={editingProduct}
+        onSubmit={handleProductSubmit}
+        isLoading={isCreatingProduct || isUpdatingProduct}
       />
 
       <DiscountFormDialog
         open={discountDialogOpen}
-        onClose={handleDialogClose}
+        onClose={() => setDiscountDialogOpen(false)}
         editingDiscount={editingDiscount}
-        onSubmit={(data: CreateDiscountData | UpdateDiscountData) => {
-          if (editingDiscount) {
-            updateDiscount({ id: editingDiscount.id, data: data as UpdateDiscountData });
-          } else {
-            createDiscount(data as CreateDiscountData);
-          }
-        }}
-        isLoading={editingDiscount ? isUpdatingDiscount : isCreatingDiscount}
+        onSubmit={handleDiscountSubmit}
+        isLoading={isCreatingDiscount || isUpdatingDiscount}
       />
     </Box>
   );

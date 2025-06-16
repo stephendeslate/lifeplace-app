@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/products/CategoriesTable.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -28,6 +28,8 @@ import {
   Folder as FolderIcon,
   FolderOpen as FolderOpenIcon,
   Category as CategoryIcon,
+  ExpandMore as ExpandMoreIcon,
+  ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import type { ProductCategory } from '../../types/products.types';
 
@@ -39,6 +41,11 @@ interface CategoriesTableProps {
   isDeleting: boolean;
 }
 
+interface HierarchicalCategory extends ProductCategory {
+  children: HierarchicalCategory[];
+  level: number;
+}
+
 export const CategoriesTable: React.FC<CategoriesTableProps> = ({
   categories,
   isLoading,
@@ -48,6 +55,71 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+
+  // Organize categories into hierarchical structure
+  const hierarchicalCategories = useMemo(() => {
+    const categoryMap = new Map<number, HierarchicalCategory>();
+    const rootCategories: HierarchicalCategory[] = [];
+
+    // First pass: create all category objects
+    categories.forEach(category => {
+      categoryMap.set(category.id, {
+        ...category,
+        children: [],
+        level: 0,
+      });
+    });
+
+    // Second pass: organize hierarchy and calculate levels
+    categories.forEach(category => {
+      const categoryObj = categoryMap.get(category.id)!;
+      
+      if (category.parent) {
+        const parent = categoryMap.get(category.parent);
+        if (parent) {
+          parent.children.push(categoryObj);
+          categoryObj.level = parent.level + 1;
+        } else {
+          // Parent not found, treat as root
+          rootCategories.push(categoryObj);
+        }
+      } else {
+        rootCategories.push(categoryObj);
+      }
+    });
+
+    // Sort root categories and their children
+    const sortCategories = (cats: HierarchicalCategory[]) => {
+      cats.sort((a, b) => {
+        if (a.sort_order !== b.sort_order) {
+          return a.sort_order - b.sort_order;
+        }
+        return a.name.localeCompare(b.name);
+      });
+      cats.forEach(cat => sortCategories(cat.children));
+    };
+
+    sortCategories(rootCategories);
+    return rootCategories;
+  }, [categories]);
+
+  // Flatten hierarchy for rendering
+  const flattenedCategories = useMemo(() => {
+    const flattened: HierarchicalCategory[] = [];
+    
+    const addCategory = (category: HierarchicalCategory) => {
+      flattened.push(category);
+      
+      // Only add children if parent is expanded
+      if (expandedCategories.has(category.id) && category.children.length > 0) {
+        category.children.forEach(child => addCategory(child));
+      }
+    };
+
+    hierarchicalCategories.forEach(category => addCategory(category));
+    return flattened;
+  }, [hierarchicalCategories, expandedCategories]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, category: ProductCategory) => {
     event.stopPropagation();
@@ -74,6 +146,17 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
     handleMenuClose();
   };
 
+  const toggleExpanded = (categoryId: number, event: React.MouseEvent) => {
+    event.stopPropagation();
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
   const getStatusChip = (isActive: boolean) => (
     <Chip
       label={isActive ? 'Active' : 'Inactive'}
@@ -83,15 +166,21 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
     />
   );
 
-  const getCategoryIcon = (category: ProductCategory) => {
-    if (category.children_count > 0) {
-      return <FolderOpenIcon color="primary" />;
+  const getCategoryIcon = (category: HierarchicalCategory) => {
+    if (category.children.length > 0) {
+      return expandedCategories.has(category.id) ? 
+        <FolderOpenIcon color="primary" /> : 
+        <FolderIcon color="primary" />;
     } else if (category.parent) {
       return <CategoryIcon color="action" />;
     } else {
       return <FolderIcon color="primary" />;
     }
   };
+
+  const getIndentationStyle = (level: number) => ({
+    paddingLeft: `${level * 24 + 16}px`,
+  });
 
   if (isLoading) {
     return (
@@ -148,30 +237,69 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {categories.map((category) => (
+            {flattenedCategories.map((category) => (
               <TableRow 
                 key={category.id} 
                 hover
-                sx={{ cursor: 'pointer' }}
+                sx={{ 
+                  cursor: 'pointer',
+                  backgroundColor: category.level > 0 ? 'rgba(0, 0, 0, 0.02)' : 'inherit',
+                  '&:hover': {
+                    backgroundColor: category.level > 0 ? 'rgba(0, 0, 0, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+                  }
+                }}
                 onClick={() => onEdit(category)}
               >
-                <TableCell>
+                <TableCell sx={getIndentationStyle(category.level)}>
                   <Box display="flex" alignItems="center" gap={1}>
-                    {getCategoryIcon(category)}
+                    {/* Expand/Collapse button for categories with children */}
+                    {category.children.length > 0 && (
+                      <IconButton
+                        size="small"
+                        onClick={(e) => toggleExpanded(category.id, e)}
+                        sx={{ 
+                          width: 20, 
+                          height: 20,
+                          mr: 0.5,
+                        }}
+                      >
+                        {expandedCategories.has(category.id) ? (
+                          <ExpandMoreIcon fontSize="small" />
+                        ) : (
+                          <ChevronRightIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    )}
+                    
+                    {/* Category icon */}
+                    <Box sx={{ minWidth: 24, display: 'flex', justifyContent: 'center' }}>
+                      {getCategoryIcon(category)}
+                    </Box>
+                    
+                    {/* Category name and path */}
                     <Box>
-                      <Typography variant="subtitle2" fontWeight="medium">
+                      <Typography 
+                        variant="subtitle2" 
+                        fontWeight={category.level === 0 ? "bold" : "medium"}
+                        sx={{ 
+                          fontSize: category.level === 0 ? '0.875rem' : '0.8125rem',
+                          color: category.level > 0 ? 'text.secondary' : 'text.primary'
+                        }}
+                      >
                         {category.name}
                       </Typography>
-                      {category.parent && (
-                        <Typography variant="caption" color="text.secondary">
-                          {category.full_path}
-                        </Typography>
-                      )}
                     </Box>
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" sx={{ maxWidth: 300 }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      maxWidth: 300,
+                      fontSize: category.level > 0 ? '0.8125rem' : '0.875rem',
+                      color: category.level > 0 ? 'text.secondary' : 'text.primary'
+                    }}
+                  >
                     {category.description || '—'}
                   </Typography>
                 </TableCell>
@@ -185,9 +313,9 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
                 </TableCell>
                 <TableCell align="center">
                   <Chip
-                    label={category.children_count}
+                    label={category.children.length}
                     size="small"
-                    color={category.children_count > 0 ? 'secondary' : 'default'}
+                    color={category.children.length > 0 ? 'secondary' : 'default'}
                     variant="outlined"
                   />
                 </TableCell>
@@ -195,7 +323,13 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
                   {getStatusChip(category.is_active)}
                 </TableCell>
                 <TableCell align="center">
-                  <Typography variant="body2">
+                  <Typography 
+                    variant="body2"
+                    sx={{ 
+                      fontSize: category.level > 0 ? '0.8125rem' : '0.875rem',
+                      color: category.level > 0 ? 'text.secondary' : 'text.primary'
+                    }}
+                  >
                     {category.typical_duration_hours || '—'}
                   </Typography>
                 </TableCell>
