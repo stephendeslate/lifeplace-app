@@ -15,19 +15,13 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  ListItemIcon,
   ListItemText,
   Tooltip,
-  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
-  MoreVert as MoreVertIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
   Category as CategoryIcon,
   Inventory as ProductIcon,
   LocalOffer as DiscountIcon,
@@ -72,7 +66,9 @@ export const ProductsPackages: React.FC = () => {
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [editingDiscount, setEditingDiscount] = useState<any>(null);
   
   // Filter states
   const [productFilters, setProductFilters] = useState<ProductFilters>({});
@@ -124,6 +120,7 @@ export const ProductsPackages: React.FC = () => {
     ]);
   }, [setBreadcrumbs]);
 
+  // @ts-ignore
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
     setFilterMenuAnchor(null);
@@ -138,32 +135,34 @@ export const ProductsPackages: React.FC = () => {
   };
 
   const handleAddClick = () => {
-    setEditingItem(null);
     switch (tabValue) {
       case 0: // Products
+        setEditingProduct(null);
         setProductDialogOpen(true);
         break;
       case 1: // Categories
+        setEditingCategory(null);
         setCategoryDialogOpen(true);
         break;
       case 2: // Discounts
+        setEditingDiscount(null);
         setDiscountDialogOpen(true);
         break;
     }
   };
 
   const handleEditProduct = (item: any) => {
-    setEditingItem(item);
+    setEditingProduct(item);
     setProductDialogOpen(true);
   };
 
   const handleEditCategory = (item: any) => {
-    setEditingItem(item);
+    setEditingCategory(item);
     setCategoryDialogOpen(true);
   };
 
   const handleEditDiscount = (item: any) => {
-    setEditingItem(item);
+    setEditingDiscount(item);
     setDiscountDialogOpen(true);
   };
 
@@ -189,7 +188,9 @@ export const ProductsPackages: React.FC = () => {
     setProductDialogOpen(false);
     setCategoryDialogOpen(false);
     setDiscountDialogOpen(false);
-    setEditingItem(null);
+    setEditingProduct(null);
+    setEditingCategory(null);
+    setEditingDiscount(null);
   };
 
   const handleSearchChange = (value: string) => {
@@ -253,44 +254,40 @@ export const ProductsPackages: React.FC = () => {
       open={Boolean(filterMenuAnchor)}
       onClose={handleFilterMenuClose}
     >
-      {tabValue === 0 && (
-        <>
-          <MenuItem onClick={() => handleTypeFilter(null)}>
-            <ListItemText>All Types</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleTypeFilter('PRODUCT')}>
-            <ListItemText>Products Only</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleTypeFilter('PACKAGE')}>
-            <ListItemText>Packages Only</ListItemText>
-          </MenuItem>
-        </>
-      )}
+      {tabValue === 0 && [
+        <MenuItem key="all-types" onClick={() => handleTypeFilter(null)}>
+          <ListItemText>All Types</ListItemText>
+        </MenuItem>,
+        <MenuItem key="product" onClick={() => handleTypeFilter('PRODUCT')}>
+          <ListItemText>Products Only</ListItemText>
+        </MenuItem>,
+        <MenuItem key="package" onClick={() => handleTypeFilter('PACKAGE')}>
+          <ListItemText>Packages Only</ListItemText>
+        </MenuItem>
+      ]}
       
-      {tabValue === 2 && (
-        <>
-          <MenuItem onClick={() => handleDiscountTypeFilter(null)}>
-            <ListItemText>All Types</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleDiscountTypeFilter('PERCENTAGE')}>
-            <ListItemText>Percentage</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleDiscountTypeFilter('FIXED')}>
-            <ListItemText>Fixed Amount</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleDiscountTypeFilter('FREE_HOURS')}>
-            <ListItemText>Free Hours</ListItemText>
-          </MenuItem>
-        </>
-      )}
+      {tabValue === 2 && [
+        <MenuItem key="all-discount-types" onClick={() => handleDiscountTypeFilter(null)}>
+          <ListItemText>All Types</ListItemText>
+        </MenuItem>,
+        <MenuItem key="percentage" onClick={() => handleDiscountTypeFilter('PERCENTAGE')}>
+          <ListItemText>Percentage</ListItemText>
+        </MenuItem>,
+        <MenuItem key="fixed" onClick={() => handleDiscountTypeFilter('FIXED')}>
+          <ListItemText>Fixed Amount</ListItemText>
+        </MenuItem>,
+        <MenuItem key="free-hours" onClick={() => handleDiscountTypeFilter('FREE_HOURS')}>
+          <ListItemText>Free Hours</ListItemText>
+        </MenuItem>
+      ]}
       
-      <MenuItem onClick={() => handleActiveFilter(null)}>
+      <MenuItem key="all-status" onClick={() => handleActiveFilter(null)}>
         <ListItemText>All Status</ListItemText>
       </MenuItem>
-      <MenuItem onClick={() => handleActiveFilter(true)}>
+      <MenuItem key="active" onClick={() => handleActiveFilter(true)}>
         <ListItemText>Active Only</ListItemText>
       </MenuItem>
-      <MenuItem onClick={() => handleActiveFilter(false)}>
+      <MenuItem key="inactive" onClick={() => handleActiveFilter(false)}>
         <ListItemText>Inactive Only</ListItemText>
       </MenuItem>
     </Menu>
@@ -412,45 +409,45 @@ export const ProductsPackages: React.FC = () => {
       <ProductFormDialog
         open={productDialogOpen}
         onClose={handleDialogClose}
-        editingProduct={editingItem}
+        editingProduct={editingProduct}
         onSubmit={(data: CreateProductData | UpdateProductData) => {
-          if (editingItem) {
+          if (editingProduct) {
             // For update, we know we have UpdateProductData
-            updateProduct({ id: editingItem.id, data: data as UpdateProductData });
+            updateProduct({ id: editingProduct.id, data: data as UpdateProductData });
           } else {
             // For create, we know we have CreateProductData
             createProduct(data as CreateProductData);
           }
         }}
-        isLoading={editingItem ? isUpdatingProduct : isCreatingProduct}
+        isLoading={editingProduct ? isUpdatingProduct : isCreatingProduct}
       />
 
       <CategoryFormDialog
         open={categoryDialogOpen}
         onClose={handleDialogClose}
-        editingCategory={editingItem}
+        editingCategory={editingCategory}
         onSubmit={(data: CreateCategoryData | UpdateCategoryData) => {
-          if (editingItem) {
-            updateCategory({ id: editingItem.id, data: data as UpdateCategoryData });
+          if (editingCategory) {
+            updateCategory({ id: editingCategory.id, data: data as UpdateCategoryData });
           } else {
             createCategory(data as CreateCategoryData);
           }
         }}
-        isLoading={editingItem ? isUpdatingCategory : isCreatingCategory}
+        isLoading={editingCategory ? isUpdatingCategory : isCreatingCategory}
       />
 
       <DiscountFormDialog
         open={discountDialogOpen}
         onClose={handleDialogClose}
-        editingDiscount={editingItem}
+        editingDiscount={editingDiscount}
         onSubmit={(data: CreateDiscountData | UpdateDiscountData) => {
-          if (editingItem) {
-            updateDiscount({ id: editingItem.id, data: data as UpdateDiscountData });
+          if (editingDiscount) {
+            updateDiscount({ id: editingDiscount.id, data: data as UpdateDiscountData });
           } else {
             createDiscount(data as CreateDiscountData);
           }
         }}
-        isLoading={editingItem ? isUpdatingDiscount : isCreatingDiscount}
+        isLoading={editingDiscount ? isUpdatingDiscount : isCreatingDiscount}
       />
     </Box>
   );

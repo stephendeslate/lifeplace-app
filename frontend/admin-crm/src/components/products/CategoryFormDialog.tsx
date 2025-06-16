@@ -68,20 +68,23 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
     : categories;
 
   useEffect(() => {
-    if (editingCategory) {
-      setFormData({
-        name: editingCategory.name || '',
-        description: editingCategory.description || '',
-        parent: editingCategory.parent ?? '',
-        is_active: editingCategory.is_active ?? true,
-        sort_order: editingCategory.sort_order?.toString() || '0',
-        requires_venue: editingCategory.requires_venue ?? false,
-        typical_duration_hours: editingCategory.typical_duration_hours?.toString() || '',
-      });
-    } else {
-      setFormData(defaultFormData);
+    if (open) {
+      if (editingCategory) {
+        console.log('Editing category:', editingCategory);
+        setFormData({
+          name: editingCategory.name || '',
+          description: editingCategory.description || '',
+          parent: editingCategory.parent ? editingCategory.parent.toString() : '',
+          is_active: editingCategory.is_active ?? true,
+          sort_order: editingCategory.sort_order?.toString() || '0',
+          requires_venue: editingCategory.requires_venue ?? false,
+          typical_duration_hours: editingCategory.typical_duration_hours?.toString() || '',
+        });
+      } else {
+        setFormData(defaultFormData);
+      }
+      setErrors({});
     }
-    setErrors({});
   }, [editingCategory, open]);
 
   const handleInputChange = (field: keyof CategoryFormData) => (
@@ -137,9 +140,9 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
     const submitData: CreateCategoryData | UpdateCategoryData = {
       name: formData.name.trim(),
       description: formData.description.trim(),
-      parent: formData.parent ? Number(formData.parent) : null,
+      parent: formData.parent ? parseInt(formData.parent) : null,
       is_active: formData.is_active,
-      sort_order: parseInt(formData.sort_order),
+      sort_order: parseInt(formData.sort_order) || 0,
       requires_venue: formData.requires_venue,
       typical_duration_hours: formData.typical_duration_hours ? parseInt(formData.typical_duration_hours) : null,
     };
@@ -160,131 +163,135 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
       maxWidth="sm"
       fullWidth
     >
-      <DialogTitle>
-        {editingCategory ? 'Edit Category' : 'Create New Category'}
-      </DialogTitle>
-      
-      <DialogContent>
-        <Box component="form" noValidate sx={{ mt: 1 }}>
-          {/* Basic Information */}
-          <Typography variant="h6" gutterBottom>
-            Basic Information
-          </Typography>
+      {open && (
+        <>
+          <DialogTitle>
+            {editingCategory ? 'Edit Category' : 'Create New Category'}
+          </DialogTitle>
           
-          <Stack spacing={2}>
-            <TextField
-              fullWidth
-              label="Category Name"
-              value={formData.name}
-              onChange={handleInputChange('name')}
-              error={!!errors.name}
-              helperText={errors.name}
-              required
-            />
-            
-            <TextField
-              fullWidth
-              label="Description"
-              value={formData.description}
-              onChange={handleInputChange('description')}
-              error={!!errors.description}
-              helperText={errors.description}
-              multiline
-              rows={3}
-              required
-            />
-            
-            <FormControl fullWidth>
-              <InputLabel>Parent Category (Optional)</InputLabel>
-              <Select
-                value={formData.parent}
-                onChange={handleInputChange('parent')}
-                label="Parent Category (Optional)"
-                disabled={isLoadingCategories}
-              >
-                <MenuItem value="">
-                  <em>None (Root Category)</em>
-                </MenuItem>
-                {availableParents.map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.full_path}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-
-          <Divider sx={{ my: 3 }} />
-
-          {/* Configuration */}
-          <Typography variant="h6" gutterBottom>
-            Configuration
-          </Typography>
-          
-          <Stack spacing={2}>
-            <Box display="flex" gap={2}>
-              <TextField
-                label="Typical Duration (Hours)"
-                value={formData.typical_duration_hours}
-                onChange={handleInputChange('typical_duration_hours')}
-                error={!!errors.typical_duration_hours}
-                helperText={errors.typical_duration_hours || 'Average event duration for this category'}
-                type="number"
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">hours</InputAdornment>,
-                }}
-                sx={{ flex: 1 }}
-              />
+          <DialogContent>
+            <Box component="form" noValidate sx={{ mt: 1 }}>
+              {/* Basic Information */}
+              <Typography variant="h6" gutterBottom>
+                Basic Information
+              </Typography>
               
-              <TextField
-                label="Sort Order"
-                value={formData.sort_order}
-                onChange={handleInputChange('sort_order')}
-                type="number"
-                helperText="Lower numbers appear first"
-                sx={{ flex: 1 }}
-              />
+              <Stack spacing={2}>
+                <TextField
+                  fullWidth
+                  label="Category Name"
+                  value={formData.name}
+                  onChange={handleInputChange('name')}
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  required
+                />
+                
+                <TextField
+                  fullWidth
+                  label="Description"
+                  value={formData.description}
+                  onChange={handleInputChange('description')}
+                  error={!!errors.description}
+                  helperText={errors.description}
+                  multiline
+                  rows={3}
+                  required
+                />
+                
+                <FormControl fullWidth>
+                  <InputLabel>Parent Category (Optional)</InputLabel>
+                  <Select
+                    value={formData.parent}
+                    onChange={handleInputChange('parent')}
+                    label="Parent Category (Optional)"
+                    disabled={isLoadingCategories}
+                  >
+                    <MenuItem value="">
+                      <em>None (Root Category)</em>
+                    </MenuItem>
+                    {availableParents.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.full_path}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* Configuration */}
+              <Typography variant="h6" gutterBottom>
+                Configuration
+              </Typography>
+              
+              <Stack spacing={2}>
+                <Box display="flex" gap={2}>
+                  <TextField
+                    label="Typical Duration (Hours)"
+                    value={formData.typical_duration_hours}
+                    onChange={handleInputChange('typical_duration_hours')}
+                    error={!!errors.typical_duration_hours}
+                    helperText={errors.typical_duration_hours || 'Average event duration for this category'}
+                    type="number"
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">hours</InputAdornment>,
+                    }}
+                    sx={{ flex: 1 }}
+                  />
+                  
+                  <TextField
+                    label="Sort Order"
+                    value={formData.sort_order}
+                    onChange={handleInputChange('sort_order')}
+                    type="number"
+                    helperText="Lower numbers appear first"
+                    sx={{ flex: 1 }}
+                  />
+                </Box>
+                
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.requires_venue}
+                      onChange={handleSwitchChange('requires_venue')}
+                    />
+                  }
+                  label="Requires Venue Specification"
+                />
+                
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.is_active}
+                      onChange={handleSwitchChange('is_active')}
+                    />
+                  }
+                  label="Active"
+                />
+              </Stack>
             </Box>
-            
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.requires_venue}
-                  onChange={handleSwitchChange('requires_venue')}
-                />
-              }
-              label="Requires Venue Specification"
-            />
-            
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.is_active}
-                  onChange={handleSwitchChange('is_active')}
-                />
-              }
-              label="Active"
-            />
-          </Stack>
-        </Box>
-      </DialogContent>
-      
-      <DialogActions sx={{ p: 3 }}>
-        <Button 
-          onClick={handleClose}
-          disabled={isLoading}
-        >
-          Cancel
-        </Button>
-        <Button 
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={isLoading}
-          startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
-        >
-          {isLoading ? 'Saving...' : editingCategory ? 'Update' : 'Create'}
-        </Button>
-      </DialogActions>
+          </DialogContent>
+          
+          <DialogActions sx={{ p: 3 }}>
+            <Button 
+              onClick={handleClose}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              variant="contained"
+              disabled={isLoading}
+              startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
+            >
+              {isLoading ? 'Saving...' : editingCategory ? 'Update' : 'Create'}
+            </Button>
+          </DialogActions>
+        </>
+      )}
     </Dialog>
   );
 };

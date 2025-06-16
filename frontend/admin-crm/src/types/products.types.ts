@@ -191,7 +191,7 @@ export interface ValidateDiscountData {
 export interface ProductFormData {
   name: string;
   description: string;
-  category: number | '';
+  category: string;
   pricing_model: PricingModel;
   base_price: string;
   currency: string;
@@ -215,7 +215,7 @@ export interface ProductFormData {
 export interface CategoryFormData {
   name: string;
   description: string;
-  parent: number | '';
+  parent: string;
   is_active: boolean;
   sort_order: string;
   requires_venue: boolean;
