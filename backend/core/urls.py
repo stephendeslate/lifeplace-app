@@ -8,27 +8,9 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Add your API URLs here
-    path('api/users/', include('core.domains.users.urls', namespace='users')),
-    path('api/communications/', include('core.domains.communications.urls', namespace='communications')),
-    path('api/clients/', include('core.domains.clients.urls', namespace='clients')),
-    path('api/events/', include('core.domains.events.urls', namespace='events')),
+    path('api/users/', include('core.domains.users.urls')),
+    path('api/communications/', include('core.domains.communications.urls')),
+    path('api/clients/', include('core.domains.clients.urls')),
+    path('api/events/', include('core.domains.events.urls')),
+    path('api/products/', include('core.domains.products.urls')),  # Added products URLs
 ]
-
-# In production, serve React apps
-if settings.IS_PRODUCTION:
-    # Admin CRM routes
-    urlpatterns += [
-        re_path(r'^admin-crm/$', TemplateView.as_view(template_name='index.html')),
-        re_path(r'^admin-crm/.*', TemplateView.as_view(template_name='index.html')),
-    ]
-    
-    # Client Portal routes  
-    urlpatterns += [
-        re_path(r'^client-portal/$', TemplateView.as_view(template_name='index.html')),
-        re_path(r'^client-portal/.*', TemplateView.as_view(template_name='index.html')),
-    ]
-
-# Serve static files in development
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
