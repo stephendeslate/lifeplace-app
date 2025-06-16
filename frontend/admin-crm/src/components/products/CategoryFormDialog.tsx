@@ -56,25 +56,36 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
 }) => {
   const [formData, setFormData] = useState<CategoryFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [initialized, setInitialized] = useState(false);
 
   const { categories, isLoadingCategories } = useProductCategories({ is_active: true });
 
   // Filter out the current category and its children to prevent circular references
-  const availableParents = editingCategory
-    ? categories.filter(cat => 
-        cat.id !== editingCategory.id && 
-        !cat.full_path.includes(editingCategory.name)
-      )
-    : categories;
+  const availableParents = React.useMemo(() => {
+    return editingCategory
+      ? categories.filter(cat => 
+          cat.id !== editingCategory.id && 
+          !cat.full_path.includes(editingCategory.name)
+        )
+      : categories;
+  }, [categories, editingCategory]);
+
+  // Check if the current parent value is valid
+  const isValidParent = React.useCallback((parentId: string) => {
+    if (!parentId) return true; // Empty is always valid
+    return availableParents.some(cat => cat.id.toString() === parentId);
+  }, [availableParents]);
 
   useEffect(() => {
-    if (open) {
+    if (open && !initialized) {
       if (editingCategory) {
+        const initialParent = editingCategory.parent?.toString() || '';
         console.log('Editing category:', editingCategory);
+        
         setFormData({
           name: editingCategory.name || '',
           description: editingCategory.description || '',
-          parent: editingCategory.parent ? editingCategory.parent.toString() : '',
+          parent: isValidParent(initialParent) ? initialParent : '',
           is_active: editingCategory.is_active ?? true,
           sort_order: editingCategory.sort_order?.toString() || '0',
           requires_venue: editingCategory.requires_venue ?? false,
@@ -83,9 +94,16 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
       } else {
         setFormData(defaultFormData);
       }
+      setInitialized(true);
       setErrors({});
     }
-  }, [editingCategory, open]);
+  }, [open, editingCategory, initialized, isValidParent]);
+
+  useEffect(() => {
+    if (!open) {
+      setInitialized(false);
+    }
+  }, [open]);
 
   const handleInputChange = (field: keyof CategoryFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
@@ -128,6 +146,10 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
 
     if (formData.typical_duration_hours && parseInt(formData.typical_duration_hours) <= 0) {
       newErrors.typical_duration_hours = 'Duration must be greater than 0';
+    }
+
+    if (formData.parent && !isValidParent(formData.parent)) {
+      newErrors.parent = 'Selected parent category is no longer available';
     }
 
     setErrors(newErrors);
@@ -199,10 +221,10 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
                   required
                 />
                 
-                <FormControl fullWidth>
+                <FormControl fullWidth error={!!errors.parent}>
                   <InputLabel>Parent Category (Optional)</InputLabel>
                   <Select
-                    value={formData.parent}
+                    value={isValidParent(formData.parent) ? formData.parent : ''}
                     onChange={handleInputChange('parent')}
                     label="Parent Category (Optional)"
                     disabled={isLoadingCategories}
@@ -211,11 +233,16 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
                       <em>None (Root Category)</em>
                     </MenuItem>
                     {availableParents.map((category) => (
-                      <MenuItem key={category.id} value={category.id}>
+                      <MenuItem key={category.id} value={category.id.toString()}>
                         {category.full_path}
                       </MenuItem>
                     ))}
                   </Select>
+                  {errors.parent && (
+                    <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                      {errors.parent}
+                    </Typography>
+                  )}
                 </FormControl>
               </Stack>
 
