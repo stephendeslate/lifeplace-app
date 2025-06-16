@@ -13,7 +13,7 @@ import type {
   ValidateDiscountData,
 } from '../types/products.types';
 
-export const useProductCategories = (filters?: CategoryFilters) => {
+export const useProductCategories = (filters?: CategoryFilters & { use_pagination?: boolean }) => {
   const { showSuccess, showError } = useToastActions();
   const queryClient = useQueryClient();
 
@@ -121,7 +121,7 @@ export const useProductCategories = (filters?: CategoryFilters) => {
   };
 };
 
-export const useProducts = (filters?: ProductFilters) => {
+export const useProducts = (filters?: ProductFilters & { use_pagination?: boolean }) => {
   const { showSuccess, showError } = useToastActions();
   const queryClient = useQueryClient();
 
@@ -257,7 +257,7 @@ export const useProducts = (filters?: ProductFilters) => {
   };
 };
 
-export const useDiscounts = (filters?: DiscountFilters) => {
+export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: boolean }) => {
   const { showSuccess, showError } = useToastActions();
   const queryClient = useQueryClient();
 

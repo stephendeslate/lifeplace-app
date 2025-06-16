@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from .models import Discount, ProductOption, ProductCategory
 from .serializers import (
@@ -17,6 +18,13 @@ from .serializers import (
 from .services import DiscountService, ProductService, ProductCategoryService
 
 
+class LargePagination(PageNumberPagination):
+    """Custom pagination for endpoints that need larger page sizes"""
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+
 class ProductCategoryViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Product Categories
@@ -25,6 +33,7 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
+    pagination_class = LargePagination  # Use larger pagination for categories
     
     def get_queryset(self):
         is_active = self.request.query_params.get('is_active', None)
@@ -104,6 +113,17 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(categories, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def all(self, request):
+        """Get all categories without pagination"""
+        is_active = self.request.query_params.get('is_active', None)
+        if is_active is not None:
+            is_active = is_active.lower() == 'true'
+        
+        categories = ProductCategoryService.get_all_categories(is_active=is_active)
+        serializer = self.get_serializer(categories, many=True)
+        return Response(serializer.data)
 
 
 class ProductOptionViewSet(viewsets.ModelViewSet):
@@ -114,6 +134,7 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description', 'sku']
+    pagination_class = LargePagination  # Use larger pagination for products
     
     def get_queryset(self):
         product_type = self.request.query_params.get('type', None)
@@ -254,6 +275,17 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def all(self, request):
+        """Get all products without pagination"""
+        is_active = self.request.query_params.get('is_active', None)
+        if is_active is not None:
+            is_active = is_active.lower() == 'true'
+        
+        products = ProductService.get_all_products(is_active=is_active)
+        serializer = self.get_serializer(products, many=True)
+        return Response(serializer.data)
 
 
 class DiscountViewSet(viewsets.ModelViewSet):
@@ -263,6 +295,7 @@ class DiscountViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'code', 'description']
+    pagination_class = LargePagination  # Use larger pagination for discounts
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -403,3 +436,14 @@ class DiscountViewSet(viewsets.ModelViewSet):
             "message": message,
             "discount": self.get_serializer(discount).data
         })
+    
+    @action(detail=False, methods=['get'])
+    def all(self, request):
+        """Get all discounts without pagination"""
+        is_active = self.request.query_params.get('is_active', None)
+        if is_active is not None:
+            is_active = is_active.lower() == 'true'
+        
+        discounts = DiscountService.get_all_discounts(is_active=is_active)
+        serializer = self.get_serializer(discounts, many=True)
+        return Response(serializer.data)
