@@ -12,5 +12,6 @@ urlpatterns = [
     path('api/communications/', include('core.domains.communications.urls')),
     path('api/clients/', include('core.domains.clients.urls')),
     path('api/events/', include('core.domains.events.urls')),
-    path('api/products/', include('core.domains.products.urls')),  # Added products URLs
+    path('api/products/', include('core.domains.products.urls')),
+    path('api/questionnaires/', include('core.domains.questionnaires.urls')),
 ]
