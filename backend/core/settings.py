@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'core.domains.communications',
     'core.domains.clients',
     'core.domains.events',
-    'core.domains.products',  # Added products domain
+    'core.domains.products',
+    'core.domains.questionnaires',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
