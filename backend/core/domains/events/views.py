@@ -8,7 +8,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .serializers import (
+from .basic_serializers import (
     EventTypeSerializer,
 )
 
