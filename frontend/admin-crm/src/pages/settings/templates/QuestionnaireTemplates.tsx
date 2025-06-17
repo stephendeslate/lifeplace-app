@@ -19,6 +19,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -43,8 +45,10 @@ export const QuestionnaireTemplates: React.FC = () => {
   const [filters, setFilters] = useState<QuestionnaireFilters>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState<Questionnaire | null>(null);
   const [previewingQuestionnaire, setPreviewingQuestionnaire] = useState<Questionnaire | null>(null);
+  const [questionnaireToDelete, setQuestionnaireToDelete] = useState<Questionnaire | null>(null);
 
   const {
     questionnaires,
@@ -99,9 +103,27 @@ export const QuestionnaireTemplates: React.FC = () => {
   };
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this questionnaire?')) {
-      deleteQuestionnaire(id);
+    const questionnaire = questionnaires.find(q => q.id === id);
+    if (questionnaire) {
+      setQuestionnaireToDelete(questionnaire);
+      setDeleteDialogOpen(true);
     }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (questionnaireToDelete) {
+      deleteQuestionnaire(questionnaireToDelete.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setQuestionnaireToDelete(null);
+        }
+      });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setQuestionnaireToDelete(null);
   };
 
   const handleDialogClose = () => {
@@ -230,8 +252,6 @@ export const QuestionnaireTemplates: React.FC = () => {
         </CardContent>
       </Card>
 
-
-
       {/* Questionnaires Table */}
       <Card>
         <QuestionnairesTable
@@ -286,6 +306,32 @@ export const QuestionnaireTemplates: React.FC = () => {
             </Alert>
           )}
         </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+      >
+        <DialogTitle>Delete Questionnaire</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete "{questionnaireToDelete?.name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isDeletingQuestionnaire}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={isDeletingQuestionnaire}
+          >
+            {isDeletingQuestionnaire ? <CircularProgress size={20} /> : 'Delete'}
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

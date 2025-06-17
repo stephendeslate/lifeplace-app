@@ -17,6 +17,12 @@ import {
   Alert,
   Chip,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -82,9 +88,15 @@ export const ProductsPackages: React.FC = () => {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
   const [editingProduct, setEditingProduct] = useState<ProductOption | null>(null);
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{
+    type: 'category' | 'product' | 'discount';
+    id: number;
+    name: string;
+  } | null>(null);
 
   // Get filters for API calls - Note: use_pagination: false to get all results
   const categoryFilters = useMemo(() => ({
@@ -158,7 +170,15 @@ export const ProductsPackages: React.FC = () => {
   };
 
   const handleDeleteCategory = (id: number) => {
-    deleteCategory(id);
+    const category = categories.find(c => c.id === id);
+    if (category) {
+      setItemToDelete({
+        type: 'category',
+        id,
+        name: category.name
+      });
+      setDeleteDialogOpen(true);
+    }
   };
 
   const handleCategorySubmit = (data: CreateCategoryData | UpdateCategoryData) => {
@@ -182,7 +202,15 @@ export const ProductsPackages: React.FC = () => {
   };
 
   const handleDeleteProduct = (id: number) => {
-    deleteProduct(id);
+    const product = products.find(p => p.id === id);
+    if (product) {
+      setItemToDelete({
+        type: 'product',
+        id,
+        name: product.name
+      });
+      setDeleteDialogOpen(true);
+    }
   };
 
   const handleProductSubmit = (data: CreateProductData | UpdateProductData) => {
@@ -206,7 +234,15 @@ export const ProductsPackages: React.FC = () => {
   };
 
   const handleDeleteDiscount = (id: number) => {
-    deleteDiscount(id);
+    const discount = discounts.find(d => d.id === id);
+    if (discount) {
+      setItemToDelete({
+        type: 'discount',
+        id,
+        name: discount.name
+      });
+      setDeleteDialogOpen(true);
+    }
   };
 
   const handleDiscountSubmit = (data: CreateDiscountData | UpdateDiscountData) => {
@@ -216,6 +252,43 @@ export const ProductsPackages: React.FC = () => {
       createDiscount(data as CreateDiscountData);
     }
     setDiscountDialogOpen(false);
+  };
+
+  // Delete handlers
+  const handleDeleteConfirm = () => {
+    if (!itemToDelete) return;
+
+    const { type, id } = itemToDelete;
+    
+    const deleteActions = {
+      category: () => deleteCategory(id),
+      product: () => deleteProduct(id),
+      discount: () => deleteDiscount(id),
+    };
+
+    deleteActions[type]();
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
+  const getDeleteItemType = () => {
+    if (!itemToDelete) return '';
+    return itemToDelete.type.charAt(0).toUpperCase() + itemToDelete.type.slice(1);
+  };
+
+  const isDeleting = () => {
+    if (!itemToDelete) return false;
+    const { type } = itemToDelete;
+    return {
+      category: isDeletingCategory,
+      product: isDeletingProduct,
+      discount: isDeletingDiscount,
+    }[type];
   };
 
   // Clear filters
@@ -247,8 +320,6 @@ export const ProductsPackages: React.FC = () => {
           Manage your service offerings, pricing, and promotional discounts
         </Typography>
       </Box>
-
-
 
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
@@ -561,6 +632,32 @@ export const ProductsPackages: React.FC = () => {
         onSubmit={handleDiscountSubmit}
         isLoading={isCreatingDiscount || isUpdatingDiscount}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+      >
+        <DialogTitle>Delete {getDeleteItemType()}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete "{itemToDelete?.name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isDeleting()}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={isDeleting()}
+          >
+            {isDeleting() ? <CircularProgress size={20} /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
