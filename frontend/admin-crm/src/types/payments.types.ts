@@ -87,6 +87,15 @@ export interface PaymentMethod {
   updated_at: string;
 }
 
+// Stripe Configuration
+export interface StripeConfig {
+  publishable_key: string;
+  secret_key: string;
+  webhook_secret: string;
+  test_mode: boolean;
+}
+
+// PayMongo Configuration
 export interface PayMongoConfig {
   public_key: string;
   secret_key: string;
@@ -94,6 +103,9 @@ export interface PayMongoConfig {
   test_mode: boolean;
 }
 
+// Gateway Constants
+export const STRIPE_GATEWAY_CODE = 'stripe';
+export const STRIPE_GATEWAY_NAME = 'Stripe';
 export const PAYMONGO_GATEWAY_CODE = 'paymongo';
 export const PAYMONGO_GATEWAY_NAME = 'PayMongo';
 
@@ -104,3 +116,29 @@ export const PAYMENT_METHOD_TYPES = [
   { value: 'CASH', label: 'Cash' },
   { value: 'DIGITAL_WALLET', label: 'Digital Wallet' },
 ] as const;
+
+// Gateway Templates for Quick Setup
+export const GATEWAY_TEMPLATES = {
+  stripe: {
+    name: STRIPE_GATEWAY_NAME,
+    code: STRIPE_GATEWAY_CODE,
+    description: 'Stripe payment processing for global and Philippine businesses',
+    config: {
+      publishable_key: '',
+      secret_key: '',
+      webhook_secret: '',
+      test_mode: true,
+    } as StripeConfig,
+  },
+  paymongo: {
+    name: PAYMONGO_GATEWAY_NAME,
+    code: PAYMONGO_GATEWAY_CODE,
+    description: 'PayMongo payment gateway for Philippines',
+    config: {
+      public_key: '',
+      secret_key: '',
+      webhook_secret: '',
+      test_mode: true,
+    } as PayMongoConfig,
+  },
+} as const;

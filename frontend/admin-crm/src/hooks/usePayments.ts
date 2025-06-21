@@ -10,7 +10,6 @@ import type {
   TaxRate,
   CreateTaxRateData,
   UpdateTaxRateData,
-  PaymentMethod,
 } from '../types/payments.types';
 
 // Query Keys
