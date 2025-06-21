@@ -1,5 +1,5 @@
 # backend/core/domains/workflows/serializers.py
-from core.domains.communications.serializers import EmailTemplateSerializer
+from core.domains.communications.serializers import CommunicationTemplateSerializer
 from core.domains.events.basic_serializers import EventTypeSerializer
 from django.db import transaction
 from rest_framework import serializers
@@ -11,7 +11,7 @@ from .models import WorkflowStage, WorkflowTemplate
 
 class WorkflowStageDetailSerializer(WorkflowStageSerializer):
     """Detailed serializer for WorkflowStage including related objects"""
-    email_template = EmailTemplateSerializer(read_only=True)
+    email_template = CommunicationTemplateSerializer(read_only=True)
 
 
 class WorkflowTemplateDetailSerializer(WorkflowTemplateSerializer):
