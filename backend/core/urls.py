@@ -14,4 +14,8 @@ urlpatterns = [
     path('api/events/', include('core.domains.events.urls')),
     path('api/products/', include('core.domains.products.urls')),
     path('api/questionnaires/', include('core.domains.questionnaires.urls')),
+    path('api/payments/', include('core.domains.payments.urls')),
+    path('api/sales/', include('core.domains.sales.urls')),
+    path('api/workflows/', include('core.domains.workflows.urls')),
+    path('api/contracts/', include('core.domains.contracts.urls')),
 ]

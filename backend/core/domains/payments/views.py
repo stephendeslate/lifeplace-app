@@ -1,5 +1,6 @@
 # backend/core/domains/payments/views.py
 from core.utils.permissions import IsAdmin
+from django.db import models
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -105,7 +106,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def update(self, request, *args, **kwargs):
-        """Update a payment"""
+        """Update an existing payment"""
         try:
             payment = PaymentService.update_payment(
                 kwargs.get('pk'), request.data, request.user
@@ -119,289 +120,134 @@ class PaymentViewSet(viewsets.ModelViewSet):
     def process(self, request, pk=None):
         """Process a payment through a payment gateway"""
         try:
-            transaction = PaymentService.process_payment(pk, request.data, request.user)
-            return Response(
-                PaymentTransactionSerializer(transaction).data,
-                status=status.HTTP_200_OK
-            )
+            payment = PaymentService.process_payment(pk, request.data, request.user)
+            serializer = self.get_serializer(payment)
+            return Response(serializer.data)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['post'])
-    def refund(self, request, pk=None):
-        """Create a refund for a payment"""
+    def send_receipt(self, request, pk=None):
+        """Send payment receipt to client"""
         try:
-            refund = PaymentService.create_refund(pk, request.data, request.user)
-            return Response(
-                RefundSerializer(refund).data,
-                status=status.HTTP_201_CREATED
-            )
+            payment = self.get_object()
+            success = payment.send_receipt_notification()
+            if success:
+                return Response({"detail": "Receipt sent successfully"})
+            else:
+                return Response(
+                    {"detail": "Receipt could not be sent"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
-    def for_event(self, request):
-        """Get payments for a specific event"""
-        event_id = self.request.query_params.get('event_id', None)
-        
-        if not event_id:
-            return Response(
-                {"detail": "event_id parameter is required"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        queryset = self.get_queryset().filter(event_id=event_id)
-        page = self.paginate_queryset(queryset)
-        
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
 
 
-class InvoiceViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing invoices"""
-    queryset = Invoice.objects.all()
-    serializer_class = InvoiceSerializer
+class PaymentGatewayViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing payment gateways"""
+    queryset = PaymentGateway.objects.all()
+    serializer_class = PaymentGatewaySerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
+        queryset = super().get_queryset().order_by('name')
         
         # Apply filters
-        event_id = self.request.query_params.get('event', None)
-        client_id = self.request.query_params.get('client', None)
-        status = self.request.query_params.get('status', None)
+        is_active = self.request.query_params.get('is_active', None)
         search = self.request.query_params.get('search', None)
         
-        if event_id:
-            queryset = queryset.filter(event_id=event_id)
-        
-        if client_id:
-            queryset = queryset.filter(client_id=client_id)
-        
-        if status:
-            queryset = queryset.filter(status=status)
+        if is_active is not None:
+            is_active = is_active.lower() == 'true'
+            queryset = queryset.filter(is_active=is_active)
         
         if search:
-            queryset = queryset.filter(invoice_id__icontains=search)
+            queryset = queryset.filter(
+                models.Q(name__icontains=search) |
+                models.Q(code__icontains=search)
+            )
         
         return queryset
     
     def create(self, request, *args, **kwargs):
-        """Create a new invoice"""
+        """Create a new payment gateway"""
         try:
-            invoice = InvoiceService.create_invoice(request.data, request.user)
-            serializer = self.get_serializer(invoice)
+            gateway = PaymentGatewayService.create_gateway(request.data, request.user)
+            serializer = self.get_serializer(gateway)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def update(self, request, *args, **kwargs):
-        """Update an invoice"""
+        """Update an existing payment gateway"""
         try:
-            invoice = InvoiceService.update_invoice(
+            gateway = PaymentGatewayService.update_gateway(
                 kwargs.get('pk'), request.data, request.user
             )
-            serializer = self.get_serializer(invoice)
+            serializer = self.get_serializer(gateway)
             return Response(serializer.data)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def destroy(self, request, *args, **kwargs):
-        """Delete an invoice (only draft invoices)"""
+        """Delete a payment gateway"""
         try:
-            InvoiceService.delete_invoice(kwargs.get('pk'))
+            PaymentGatewayService.delete_gateway(kwargs.get('pk'), request.user)
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
-    def for_event(self, request):
-        """Get invoices for a specific event"""
-        event_id = self.request.query_params.get('event_id', None)
-        
-        if not event_id:
-            return Response(
-                {"detail": "event_id parameter is required"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        queryset = self.get_queryset().filter(event_id=event_id)
-        page = self.paginate_queryset(queryset)
-        
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['post'])
-    def issue(self, request, pk=None):
-        """Issue an invoice to the client"""
-        try:
-            invoice = Invoice.objects.get(pk=pk)
-            
-            if invoice.status != 'DRAFT':
-                return Response(
-                    {"detail": "Only draft invoices can be issued"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            invoice.status = 'ISSUED'
-            invoice.save()
-            invoice.issue()
-            
-            serializer = self.get_serializer(invoice)
-            return Response(serializer.data)
-        except Invoice.DoesNotExist:
-            return Response(
-                {"detail": f"Invoice with ID {pk} not found"}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=True, methods=['post'])
-    def mark_paid(self, request, pk=None):
-        """Mark an invoice as paid"""
-        try:
-            invoice = Invoice.objects.get(pk=pk)
-            
-            if invoice.status != 'ISSUED':
-                return Response(
-                    {"detail": "Only issued invoices can be marked as paid"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            invoice.status = 'PAID'
-            invoice.save()
-            invoice.mark_as_paid()
-            
-            serializer = self.get_serializer(invoice)
-            return Response(serializer.data)
-        except Invoice.DoesNotExist:
-            return Response(
-                {"detail": f"Invoice with ID {pk} not found"}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class PaymentPlanViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing payment plans"""
-    queryset = PaymentPlan.objects.all()
-    serializer_class = PaymentPlanSerializer
+class TaxRateViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing tax rates"""
+    queryset = TaxRate.objects.all()
+    serializer_class = TaxRateSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
+        queryset = super().get_queryset().order_by('-is_default', 'name')
         
         # Apply filters
-        event_id = self.request.query_params.get('event', None)
+        is_default = self.request.query_params.get('is_default', None)
+        region = self.request.query_params.get('region', None)
+        search = self.request.query_params.get('search', None)
         
-        if event_id:
-            queryset = queryset.filter(event_id=event_id)
+        if is_default is not None:
+            is_default = is_default.lower() == 'true'
+            queryset = queryset.filter(is_default=is_default)
+        
+        if region:
+            queryset = queryset.filter(region__icontains=region)
+        
+        if search:
+            queryset = queryset.filter(name__icontains=search)
         
         return queryset
     
     def create(self, request, *args, **kwargs):
-        """Create a new payment plan"""
+        """Create a new tax rate"""
         try:
-            plan = PaymentPlanService.create_payment_plan(request.data, request.user)
-            serializer = self.get_serializer(plan)
+            tax_rate = TaxRateService.create_tax_rate(request.data, request.user)
+            serializer = self.get_serializer(tax_rate)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def update(self, request, *args, **kwargs):
-        """Update a payment plan"""
+        """Update an existing tax rate"""
         try:
-            plan = PaymentPlanService.update_payment_plan(
+            tax_rate = TaxRateService.update_tax_rate(
                 kwargs.get('pk'), request.data, request.user
             )
-            serializer = self.get_serializer(plan)
+            serializer = self.get_serializer(tax_rate)
             return Response(serializer.data)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
-    @action(detail=False, methods=['get'])
-    def for_event(self, request):
-        """Get payment plan for a specific event"""
-        event_id = self.request.query_params.get('event_id', None)
-        
-        if not event_id:
-            return Response(
-                {"detail": "event_id parameter is required"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
+    def destroy(self, request, *args, **kwargs):
+        """Delete a tax rate"""
         try:
-            plan = PaymentPlan.objects.get(event_id=event_id)
-            serializer = self.get_serializer(plan)
-            return Response(serializer.data)
-        except PaymentPlan.DoesNotExist:
-            return Response(
-                {"detail": f"No payment plan found for event ID {event_id}"}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-
-class PaymentInstallmentViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for viewing payment installments"""
-    queryset = PaymentInstallment.objects.all()
-    serializer_class = PaymentInstallmentSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
-    
-    def get_queryset(self):
-        queryset = super().get_queryset().order_by('due_date')
-        
-        # Apply filters
-        payment_plan_id = self.request.query_params.get('payment_plan', None)
-        status = self.request.query_params.get('status', None)
-        
-        if payment_plan_id:
-            queryset = queryset.filter(payment_plan_id=payment_plan_id)
-        
-        if status:
-            queryset = queryset.filter(status=status)
-        
-        return queryset
-    
-    @action(detail=True, methods=['post'])
-    def create_payment(self, request, pk=None):
-        """Create a payment for this installment"""
-        try:
-            payment = PaymentPlanService.create_payment_from_installment(
-                pk, request.data, request.user
-            )
-            return Response(
-                PaymentSerializer(payment).data,
-                status=status.HTTP_201_CREATED
-            )
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=True, methods=['post'])
-    def check_status(self, request, pk=None):
-        """Check and update installment status"""
-        try:
-            installment = PaymentInstallment.objects.get(pk=pk)
-            was_updated = installment.check_status()
-            serializer = self.get_serializer(installment)
-            return Response({
-                "installment": serializer.data,
-                "status_updated": was_updated
-            })
-        except PaymentInstallment.DoesNotExist:
-            return Response(
-                {"detail": f"Installment with ID {pk} not found"}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+            TaxRateService.delete_tax_rate(kwargs.get('pk'), request.user)
+            return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -418,22 +264,25 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
         # Non-admin users can only see their own payment methods
         if not self.request.user.is_staff and self.request.user.role != 'ADMIN':
             queryset = queryset.filter(user=self.request.user)
-        else:
-            # Admin filters
-            user_id = self.request.query_params.get('user', None)
-            if user_id:
-                queryset = queryset.filter(user_id=user_id)
         
-        # Common filters
-        type_filter = self.request.query_params.get('type', None)
+        # Apply filters
+        user_id = self.request.query_params.get('user', None)
+        method_type = self.request.query_params.get('type', None)
         is_default = self.request.query_params.get('is_default', None)
+        gateway_id = self.request.query_params.get('gateway', None)
         
-        if type_filter:
-            queryset = queryset.filter(type=type_filter)
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+        
+        if method_type:
+            queryset = queryset.filter(type=method_type)
         
         if is_default is not None:
             is_default = is_default.lower() == 'true'
             queryset = queryset.filter(is_default=is_default)
+        
+        if gateway_id:
+            queryset = queryset.filter(gateway_id=gateway_id)
         
         return queryset
     
@@ -493,130 +342,118 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class PaymentGatewayViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing payment gateways"""
-    queryset = PaymentGateway.objects.all()
-    serializer_class = PaymentGatewaySerializer
+class PaymentPlanViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing payment plans"""
+    queryset = PaymentPlan.objects.all()
+    serializer_class = PaymentPlanSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-is_active', 'name')
+        queryset = super().get_queryset().order_by('-created_at')
         
         # Apply filters
-        is_active = self.request.query_params.get('is_active', None)
-        code = self.request.query_params.get('code', None)
+        event_id = self.request.query_params.get('event', None)
         
-        if is_active is not None:
-            is_active = is_active.lower() == 'true'
-            queryset = queryset.filter(is_active=is_active)
-        
-        if code:
-            queryset = queryset.filter(code=code)
+        if event_id:
+            queryset = queryset.filter(event_id=event_id)
         
         return queryset
     
     def create(self, request, *args, **kwargs):
-        """Create a new payment gateway"""
+        """Create a new payment plan"""
         try:
-            gateway = PaymentGatewayService.create_gateway(request.data, request.user)
-            serializer = self.get_serializer(gateway)
+            plan = PaymentPlanService.create_payment_plan(request.data, request.user)
+            serializer = self.get_serializer(plan)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def update(self, request, *args, **kwargs):
-        """Update a payment gateway"""
+        """Update a payment plan (limited fields)"""
         try:
-            gateway = PaymentGatewayService.update_gateway(
+            plan = PaymentPlanService.update_payment_plan(
                 kwargs.get('pk'), request.data, request.user
             )
-            serializer = self.get_serializer(gateway)
+            serializer = self.get_serializer(plan)
             return Response(serializer.data)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def destroy(self, request, *args, **kwargs):
-        """Delete a payment gateway"""
-        try:
-            PaymentGatewayService.delete_gateway(kwargs.get('pk'), request.user)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
-    def active(self, request):
-        """Get active payment gateways only"""
-        queryset = self.get_queryset().filter(is_active=True)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
 
 
-class TaxRateViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing tax rates"""
-    queryset = TaxRate.objects.all()
-    serializer_class = TaxRateSerializer
+class PaymentInstallmentViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing payment installments"""
+    queryset = PaymentInstallment.objects.all()
+    serializer_class = PaymentInstallmentSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-is_default', 'name')
+        queryset = super().get_queryset().order_by('due_date')
         
         # Apply filters
-        is_default = self.request.query_params.get('is_default', None)
-        region = self.request.query_params.get('region', None)
+        payment_plan_id = self.request.query_params.get('payment_plan', None)
+        status = self.request.query_params.get('status', None)
+        due_date_start = self.request.query_params.get('due_date_start', None)
+        due_date_end = self.request.query_params.get('due_date_end', None)
         
-        if is_default is not None:
-            is_default = is_default.lower() == 'true'
-            queryset = queryset.filter(is_default=is_default)
+        if payment_plan_id:
+            queryset = queryset.filter(payment_plan_id=payment_plan_id)
         
-        if region:
-            queryset = queryset.filter(region__icontains=region)
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        if due_date_start:
+            queryset = queryset.filter(due_date__gte=due_date_start)
+        
+        if due_date_end:
+            queryset = queryset.filter(due_date__lte=due_date_end)
         
         return queryset
     
-    def create(self, request, *args, **kwargs):
-        """Create a new tax rate"""
+    @action(detail=True, methods=['post'])
+    def create_payment(self, request, pk=None):
+        """Create a payment for this installment"""
         try:
-            tax_rate = TaxRateService.create_tax_rate(request.data, request.user)
-            serializer = self.get_serializer(tax_rate)
+            payment = PaymentPlanService.create_payment_from_installment(
+                pk, request.data, request.user
+            )
+            serializer = PaymentSerializer(payment)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def update(self, request, *args, **kwargs):
-        """Update a tax rate"""
-        try:
-            tax_rate = TaxRateService.update_tax_rate(
-                kwargs.get('pk'), request.data, request.user
-            )
-            serializer = self.get_serializer(tax_rate)
-            return Response(serializer.data)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def destroy(self, request, *args, **kwargs):
-        """Delete a tax rate"""
-        try:
-            TaxRateService.delete_tax_rate(kwargs.get('pk'), request.user)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
-    def default(self, request):
-        """Get the default tax rate"""
-        try:
-            tax_rate = TaxRate.objects.get(is_default=True)
-            serializer = self.get_serializer(tax_rate)
-            return Response(serializer.data)
-        except TaxRate.DoesNotExist:
-            return Response(
-                {"detail": "No default tax rate found"}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
 
 
-class PaymentTransactionViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for viewing payment transactions"""
+class InvoiceViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing invoices"""
+    queryset = Invoice.objects.all()
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset().order_by('-created_at')
+        
+        # Apply filters
+        event_id = self.request.query_params.get('event', None)
+        client_id = self.request.query_params.get('client', None)
+        status = self.request.query_params.get('status', None)
+        search = self.request.query_params.get('search', None)
+        
+        if event_id:
+            queryset = queryset.filter(event_id=event_id)
+        
+        if client_id:
+            queryset = queryset.filter(client_id=client_id)
+        
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        if search:
+            queryset = queryset.filter(invoice_id__icontains=search)
+        
+        return queryset
+
+
+class PaymentTransactionViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing payment transactions"""
     queryset = PaymentTransaction.objects.all()
     serializer_class = PaymentTransactionSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -628,7 +465,6 @@ class PaymentTransactionViewSet(viewsets.ReadOnlyModelViewSet):
         payment_id = self.request.query_params.get('payment', None)
         gateway_id = self.request.query_params.get('gateway', None)
         status = self.request.query_params.get('status', None)
-        is_test = self.request.query_params.get('is_test', None)
         
         if payment_id:
             queryset = queryset.filter(payment_id=payment_id)
@@ -639,15 +475,11 @@ class PaymentTransactionViewSet(viewsets.ReadOnlyModelViewSet):
         if status:
             queryset = queryset.filter(status=status)
         
-        if is_test is not None:
-            is_test = is_test.lower() == 'true'
-            queryset = queryset.filter(is_test=is_test)
-        
         return queryset
 
 
-class RefundViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for viewing refunds"""
+class RefundViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing refunds"""
     queryset = Refund.objects.all()
     serializer_class = RefundSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -673,6 +505,17 @@ class InvoiceLineItemViewSet(viewsets.ModelViewSet):
     queryset = InvoiceLineItem.objects.all()
     serializer_class = InvoiceLineItemSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset().order_by('id')
+        
+        # Apply filters
+        invoice_id = self.request.query_params.get('invoice', None)
+        
+        if invoice_id:
+            queryset = queryset.filter(invoice_id=invoice_id)
+        
+        return queryset
 
 
 class InvoiceTaxViewSet(viewsets.ModelViewSet):
@@ -680,21 +523,31 @@ class InvoiceTaxViewSet(viewsets.ModelViewSet):
     queryset = InvoiceTax.objects.all()
     serializer_class = InvoiceTaxSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset().order_by('id')
+        
+        # Apply filters
+        invoice_id = self.request.query_params.get('invoice', None)
+        
+        if invoice_id:
+            queryset = queryset.filter(invoice_id=invoice_id)
+        
+        return queryset
 
 
-class PaymentNotificationViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for viewing payment notifications"""
+class PaymentNotificationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing payment notifications"""
     queryset = PaymentNotification.objects.all()
     serializer_class = PaymentNotificationSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-sent_at')
+        queryset = super().get_queryset().order_by('-created_at')
         
         # Apply filters
         payment_id = self.request.query_params.get('payment', None)
         notification_type = self.request.query_params.get('notification_type', None)
-        sent_to = self.request.query_params.get('sent_to', None)
         is_successful = self.request.query_params.get('is_successful', None)
         
         if payment_id:
@@ -702,9 +555,6 @@ class PaymentNotificationViewSet(viewsets.ReadOnlyModelViewSet):
         
         if notification_type:
             queryset = queryset.filter(notification_type=notification_type)
-        
-        if sent_to:
-            queryset = queryset.filter(sent_to__icontains=sent_to)
         
         if is_successful is not None:
             is_successful = is_successful.lower() == 'true'
