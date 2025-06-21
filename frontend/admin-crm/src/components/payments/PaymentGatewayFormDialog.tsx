@@ -17,18 +17,23 @@ import {
   Alert,
   Collapse,
   Stack,
+  Chip,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Security as SecurityIcon,
+  CreditCard as StripeIcon,
+  Payment as PayMongoIcon,
 } from '@mui/icons-material';
 import { useCreatePaymentGateway, useUpdatePaymentGateway } from '../../hooks/usePayments';
 import type { 
   PaymentGateway, 
   PaymentGatewayFormData,
+  StripeConfig,
   PayMongoConfig,
 } from '../../types/payments.types';
+import { GATEWAY_TEMPLATES } from '../../types/payments.types';
 
 interface PaymentGatewayFormDialogProps {
   open: boolean;
@@ -92,6 +97,19 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
     }
   };
 
+  const handleStripeConfigChange = (field: keyof StripeConfig) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = field === 'test_mode' ? event.target.checked : event.target.value;
+    setFormData(prev => ({
+      ...prev,
+      config: {
+        ...prev.config,
+        [field]: value,
+      },
+    }));
+  };
+
   const handlePayMongoConfigChange = (field: keyof PayMongoConfig) => (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -105,18 +123,14 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
     }));
   };
 
-  const setupPayMongo = () => {
+  const setupGateway = (gatewayType: 'stripe' | 'paymongo') => {
+    const template = GATEWAY_TEMPLATES[gatewayType];
     setFormData(prev => ({
       ...prev,
-      name: 'PayMongo',
-      code: 'paymongo',
-      description: 'PayMongo payment gateway for Philippines',
-      config: {
-        public_key: '',
-        secret_key: '',
-        webhook_secret: '',
-        test_mode: true,
-      },
+      name: template.name,
+      code: template.code,
+      description: template.description,
+      config: template.config,
     }));
     setShowAdvanced(true);
   };
@@ -132,6 +146,17 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
       newErrors.code = 'Gateway code is required';
     } else if (!/^[a-z0-9_-]+$/.test(formData.code)) {
       newErrors.code = 'Code must contain only lowercase letters, numbers, underscores, and hyphens';
+    }
+
+    // Stripe specific validation
+    if (formData.code === 'stripe') {
+      const config = formData.config as StripeConfig;
+      if (!config.publishable_key?.trim()) {
+        newErrors.publishable_key = 'Publishable key is required for Stripe';
+      }
+      if (!config.secret_key?.trim()) {
+        newErrors.secret_key = 'Secret key is required for Stripe';
+      }
     }
 
     // PayMongo specific validation
@@ -171,7 +196,9 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
     }
   };
 
+  const isStripe = formData.code === 'stripe';
   const isPayMongo = formData.code === 'paymongo';
+  const stripeConfig = formData.config as StripeConfig;
   const paymongoConfig = formData.config as PayMongoConfig;
 
   return (
@@ -187,19 +214,36 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
       
       <DialogContent>
         <Box sx={{ mt: 2 }}>
-          {/* Quick Setup for PayMongo */}
+          {/* Quick Setup Options */}
           {!isEditing && (
-            <Alert 
-              severity="info" 
-              sx={{ mb: 3 }}
-              action={
-                <Button color="inherit" size="small" onClick={setupPayMongo}>
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Quick Setup
+              </Typography>
+              <Stack direction="row" spacing={2}>
+                <Button
+                  variant="outlined"
+                  startIcon={<StripeIcon />}
+                  onClick={() => setupGateway('stripe')}
+                  size="small"
+                >
+                  Setup Stripe
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<PayMongoIcon />}
+                  onClick={() => setupGateway('paymongo')}
+                  size="small"
+                >
                   Setup PayMongo
                 </Button>
-              }
-            >
-              For Philippine businesses, we recommend using PayMongo for secure payment processing.
-            </Alert>
+              </Stack>
+              
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <strong>Recommendation:</strong> Start with Stripe for immediate development, 
+                then add PayMongo for Philippine-specific payment methods.
+              </Alert>
+            </Box>
           )}
 
           {/* Basic Information */}
@@ -216,7 +260,7 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                 onChange={handleChange('name')}
                 error={!!errors.name}
                 helperText={errors.name}
-                placeholder="e.g., PayMongo, Stripe, PayPal"
+                placeholder="e.g., Stripe, PayMongo, PayPal"
               />
               
               <TextField
@@ -226,7 +270,7 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                 onChange={handleChange('code')}
                 error={!!errors.code}
                 helperText={errors.code || 'Unique identifier (lowercase, no spaces)'}
-                placeholder="e.g., paymongo, stripe, paypal"
+                placeholder="e.g., stripe, paymongo, paypal"
                 disabled={isEditing}
               />
             </Box>
@@ -252,17 +296,100 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
             />
           </Stack>
 
+          {/* Stripe Configuration */}
+          {isStripe && (
+            <>
+              <Divider sx={{ my: 3 }} />
+              
+              <Box sx={{ mb: 2 }}>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <StripeIcon color="primary" />
+                  <Typography variant="h6">
+                    Stripe Configuration
+                  </Typography>
+                  <Chip 
+                    label="Recommended" 
+                    size="small" 
+                    color="success" 
+                  />
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Enter your Stripe API keys from your Stripe Dashboard → Developers → API Keys.
+                </Typography>
+              </Box>
+
+              <Stack spacing={3}>
+                <TextField
+                  fullWidth
+                  label="Publishable Key"
+                  value={stripeConfig.publishable_key || ''}
+                  onChange={handleStripeConfigChange('publishable_key')}
+                  error={!!errors.publishable_key}
+                  helperText={errors.publishable_key || 'Starts with pk_test_ or pk_live_'}
+                  placeholder="pk_test_..."
+                />
+
+                <TextField
+                  fullWidth
+                  label="Secret Key"
+                  type="password"
+                  value={stripeConfig.secret_key || ''}
+                  onChange={handleStripeConfigChange('secret_key')}
+                  error={!!errors.secret_key}
+                  helperText={errors.secret_key || 'Starts with sk_test_ or sk_live_'}
+                  placeholder="sk_test_..."
+                  InputProps={{
+                    startAdornment: <SecurityIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Webhook Endpoint Secret"
+                  type="password"
+                  value={stripeConfig.webhook_secret || ''}
+                  onChange={handleStripeConfigChange('webhook_secret')}
+                  helperText="Used to verify webhook authenticity (optional)"
+                  placeholder="whsec_..."
+                />
+
+                <Box>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={stripeConfig.test_mode || false}
+                        onChange={handleStripeConfigChange('test_mode')}
+                      />
+                    }
+                    label="Test Mode"
+                  />
+                  <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+                    Use test keys for development and testing
+                  </Typography>
+                </Box>
+              </Stack>
+            </>
+          )}
+
           {/* PayMongo Configuration */}
           {isPayMongo && (
             <>
               <Divider sx={{ my: 3 }} />
               
               <Box sx={{ mb: 2 }}>
-                <Typography variant="h6" gutterBottom>
-                  PayMongo Configuration
-                </Typography>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <PayMongoIcon color="primary" />
+                  <Typography variant="h6">
+                    PayMongo Configuration
+                  </Typography>
+                  <Chip 
+                    label="Philippines" 
+                    size="small" 
+                    color="info" 
+                  />
+                </Box>
                 <Typography variant="body2" color="text.secondary">
-                  Enter your PayMongo API credentials. You can find these in your PayMongo dashboard.
+                  Enter your PayMongo API credentials from your PayMongo Dashboard → Developers → API Keys.
                 </Typography>
               </Box>
 
