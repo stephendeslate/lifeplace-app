@@ -28,7 +28,7 @@ import {
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../types/communications.types';
-import RichTextEditor from './RichTextEditor';
+import RichTextEditor from '../shared/RichTextEditor';
 import VariableInserter from './VariableInserter';
 
 interface TemplateFormProps {
