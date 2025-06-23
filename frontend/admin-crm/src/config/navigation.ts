@@ -32,6 +32,13 @@ export const navigationConfig: NavigationGroup[] = [
         roles: ['ADMIN'],
         disabled: true, // Coming soon
       },
+     ],
+    roles: ['ADMIN'],
+  },
+  {
+    id: 'event-management',
+    label: 'Event Management',
+    items: [
       {
         id: 'events',
         label: 'Events',
