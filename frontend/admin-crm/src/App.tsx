@@ -9,6 +9,7 @@ import { Login } from './pages/auth';
 import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
+import { CommunicationRecords } from './pages/records';
 import { AppLayout } from './components/layout';
 
 // Settings imports
@@ -17,7 +18,7 @@ import { Settings } from './pages/settings';
 import { AccountSettings, AdminUsers } from './pages/settings/account';
 import { BookingFlow, EventTypes } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
-import { CommunicationTemplates, CommunicationRecords, CommunicationNotifications } from './pages/settings/communication';
+import { CommunicationTemplates, CommunicationNotifications } from './pages/settings/communication';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 
 // Protected Route Component
@@ -135,6 +136,16 @@ const AppRouter: React.FC = () => {
         }
       />
 
+      {/* Records Route */}
+      <Route
+        path="/records"
+        element={
+          <ProtectedRoute>
+            <CommunicationRecords />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Settings Routes */}
       <Route
         path="/settings"
@@ -159,6 +170,14 @@ const AppRouter: React.FC = () => {
         element={
           <SettingsRoute>
             <AdminUsers />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/account/notifications"
+        element={
+          <SettingsRoute>
+            <CommunicationNotifications />
           </SettingsRoute>
         }
       />
@@ -206,29 +225,11 @@ const AppRouter: React.FC = () => {
           </SettingsRoute>
         }
       />
-
-      {/* Communication */}
       <Route
-        path="/settings/communication/templates"
+        path="/settings/templates/communication-templates"
         element={
           <SettingsRoute>
             <CommunicationTemplates />
-          </SettingsRoute>
-        }
-      />
-      <Route
-        path="/settings/communication/records"
-        element={
-          <SettingsRoute>
-            <CommunicationRecords />
-          </SettingsRoute>
-        }
-      />
-      <Route
-        path="/settings/communication/notifications"
-        element={
-          <SettingsRoute>
-            <CommunicationNotifications />
           </SettingsRoute>
         }
       />
@@ -259,7 +260,56 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Existing Placeholder Protected Routes */}
+      {/* Placeholder Protected Routes */}
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+              <Typography variant="h4">Analytics</Typography>
+              <Typography color="text.secondary">Coming soon...</Typography>
+            </Box>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/events"
+        element={
+          <ProtectedRoute>
+            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+              <Typography variant="h4">Events</Typography>
+              <Typography color="text.secondary">Coming soon...</Typography>
+            </Box>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute>
+            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+              <Typography variant="h4">Calendar</Typography>
+              <Typography color="text.secondary">Coming soon...</Typography>
+            </Box>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute>
+            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+              <Typography variant="h4">Payments</Typography>
+              <Typography color="text.secondary">Coming soon...</Typography>
+            </Box>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Legacy Routes for backward compatibility */}
       <Route
         path="/invitations"
         element={
@@ -290,18 +340,6 @@ const AppRouter: React.FC = () => {
           <ProtectedRoute>
             <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
               <Typography variant="h4">Organizations</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/analytics"
-        element={
-          <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Analytics</Typography>
               <Typography color="text.secondary">Coming soon...</Typography>
             </Box>
           </ProtectedRoute>
