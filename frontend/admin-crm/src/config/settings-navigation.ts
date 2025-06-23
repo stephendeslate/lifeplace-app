@@ -13,7 +13,6 @@ import {
   AccountTree,
   TrendingUp,
   Psychology,
-  Analytics,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -35,6 +34,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/account/admin-users',
         icon: AdminPanelSettings,
         description: 'Manage administrator accounts',
+      },
+      {
+        id: 'notifications',
+        label: 'Notifications',
+        path: '/settings/account/notifications',
+        icon: Notifications,
+        description: 'Configure notification preferences',
       },
     ],
   },
@@ -83,32 +89,12 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         icon: AccountTree,
         description: 'Manage workflow templates',
       },
-    ],
-  },
-  {
-    id: 'communication',
-    label: 'Communication',
-    items: [
       {
         id: 'communication-templates',
-        label: 'Templates',
-        path: '/settings/communication/templates',
+        label: 'Communication Templates',
+        path: '/settings/templates/communication-templates',
         icon: Message,
         description: 'Manage email and SMS templates',
-      },
-      {
-        id: 'communication-records',
-        label: 'Records',
-        path: '/settings/communication/records',
-        icon: Analytics,
-        description: 'View communication history and analytics',
-      },
-      {
-        id: 'notifications',
-        label: 'Notifications',
-        path: '/settings/communication/notifications',
-        icon: Notifications,
-        description: 'Configure notification preferences',
       },
     ],
   },
