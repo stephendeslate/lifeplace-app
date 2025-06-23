@@ -18,14 +18,15 @@ import {
   TextField,
   InputAdornment,
   MenuItem,
-  Select,
   FormControl,
   InputLabel,
+  Select,
   TablePagination,
   Tooltip,
   Button,
   Stack,
-  Avatar,
+  CircularProgress,
+  Divider,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -33,112 +34,25 @@ import {
   Download as DownloadIcon,
   Email as EmailIcon,
   Sms as SmsIcon,
-  Phone as PhoneIcon,
-  VideoCall as VideoCallIcon,
+  History as HistoryIcon,
+  SearchOff as SearchOffIcon,
+  Send as SendIcon,
+  Analytics as AnalyticsIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
-
-// Mock data interface
-interface CommunicationRecord {
-  id: string;
-  type: 'email' | 'sms' | 'phone' | 'video_call';
-  direction: 'inbound' | 'outbound';
-  recipient: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-  subject: string;
-  content: string;
-  status: 'delivered' | 'pending' | 'failed' | 'read';
-  timestamp: string;
-  duration?: number; // For calls in seconds
-  attachments?: number;
-}
-
-// Mock data
-const mockRecords: CommunicationRecord[] = [
-  {
-    id: '1',
-    type: 'email',
-    direction: 'outbound',
-    recipient: {
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-    },
-    subject: 'Welcome to LifePlace - Getting Started Guide',
-    content: 'Thank you for choosing LifePlace for your wellness journey...',
-    status: 'read',
-    timestamp: '2024-01-15T10:30:00Z',
-    attachments: 2,
-  },
-  {
-    id: '2',
-    type: 'sms',
-    direction: 'outbound',
-    recipient: {
-      name: 'Michael Chen',
-      email: 'michael.chen@email.com',
-    },
-    subject: 'Appointment Reminder',
-    content: 'Hi Michael, this is a reminder for your appointment tomorrow at 2 PM.',
-    status: 'delivered',
-    timestamp: '2024-01-15T09:15:00Z',
-  },
-  {
-    id: '3',
-    type: 'phone',
-    direction: 'inbound',
-    recipient: {
-      name: 'Emily Rodriguez',
-      email: 'emily.rodriguez@email.com',
-    },
-    subject: 'Consultation Call',
-    content: 'Client called for consultation about wellness program options.',
-    status: 'delivered',
-    timestamp: '2024-01-14T14:45:00Z',
-    duration: 1800, // 30 minutes
-  },
-  {
-    id: '4',
-    type: 'email',
-    direction: 'inbound',
-    recipient: {
-      name: 'David Wilson',
-      email: 'david.wilson@email.com',
-    },
-    subject: 'Question about Package Options',
-    content: 'Hi, I have some questions about the wellness packages you offer...',
-    status: 'delivered',
-    timestamp: '2024-01-14T11:20:00Z',
-  },
-  {
-    id: '5',
-    type: 'video_call',
-    direction: 'outbound',
-    recipient: {
-      name: 'Lisa Thompson',
-      email: 'lisa.thompson@email.com',
-    },
-    subject: 'Virtual Consultation',
-    content: 'Scheduled video consultation for wellness assessment.',
-    status: 'delivered',
-    timestamp: '2024-01-13T16:00:00Z',
-    duration: 2700, // 45 minutes
-  },
-];
+import { useCommunications } from '../../hooks/useCommunications';
+import type { CommunicationFilters } from '../../types/communications.types';
 
 export const CommunicationRecords: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
-  // @ts-ignore
-  const [records, setRecords] = useState<CommunicationRecord[]>(mockRecords);
-  const [filteredRecords, setFilteredRecords] = useState<CommunicationRecord[]>(mockRecords);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [directionFilter, setDirectionFilter] = useState<string>('all');
+  const navigate = useNavigate();
+  const [filters, setFilters] = useState<CommunicationFilters>({});
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const { useRecords } = useCommunications();
+  const { data: records, isLoading } = useRecords(filters);
 
   // Set breadcrumbs
   useEffect(() => {
@@ -147,78 +61,17 @@ export const CommunicationRecords: React.FC = () => {
     ]);
   }, [setBreadcrumbs]);
 
-  // Filter records based on search and filters
-  useEffect(() => {
-    let filtered = records;
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        record =>
-          record.recipient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          record.recipient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          record.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          record.content.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(record => record.type === typeFilter);
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(record => record.status === statusFilter);
-    }
-
-    // Direction filter
-    if (directionFilter !== 'all') {
-      filtered = filtered.filter(record => record.direction === directionFilter);
-    }
-
-    setFilteredRecords(filtered);
+  const handleFilterChange = (key: keyof CommunicationFilters, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value || undefined
+    }));
     setPage(0); // Reset to first page when filters change
-  }, [searchTerm, typeFilter, statusFilter, directionFilter, records]);
-
-  const getCommunicationIcon = (type: string) => {
-    switch (type) {
-      case 'email':
-        return <EmailIcon fontSize="small" />;
-      case 'sms':
-        return <SmsIcon fontSize="small" />;
-      case 'phone':
-        return <PhoneIcon fontSize="small" />;
-      case 'video_call':
-        return <VideoCallIcon fontSize="small" />;
-      default:
-        return <EmailIcon fontSize="small" />;
-    }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return 'success';
-      case 'read':
-        return 'info';
-      case 'pending':
-        return 'warning';
-      case 'failed':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
+  const handleClearFilters = () => {
+    setFilters({});
+    setPage(0);
   };
 
   // @ts-ignore
@@ -231,7 +84,159 @@ export const CommunicationRecords: React.FC = () => {
     setPage(0);
   };
 
-  const paginatedRecords = filteredRecords.slice(
+  const handleGoToTemplates = () => {
+    navigate('/settings/templates/communication-templates');
+  };
+
+  const getChannelIcon = (channel: string) => {
+    return channel === 'EMAIL' ? <EmailIcon fontSize="small" /> : <SmsIcon fontSize="small" />;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'SENT': return 'success';
+      case 'DELIVERED': return 'primary';
+      case 'FAILED': return 'error';
+      case 'BOUNCED': return 'error';
+      case 'PENDING': return 'warning';
+      default: return 'default';
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'SYSTEM': return 'primary';
+      case 'AUTO': return 'secondary';
+      case 'MANUAL': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const hasActiveFilters = Object.values(filters).some(value => value);
+  const filteredRecordsCount = records?.length || 0;
+
+  // Calculate statistics from real data
+  const totalCommunications = records?.length || 0;
+  const deliveredToday = records?.filter(record => {
+    const today = new Date().toDateString();
+    const sentDate = record.sent_at ? new Date(record.sent_at).toDateString() : null;
+    return sentDate === today && (record.delivery_status === 'SENT' || record.delivery_status === 'DELIVERED');
+  }).length || 0;
+  
+  const emailRecords = records?.filter(record => record.channel === 'EMAIL') || [];
+  const openedEmails = emailRecords.filter(record => record.is_opened).length;
+  const readRate = emailRecords.length > 0 ? Math.round((openedEmails / emailRecords.length) * 100) : 0;
+
+  // Empty state when no records exist at all
+  const renderNoRecordsState = () => (
+    <Paper 
+      elevation={0} 
+      sx={{ 
+        p: 6, 
+        textAlign: 'center',
+        bgcolor: 'grey.50',
+        border: '2px dashed',
+        borderColor: 'grey.300'
+      }}
+    >
+      <HistoryIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+      <Typography variant="h5" fontWeight="bold" gutterBottom>
+        No Communication Records Yet
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
+        Communication records will appear here once you start sending emails or SMS messages. 
+        This includes both manual communications and automated messages triggered by your workflows.
+      </Typography>
+      
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          Records will track:
+        </Typography>
+        <Box display="flex" justifyContent="center" gap={1} flexWrap="wrap" mt={1}>
+          <Chip 
+            icon={<SendIcon />} 
+            label="Delivery Status" 
+            variant="outlined" 
+            size="small" 
+          />
+          <Chip 
+            icon={<AnalyticsIcon />} 
+            label="Open Tracking" 
+            variant="outlined" 
+            size="small" 
+          />
+          <Chip 
+            icon={<HistoryIcon />} 
+            label="Send History" 
+            variant="outlined" 
+            size="small" 
+          />
+        </Box>
+      </Box>
+
+      <Button
+        variant="contained"
+        size="large"
+        startIcon={<SendIcon />}
+        onClick={handleGoToTemplates}
+        sx={{ mt: 2 }}
+      >
+        Create Templates to Get Started
+      </Button>
+
+      <Divider sx={{ my: 3 }} />
+      
+      <Typography variant="body2" color="text.secondary">
+        💡 <strong>Tip:</strong> Admin invitations and other system emails will automatically appear here once sent
+      </Typography>
+    </Paper>
+  );
+
+  // Empty state when filters return no results
+  const renderNoResultsState = () => (
+    <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
+      <SearchOffIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+      <Typography variant="h6" fontWeight="bold" gutterBottom>
+        No Records Match Your Filters
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Try adjusting your search criteria or clearing filters to see more communication records.
+      </Typography>
+      <Button variant="outlined" onClick={handleClearFilters}>
+        Clear All Filters
+      </Button>
+    </Paper>
+  );
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" p={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Show appropriate empty state
+  if (!records || records.length === 0) {
+    return (
+      <Box>
+        {/* Header */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+            Communication Records
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            View and manage all communication history and analytics
+          </Typography>
+        </Box>
+
+        {hasActiveFilters ? renderNoResultsState() : renderNoRecordsState()}
+      </Box>
+    );
+  }
+
+  // Paginate records
+  const paginatedRecords = records.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -256,7 +261,7 @@ export const CommunicationRecords: React.FC = () => {
               Total Communications
             </Typography>
             <Typography variant="h4" component="div" color="primary">
-              {records.length}
+              {totalCommunications}
             </Typography>
           </CardContent>
         </Card>
@@ -266,17 +271,17 @@ export const CommunicationRecords: React.FC = () => {
               Delivered Today
             </Typography>
             <Typography variant="h4" component="div" color="success.main">
-              12
+              {deliveredToday}
             </Typography>
           </CardContent>
         </Card>
         <Card sx={{ minWidth: 200, flex: 1 }}>
           <CardContent>
             <Typography color="text.secondary" gutterBottom variant="body2">
-              Read Rate
+              Email Open Rate
             </Typography>
             <Typography variant="h4" component="div" color="info.main">
-              85%
+              {readRate}%
             </Typography>
           </CardContent>
         </Card>
@@ -293,9 +298,9 @@ export const CommunicationRecords: React.FC = () => {
           >
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, flex: 1 }}>
               <TextField
-                placeholder="Search communications..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by template name..."
+                value={filters.template_name || ''}
+                onChange={(e) => handleFilterChange('template_name', e.target.value)}
                 size="small"
                 sx={{ minWidth: 250 }}
                 InputProps={{
@@ -308,47 +313,39 @@ export const CommunicationRecords: React.FC = () => {
               />
 
               <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Type</InputLabel>
+                <InputLabel>Channel</InputLabel>
                 <Select
-                  value={typeFilter}
-                  label="Type"
-                  onChange={(e) => setTypeFilter(e.target.value)}
+                  value={filters.channel || ''}
+                  label="Channel"
+                  onChange={(e) => handleFilterChange('channel', e.target.value)}
                 >
-                  <MenuItem value="all">All Types</MenuItem>
-                  <MenuItem value="email">Email</MenuItem>
-                  <MenuItem value="sms">SMS</MenuItem>
-                  <MenuItem value="phone">Phone</MenuItem>
-                  <MenuItem value="video_call">Video Call</MenuItem>
+                  <MenuItem value="">All Channels</MenuItem>
+                  <MenuItem value="EMAIL">Email</MenuItem>
+                  <MenuItem value="SMS">SMS</MenuItem>
                 </Select>
               </FormControl>
 
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Status</InputLabel>
                 <Select
-                  value={statusFilter}
+                  value={filters.status || ''}
                   label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
                 >
-                  <MenuItem value="all">All Status</MenuItem>
-                  <MenuItem value="delivered">Delivered</MenuItem>
-                  <MenuItem value="read">Read</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="failed">Failed</MenuItem>
+                  <MenuItem value="">All Status</MenuItem>
+                  <MenuItem value="PENDING">Pending</MenuItem>
+                  <MenuItem value="SENT">Sent</MenuItem>
+                  <MenuItem value="DELIVERED">Delivered</MenuItem>
+                  <MenuItem value="FAILED">Failed</MenuItem>
+                  <MenuItem value="BOUNCED">Bounced</MenuItem>
                 </Select>
               </FormControl>
 
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Direction</InputLabel>
-                <Select
-                  value={directionFilter}
-                  label="Direction"
-                  onChange={(e) => setDirectionFilter(e.target.value)}
-                >
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="inbound">Inbound</MenuItem>
-                  <MenuItem value="outbound">Outbound</MenuItem>
-                </Select>
-              </FormControl>
+              {hasActiveFilters && (
+                <Button variant="outlined" size="small" onClick={handleClearFilters}>
+                  Clear Filters
+                </Button>
+              )}
             </Box>
 
             <Button
@@ -368,13 +365,12 @@ export const CommunicationRecords: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Type</TableCell>
-                <TableCell>Direction</TableCell>
+                <TableCell>Template</TableCell>
+                <TableCell>Channel</TableCell>
                 <TableCell>Recipient</TableCell>
-                <TableCell>Subject</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Duration</TableCell>
+                <TableCell>Sent</TableCell>
+                <TableCell>Opened</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -382,68 +378,71 @@ export const CommunicationRecords: React.FC = () => {
               {paginatedRecords.map((record) => (
                 <TableRow key={record.id} hover>
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {getCommunicationIcon(record.type)}
-                      <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                        {record.type.replace('_', ' ')}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={record.direction}
-                      size="small"
-                      variant="outlined"
-                      color={record.direction === 'inbound' ? 'primary' : 'secondary'}
-                      sx={{ textTransform: 'capitalize' }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        {record.recipient.name.charAt(0)}
-                      </Avatar>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {getChannelIcon(record.channel)}
                       <Box>
                         <Typography variant="body2" fontWeight="medium">
-                          {record.recipient.name}
+                          {record.template_name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {record.recipient.email}
-                        </Typography>
+                        <Chip
+                          label={record.category}
+                          size="small"
+                          color={getCategoryColor(record.category) as any}
+                          variant="outlined"
+                        />
                       </Box>
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ maxWidth: 250 }}>
-                      {record.subject}
-                    </Typography>
-                    {record.attachments && (
-                      <Typography variant="caption" color="text.secondary">
-                        {record.attachments} attachment{record.attachments > 1 ? 's' : ''}
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
                     <Chip
-                      label={record.status}
+                      label={record.channel}
                       size="small"
-                      color={getStatusColor(record.status) as any}
-                      sx={{ textTransform: 'capitalize' }}
+                      variant="outlined"
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
-                      {formatTimestamp(record.timestamp)}
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">
+                        {record.recipient}
+                      </Typography>
+                      {record.client_name && (
+                        <Typography variant="caption" color="text.secondary">
+                          {record.client_name}
+                        </Typography>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={record.delivery_status}
+                      size="small"
+                      color={getStatusColor(record.delivery_status) as any}
+                      variant="filled"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {record.sent_at 
+                        ? new Date(record.sent_at).toLocaleString()
+                        : '-'
+                      }
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    {record.duration ? (
-                      <Typography variant="body2">
-                        {formatDuration(record.duration)}
-                      </Typography>
+                    {record.channel === 'EMAIL' ? (
+                      record.is_opened ? (
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Chip label="Opened" size="small" color="success" variant="outlined" />
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(record.opened_at!).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Chip label="Not opened" size="small" variant="outlined" />
+                      )
                     ) : (
                       <Typography variant="body2" color="text.secondary">
-                        -
+                        N/A
                       </Typography>
                     )}
                   </TableCell>
@@ -463,7 +462,7 @@ export const CommunicationRecords: React.FC = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
-          count={filteredRecords.length}
+          count={filteredRecordsCount}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
