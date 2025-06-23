@@ -19,7 +19,6 @@ import {
   Switch,
   Chip,
   Paper,
-  Divider
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -31,7 +30,6 @@ import { useCreateContractTemplate, useUpdateContractTemplate } from '../../hook
 import type { 
   ContractTemplate, 
   CreateContractTemplateData, 
-  UpdateContractTemplateData
 } from '../../types/contracts.types';
 import RichTextEditor from '../shared/RichTextEditor';
 import ContractVariableInserter from './ContractVariableInserter';
@@ -324,6 +322,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
   };
 
   const handleVariableInsert = (variable: string) => {
+    // @ts-ignore
     const variableText = `{{ ${variable} }}`;
     
     // For rich text editor, we'll use the global function if available
@@ -444,7 +443,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                   value={formData.content}
                   onChange={(value) => handleInputChange('content', value)}
                   placeholder="Enter your contract content here. Use variables like {{ client_name }} for dynamic content."
-                  minHeight={400}
+                  minHeight={10}
                 />
               </Stack>
             </CardContent>

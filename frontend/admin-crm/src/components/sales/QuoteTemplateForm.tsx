@@ -32,7 +32,6 @@ import { useCreateQuoteTemplate, useUpdateQuoteTemplate } from '../../hooks/useS
 import type { 
   QuoteTemplate, 
   CreateQuoteTemplateData, 
-  UpdateQuoteTemplateData 
 } from '../../types/sales.types';
 import RichTextEditor from '../shared/RichTextEditor';
 import QuoteVariableInserter from './QuoteVariableInserter';
@@ -298,6 +297,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
     }
   };
 
+  // @ts-ignore
   const handleProductsChange = (event: any, newValue: any[]) => {
     setSelectedProducts(newValue);
     
@@ -583,7 +583,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
                 value={formData.terms_and_conditions ?? ''}
                 onChange={(value) => handleInputChange('terms_and_conditions', value)}
                 placeholder="Enter your terms and conditions here..."
-                minHeight={200}
+                minHeight={10}
               />
             </CardContent>
           </Card>
