@@ -11,16 +11,19 @@ from .models import WorkflowStage, WorkflowTemplate
 
 class WorkflowStageDetailSerializer(WorkflowStageSerializer):
     """Detailed serializer for WorkflowStage including related objects"""
-    email_template = CommunicationTemplateSerializer(read_only=True)
+    email_template_name = serializers.CharField(source='email_template.name', read_only=True)
+    
+    class Meta(WorkflowStageSerializer.Meta):
+        fields = WorkflowStageSerializer.Meta.fields + ['email_template_name']
 
 
 class WorkflowTemplateDetailSerializer(WorkflowTemplateSerializer):
     """Detailed serializer for WorkflowTemplate including related objects"""
-    event_type = EventTypeSerializer(read_only=True)
+    event_type_name = serializers.CharField(source='event_type.name', read_only=True)
     stages = WorkflowStageDetailSerializer(many=True, read_only=True)
     
     class Meta(WorkflowTemplateSerializer.Meta):
-        fields = WorkflowTemplateSerializer.Meta.fields + ['stages']
+        fields = WorkflowTemplateSerializer.Meta.fields + ['event_type_name', 'stages']
 
 
 class WorkflowTemplateWithStagesSerializer(WorkflowTemplateSerializer):

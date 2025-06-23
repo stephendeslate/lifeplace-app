@@ -3,15 +3,12 @@
 import {
   Dashboard,
   People,
-  PersonAdd,
-  AdminPanelSettings,
-  Business,
   Settings,
   Analytics,
-  Notifications,
-  Security,
-  IntegrationInstructions,
-  Support,
+  EventNote,
+  CalendarMonth,
+  Payment,
+  Description,
 } from '@mui/icons-material';
 import type { NavigationGroup } from '../types/layout.types';
 
@@ -35,6 +32,29 @@ export const navigationConfig: NavigationGroup[] = [
         roles: ['ADMIN'],
         disabled: true, // Coming soon
       },
+     ],
+    roles: ['ADMIN'],
+  },
+  {
+    id: 'event-management',
+    label: 'Event Management',
+    items: [
+      {
+        id: 'events',
+        label: 'Events',
+        path: '/events',
+        icon: EventNote,
+        roles: ['ADMIN'],
+        disabled: true, // Coming soon
+      },
+      {
+        id: 'calendar',
+        label: 'Calendar',
+        path: '/calendar',
+        icon: CalendarMonth,
+        roles: ['ADMIN'],
+        disabled: true, // Coming soon
+      },
     ],
     roles: ['ADMIN'],
   },
@@ -50,40 +70,10 @@ export const navigationConfig: NavigationGroup[] = [
         roles: ['ADMIN'],
       },
       {
-        id: 'invitations',
-        label: 'Invitations',
-        path: '/invitations',
-        icon: PersonAdd,
-        roles: ['ADMIN'],
-        disabled: true, // Coming soon
-      },
-    ],
-    roles: ['ADMIN'],
-  },
-  {
-    id: 'user-management',
-    label: 'User Management',
-    items: [
-      {
-        id: 'roles',
-        label: 'Roles & Permissions',
-        path: '/roles',
-        icon: AdminPanelSettings,
-        roles: ['ADMIN'],
-        disabled: true, // Coming soon
-      },
-    ],
-    roles: ['ADMIN'],
-  },
-  {
-    id: 'content-management',
-    label: 'Content Management',
-    items: [
-      {
-        id: 'organizations',
-        label: 'Organizations',
-        path: '/organizations',
-        icon: Business,
+        id: 'payments',
+        label: 'Payments',
+        path: '/payments',
+        icon: Payment,
         roles: ['ADMIN'],
         disabled: true, // Coming soon
       },
@@ -95,43 +85,18 @@ export const navigationConfig: NavigationGroup[] = [
     label: 'System',
     items: [
       {
+        id: 'records',
+        label: 'Records',
+        path: '/records',
+        icon: Description,
+        roles: ['ADMIN'],
+      },
+      {
         id: 'settings',
         label: 'Settings',
         path: '/settings',
         icon: Settings,
         roles: ['ADMIN'],
-      },
-      {
-        id: 'notifications',
-        label: 'Notifications',
-        path: '/notifications',
-        icon: Notifications,
-        roles: ['ADMIN'],
-        disabled: true, // Coming soon
-      },
-      {
-        id: 'security',
-        label: 'Security',
-        path: '/security',
-        icon: Security,
-        roles: ['ADMIN'],
-        disabled: true, // Coming soon
-      },
-      {
-        id: 'integrations',
-        label: 'Integrations',
-        path: '/integrations',
-        icon: IntegrationInstructions,
-        roles: ['ADMIN'],
-        disabled: true, // Coming soon
-      },
-      {
-        id: 'support',
-        label: 'Support',
-        path: '/support',
-        icon: Support,
-        roles: ['ADMIN'],
-        disabled: true, // Coming soon
       },
     ],
     roles: ['ADMIN'],

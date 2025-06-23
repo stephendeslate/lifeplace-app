@@ -1,0 +1,496 @@
+// frontend/admin-crm/src/hooks/useContracts.ts
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { contractsApi } from '../apis/contracts.api';
+import { useToast } from '../contexts/ToastContext';
+import type {
+  CreateContractTemplateData,
+  UpdateContractTemplateData,
+  CreateEventContractData,
+  UpdateEventContractData,
+  CreateContractSignatureData,
+  CreateContractAmendmentData,
+  CreateContractDocumentData,
+  CreateContractNoteData,
+  ContractTemplateFilters,
+  EventContractFilters,
+  ContractSignatureFilters,
+  ContractAmendmentFilters,
+  ContractSigningData,
+} from '../types/contracts.types';
+
+// Contract Templates
+export const useContractTemplates = (filters?: ContractTemplateFilters) => {
+  return useQuery({
+    queryKey: ['contractTemplates', filters],
+    queryFn: () => contractsApi.getContractTemplates(filters),
+  });
+};
+
+export const useContractTemplate = (id: number) => {
+  return useQuery({
+    queryKey: ['contractTemplate', id],
+    queryFn: () => contractsApi.getContractTemplate(id),
+    enabled: !!id,
+  });
+};
+
+export const useCreateContractTemplate = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: CreateContractTemplateData) => contractsApi.createContractTemplate(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contractTemplates'] });
+      showToast({
+        type: 'success',
+        title: 'Template Created',
+        message: 'Contract template has been created successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to create contract template';
+      showToast({
+        type: 'error',
+        title: 'Creation Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useUpdateContractTemplate = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateContractTemplateData }) =>
+      contractsApi.updateContractTemplate(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['contractTemplates'] });
+      queryClient.invalidateQueries({ queryKey: ['contractTemplate', id] });
+      showToast({
+        type: 'success',
+        title: 'Template Updated',
+        message: 'Contract template has been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to update contract template';
+      showToast({
+        type: 'error',
+        title: 'Update Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useDeleteContractTemplate = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: number) => contractsApi.deleteContractTemplate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contractTemplates'] });
+      showToast({
+        type: 'success',
+        title: 'Template Deleted',
+        message: 'Contract template has been deleted successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to delete contract template';
+      showToast({
+        type: 'error',
+        title: 'Deletion Failed',
+        message,
+      });
+    },
+  });
+};
+
+// Event Contracts
+export const useEventContracts = (filters?: EventContractFilters) => {
+  return useQuery({
+    queryKey: ['eventContracts', filters],
+    queryFn: () => contractsApi.getEventContracts(filters),
+  });
+};
+
+export const useEventContract = (id: number) => {
+  return useQuery({
+    queryKey: ['eventContract', id],
+    queryFn: () => contractsApi.getEventContract(id),
+    enabled: !!id,
+  });
+};
+
+export const useContractsForEvent = (eventId: number) => {
+  return useQuery({
+    queryKey: ['eventContracts', 'forEvent', eventId],
+    queryFn: () => contractsApi.getContractsForEvent(eventId),
+    enabled: !!eventId,
+  });
+};
+
+export const useCreateEventContract = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: CreateEventContractData) => contractsApi.createEventContract(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
+      showToast({
+        type: 'success',
+        title: 'Contract Created',
+        message: 'Event contract has been created successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to create event contract';
+      showToast({
+        type: 'error',
+        title: 'Creation Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useUpdateEventContract = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateEventContractData }) =>
+      contractsApi.updateEventContract(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
+      queryClient.invalidateQueries({ queryKey: ['eventContract', id] });
+      showToast({
+        type: 'success',
+        title: 'Contract Updated',
+        message: 'Event contract has been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to update event contract';
+      showToast({
+        type: 'error',
+        title: 'Update Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useDeleteEventContract = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: number) => contractsApi.deleteEventContract(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
+      showToast({
+        type: 'success',
+        title: 'Contract Deleted',
+        message: 'Event contract has been deleted successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to delete event contract';
+      showToast({
+        type: 'error',
+        title: 'Deletion Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useSignContract = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ContractSigningData }) =>
+      contractsApi.signContract(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
+      queryClient.invalidateQueries({ queryKey: ['eventContract', id] });
+      showToast({
+        type: 'success',
+        title: 'Contract Signed',
+        message: 'Contract has been signed successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to sign contract';
+      showToast({
+        type: 'error',
+        title: 'Signing Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useAddContractSignature = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateContractSignatureData }) =>
+      contractsApi.addSignature(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['eventContract', id] });
+      queryClient.invalidateQueries({ queryKey: ['contractSignatures'] });
+      showToast({
+        type: 'success',
+        title: 'Signature Added',
+        message: 'Signature has been added to the contract.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to add signature';
+      showToast({
+        type: 'error',
+        title: 'Signature Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useVoidContract = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason?: string }) =>
+      contractsApi.voidContract(id, reason),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
+      queryClient.invalidateQueries({ queryKey: ['eventContract', id] });
+      showToast({
+        type: 'success',
+        title: 'Contract Voided',
+        message: 'Contract has been voided successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to void contract';
+      showToast({
+        type: 'error',
+        title: 'Void Failed',
+        message,
+      });
+    },
+  });
+};
+
+// Contract Signatures
+export const useContractSignatures = (filters?: ContractSignatureFilters) => {
+  return useQuery({
+    queryKey: ['contractSignatures', filters],
+    queryFn: () => contractsApi.getContractSignatures(filters),
+  });
+};
+
+export const useContractSignature = (id: number) => {
+  return useQuery({
+    queryKey: ['contractSignature', id],
+    queryFn: () => contractsApi.getContractSignature(id),
+    enabled: !!id,
+  });
+};
+
+export const useVerifySignature = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, verificationMethod }: { id: number; verificationMethod?: string }) =>
+      contractsApi.verifySignature(id, verificationMethod),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contractSignatures'] });
+      showToast({
+        type: 'success',
+        title: 'Signature Verified',
+        message: 'Signature has been verified successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to verify signature';
+      showToast({
+        type: 'error',
+        title: 'Verification Failed',
+        message,
+      });
+    },
+  });
+};
+
+// Contract Amendments
+export const useContractAmendments = (filters?: ContractAmendmentFilters) => {
+  return useQuery({
+    queryKey: ['contractAmendments', filters],
+    queryFn: () => contractsApi.getAllContractAmendments(filters),
+  });
+};
+
+export const useContractAmendmentsForContract = (contractId: number) => {
+  return useQuery({
+    queryKey: ['contractAmendments', 'forContract', contractId],
+    queryFn: () => contractsApi.getContractAmendments(contractId),
+    enabled: !!contractId,
+  });
+};
+
+export const useRequestAmendment = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateContractAmendmentData }) =>
+      contractsApi.requestAmendment(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contractAmendments'] });
+      showToast({
+        type: 'success',
+        title: 'Amendment Requested',
+        message: 'Contract amendment has been requested successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to request amendment';
+      showToast({
+        type: 'error',
+        title: 'Request Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useApproveAmendment = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, reviewNotes }: { id: number; reviewNotes?: string }) =>
+      contractsApi.approveAmendment(id, reviewNotes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contractAmendments'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to approve amendment';
+      showToast({
+        type: 'error',
+        title: 'Approval Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useRejectAmendment = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, reviewNotes }: { id: number; reviewNotes?: string }) =>
+      contractsApi.rejectAmendment(id, reviewNotes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contractAmendments'] });
+      showToast({
+        type: 'success',
+        title: 'Amendment Rejected',
+        message: 'Contract amendment has been rejected.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to reject amendment';
+      showToast({
+        type: 'error',
+        title: 'Rejection Failed',
+        message,
+      });
+    },
+  });
+};
+
+// Contract Documents
+export const useContractDocuments = (contractId: number) => {
+  return useQuery({
+    queryKey: ['contractDocuments', contractId],
+    queryFn: () => contractsApi.getContractDocuments(contractId),
+    enabled: !!contractId,
+  });
+};
+
+export const useAddContractDocument = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateContractDocumentData }) =>
+      contractsApi.addContractDocument(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['contractDocuments', id] });
+      showToast({
+        type: 'success',
+        title: 'Document Added',
+        message: 'Document has been added to the contract.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to add document';
+      showToast({
+        type: 'error',
+        title: 'Upload Failed',
+        message,
+      });
+    },
+  });
+};
+
+// Contract Notes
+export const useContractNotes = (contractId: number) => {
+  return useQuery({
+    queryKey: ['contractNotes', contractId],
+    queryFn: () => contractsApi.getContractNotes(contractId),
+    enabled: !!contractId,
+  });
+};
+
+export const useAddContractNote = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateContractNoteData }) =>
+      contractsApi.addContractNote(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['contractNotes', id] });
+      showToast({
+        type: 'success',
+        title: 'Note Added',
+        message: 'Note has been added to the contract.',
+      });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to add note';
+      showToast({
+        type: 'error',
+        title: 'Note Failed',
+        message,
+      });
+    },
+  });
+};
