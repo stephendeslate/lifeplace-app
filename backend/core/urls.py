@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/sales/', include('core.domains.sales.urls')),
     path('api/workflows/', include('core.domains.workflows.urls')),
     path('api/contracts/', include('core.domains.contracts.urls')),
+    path('api/bookingflow/', include('core.domains.bookingflow.urls')),
 ]
