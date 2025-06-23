@@ -11,14 +11,19 @@ These serializers should be kept simple and only include essential fields.
 
 class WorkflowTemplateSerializer(serializers.ModelSerializer):
     """Basic serializer for the WorkflowTemplate model"""
+    stages_count = serializers.SerializerMethodField()
     
     class Meta:
         model = WorkflowTemplate
         fields = [
             'id', 'name', 'description', 'event_type', 
-            'is_active', 'created_at', 'updated_at'
+            'is_active', 'stages_count', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_stages_count(self, obj):
+        """Return the count of stages for this template"""
+        return obj.stages.count()
 
 
 class WorkflowStageSerializer(serializers.ModelSerializer):

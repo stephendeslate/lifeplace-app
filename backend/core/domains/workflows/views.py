@@ -1,7 +1,7 @@
 # backend/core/domains/workflows/views.py
 from core.utils.permissions import IsAdmin
 from django.db import transaction
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, status, viewsets, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -14,6 +14,14 @@ from .serializers import (
     WorkflowTemplateWithStagesSerializer,
 )
 from .services import WorkflowStageService, WorkflowTemplateService
+
+
+class WorkflowTemplateListSerializer(WorkflowTemplateSerializer):
+    """Serializer for WorkflowTemplate list view with event type name"""
+    event_type_name = serializers.CharField(source='event_type.name', read_only=True)
+    
+    class Meta(WorkflowTemplateSerializer.Meta):
+        fields = WorkflowTemplateSerializer.Meta.fields + ['event_type_name']
 
 
 class WorkflowTemplateViewSet(viewsets.ModelViewSet):
@@ -35,12 +43,14 @@ class WorkflowTemplateViewSet(viewsets.ModelViewSet):
         return WorkflowTemplateService.get_all_templates(
             event_type_id=event_type_id,
             is_active=is_active
-        )
+        ).select_related('event_type').prefetch_related('stages')
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return WorkflowTemplateDetailSerializer
-        if self.action in ['create', 'update', 'partial_update']:
+        elif self.action == 'list':
+            return WorkflowTemplateListSerializer
+        elif self.action in ['create', 'update', 'partial_update']:
             return WorkflowTemplateWithStagesSerializer
         return WorkflowTemplateSerializer
     
