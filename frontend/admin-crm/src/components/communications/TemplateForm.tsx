@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/communications/TemplateForm.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -28,7 +28,7 @@ import {
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../types/communications.types';
-import RichTextEditor from '../shared/RichTextEditor';
+import RichTextEditor, { type RichTextEditorHandle } from '../shared/RichTextEditor';
 import VariableInserter from './VariableInserter';
 
 interface TemplateFormProps {
@@ -54,6 +54,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
   });
 
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
+  const richTextEditorRef = useRef<RichTextEditorHandle>(null);
 
   const { useCreateTemplate, useUpdateTemplate, useVariableSchemas, usePreviewTemplate } = useCommunications();
   const { mutate: createTemplate, isPending: isCreating } = useCreateTemplate();
@@ -127,37 +128,9 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
   };
 
   const handleVariableInsert = (variable: string) => {
-    const variableText = `{{ ${variable} }}`;
-    
-    if (editorMode === 'visual') {
-      // For rich text editor, insert at cursor position
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const span = document.createElement('span');
-        span.className = 'variable-placeholder';
-        span.style.backgroundColor = '#e3f2fd';
-        span.style.padding = '2px 4px';
-        span.style.borderRadius = '3px';
-        span.style.fontFamily = 'monospace';
-        span.style.fontSize = '0.875em';
-        span.textContent = variableText;
-        
-        range.deleteContents();
-        range.insertNode(span);
-        
-        // Move cursor after the inserted variable
-        range.setStartAfter(span);
-        range.setEndAfter(span);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        
-        // Update the form data
-        const editor = document.querySelector('[contenteditable]') as HTMLElement;
-        if (editor) {
-          handleInputChange('body_template', editor.innerHTML);
-        }
-      }
+    if (editorMode === 'visual' && richTextEditorRef.current) {
+      // Use the rich text editor's insert method
+      richTextEditorRef.current.insertVariable(variable);
     } else {
       // For HTML mode, insert at textarea cursor position
       const textarea = document.getElementById('body-template-html') as HTMLTextAreaElement;
@@ -168,6 +141,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
         const before = text.substring(0, start);
         const after = text.substring(end);
         
+        const variableText = `{{ ${variable} }}`;
         const newText = before + variableText + after;
         handleInputChange('body_template', newText);
         
@@ -421,12 +395,15 @@ The {{ site_name }} Team</p>`
                       )}
                     </Box>
                   ) : (
-                    // Email visual mode - use rich text editor
+                    // Email visual mode - use mui-tiptap rich text editor
                     <RichTextEditor
+                      ref={richTextEditorRef}
                       value={formData.body_template}
                       onChange={(value) => handleInputChange('body_template', value)}
                       placeholder="Start typing your email content... Use variables for dynamic content."
-                      minHeight={300}
+                      minHeight={10}
+                      showVariableInsert={true}
+                      onVariableInsert={handleVariableInsert}
                     />
                   )}
                 </Box>
