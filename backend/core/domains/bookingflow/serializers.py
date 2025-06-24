@@ -37,7 +37,7 @@ class IntroductionStepConfigurationSerializer(serializers.ModelSerializer):
             'show_pricing_overview', 'custom_css', 'background_image',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
 
 class EventDetailsStepConfigurationSerializer(serializers.ModelSerializer):
@@ -48,7 +48,7 @@ class EventDetailsStepConfigurationSerializer(serializers.ModelSerializer):
             'require_description', 'require_guest_count', 'max_guest_count',
             'require_venue_preference', 'venue_options', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
 
 class DateTimeStepConfigurationSerializer(serializers.ModelSerializer):
@@ -61,7 +61,7 @@ class DateTimeStepConfigurationSerializer(serializers.ModelSerializer):
             'blocked_dates', 'available_days_of_week', 'available_time_slots',
             'buffer_before_hours', 'buffer_after_hours', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
 
 class QuestionnaireStepItemSerializer(serializers.ModelSerializer):
@@ -85,7 +85,7 @@ class QuestionnaireStepConfigurationSerializer(serializers.ModelSerializer):
             'id', 'step', 'allow_file_uploads', 'max_file_size_mb',
             'allowed_file_types', 'questionnaire_items', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'questionnaire_items']
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at', 'questionnaire_items']
 
 
 class PackageSelectionStepConfigurationSerializer(serializers.ModelSerializer):
@@ -105,7 +105,7 @@ class PackageSelectionStepConfigurationSerializer(serializers.ModelSerializer):
             'show_images', 'enable_comparison', 'enable_dynamic_pricing',
             'pricing_factors', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
 
 class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
@@ -124,7 +124,7 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
             'max_selection', 'group_by_category', 'show_recommendations',
             'recommendation_logic', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
 
 class ContactInfoStepConfigurationSerializer(serializers.ModelSerializer):
@@ -136,7 +136,7 @@ class ContactInfoStepConfigurationSerializer(serializers.ModelSerializer):
             'offer_account_creation', 'require_account_creation',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
 
 class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
@@ -148,7 +148,7 @@ class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
             'require_immediate_payment', 'allow_payment_plans',
             'payment_terms', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
 
 class ConfirmationStepConfigurationSerializer(serializers.ModelSerializer):
@@ -160,7 +160,7 @@ class ConfirmationStepConfigurationSerializer(serializers.ModelSerializer):
             'send_calendar_invite', 'create_event_immediately',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
 
 # Main Serializers
@@ -296,63 +296,6 @@ class BookingFlowAnalyticsSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
-# Specialized serializers for creating/updating with nested data
-class BookingFlowCreateUpdateSerializer(serializers.ModelSerializer):
-    steps = BookingFlowStepSerializer(many=True, required=False)
-
-    class Meta:
-        model = BookingFlow
-        fields = [
-            'id', 'name', 'description', 'event_type', 'workflow_template',
-            'confirmation_email_template', 'reminder_email_template',
-            'is_active', 'allow_guest_booking', 'require_account_creation',
-            'auto_approve_bookings', 'enable_progress_saving',
-            'max_advance_booking_days', 'min_advance_booking_days',
-            'allow_discounts', 'available_discounts', 'redirect_url',
-            'success_message', 'is_test_mode', 'conversion_tracking_code',
-            'steps', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-    def create(self, validated_data):
-        steps_data = validated_data.pop('steps', [])
-        available_discounts = validated_data.pop('available_discounts', [])
-        
-        booking_flow = BookingFlow.objects.create(**validated_data)
-        
-        # Set available discounts
-        if available_discounts:
-            booking_flow.available_discounts.set(available_discounts)
-        
-        # Create steps
-        for step_data in steps_data:
-            BookingFlowStep.objects.create(booking_flow=booking_flow, **step_data)
-        
-        return booking_flow
-
-    def update(self, instance, validated_data):
-        steps_data = validated_data.pop('steps', None)
-        available_discounts = validated_data.pop('available_discounts', None)
-        
-        # Update main fields
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        
-        # Update available discounts
-        if available_discounts is not None:
-            instance.available_discounts.set(available_discounts)
-        
-        # Update steps if provided
-        if steps_data is not None:
-            # Delete existing steps and create new ones
-            instance.steps.all().delete()
-            for step_data in steps_data:
-                BookingFlowStep.objects.create(booking_flow=instance, **step_data)
-        
-        return instance
-
-
 # Public API serializers (for client-facing endpoints)
 class PublicBookingFlowSerializer(serializers.ModelSerializer):
     """Serializer for public booking flow data (used by clients)"""
@@ -373,24 +316,169 @@ class PublicBookingFlowSerializer(serializers.ModelSerializer):
         return obj.calculate_total_steps()
 
 
+# Simplified create/update serializers for better CRUD
+class BookingFlowCreateSerializer(serializers.ModelSerializer):
+    """Simplified serializer for creating booking flows"""
+    
+    class Meta:
+        model = BookingFlow
+        fields = [
+            'name', 'description', 'event_type', 'workflow_template',
+            'confirmation_email_template', 'reminder_email_template',
+            'is_active', 'allow_guest_booking', 'require_account_creation',
+            'auto_approve_bookings', 'enable_progress_saving',
+            'max_advance_booking_days', 'min_advance_booking_days',
+            'allow_discounts', 'available_discounts', 'redirect_url',
+            'success_message', 'conversion_tracking_code'
+        ]
+
+    def validate(self, data):
+        """Validate booking flow data"""
+        # Ensure min advance booking is less than max
+        min_days = data.get('min_advance_booking_days', 1)
+        max_days = data.get('max_advance_booking_days', 365)
+        
+        if min_days >= max_days:
+            raise serializers.ValidationError({
+                'max_advance_booking_days': 'Maximum days must be greater than minimum days'
+            })
+        
+        return data
+
+
+class BookingFlowUpdateSerializer(BookingFlowCreateSerializer):
+    """Serializer for updating booking flows"""
+    
+    class Meta(BookingFlowCreateSerializer.Meta):
+        pass
+
+    def validate(self, data):
+        """Validate booking flow update data"""
+        # Get current instance for validation
+        instance = getattr(self, 'instance', None)
+        
+        if instance:
+            # Merge current data with update data for validation
+            current_data = {
+                'min_advance_booking_days': instance.min_advance_booking_days,
+                'max_advance_booking_days': instance.max_advance_booking_days,
+            }
+            current_data.update(data)
+            
+            min_days = current_data.get('min_advance_booking_days', 1)
+            max_days = current_data.get('max_advance_booking_days', 365)
+            
+            if min_days >= max_days:
+                raise serializers.ValidationError({
+                    'max_advance_booking_days': 'Maximum days must be greater than minimum days'
+                })
+        
+        return data
+
+
+class BookingFlowStepCreateSerializer(serializers.ModelSerializer):
+    """Simplified serializer for creating booking flow steps"""
+    
+    class Meta:
+        model = BookingFlowStep
+        fields = [
+            'booking_flow', 'step_type', 'name', 'description', 'order',
+            'is_enabled', 'is_required', 'is_skippable', 'display_conditions',
+            'configuration', 'validation_rules'
+        ]
+
+        extra_kwargs = {
+                'order': {'required': False, 'allow_null': True}
+            }
+
+    def validate(self, data):
+        """Validate step data"""
+        booking_flow = data.get('booking_flow')
+        step_type = data.get('step_type')
+        
+        # Check for duplicate step type in the same flow
+        if booking_flow and step_type:
+            existing_step = BookingFlowStep.objects.filter(
+                booking_flow=booking_flow,
+                step_type=step_type
+            ).first()
+            
+            if existing_step:
+                raise serializers.ValidationError({
+                    'step_type': f'A step with type "{step_type}" already exists in this booking flow'
+                })
+        
+        return data
+
+
+class BookingFlowStepUpdateSerializer(serializers.ModelSerializer):
+    """Simplified serializer for updating booking flow steps"""
+    
+    class Meta:
+        model = BookingFlowStep
+        fields = [
+            'step_type', 'name', 'description', 'order',
+            'is_enabled', 'is_required', 'is_skippable', 'display_conditions',
+            'configuration', 'validation_rules'
+        ]
+
+    def validate(self, data):
+        """Validate step update data"""
+        instance = getattr(self, 'instance', None)
+        step_type = data.get('step_type')
+        
+        # Check for duplicate step type if changing
+        if instance and step_type and step_type != instance.step_type:
+            existing_step = BookingFlowStep.objects.filter(
+                booking_flow=instance.booking_flow,
+                step_type=step_type
+            ).exclude(id=instance.id).first()
+            
+            if existing_step:
+                raise serializers.ValidationError({
+                    'step_type': f'A step with type "{step_type}" already exists in this booking flow'
+                })
+        
+        return data
+
+
+# Session management serializers
 class BookingSessionCreateSerializer(serializers.Serializer):
     """Serializer for creating a new booking session"""
-    booking_flow_id = serializers.IntegerField()
-    client_ip = serializers.IPAddressField(required=False)
+    booking_flow = serializers.IntegerField()
+    ip_address = serializers.IPAddressField(required=False)
     user_agent = serializers.CharField(required=False, allow_blank=True)
     referrer_url = serializers.URLField(required=False, allow_blank=True)
 
 
 class BookingSessionUpdateSerializer(serializers.Serializer):
     """Serializer for updating booking session data"""
+    session_id = serializers.UUIDField()
     step_id = serializers.IntegerField()
     step_data = serializers.DictField()
     mark_completed = serializers.BooleanField(default=False)
 
 
-class BookingCompletionSerializer(serializers.Serializer):
-    """Serializer for completing a booking"""
-    session_id = serializers.UUIDField()
-    final_data = serializers.DictField(required=False)
-    create_event = serializers.BooleanField(default=True)
-    send_confirmation = serializers.BooleanField(default=True)
+# Reorder serializers
+class ReorderStepsSerializer(serializers.Serializer):
+    """Serializer for reordering steps"""
+    flow_id = serializers.IntegerField()
+    order_mapping = serializers.DictField(
+        child=serializers.IntegerField(),
+        help_text="Mapping of step IDs to their new order positions"
+    )
+
+
+class DuplicateFlowSerializer(serializers.Serializer):
+    """Serializer for duplicating a booking flow"""
+    name = serializers.CharField(max_length=255)
+    copy_steps = serializers.BooleanField(default=True)
+    copy_configuration = serializers.BooleanField(default=True)
+
+    def validate_name(self, value):
+        """Ensure the new name is unique"""
+        if BookingFlow.objects.filter(name=value).exists():
+            raise serializers.ValidationError(
+                "A booking flow with this name already exists."
+            )
+        return value
