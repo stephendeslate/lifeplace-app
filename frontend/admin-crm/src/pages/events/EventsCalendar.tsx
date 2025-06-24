@@ -36,7 +36,6 @@ import {
   FilterList as FilterIcon,
   MoreVert as MoreVertIcon,
   EventNote as EventIcon,
-  Person as PersonIcon,
   Search as SearchIcon,
   FileDownload as ExportIcon,
 } from '@mui/icons-material';
