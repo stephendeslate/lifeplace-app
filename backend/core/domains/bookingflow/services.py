@@ -246,38 +246,52 @@ class BookingFlowStepService:
             raise BookingFlowStepNotFound()
     
     @staticmethod
-    def create_step(flow_id, step_data):
-        """Create a new booking flow step"""
+    def create_step(flow_id: int, step_data: dict) -> BookingFlowStep:
+        """
+        Create a new booking flow step
+        """
+        from .models import BookingFlow, BookingFlowStep
+        
         try:
-            flow = BookingFlow.objects.get(id=flow_id)
-        except BookingFlow.DoesNotExist:
-            raise BookingFlowNotFound()
-        
-        # Check for duplicate step type
-        if BookingFlowStep.objects.filter(
-            booking_flow=flow,
-            step_type=step_data['step_type']
-        ).exists():
-            raise DuplicateStepType()
-        
-        # Auto-assign order if not provided
-        if 'order' not in step_data or step_data['order'] is None:
-            max_order = BookingFlowStep.objects.filter(
-                booking_flow=flow
-            ).aggregate(Max('order'))['order__max'] or 0
-            step_data['order'] = max_order + 1
-        
-        with transaction.atomic():
+            # Get the booking flow
+            booking_flow = BookingFlow.objects.get(id=flow_id)
+            
+            # Handle order assignment
+            if 'order' not in step_data or step_data['order'] is None:
+                # Auto-assign the next available order
+                max_order = BookingFlowStep.objects.filter(
+                    booking_flow=booking_flow
+                ).aggregate(models.Max('order'))['order__max']
+                step_data['order'] = (max_order or 0) + 1
+            else:
+                # Check if the provided order already exists
+                existing_step = BookingFlowStep.objects.filter(
+                    booking_flow=booking_flow,
+                    order=step_data['order']
+                ).first()
+                
+                if existing_step:
+                    # Auto-assign the next available order instead
+                    max_order = BookingFlowStep.objects.filter(
+                        booking_flow=booking_flow
+                    ).aggregate(models.Max('order'))['order__max']
+                    step_data['order'] = (max_order or 0) + 1
+            
+            # Create the step
             step = BookingFlowStep.objects.create(
-                booking_flow=flow,
+                booking_flow=booking_flow,
                 **step_data
             )
             
-            # Create default configuration for the step
-            BookingFlowStepConfigurationService._create_default_configuration(step)
-            
-            logger.info(f"Created new step: {step.name} for flow: {flow.name}")
+            logger.info(f"Created booking flow step: {step.name} (ID: {step.id}) for flow: {booking_flow.name}")
             return step
+        
+        except BookingFlow.DoesNotExist:
+            logger.error(f"Booking flow not found: {flow_id}")
+            raise BookingFlowNotFound(f"Booking flow with ID {flow_id} not found")
+        except Exception as e:
+            logger.error(f"Error creating booking flow step: {e}")
+            raise e
     
     @staticmethod
     def update_step(step_id, step_data):

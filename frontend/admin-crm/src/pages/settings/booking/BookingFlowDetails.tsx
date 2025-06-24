@@ -1,47 +1,65 @@
 // frontend/admin-crm/src/pages/settings/booking/BookingFlowDetails.tsx
-// FIXED: Routing and parameter parsing issues
 
+import React, { useEffect, useState } from 'react';
 import {
-  ArrowBack as ArrowBackIcon,
-  Analytics as AnalyticsIcon,
-  Preview as PreviewIcon,
-  Science as TestIcon,
-} from "@mui/icons-material";
-import {
-  Alert,
   Box,
   Button,
   Card,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Tab,
-  Tabs,
+  CardContent,
   Typography,
-} from "@mui/material";
-import { format } from "date-fns";
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import type { DropResult } from "@hello-pangea/dnd";
-import { useLayout } from "../../../contexts/LayoutContext";
-import { useEventTypes } from "../../../hooks/useEvents";
-import { useBookingFlow, useBookingFlowSteps, useBookingFlows } from "../../../hooks/useBookingFlows";
-import { FlowGeneralSettings } from "../../../components/bookingflow/FlowGeneralSettings";
-import { FlowStepsManager } from "../../../components/bookingflow/FlowStepsManager";
-import { StepDialog } from "../../../components/bookingflow/StepDialog";
-import { BookingStepConfiguration } from "../../../components/bookingflow/BookingStepConfiguration";
-import { BookingSessions } from "../../../components/bookingflow/BookingSessions";
-import type {
+  Tabs,
+  Tab,
+  Alert,
+  CircularProgress,
+  Chip,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Divider,
+  Stack,
+  Breadcrumbs,
+  Link,
+} from '@mui/material';
+import {
+  ArrowBack as BackIcon,
+  Settings as SettingsIcon,
+  List as StepsIcon,
+  Analytics as AnalyticsIcon,
+  Preview as PreviewIcon,
+  MoreVert as MoreVertIcon,
+  Edit as EditIcon,
+  ContentCopy as DuplicateIcon,
+  Delete as DeleteIcon,
+  PlayArrow as TestIcon,
+  Visibility as ViewIcon,
+  NavigateNext as NavigateNextIcon,
+} from '@mui/icons-material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useLayout } from '../../../contexts/LayoutContext';
+import { useBookingFlows, useBookingFlowSteps } from '../../../hooks/useBookingFlows';
+import { 
+  BookingFlowFormDialog,
+  BookingFlowPreview 
+} from '../../../components/bookingflows/flows';
+import { 
+  BookingFlowStepFormDialog,
+  BookingFlowStepsTable,
+  StepConfigurationPanel,
+  StepReorderList 
+} from '../../../components/bookingflows/steps';
+import type { 
   BookingFlowStep,
-  CreateBookingFlowData,
-  UpdateBookingFlowData,
   CreateBookingFlowStepData,
-  BookingFlowFormErrors,
-} from "../../../types/bookingflows.types";
+  UpdateBookingFlowStepData,
+  UpdateBookingFlowData 
+} from '../../../types/bookingflows.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -49,575 +67,690 @@ interface TabPanelProps {
   value: number;
 }
 
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`flow-tabpanel-${index}`}
-      aria-labelledby={`flow-tab-${index}`}
-    >
-      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
-    </div>
-  );
-};
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => (
+  <div
+    role="tabpanel"
+    hidden={value !== index}
+    id={`flow-detail-tabpanel-${index}`}
+    aria-labelledby={`flow-detail-tab-${index}`}
+    {...other}
+  >
+    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+  </div>
+);
 
 export const BookingFlowDetails: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
-  const { id } = useParams<{ id: string }>();
-  
-  // FIXED: Proper routing logic
-  const isNewFlow = id === 'new';
-  const flowId = isNewFlow ? undefined : (id ? parseInt(id, 10) : undefined);
-  
-  console.log('🔄 BookingFlowDetails params:', { 
-    urlId: id, 
-    isNewFlow, 
-    flowId,
-    isValidId: !isNaN(Number(id))
-  });
-  
   const [activeTab, setActiveTab] = useState(0);
-  const [formData, setFormData] = useState<CreateBookingFlowData | UpdateBookingFlowData>({
-    name: '',
-    description: '',
-    event_type: 0,
-    is_active: true,
-    allow_guest_booking: true,
-    require_account_creation: false,
-    auto_approve_bookings: false,
-    enable_progress_saving: true,
-    max_advance_booking_days: 365,
-    min_advance_booking_days: 1,
-    allow_discounts: true,
-  });
-  const [formErrors, setFormErrors] = useState<BookingFlowFormErrors>({});
-  const [stepDialog, setStepDialog] = useState<{
-    open: boolean;
-    step: BookingFlowStep | null;
-    editMode: boolean;
-  }>({ open: false, step: null, editMode: false });
-  const [configurationDialog, setConfigurationDialog] = useState<{
-    open: boolean;
-    step: BookingFlowStep | null;
-  }>({ open: false, step: null });
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [stepDialogOpen, setStepDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingStep, setEditingStep] = useState<BookingFlowStep | null>(null);
+  const [selectedStepForConfig, setSelectedStepForConfig] = useState<BookingFlowStep | null>(null);
 
-  // Hooks
-  const { flow, isLoading, error } = useBookingFlow(flowId);
+  const flowId = parseInt(id || '0');
+
+  const { useBookingFlow, updateFlow, deleteFlow, duplicateFlow, isUpdatingFlow, isDeletingFlow } = useBookingFlows();
+  const { 
+    data: flow, 
+    isLoading: isLoadingFlow, 
+    error: flowError 
+  } = useBookingFlow(flowId);
+
   const {
-    steps,
+    useFlowSteps,
     createStep,
-    isCreating: isCreatingStep,
     updateStep,
-    isUpdating: isUpdatingStep,
     deleteStep,
     reorderSteps,
-    isReordering: isReorderingSteps,
-    refetch: refetchSteps,
-  } = useBookingFlowSteps(flowId);
-  
-  const {
-    createFlow,
-    isCreating: isCreatingFlow,
-    updateFlow,
-    isUpdating: isUpdatingFlow,
-  } = useBookingFlows();
-  
-  const { eventTypes } = useEventTypes();
+    isCreatingStep,
+    isUpdatingStep,
+    isDeletingStep,
+  } = useBookingFlowSteps();
 
-  console.log('🔧 Hooks status:', {
-    createFlow: typeof createFlow,
-    updateFlow: typeof updateFlow,
-    isCreatingFlow,
-    isUpdatingFlow,
-    eventTypesCount: eventTypes.length,
-    flowLoaded: !!flow,
-    stepsCount: steps.length
-  });
+  const { 
+    data: steps = [], 
+    isLoading: isLoadingSteps,
+    refetch: refetchSteps 
+  } = useFlowSteps(flowId);
 
-  // Set breadcrumbs
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Settings', path: '/settings' },
-      { label: 'Booking Configuration' },
-      { label: 'Booking Flows', path: '/settings/booking/booking-flow' },
-      { label: isNewFlow ? 'New Flow' : flow?.name || 'Flow Details' },
-    ]);
-  }, [setBreadcrumbs, isNewFlow, flow?.name]);
+    if (flow) {
+      setBreadcrumbs([
+        { label: 'Settings', path: '/settings' },
+        { label: 'Booking Configuration' },
+        { label: 'Booking Flows', path: '/settings/booking/booking-flow' },
+        { label: flow.name },
+      ]);
+    }
+  }, [flow, setBreadcrumbs]);
 
-  // Initialize form data
-  useEffect(() => {
-    if (flow && !isNewFlow) {
-      console.log('📝 Initializing form data with flow:', flow);
-      setFormData({
-        name: flow.name,
-        description: flow.description,
-        event_type: typeof flow.event_type === 'object' ? flow.event_type.id : flow.event_type,
-        is_active: flow.is_active,
-        allow_guest_booking: flow.allow_guest_booking,
-        require_account_creation: flow.require_account_creation,
-        auto_approve_bookings: flow.auto_approve_bookings,
-        enable_progress_saving: flow.enable_progress_saving,
-        max_advance_booking_days: flow.max_advance_booking_days,
-        min_advance_booking_days: flow.min_advance_booking_days,
-        allow_discounts: flow.allow_discounts,
-        redirect_url: flow.redirect_url,
-        success_message: flow.success_message,
-      });
-    }
-  }, [flow, isNewFlow]);
-
-  // Form validation
-  const validateForm = (): boolean => {
-    const errors: BookingFlowFormErrors = {};
-    
-    if (!formData.name?.trim()) {
-      errors.name = 'Flow name is required';
-    }
-    
-    if (!formData.event_type || formData.event_type === 0) {
-      errors.event_type = 'Event type is required';
-    }
-    
-    if (formData.min_advance_booking_days && 
-        formData.max_advance_booking_days && 
-        formData.min_advance_booking_days >= formData.max_advance_booking_days) {
-      errors.max_advance_booking_days = 'Maximum days must be greater than minimum days';
-    }
-
-    if (formData.redirect_url && !isValidUrl(formData.redirect_url)) {
-      errors.redirect_url = 'Please enter a valid URL';
-    }
-    
-    console.log('✅ Form validation result:', { errors, hasErrors: Object.keys(errors).length > 0 });
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Helper function to validate URL
-  const isValidUrl = (string: string): boolean => {
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  };
-
-  // Handlers
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    let processedValue: any = value;
-    
-    if (type === 'checkbox') {
-      processedValue = (e.target as HTMLInputElement).checked;
-    } else if (type === 'number') {
-      processedValue = value ? parseInt(value, 10) : undefined;
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: processedValue,
-    }));
-    
-    // Clear error when user starts typing
-    if (formErrors[name as keyof BookingFlowFormErrors]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [name]: undefined,
-      }));
-    }
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchor(event.currentTarget);
   };
 
-  const handleSelectChange = (e: any) => {
-    const { name, value } = e.target;
-    const processedValue = name === 'event_type' ? parseInt(value, 10) : value;
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: processedValue,
-    }));
-    
-    // Clear error when user selects
-    if (formErrors[name as keyof BookingFlowFormErrors]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [name]: undefined,
-      }));
-    }
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
   };
 
-  const handleBack = () => {
-    navigate('/settings/booking/booking-flow');
+  const handleEditFlow = () => {
+    setEditDialogOpen(true);
+    handleMenuClose();
   };
 
-  // FIXED: Proper save logic with detailed debugging
-  const handleSave = async () => {
-    console.log('=== HANDLE SAVE START ===');
-    console.log('📊 Save context:', {
-      isNewFlow,
-      flowId,
-      hasFormData: !!formData,
-      formDataKeys: Object.keys(formData),
-      createFlowType: typeof createFlow,
-      updateFlowType: typeof updateFlow
-    });
-    console.log('📦 Form data to save:', formData);
-    
-    if (!validateForm()) {
-      console.log('❌ Form validation failed:', formErrors);
-      return;
-    }
-
-    try {
-      console.log('✅ Form validation passed, proceeding with save...');
-      
-      if (isNewFlow) {
-        console.log('🆕 Creating new flow...');
-        
-        if (typeof createFlow !== 'function') {
-          console.error('❌ createFlow is not a function!', createFlow);
-          return;
+  const handleDuplicateFlow = () => {
+    if (flow) {
+      duplicateFlow({ 
+        id: flow.id, 
+        data: { 
+          name: `${flow.name} (Copy)`,
+          copy_steps: true,
+          copy_configuration: true 
+        } 
+      }, {
+        onSuccess: (newFlow) => {
+          navigate(`/settings/booking/booking-flow/${newFlow.id}`);
         }
-        
-        const result = await createFlow(formData as CreateBookingFlowData);
-        console.log('✅ Flow created successfully:', result);
-        navigate(`/settings/booking/booking-flow/${result.id}`);
-        
-      } else if (flowId && flowId > 0) {
-        console.log('📝 Updating existing flow with ID:', flowId);
-        
-        if (typeof updateFlow !== 'function') {
-          console.error('❌ updateFlow is not a function!', updateFlow);
-          return;
-        }
-        
-        const result = await updateFlow(flowId, formData as UpdateBookingFlowData);
-        console.log('✅ Flow updated successfully:', result);
-        
-      } else {
-        console.error('❌ Invalid state: not new flow but no valid flowId', {
-          isNewFlow,
-          flowId,
-          urlId: id
-        });
-        // This might happen if we're on an invalid URL - redirect to create new
-        navigate('/settings/booking/booking-flow/new');
-        return;
-      }
-      
-    } catch (error) {
-      console.error('❌ Save operation failed:', error);
-      console.error('Error details:', {
-        message: (error as any)?.message,
-        response: (error as any)?.response?.data,
-        status: (error as any)?.response?.status
       });
     }
-    
-    console.log('=== HANDLE SAVE END ===');
+    handleMenuClose();
   };
 
-  const handleAddStep = () => {
-    if (!flowId && isNewFlow) {
-      alert('Please save the flow first before adding steps');
-      return;
+  const handleDeleteFlow = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleDeleteConfirm = () => {
+    if (flow) {
+      deleteFlow(flow.id, {
+        onSuccess: () => {
+          navigate('/settings/booking/booking-flow');
+        }
+      });
     }
-    setStepDialog({ open: true, step: null, editMode: false });
   };
 
+  const handlePreviewFlow = () => {
+    if (flow) {
+      navigate(`/settings/booking/booking-flow/preview/${flow.id}`);
+    }
+    handleMenuClose();
+  };
+
+  const handleUpdateFlow = (data: UpdateBookingFlowData) => {
+    if (flow) {
+      updateFlow({ id: flow.id, data });
+      setEditDialogOpen(false);
+    }
+  };
+
+  const handleCreateStep = () => {
+    setEditingStep(null);
+    setStepDialogOpen(true);
+  };
+
+  // This is for editing step PROPERTIES (name, description, etc.)
   const handleEditStep = (step: BookingFlowStep) => {
-    setStepDialog({ open: true, step, editMode: true });
+    setEditingStep(step);
+    setStepDialogOpen(true);
   };
 
-  const handleDeleteStep = async (step: BookingFlowStep) => {
-    if (window.confirm(`Are you sure you want to delete the step "${step.name}"? This action cannot be undone.`)) {
-      try {
-        await deleteStep(step.id);
-      } catch (error) {
-        console.error('Delete step failed:', error);
-      }
-    }
-  };
-
+  // This is for configuring step BEHAVIOR (questionnaires, packages, etc.)
   const handleConfigureStep = (step: BookingFlowStep) => {
-    setConfigurationDialog({ open: true, step });
+    setSelectedStepForConfig(step);
+    setActiveTab(2); // Switch to configuration tab
   };
 
-  const handleStepSave = async (stepData: CreateBookingFlowStepData) => {
-    try {
-      if (stepDialog.editMode && stepDialog.step) {
-        await updateStep(stepDialog.step.id, stepData);
-      } else {
-        await createStep(stepData);
+  const handleDeleteStep = (stepId: number) => {
+    deleteStep(stepId, {
+      onSuccess: () => {
+        refetchSteps();
+        // Clear selected step if it was deleted
+        if (selectedStepForConfig?.id === stepId) {
+          setSelectedStepForConfig(null);
+        }
       }
-      
-      setStepDialog({ open: false, step: null, editMode: false });
-    } catch (error) {
-      console.error('Step save operation failed:', error);
+    });
+  };
+
+  const handleStepSubmit = (data: CreateBookingFlowStepData | UpdateBookingFlowStepData) => {
+    if (editingStep) {
+      updateStep({ 
+        id: editingStep.id, 
+        data: data as UpdateBookingFlowStepData 
+      }, {
+        onSuccess: () => {
+          setStepDialogOpen(false);
+          refetchSteps();
+        }
+      });
+    } else {
+      createStep({
+        ...data as CreateBookingFlowStepData,
+        booking_flow: flowId
+      }, {
+        onSuccess: () => {
+          setStepDialogOpen(false);
+          refetchSteps();
+        }
+      });
     }
   };
 
-  const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination || !flowId) return;
-
-    const items = Array.from(steps);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    // Create order mapping
-    const orderMapping: Record<number, number> = {};
-    items.forEach((item, index) => {
-      orderMapping[item.id] = index + 1;
+  const handleStepReorder = (reorderedSteps: BookingFlowStep[]) => {
+    const orderMapping: Record<string, number> = {};
+    reorderedSteps.forEach((step, index) => {
+      orderMapping[step.id.toString()] = index + 1;
     });
 
-    try {
-      await reorderSteps({
-        flow_id: flowId,
-        order_mapping: orderMapping,
-      });
-    } catch (error) {
-      console.error('Reorder failed:', error);
-      refetchSteps();
-    }
+    reorderSteps({
+      flow_id: flowId,
+      order_mapping: orderMapping
+    }, {
+      onSuccess: () => {
+        refetchSteps();
+      }
+    });
   };
 
-  const handlePreview = () => {
-    if (flow) {
-      window.open(`/booking/${flow.id}/preview`, '_blank');
-    }
-  };
+  const getTabLabel = (label: string, count?: number) => (
+    <Box display="flex" alignItems="center" gap={1}>
+      {label}
+      {count !== undefined && (
+        <Chip label={count} size="small" color="primary" />
+      )}
+    </Box>
+  );
 
-  const handleViewAnalytics = () => {
-    if (flow) {
-      navigate(`/settings/booking/flows/${flow.id}/analytics`);
-    }
-  };
-
-  // Loading state for edit mode
-  if (isLoading && !isNewFlow) {
+  if (isLoadingFlow) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
         <CircularProgress />
       </Box>
     );
   }
 
-  // Error state for edit mode
-  if (error && !isNewFlow) {
+  if (flowError || !flow) {
     return (
-      <Box sx={{ mt: 3 }}>
-        <Alert severity="error">
-          Error loading booking flow. The flow may not exist or you may not have permission to view it.
+      <Box>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Failed to load booking flow. Please check the URL and try again.
         </Alert>
-      </Box>
-    );
-  }
-
-  // Invalid ID state
-  if (!isNewFlow && (!id || (id !== 'new' && isNaN(Number(id))))) {
-    return (
-      <Box sx={{ mt: 3 }}>
-        <Alert severity="warning">
-          Invalid flow ID. Please check the URL or create a new flow.
-        </Alert>
-        <Button 
-          variant="contained" 
-          onClick={() => navigate('/settings/booking/booking-flow/new')}
-          sx={{ mt: 2 }}
+        <Button
+          startIcon={<BackIcon />}
+          onClick={() => navigate('/settings/booking/booking-flow')}
         >
-          Create New Flow
+          Back to Booking Flows
         </Button>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ mb: 4 }}>
-      {/* DEBUG INFO */}
-      <Alert severity="info" sx={{ mb: 2 }}>
-        <strong>Debug Info:</strong> 
-        URL ID: {id || 'undefined'} | 
-        isNewFlow: {String(isNewFlow)} | 
-        flowId: {flowId || 'undefined'} | 
-        createFlow: {typeof createFlow} |
-        event_type: {formData.event_type}
-      </Alert>
-
+    <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={handleBack} sx={{ mr: 2 }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-            {isNewFlow ? 'Create Booking Flow' : flow?.name || 'Booking Flow'}
-          </Typography>
-          {flow && (
-            <Typography variant="body2" color="textSecondary">
-              Created {format(new Date(flow.created_at), 'MMM dd, yyyy')} • 
-              Last updated {format(new Date(flow.updated_at), 'MMM dd, yyyy')}
+      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
+        <Box>
+          <Box display="flex" alignItems="center" gap={2} mb={1}>
+            <IconButton
+              onClick={() => navigate('/settings/booking/booking-flow')}
+              size="small"
+            >
+              <BackIcon />
+            </IconButton>
+            <Typography variant="h4" fontWeight="bold">
+              {flow.name}
+            </Typography>
+            <Chip
+              label={flow.is_test_mode ? 'Test Mode' : flow.is_active ? 'Active' : 'Inactive'}
+              size="small"
+              color={flow.is_test_mode ? 'warning' : flow.is_active ? 'success' : 'default'}
+              variant={flow.is_active ? 'filled' : 'outlined'}
+            />
+          </Box>
+          {flow.description && (
+            <Typography variant="body1" color="text.secondary">
+              {flow.description}
             </Typography>
           )}
-        </Box>
-        
-        {flow && !isNewFlow && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="outlined"
-              startIcon={<PreviewIcon />}
-              onClick={handlePreview}
-            >
-              Preview
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<AnalyticsIcon />}
-              onClick={handleViewAnalytics}
-            >
-              Analytics
-            </Button>
+          <Box display="flex" alignItems="center" gap={2} mt={1}>
+            {flow.event_type_name && (
+              <Chip
+                label={flow.event_type_name}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            )}
+            <Typography variant="caption" color="text.secondary">
+              {flow.enabled_steps_count} of {flow.total_steps} steps enabled
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Last updated {new Date(flow.updated_at).toLocaleDateString()}
+            </Typography>
           </Box>
-        )}
+
+          {/* Configuration Breadcrumb */}
+          {selectedStepForConfig && activeTab === 2 && (
+            <Box mt={2}>
+              <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />}>
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={() => {
+                    setSelectedStepForConfig(null);
+                    setActiveTab(1);
+                  }}
+                  sx={{ textDecoration: 'none' }}
+                >
+                  Steps
+                </Link>
+                <Typography variant="body2" color="text.primary">
+                  Configure: {selectedStepForConfig.name}
+                </Typography>
+              </Breadcrumbs>
+            </Box>
+          )}
+        </Box>
+
+        <Box display="flex" gap={1}>
+          <Button
+            variant="outlined"
+            startIcon={<PreviewIcon />}
+            onClick={handlePreviewFlow}
+          >
+            Preview
+          </Button>
+
+          <IconButton onClick={handleMenuOpen}>
+            <MoreVertIcon />
+          </IconButton>
+        </Box>
       </Box>
 
-      {/* Status Chips */}
-      {flow && !isNewFlow && (
-        <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-          <Chip
-            label={flow.is_active ? 'Active' : 'Inactive'}
-            color={flow.is_active ? 'success' : 'default'}
-          />
-          {flow.is_test_mode && (
-            <Chip
-              label="Test Mode"
-              color="warning"
-              icon={<TestIcon />}
-            />
-          )}
-          <Chip
-            label={`${flow.total_steps} steps`}
-            variant="outlined"
-          />
-          <Chip
-            label={`${flow.enabled_steps_count} enabled`}
-            variant="outlined"
-            color="primary"
-          />
-        </Box>
-      )}
+      {/* Action Menu */}
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleEditFlow}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Edit Flow Details</ListItemText>
+        </MenuItem>
+        
+        <MenuItem onClick={handlePreviewFlow}>
+          <ListItemIcon>
+            <ViewIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Full Preview</ListItemText>
+        </MenuItem>
+        
+        <MenuItem onClick={handleDuplicateFlow}>
+          <ListItemIcon>
+            <DuplicateIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Duplicate Flow</ListItemText>
+        </MenuItem>
+        
+        <Divider />
+        
+        <MenuItem onClick={handleDeleteFlow} sx={{ color: 'error.main' }}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Delete Flow</ListItemText>
+        </MenuItem>
+      </Menu>
 
       {/* Tabs */}
-      <Card>
-        <Tabs
-          value={activeTab}
+      <Card sx={{ mb: 3 }}>
+        <Tabs 
+          value={activeTab} 
           onChange={handleTabChange}
-          aria-label="booking flow tabs"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          variant="scrollable"
+          scrollButtons="auto"
         >
-          <Tab label="General Settings" />
-          <Tab label="Steps" disabled={isNewFlow} />
-          <Tab label="Analytics" disabled={isNewFlow} />
-          <Tab label="Sessions" disabled={isNewFlow} />
+          <Tab 
+            icon={<SettingsIcon />} 
+            label="Overview"
+            iconPosition="start"
+          />
+          <Tab 
+            icon={<StepsIcon />} 
+            label={getTabLabel("Steps", steps.length)}
+            iconPosition="start"
+          />
+          <Tab 
+            icon={<SettingsIcon />} 
+            label={selectedStepForConfig ? `Configure: ${selectedStepForConfig.name}` : "Configuration"}
+            iconPosition="start"
+          />
+          <Tab 
+            icon={<PreviewIcon />} 
+            label="Preview"
+            iconPosition="start"
+          />
+          <Tab 
+            icon={<AnalyticsIcon />} 
+            label="Analytics"
+            iconPosition="start"
+            disabled
+          />
         </Tabs>
-
-        {/* General Settings Tab */}
-        <TabPanel value={activeTab} index={0}>
-          <FlowGeneralSettings
-            formData={formData}
-            formErrors={formErrors}
-            eventTypes={eventTypes}
-            isNewFlow={isNewFlow}
-            isCreating={isCreatingFlow}
-            isUpdating={isUpdatingFlow}
-            onInputChange={handleInputChange}
-            onSelectChange={handleSelectChange}
-            onSave={handleSave}
-            onCancel={handleBack}
-          />
-        </TabPanel>
-
-        {/* Steps Tab */}
-        <TabPanel value={activeTab} index={1}>
-          <FlowStepsManager
-            steps={steps}
-            flowId={flowId}
-            isLoading={isLoading}
-            isReordering={isReorderingSteps}
-            onAddStep={handleAddStep}
-            onEditStep={handleEditStep}
-            onDeleteStep={handleDeleteStep}
-            onConfigureStep={handleConfigureStep}
-            onDragEnd={handleDragEnd}
-          />
-        </TabPanel>
-
-        {/* Analytics Tab */}
-        <TabPanel value={activeTab} index={2}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Analytics
-          </Typography>
-          <Alert severity="info">
-            Analytics data will be displayed here. This includes conversion rates, 
-            step completion rates, and session analytics.
-          </Alert>
-        </TabPanel>
-
-        {/* Sessions Tab */}
-        <TabPanel value={activeTab} index={3}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Booking Sessions
-          </Typography>
-          {flowId ? (
-            <BookingSessions flowId={flowId} />
-          ) : (
-            <Alert severity="info">
-              Active and completed booking sessions will be displayed here.
-            </Alert>
-          )}
-        </TabPanel>
       </Card>
 
-      {/* Step Dialog */}
-      <StepDialog
-        open={stepDialog.open}
-        step={stepDialog.step}
-        onClose={() => setStepDialog({ open: false, step: null, editMode: false })}
-        onSave={handleStepSave}
-        isLoading={isCreatingStep || isUpdatingStep}
-        editMode={stepDialog.editMode}
-        flowId={flowId}
-        existingSteps={steps}
-      />
+      {/* Tab Content */}
+      <TabPanel value={activeTab} index={0}>
+        {/* Overview Tab */}
+        <Stack spacing={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Flow Information
+              </Typography>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Name
+                  </Typography>
+                  <Typography variant="body1">
+                    {flow.name}
+                  </Typography>
+                </Box>
+                
+                {flow.description && (
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Description
+                    </Typography>
+                    <Typography variant="body1">
+                      {flow.description}
+                    </Typography>
+                  </Box>
+                )}
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Event Type
+                  </Typography>
+                  <Typography variant="body1">
+                    {flow.event_type_name || 'Any Event Type'}
+                  </Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Status
+                  </Typography>
+                  <Box display="flex" gap={1}>
+                    <Chip
+                      label={flow.is_active ? 'Active' : 'Inactive'}
+                      size="small"
+                      color={flow.is_active ? 'success' : 'default'}
+                      variant={flow.is_active ? 'filled' : 'outlined'}
+                    />
+                    {flow.is_test_mode && (
+                      <Chip
+                        label="Test Mode"
+                        size="small"
+                        color="warning"
+                        variant="filled"
+                      />
+                    )}
+                  </Box>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
 
-      {/* Step Configuration Dialog */}
-      <Dialog 
-        open={configurationDialog.open} 
-        onClose={() => setConfigurationDialog({ open: false, step: null })}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle>
-          Step Configuration
-        </DialogTitle>
-        <DialogContent>
-          {configurationDialog.step && (
-            <BookingStepConfiguration
-              step={configurationDialog.step}
-              onConfigurationSaved={() => {
-                // Optionally refresh steps or show success message
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Configuration Summary
+              </Typography>
+              <Stack spacing={2}>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">Steps Configured:</Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {flow.enabled_steps_count} of {flow.total_steps}
+                  </Typography>
+                </Box>
+                
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">Guest Booking:</Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {flow.allow_guest_booking ? 'Allowed' : 'Not Allowed'}
+                  </Typography>
+                </Box>
+                
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">Auto Approval:</Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {flow.auto_approve_bookings ? 'Enabled' : 'Disabled'}
+                  </Typography>
+                </Box>
+                
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">Booking Window:</Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {flow.min_advance_booking_days} - {flow.max_advance_booking_days} days
+                  </Typography>
+                </Box>
+                
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">Discounts:</Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {flow.allow_discounts ? 'Enabled' : 'Disabled'}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={1}>
+        {/* Steps Tab */}
+        <Stack spacing={3}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">
+              Booking Flow Steps ({steps.length})
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<StepsIcon />}
+              onClick={handleCreateStep}
+            >
+              Add Step
+            </Button>
+          </Box>
+
+          {steps.length === 0 ? (
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 6 }}>
+                <StepsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No steps configured
+                </Typography>
+                <Typography variant="body2" color="text.secondary" mb={3}>
+                  Add steps to guide clients through the booking process
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<StepsIcon />}
+                  onClick={handleCreateStep}
+                >
+                  Add First Step
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Instructions */}
+              <Alert severity="info">
+                <Typography variant="body2" gutterBottom>
+                  <strong>Step Management:</strong>
+                </Typography>
+                <Typography variant="body2">
+                  • <strong>Edit Properties:</strong> Change step name, description, order, and basic settings
+                </Typography>
+                <Typography variant="body2">
+                  • <strong>Configure:</strong> Set up step-specific behavior like questionnaires, packages, payment options
+                </Typography>
+              </Alert>
+
+              <BookingFlowStepsTable
+                steps={steps}
+                isLoading={isLoadingSteps}
+                onEdit={handleEditStep} // For editing basic properties
+                onConfigure={handleConfigureStep} // For configuring step behavior
+                onDelete={handleDeleteStep}
+                isDeleting={isDeletingStep}
+              />
+
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Reorder Steps
+                  </Typography>
+                  <StepReorderList
+                    steps={steps}
+                    onReorder={handleStepReorder}
+                    isLoading={false}
+                  />
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </Stack>
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={2}>
+        {/* Configuration Tab */}
+        {selectedStepForConfig ? (
+          <Box>
+            {/* Back to Steps Button */}
+            <Box mb={3}>
+              <Button
+                startIcon={<BackIcon />}
+                onClick={() => {
+                  setSelectedStepForConfig(null);
+                  setActiveTab(1);
+                }}
+                variant="outlined"
+                size="small"
+              >
+                Back to Steps
+              </Button>
+            </Box>
+
+            {/* Step Configuration Panel */}
+            <StepConfigurationPanel
+              step={selectedStepForConfig}
+              onUpdate={(updatedStep) => {
+                refetchSteps();
+                // Update the selected step with new data
+                setSelectedStepForConfig(updatedStep);
               }}
             />
-          )}
+          </Box>
+        ) : (
+          <Card>
+            <CardContent sx={{ textAlign: 'center', py: 6 }}>
+              <SettingsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                Select a step to configure
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={3}>
+                Choose a step from the Steps tab to configure its specific settings and behavior
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={() => setActiveTab(1)}
+              >
+                Go to Steps
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={3}>
+        {/* Preview Tab */}
+        <BookingFlowPreview
+          flow={flow}
+          compact={false}
+          showMobileView={false}
+        />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={4}>
+        {/* Analytics Tab - Coming Soon */}
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 6 }}>
+            <AnalyticsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Analytics Coming Soon
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              View booking flow performance, conversion rates, and step completion analytics
+            </Typography>
+          </CardContent>
+        </Card>
+      </TabPanel>
+
+      {/* Edit Flow Dialog */}
+      <BookingFlowFormDialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        editingFlow={flow}
+        onSubmit={handleUpdateFlow}
+        isLoading={isUpdatingFlow}
+      />
+
+      {/* Step Properties Dialog (for editing basic step info) */}
+      <BookingFlowStepFormDialog
+        open={stepDialogOpen}
+        onClose={() => setStepDialogOpen(false)}
+        editingStep={editingStep}
+        flowId={flowId}
+        onSubmit={handleStepSubmit}
+        isLoading={isCreatingStep || isUpdatingStep}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Delete Booking Flow</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete "{flow.name}"? This action cannot be undone and will affect any active booking sessions.
+          </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfigurationDialog({ open: false, step: null })}>
-            Close
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingFlow}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={isDeletingFlow}
+          >
+            {isDeletingFlow ? <CircularProgress size={20} /> : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
