@@ -107,10 +107,6 @@ export const BookingFlows: React.FC = () => {
     navigate(`/settings/booking/booking-flow/${flow.id}`);
   };
 
-  const handleQuickEdit = (flow: BookingFlow) => {
-    setEditingFlow(flow);
-    setDialogOpen(true);
-  };
 
   const handlePreview = (flow: BookingFlow) => {
     setFlowToPreview(flow);

@@ -14,7 +14,6 @@ import {
   CardContent,
   Chip,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   Checkbox,
@@ -29,7 +28,6 @@ import {
   Schedule as TimeIcon,
   CalendarMonth as CalendarIcon,
   Block as BlockIcon,
-  AccessTime as DurationIcon,
 } from '@mui/icons-material';
 import type { 
   BookingFlowStep, 
@@ -84,7 +82,6 @@ const DAYS_OF_WEEK = [
 ];
 
 export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
-  step,
   config,
   onUpdate,
   isLoading = false,

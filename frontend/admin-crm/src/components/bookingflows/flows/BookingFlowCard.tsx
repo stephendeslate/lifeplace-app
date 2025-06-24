@@ -14,7 +14,6 @@ import {
   ListItemIcon,
   ListItemText,
   Button,
-  Tooltip,
   LinearProgress,
   Avatar,
 } from '@mui/material';
@@ -26,7 +25,6 @@ import {
   Visibility as PreviewIcon,
   EventNote as FlowIcon,
   Event as EventIcon,
-  List as StepsIcon,
   Analytics as AnalyticsIcon,
   Science as TestIcon,
   Schedule as TimeIcon,

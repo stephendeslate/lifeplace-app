@@ -73,7 +73,6 @@ const PAYMENT_METHODS = [
 ];
 
 export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
-  step,
   config,
   onUpdate,
   isLoading = false,

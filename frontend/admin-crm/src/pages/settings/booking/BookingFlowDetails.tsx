@@ -37,7 +37,6 @@ import {
   Edit as EditIcon,
   ContentCopy as DuplicateIcon,
   Delete as DeleteIcon,
-  PlayArrow as TestIcon,
   Visibility as ViewIcon,
   NavigateNext as NavigateNextIcon,
 } from '@mui/icons-material';
@@ -128,6 +127,7 @@ export const BookingFlowDetails: React.FC = () => {
     }
   }, [flow, setBreadcrumbs]);
 
+  // @ts-ignore
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };

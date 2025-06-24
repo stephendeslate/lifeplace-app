@@ -27,7 +27,6 @@ import {
   ExpandMore as ExpandMoreIcon,
   ShoppingCart as AddonIcon,
   Category as CategoryIcon,
-  Recommend as RecommendIcon,
 } from '@mui/icons-material';
 import type { 
   BookingFlowStep, 
@@ -65,7 +64,6 @@ const defaultFormData: AddonConfigFormData = {
 export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> = ({
   step,
   config,
-  onUpdate,
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState<AddonConfigFormData>(defaultFormData);

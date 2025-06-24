@@ -145,19 +145,6 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
     setQuestionnaireItems(updatedItems);
   };
 
-  const handleReorderQuestionnaires = (oldIndex: number, newIndex: number) => {
-    const updatedItems = [...questionnaireItems];
-    const [movedItem] = updatedItems.splice(oldIndex, 1);
-    updatedItems.splice(newIndex, 0, movedItem);
-    
-    // Update order values
-    const reorderedItems = updatedItems.map((item, index) => ({
-      ...item,
-      order: index + 1,
-    }));
-    
-    setQuestionnaireItems(reorderedItems);
-  };
 
   const handleSave = () => {
     onUpdate({
@@ -209,7 +196,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
               <List dense>
                 {questionnaireItems
                   .sort((a, b) => a.order - b.order)
-                  .map((item, index) => (
+                  .map((item) => (
                   <ListItem 
                     key={item.id}
                     sx={{ 

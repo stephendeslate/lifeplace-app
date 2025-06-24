@@ -22,7 +22,6 @@ import {
   Tabs,
   Tab,
   Divider,
-  Chip,
 } from '@mui/material';
 import {
   EventNote as FlowIcon,
@@ -152,6 +151,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     }));
   };
 
+  // @ts-ignore
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };

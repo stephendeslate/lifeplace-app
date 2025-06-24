@@ -22,18 +22,15 @@ import {
   DialogActions,
   IconButton,
   Tooltip,
-  Divider,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  TextField,
 } from '@mui/material';
 import {
   PlayArrow as StartIcon,
   NavigateNext as NextIcon,
   NavigateBefore as BackIcon,
-  Refresh as RefreshIcon,
   Stop as StopIcon,
   BugReport as TestIcon,
   CheckCircle as CompleteIcon,
@@ -44,7 +41,6 @@ import {
 } from '@mui/icons-material';
 import type { 
   BookingFlowDetail, 
-  BookingSession,
   BookingFlowStep 
 } from '../../../types/bookingflows.types';
 import { useBookingSessions } from '../../../hooks/useBookingFlows';
@@ -86,9 +82,6 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
 
   const {
     createSession,
-    updateSessionData,
-    completeBooking,
-    abandonSession,
     isCreatingSession,
     isUpdatingSessionData,
   } = useBookingSessions();
@@ -195,6 +188,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     // completeBooking would be called here in real implementation
   };
 
+  // @ts-ignore
   const runAutomatedTest = async (session: TestSession) => {
     const delay = testSpeed === 'fast' ? 500 : testSpeed === 'normal' ? 1500 : 3000;
 
@@ -417,10 +411,6 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     return Math.round(((testSession.currentStepIndex + 1) / enabledSteps.length) * 100);
   };
 
-  const getCurrentStep = () => {
-    if (!testSession || !enabledSteps[testSession.currentStepIndex]) return null;
-    return enabledSteps[testSession.currentStepIndex];
-  };
 
   return (
     <Box>

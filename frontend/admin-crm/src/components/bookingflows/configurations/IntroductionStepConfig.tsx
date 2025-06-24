@@ -12,7 +12,6 @@ import {
   Button,
   Card,
   CardContent,
-  Divider,
 } from '@mui/material';
 import {
   Upload as UploadIcon,
