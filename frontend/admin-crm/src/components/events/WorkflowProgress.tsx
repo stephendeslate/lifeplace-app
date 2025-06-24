@@ -7,7 +7,6 @@ import {
   Typography,
   Chip,
   Stack,
-  Tooltip,
   useTheme,
 } from '@mui/material';
 import {
