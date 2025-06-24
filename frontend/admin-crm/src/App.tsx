@@ -1,4 +1,5 @@
 // frontend/admin-crm/src/App.tsx
+// FIXED: Route order and parameter handling
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -16,7 +17,7 @@ import { AppLayout } from './components/layout';
 import { SettingsLayout } from './pages/settings';
 import { Settings } from './pages/settings';
 import { AccountSettings, AdminUsers } from './pages/settings/account';
-import { BookingFlow, EventTypes } from './pages/settings/booking';
+import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CommunicationNotifications } from './pages/settings/account/Notifications';
@@ -183,12 +184,38 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Booking Configuration */}
+      {/* Booking Configuration - FIXED: Single route with parameter */}
       <Route
         path="/settings/booking/booking-flow"
         element={
           <SettingsRoute>
-            <BookingFlow />
+            <BookingFlows />
+          </SettingsRoute>
+        }
+      />
+      {/* Booking Configuration - UPDATED with preview route */}
+      <Route
+        path="/settings/booking/booking-flow"
+        element={
+          <SettingsRoute>
+            <BookingFlows />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/booking/booking-flow/:id"
+        element={
+          <SettingsRoute>
+            <BookingFlowDetails />
+          </SettingsRoute>
+        }
+      />
+      {/* NEW: Preview route */}
+      <Route
+        path="/settings/booking/booking-flow/preview/:id"
+        element={
+          <SettingsRoute>
+            <BookingFlowPreviewPage />
           </SettingsRoute>
         }
       />

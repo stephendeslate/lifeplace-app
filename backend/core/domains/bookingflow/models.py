@@ -1,0 +1,659 @@
+# backend/core/domains/bookingflow/models.py
+from decimal import Decimal
+
+from core.domains.events.models import EventType
+from core.domains.products.models import ProductCategory, ProductOption
+from core.domains.questionnaires.models import Questionnaire
+from core.utils.models import BaseModel
+from django.contrib.postgres.fields import ArrayField
+from django.db import models
+from django.utils import timezone
+
+
+class BookingFlow(BaseModel):
+    """
+    Main booking flow configuration that defines the client booking experience
+    """
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    event_type = models.ForeignKey(
+        EventType, 
+        on_delete=models.CASCADE, 
+        related_name='booking_flows'
+    )
+    
+    # Integration with other domains
+    workflow_template = models.ForeignKey(
+        'workflows.WorkflowTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='booking_flows',
+        help_text="Workflow template to assign when booking is completed"
+    )
+    confirmation_email_template = models.ForeignKey(
+        'communications.CommunicationTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='booking_flows_confirmation',
+        help_text="Email template for booking confirmation"
+    )
+    reminder_email_template = models.ForeignKey(
+        'communications.CommunicationTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='booking_flows_reminder',
+        help_text="Email template for booking reminders"
+    )
+    
+    # Flow configuration
+    is_active = models.BooleanField(default=True)
+    allow_guest_booking = models.BooleanField(default=True)
+    require_account_creation = models.BooleanField(default=False)
+    auto_approve_bookings = models.BooleanField(default=False)
+    enable_progress_saving = models.BooleanField(default=True)
+    max_advance_booking_days = models.PositiveIntegerField(default=365)
+    min_advance_booking_days = models.PositiveIntegerField(default=1)
+    
+    # Pricing and discounts
+    allow_discounts = models.BooleanField(default=True)
+    available_discounts = models.ManyToManyField(
+        'products.Discount',
+        blank=True,
+        related_name='booking_flows'
+    )
+    
+    # Completion actions
+    redirect_url = models.URLField(blank=True, help_text="URL to redirect after successful booking")
+    success_message = models.TextField(blank=True)
+    
+    # Analytics and testing
+    is_test_mode = models.BooleanField(default=False)
+    conversion_tracking_code = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = [['event_type', 'name']]
+
+    def __str__(self):
+        return f"{self.name} - {self.event_type.name}"
+    
+    @property
+    def enabled_steps(self):
+        """Get all enabled steps in order"""
+        return self.steps.filter(is_enabled=True).order_by('order')
+    
+    def get_next_step(self, current_step_id=None):
+        """Get the next step in the flow"""
+        enabled_steps = self.enabled_steps
+        
+        if not current_step_id:
+            return enabled_steps.first()
+        
+        current_index = None
+        for i, step in enumerate(enabled_steps):
+            if step.id == current_step_id:
+                current_index = i
+                break
+        
+        if current_index is not None and current_index + 1 < len(enabled_steps):
+            return enabled_steps[current_index + 1]
+        
+        return None
+    
+    def calculate_total_steps(self):
+        """Calculate total number of enabled steps"""
+        return self.enabled_steps.count()
+
+
+class BookingFlowStep(BaseModel):
+    """
+    Individual steps within a booking flow with flexible configuration
+    """
+    STEP_TYPES = [
+        ('introduction', 'Introduction'),
+        ('event_details', 'Event Details'),
+        ('date_time', 'Date & Time Selection'),
+        ('questionnaire', 'Questionnaire'),
+        ('package_selection', 'Package Selection'),
+        ('addon_selection', 'Add-on Selection'),
+        ('availability_check', 'Availability Check'),
+        ('pricing_summary', 'Pricing Summary'),
+        ('contact_info', 'Contact Information'),
+        ('payment_info', 'Payment Information'),
+        ('review_booking', 'Review Booking'),
+        ('confirmation', 'Confirmation'),
+    ]
+    
+    booking_flow = models.ForeignKey(
+        BookingFlow,
+        on_delete=models.CASCADE,
+        related_name='steps'
+    )
+    step_type = models.CharField(max_length=50, choices=STEP_TYPES)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField()
+    
+    # Step behavior
+    is_enabled = models.BooleanField(default=True)
+    is_required = models.BooleanField(default=True)
+    is_skippable = models.BooleanField(default=False)
+    
+    # Conditional display
+    display_conditions = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="JSON conditions for when to show this step"
+    )
+    
+    # Step configuration
+    configuration = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Step-specific configuration options"
+    )
+    
+    # Validation rules
+    validation_rules = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Validation rules for this step"
+    )
+
+    class Meta:
+        ordering = ['booking_flow', 'order']
+        unique_together = [['booking_flow', 'order'], ['booking_flow', 'step_type']]
+
+    def __str__(self):
+        return f"{self.booking_flow.name} - {self.name}"
+    
+    def is_visible_for_data(self, booking_data):
+        """Check if this step should be visible based on booking data"""
+        if not self.display_conditions:
+            return True
+        
+        # Implement condition checking logic
+        for condition_key, condition_value in self.display_conditions.items():
+            if condition_key in booking_data:
+                if booking_data[condition_key] != condition_value:
+                    return False
+        
+        return True
+
+
+class IntroductionStepConfiguration(BaseModel):
+    """Configuration for introduction step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='introduction_config'
+    )
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    show_event_details = models.BooleanField(default=True)
+    show_pricing_overview = models.BooleanField(default=False)
+    custom_css = models.TextField(blank=True)
+    background_image = models.ImageField(upload_to='booking_flow/intro/', null=True, blank=True)
+
+    def __str__(self):
+        return f"Intro config for {self.step}"
+
+
+class EventDetailsStepConfiguration(BaseModel):
+    """Configuration for event details step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='event_details_config'
+    )
+    show_event_type_selection = models.BooleanField(default=False)
+    require_event_name = models.BooleanField(default=True)
+    require_description = models.BooleanField(default=False)
+    require_guest_count = models.BooleanField(default=True)
+    max_guest_count = models.PositiveIntegerField(null=True, blank=True)
+    require_venue_preference = models.BooleanField(default=False)
+    venue_options = ArrayField(
+        models.CharField(max_length=255),
+        blank=True,
+        default=list,
+        help_text="Predefined venue options"
+    )
+
+    def __str__(self):
+        return f"Event details config for {self.step}"
+
+
+class DateTimeStepConfiguration(BaseModel):
+    """Configuration for date and time selection step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='datetime_config'
+    )
+    allow_time_selection = models.BooleanField(default=True)
+    allow_multi_day = models.BooleanField(default=False)
+    show_calendar_view = models.BooleanField(default=True)
+    min_duration_hours = models.PositiveIntegerField(default=1)
+    max_duration_hours = models.PositiveIntegerField(default=24)
+    default_duration_hours = models.PositiveIntegerField(default=4)
+    
+    # Availability settings
+    enable_real_time_availability = models.BooleanField(default=True)
+    blocked_dates = ArrayField(
+        models.DateField(),
+        blank=True,
+        default=list,
+        help_text="Dates that are completely blocked"
+    )
+    available_days_of_week = ArrayField(
+        models.IntegerField(),
+        default=list,
+        blank=True,
+        help_text="Days of week available (0=Monday, 6=Sunday)"
+    )
+    available_time_slots = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Available time slots configuration"
+    )
+    
+    # Buffer settings
+    buffer_before_hours = models.PositiveIntegerField(default=0)
+    buffer_after_hours = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"DateTime config for {self.step}"
+
+
+class QuestionnaireStepConfiguration(BaseModel):
+    """Configuration for questionnaire step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='questionnaire_config'
+    )
+    questionnaires = models.ManyToManyField(
+        Questionnaire,
+        through='QuestionnaireStepItem',
+        related_name='booking_flow_steps'
+    )
+    allow_file_uploads = models.BooleanField(default=False)
+    max_file_size_mb = models.PositiveIntegerField(default=10)
+    allowed_file_types = ArrayField(
+        models.CharField(max_length=10),
+        default=list,
+        blank=True,
+        help_text="Allowed file extensions (e.g., ['pdf', 'jpg', 'png'])"
+    )
+
+    def __str__(self):
+        return f"Questionnaire config for {self.step}"
+
+
+class QuestionnaireStepItem(BaseModel):
+    """Junction model for questionnaires in a step"""
+    configuration = models.ForeignKey(
+        QuestionnaireStepConfiguration,
+        on_delete=models.CASCADE,
+        related_name='questionnaire_items'
+    )
+    questionnaire = models.ForeignKey(
+        Questionnaire,
+        on_delete=models.CASCADE,
+        related_name='step_items'
+    )
+    order = models.PositiveIntegerField(default=0)
+    is_conditional = models.BooleanField(default=False)
+    show_conditions = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Conditions for showing this questionnaire"
+    )
+
+    class Meta:
+        ordering = ['configuration', 'order']
+        unique_together = [['configuration', 'questionnaire']]
+
+    def __str__(self):
+        return f"{self.questionnaire.name} in {self.configuration.step}"
+
+
+class PackageSelectionStepConfiguration(BaseModel):
+    """Configuration for package selection step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='package_config'
+    )
+    
+    # Product filtering
+    available_categories = models.ManyToManyField(
+        ProductCategory,
+        blank=True,
+        related_name='package_step_configs',
+        help_text="Limit packages to specific categories"
+    )
+    available_packages = models.ManyToManyField(
+        ProductOption,
+        blank=True,
+        related_name='package_step_configs',
+        limit_choices_to={'type': 'PACKAGE'},
+        help_text="Specific packages to show (overrides categories)"
+    )
+    
+    # Selection behavior
+    selection_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('SINGLE', 'Single Selection'),
+            ('MULTIPLE', 'Multiple Selection'),
+        ],
+        default='SINGLE'
+    )
+    min_selection = models.PositiveIntegerField(default=1)
+    max_selection = models.PositiveIntegerField(default=1)
+    
+    # Display options
+    show_pricing = models.BooleanField(default=True)
+    show_descriptions = models.BooleanField(default=True)
+    show_images = models.BooleanField(default=True)
+    enable_comparison = models.BooleanField(default=False)
+    
+    # Dynamic pricing
+    enable_dynamic_pricing = models.BooleanField(default=False)
+    pricing_factors = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Factors that affect pricing (guest count, date, etc.)"
+    )
+
+    def __str__(self):
+        return f"Package config for {self.step}"
+
+
+class AddonSelectionStepConfiguration(BaseModel):
+    """Configuration for add-on selection step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='addon_config'
+    )
+    
+    # Product filtering
+    available_categories = models.ManyToManyField(
+        ProductCategory,
+        blank=True,
+        related_name='addon_step_configs'
+    )
+    available_addons = models.ManyToManyField(
+        ProductOption,
+        blank=True,
+        related_name='addon_step_configs',
+        limit_choices_to={'type': 'PRODUCT'}
+    )
+    
+    # Selection behavior
+    min_selection = models.PositiveIntegerField(default=0)
+    max_selection = models.PositiveIntegerField(default=0, help_text="0 means unlimited")
+    
+    # Display options
+    group_by_category = models.BooleanField(default=True)
+    show_recommendations = models.BooleanField(default=True)
+    recommendation_logic = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Logic for recommending add-ons"
+    )
+
+    def __str__(self):
+        return f"Addon config for {self.step}"
+
+
+class ContactInfoStepConfiguration(BaseModel):
+    """Configuration for contact information step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='contact_config'
+    )
+    require_full_name = models.BooleanField(default=True)
+    require_email = models.BooleanField(default=True)
+    require_phone = models.BooleanField(default=True)
+    require_address = models.BooleanField(default=False)
+    require_company = models.BooleanField(default=False)
+    
+    # Additional fields
+    custom_fields = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Additional custom fields to collect"
+    )
+    
+    # Account creation
+    offer_account_creation = models.BooleanField(default=True)
+    require_account_creation = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Contact info config for {self.step}"
+
+
+class PaymentInfoStepConfiguration(BaseModel):
+    """Configuration for payment information step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='payment_config'
+    )
+    
+    # Payment options
+    accept_full_payment = models.BooleanField(default=True)
+    accept_deposit = models.BooleanField(default=True)
+    deposit_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('PERCENTAGE', 'Percentage'),
+            ('FIXED', 'Fixed Amount'),
+        ],
+        default='PERCENTAGE'
+    )
+    deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('50.00'))
+    
+    # Payment methods
+    available_payment_methods = ArrayField(
+        models.CharField(max_length=50),
+        default=list,
+        blank=True,
+        help_text="Available payment methods"
+    )
+    
+    # Payment processing
+    require_immediate_payment = models.BooleanField(default=False)
+    allow_payment_plans = models.BooleanField(default=False)
+    payment_terms = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Payment config for {self.step}"
+
+
+class ConfirmationStepConfiguration(BaseModel):
+    """Configuration for confirmation step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='confirmation_config'
+    )
+    title = models.CharField(max_length=255, default="Booking Confirmed!")
+    message = models.TextField()
+    show_booking_summary = models.BooleanField(default=True)
+    show_next_steps = models.BooleanField(default=True)
+    next_steps_content = models.TextField(blank=True)
+    
+    # Auto-actions
+    send_confirmation_email = models.BooleanField(default=True)
+    send_calendar_invite = models.BooleanField(default=False)
+    create_event_immediately = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Confirmation config for {self.step}"
+
+
+class BookingSession(BaseModel):
+    """
+    Tracks client progress through a booking flow
+    """
+    session_id = models.UUIDField(unique=True, db_index=True)
+    booking_flow = models.ForeignKey(
+        BookingFlow,
+        on_delete=models.CASCADE,
+        related_name='sessions'
+    )
+    client = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='booking_sessions'
+    )
+    
+    # Progress tracking
+    current_step = models.ForeignKey(
+        BookingFlowStep,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='current_sessions'
+    )
+    completed_steps = models.ManyToManyField(
+        BookingFlowStep,
+        blank=True,
+        related_name='completed_sessions'
+    )
+    
+    # Data storage
+    booking_data = models.JSONField(default=dict)
+    validation_errors = models.JSONField(default=dict, blank=True)
+    
+    # Session metadata
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    referrer_url = models.URLField(blank=True)
+    
+    # Status
+    is_completed = models.BooleanField(default=False)
+    is_abandoned = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    
+    # Conversion tracking
+    created_event = models.ForeignKey(
+        'events.Event',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='booking_session'
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Session {self.session_id} - {self.booking_flow.name}"
+    
+    @property
+    def progress_percentage(self):
+        """Calculate completion percentage"""
+        total_steps = self.booking_flow.enabled_steps.count()
+        if total_steps == 0:
+            return 0
+        completed_count = self.completed_steps.count()
+        return (completed_count / total_steps) * 100
+    
+    def is_expired(self):
+        """Check if session has expired"""
+        return timezone.now() > self.expires_at
+    
+    def mark_step_completed(self, step):
+        """Mark a step as completed"""
+        self.completed_steps.add(step)
+        
+        # Update current step to next step
+        next_step = self.booking_flow.get_next_step(step.id)
+        if next_step:
+            self.current_step = next_step
+        else:
+            # Flow completed
+            self.is_completed = True
+            self.completed_at = timezone.now()
+        
+        self.save()
+    
+    def calculate_total_price(self):
+        """Calculate total price from booking data"""
+        total = Decimal('0.00')
+        
+        # Add package prices
+        if 'selected_packages' in self.booking_data:
+            for package_data in self.booking_data['selected_packages']:
+                total += Decimal(str(package_data.get('price', 0)))
+        
+        # Add addon prices
+        if 'selected_addons' in self.booking_data:
+            for addon_data in self.booking_data['selected_addons']:
+                total += Decimal(str(addon_data.get('price', 0)))
+        
+        # Apply discounts
+        if 'applied_discount' in self.booking_data:
+            discount_data = self.booking_data['applied_discount']
+            discount_amount = Decimal(str(discount_data.get('amount', 0)))
+            total -= discount_amount
+        
+        return max(total, Decimal('0.00'))
+
+
+class BookingFlowAnalytics(BaseModel):
+    """
+    Analytics and tracking for booking flow performance
+    """
+    booking_flow = models.ForeignKey(
+        BookingFlow,
+        on_delete=models.CASCADE,
+        related_name='analytics'
+    )
+    date = models.DateField()
+    
+    # Conversion metrics
+    total_sessions = models.PositiveIntegerField(default=0)
+    completed_bookings = models.PositiveIntegerField(default=0)
+    abandoned_sessions = models.PositiveIntegerField(default=0)
+    conversion_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    
+    # Step analytics
+    step_completion_data = models.JSONField(
+        default=dict,
+        help_text="Completion rates for each step"
+    )
+    step_drop_off_data = models.JSONField(
+        default=dict,
+        help_text="Drop-off rates for each step"
+    )
+    
+    # Revenue metrics
+    total_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    average_booking_value = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    
+    # Performance metrics
+    average_completion_time = models.DurationField(null=True, blank=True)
+    bounce_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+
+    class Meta:
+        ordering = ['-date']
+        unique_together = [['booking_flow', 'date']]
+
+    def __str__(self):
+        return f"Analytics for {self.booking_flow.name} on {self.date}"

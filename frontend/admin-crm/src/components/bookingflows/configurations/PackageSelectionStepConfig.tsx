@@ -1,0 +1,538 @@
+// frontend/admin-crm/src/components/bookingflows/configurations/PackageSelectionStepConfig.tsx
+
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  TextField,
+  FormControlLabel,
+  Switch,
+  Typography,
+  Stack,
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
+  ListItemText,
+  RadioGroup,
+  Radio,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+} from '@mui/material';
+import {
+  ExpandMore as ExpandMoreIcon,
+  LocalShipping as PackageIcon,
+  Category as CategoryIcon,
+} from '@mui/icons-material';
+import type { 
+  BookingFlowStep, 
+  PackageSelectionStepConfiguration,
+} from '../../../types/bookingflows.types';
+import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
+
+interface PackageSelectionStepConfigProps {
+  step: BookingFlowStep;
+  config?: PackageSelectionStepConfiguration | null;
+  onUpdate: (data: Partial<PackageSelectionStepConfiguration>) => void;
+  isLoading?: boolean;
+}
+
+interface PackageConfigFormData {
+  available_categories: number[];
+  available_packages: number[];
+  selection_type: 'SINGLE' | 'MULTIPLE';
+  min_selection: number;
+  max_selection: number;
+  show_pricing: boolean;
+  show_descriptions: boolean;
+  show_images: boolean;
+  enable_comparison: boolean;
+  enable_dynamic_pricing: boolean;
+  pricing_factors: Record<string, any>;
+}
+
+const defaultFormData: PackageConfigFormData = {
+  available_categories: [],
+  available_packages: [],
+  selection_type: 'SINGLE',
+  min_selection: 1,
+  max_selection: 1,
+  show_pricing: true,
+  show_descriptions: true,
+  show_images: true,
+  enable_comparison: false,
+  enable_dynamic_pricing: false,
+  pricing_factors: {},
+};
+
+export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProps> = ({
+  step,
+  config,
+  isLoading = false,
+}) => {
+  const [formData, setFormData] = useState<PackageConfigFormData>(defaultFormData);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const {
+    useAvailablePackages,
+    useAvailableCategories,
+    configurePackages,
+    isConfiguringPackages,
+  } = useBookingFlowStepConfiguration();
+
+  const { data: availablePackages = [] } = useAvailablePackages(step.id);
+  const { data: availableCategories = [] } = useAvailableCategories(step.id);
+
+  useEffect(() => {
+    if (config) {
+      setFormData({
+        available_categories: config.available_categories || [],
+        available_packages: config.available_packages || [],
+        selection_type: config.selection_type || 'SINGLE',
+        min_selection: config.min_selection || 1,
+        max_selection: config.max_selection || 1,
+        show_pricing: config.show_pricing ?? true,
+        show_descriptions: config.show_descriptions ?? true,
+        show_images: config.show_images ?? true,
+        enable_comparison: config.enable_comparison ?? false,
+        enable_dynamic_pricing: config.enable_dynamic_pricing ?? false,
+        pricing_factors: config.pricing_factors || {},
+      });
+    }
+  }, [config]);
+
+  const handleInputChange = (field: keyof PackageConfigFormData) => (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
+           { target: { value: unknown } }
+  ) => {
+    const value = event.target.value;
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: '',
+      }));
+    }
+  };
+
+  const handleSwitchChange = (field: keyof PackageConfigFormData) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: event.target.checked,
+    }));
+  };
+
+  const handleSelectionTypeChange = (value: 'SINGLE' | 'MULTIPLE') => {
+    setFormData(prev => ({
+      ...prev,
+      selection_type: value,
+      min_selection: value === 'SINGLE' ? 1 : prev.min_selection,
+      max_selection: value === 'SINGLE' ? 1 : prev.max_selection,
+    }));
+  };
+
+  const handleCategoriesChange = (value: number[]) => {
+    setFormData(prev => ({
+      ...prev,
+      available_categories: value,
+      // Clear specific packages when categories change
+      available_packages: [],
+    }));
+  };
+
+  const handlePackagesChange = (value: number[]) => {
+    setFormData(prev => ({
+      ...prev,
+      available_packages: value,
+    }));
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (formData.available_categories.length === 0 && formData.available_packages.length === 0) {
+      newErrors.packages = 'Select either categories or specific packages';
+    }
+
+    if (formData.selection_type === 'MULTIPLE') {
+      if (formData.min_selection < 0) {
+        newErrors.min_selection = 'Minimum selection cannot be negative';
+      }
+      
+      if (formData.max_selection > 0 && formData.max_selection < formData.min_selection) {
+        newErrors.max_selection = 'Maximum selection must be greater than or equal to minimum';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validateForm()) return;
+
+    configurePackages({
+      stepId: step.id,
+      data: {
+        available_categories: formData.available_categories,
+        available_packages: formData.available_packages,
+        selection_type: formData.selection_type,
+        min_selection: formData.min_selection,
+        max_selection: formData.max_selection,
+        show_pricing: formData.show_pricing,
+        show_descriptions: formData.show_descriptions,
+        show_images: formData.show_images,
+        enable_comparison: formData.enable_comparison,
+        enable_dynamic_pricing: formData.enable_dynamic_pricing,
+        pricing_factors: formData.pricing_factors,
+      }
+    });
+  };
+
+  return (
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        Package Selection Configuration
+      </Typography>
+      
+      <Alert severity="info" sx={{ mb: 3 }}>
+        Configure which packages are available for selection and how clients can choose them.
+      </Alert>
+
+      <Stack spacing={3}>
+        {/* Package Availability */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>
+              Available Packages
+            </Typography>
+            
+            <Stack spacing={2}>
+              {/* Categories Selection */}
+              <FormControl fullWidth>
+                <InputLabel>Filter by Categories</InputLabel>
+                <Select
+                  multiple
+                  value={formData.available_categories}
+                  onChange={(e) => handleCategoriesChange(e.target.value as number[])}
+                  label="Filter by Categories"
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((categoryId) => {
+                        const category = availableCategories.find(c => c.id === categoryId);
+                        return (
+                          <Chip 
+                            key={categoryId} 
+                            label={category?.name || `Category ${categoryId}`} 
+                            size="small" 
+                            icon={<CategoryIcon />}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                >
+                  {availableCategories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      <Checkbox checked={formData.available_categories.includes(category.id)} />
+                      <ListItemText primary={category.name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+                <Typography variant="caption" color="text.secondary">
+                  Show packages from selected categories
+                </Typography>
+              </FormControl>
+
+              {/* Specific Packages Selection */}
+              <FormControl fullWidth>
+                <InputLabel>Specific Packages (Optional)</InputLabel>
+                <Select
+                  multiple
+                  value={formData.available_packages}
+                  onChange={(e) => handlePackagesChange(e.target.value as number[])}
+                  label="Specific Packages (Optional)"
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((packageId) => {
+                        const pkg = availablePackages.find(p => p.id === packageId);
+                        return (
+                          <Chip 
+                            key={packageId} 
+                            label={pkg?.name || `Package ${packageId}`} 
+                            size="small" 
+                            icon={<PackageIcon />}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                >
+                  {availablePackages.map((pkg) => (
+                    <MenuItem key={pkg.id} value={pkg.id}>
+                      <Checkbox checked={formData.available_packages.includes(pkg.id)} />
+                      <ListItemText 
+                        primary={pkg.name}
+                        secondary={`${pkg.base_price}`}
+                      />
+                    </MenuItem>
+                  ))}
+                </Select>
+                <Typography variant="caption" color="text.secondary">
+                  Override category filtering with specific packages
+                </Typography>
+              </FormControl>
+
+              {errors.packages && (
+                <Alert severity="error">{errors.packages}</Alert>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Selection Behavior */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>
+              Selection Behavior
+            </Typography>
+            
+            <Stack spacing={2}>
+              <FormControl>
+                <Typography variant="body2" gutterBottom>
+                  Selection Type
+                </Typography>
+                <RadioGroup
+                  value={formData.selection_type}
+                  onChange={(e) => handleSelectionTypeChange(e.target.value as 'SINGLE' | 'MULTIPLE')}
+                >
+                  <FormControlLabel
+                    value="SINGLE"
+                    control={<Radio />}
+                    label="Single Selection"
+                  />
+                  <FormControlLabel
+                    value="MULTIPLE"
+                    control={<Radio />}
+                    label="Multiple Selection"
+                  />
+                </RadioGroup>
+              </FormControl>
+
+              {formData.selection_type === 'MULTIPLE' && (
+                <Box display="flex" gap={2}>
+                  <TextField
+                    label="Minimum Selection"
+                    type="number"
+                    value={formData.min_selection}
+                    onChange={handleInputChange('min_selection')}
+                    error={!!errors.min_selection}
+                    helperText={errors.min_selection || 'Minimum packages required'}
+                    inputProps={{ min: 0 }}
+                    sx={{ flex: 1 }}
+                  />
+                  
+                  <TextField
+                    label="Maximum Selection"
+                    type="number"
+                    value={formData.max_selection}
+                    onChange={handleInputChange('max_selection')}
+                    error={!!errors.max_selection}
+                    helperText={errors.max_selection || 'Maximum packages allowed (0 = unlimited)'}
+                    inputProps={{ min: 0 }}
+                    sx={{ flex: 1 }}
+                  />
+                </Box>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Display Options */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>
+              Display Options
+            </Typography>
+            
+            <Stack spacing={2}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_pricing}
+                    onChange={handleSwitchChange('show_pricing')}
+                  />
+                }
+                label="Show Pricing"
+              />
+              <Typography variant="caption" color="text.secondary">
+                Display package prices to clients
+              </Typography>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_descriptions}
+                    onChange={handleSwitchChange('show_descriptions')}
+                  />
+                }
+                label="Show Descriptions"
+              />
+              <Typography variant="caption" color="text.secondary">
+                Display detailed package descriptions
+              </Typography>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_images}
+                    onChange={handleSwitchChange('show_images')}
+                  />
+                }
+                label="Show Images"
+              />
+              <Typography variant="caption" color="text.secondary">
+                Display package images if available
+              </Typography>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.enable_comparison}
+                    onChange={handleSwitchChange('enable_comparison')}
+                  />
+                }
+                label="Enable Package Comparison"
+              />
+              <Typography variant="caption" color="text.secondary">
+                Allow clients to compare packages side-by-side
+              </Typography>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Advanced Pricing */}
+        <Accordion>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <Typography variant="subtitle1">Advanced Pricing</Typography>
+              {formData.enable_dynamic_pricing && (
+                <Chip label="Enabled" size="small" color="primary" />
+              )}
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Stack spacing={2}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.enable_dynamic_pricing}
+                    onChange={handleSwitchChange('enable_dynamic_pricing')}
+                  />
+                }
+                label="Enable Dynamic Pricing"
+              />
+              <Typography variant="caption" color="text.secondary">
+                Adjust prices based on guest count, date, or other factors
+              </Typography>
+
+              {formData.enable_dynamic_pricing && (
+                <TextField
+                  fullWidth
+                  label="Pricing Factors (JSON)"
+                  value={JSON.stringify(formData.pricing_factors, null, 2)}
+                  onChange={(e) => {
+                    try {
+                      const parsed = JSON.parse(e.target.value);
+                      setFormData(prev => ({
+                        ...prev,
+                        pricing_factors: parsed,
+                      }));
+                    } catch {
+                      // Invalid JSON, ignore
+                    }
+                  }}
+                  multiline
+                  rows={4}
+                  helperText="Define pricing adjustment rules (e.g., guest count multipliers, date-based pricing)"
+                />
+              )}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
+
+        {/* Configuration Summary */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>
+              Configuration Summary
+            </Typography>
+            
+            <Stack spacing={1}>
+              <Typography variant="body2">
+                <strong>Package Source:</strong>{' '}
+                {formData.available_packages.length > 0 
+                  ? `${formData.available_packages.length} specific packages` 
+                  : formData.available_categories.length > 0 
+                    ? `${formData.available_categories.length} categories`
+                    : 'All packages'
+                }
+              </Typography>
+              
+              <Typography variant="body2">
+                <strong>Selection:</strong> {formData.selection_type === 'SINGLE' ? 'Single package' : `${formData.min_selection}-${formData.max_selection || '∞'} packages`}
+              </Typography>
+              
+              <Typography variant="body2">
+                <strong>Display:</strong>{' '}
+                {[
+                  formData.show_pricing && 'Pricing',
+                  formData.show_descriptions && 'Descriptions', 
+                  formData.show_images && 'Images',
+                  formData.enable_comparison && 'Comparison'
+                ].filter(Boolean).join(', ') || 'Basic display'}
+              </Typography>
+              
+              {formData.enable_dynamic_pricing && (
+                <Typography variant="body2">
+                  <strong>Dynamic Pricing:</strong> Enabled
+                </Typography>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Actions */}
+        <Box display="flex" gap={2}>
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            disabled={isLoading || isConfiguringPackages}
+          >
+            {isLoading || isConfiguringPackages ? 'Saving...' : 'Save Configuration'}
+          </Button>
+          
+          <Button
+            variant="outlined"
+            onClick={() => setFormData(defaultFormData)}
+          >
+            Reset to Defaults
+          </Button>
+        </Box>
+      </Stack>
+    </Box>
+  );
+};
