@@ -2,3 +2,6 @@
 
 export { EventTypeFormDialog } from './EventTypeFormDialog';
 export { EventTypesTable } from './EventTypesTable';
+
+export { EventForm } from './EventForm';
+export { WorkflowProgress } from './WorkflowProgress';
