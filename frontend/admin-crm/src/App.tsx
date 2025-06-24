@@ -17,7 +17,7 @@ import { AppLayout } from './components/layout';
 import { SettingsLayout } from './pages/settings';
 import { Settings } from './pages/settings';
 import { AccountSettings, AdminUsers } from './pages/settings/account';
-import { BookingFlows, BookingFlowDetails, EventTypes } from './pages/settings/booking';
+import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CommunicationNotifications } from './pages/settings/account/Notifications';
@@ -193,12 +193,29 @@ const AppRouter: React.FC = () => {
           </SettingsRoute>
         }
       />
-      {/* FIXED: Use single parameterized route for both new and edit */}
+      {/* Booking Configuration - UPDATED with preview route */}
+      <Route
+        path="/settings/booking/booking-flow"
+        element={
+          <SettingsRoute>
+            <BookingFlows />
+          </SettingsRoute>
+        }
+      />
       <Route
         path="/settings/booking/booking-flow/:id"
         element={
           <SettingsRoute>
             <BookingFlowDetails />
+          </SettingsRoute>
+        }
+      />
+      {/* NEW: Preview route */}
+      <Route
+        path="/settings/booking/booking-flow/preview/:id"
+        element={
+          <SettingsRoute>
+            <BookingFlowPreviewPage />
           </SettingsRoute>
         }
       />
