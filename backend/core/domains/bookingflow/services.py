@@ -1,51 +1,47 @@
 # backend/core/domains/bookingflow/services.py
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from decimal import Decimal
+from typing import Dict, List, Any, Optional
 
-from core.domains.events.models import Event, EventProductOption, EventTimeline
-from core.domains.events.services import EventService
-from core.domains.products.models import Discount, ProductOption
-from core.domains.questionnaires.models import QuestionnaireResponse
 from django.db import models, transaction
-from django.db.models import Q
+from django.db.models import Q, Max, Prefetch
 from django.utils import timezone
+from core.domains.questionnaires.models import Questionnaire
+from core.domains.products.models import ProductCategory, ProductOption, Discount
+from core.domains.events.models import Event, EventProductOption
 
 from .exceptions import (
-    AvailabilityCheckFailed,
-    BookingCreationFailed,
-    BookingFlowInactive,
     BookingFlowNotFound,
     BookingFlowStepNotFound,
-    BookingSessionExpired,
     BookingSessionNotFound,
-    ConditionalLogicError,
-    DiscountNotApplicable,
-    DuplicateStepType,
-    InvalidBookingData,
     InvalidStepConfiguration,
-    InvalidStepTransition,
-    MaxAdvanceBookingExceeded,
-    MinAdvanceBookingNotMet,
-    ProductNotAvailable,
+    DuplicateStepType,
+    InvalidStepOrder,
+    BookingSessionExpired,
+    InvalidSessionData,
     StepValidationError,
+    QuestionnaireNotFound,
+    ProductNotFound,
+    BookingFlowNotActive,
+    EventCreationFailed,
 )
 from .models import (
-    AddonSelectionStepConfiguration,
     BookingFlow,
-    BookingFlowAnalytics,
     BookingFlowStep,
     BookingSession,
-    ConfirmationStepConfiguration,
-    ContactInfoStepConfiguration,
-    DateTimeStepConfiguration,
-    EventDetailsStepConfiguration,
-    IntroductionStepConfiguration,
-    PackageSelectionStepConfiguration,
-    PaymentInfoStepConfiguration,
+    BookingFlowAnalytics,
     QuestionnaireStepConfiguration,
     QuestionnaireStepItem,
+    PackageSelectionStepConfiguration,
+    AddonSelectionStepConfiguration,
+    ContactInfoStepConfiguration,
+    PaymentInfoStepConfiguration,
+    IntroductionStepConfiguration,
+    EventDetailsStepConfiguration,
+    DateTimeStepConfiguration,
+    ConfirmationStepConfiguration,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,7 +53,7 @@ class BookingFlowService:
     @staticmethod
     def get_all_flows(search_query=None, event_type_id=None, is_active=None):
         """Get all booking flows with optional filtering"""
-        queryset = BookingFlow.objects.select_related('event_type', 'workflow_template').all()
+        queryset = BookingFlow.objects.select_related('event_type').prefetch_related('steps')
         
         if search_query:
             queryset = queryset.filter(
@@ -78,69 +74,70 @@ class BookingFlowService:
         """Get a booking flow by ID"""
         try:
             return BookingFlow.objects.select_related(
-                'event_type', 'workflow_template'
+                'event_type', 'workflow_template',
+                'confirmation_email_template', 'reminder_email_template'
             ).prefetch_related(
-                'steps', 'available_discounts'
+                'steps__introduction_config',
+                'steps__event_details_config',
+                'steps__datetime_config',
+                'steps__questionnaire_config__questionnaire_items__questionnaire',
+                'steps__package_config__available_categories',
+                'steps__package_config__available_packages',
+                'steps__addon_config__available_categories',
+                'steps__addon_config__available_addons',
+                'steps__contact_config',
+                'steps__payment_config',
+                'steps__confirmation_config',
+                'available_discounts'
             ).get(id=flow_id)
         except BookingFlow.DoesNotExist:
             raise BookingFlowNotFound()
     
     @staticmethod
-    def create_flow(flow_data, user):
-        """Create a new booking flow with default steps"""
+    def create_flow(flow_data):
+        """Create a new booking flow"""
         with transaction.atomic():
-            # Extract nested data
+            # Extract steps data if provided
             steps_data = flow_data.pop('steps', [])
-            available_discounts = flow_data.pop('available_discounts', [])
             
-            # Create the flow
+            # Create the booking flow
             flow = BookingFlow.objects.create(**flow_data)
             
-            # Set available discounts
-            if available_discounts:
-                flow.available_discounts.set(available_discounts)
+            # Create steps if provided
+            for step_data in steps_data:
+                BookingFlowStepService.create_step(flow.id, step_data)
             
-            # Create steps or use default steps if none provided
-            if steps_data:
-                for step_data in steps_data:
-                    BookingFlowStepService.create_step(flow.id, step_data, user)
-            else:
-                BookingFlowService._create_default_steps(flow, user)
-            
-            logger.info(f"Created booking flow: {flow.name} by {user}")
+            logger.info(f"Created new booking flow: {flow.name}")
             return flow
     
     @staticmethod
-    def update_flow(flow_id, flow_data, user):
+    def update_flow(flow_id, flow_data):
         """Update an existing booking flow"""
         flow = BookingFlowService.get_flow_by_id(flow_id)
         
         with transaction.atomic():
-            # Extract nested data
+            # Handle steps separately if provided
             steps_data = flow_data.pop('steps', None)
-            available_discounts = flow_data.pop('available_discounts', None)
             
-            # Update main fields
+            # Update flow fields
             for key, value in flow_data.items():
                 setattr(flow, key, value)
-            flow.save()
             
-            # Update available discounts
-            if available_discounts is not None:
-                flow.available_discounts.set(available_discounts)
+            flow.save()
             
             # Update steps if provided
             if steps_data is not None:
-                # Delete existing steps and create new ones
+                # Clear existing steps and create new ones
                 flow.steps.all().delete()
+                
                 for step_data in steps_data:
-                    BookingFlowStepService.create_step(flow.id, step_data, user)
+                    BookingFlowStepService.create_step(flow.id, step_data)
             
-            logger.info(f"Updated booking flow: {flow.name} by {user}")
+            logger.info(f"Updated booking flow: {flow.name}")
             return flow
     
     @staticmethod
-    def delete_flow(flow_id, user):
+    def delete_flow(flow_id):
         """Delete a booking flow"""
         flow = BookingFlowService.get_flow_by_id(flow_id)
         
@@ -148,144 +145,84 @@ class BookingFlowService:
         active_sessions = BookingSession.objects.filter(
             booking_flow=flow,
             is_completed=False,
+            is_abandoned=False,
             expires_at__gt=timezone.now()
-        ).count()
+        ).exists()
         
-        if active_sessions > 0:
-            raise InvalidStepTransition(
-                detail=f"Cannot delete flow with {active_sessions} active booking sessions"
+        if active_sessions:
+            # Instead of preventing deletion, mark sessions as abandoned
+            BookingSession.objects.filter(
+                booking_flow=flow,
+                is_completed=False,
+                is_abandoned=False
+            ).update(
+                is_abandoned=True,
+                booking_data=models.F('booking_data') | {'abandonment_reason': 'Booking flow deleted'}
             )
         
         with transaction.atomic():
             flow_name = flow.name
             flow.delete()
-            logger.info(f"Deleted booking flow: {flow_name} by {user}")
+            logger.info(f"Deleted booking flow: {flow_name}")
             return True
     
     @staticmethod
-    def duplicate_flow(flow_id, new_name, user):
-        """Create a duplicate of an existing booking flow"""
-        original_flow = BookingFlowService.get_flow_by_id(flow_id)
+    def duplicate_flow(flow_id, new_name, copy_steps=True, copy_configuration=True):
+        """Duplicate a booking flow"""
+        source_flow = BookingFlowService.get_flow_by_id(flow_id)
         
         with transaction.atomic():
-            # Create new flow
-            new_flow = BookingFlow.objects.create(
-                name=new_name,
-                description=f"Copy of {original_flow.description}",
-                event_type=original_flow.event_type,
-                workflow_template=original_flow.workflow_template,
-                confirmation_email_template=original_flow.confirmation_email_template,
-                reminder_email_template=original_flow.reminder_email_template,
-                is_active=False,  # Start as inactive
-                allow_guest_booking=original_flow.allow_guest_booking,
-                require_account_creation=original_flow.require_account_creation,
-                auto_approve_bookings=original_flow.auto_approve_bookings,
-                enable_progress_saving=original_flow.enable_progress_saving,
-                max_advance_booking_days=original_flow.max_advance_booking_days,
-                min_advance_booking_days=original_flow.min_advance_booking_days,
-                allow_discounts=original_flow.allow_discounts,
-                redirect_url=original_flow.redirect_url,
-                success_message=original_flow.success_message,
-                is_test_mode=True  # Start in test mode
-            )
+            # Create new flow with duplicated data
+            new_flow_data = {
+                'name': new_name,
+                'description': f"Copy of {source_flow.description}",
+                'event_type': source_flow.event_type,
+                'workflow_template': source_flow.workflow_template,
+                'confirmation_email_template': source_flow.confirmation_email_template,
+                'reminder_email_template': source_flow.reminder_email_template,
+                'is_active': False,  # Start as inactive
+                'allow_guest_booking': source_flow.allow_guest_booking,
+                'require_account_creation': source_flow.require_account_creation,
+                'auto_approve_bookings': source_flow.auto_approve_bookings,
+                'enable_progress_saving': source_flow.enable_progress_saving,
+                'max_advance_booking_days': source_flow.max_advance_booking_days,
+                'min_advance_booking_days': source_flow.min_advance_booking_days,
+                'allow_discounts': source_flow.allow_discounts,
+                'redirect_url': source_flow.redirect_url,
+                'success_message': source_flow.success_message,
+                'conversion_tracking_code': source_flow.conversion_tracking_code,
+            }
+            
+            new_flow = BookingFlow.objects.create(**new_flow_data)
             
             # Copy available discounts
-            new_flow.available_discounts.set(original_flow.available_discounts.all())
+            new_flow.available_discounts.set(source_flow.available_discounts.all())
             
-            # Copy steps
-            for step in original_flow.steps.all():
-                new_step = BookingFlowStep.objects.create(
-                    booking_flow=new_flow,
-                    step_type=step.step_type,
-                    name=step.name,
-                    description=step.description,
-                    order=step.order,
-                    is_enabled=step.is_enabled,
-                    is_required=step.is_required,
-                    is_skippable=step.is_skippable,
-                    display_conditions=step.display_conditions,
-                    configuration=step.configuration,
-                    validation_rules=step.validation_rules
-                )
-                
-                # Copy step configurations
-                BookingFlowStepService._copy_step_configuration(step, new_step)
+            # Copy steps if requested
+            if copy_steps:
+                for step in source_flow.steps.all().order_by('order'):
+                    new_step = BookingFlowStep.objects.create(
+                        booking_flow=new_flow,
+                        step_type=step.step_type,
+                        name=step.name,
+                        description=step.description,
+                        order=step.order,
+                        is_enabled=step.is_enabled,
+                        is_required=step.is_required,
+                        is_skippable=step.is_skippable,
+                        display_conditions=step.display_conditions.copy(),
+                        configuration=step.configuration.copy(),
+                        validation_rules=step.validation_rules.copy(),
+                    )
+                    
+                    # Copy step configurations if requested
+                    if copy_configuration:
+                        BookingFlowStepConfigurationService.duplicate_step_configuration(
+                            step.id, new_step.id
+                        )
             
-            logger.info(f"Duplicated booking flow: {original_flow.name} -> {new_name} by {user}")
+            logger.info(f"Duplicated booking flow: {source_flow.name} -> {new_name}")
             return new_flow
-    
-    @staticmethod
-    def _create_default_steps(flow, user):
-        """Create default steps for a new booking flow"""
-        default_steps = [
-            {
-                'step_type': 'introduction',
-                'name': 'Welcome',
-                'description': 'Introduction to the booking process',
-                'order': 1,
-                'is_enabled': True,
-                'is_required': True
-            },
-            {
-                'step_type': 'event_details',
-                'name': 'Event Details',
-                'description': 'Basic event information',
-                'order': 2,
-                'is_enabled': True,
-                'is_required': True
-            },
-            {
-                'step_type': 'date_time',
-                'name': 'Date & Time',
-                'description': 'Select event date and time',
-                'order': 3,
-                'is_enabled': True,
-                'is_required': True
-            },
-            {
-                'step_type': 'package_selection',
-                'name': 'Select Package',
-                'description': 'Choose your event package',
-                'order': 4,
-                'is_enabled': True,
-                'is_required': True
-            },
-            {
-                'step_type': 'addon_selection',
-                'name': 'Add-ons',
-                'description': 'Optional add-ons',
-                'order': 5,
-                'is_enabled': True,
-                'is_required': False
-            },
-            {
-                'step_type': 'contact_info',
-                'name': 'Contact Information',
-                'description': 'Your contact details',
-                'order': 6,
-                'is_enabled': True,
-                'is_required': True
-            },
-            {
-                'step_type': 'review_booking',
-                'name': 'Review Booking',
-                'description': 'Review your booking details',
-                'order': 7,
-                'is_enabled': True,
-                'is_required': True
-            },
-            {
-                'step_type': 'confirmation',
-                'name': 'Confirmation',
-                'description': 'Booking confirmation',
-                'order': 8,
-                'is_enabled': True,
-                'is_required': True
-            }
-        ]
-        
-        for step_data in default_steps:
-            BookingFlowStepService.create_step(flow.id, step_data, user)
 
 
 class BookingFlowStepService:
@@ -309,7 +246,7 @@ class BookingFlowStepService:
             raise BookingFlowStepNotFound()
     
     @staticmethod
-    def create_step(flow_id, step_data, user):
+    def create_step(flow_id, step_data):
         """Create a new booking flow step"""
         try:
             flow = BookingFlow.objects.get(id=flow_id)
@@ -324,23 +261,26 @@ class BookingFlowStepService:
             raise DuplicateStepType()
         
         # Auto-assign order if not provided
-        if 'order' not in step_data:
+        if 'order' not in step_data or step_data['order'] is None:
             max_order = BookingFlowStep.objects.filter(
                 booking_flow=flow
-            ).aggregate(models.Max('order'))['order__max'] or 0
+            ).aggregate(Max('order'))['order__max'] or 0
             step_data['order'] = max_order + 1
         
         with transaction.atomic():
-            step = BookingFlowStep.objects.create(booking_flow=flow, **step_data)
+            step = BookingFlowStep.objects.create(
+                booking_flow=flow,
+                **step_data
+            )
             
             # Create default configuration for the step
-            BookingFlowStepService._create_default_configuration(step)
+            BookingFlowStepConfigurationService._create_default_configuration(step)
             
-            logger.info(f"Created step: {step.name} for flow: {flow.name} by {user}")
+            logger.info(f"Created new step: {step.name} for flow: {flow.name}")
             return step
     
     @staticmethod
-    def update_step(step_id, step_data, user):
+    def update_step(step_id, step_data):
         """Update an existing booking flow step"""
         step = BookingFlowStepService.get_step_by_id(step_id)
         
@@ -353,28 +293,47 @@ class BookingFlowStepService:
                 raise DuplicateStepType()
         
         with transaction.atomic():
-            # Update step fields
+            # Handle order change specially to maintain sequential ordering
+            if 'order' in step_data and step_data['order'] != step.order:
+                BookingFlowStepService._reorder_step(step, step_data['order'])
+                step_data.pop('order')  # Remove from data as it's handled separately
+            
+            # Update other fields
             for key, value in step_data.items():
                 setattr(step, key, value)
-            step.save()
             
-            logger.info(f"Updated step: {step.name} by {user}")
+            step.save()
+            logger.info(f"Updated step: {step.name}")
             return step
     
     @staticmethod
-    def delete_step(step_id, user):
+    def delete_step(step_id):
         """Delete a booking flow step"""
         step = BookingFlowStepService.get_step_by_id(step_id)
         
         with transaction.atomic():
+            flow = step.booking_flow
+            deleted_order = step.order
             step_name = step.name
-            flow_name = step.booking_flow.name
+            
+            # Delete the step
             step.delete()
-            logger.info(f"Deleted step: {step_name} from flow: {flow_name} by {user}")
+            
+            # Reorder remaining steps to maintain sequential ordering
+            remaining_steps = BookingFlowStep.objects.filter(
+                booking_flow=flow,
+                order__gt=deleted_order
+            ).select_for_update().order_by('order')
+            
+            for remaining in remaining_steps:
+                remaining.order -= 1
+                remaining.save(update_fields=['order'])
+            
+            logger.info(f"Deleted step: {step_name} and reordered remaining steps")
             return True
     
     @staticmethod
-    def reorder_steps(flow_id, order_mapping, user):
+    def reorder_steps(flow_id, order_mapping):
         """Reorder steps within a booking flow"""
         try:
             flow = BookingFlow.objects.get(id=flow_id)
@@ -389,107 +348,390 @@ class BookingFlowStepService:
             # Convert string IDs to integers
             int_order_mapping = {int(k): v for k, v in order_mapping.items()}
             
-            # Update orders
+            # Get maximum order for temporary values
+            max_order = steps.aggregate(Max('order'))['order__max'] or 0
+            temp_start = max_order + 1000
+            
+            # Phase 1: Assign temporary high orders
+            for i, step in enumerate(steps):
+                if step.id in int_order_mapping:
+                    step.order = temp_start + i
+                    step.save(update_fields=['order'])
+            
+            # Phase 2: Assign final order values
             for step in steps:
                 if step.id in int_order_mapping:
                     step.order = int_order_mapping[step.id]
                     step.save(update_fields=['order'])
             
-            logger.info(f"Reordered steps for flow: {flow.name} by {user}")
+            logger.info(f"Reordered steps for flow: {flow.name}")
             return steps.order_by('order')
     
     @staticmethod
-    def _create_default_configuration(step):
-        """Create default configuration for a step based on its type"""
-        if step.step_type == 'introduction':
-            IntroductionStepConfiguration.objects.create(
-                step=step,
-                title=f"Welcome to {step.booking_flow.event_type.name} Booking",
-                content="We're excited to help you plan your perfect event!"
-            )
-        elif step.step_type == 'event_details':
-            EventDetailsStepConfiguration.objects.create(
-                step=step,
-                require_event_name=True,
-                require_guest_count=True
-            )
-        elif step.step_type == 'date_time':
-            DateTimeStepConfiguration.objects.create(
-                step=step,
-                allow_time_selection=True,
-                show_calendar_view=True,
-                default_duration_hours=4
-            )
-        elif step.step_type == 'questionnaire':
-            QuestionnaireStepConfiguration.objects.create(step=step)
-        elif step.step_type == 'package_selection':
-            PackageSelectionStepConfiguration.objects.create(step=step)
-        elif step.step_type == 'addon_selection':
-            AddonSelectionStepConfiguration.objects.create(step=step)
-        elif step.step_type == 'contact_info':
-            ContactInfoStepConfiguration.objects.create(
-                step=step,
-                require_full_name=True,
-                require_email=True,
-                require_phone=True
-            )
-        elif step.step_type == 'payment_info':
-            PaymentInfoStepConfiguration.objects.create(
-                step=step,
-                accept_full_payment=True,
-                accept_deposit=True
-            )
-        elif step.step_type == 'confirmation':
-            ConfirmationStepConfiguration.objects.create(
-                step=step,
-                title="Booking Confirmed!",
-                message="Thank you for your booking. We'll be in touch soon!"
-            )
+    def _reorder_step(step, new_order):
+        """Helper method to reorder a single step"""
+        flow = step.booking_flow
+        old_order = step.order
+        
+        # Get all steps for this flow
+        all_steps = BookingFlowStep.objects.filter(
+            booking_flow=flow
+        ).select_for_update().order_by('order')
+        
+        # Get maximum order for temporary values
+        max_order = all_steps.aggregate(Max('order'))['order__max'] or 0
+        temp_start = max_order + 1000
+        
+        # Assign temporary orders
+        for i, s in enumerate(all_steps):
+            s.order = temp_start + i
+            s.save(update_fields=['order'])
+        
+        # Create list in desired order
+        step_list = [s for s in all_steps if s.id != step.id]
+        insert_position = min(new_order - 1, len(step_list))
+        step_list.insert(insert_position, step)
+        
+        # Assign final sequential orders
+        for i, s in enumerate(step_list, start=1):
+            s.order = i
+            s.save(update_fields=['order'])
+
+
+class BookingFlowStepConfigurationService:
+    """Enhanced service for managing step configurations"""
     
     @staticmethod
-    def _copy_step_configuration(original_step, new_step):
-        """Copy step configuration from original to new step"""
+    def get_step_configuration(step_id):
+        """Get configuration for a specific step"""
         try:
-            if original_step.step_type == 'introduction' and hasattr(original_step, 'introduction_config'):
-                config = original_step.introduction_config
-                IntroductionStepConfiguration.objects.create(
-                    step=new_step,
-                    title=config.title,
-                    content=config.content,
-                    show_event_details=config.show_event_details,
-                    show_pricing_overview=config.show_pricing_overview,
-                    custom_css=config.custom_css
-                )
-            # Add similar copying logic for other step types...
-        except AttributeError:
-            # If no configuration exists, create default
-            BookingFlowStepService._create_default_configuration(new_step)
+            step = BookingFlowStep.objects.get(id=step_id)
+        except BookingFlowStep.DoesNotExist:
+            raise BookingFlowStepNotFound()
+        
+        config_map = {
+            'introduction': lambda s: getattr(s, 'introduction_config', None),
+            'event_details': lambda s: getattr(s, 'event_details_config', None),
+            'date_time': lambda s: getattr(s, 'datetime_config', None),
+            'questionnaire': lambda s: getattr(s, 'questionnaire_config', None),
+            'package_selection': lambda s: getattr(s, 'package_config', None),
+            'addon_selection': lambda s: getattr(s, 'addon_config', None),
+            'contact_info': lambda s: getattr(s, 'contact_config', None),
+            'payment_info': lambda s: getattr(s, 'payment_config', None),
+            'confirmation': lambda s: getattr(s, 'confirmation_config', None),
+        }
+        
+        config_getter = config_map.get(step.step_type)
+        if config_getter:
+            try:
+                config = config_getter(step)
+                if config is None:
+                    # Create default configuration if it doesn't exist
+                    config = BookingFlowStepConfigurationService._create_default_configuration(step)
+                return config
+            except AttributeError:
+                # Configuration doesn't exist, create default
+                return BookingFlowStepConfigurationService._create_default_configuration(step)
+        
+        return None
+    
+    @staticmethod
+    def update_step_configuration(step_id, config_data):
+        """Update configuration for a specific step"""
+        try:
+            step = BookingFlowStep.objects.get(id=step_id)
+        except BookingFlowStep.DoesNotExist:
+            raise BookingFlowStepNotFound()
+        
+        with transaction.atomic():
+            config_updaters = {
+                'introduction': BookingFlowStepConfigurationService._update_introduction_config,
+                'event_details': BookingFlowStepConfigurationService._update_event_details_config,
+                'date_time': BookingFlowStepConfigurationService._update_datetime_config,
+                'questionnaire': BookingFlowStepConfigurationService._update_questionnaire_config,
+                'package_selection': BookingFlowStepConfigurationService._update_package_config,
+                'addon_selection': BookingFlowStepConfigurationService._update_addon_config,
+                'contact_info': BookingFlowStepConfigurationService._update_contact_config,
+                'payment_info': BookingFlowStepConfigurationService._update_payment_config,
+                'confirmation': BookingFlowStepConfigurationService._update_confirmation_config,
+            }
+            
+            updater = config_updaters.get(step.step_type)
+            if updater:
+                config = updater(step, config_data)
+                logger.info(f"Updated configuration for step: {step.name}")
+                return config
+            else:
+                raise InvalidStepConfiguration(f"No configuration handler for step type: {step.step_type}")
+    
+    @staticmethod
+    def duplicate_step_configuration(source_step_id, target_step_id):
+        """Duplicate configuration from one step to another"""
+        try:
+            source_step = BookingFlowStep.objects.get(id=source_step_id)
+            target_step = BookingFlowStep.objects.get(id=target_step_id)
+        except BookingFlowStep.DoesNotExist:
+            raise BookingFlowStepNotFound()
+        
+        if source_step.step_type != target_step.step_type:
+            raise InvalidStepConfiguration("Cannot duplicate configuration between different step types")
+        
+        source_config = BookingFlowStepConfigurationService.get_step_configuration(source_step_id)
+        if not source_config:
+            raise InvalidStepConfiguration("Source step has no configuration to duplicate")
+        
+        # Extract configuration data
+        config_data = {}
+        for field in source_config._meta.fields:
+            if field.name not in ['id', 'step', 'created_at', 'updated_at']:
+                config_data[field.name] = getattr(source_config, field.name)
+        
+        # Handle many-to-many fields
+        for field in source_config._meta.many_to_many:
+            if field.name != 'step':
+                config_data[field.name] = list(getattr(source_config, field.name).values_list('id', flat=True))
+        
+        # Update target step configuration
+        updated_config = BookingFlowStepConfigurationService.update_step_configuration(
+            target_step_id, config_data
+        )
+        
+        # Handle special cases like questionnaire items
+        if source_step.step_type == 'questionnaire':
+            source_items = source_config.questionnaire_items.all()
+            questionnaire_ids = [item.questionnaire_id for item in source_items]
+            BookingFlowStepConfigurationService.assign_questionnaires(target_step_id, questionnaire_ids)
+        
+        return updated_config
+    
+    @staticmethod
+    def assign_questionnaires(step_id, questionnaire_ids):
+        """Assign questionnaires to a questionnaire step"""
+        try:
+            step = BookingFlowStep.objects.get(id=step_id)
+        except BookingFlowStep.DoesNotExist:
+            raise BookingFlowStepNotFound()
+        
+        if step.step_type != 'questionnaire':
+            raise InvalidStepConfiguration("This action is only available for questionnaire steps")
+        
+        with transaction.atomic():
+            config, created = QuestionnaireStepConfiguration.objects.get_or_create(step=step)
+            
+            # Clear existing questionnaire assignments
+            config.questionnaire_items.all().delete()
+            
+            # Add new assignments
+            for order, questionnaire_id in enumerate(questionnaire_ids):
+                try:
+                    questionnaire = Questionnaire.objects.get(id=questionnaire_id, is_active=True)
+                    QuestionnaireStepItem.objects.create(
+                        configuration=config,
+                        questionnaire=questionnaire,
+                        order=order + 1
+                    )
+                except Questionnaire.DoesNotExist:
+                    logger.warning(f"Questionnaire {questionnaire_id} not found or inactive")
+                    continue
+            
+            logger.info(f"Assigned {len(questionnaire_ids)} questionnaires to step: {step.name}")
+            return config
+    
+    @staticmethod
+    def _create_default_configuration(step):
+        """Create default configuration for a step"""
+        config_creators = {
+            'introduction': lambda s: IntroductionStepConfiguration.objects.create(
+                step=s,
+                title=f"Welcome to {s.booking_flow.event_type.name if s.booking_flow.event_type else 'Event'} Booking",
+                content="We're excited to help you plan your perfect event!"
+            ),
+            'event_details': lambda s: EventDetailsStepConfiguration.objects.create(step=s),
+            'date_time': lambda s: DateTimeStepConfiguration.objects.create(step=s),
+            'questionnaire': lambda s: QuestionnaireStepConfiguration.objects.create(step=s),
+            'package_selection': lambda s: PackageSelectionStepConfiguration.objects.create(step=s),
+            'addon_selection': lambda s: AddonSelectionStepConfiguration.objects.create(step=s),
+            'contact_info': lambda s: ContactInfoStepConfiguration.objects.create(step=s),
+            'payment_info': lambda s: PaymentInfoStepConfiguration.objects.create(step=s),
+            'confirmation': lambda s: ConfirmationStepConfiguration.objects.create(
+                step=s,
+                title="Booking Confirmed!",
+                message="Thank you for your booking. We'll be in touch soon!"
+            ),
+        }
+        
+        creator = config_creators.get(step.step_type)
+        return creator(step) if creator else None
+    
+    @staticmethod
+    def _update_introduction_config(step, config_data):
+        """Update introduction step configuration"""
+        config, created = IntroductionStepConfiguration.objects.get_or_create(
+            step=step,
+            defaults={
+                'title': f"Welcome to {step.booking_flow.event_type.name if step.booking_flow.event_type else 'Event'} Booking",
+                'content': "We're excited to help you plan your perfect event!"
+            }
+        )
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+        config.save()
+        return config
+    
+    @staticmethod
+    def _update_event_details_config(step, config_data):
+        """Update event details step configuration"""
+        config, created = EventDetailsStepConfiguration.objects.get_or_create(step=step)
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+        config.save()
+        return config
+    
+    @staticmethod
+    def _update_datetime_config(step, config_data):
+        """Update datetime step configuration"""
+        config, created = DateTimeStepConfiguration.objects.get_or_create(step=step)
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+        config.save()
+        return config
+    
+    @staticmethod
+    def _update_questionnaire_config(step, config_data):
+        """Update questionnaire step configuration"""
+        config, created = QuestionnaireStepConfiguration.objects.get_or_create(step=step)
+        for key, value in config_data.items():
+            if hasattr(config, key) and key not in ['questionnaires']:
+                setattr(config, key, value)
+        config.save()
+        return config
+    
+    @staticmethod
+    def _update_package_config(step, config_data):
+        """Update package selection step configuration"""
+        config, created = PackageSelectionStepConfiguration.objects.get_or_create(step=step)
+        
+        # Handle many-to-many fields separately
+        m2m_fields = ['available_categories', 'available_packages']
+        
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                if key in m2m_fields:
+                    # Validate the IDs exist
+                    if key == 'available_categories':
+                        valid_ids = ProductCategory.objects.filter(
+                            id__in=value, is_active=True
+                        ).values_list('id', flat=True)
+                        getattr(config, key).set(valid_ids)
+                    elif key == 'available_packages':
+                        valid_ids = ProductOption.objects.filter(
+                            id__in=value, type='PACKAGE', is_active=True
+                        ).values_list('id', flat=True)
+                        getattr(config, key).set(valid_ids)
+                else:
+                    setattr(config, key, value)
+        
+        config.save()
+        return config
+    
+    @staticmethod
+    def _update_addon_config(step, config_data):
+        """Update addon selection step configuration"""
+        config, created = AddonSelectionStepConfiguration.objects.get_or_create(step=step)
+        
+        # Handle many-to-many fields separately
+        m2m_fields = ['available_categories', 'available_addons']
+        
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                if key in m2m_fields:
+                    # Validate the IDs exist
+                    if key == 'available_categories':
+                        valid_ids = ProductCategory.objects.filter(
+                            id__in=value, is_active=True
+                        ).values_list('id', flat=True)
+                        getattr(config, key).set(valid_ids)
+                    elif key == 'available_addons':
+                        valid_ids = ProductOption.objects.filter(
+                            id__in=value, type='PRODUCT', is_active=True
+                        ).values_list('id', flat=True)
+                        getattr(config, key).set(valid_ids)
+                else:
+                    setattr(config, key, value)
+        
+        config.save()
+        return config
+    
+    @staticmethod
+    def _update_contact_config(step, config_data):
+        """Update contact info step configuration"""
+        config, created = ContactInfoStepConfiguration.objects.get_or_create(step=step)
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+        config.save()
+        return config
+    
+    @staticmethod
+    def _update_payment_config(step, config_data):
+        """Update payment info step configuration"""
+        config, created = PaymentInfoStepConfiguration.objects.get_or_create(step=step)
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+        config.save()
+        return config
+    
+    @staticmethod
+    def _update_confirmation_config(step, config_data):
+        """Update confirmation step configuration"""
+        config, created = ConfirmationStepConfiguration.objects.get_or_create(
+            step=step,
+            defaults={
+                'title': "Booking Confirmed!",
+                'message': "Thank you for your booking. We'll be in touch soon!"
+            }
+        )
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+        config.save()
+        return config
 
 
 class BookingSessionService:
     """Service for managing booking sessions"""
     
     @staticmethod
-    def create_session(flow_id, client=None, client_ip=None, user_agent=None, referrer_url=None):
+    def create_session(booking_flow_id, client_id=None, session_data=None):
         """Create a new booking session"""
         try:
-            flow = BookingFlow.objects.get(id=flow_id, is_active=True)
+            flow = BookingFlow.objects.get(id=booking_flow_id, is_active=True)
         except BookingFlow.DoesNotExist:
-            raise BookingFlowInactive()
+            raise BookingFlowNotActive()
         
-        # Create session
+        # Generate session expiry (24 hours from now)
+        expires_at = timezone.now() + timedelta(hours=24)
+        
+        # Get first step
+        first_step = flow.enabled_steps.first()
+        
         session = BookingSession.objects.create(
             session_id=uuid.uuid4(),
             booking_flow=flow,
-            client=client,
-            current_step=flow.enabled_steps.first(),
-            ip_address=client_ip,
-            user_agent=user_agent or '',
-            referrer_url=referrer_url or '',
-            expires_at=timezone.now() + timedelta(hours=24)  # 24-hour expiry
+            client_id=client_id,
+            current_step=first_step,
+            booking_data=session_data or {},
+            expires_at=expires_at,
+            ip_address=session_data.get('ip_address') if session_data else None,
+            user_agent=session_data.get('user_agent', '') if session_data else '',
+            referrer_url=session_data.get('referrer_url', '') if session_data else '',
         )
         
-        logger.info(f"Created booking session: {session.session_id} for flow: {flow.name}")
+        logger.info(f"Created booking session: {session.session_id}")
         return session
     
     @staticmethod
@@ -497,9 +739,10 @@ class BookingSessionService:
         """Get a booking session by session ID"""
         try:
             session = BookingSession.objects.select_related(
-                'booking_flow', 'current_step', 'client'
+                'booking_flow', 'client', 'current_step'
             ).get(session_id=session_id)
             
+            # Check if session is expired
             if session.is_expired():
                 raise BookingSessionExpired()
             
@@ -508,49 +751,38 @@ class BookingSessionService:
             raise BookingSessionNotFound()
     
     @staticmethod
-    def update_session_data(session_id, step_id, step_data, mark_completed=False):
-        """Update booking session data for a specific step"""
+    def update_session_data(session_id, step_data, mark_completed=False):
+        """Update booking session data for a step"""
         session = BookingSessionService.get_session_by_id(session_id)
         
-        try:
-            step = BookingFlowStep.objects.get(id=step_id, booking_flow=session.booking_flow)
-        except BookingFlowStep.DoesNotExist:
-            raise BookingFlowStepNotFound()
-        
-        # Validate step data
-        validation_errors = BookingSessionService._validate_step_data(step, step_data)
-        if validation_errors:
-            session.validation_errors[step.step_type] = validation_errors
-            session.save()
-            raise StepValidationError(detail=validation_errors)
+        # Validate step data against current step
+        if session.current_step:
+            validation_errors = BookingSessionService._validate_step_data(
+                session.current_step, step_data
+            )
+            if validation_errors:
+                raise StepValidationError(detail=validation_errors)
         
         with transaction.atomic():
             # Update booking data
-            if step.step_type not in session.booking_data:
-                session.booking_data[step.step_type] = {}
-            
-            session.booking_data[step.step_type].update(step_data)
-            
-            # Clear validation errors for this step
-            if step.step_type in session.validation_errors:
-                del session.validation_errors[step.step_type]
-            
-            # Mark step as completed if requested
-            if mark_completed:
-                session.mark_step_completed(step)
-            
+            current_step_key = f"step_{session.current_step.id}" if session.current_step else "general"
+            session.booking_data[current_step_key] = step_data
             session.save()
             
-            logger.info(f"Updated session data: {session_id} for step: {step.name}")
+            # Mark step as completed if requested
+            if mark_completed and session.current_step:
+                session.mark_step_completed(session.current_step)
+            
+            logger.info(f"Updated session data for session: {session.session_id}")
             return session
     
     @staticmethod
-    def complete_booking(session_id, final_data=None, create_event=True, send_confirmation=True):
-        """Complete a booking session and create the event"""
+    def complete_booking(session_id):
+        """Complete the booking and create event"""
         session = BookingSessionService.get_session_by_id(session_id)
         
         if session.is_completed:
-            raise InvalidStepTransition(detail="Booking session is already completed")
+            return session.created_event
         
         # Validate all required steps are completed
         required_steps = session.booking_flow.steps.filter(is_required=True, is_enabled=True)
@@ -558,32 +790,25 @@ class BookingSessionService:
         
         for step in required_steps:
             if step.id not in completed_step_ids:
-                raise StepValidationError(detail=f"Required step '{step.name}' not completed")
+                raise StepValidationError(f"Required step '{step.name}' is not completed")
         
         with transaction.atomic():
-            # Add final data if provided
-            if final_data:
-                session.booking_data.update(final_data)
-            
-            # Create event if requested
-            if create_event:
+            try:
+                # Create event from booking data
                 event = BookingSessionService._create_event_from_session(session)
+                
+                # Mark session as completed
+                session.is_completed = True
+                session.completed_at = timezone.now()
                 session.created_event = event
-            
-            # Mark session as completed
-            session.is_completed = True
-            session.completed_at = timezone.now()
-            session.save()
-            
-            # Send confirmation if requested
-            if send_confirmation and session.booking_flow.confirmation_email_template:
-                BookingSessionService._send_confirmation_email(session)
-            
-            # Update analytics
-            BookingFlowAnalyticsService.record_completion(session.booking_flow, session)
-            
-            logger.info(f"Completed booking session: {session_id}")
-            return session
+                session.save()
+                
+                logger.info(f"Completed booking session: {session.session_id}, created event: {event.id}")
+                return event
+                
+            except Exception as e:
+                logger.error(f"Failed to create event from session {session.session_id}: {str(e)}")
+                raise EventCreationFailed(f"Failed to create event: {str(e)}")
     
     @staticmethod
     def abandon_session(session_id, reason=None):
@@ -595,46 +820,18 @@ class BookingSessionService:
             session.booking_data['abandonment_reason'] = reason
         session.save()
         
-        # Update analytics
-        BookingFlowAnalyticsService.record_abandonment(session.booking_flow, session)
-        
-        logger.info(f"Abandoned booking session: {session_id}")
+        logger.info(f"Abandoned booking session: {session.session_id}")
         return session
     
     @staticmethod
     def _validate_step_data(step, step_data):
-        """Validate step data against step validation rules"""
+        """Validate step data against step configuration"""
         errors = {}
         
-        # Check required fields based on step type
-        if step.step_type == 'event_details':
-            if hasattr(step, 'event_details_config'):
-                config = step.event_details_config
-                if config.require_event_name and not step_data.get('event_name'):
-                    errors['event_name'] = 'Event name is required'
-                if config.require_guest_count and not step_data.get('guest_count'):
-                    errors['guest_count'] = 'Guest count is required'
-                if config.max_guest_count and step_data.get('guest_count', 0) > config.max_guest_count:
-                    errors['guest_count'] = f'Guest count cannot exceed {config.max_guest_count}'
-        
-        elif step.step_type == 'date_time':
-            if not step_data.get('event_date'):
-                errors['event_date'] = 'Event date is required'
-            else:
-                # Validate advance booking limits
-                event_date = datetime.fromisoformat(step_data['event_date'].replace('Z', '+00:00')).date()
-                today = timezone.now().date()
-                days_advance = (event_date - today).days
-                
-                flow = step.booking_flow
-                if days_advance < flow.min_advance_booking_days:
-                    errors['event_date'] = f'Event must be at least {flow.min_advance_booking_days} days in advance'
-                if days_advance > flow.max_advance_booking_days:
-                    errors['event_date'] = f'Event cannot be more than {flow.max_advance_booking_days} days in advance'
-        
-        elif step.step_type == 'contact_info':
-            if hasattr(step, 'contact_config'):
-                config = step.contact_config
+        # Basic validation based on step type
+        if step.step_type == 'contact_info':
+            config = getattr(step, 'contact_config', None)
+            if config:
                 if config.require_full_name and not step_data.get('full_name'):
                     errors['full_name'] = 'Full name is required'
                 if config.require_email and not step_data.get('email'):
@@ -642,277 +839,188 @@ class BookingSessionService:
                 if config.require_phone and not step_data.get('phone'):
                     errors['phone'] = 'Phone number is required'
         
-        # Add custom validation rules
-        for rule_name, rule_config in step.validation_rules.items():
-            # Implement custom validation logic here
+        elif step.step_type == 'package_selection':
+            config = getattr(step, 'package_config', None)
+            if config:
+                selected_packages = step_data.get('selected_packages', [])
+                if config.min_selection > 0 and len(selected_packages) < config.min_selection:
+                    errors['selected_packages'] = f'Must select at least {config.min_selection} packages'
+                if config.max_selection > 0 and len(selected_packages) > config.max_selection:
+                    errors['selected_packages'] = f'Cannot select more than {config.max_selection} packages'
+        
+        elif step.step_type == 'addon_selection':
+            config = getattr(step, 'addon_config', None)
+            if config:
+                selected_addons = step_data.get('selected_addons', [])
+                if config.min_selection > 0 and len(selected_addons) < config.min_selection:
+                    errors['selected_addons'] = f'Must select at least {config.min_selection} add-ons'
+                if config.max_selection > 0 and len(selected_addons) > config.max_selection:
+                    errors['selected_addons'] = f'Cannot select more than {config.max_selection} add-ons'
+        
+        # Apply custom validation rules
+        if step.validation_rules:
+            # Custom validation logic would go here
             pass
         
         return errors
     
     @staticmethod
     def _create_event_from_session(session):
-        """Create an event from a completed booking session"""
-        booking_data = session.booking_data
-        flow = session.booking_flow
+        """Create an event from booking session data"""
+        from core.domains.events.services import EventService
         
-        # Prepare event data
+        # Extract event data from session
+        booking_data = session.booking_data
+        
+        # Build event data
         event_data = {
-            'client': session.client,
-            'event_type': flow.event_type,
-            'status': 'CONFIRMED' if flow.auto_approve_bookings else 'LEAD',
-            'workflow_template': flow.workflow_template,
+            'client': session.client or session.booking_flow.event_type.name,  # Handle guest bookings
+            'event_type': session.booking_flow.event_type,
+            'status': 'LEAD',
+            'workflow_template': session.booking_flow.workflow_template,
         }
         
-        # Extract data from booking
-        if 'event_details' in booking_data:
-            event_details = booking_data['event_details']
-            event_data.update({
-                'name': event_details.get('event_name', ''),
-                'description': event_details.get('description', ''),
-            })
+        # Extract basic event info
+        for step_key, step_data in booking_data.items():
+            if step_key.startswith('step_'):
+                # Extract event name, dates, etc.
+                if 'event_name' in step_data:
+                    event_data['name'] = step_data['event_name']
+                if 'start_date' in step_data:
+                    event_data['start_date'] = step_data['start_date']
+                if 'end_date' in step_data:
+                    event_data['end_date'] = step_data['end_date']
         
-        if 'date_time' in booking_data:
-            date_time = booking_data['date_time']
-            event_data.update({
-                'start_date': date_time.get('event_date'),
-                'end_date': date_time.get('end_date'),
-            })
-        
-        # Calculate total price
-        total_price = session.calculate_total_price()
-        event_data['total_price'] = total_price
-        
-        # Prepare products data
+        # Prepare event products
         event_products = []
+        total_price = Decimal('0.00')
         
-        if 'package_selection' in booking_data:
-            for package_data in booking_data['package_selection'].get('selected_packages', []):
-                event_products.append({
-                    'product_option': package_data['id'],
-                    'quantity': package_data.get('quantity', 1),
-                    'final_price': Decimal(str(package_data.get('price', 0)))
-                })
+        # Add selected packages
+        for step_key, step_data in booking_data.items():
+            if 'selected_packages' in step_data:
+                for package_data in step_data['selected_packages']:
+                    product_option = ProductOption.objects.get(id=package_data['id'])
+                    event_products.append({
+                        'product_option': product_option,
+                        'quantity': package_data.get('quantity', 1),
+                        'final_price': Decimal(str(package_data.get('price', product_option.base_price))),
+                        'num_participants': step_data.get('guest_count'),
+                    })
+                    total_price += Decimal(str(package_data.get('price', product_option.base_price)))
+            
+            # Add selected addons
+            if 'selected_addons' in step_data:
+                for addon_data in step_data['selected_addons']:
+                    product_option = ProductOption.objects.get(id=addon_data['id'])
+                    event_products.append({
+                        'product_option': product_option,
+                        'quantity': addon_data.get('quantity', 1),
+                        'final_price': Decimal(str(addon_data.get('price', product_option.base_price))),
+                    })
+                    total_price += Decimal(str(addon_data.get('price', product_option.base_price)))
         
-        if 'addon_selection' in booking_data:
-            for addon_data in booking_data['addon_selection'].get('selected_addons', []):
-                event_products.append({
-                    'product_option': addon_data['id'],
-                    'quantity': addon_data.get('quantity', 1),
-                    'final_price': Decimal(str(addon_data.get('price', 0)))
-                })
-        
+        event_data['total_price'] = total_price
         event_data['event_products'] = event_products
         
         # Create the event
-        event = EventService.create_event(
+        return EventService.create_event(
             event_data, 
-            session.client or session.booking_flow.created_by,
-            booking_flow_id=flow.id
+            user=session.client,  # Assuming client is the user
+            booking_flow_id=session.booking_flow.id
         )
-        
-        # Save questionnaire responses
-        if 'questionnaire' in booking_data:
-            BookingSessionService._save_questionnaire_responses(event, booking_data['questionnaire'])
-        
-        # Record in timeline
-        EventTimeline.objects.create(
-            event=event,
-            action_type='SYSTEM_UPDATE',
-            description=f"Event created from booking flow: {flow.name}",
-            is_public=True,
-            action_data={
-                'booking_session_id': str(session.session_id),
-                'booking_flow_id': flow.id
-            }
-        )
-        
-        return event
-    
-    @staticmethod
-    def _save_questionnaire_responses(event, questionnaire_data):
-        """Save questionnaire responses from booking data"""
-        for field_id, value in questionnaire_data.items():
-            if field_id.startswith('field_'):
-                try:
-                    field_id_int = int(field_id.replace('field_', ''))
-                    QuestionnaireResponse.objects.create(
-                        event=event,
-                        field_id=field_id_int,
-                        value=str(value)
-                    )
-                except (ValueError, Exception) as e:
-                    logger.warning(f"Failed to save questionnaire response: {e}")
-    
-    @staticmethod
-    def _send_confirmation_email(session):
-        """Send confirmation email to client"""
-        # This would integrate with the communications domain
-        # For now, just log the action
-        logger.info(f"Confirmation email sent for session: {session.session_id}")
 
 
 class BookingFlowAnalyticsService:
-    """Service for tracking booking flow analytics"""
+    """Service for managing booking flow analytics"""
     
     @staticmethod
-    def record_completion(booking_flow, session):
-        """Record a completed booking for analytics"""
-        today = timezone.now().date()
+    def update_daily_analytics(flow_id, date=None):
+        """Update daily analytics for a booking flow"""
+        if date is None:
+            date = timezone.now().date()
         
+        try:
+            flow = BookingFlow.objects.get(id=flow_id)
+        except BookingFlow.DoesNotExist:
+            raise BookingFlowNotFound()
+        
+        # Get or create analytics record
         analytics, created = BookingFlowAnalytics.objects.get_or_create(
-            booking_flow=booking_flow,
-            date=today,
+            booking_flow=flow,
+            date=date,
             defaults={
                 'total_sessions': 0,
                 'completed_bookings': 0,
                 'abandoned_sessions': 0,
-                'total_revenue': Decimal('0.00')
+                'conversion_rate': Decimal('0.00'),
+                'total_revenue': Decimal('0.00'),
+                'average_booking_value': Decimal('0.00'),
             }
         )
         
-        analytics.completed_bookings += 1
-        analytics.total_revenue += session.calculate_total_price()
-        analytics.total_sessions = BookingSession.objects.filter(
-            booking_flow=booking_flow,
-            created_at__date=today
-        ).count()
+        # Calculate metrics for the day
+        day_sessions = BookingSession.objects.filter(
+            booking_flow=flow,
+            created_at__date=date
+        )
+        
+        analytics.total_sessions = day_sessions.count()
+        analytics.completed_bookings = day_sessions.filter(is_completed=True).count()
+        analytics.abandoned_sessions = day_sessions.filter(is_abandoned=True).count()
         
         # Calculate conversion rate
         if analytics.total_sessions > 0:
             analytics.conversion_rate = (analytics.completed_bookings / analytics.total_sessions) * 100
         
-        # Calculate average booking value
+        # Calculate revenue
+        completed_sessions = day_sessions.filter(is_completed=True, created_event__isnull=False)
+        total_revenue = sum(
+            session.calculate_total_price() for session in completed_sessions
+        )
+        analytics.total_revenue = total_revenue
+        
         if analytics.completed_bookings > 0:
-            analytics.average_booking_value = analytics.total_revenue / analytics.completed_bookings
+            analytics.average_booking_value = total_revenue / analytics.completed_bookings
         
-        analytics.save()
-    
-    @staticmethod
-    def record_abandonment(booking_flow, session):
-        """Record an abandoned session for analytics"""
-        today = timezone.now().date()
+        # Calculate step analytics
+        step_data = {}
+        drop_off_data = {}
         
-        analytics, created = BookingFlowAnalytics.objects.get_or_create(
-            booking_flow=booking_flow,
-            date=today,
-            defaults={
-                'total_sessions': 0,
-                'completed_bookings': 0,
-                'abandoned_sessions': 0,
-                'total_revenue': Decimal('0.00')
+        for step in flow.enabled_steps:
+            step_completions = day_sessions.filter(completed_steps=step).count()
+            step_data[str(step.id)] = {
+                'completions': step_completions,
+                'completion_rate': (step_completions / analytics.total_sessions * 100) if analytics.total_sessions > 0 else 0
             }
-        )
+            
+            # Calculate drop-off rate (sessions that reached this step but didn't complete it)
+            sessions_reached = day_sessions.filter(
+                current_step__order__gte=step.order
+            ).count()
+            if sessions_reached > 0:
+                drop_off_rate = ((sessions_reached - step_completions) / sessions_reached) * 100
+                drop_off_data[str(step.id)] = drop_off_rate
         
-        analytics.abandoned_sessions += 1
-        analytics.total_sessions = BookingSession.objects.filter(
-            booking_flow=booking_flow,
-            created_at__date=today
-        ).count()
-        
-        # Calculate conversion rate
-        if analytics.total_sessions > 0:
-            analytics.conversion_rate = (analytics.completed_bookings / analytics.total_sessions) * 100
+        analytics.step_completion_data = step_data
+        analytics.step_drop_off_data = drop_off_data
         
         analytics.save()
-
-
-class AvailabilityService:
-    """Service for checking availability during booking"""
+        logger.info(f"Updated analytics for flow {flow.name} on {date}")
+        return analytics
     
     @staticmethod
-    def check_date_availability(booking_flow, event_date, duration_hours=None):
-        """Check if a date is available for booking"""
-        # This would integrate with calendar/scheduling system
-        # For now, implement basic checks
-        
-        # Check if date is blocked
-        if hasattr(booking_flow, 'datetime_config'):
-            datetime_config = None
-            for step in booking_flow.steps.filter(step_type='date_time'):
-                if hasattr(step, 'datetime_config'):
-                    datetime_config = step.datetime_config
-                    break
-            
-            if datetime_config and datetime_config.blocked_dates:
-                if event_date in datetime_config.blocked_dates:
-                    raise AvailabilityCheckFailed(detail="Selected date is blocked")
-            
-            if datetime_config and datetime_config.available_days_of_week:
-                weekday = event_date.weekday()  # 0=Monday, 6=Sunday
-                if weekday not in datetime_config.available_days_of_week:
-                    raise AvailabilityCheckFailed(detail="Selected day of week is not available")
-        
-        # Check against existing events (basic conflict detection)
-        existing_events = Event.objects.filter(
-            event_type=booking_flow.event_type,
-            start_date__date=event_date,
-            status__in=['CONFIRMED', 'LEAD']
-        )
-        
-        # This is a simplified check - in reality, you'd check time conflicts
-        if existing_events.exists():
-            logger.warning(f"Potential scheduling conflict on {event_date}")
-        
-        return True
-    
-    @staticmethod
-    def get_available_time_slots(booking_flow, event_date):
-        """Get available time slots for a specific date"""
-        # This would integrate with calendar/scheduling system
-        # Return sample time slots for now
-        return [
-            {'time': '09:00', 'available': True},
-            {'time': '10:00', 'available': True},
-            {'time': '11:00', 'available': False},
-            {'time': '12:00', 'available': True},
-            {'time': '13:00', 'available': True},
-            {'time': '14:00', 'available': True},
-            {'time': '15:00', 'available': False},
-            {'time': '16:00', 'available': True},
-            {'time': '17:00', 'available': True},
-        ]
-
-
-class PricingService:
-    """Service for calculating dynamic pricing during booking"""
-    
-    @staticmethod
-    def calculate_package_price(package_id, booking_data):
-        """Calculate price for a package based on booking data"""
+    def get_flow_analytics(flow_id, start_date=None, end_date=None):
+        """Get analytics for a booking flow over a date range"""
         try:
-            package = ProductOption.objects.get(id=package_id)
-            base_price = package.base_price
-            
-            # Apply dynamic pricing factors
-            if 'event_details' in booking_data:
-                guest_count = booking_data['event_details'].get('guest_count', 1)
-                # Example: charge per guest for certain packages
-                if package.pricing_model == 'TIERED':
-                    base_price = base_price * guest_count
-            
-            return base_price
-        except ProductOption.DoesNotExist:
-            raise ProductNotAvailable()
-    
-    @staticmethod
-    def apply_discount(total_amount, discount_code, booking_data):
-        """Apply a discount to the booking total"""
-        try:
-            discount = Discount.objects.get(code=discount_code, is_active=True)
-            
-            if not discount.is_valid():
-                raise DiscountNotApplicable(detail="Discount code is not valid")
-            
-            # Check if discount can be applied to this booking
-            if discount.minimum_order_amount and total_amount < discount.minimum_order_amount:
-                raise DiscountNotApplicable(detail="Order does not meet minimum amount for this discount")
-            
-            # Calculate discount amount
-            if discount.discount_type == 'PERCENTAGE':
-                discount_amount = total_amount * (discount.value / 100)
-            else:  # FIXED
-                discount_amount = min(discount.value, total_amount)
-            
-            return discount_amount, discount
-        except Discount.DoesNotExist:
-            raise DiscountNotApplicable(detail="Invalid discount code")
+            flow = BookingFlow.objects.get(id=flow_id)
+        except BookingFlow.DoesNotExist:
+            raise BookingFlowNotFound()
+        
+        queryset = BookingFlowAnalytics.objects.filter(booking_flow=flow)
+        
+        if start_date:
+            queryset = queryset.filter(date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(date__lte=end_date)
+        
+        return queryset.order_by('-date')
