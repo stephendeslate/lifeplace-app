@@ -32,8 +32,6 @@ import {
   Visibility as PreviewIcon,
   CheckCircle as EnabledIcon,
   RadioButtonUnchecked as DisabledIcon,
-  Star as RequiredIcon,
-  StarBorder as OptionalIcon,
   SkipNext as SkippableIcon,
 } from '@mui/icons-material';
 import type { BookingFlowStepTableProps, BookingFlowStep } from '../../../types/bookingflows.types';
@@ -50,7 +48,6 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
   onEdit,
   onConfigure, // New configure handler
   onDelete,
-  onReorder,
   isDeleting,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -130,17 +127,6 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
     );
   };
 
-  const getRequiredIcon = (isRequired: boolean) => {
-    return isRequired ? (
-      <Tooltip title="Required step">
-        <RequiredIcon color="error" fontSize="small" />
-      </Tooltip>
-    ) : (
-      <Tooltip title="Optional step">
-        <OptionalIcon color="disabled" fontSize="small" />
-      </Tooltip>
-    );
-  };
 
   const getBehaviorChips = (step: BookingFlowStep) => {
     const chips = [];
@@ -244,7 +230,7 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
           </TableHead>
           <TableBody>
             {steps
-              .sort((a, b) => a.order - b.order)
+              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
               .map((step) => (
               <TableRow 
                 key={step.id} 

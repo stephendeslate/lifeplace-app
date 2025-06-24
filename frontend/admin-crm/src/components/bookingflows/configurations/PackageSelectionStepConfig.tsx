@@ -74,7 +74,6 @@ const defaultFormData: PackageConfigFormData = {
 export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProps> = ({
   step,
   config,
-  onUpdate,
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState<PackageConfigFormData>(defaultFormData);

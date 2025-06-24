@@ -25,7 +25,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -92,7 +91,6 @@ const FIELD_TYPES = [
 ];
 
 export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
-  step,
   config,
   onUpdate,
   isLoading = false,

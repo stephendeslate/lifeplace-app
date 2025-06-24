@@ -1,12 +1,11 @@
 // frontend/admin-crm/src/components/bookingflows/sessions/SessionAnalytics.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  Grid,
   Chip,
   Button,
   FormControl,
@@ -23,10 +22,7 @@ import {
   TableRow,
   Paper,
   LinearProgress,
-  Tooltip,
-  IconButton,
   Stack,
-  Divider,
 } from '@mui/material';
 import {
   Analytics as AnalyticsIcon,
@@ -34,19 +30,14 @@ import {
   TrendingDown as TrendingDownIcon,
   People as PeopleIcon,
   CheckCircle as CompleteIcon,
-  Cancel as AbandonIcon,
   Schedule as TimeIcon,
   AttachMoney as RevenueIcon,
   Refresh as RefreshIcon,
   Download as DownloadIcon,
-  FilterList as FilterIcon,
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import type { 
-  BookingFlowDetail,
-  BookingFlowAnalytics,
-  BookingSession 
-} from '../../../types/bookingflows.types';
+  BookingFlowDetail} from '../../../types/bookingflows.types';
 import { useBookingFlowAnalytics, useBookingSessions } from '../../../hooks/useBookingFlows';
 
 interface SessionAnalyticsProps {
@@ -74,7 +65,6 @@ interface StepAnalytics {
   errorRate: number;
 }
 
-const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
 export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
@@ -88,8 +78,6 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   } = useBookingFlowAnalytics();
 
   const { 
-    sessions, 
-    isLoadingSessions,
     refetchSessions 
   } = useBookingSessions({ booking_flow: flow.id });
 
@@ -188,7 +176,6 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
       // In real implementation, this would come from detailed session data
       // For now, we'll simulate based on step type and position
       const stepPosition = enabledSteps.findIndex(s => s.id === step.id);
-      const totalSteps = enabledSteps.length;
       
       // Simulate realistic completion rates (earlier steps have higher completion)
       const baseCompletionRate = Math.max(20, 95 - (stepPosition * 15));
@@ -481,7 +468,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                   </ResponsiveContainer>
                   
                   <Box mt={2}>
-                    {sessionStatusData.map((entry, index) => (
+                    {sessionStatusData.map((entry) => (
                       <Box key={entry.name} display="flex" alignItems="center" gap={1} mb={1}>
                         <Box 
                           sx={{ 

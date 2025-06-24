@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Button,
   Alert,
   CircularProgress,
   Tabs,
@@ -19,15 +18,11 @@ import {
 import {
   Settings as ConfigIcon,
   Preview as PreviewIcon,
-  Save as SaveIcon,
   Refresh as RefreshIcon,
   ContentCopy as CopyIcon,
 } from '@mui/icons-material';
 import type { 
-  BookingFlowStep, 
-  StepConfiguration,
-  StepPreviewData 
-} from '../../../types/bookingflows.types';
+  BookingFlowStep} from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import {
   IntroductionStepConfig,
@@ -74,7 +69,6 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
     useStepConfiguration,
     useStepPreview,
     updateConfiguration,
-    duplicateConfiguration,
     isUpdatingConfiguration,
   } = useBookingFlowStepConfiguration();
 
@@ -90,6 +84,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
     refetch: refetchPreview,
   } = useStepPreview(step.id);
 
+  // @ts-ignore
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
@@ -105,18 +100,6 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         if (onUpdate) {
           onUpdate(step);
         }
-      }
-    });
-  };
-
-  const handleDuplicateConfiguration = (sourceStepId: number) => {
-    duplicateConfiguration({
-      stepId: step.id,
-      sourceStepId
-    }, {
-      onSuccess: () => {
-        refetchConfig();
-        refetchPreview();
       }
     });
   };

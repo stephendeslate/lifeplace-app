@@ -65,6 +65,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
   }, [flow, setBreadcrumbs]);
 
   const handleViewModeChange = (
+    // @ts-ignore
     event: React.MouseEvent<HTMLElement>,
     newMode: ViewMode,
   ) => {

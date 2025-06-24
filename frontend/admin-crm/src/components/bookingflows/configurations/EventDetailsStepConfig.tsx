@@ -12,7 +12,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   IconButton,
   List,
   ListItem,
@@ -59,7 +58,6 @@ const defaultFormData: EventDetailsConfigFormData = {
 };
 
 export const EventDetailsStepConfig: React.FC<EventDetailsStepConfigProps> = ({
-  step,
   config,
   onUpdate,
   isLoading = false,

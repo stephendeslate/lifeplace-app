@@ -26,8 +26,6 @@ import {
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
-  Add as AddIcon,
-  Remove as RemoveIcon,
   Settings as ConfigIcon,
 } from '@mui/icons-material';
 import { 
@@ -172,6 +170,7 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
     }
   };
 
+  // @ts-ignore
   const getStepTypeIcon = (stepType: StepType) => {
     // Return appropriate icon based on step type
     return <ConfigIcon fontSize="small" />;

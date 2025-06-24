@@ -7,22 +7,13 @@ import {
   CardContent,
   Typography,
   Button,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
   LinearProgress,
   Chip,
   Stack,
-  Divider,
   Alert,
   IconButton,
   Tooltip,
   Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
 import {
   Preview as PreviewIcon,
@@ -37,7 +28,7 @@ import {
   Block as DisabledIcon,
   CheckCircle,
 } from '@mui/icons-material';
-import type { BookingFlow, BookingFlowDetail, BookingFlowStep } from '../../../types/bookingflows.types';
+import type { BookingFlowDetail, BookingFlowStep } from '../../../types/bookingflows.types';
 
 interface BookingFlowPreviewProps {
   flow: BookingFlowDetail;
@@ -287,6 +278,7 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isMobileView, setIsMobileView] = useState(showMobileView);
+  // @ts-ignore
   const [isTestRunning, setIsTestRunning] = useState(false);
 
   // Get enabled steps only
@@ -303,11 +295,6 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
     if (currentStepIndex > 0) {
       setCurrentStepIndex(prev => prev - 1);
     }
-  };
-
-  const handleStartTest = () => {
-    setIsTestRunning(true);
-    setCurrentStepIndex(0);
   };
 
   const handleRestart = () => {

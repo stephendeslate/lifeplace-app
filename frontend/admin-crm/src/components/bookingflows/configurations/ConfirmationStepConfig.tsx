@@ -12,14 +12,9 @@ import {
   Button,
   Card,
   CardContent,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Chip,
   Divider,
 } from '@mui/material';
 import {
-  ExpandMore as ExpandMoreIcon,
   CheckCircle as ConfirmIcon,
   Email as EmailIcon,
   CalendarMonth as CalendarIcon,
@@ -61,7 +56,6 @@ const defaultFormData: ConfirmationConfigFormData = {
 };
 
 export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
-  step,
   config,
   onUpdate,
   isLoading = false,
