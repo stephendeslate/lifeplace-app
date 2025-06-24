@@ -52,7 +52,7 @@ export const navigationConfig: NavigationGroup[] = [
         path: '/calendar',
         icon: CalendarMonth,
         roles: ['ADMIN'],
-        disabled: true, // Coming soon
+        // UPDATED: Removed disabled flag to enable calendar
       },
     ],
     roles: ['ADMIN'],
