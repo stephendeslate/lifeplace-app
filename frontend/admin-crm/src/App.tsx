@@ -1,5 +1,5 @@
 // frontend/admin-crm/src/App.tsx
-// FIXED: Route order and parameter handling
+// UPDATED: Added calendar route
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { Login } from './pages/auth';
 import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
-import { EventsOverview, EventProfile } from './pages/events';
+import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
 import { CommunicationRecords } from './pages/records';
 import { AppLayout } from './components/layout';
 
@@ -139,6 +139,16 @@ const AppRouter: React.FC = () => {
         }
       />
 
+      {/* Calendar Route - NEW */}
+      <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute>
+            <EventsCalendar />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Client Management Routes */}
       <Route
         path="/clients"
@@ -203,16 +213,7 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Booking Configuration - FIXED: Single route with parameter */}
-      <Route
-        path="/settings/booking/booking-flow"
-        element={
-          <SettingsRoute>
-            <BookingFlows />
-          </SettingsRoute>
-        }
-      />
-      {/* Booking Configuration - UPDATED with preview route */}
+      {/* Booking Configuration */}
       <Route
         path="/settings/booking/booking-flow"
         element={
@@ -229,7 +230,6 @@ const AppRouter: React.FC = () => {
           </SettingsRoute>
         }
       />
-      {/* NEW: Preview route */}
       <Route
         path="/settings/booking/booking-flow/preview/:id"
         element={
@@ -314,18 +314,6 @@ const AppRouter: React.FC = () => {
           <ProtectedRoute>
             <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
               <Typography variant="h4">Analytics</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/calendar"
-        element={
-          <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Calendar</Typography>
               <Typography color="text.secondary">Coming soon...</Typography>
             </Box>
           </ProtectedRoute>
