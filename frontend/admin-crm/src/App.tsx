@@ -10,6 +10,7 @@ import { Login } from './pages/auth';
 import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
+import { EventsOverview, EventProfile } from './pages/events';
 import { CommunicationRecords } from './pages/records';
 import { AppLayout } from './components/layout';
 
@@ -116,6 +117,24 @@ const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Event Management Routes */}
+      <Route
+        path="/events"
+        element={
+          <ProtectedRoute>
+            <EventsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/:id"
+        element={
+          <ProtectedRoute>
+            <EventProfile />
           </ProtectedRoute>
         }
       />
@@ -295,18 +314,6 @@ const AppRouter: React.FC = () => {
           <ProtectedRoute>
             <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
               <Typography variant="h4">Analytics</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/events"
-        element={
-          <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Events</Typography>
               <Typography color="text.secondary">Coming soon...</Typography>
             </Box>
           </ProtectedRoute>

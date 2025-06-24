@@ -45,7 +45,6 @@ export const navigationConfig: NavigationGroup[] = [
         path: '/events',
         icon: EventNote,
         roles: ['ADMIN'],
-        disabled: true, // Coming soon
       },
       {
         id: 'calendar',
