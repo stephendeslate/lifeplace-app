@@ -103,4 +103,20 @@ export const eventsApi = {
   deleteEvent: async (id: number): Promise<void> => {
     await api.delete(`/events/events/${id}/`);
   },
+
+  // Export events
+  exportEvents: async (filters?: EventFilters): Promise<Blob> => {
+    const params = new URLSearchParams();
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.event_type) params.append('event_type', filters.event_type.toString());
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.client) params.append('client', filters.client.toString());
+    if (filters?.start_date_from) params.append('start_date_from', filters.start_date_from);
+    if (filters?.start_date_to) params.append('start_date_to', filters.start_date_to);
+    
+    const response = await api.get<Blob>(`/events/events/export/?${params.toString()}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };

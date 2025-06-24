@@ -170,11 +170,11 @@ export const useEvents = (filters?: EventFilters) => {
     mutationFn: (id: number) => eventsApi.deleteEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      showSuccess('Event Cancelled', 'Event has been cancelled successfully.');
+      showSuccess('Event Deleted', 'Event has been deleted successfully.');
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to cancel event';
-      showError('Cancel Failed', message);
+      const message = error.response?.data?.detail || 'Failed to delete event';
+      showError('Delete Failed', message);
     },
   });
 

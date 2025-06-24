@@ -149,15 +149,16 @@ class EventSerializer(serializers.ModelSerializer):
     workflow_progress = serializers.FloatField(read_only=True)
     next_task = serializers.SerializerMethodField()
     current_stage_name = serializers.CharField(source='current_stage.name', read_only=True)
+    workflow_template_name = serializers.CharField(source='workflow_template.name', read_only=True)
     
     class Meta:
         model = Event
         fields = [
             'id', 'client', 'client_name', 'event_type', 'event_type_name', 'name',
-            'status', 'start_date', 'end_date', 'workflow_template', 'current_stage',
-            'current_stage_name', 'lead_source', 'last_contacted', 'total_price',
-            'payment_status', 'total_amount_due', 'total_amount_paid', 'workflow_progress',
-            'next_task', 'created_at', 'updated_at'
+            'status', 'start_date', 'end_date', 'workflow_template', 'workflow_template_name',
+            'current_stage', 'current_stage_name', 'lead_source', 'last_contacted', 
+            'total_price', 'payment_status', 'total_amount_due', 'total_amount_paid', 
+            'workflow_progress', 'next_task', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task']
     
@@ -243,6 +244,9 @@ class EventCreateUpdateSerializer(EventSerializer):
             return event
     
     def update(self, instance, validated_data):
+        print(f"EventCreateUpdateSerializer update called for event {instance.id}")
+        print("Validated data:", validated_data)
+        
         tasks_data = validated_data.pop('tasks', None)
         event_products_data = validated_data.pop('event_products', None)
         
@@ -261,9 +265,13 @@ class EventCreateUpdateSerializer(EventSerializer):
         
         # Update event fields
         for key, value in validated_data.items():
-            setattr(instance, key, value)
+            old_value = getattr(instance, key)
+            if old_value != value:
+                print(f"Updating {key}: {old_value} -> {value}")
+                setattr(instance, key, value)
         
         instance.save()
+        print(f"Event {instance.id} saved successfully")
         
         # Handle tasks updates if provided
         if tasks_data is not None:

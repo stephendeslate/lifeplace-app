@@ -9,30 +9,54 @@ export interface EventType {
   updated_at: string;
 }
 
+export interface WorkflowProgress {
+  current_stage: number;
+  total_stages: number;
+  current_stage_name: string;
+  current_task_name: string;
+  percentage: number;
+  stage_names: string[];
+}
+
 export interface Event {
   id: number;
   client: number;
   client_name?: string;
   event_type: number | null;
   event_type_name?: string;
+  workflow_template: number | null;
+  workflow_template_name?: string;
+  current_stage: number | null;
+  current_stage_name?: string;
   status: EventStatus;
   name: string;
   start_date: string;
   end_date: string | null;
-  venue: string;
   lead_source: string;
+  last_contacted: string | null;
   total_price: string | null;
+  payment_status: PaymentStatus;
+  total_amount_due: string | null;
+  total_amount_paid: string;
+  workflow_progress?: WorkflowProgress;
   created_at: string;
   updated_at: string;
 }
 
 export type EventStatus = 'LEAD' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+export type PaymentStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
 
 export const EVENT_STATUSES = [
   { value: 'LEAD', label: 'Lead' },
   { value: 'CONFIRMED', label: 'Confirmed' },
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' },
+] as const;
+
+export const PAYMENT_STATUSES = [
+  { value: 'UNPAID', label: 'Unpaid' },
+  { value: 'PARTIALLY_PAID', label: 'Partially Paid' },
+  { value: 'PAID', label: 'Paid' },
 ] as const;
 
 // Create/Update types
@@ -47,11 +71,11 @@ export interface UpdateEventTypeData extends Partial<CreateEventTypeData> {}
 export interface CreateEventData {
   client: number;
   event_type?: number | null;
+  workflow_template?: number | null;
   status?: EventStatus;
   name?: string;
   start_date: string;
   end_date?: string | null;
-  venue?: string;
   lead_source?: string;
   total_price?: string | null;
 }
@@ -71,6 +95,7 @@ export interface EventFilters {
   client?: number;
   start_date_from?: string;
   start_date_to?: string;
+  payment_status?: PaymentStatus;
 }
 
 // Form data types
@@ -83,11 +108,11 @@ export interface EventTypeFormData {
 export interface EventFormData {
   client: string;
   event_type: string;
+  workflow_template: string;
   status: EventStatus;
   name: string;
   start_date: string;
   end_date: string;
-  venue: string;
   lead_source: string;
   total_price: string;
 }
@@ -114,5 +139,21 @@ export interface EventTypeFormDialogProps {
   onClose: () => void;
   editingEventType?: EventType | null;
   onSubmit: (data: CreateEventTypeData | UpdateEventTypeData) => void;
+  isLoading: boolean;
+}
+
+export interface EventTableProps {
+  events: Event[];
+  isLoading: boolean;
+  onEdit: (event: Event) => void;
+  onDelete: (id: number) => void;
+  isDeleting: boolean;
+}
+
+export interface EventFormDialogProps {
+  open: boolean;
+  onClose: () => void;
+  editingEvent?: Event | null;
+  onSubmit: (data: CreateEventData | UpdateEventData) => void;
   isLoading: boolean;
 }
