@@ -1,4 +1,4 @@
-// frontend/admin-crm/src/pages/clients/ClientProfile.tsx (Complete with tabs)
+// frontend/admin-crm/src/pages/clients/ClientProfile.tsx
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -51,6 +51,7 @@ import { getClientStatusSummary } from '../../utils/clientStatus';
 import { SendMessageDialog } from '../../components/communications/SendMessageDialog';
 import { ClientForm } from '../../components/clients/ClientForm';
 import { CommunicationRecords } from '../../components/clients/CommunicationRecords';
+import { NotesList } from '../../components/notes';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -473,10 +474,9 @@ export const ClientProfile: React.FC = () => {
               disabled
             />
             <Tab 
-              label="Notes (0)" 
+              label="Notes" 
               icon={<NoteIcon />} 
               iconPosition="start"
-              disabled
             />
           </Tabs>
         </Box>
@@ -535,7 +535,7 @@ export const ClientProfile: React.FC = () => {
             <CommunicationRecords clientId={clientId} />
           </TabPanel>
 
-          {/* Other tabs - placeholder content */}
+          {/* Contracts Tab - placeholder */}
           <TabPanel value={tabValue} index={2}>
             <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
               <ContractIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
@@ -548,6 +548,7 @@ export const ClientProfile: React.FC = () => {
             </Paper>
           </TabPanel>
           
+          {/* Quotes Tab - placeholder */}
           <TabPanel value={tabValue} index={3}>
             <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
               <QuoteIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
@@ -560,16 +561,16 @@ export const ClientProfile: React.FC = () => {
             </Paper>
           </TabPanel>
           
+          {/* Notes Tab - Now functional */}
           <TabPanel value={tabValue} index={4}>
-            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-              <NoteIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-              <Typography variant="h6" gutterBottom>
-                Notes Coming Soon
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Client notes functionality will be available in a future update.
-              </Typography>
-            </Paper>
+            <NotesList
+              contentType="client"
+              objectId={clientId}
+              objectName={`${client.first_name} ${client.last_name}`}
+              allowCreate={true}
+              allowEdit={true}
+              allowDelete={true}
+            />
           </TabPanel>
         </CardContent>
       </Card>
