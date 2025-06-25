@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/bookingflows/flows/BookingFlowFormDialog.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -86,6 +86,10 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
   const [formData, setFormData] = useState<BookingFlowFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState(0);
+  
+  // Ref for the first input field to focus when dialog opens
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
     eventTypes,
@@ -121,14 +125,13 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       }
       setErrors({});
       setActiveTab(0);
-    } else {
-      // When dialog closes, ensure no elements retain focus
+
+      // Focus the first input after dialog animation completes
       setTimeout(() => {
-        const activeElement = document.activeElement as HTMLElement;
-        if (activeElement && activeElement.blur && activeElement.tagName !== 'BODY') {
-          activeElement.blur();
+        if (firstInputRef.current && document.contains(firstInputRef.current)) {
+          firstInputRef.current.focus();
         }
-      }, 100);
+      }, 150);
     }
   }, [editingFlow, open]);
 
@@ -160,6 +163,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     }));
   };
 
+  // @ts-ignore
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
@@ -194,10 +198,18 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     if (!isLoading) {
       // Clear focus from any focused elements within the dialog before closing
       const activeElement = document.activeElement as HTMLElement;
-      if (activeElement && activeElement.blur) {
-        activeElement.blur();
+      if (activeElement && activeElement.blur && activeElement !== document.body) {
+        // Only blur if the element is within this dialog
+        const dialogElement = activeElement.closest('[role="dialog"]');
+        if (dialogElement) {
+          activeElement.blur();
+        }
       }
-      onClose();
+      
+      // Small delay to ensure blur completes before dialog closes
+      setTimeout(() => {
+        onClose();
+      }, 10);
     }
   };
 
@@ -237,6 +249,13 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     onSubmit(submitData);
   };
 
+  // Handle escape key
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape' && !isLoading) {
+      handleClose();
+    }
+  };
+
   return (
     <Dialog 
       open={open} 
@@ -244,23 +263,27 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: '80vh' }
+        sx: { minHeight: '80vh' },
+        onKeyDown: handleKeyDown
       }}
-      // Add focus management props
-      disableRestoreFocus
+      // Enhanced focus management props
+      disableRestoreFocus={false}
       disableEnforceFocus={false}
       keepMounted={false}
+      // Additional accessibility props
+      aria-labelledby="booking-flow-dialog-title"
+      aria-describedby="booking-flow-dialog-description"
     >
       {open && (
         <>
-          <DialogTitle>
+          <DialogTitle id="booking-flow-dialog-title">
             <Box display="flex" alignItems="center" gap={1}>
               <FlowIcon color="primary" />
               {editingFlow ? 'Edit Booking Flow' : 'Create New Booking Flow'}
             </Box>
           </DialogTitle>
       
-          <DialogContent>
+          <DialogContent id="booking-flow-dialog-description">
             {isLoadingDependencies ? (
               <Box display="flex" justifyContent="center" py={4}>
                 <CircularProgress />
@@ -300,6 +323,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                 <TabPanel value={activeTab} index={0}>
                   <Stack spacing={3}>
                     <TextField
+                      inputRef={firstInputRef}
                       fullWidth
                       label="Flow Name"
                       value={formData.name}
@@ -307,6 +331,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       error={!!errors.name}
                       helperText={errors.name || 'A descriptive name for this booking flow'}
                       required
+                      autoComplete="off"
                     />
                     
                     <TextField
@@ -317,6 +342,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       multiline
                       rows={3}
                       helperText="Optional description explaining when to use this flow"
+                      autoComplete="off"
                     />
                     
                     <FormControl fullWidth>
@@ -446,6 +472,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         helperText={errors.min_advance_booking_days || 'Minimum days in advance'}
                         type="number"
                         sx={{ flex: 1 }}
+                        autoComplete="off"
                       />
                       
                       <TextField
@@ -456,6 +483,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         helperText={errors.max_advance_booking_days || 'Maximum days in advance'}
                         type="number"
                         sx={{ flex: 1 }}
+                        autoComplete="off"
                       />
                     </Box>
 
@@ -542,6 +570,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       multiline
                       rows={3}
                       helperText="Message shown to clients after successful booking"
+                      autoComplete="off"
                     />
 
                     <TextField
@@ -550,6 +579,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       value={formData.redirect_url}
                       onChange={handleInputChange('redirect_url')}
                       helperText="Optional URL to redirect clients after booking completion"
+                      autoComplete="off"
                     />
 
                     <Divider />
@@ -566,6 +596,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       multiline
                       rows={3}
                       helperText="JavaScript code for tracking conversions (Google Analytics, Facebook Pixel, etc.)"
+                      autoComplete="off"
                     />
 
                     <Alert severity="warning">
@@ -585,6 +616,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
               Cancel
             </Button>
             <Button 
+              ref={submitButtonRef}
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading || isLoadingDependencies}
