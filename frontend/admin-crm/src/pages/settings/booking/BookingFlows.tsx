@@ -150,9 +150,19 @@ export const BookingFlows: React.FC = () => {
   };
 
   const handleDialogClose = () => {
-    setDialogOpen(false);
-    setEditingFlow(null);
+    // Clear any focused elements before closing
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.blur && activeElement.tagName !== 'BODY') {
+      activeElement.blur();
+    }
+    
+    // Use a small timeout to ensure focus is cleared before dialog closes
+    setTimeout(() => {
+      setDialogOpen(false);
+      setEditingFlow(null);
+    }, 50);
   };
+
 
   const handlePreviewClose = () => {
     setPreviewDialogOpen(false);
@@ -160,16 +170,23 @@ export const BookingFlows: React.FC = () => {
   };
 
   const handleSubmit = (data: CreateBookingFlowData | UpdateBookingFlowData) => {
-    if (editingFlow) {
-      updateFlow({ 
-        id: editingFlow.id, 
-        data: data as UpdateBookingFlowData 
-      });
-    } else {
-      createFlow(data as CreateBookingFlowData);
-    }
-    handleDialogClose();
-  };
+  if (editingFlow) {
+    updateFlow({ 
+      id: editingFlow.id, 
+      data: data as UpdateBookingFlowData 
+    }, {
+      onSuccess: () => {
+        handleDialogClose();
+      }
+    });
+  } else {
+    createFlow(data as CreateBookingFlowData, {
+      onSuccess: () => {
+        handleDialogClose();
+      }
+    });
+  }
+};
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
   const isLoading = isCreatingFlow || isUpdatingFlow;

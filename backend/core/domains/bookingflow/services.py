@@ -95,13 +95,23 @@ class BookingFlowService:
     
     @staticmethod
     def create_flow(flow_data):
-        """Create a new booking flow"""
+        """Create a new booking flow with proper data handling"""
         with transaction.atomic():
-            # Extract steps data if provided
+            # Extract steps data and many-to-many fields
             steps_data = flow_data.pop('steps', [])
+            available_discounts = flow_data.pop('available_discounts', [])
+            
+            # Handle event_type conversion
+            event_type = flow_data.get('event_type')
+            if event_type == '' or event_type == 'null' or event_type is None:
+                flow_data['event_type'] = None
             
             # Create the booking flow
             flow = BookingFlow.objects.create(**flow_data)
+            
+            # Set many-to-many relationships
+            if available_discounts:
+                flow.available_discounts.set(available_discounts)
             
             # Create steps if provided
             for step_data in steps_data:
@@ -112,18 +122,29 @@ class BookingFlowService:
     
     @staticmethod
     def update_flow(flow_id, flow_data):
-        """Update an existing booking flow"""
+        """Update an existing booking flow with proper data handling"""
         flow = BookingFlowService.get_flow_by_id(flow_id)
         
         with transaction.atomic():
             # Handle steps separately if provided
             steps_data = flow_data.pop('steps', None)
+            available_discounts = flow_data.pop('available_discounts', None)
+            
+            # Handle event_type conversion
+            if 'event_type' in flow_data:
+                event_type = flow_data['event_type']
+                if event_type == '' or event_type == 'null':
+                    flow_data['event_type'] = None
             
             # Update flow fields
             for key, value in flow_data.items():
                 setattr(flow, key, value)
             
             flow.save()
+            
+            # Update many-to-many relationships if provided
+            if available_discounts is not None:
+                flow.available_discounts.set(available_discounts)
             
             # Update steps if provided
             if steps_data is not None:
@@ -248,22 +269,32 @@ class BookingFlowStepService:
     @staticmethod
     def create_step(flow_id: int, step_data: dict) -> BookingFlowStep:
         """
-        Create a new booking flow step
+        Create a new booking flow step with robust order handling
         """
-        from .models import BookingFlow, BookingFlowStep
-        
         try:
             # Get the booking flow
             booking_flow = BookingFlow.objects.get(id=flow_id)
             
-            # Handle order assignment
-            if 'order' not in step_data or step_data['order'] is None:
+            # Handle order assignment more robustly
+            order = step_data.get('order')
+            if order is None or order == 0 or order == '':
                 # Auto-assign the next available order
                 max_order = BookingFlowStep.objects.filter(
                     booking_flow=booking_flow
                 ).aggregate(models.Max('order'))['order__max']
                 step_data['order'] = (max_order or 0) + 1
             else:
+                # Ensure order is an integer
+                try:
+                    order = int(order)
+                    step_data['order'] = order
+                except (ValueError, TypeError):
+                    # Invalid order, auto-assign
+                    max_order = BookingFlowStep.objects.filter(
+                        booking_flow=booking_flow
+                    ).aggregate(models.Max('order'))['order__max']
+                    step_data['order'] = (max_order or 0) + 1
+                
                 # Check if the provided order already exists
                 existing_step = BookingFlowStep.objects.filter(
                     booking_flow=booking_flow,
@@ -309,8 +340,13 @@ class BookingFlowStepService:
         with transaction.atomic():
             # Handle order change specially to maintain sequential ordering
             if 'order' in step_data and step_data['order'] != step.order:
-                BookingFlowStepService._reorder_step(step, step_data['order'])
-                step_data.pop('order')  # Remove from data as it's handled separately
+                try:
+                    new_order = int(step_data['order'])
+                    BookingFlowStepService._reorder_step(step, new_order)
+                    step_data.pop('order')  # Remove from data as it's handled separately
+                except (ValueError, TypeError):
+                    # Invalid order, ignore
+                    step_data.pop('order', None)
             
             # Update other fields
             for key, value in step_data.items():

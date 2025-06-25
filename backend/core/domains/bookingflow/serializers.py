@@ -1,4 +1,58 @@
-# backend/core/domains/bookingflow/serializers.py
+def validate(self, data):
+        """Validate booking flow update data"""
+        # Get current instance for validation
+        instance = getattr(self, 'instance', None)
+        
+        if instance:
+            # Merge current data with update data for validation
+            current_data = {
+                'min_advance_booking_days': instance.min_advance_booking_days,
+                'max_advance_booking_days': instance.max_advance_booking_days,
+                'event_type': instance.event_type_id,
+                'is_active': instance.is_active,
+            }
+            current_data.update(data)
+            
+            min_days = current_data.get('min_advance_booking_days', 1)
+            max_days = current_data.get('max_advance_booking_days', 365)
+            
+            if min_days >= max_days:
+                raise serializers.ValidationError({
+                    'max_advance_booking_days': 'Maximum days must be greater than minimum days'
+                })
+            
+            # Check for active booking flows with same event type
+            event_type = current_data.get('event_type')
+            is_active = current_data.get('is_active', True)
+            
+            if is_active:
+                # Check for existing active flows with same event type (excluding current instance)
+                existing_flows = BookingFlow.objects.filter(
+                    event_type=event_type,
+                    is_active=True
+                ).exclude(pk=instance.pk)
+                
+                if existing_flows.exists():
+                    if event_type:
+                        # Get event type name for better error message
+                        try:
+                            from core.domains.events.models import EventType
+                            event_type_obj = EventType.objects.get(id=event_type)
+                            event_type_name = event_type_obj.name
+                        except EventType.DoesNotExist:
+                            event_type_name = f"Event Type ID {event_type}"
+                        
+                        raise serializers.ValidationError({
+                            'event_type': f'An active booking flow already exists for {event_type_name}. '
+                                        'Only one active flow per event type is allowed.'
+                        })
+                    else:
+                        raise serializers.ValidationError({
+                            'event_type': 'An active booking flow already exists for "Any Event Type". '
+                                        'Only one active flow for "Any Event Type" is allowed.'
+                        })
+        
+        return data# backend/core/domains/bookingflow/serializers.py
 from core.domains.communications.serializers import CommunicationTemplateSerializer
 from core.domains.events.basic_serializers import EventTypeSerializer
 from core.domains.products.serializers import (
@@ -273,7 +327,7 @@ class BookingSessionSerializer(serializers.ModelSerializer):
         return {
             'id': obj.booking_flow.id,
             'name': obj.booking_flow.name,
-            'event_type_name': obj.booking_flow.event_type.name,
+            'event_type_name': obj.booking_flow.event_type.name if obj.booking_flow.event_type else None,
             'total_steps': obj.booking_flow.calculate_total_steps()
         }
 
@@ -316,7 +370,7 @@ class PublicBookingFlowSerializer(serializers.ModelSerializer):
         return obj.calculate_total_steps()
 
 
-# Simplified create/update serializers for better CRUD
+# FIXED: Simplified create/update serializers for better CRUD
 class BookingFlowCreateSerializer(serializers.ModelSerializer):
     """Simplified serializer for creating booking flows"""
     
@@ -332,6 +386,12 @@ class BookingFlowCreateSerializer(serializers.ModelSerializer):
             'success_message', 'conversion_tracking_code'
         ]
 
+    def validate_event_type(self, value):
+        """Convert empty string to None for 'Any Event Type'"""
+        if value == '' or value == 'null':
+            return None
+        return value
+
     def validate(self, data):
         """Validate booking flow data"""
         # Ensure min advance booking is less than max
@@ -343,14 +403,74 @@ class BookingFlowCreateSerializer(serializers.ModelSerializer):
                 'max_advance_booking_days': 'Maximum days must be greater than minimum days'
             })
         
+        # Check for active booking flows with same event type
+        event_type = data.get('event_type')
+        is_active = data.get('is_active', True)
+        
+        if is_active:
+            # Check for existing active flows with same event type
+            existing_flows = BookingFlow.objects.filter(
+                event_type=event_type,
+                is_active=True
+            )
+            
+            if existing_flows.exists():
+                if event_type:
+                    # Get event type name for better error message
+                    try:
+                        from core.domains.events.models import EventType
+                        event_type_obj = EventType.objects.get(id=event_type)
+                        event_type_name = event_type_obj.name
+                    except EventType.DoesNotExist:
+                        event_type_name = f"Event Type ID {event_type}"
+                    
+                    raise serializers.ValidationError({
+                        'event_type': f'An active booking flow already exists for {event_type_name}. '
+                                    'Only one active flow per event type is allowed.'
+                    })
+                else:
+                    raise serializers.ValidationError({
+                        'event_type': 'An active booking flow already exists for "Any Event Type". '
+                                    'Only one active flow for "Any Event Type" is allowed.'
+                    })
+        
         return data
 
+    def create(self, validated_data):
+        """Create booking flow with proper many-to-many handling"""
+        # Extract many-to-many fields
+        available_discounts = validated_data.pop('available_discounts', [])
+        
+        # Create the booking flow
+        booking_flow = BookingFlow.objects.create(**validated_data)
+        
+        # Set many-to-many relationships
+        if available_discounts:
+            booking_flow.available_discounts.set(available_discounts)
+        
+        return booking_flow
 
-class BookingFlowUpdateSerializer(BookingFlowCreateSerializer):
+
+class BookingFlowUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating booking flows"""
     
-    class Meta(BookingFlowCreateSerializer.Meta):
-        pass
+    class Meta:
+        model = BookingFlow
+        fields = [
+            'name', 'description', 'event_type', 'workflow_template',
+            'confirmation_email_template', 'reminder_email_template',
+            'is_active', 'allow_guest_booking', 'require_account_creation',
+            'auto_approve_bookings', 'enable_progress_saving',
+            'max_advance_booking_days', 'min_advance_booking_days',
+            'allow_discounts', 'available_discounts', 'redirect_url',
+            'success_message', 'conversion_tracking_code'
+        ]
+
+    def validate_event_type(self, value):
+        """Convert empty string to None for 'Any Event Type'"""
+        if value == '' or value == 'null':
+            return None
+        return value
 
     def validate(self, data):
         """Validate booking flow update data"""
@@ -362,6 +482,8 @@ class BookingFlowUpdateSerializer(BookingFlowCreateSerializer):
             current_data = {
                 'min_advance_booking_days': instance.min_advance_booking_days,
                 'max_advance_booking_days': instance.max_advance_booking_days,
+                'event_type': instance.event_type_id,
+                'is_active': instance.is_active,
             }
             current_data.update(data)
             
@@ -372,8 +494,55 @@ class BookingFlowUpdateSerializer(BookingFlowCreateSerializer):
                 raise serializers.ValidationError({
                     'max_advance_booking_days': 'Maximum days must be greater than minimum days'
                 })
+            
+            # Check for active booking flows with same event type
+            event_type = current_data.get('event_type')
+            is_active = current_data.get('is_active', True)
+            
+            if is_active:
+                # Check for existing active flows with same event type (excluding current instance)
+                existing_flows = BookingFlow.objects.filter(
+                    event_type=event_type,
+                    is_active=True
+                ).exclude(pk=instance.pk)
+                
+                if existing_flows.exists():
+                    if event_type:
+                        # Get event type name for better error message
+                        try:
+                            from core.domains.events.models import EventType
+                            event_type_obj = EventType.objects.get(id=event_type)
+                            event_type_name = event_type_obj.name
+                        except EventType.DoesNotExist:
+                            event_type_name = f"Event Type ID {event_type}"
+                        
+                        raise serializers.ValidationError({
+                            'event_type': f'An active booking flow already exists for {event_type_name}. '
+                                        'Only one active flow per event type is allowed.'
+                        })
+                    else:
+                        raise serializers.ValidationError({
+                            'event_type': 'An active booking flow already exists for "Any Event Type". '
+                                        'Only one active flow for "Any Event Type" is allowed.'
+                        })
         
         return data
+
+    def update(self, instance, validated_data):
+        """Update booking flow with proper many-to-many handling"""
+        # Extract many-to-many fields
+        available_discounts = validated_data.pop('available_discounts', None)
+        
+        # Update regular fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update many-to-many relationships if provided
+        if available_discounts is not None:
+            instance.available_discounts.set(available_discounts)
+        
+        return instance
 
 
 class BookingFlowStepCreateSerializer(serializers.ModelSerializer):
