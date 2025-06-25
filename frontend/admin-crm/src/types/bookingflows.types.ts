@@ -381,11 +381,11 @@ export interface BookingFlowAnalytics {
   updated_at: string;
 }
 
-// Create/Update Data Types
+// Create/Update Data Types - FIXED
 export interface CreateBookingFlowData {
   name: string;
   description?: string;
-  event_type?: number | null;
+  event_type?: number | null; // Allow null for "Any Event Type"
   workflow_template?: number | null;
   confirmation_email_template?: number | null;
   reminder_email_template?: number | null;
@@ -512,11 +512,11 @@ export interface StepPreviewData {
   };
 }
 
-// Form Data Types
+// Form Data Types - FIXED to handle null values properly
 export interface BookingFlowFormData {
   name: string;
   description: string;
-  event_type: string;
+  event_type: string; // Will be converted to number | null in API
   workflow_template: string;
   confirmation_email_template: string;
   reminder_email_template: string;

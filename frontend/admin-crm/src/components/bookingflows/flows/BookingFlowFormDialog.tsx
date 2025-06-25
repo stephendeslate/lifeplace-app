@@ -58,7 +58,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 const defaultFormData: BookingFlowFormData = {
   name: '',
   description: '',
-  event_type: '',
+  event_type: '', // Empty string for "Any Event Type"
   workflow_template: '',
   confirmation_email_template: '',
   reminder_email_template: '',
@@ -98,6 +98,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
         setFormData({
           name: editingFlow.name || '',
           description: editingFlow.description || '',
+          // FIXED: Handle null event_type properly
           event_type: editingFlow.event_type?.toString() || '',
           workflow_template: editingFlow.workflow_template?.toString() || '',
           confirmation_email_template: editingFlow.confirmation_email_template?.toString() || '',
@@ -120,6 +121,14 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       }
       setErrors({});
       setActiveTab(0);
+    } else {
+      // When dialog closes, ensure no elements retain focus
+      setTimeout(() => {
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && activeElement.blur && activeElement.tagName !== 'BODY') {
+          activeElement.blur();
+        }
+      }, 100);
     }
   }, [editingFlow, open]);
 
@@ -151,7 +160,6 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     }));
   };
 
-  // @ts-ignore
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
@@ -182,6 +190,17 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleClose = () => {
+    if (!isLoading) {
+      // Clear focus from any focused elements within the dialog before closing
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement.blur) {
+        activeElement.blur();
+      }
+      onClose();
+    }
+  };
+
   const handleSubmit = () => {
     if (!validateForm()) {
       // Switch to the tab with errors
@@ -190,10 +209,14 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       return;
     }
 
+    // FIXED: Properly convert form data to API data
     const submitData: CreateBookingFlowData | UpdateBookingFlowData = {
       name: formData.name.trim(),
       description: formData.description.trim() || undefined,
-      event_type: formData.event_type ? parseInt(formData.event_type) : null,
+      // FIXED: Convert empty string to null for "Any Event Type"
+      event_type: formData.event_type === '' || formData.event_type === 'null' 
+        ? null 
+        : parseInt(formData.event_type) || null,
       workflow_template: formData.workflow_template ? parseInt(formData.workflow_template) : null,
       confirmation_email_template: formData.confirmation_email_template ? parseInt(formData.confirmation_email_template) : null,
       reminder_email_template: formData.reminder_email_template ? parseInt(formData.reminder_email_template) : null,
@@ -214,12 +237,6 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     onSubmit(submitData);
   };
 
-  const handleClose = () => {
-    if (!isLoading) {
-      onClose();
-    }
-  };
-
   return (
     <Dialog 
       open={open} 
@@ -229,6 +246,10 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       PaperProps={{
         sx: { minHeight: '80vh' }
       }}
+      // Add focus management props
+      disableRestoreFocus
+      disableEnforceFocus={false}
+      keepMounted={false}
     >
       {open && (
         <>
@@ -308,12 +329,22 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>Any Event Type</em>
                         </MenuItem>
-                        {eventTypes.map((eventType: { id: number; name: string }) => (
-                          <MenuItem key={eventType.id} value={eventType.id.toString()}>
-                            {eventType.name}
+                        {eventTypes && eventTypes.length > 0 ? (
+                          eventTypes.map((eventType: { id: number; name: string }) => (
+                            <MenuItem key={eventType.id} value={eventType.id.toString()}>
+                              {eventType.name}
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem disabled>
+                            <em>No event types available</em>
                           </MenuItem>
-                        ))}
+                        )}
                       </Select>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                        Only one active booking flow is allowed per event type. 
+                        Choose "Any Event Type" for a universal flow.
+                      </Typography>
                     </FormControl>
 
                     <Box>
