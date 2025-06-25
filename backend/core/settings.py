@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'core.domains.payments',
     'core.domains.workflows',
     'core.domains.bookingflow',
+    'core.domains.notes',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
