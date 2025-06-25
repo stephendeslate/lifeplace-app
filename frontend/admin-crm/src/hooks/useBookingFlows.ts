@@ -23,7 +23,6 @@ import type {
 import { useEventTypes } from './useEvents';
 import { useQuestionnaires } from './useQuestionnaires';
 import { useProductCategories, useProducts } from './useProducts';
-import { usePaymentGateways, useTaxRates } from './usePayments';
 
 export const useBookingFlows = (filters?: BookingFlowFilters) => {
   const queryClient = useQueryClient();
@@ -58,7 +57,7 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
     });
   };
 
-  // Mutations
+  // FIXED: Improved error handling for mutations
   const createFlowMutation = useMutation({
     mutationFn: (data: CreateBookingFlowData) => bookingFlowsApi.createBookingFlow(data),
     onSuccess: (newFlow) => {
@@ -66,8 +65,38 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
       showSuccess('Booking Flow Created', `${newFlow.name} has been created successfully.`);
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create booking flow';
-      showError('Create Failed', message);
+      console.error('Create booking flow error:', error);
+      
+      // Handle validation errors
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Handle event type uniqueness constraint
+        if (errorData.event_type) {
+          if (Array.isArray(errorData.event_type)) {
+            showError('Event Type Conflict', errorData.event_type[0]);
+          } else {
+            showError('Event Type Conflict', errorData.event_type);
+          }
+        } else if (errorData.available_discounts) {
+          showError('Validation Error', 'There was an issue with the discount selection. Please try again.');
+        } else if (errorData.detail) {
+          showError('Create Failed', errorData.detail);
+        } else if (errorData.non_field_errors) {
+          showError('Validation Error', errorData.non_field_errors[0] || 'A booking flow validation error occurred.');
+        } else {
+          // Handle field-specific errors
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, messages]) => {
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              return `${field}: ${messageText}`;
+            })
+            .join('\n');
+          showError('Validation Errors', fieldErrors);
+        }
+      } else {
+        showError('Create Failed', 'Failed to create booking flow. Please try again.');
+      }
     },
   });
 
@@ -80,8 +109,36 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
       showSuccess('Booking Flow Updated', `${updatedFlow.name} has been updated successfully.`);
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update booking flow';
-      showError('Update Failed', message);
+      console.error('Update booking flow error:', error);
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Handle event type uniqueness constraint
+        if (errorData.event_type) {
+          if (Array.isArray(errorData.event_type)) {
+            showError('Event Type Conflict', errorData.event_type[0]);
+          } else {
+            showError('Event Type Conflict', errorData.event_type);
+          }
+        } else if (errorData.available_discounts) {
+          showError('Validation Error', 'There was an issue with the discount selection. Please try again.');
+        } else if (errorData.detail) {
+          showError('Update Failed', errorData.detail);
+        } else if (errorData.non_field_errors) {
+          showError('Validation Error', errorData.non_field_errors[0] || 'A booking flow validation error occurred.');
+        } else {
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, messages]) => {
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              return `${field}: ${messageText}`;
+            })
+            .join('\n');
+          showError('Validation Errors', fieldErrors);
+        }
+      } else {
+        showError('Update Failed', 'Failed to update booking flow. Please try again.');
+      }
     },
   });
 
@@ -183,6 +240,7 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
       showSuccess('Step Created', `${newStep.name} has been created successfully.`);
     },
     onError: (error: any) => {
+      console.error('Create step error:', error);
       const message = error.response?.data?.detail || 'Failed to create step';
       showError('Create Failed', message);
     },
@@ -586,44 +644,42 @@ export const useBookingFlowAnalytics = (filters?: BookingFlowAnalyticsFilters) =
   };
 };
 
-// Cross-domain dependencies hook - CORRECTED VERSION
+// FIXED: Cross-domain dependencies hook with robust error handling
 export const useBookingFlowDependencies = () => {
   // Use the actual hook methods from your existing implementations
   const { useActiveEventTypes } = useEventTypes();
   const { useActiveQuestionnaires } = useQuestionnaires();
   const { useActiveProducts } = useProducts();
   const { categories } = useProductCategories();
-  const paymentGatewaysQuery = usePaymentGateways();
-  const taxRatesQuery = useTaxRates();
 
-  // Call the actual hooks
+  // Call the actual hooks with proper error handling
   const eventTypesQuery = useActiveEventTypes();
   const questionnairesQuery = useActiveQuestionnaires();
   const productsQuery = useActiveProducts();
 
   return {
-    // Data
+    // Data with fallbacks
     eventTypes: eventTypesQuery.data || [],
     questionnaires: questionnairesQuery.data || [],
     products: productsQuery.data || [],
     categories: categories || [],
-    paymentGateways: paymentGatewaysQuery.data || [],
-    taxRates: taxRatesQuery.data || [],
     
     // Loading states
     isLoadingDependencies: 
       eventTypesQuery.isLoading ||
       questionnairesQuery.isLoading ||
-      productsQuery.isLoading ||
-      paymentGatewaysQuery.isLoading ||
-      taxRatesQuery.isLoading,
+      productsQuery.isLoading,
+    
+    // Error states
+    hasErrors: 
+      !!eventTypesQuery.error ||
+      !!questionnairesQuery.error ||
+      !!productsQuery.error,
     
     // Individual query objects for more granular control
     eventTypesQuery,
     questionnairesQuery,
     productsQuery,
     categoriesQuery: { data: categories, isLoading: false }, // Adjust based on actual implementation
-    gatewaysQuery: paymentGatewaysQuery,
-    taxRatesQuery,
   };
 };

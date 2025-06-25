@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/bookingflows/flows/BookingFlowFormDialog.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -58,7 +58,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 const defaultFormData: BookingFlowFormData = {
   name: '',
   description: '',
-  event_type: '',
+  event_type: '', // Empty string for "Any Event Type"
   workflow_template: '',
   confirmation_email_template: '',
   reminder_email_template: '',
@@ -86,6 +86,10 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
   const [formData, setFormData] = useState<BookingFlowFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState(0);
+  
+  // Ref for the first input field to focus when dialog opens
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
     eventTypes,
@@ -98,6 +102,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
         setFormData({
           name: editingFlow.name || '',
           description: editingFlow.description || '',
+          // FIXED: Handle null event_type properly
           event_type: editingFlow.event_type?.toString() || '',
           workflow_template: editingFlow.workflow_template?.toString() || '',
           confirmation_email_template: editingFlow.confirmation_email_template?.toString() || '',
@@ -120,6 +125,13 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       }
       setErrors({});
       setActiveTab(0);
+
+      // Focus the first input after dialog animation completes
+      setTimeout(() => {
+        if (firstInputRef.current && document.contains(firstInputRef.current)) {
+          firstInputRef.current.focus();
+        }
+      }, 150);
     }
   }, [editingFlow, open]);
 
@@ -182,6 +194,25 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleClose = () => {
+    if (!isLoading) {
+      // Clear focus from any focused elements within the dialog before closing
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement.blur && activeElement !== document.body) {
+        // Only blur if the element is within this dialog
+        const dialogElement = activeElement.closest('[role="dialog"]');
+        if (dialogElement) {
+          activeElement.blur();
+        }
+      }
+      
+      // Small delay to ensure blur completes before dialog closes
+      setTimeout(() => {
+        onClose();
+      }, 10);
+    }
+  };
+
   const handleSubmit = () => {
     if (!validateForm()) {
       // Switch to the tab with errors
@@ -190,10 +221,14 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       return;
     }
 
+    // FIXED: Properly convert form data to API data
     const submitData: CreateBookingFlowData | UpdateBookingFlowData = {
       name: formData.name.trim(),
       description: formData.description.trim() || undefined,
-      event_type: formData.event_type ? parseInt(formData.event_type) : null,
+      // FIXED: Convert empty string to null for "Any Event Type"
+      event_type: formData.event_type === '' || formData.event_type === 'null' 
+        ? null 
+        : parseInt(formData.event_type) || null,
       workflow_template: formData.workflow_template ? parseInt(formData.workflow_template) : null,
       confirmation_email_template: formData.confirmation_email_template ? parseInt(formData.confirmation_email_template) : null,
       reminder_email_template: formData.reminder_email_template ? parseInt(formData.reminder_email_template) : null,
@@ -214,9 +249,10 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     onSubmit(submitData);
   };
 
-  const handleClose = () => {
-    if (!isLoading) {
-      onClose();
+  // Handle escape key
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape' && !isLoading) {
+      handleClose();
     }
   };
 
@@ -227,19 +263,27 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: '80vh' }
+        sx: { minHeight: '80vh' },
+        onKeyDown: handleKeyDown
       }}
+      // Enhanced focus management props
+      disableRestoreFocus={false}
+      disableEnforceFocus={false}
+      keepMounted={false}
+      // Additional accessibility props
+      aria-labelledby="booking-flow-dialog-title"
+      aria-describedby="booking-flow-dialog-description"
     >
       {open && (
         <>
-          <DialogTitle>
+          <DialogTitle id="booking-flow-dialog-title">
             <Box display="flex" alignItems="center" gap={1}>
               <FlowIcon color="primary" />
               {editingFlow ? 'Edit Booking Flow' : 'Create New Booking Flow'}
             </Box>
           </DialogTitle>
       
-          <DialogContent>
+          <DialogContent id="booking-flow-dialog-description">
             {isLoadingDependencies ? (
               <Box display="flex" justifyContent="center" py={4}>
                 <CircularProgress />
@@ -279,6 +323,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                 <TabPanel value={activeTab} index={0}>
                   <Stack spacing={3}>
                     <TextField
+                      inputRef={firstInputRef}
                       fullWidth
                       label="Flow Name"
                       value={formData.name}
@@ -286,6 +331,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       error={!!errors.name}
                       helperText={errors.name || 'A descriptive name for this booking flow'}
                       required
+                      autoComplete="off"
                     />
                     
                     <TextField
@@ -296,6 +342,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       multiline
                       rows={3}
                       helperText="Optional description explaining when to use this flow"
+                      autoComplete="off"
                     />
                     
                     <FormControl fullWidth>
@@ -308,12 +355,22 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>Any Event Type</em>
                         </MenuItem>
-                        {eventTypes.map((eventType: { id: number; name: string }) => (
-                          <MenuItem key={eventType.id} value={eventType.id.toString()}>
-                            {eventType.name}
+                        {eventTypes && eventTypes.length > 0 ? (
+                          eventTypes.map((eventType: { id: number; name: string }) => (
+                            <MenuItem key={eventType.id} value={eventType.id.toString()}>
+                              {eventType.name}
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem disabled>
+                            <em>No event types available</em>
                           </MenuItem>
-                        ))}
+                        )}
                       </Select>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                        Only one active booking flow is allowed per event type. 
+                        Choose "Any Event Type" for a universal flow.
+                      </Typography>
                     </FormControl>
 
                     <Box>
@@ -415,6 +472,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         helperText={errors.min_advance_booking_days || 'Minimum days in advance'}
                         type="number"
                         sx={{ flex: 1 }}
+                        autoComplete="off"
                       />
                       
                       <TextField
@@ -425,6 +483,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         helperText={errors.max_advance_booking_days || 'Maximum days in advance'}
                         type="number"
                         sx={{ flex: 1 }}
+                        autoComplete="off"
                       />
                     </Box>
 
@@ -511,6 +570,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       multiline
                       rows={3}
                       helperText="Message shown to clients after successful booking"
+                      autoComplete="off"
                     />
 
                     <TextField
@@ -519,6 +579,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       value={formData.redirect_url}
                       onChange={handleInputChange('redirect_url')}
                       helperText="Optional URL to redirect clients after booking completion"
+                      autoComplete="off"
                     />
 
                     <Divider />
@@ -535,6 +596,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       multiline
                       rows={3}
                       helperText="JavaScript code for tracking conversions (Google Analytics, Facebook Pixel, etc.)"
+                      autoComplete="off"
                     />
 
                     <Alert severity="warning">
@@ -554,6 +616,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
               Cancel
             </Button>
             <Button 
+              ref={submitButtonRef}
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading || isLoadingDependencies}

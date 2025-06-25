@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/bookingflows/flows/BookingFlowCard.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Card,
   CardContent,
@@ -50,6 +50,9 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
   isDeleting = false,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  
+  // Ref for the menu button to restore focus
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -58,26 +61,55 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
 
   const handleMenuClose = () => {
     setMenuAnchor(null);
+    // Restore focus to the menu button after menu closes
+    setTimeout(() => {
+      menuButtonRef.current?.focus();
+    }, 100);
   };
 
   const handleEdit = () => {
     onEdit(flow);
-    handleMenuClose();
+    handleMenuCloseWithoutFocus();
   };
 
   const handlePreview = () => {
     onPreview(flow);
-    handleMenuClose();
+    handleMenuCloseWithoutFocus();
   };
 
   const handleDuplicate = () => {
     onDuplicate(flow);
-    handleMenuClose();
+    handleMenuCloseWithoutFocus();
   };
 
   const handleDelete = () => {
     onDelete(flow.id);
-    handleMenuClose();
+    handleMenuCloseWithoutFocus();
+  };
+
+  const handleMenuCloseWithoutFocus = () => {
+    setMenuAnchor(null);
+    // Don't restore focus when navigating away or opening dialogs
+  };
+
+  const handleCardClick = (event: React.MouseEvent) => {
+    // Only trigger edit if not clicking on interactive elements
+    const target = event.target as HTMLElement;
+    const isInteractiveElement = target.closest('button') || target.closest('[role="button"]');
+    
+    if (!isInteractiveElement) {
+      onEdit(flow);
+    }
+  };
+
+  const handlePreviewClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onPreview(flow);
+  };
+
+  const handleAnalyticsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Navigate to analytics - would be handled by parent
   };
 
   const getStatusColor = () => {
@@ -107,9 +139,24 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
         '&:hover': {
           transform: 'translateY(-2px)',
           boxShadow: 3,
+        },
+        // Ensure card is focusable for keyboard navigation
+        '&:focus-visible': {
+          outline: '2px solid',
+          outlineColor: 'primary.main',
+          outlineOffset: '2px',
         }
       }}
-      onClick={() => onEdit(flow)}
+      onClick={handleCardClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onEdit(flow);
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`Edit booking flow: ${flow.name}`}
     >
       {/* Header */}
       <CardContent sx={{ flexGrow: 1 }}>
@@ -129,9 +176,19 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
           </Box>
           
           <IconButton
+            ref={menuButtonRef}
             size="small"
             onClick={handleMenuOpen}
             disabled={isDeleting}
+            aria-label={`More actions for ${flow.name}`}
+            sx={{
+              // Ensure button is visible to screen readers
+              '&:focus-visible': {
+                outline: '2px solid',
+                outlineColor: 'primary.main',
+                outlineOffset: '2px',
+              }
+            }}
           >
             <MoreVertIcon fontSize="small" />
           </IconButton>
@@ -216,6 +273,7 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
                 backgroundColor: completionPercentage === 100 ? 'success.main' : 'primary.main'
               }
             }}
+            aria-label={`Configuration progress: ${completionPercentage}%`}
           />
           <Typography variant="caption" color="text.secondary">
             {completionPercentage}% configured
@@ -242,10 +300,8 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
         <Button
           size="small"
           startIcon={<PreviewIcon />}
-          onClick={(e) => {
-            e.stopPropagation();
-            onPreview(flow);
-          }}
+          onClick={handlePreviewClick}
+          aria-label={`Preview ${flow.name}`}
         >
           Preview
         </Button>
@@ -253,10 +309,8 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
         <Button
           size="small"
           startIcon={<AnalyticsIcon />}
-          onClick={(e) => {
-            e.stopPropagation();
-            // Navigate to analytics - would be handled by parent
-          }}
+          onClick={handleAnalyticsClick}
+          aria-label={`View analytics for ${flow.name}`}
         >
           Analytics
         </Button>
@@ -268,29 +322,34 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
         onClick={(e) => e.stopPropagation()}
+        // Enhanced accessibility
+        MenuListProps={{
+          'aria-labelledby': menuButtonRef.current?.id,
+          role: 'menu',
+        }}
       >
-        <MenuItem onClick={handleEdit}>
+        <MenuItem onClick={handleEdit} role="menuitem">
           <ListItemIcon>
             <EditIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Edit Flow</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handlePreview}>
+        <MenuItem onClick={handlePreview} role="menuitem">
           <ListItemIcon>
             <PreviewIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Preview Flow</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handleDuplicate}>
+        <MenuItem onClick={handleDuplicate} role="menuitem">
           <ListItemIcon>
             <DuplicateIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Duplicate Flow</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }} role="menuitem">
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />
           </ListItemIcon>

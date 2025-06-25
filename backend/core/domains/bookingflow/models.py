@@ -8,6 +8,7 @@ from core.utils.models import BaseModel
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 class BookingFlow(BaseModel):
@@ -19,7 +20,10 @@ class BookingFlow(BaseModel):
     event_type = models.ForeignKey(
         EventType, 
         on_delete=models.CASCADE, 
-        related_name='booking_flows'
+        related_name='booking_flows',
+        null=True,
+        blank=True,
+        help_text="Leave blank for 'Any Event Type'"
     )
     
     # Integration with other domains
@@ -78,10 +82,45 @@ class BookingFlow(BaseModel):
 
     class Meta:
         ordering = ['name']
-        unique_together = [['event_type', 'name']]
+        # REMOVED: unique_together constraint since we want to allow multiple flows per event type
+        # but we'll add custom validation instead
+        indexes = [
+            models.Index(fields=['event_type', 'is_active']),
+            models.Index(fields=['is_active']),
+        ]
 
     def __str__(self):
-        return f"{self.name} - {self.event_type.name}"
+        if self.event_type:
+            return f"{self.name} - {self.event_type.name}"
+        return f"{self.name} - Any Event Type"
+    
+    def clean(self):
+        """Custom validation for business rules"""
+        super().clean()
+        
+        # Check for active flows with same event type (including null)
+        if self.is_active:
+            existing_flows = BookingFlow.objects.filter(
+                event_type=self.event_type,
+                is_active=True
+            ).exclude(pk=self.pk)
+            
+            if existing_flows.exists():
+                if self.event_type:
+                    raise ValidationError({
+                        'event_type': f'An active booking flow already exists for {self.event_type.name}. '
+                                    'Only one active flow per event type is allowed.'
+                    })
+                else:
+                    raise ValidationError({
+                        'event_type': 'An active booking flow already exists for "Any Event Type". '
+                                    'Only one active flow for "Any Event Type" is allowed.'
+                    })
+    
+    def save(self, *args, **kwargs):
+        """Override save to run full_clean validation"""
+        self.full_clean()
+        super().save(*args, **kwargs)
     
     @property
     def enabled_steps(self):
@@ -109,6 +148,11 @@ class BookingFlow(BaseModel):
     def calculate_total_steps(self):
         """Calculate total number of enabled steps"""
         return self.enabled_steps.count()
+    
+    @property
+    def event_type_name(self):
+        """Get event type name or 'Any Event Type'"""
+        return self.event_type.name if self.event_type else 'Any Event Type'
 
 
 class BookingFlowStep(BaseModel):

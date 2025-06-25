@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/pages/settings/booking/BookingFlows.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Box,
   Button,
@@ -64,6 +64,11 @@ export const BookingFlows: React.FC = () => {
   const [flowToDelete, setFlowToDelete] = useState<BookingFlow | null>(null);
   const [flowToPreview, setFlowToPreview] = useState<BookingFlow | null>(null);
 
+  // Refs for focus management
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const createButtonRef = useRef<HTMLButtonElement>(null);
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
   const {
     bookingFlows,
     isLoadingFlows,
@@ -99,6 +104,8 @@ export const BookingFlows: React.FC = () => {
   };
 
   const handleCreateNew = () => {
+    // Store the currently focused element
+    lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setEditingFlow(null);
     setDialogOpen(true);
   };
@@ -107,8 +114,9 @@ export const BookingFlows: React.FC = () => {
     navigate(`/settings/booking/booking-flow/${flow.id}`);
   };
 
-
   const handlePreview = (flow: BookingFlow) => {
+    // Store the currently focused element
+    lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setFlowToPreview(flow);
     setPreviewDialogOpen(true);
   };
@@ -128,6 +136,8 @@ export const BookingFlows: React.FC = () => {
   const handleDelete = (id: number) => {
     const flow = bookingFlows.find(f => f.id === id);
     if (flow) {
+      // Store the currently focused element
+      lastFocusedElementRef.current = document.activeElement as HTMLElement;
       setFlowToDelete(flow);
       setDeleteDialogOpen(true);
     }
@@ -137,26 +147,90 @@ export const BookingFlows: React.FC = () => {
     if (flowToDelete) {
       deleteFlow(flowToDelete.id, {
         onSuccess: () => {
-          setDeleteDialogOpen(false);
-          setFlowToDelete(null);
+          handleDeleteCancel(); // This will handle cleanup and focus restoration
         }
       });
     }
   };
 
   const handleDeleteCancel = () => {
+    // Clear any focused elements before closing
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.blur && activeElement !== document.body) {
+      activeElement.blur();
+    }
+
+    // Close dialog first
     setDeleteDialogOpen(false);
     setFlowToDelete(null);
+
+    // Restore focus after a brief delay to ensure dialog is fully closed
+    setTimeout(() => {
+      if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
+        try {
+          lastFocusedElementRef.current.focus();
+        } catch (error) {
+          // If focus restoration fails, focus the create button as fallback
+          createButtonRef.current?.focus();
+        }
+      } else {
+        // Fallback to create button if original element is no longer available
+        createButtonRef.current?.focus();
+      }
+      lastFocusedElementRef.current = null;
+    }, 100);
   };
 
   const handleDialogClose = () => {
+    // Clear any focused elements before closing
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.blur && activeElement !== document.body) {
+      activeElement.blur();
+    }
+    
+    // Close dialog first
     setDialogOpen(false);
     setEditingFlow(null);
+
+    // Restore focus after a brief delay
+    setTimeout(() => {
+      if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
+        try {
+          lastFocusedElementRef.current.focus();
+        } catch (error) {
+          createButtonRef.current?.focus();
+        }
+      } else {
+        createButtonRef.current?.focus();
+      }
+      lastFocusedElementRef.current = null;
+    }, 100);
   };
 
   const handlePreviewClose = () => {
+    // Clear any focused elements before closing
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.blur && activeElement !== document.body) {
+      activeElement.blur();
+    }
+
+    // Close dialog first
     setPreviewDialogOpen(false);
     setFlowToPreview(null);
+
+    // Restore focus after a brief delay
+    setTimeout(() => {
+      if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
+        try {
+          lastFocusedElementRef.current.focus();
+        } catch (error) {
+          createButtonRef.current?.focus();
+        }
+      } else {
+        createButtonRef.current?.focus();
+      }
+      lastFocusedElementRef.current = null;
+    }, 100);
   };
 
   const handleSubmit = (data: CreateBookingFlowData | UpdateBookingFlowData) => {
@@ -164,11 +238,18 @@ export const BookingFlows: React.FC = () => {
       updateFlow({ 
         id: editingFlow.id, 
         data: data as UpdateBookingFlowData 
+      }, {
+        onSuccess: () => {
+          handleDialogClose();
+        }
       });
     } else {
-      createFlow(data as CreateBookingFlowData);
+      createFlow(data as CreateBookingFlowData, {
+        onSuccess: () => {
+          handleDialogClose();
+        }
+      });
     }
-    handleDialogClose();
   };
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
@@ -196,6 +277,7 @@ export const BookingFlows: React.FC = () => {
           </Typography>
         </Box>
         <Button
+          ref={createButtonRef}
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleCreateNew}
@@ -447,6 +529,9 @@ export const BookingFlows: React.FC = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
+        disableRestoreFocus
+        disableEnforceFocus={false}
+        keepMounted={false}
       >
         <DialogTitle>Delete Booking Flow</DialogTitle>
         <DialogContent>
@@ -459,6 +544,7 @@ export const BookingFlows: React.FC = () => {
             Cancel
           </Button>
           <Button 
+            ref={deleteButtonRef}
             onClick={handleDeleteConfirm} 
             color="error" 
             variant="contained"
@@ -475,6 +561,9 @@ export const BookingFlows: React.FC = () => {
         onClose={handlePreviewClose}
         maxWidth="md"
         fullWidth
+        disableRestoreFocus
+        disableEnforceFocus={false}
+        keepMounted={false}
       >
         <DialogTitle>
           <Box display="flex" alignItems="center" gap={1}>
