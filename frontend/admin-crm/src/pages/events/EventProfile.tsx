@@ -53,6 +53,7 @@ import { useEvents } from '../../hooks/useEvents';
 import { useClients } from '../../hooks/useClients';
 import { EventForm } from '../../components/events/EventForm';
 import { WorkflowProgress } from '../../components/events/WorkflowProgress';
+import { NotesList } from '../../components/notes';
 import { EVENT_STATUSES } from '../../types/events.types';
 
 interface TabPanelProps {
@@ -517,17 +518,16 @@ export const EventProfile: React.FC = () => {
               disabled
             />
             <Tab 
-              label="Notes (0)" 
+              label="Notes" 
               icon={<NoteIcon />} 
               iconPosition="start"
-              disabled
             />
           </Tabs>
         </Box>
 
         <CardContent>
-          {/* All tabs disabled with coming soon message */}
-          {[0, 1, 2, 3, 4, 5, 6].map((index) => (
+          {/* Placeholder tabs for coming soon features */}
+          {[0, 1, 2, 3, 4, 5].map((index) => (
             <TabPanel key={index} value={tabValue} index={index}>
               <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
                 {index === 0 && <MessageIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
@@ -536,7 +536,6 @@ export const EventProfile: React.FC = () => {
                 {index === 3 && <InvoiceIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
                 {index === 4 && <QuestionnaireIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
                 {index === 5 && <FilesIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
-                {index === 6 && <NoteIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
                 
                 <Typography variant="h6" gutterBottom>
                   {index === 0 && 'Communications Coming Soon'}
@@ -545,7 +544,6 @@ export const EventProfile: React.FC = () => {
                   {index === 3 && 'Invoices Coming Soon'}
                   {index === 4 && 'Questionnaires Coming Soon'}
                   {index === 5 && 'Files Coming Soon'}
-                  {index === 6 && 'Notes Coming Soon'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   This functionality will be available in a future update.
@@ -553,6 +551,18 @@ export const EventProfile: React.FC = () => {
               </Paper>
             </TabPanel>
           ))}
+
+          {/* Notes Tab - Now functional */}
+          <TabPanel value={tabValue} index={6}>
+            <NotesList
+              contentType="event"
+              objectId={eventId}
+              objectName={event.name || `Event #${event.id}`}
+              allowCreate={true}
+              allowEdit={true}
+              allowDelete={true}
+            />
+          </TabPanel>
         </CardContent>
       </Card>
 
