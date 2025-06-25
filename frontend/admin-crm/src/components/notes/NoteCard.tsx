@@ -13,7 +13,6 @@ import {
   Box,
   Chip,
   Tooltip,
-  Collapse,
 } from '@mui/material';
 import {
   MoreVert as MoreVertIcon,
