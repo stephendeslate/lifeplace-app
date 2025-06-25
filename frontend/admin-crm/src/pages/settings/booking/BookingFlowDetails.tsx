@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/pages/settings/booking/BookingFlowDetails.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Box,
   Button,
@@ -90,6 +90,11 @@ export const BookingFlowDetails: React.FC = () => {
   const [editingStep, setEditingStep] = useState<BookingFlowStep | null>(null);
   const [selectedStepForConfig, setSelectedStepForConfig] = useState<BookingFlowStep | null>(null);
 
+  // Refs for focus management
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const addStepButtonRef = useRef<HTMLButtonElement>(null);
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
   const flowId = parseInt(id || '0');
 
   const { useBookingFlow, updateFlow, deleteFlow, duplicateFlow, isUpdatingFlow, isDeletingFlow } = useBookingFlows();
@@ -141,6 +146,8 @@ export const BookingFlowDetails: React.FC = () => {
   };
 
   const handleEditFlow = () => {
+    // Store the currently focused element
+    lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setEditDialogOpen(true);
     handleMenuClose();
   };
@@ -164,6 +171,8 @@ export const BookingFlowDetails: React.FC = () => {
   };
 
   const handleDeleteFlow = () => {
+    // Store the currently focused element
+    lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setDeleteDialogOpen(true);
     handleMenuClose();
   };
@@ -178,6 +187,32 @@ export const BookingFlowDetails: React.FC = () => {
     }
   };
 
+  const handleDeleteCancel = () => {
+    // Clear any focused elements before closing
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.blur && activeElement !== document.body) {
+      activeElement.blur();
+    }
+
+    // Close dialog first
+    setDeleteDialogOpen(false);
+
+    // Restore focus after a brief delay
+    setTimeout(() => {
+      if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
+        try {
+          lastFocusedElementRef.current.focus();
+        } catch (error) {
+          // Fallback to menu button
+          menuButtonRef.current?.focus();
+        }
+      } else {
+        menuButtonRef.current?.focus();
+      }
+      lastFocusedElementRef.current = null;
+    }, 100);
+  };
+
   const handlePreviewFlow = () => {
     if (flow) {
       navigate(`/settings/booking/booking-flow/preview/${flow.id}`);
@@ -188,17 +223,49 @@ export const BookingFlowDetails: React.FC = () => {
   const handleUpdateFlow = (data: UpdateBookingFlowData) => {
     if (flow) {
       updateFlow({ id: flow.id, data });
-      setEditDialogOpen(false);
+      handleEditDialogClose();
     }
   };
 
+  const handleEditDialogClose = () => {
+    // Clear any focused elements before closing
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.blur && activeElement !== document.body) {
+      const dialogElement = activeElement.closest('[role="dialog"]');
+      if (dialogElement) {
+        activeElement.blur();
+      }
+    }
+    
+    // Close dialog first
+    setEditDialogOpen(false);
+
+    // Restore focus after a brief delay
+    setTimeout(() => {
+      if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
+        try {
+          lastFocusedElementRef.current.focus();
+        } catch (error) {
+          menuButtonRef.current?.focus();
+        }
+      } else {
+        menuButtonRef.current?.focus();
+      }
+      lastFocusedElementRef.current = null;
+    }, 100);
+  };
+
   const handleCreateStep = () => {
+    // Store the currently focused element
+    lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setEditingStep(null);
     setStepDialogOpen(true);
   };
 
   // This is for editing step PROPERTIES (name, description, etc.)
   const handleEditStep = (step: BookingFlowStep) => {
+    // Store the currently focused element
+    lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setEditingStep(step);
     setStepDialogOpen(true);
   };
@@ -221,6 +288,34 @@ export const BookingFlowDetails: React.FC = () => {
     });
   };
 
+  const handleStepDialogClose = () => {
+    // Clear any focused elements before closing
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.blur && activeElement !== document.body) {
+      const dialogElement = activeElement.closest('[role="dialog"]');
+      if (dialogElement) {
+        activeElement.blur();
+      }
+    }
+    
+    // Close dialog first
+    setStepDialogOpen(false);
+
+    // Restore focus after a brief delay
+    setTimeout(() => {
+      if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
+        try {
+          lastFocusedElementRef.current.focus();
+        } catch (error) {
+          addStepButtonRef.current?.focus();
+        }
+      } else {
+        addStepButtonRef.current?.focus();
+      }
+      lastFocusedElementRef.current = null;
+    }, 100);
+  };
+
   const handleStepSubmit = (data: CreateBookingFlowStepData | UpdateBookingFlowStepData) => {
     if (editingStep) {
       updateStep({ 
@@ -228,7 +323,7 @@ export const BookingFlowDetails: React.FC = () => {
         data: data as UpdateBookingFlowStepData 
       }, {
         onSuccess: () => {
-          setStepDialogOpen(false);
+          handleStepDialogClose();
           refetchSteps();
         }
       });
@@ -238,7 +333,7 @@ export const BookingFlowDetails: React.FC = () => {
         booking_flow: flowId
       }, {
         onSuccess: () => {
-          setStepDialogOpen(false);
+          handleStepDialogClose();
           refetchSteps();
         }
       });
@@ -370,7 +465,7 @@ export const BookingFlowDetails: React.FC = () => {
             Preview
           </Button>
 
-          <IconButton onClick={handleMenuOpen}>
+          <IconButton ref={menuButtonRef} onClick={handleMenuOpen}>
             <MoreVertIcon />
           </IconButton>
         </Box>
@@ -568,6 +663,7 @@ export const BookingFlowDetails: React.FC = () => {
               Booking Flow Steps ({steps.length})
             </Typography>
             <Button
+              ref={addStepButtonRef}
               variant="contained"
               startIcon={<StepsIcon />}
               onClick={handleCreateStep}
@@ -713,7 +809,7 @@ export const BookingFlowDetails: React.FC = () => {
       {/* Edit Flow Dialog */}
       <BookingFlowFormDialog
         open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
+        onClose={handleEditDialogClose}
         editingFlow={flow}
         onSubmit={handleUpdateFlow}
         isLoading={isUpdatingFlow}
@@ -722,7 +818,7 @@ export const BookingFlowDetails: React.FC = () => {
       {/* Step Properties Dialog (for editing basic step info) */}
       <BookingFlowStepFormDialog
         open={stepDialogOpen}
-        onClose={() => setStepDialogOpen(false)}
+        onClose={handleStepDialogClose}
         editingStep={editingStep}
         flowId={flowId}
         onSubmit={handleStepSubmit}
@@ -732,7 +828,10 @@ export const BookingFlowDetails: React.FC = () => {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={handleDeleteCancel}
+        disableRestoreFocus
+        disableEnforceFocus={false}
+        keepMounted={false}
       >
         <DialogTitle>Delete Booking Flow</DialogTitle>
         <DialogContent>
@@ -741,7 +840,7 @@ export const BookingFlowDetails: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingFlow}>
+          <Button onClick={handleDeleteCancel} disabled={isDeletingFlow}>
             Cancel
           </Button>
           <Button 
