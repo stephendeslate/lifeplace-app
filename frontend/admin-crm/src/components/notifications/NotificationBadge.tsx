@@ -249,29 +249,21 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
                     </Box>
                   }
                   secondary={
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {notification.content}
-                      </Typography>
-                      
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block', mt: 0.5 }}
-                      >
-                        {notification.time_since_created}
-                      </Typography>
-                    </Box>
+                    // Convert everything to plain text to avoid nesting issues
+                    `${notification.content} • ${notification.time_since_created}`
                   }
+                  secondaryTypographyProps={{
+                    component: 'div',
+                    variant: 'caption',
+                    color: 'text.secondary',
+                    sx: {
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      whiteSpace: 'normal',
+                    }
+                  }}
                 />
               </ListItem>
             ))}
