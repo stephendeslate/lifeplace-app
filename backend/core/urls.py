@@ -20,5 +20,5 @@ urlpatterns = [
     path('api/contracts/', include('core.domains.contracts.urls')),
     path('api/bookingflow/', include('core.domains.bookingflow.urls')),
     path('api/notes/', include('core.domains.notes.urls')),
-    path('api/notifications/', include('core.domains.notifications.urls')),
+    #path('api/notifications/', include('core.domains.notifications.urls')),
 ]
