@@ -9,6 +9,7 @@ import {
   CalendarMonth,
   Payment,
   Description,
+  Notifications,
 } from '@mui/icons-material';
 import type { NavigationGroup } from '../types/layout.types';
 
@@ -52,7 +53,6 @@ export const navigationConfig: NavigationGroup[] = [
         path: '/calendar',
         icon: CalendarMonth,
         roles: ['ADMIN'],
-        // UPDATED: Removed disabled flag to enable calendar
       },
     ],
     roles: ['ADMIN'],
@@ -88,6 +88,13 @@ export const navigationConfig: NavigationGroup[] = [
         label: 'Records',
         path: '/records',
         icon: Description,
+        roles: ['ADMIN'],
+      },
+      {
+        id: 'notifications',
+        label: 'Notifications',
+        path: '/notifications',
+        icon: Notifications,
         roles: ['ADMIN'],
       },
       {

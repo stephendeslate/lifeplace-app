@@ -1,887 +1,782 @@
 # backend/core/domains/notifications/services.py
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from typing import Dict, List, Optional, Any
 
-from celery import shared_task
-from django.contrib.auth import get_user_model
-from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
-from django.template import Template, Context
-from django.utils import timezone
 from django.conf import settings
-from django.db.models import Count, Q
+from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.db.models import Q, Count
+from django.template import Context, Template
+from django.utils import timezone
 
-from core.domains.communications.services import CommunicationService
 from .exceptions import (
-    NotificationTemplateNotFound,
-    NotificationPreferenceNotFound,
-    NotificationRuleNotFound,
-    InvalidNotificationRule,
-    NotificationDispatchFailed,
-    InvalidNotificationChannel,
-    NotificationQuotaExceeded,
-    DuplicateNotificationRule
+    InvalidNotificationDataException,
+    NotificationNotFoundException,
+    NotificationPreferenceNotFoundException,
+    NotificationTypeNotFoundException,
 )
 from .models import (
-    NotificationTemplate,
+    Notification,
+    NotificationDigest,
     NotificationPreference,
-    NotificationRule,
-    NotificationQueue,
-    NotificationHistory,
-    InAppNotification
+    NotificationType,
 )
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-class NotificationTemplateService:
-    """Service for managing notification templates"""
-    
-    @staticmethod
-    def get_all_templates(notification_type=None, is_active=None):
-        """Get all notification templates with optional filtering"""
-        queryset = NotificationTemplate.objects.all()
-        
-        if notification_type:
-            queryset = queryset.filter(notification_type=notification_type)
-        if is_active is not None:
-            queryset = queryset.filter(is_active=is_active)
-            
-        return queryset.order_by('notification_type', 'name')
-    
-    @staticmethod
-    def get_template_by_id(template_id):
-        """Get template by ID"""
-        try:
-            return NotificationTemplate.objects.get(id=template_id)
-        except NotificationTemplate.DoesNotExist:
-            raise NotificationTemplateNotFound()
-    
-    @staticmethod
-    def get_template_by_type(notification_type):
-        """Get active template by notification type"""
-        try:
-            return NotificationTemplate.objects.get(
-                notification_type=notification_type,
-                is_active=True
-            )
-        except NotificationTemplate.DoesNotExist:
-            raise NotificationTemplateNotFound(
-                detail=f"No active template found for type: {notification_type}"
-            )
-    
-    @staticmethod
-    def create_template(template_data):
-        """Create a new notification template"""
-        # Validate channels
-        channels = template_data.get('channels', [])
-        valid_channels = [choice[0] for choice in NotificationTemplate.CHANNEL_CHOICES]
-        for channel in channels:
-            if channel not in valid_channels:
-                raise InvalidNotificationChannel(detail=f"Invalid channel: {channel}")
-        
-        template = NotificationTemplate.objects.create(**template_data)
-        logger.info(f"Created notification template: {template.name}")
-        return template
-    
-    @staticmethod
-    def update_template(template_id, template_data):
-        """Update an existing template"""
-        template = NotificationTemplateService.get_template_by_id(template_id)
-        
-        # Validate channels if provided
-        if 'channels' in template_data:
-            channels = template_data['channels']
-            valid_channels = [choice[0] for choice in NotificationTemplate.CHANNEL_CHOICES]
-            for channel in channels:
-                if channel not in valid_channels:
-                    raise InvalidNotificationChannel(detail=f"Invalid channel: {channel}")
-        
-        for key, value in template_data.items():
-            setattr(template, key, value)
-        
-        template.save()
-        logger.info(f"Updated notification template: {template.name}")
-        return template
-    
-    @staticmethod
-    def delete_template(template_id):
-        """Delete a template (only if not system template)"""
-        template = NotificationTemplateService.get_template_by_id(template_id)
-        
-        if template.is_system:
-            raise InvalidNotificationRule(detail="Cannot delete system template")
-        
-        template.delete()
-        logger.info(f"Deleted notification template: {template.name}")
-        return True
-    
-    @staticmethod
-    def render_template_content(template, channel, context_data=None):
-        """Render template content for a specific channel"""
-        if context_data is None:
-            context_data = {}
-        
-        context = Context(context_data)
-        
-        try:
-            if channel == 'EMAIL':
-                subject = Template(template.email_subject).render(context) if template.email_subject else ''
-                body = Template(template.email_body).render(context) if template.email_body else ''
-                return {'subject': subject, 'content': body}
-            
-            elif channel == 'SMS':
-                content = Template(template.sms_body).render(context) if template.sms_body else ''
-                return {'subject': '', 'content': content}
-            
-            elif channel == 'PUSH':
-                title = Template(template.push_title).render(context) if template.push_title else ''
-                body = Template(template.push_body).render(context) if template.push_body else ''
-                return {'subject': title, 'content': body}
-            
-            elif channel == 'IN_APP':
-                title = Template(template.in_app_title).render(context) if template.in_app_title else ''
-                body = Template(template.in_app_body).render(context) if template.in_app_body else ''
-                return {'subject': title, 'content': body}
-            
-            else:
-                raise InvalidNotificationChannel(detail=f"Unsupported channel: {channel}")
-                
-        except Exception as e:
-            logger.error(f"Error rendering template {template.name} for channel {channel}: {str(e)}")
-            raise InvalidNotificationRule(detail=f"Template rendering error: {str(e)}")
+class NotificationService:
+    """Enhanced service for handling notification operations"""
 
-
-class NotificationPreferenceService:
-    """Service for managing user notification preferences"""
-    
     @staticmethod
-    def get_or_create_preferences(user):
-        """Get or create notification preferences for a user"""
-        preferences, created = NotificationPreference.objects.get_or_create(
-            user=user,
-            defaults={
-                'email_enabled': True,
-                'sms_enabled': False,
-                'push_enabled': True,
-                'in_app_enabled': True,
-                'digest_frequency': 'REAL_TIME',
-                'notification_settings': {}
-            }
-        )
-        
-        if created:
-            logger.info(f"Created default notification preferences for user: {user.email}")
-        
-        return preferences
-    
-    @staticmethod
-    def update_preferences(user, preferences_data):
-        """Update user notification preferences"""
-        preferences = NotificationPreferenceService.get_or_create_preferences(user)
-        
-        for key, value in preferences_data.items():
-            setattr(preferences, key, value)
-        
-        preferences.save()
-        logger.info(f"Updated notification preferences for user: {user.email}")
-        return preferences
-    
-    @staticmethod
-    def update_notification_setting(user, notification_type, channel, enabled):
-        """Update specific notification setting"""
-        preferences = NotificationPreferenceService.get_or_create_preferences(user)
-        
-        if notification_type not in preferences.notification_settings:
-            preferences.notification_settings[notification_type] = {}
-        
-        preferences.notification_settings[notification_type][f'{channel.lower()}_enabled'] = enabled
-        preferences.save()
-        
-        logger.info(f"Updated {notification_type} {channel} setting to {enabled} for user: {user.email}")
-        return preferences
-    
-    @staticmethod
-    def is_notification_allowed(user, notification_type, channel):
-        """Check if a notification is allowed for a user"""
-        try:
-            preferences = NotificationPreference.objects.get(user=user)
-        except NotificationPreference.DoesNotExist:
-            # Create default preferences
-            preferences = NotificationPreferenceService.get_or_create_preferences(user)
-        
-        # Check if notification is enabled for this type and channel
-        return preferences.is_notification_enabled(notification_type, channel)
-    
-    @staticmethod
-    def is_in_quiet_hours(user):
-        """Check if user is currently in quiet hours"""
-        try:
-            preferences = NotificationPreference.objects.get(user=user)
-        except NotificationPreference.DoesNotExist:
-            return False
-        
-        if not preferences.quiet_hours_enabled:
-            return False
-        
-        if not preferences.quiet_hours_start or not preferences.quiet_hours_end:
-            return False
-        
-        # Get current time in user's timezone
-        import pytz
-        try:
-            user_tz = pytz.timezone(preferences.quiet_hours_timezone)
-            current_time = timezone.now().astimezone(user_tz).time()
-            
-            # Check if current time is within quiet hours
-            if preferences.quiet_hours_start <= preferences.quiet_hours_end:
-                # Same day range
-                return preferences.quiet_hours_start <= current_time <= preferences.quiet_hours_end
-            else:
-                # Overnight range
-                return current_time >= preferences.quiet_hours_start or current_time <= preferences.quiet_hours_end
-                
-        except Exception as e:
-            logger.error(f"Error checking quiet hours for user {user.email}: {str(e)}")
-            return False
-
-
-class NotificationRuleService:
-    """Service for managing notification rules"""
-    
-    @staticmethod
-    def get_all_rules(event_type=None, is_active=None):
-        """Get all notification rules with optional filtering"""
-        queryset = NotificationRule.objects.select_related('template').prefetch_related('target_users')
-        
-        if event_type:
-            queryset = queryset.filter(event_type=event_type)
-        if is_active is not None:
-            queryset = queryset.filter(is_active=is_active)
-            
-        return queryset.order_by('event_type', 'name')
-    
-    @staticmethod
-    def get_rule_by_id(rule_id):
-        """Get rule by ID"""
-        try:
-            return NotificationRule.objects.select_related('template').get(id=rule_id)
-        except NotificationRule.DoesNotExist:
-            raise NotificationRuleNotFound()
-    
-    @staticmethod
-    def create_rule(rule_data):
-        """Create a new notification rule"""
-        # Check for duplicate rules
-        existing_rule = NotificationRule.objects.filter(
-            name=rule_data['name'],
-            event_type=rule_data['event_type']
-        ).first()
-        
-        if existing_rule:
-            raise DuplicateNotificationRule(
-                detail=f"Rule with name '{rule_data['name']}' already exists for event type '{rule_data['event_type']}'"
-            )
-        
-        rule = NotificationRule.objects.create(**rule_data)
-        logger.info(f"Created notification rule: {rule.name}")
-        return rule
-    
-    @staticmethod
-    def update_rule(rule_id, rule_data):
-        """Update an existing rule"""
-        rule = NotificationRuleService.get_rule_by_id(rule_id)
-        
-        for key, value in rule_data.items():
-            setattr(rule, key, value)
-        
-        rule.save()
-        logger.info(f"Updated notification rule: {rule.name}")
-        return rule
-    
-    @staticmethod
-    def delete_rule(rule_id):
-        """Delete a notification rule"""
-        rule = NotificationRuleService.get_rule_by_id(rule_id)
-        rule.delete()
-        logger.info(f"Deleted notification rule: {rule.name}")
-        return True
-    
-    @staticmethod
-    def get_matching_rules(event_type, event_data=None):
-        """Get rules that match the given event"""
-        rules = NotificationRule.objects.filter(
-            event_type=event_type,
-            is_active=True
-        ).select_related('template').prefetch_related('target_users')
-        
-        matching_rules = []
-        
-        for rule in rules:
-            if NotificationRuleService._evaluate_conditions(rule.conditions, event_data):
-                matching_rules.append(rule)
-        
-        return matching_rules
-    
-    @staticmethod
-    def _evaluate_conditions(conditions, event_data):
-        """Evaluate rule conditions against event data"""
-        if not conditions or not event_data:
-            return True
-        
-        try:
-            for field, condition in conditions.items():
-                if field not in event_data:
-                    return False
-                
-                event_value = event_data[field]
-                
-                if isinstance(condition, dict):
-                    # Complex condition with operators
-                    for operator, expected_value in condition.items():
-                        if operator == 'eq' and event_value != expected_value:
-                            return False
-                        elif operator == 'ne' and event_value == expected_value:
-                            return False
-                        elif operator == 'in' and event_value not in expected_value:
-                            return False
-                        elif operator == 'not_in' and event_value in expected_value:
-                            return False
-                        elif operator == 'gt' and event_value <= expected_value:
-                            return False
-                        elif operator == 'gte' and event_value < expected_value:
-                            return False
-                        elif operator == 'lt' and event_value >= expected_value:
-                            return False
-                        elif operator == 'lte' and event_value > expected_value:
-                            return False
-                else:
-                    # Simple equality condition
-                    if event_value != condition:
-                        return False
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error evaluating rule conditions: {str(e)}")
-            return False
-
-
-class NotificationDispatchService:
-    """Service for dispatching notifications"""
-    
-    @staticmethod
-    def dispatch_notification(
-        notification_type: str,
-        recipients: List[Any],
-        context_data: Dict[str, Any] = None,
-        source_object=None,
-        priority: str = 'MEDIUM',
-        delay_minutes: int = 0
+    def get_notifications(
+        user, 
+        is_read: Optional[bool] = None, 
+        notification_type: Optional[str] = None,
+        category: Optional[str] = None,
+        limit: Optional[int] = None
     ):
-        """Dispatch notification to multiple recipients"""
-        if context_data is None:
-            context_data = {}
+        """Get notifications for a user with filtering"""
+        query = Q(recipient=user)
         
+        if is_read is not None:
+            query &= Q(is_read=is_read)
+            
+        if notification_type is not None:
+            query &= Q(notification_type__code=notification_type)
+            
+        if category is not None:
+            query &= Q(notification_type__category=category)
+            
+        notifications = Notification.objects.filter(query).select_related(
+            'notification_type', 'recipient', 'event', 'client'
+        ).order_by('-created_at')
+        
+        if limit:
+            notifications = notifications[:limit]
+            
+        return notifications
+    
+    @staticmethod
+    def get_notification_by_id(notification_id: int, user=None):
+        """Get a notification by ID, optionally filtered by user"""
+        query = Q(id=notification_id)
+        if user:
+            query &= Q(recipient=user)
+            
         try:
-            template = NotificationTemplateService.get_template_by_type(notification_type)
-        except NotificationTemplateNotFound:
-            logger.error(f"No template found for notification type: {notification_type}")
-            return []
-        
-        queued_notifications = []
-        
-        for recipient in recipients:
-            # Check user preferences for each supported channel
-            for channel in template.channels:
-                if NotificationPreferenceService.is_notification_allowed(recipient, notification_type, channel):
-                    # Check quiet hours for non-urgent notifications
-                    if priority != 'URGENT' and NotificationPreferenceService.is_in_quiet_hours(recipient):
-                        # Schedule for after quiet hours
-                        delay_minutes = max(delay_minutes, 60)  # At least 1 hour delay
-                    
-                    notification = NotificationDispatchService._queue_notification(
-                        template=template,
-                        recipient=recipient,
-                        channel=channel,
-                        context_data=context_data,
-                        source_object=source_object,
-                        priority=priority,
-                        delay_minutes=delay_minutes
-                    )
-                    
-                    if notification:
-                        queued_notifications.append(notification)
-        
-        # Process notifications asynchronously
-        if queued_notifications:
-            process_notification_queue.delay()
-        
-        return queued_notifications
+            return Notification.objects.select_related(
+                'notification_type', 'recipient', 'event', 'client'
+            ).get(query)
+        except Notification.DoesNotExist:
+            raise NotificationNotFoundException()
     
     @staticmethod
-    def dispatch_from_event(event_type: str, event_data: Dict[str, Any], source_object=None):
-        """Dispatch notifications based on event rules"""
-        matching_rules = NotificationRuleService.get_matching_rules(event_type, event_data)
-        
-        if not matching_rules:
-            logger.debug(f"No matching rules for event type: {event_type}")
-            return []
-        
-        all_notifications = []
-        
-        for rule in matching_rules:
-            # Get target recipients
-            recipients = NotificationDispatchService._get_rule_recipients(rule)
-            
-            if recipients:
-                # Check frequency limits
-                if NotificationDispatchService._check_frequency_limit(rule, recipients):
-                    notifications = NotificationDispatchService.dispatch_notification(
-                        notification_type=rule.template.notification_type,
-                        recipients=recipients,
-                        context_data=event_data,
-                        source_object=source_object,
-                        priority=rule.template.priority,
-                        delay_minutes=rule.delay_minutes
-                    )
-                    all_notifications.extend(notifications)
-        
-        return all_notifications
-    
-    @staticmethod
-    def _queue_notification(template, recipient, channel, context_data, source_object, priority, delay_minutes):
-        """Queue a single notification for delivery"""
-        try:
-            # Render template content
-            rendered = NotificationTemplateService.render_template_content(
-                template, channel, context_data
-            )
-            
-            # Calculate scheduled time
-            scheduled_at = timezone.now()
-            if delay_minutes > 0:
-                scheduled_at += timedelta(minutes=delay_minutes)
-            
-            # Get content type and object id if source object provided
-            content_type = None
-            object_id = None
-            if source_object:
-                content_type = ContentType.objects.get_for_model(source_object)
-                object_id = source_object.id
-            
-            notification = NotificationQueue.objects.create(
-                template=template,
-                recipient=recipient,
-                channel=channel,
-                subject=rendered['subject'],
-                content=rendered['content'],
-                context_data=context_data,
-                priority=priority,
-                scheduled_at=scheduled_at,
-                content_type=content_type,
-                object_id=object_id
-            )
-            
-            logger.info(f"Queued {channel} notification for {recipient.email}: {template.name}")
-            return notification
-            
-        except Exception as e:
-            logger.error(f"Error queueing notification: {str(e)}")
-            return None
-    
-    @staticmethod
-    def _get_rule_recipients(rule):
-        """Get recipients for a notification rule"""
-        recipients = []
-        
-        # Add specific target users
-        recipients.extend(rule.target_users.filter(is_active=True))
-        
-        # Add users by role
-        if rule.target_roles:
-            role_users = User.objects.filter(
-                role__in=rule.target_roles,
-                is_active=True
-            )
-            recipients.extend(role_users)
-        
-        # Remove duplicates
-        return list(set(recipients))
-    
-    @staticmethod
-    def _check_frequency_limit(rule, recipients):
-        """Check if frequency limit allows sending notification"""
-        if rule.max_frequency_hours == 0:
-            return True  # No frequency limit
-        
-        # Check if any recipient has received this notification type recently
-        cutoff_time = timezone.now() - timedelta(hours=rule.max_frequency_hours)
-        
-        recent_notifications = NotificationHistory.objects.filter(
-            notification_type=rule.template.notification_type,
-            recipient__in=recipients,
-            sent_at__gt=cutoff_time
-        )
-        
-        if recent_notifications.exists():
-            logger.debug(f"Frequency limit reached for rule: {rule.name}")
-            return False
-        
-        return True
-
-
-class NotificationAnalyticsService:
-    """Service for notification analytics and reporting"""
-    
-    @staticmethod
-    def get_delivery_stats(days=30, notification_type=None, user_id=None):
-        """Get notification delivery statistics"""
-        from django.db.models import Count, Q
-        
-        start_date = timezone.now() - timedelta(days=days)
-        queryset = NotificationHistory.objects.filter(sent_at__gte=start_date)
-        
-        if notification_type:
-            queryset = queryset.filter(notification_type=notification_type)
-        if user_id:
-            queryset = queryset.filter(recipient_id=user_id)
-        
-        stats = queryset.aggregate(
-            total_sent=Count('id'),
-            delivered=Count('id', filter=Q(delivery_status='DELIVERED')),
-            opened=Count('id', filter=Q(delivery_status='OPENED')),
-            clicked=Count('id', filter=Q(delivery_status='CLICKED')),
-            failed=Count('id', filter=Q(delivery_status='FAILED')),
-            bounced=Count('id', filter=Q(delivery_status='BOUNCED'))
-        )
-        
-        # Calculate rates
-        total = stats['total_sent'] or 1
-        stats['delivery_rate'] = round((stats['delivered'] / total) * 100, 2)
-        stats['open_rate'] = round((stats['opened'] / total) * 100, 2)
-        stats['click_rate'] = round((stats['clicked'] / total) * 100, 2)
-        stats['failure_rate'] = round((stats['failed'] / total) * 100, 2)
-        
-        return stats
-    
-    @staticmethod
-    def get_channel_performance(days=30):
-        """Get performance stats by channel"""
-        from django.db.models import Count
-        
-        start_date = timezone.now() - timedelta(days=days)
-        
-        channel_stats = NotificationHistory.objects.filter(
-            sent_at__gte=start_date
-        ).values('channel').annotate(
-            total=Count('id'),
-            delivered=Count('id', filter=Q(delivery_status='DELIVERED')),
-            failed=Count('id', filter=Q(delivery_status='FAILED'))
-        ).order_by('-total')
-        
-        return list(channel_stats)
-    
-    @staticmethod
-    def get_user_engagement(user_id, days=30):
-        """Get engagement stats for a specific user"""
-        start_date = timezone.now() - timedelta(days=days)
-        
-        user_stats = NotificationHistory.objects.filter(
-            recipient_id=user_id,
-            sent_at__gte=start_date
-        ).aggregate(
-            total_received=Count('id'),
-            total_opened=Count('id', filter=Q(is_read=True)),
-            total_clicked=Count('id', filter=Q(delivery_status='CLICKED'))
-        )
-        
-        # Get in-app notification stats
-        in_app_stats = InAppNotification.objects.filter(
-            recipient_id=user_id,
-            created_at__gte=start_date
-        ).aggregate(
-            total_in_app=Count('id'),
-            read_in_app=Count('id', filter=Q(is_read=True))
-        )
-        
-        user_stats.update(in_app_stats)
-        return user_stats
-
-
-class InAppNotificationService:
-    """Service for in-app notifications"""
-    
-    @staticmethod
-    def create_notification(
-        recipient: Any,
-        title: str,
-        message: str,
-        notification_type: str,
-        priority: str = 'MEDIUM',
-        action_url: str = None,
-        action_data: Dict[str, Any] = None,
-        source_object=None,
-        expires_hours: int = 168  # 7 days default
-    ):
-        """Create an in-app notification"""
-        
-        # Calculate expiration time
-        expires_at = timezone.now() + timedelta(hours=expires_hours)
-        
-        # Get content type and object id if source object provided
-        content_type = None
-        object_id = None
-        if source_object:
-            content_type = ContentType.objects.get_for_model(source_object)
-            object_id = source_object.id
-        
-        notification = InAppNotification.objects.create(
-            recipient=recipient,
-            title=title,
-            message=message,
-            notification_type=notification_type,
-            priority=priority,
-            action_url=action_url or '',
-            action_data=action_data or {},
-            expires_at=expires_at,
-            content_type=content_type,
-            object_id=object_id
-        )
-        
-        logger.info(f"Created in-app notification for {recipient.email}: {title}")
-        return notification
-    
-    @staticmethod
-    def get_user_notifications(user, limit=50, unread_only=False):
-        """Get in-app notifications for a user"""
-        queryset = InAppNotification.objects.filter(recipient=user)
-        
-        if unread_only:
-            queryset = queryset.filter(is_read=False)
-        
-        # Exclude expired notifications
-        queryset = queryset.filter(
-            Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now())
-        )
-        
-        return queryset.order_by('-created_at')[:limit]
-    
-    @staticmethod
-    def mark_as_read(notification_id, user):
-        """Mark notification as read"""
-        try:
-            notification = InAppNotification.objects.get(
-                id=notification_id,
-                recipient=user
-            )
+    def mark_as_read(notification_id: int, user=None):
+        """Mark a notification as read"""
+        with transaction.atomic():
+            notification = NotificationService.get_notification_by_id(notification_id, user)
             notification.mark_as_read()
             return notification
-        except InAppNotification.DoesNotExist:
-            logger.warning(f"In-app notification {notification_id} not found for user {user.email}")
-            return None
+    
+    @staticmethod
+    def mark_as_unread(notification_id: int, user=None):
+        """Mark a notification as unread"""
+        with transaction.atomic():
+            notification = NotificationService.get_notification_by_id(notification_id, user)
+            if notification.is_read:
+                notification.is_read = False
+                notification.read_at = None
+                notification.save(update_fields=['is_read', 'read_at', 'updated_at'])
+            return notification
     
     @staticmethod
     def mark_all_as_read(user):
         """Mark all notifications as read for a user"""
-        count = InAppNotification.objects.filter(
-            recipient=user,
-            is_read=False
-        ).update(
-            is_read=True,
-            read_at=timezone.now()
-        )
-        
-        logger.info(f"Marked {count} notifications as read for user {user.email}")
-        return count
+        with transaction.atomic():
+            now = timezone.now()
+            updated = Notification.objects.filter(
+                recipient=user, 
+                is_read=False
+            ).update(
+                is_read=True, 
+                read_at=now,
+                updated_at=now
+            )
+            return updated
     
     @staticmethod
-    def cleanup_expired_notifications():
-        """Remove expired notifications"""
-        expired_notifications = InAppNotification.objects.filter(
-            expires_at__lt=timezone.now()
+    def delete_notification(notification_id: int, user=None):
+        """Delete a notification"""
+        notification = NotificationService.get_notification_by_id(notification_id, user)
+        notification.delete()
+        return True
+    
+    @staticmethod
+    def create_notification(
+        recipient, 
+        notification_type_code: str, 
+        context: Optional[Dict[str, Any]] = None,
+        delivery_methods: Optional[List[str]] = None,
+        event=None,
+        client=None
+    ):
+        """
+        Create and deliver a new notification
+        
+        Args:
+            recipient: User to receive the notification
+            notification_type_code: Code of the notification type
+            context: Dictionary of context variables for templates
+            delivery_methods: List of delivery methods to force (overrides preferences)
+            event: Related event object
+            client: Related client object
+        
+        Returns:
+            Created notification object or None if user has disabled this type
+        """
+        if not context:
+            context = {}
+            
+        # Get notification type
+        try:
+            notification_type = NotificationType.objects.get(
+                code=notification_type_code, 
+                is_active=True
+            )
+        except NotificationType.DoesNotExist:
+            raise NotificationTypeNotFoundException(
+                f"Notification type with code {notification_type_code} not found"
+            )
+            
+        # Get or create user notification preferences
+        preferences = NotificationService.get_or_create_user_preferences(recipient.id)
+        
+        # Determine delivery methods
+        if delivery_methods:
+            # Use forced delivery methods
+            enabled_methods = delivery_methods
+        else:
+            # Check user preferences for each method
+            enabled_methods = []
+            
+            if preferences.is_notification_enabled(notification_type, 'in_app'):
+                enabled_methods.append('in_app')
+                
+            if preferences.is_notification_enabled(notification_type, 'email'):
+                enabled_methods.append('email')
+                
+            if preferences.is_notification_enabled(notification_type, 'sms'):
+                enabled_methods.append('sms')
+        
+        # If no delivery methods are enabled and it's not a system notification, skip
+        if not enabled_methods and not notification_type.is_system:
+            logger.info(f"Skipping notification {notification_type_code} for {recipient.email} - no enabled delivery methods")
+            return None
+        
+        # Prepare context with additional data
+        enhanced_context = {
+            **context,
+            'recipient_name': recipient.get_display_name(),
+            'recipient_first_name': recipient.first_name,
+            'recipient_last_name': recipient.last_name,
+            'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
+        }
+        
+        # Add event context if provided
+        if event:
+            enhanced_context.update({
+                'event_id': event.id,
+                'event_name': event.name or f"{event.event_type} Event",
+                'event_start_date': event.start_date,
+            })
+            
+        # Add client context if provided
+        if client:
+            enhanced_context.update({
+                'client_id': client.id,
+                'client_name': client.get_display_name(),
+                'client_email': client.email,
+            })
+        
+        # Render templates with context
+        template_context = Context(enhanced_context)
+        
+        try:
+            title = Template(notification_type.default_title_template).render(template_context)
+            content = Template(notification_type.default_content_template).render(template_context)
+        except Exception as e:
+            logger.error(f"Error rendering notification template: {str(e)}")
+            raise InvalidNotificationDataException(f"Template rendering error: {str(e)}")
+        
+        # Create the notification
+        with transaction.atomic():
+            notification = Notification.objects.create(
+                recipient=recipient,
+                notification_type=notification_type,
+                title=title,
+                content=content,
+                action_url=context.get('action_url', ''),
+                context_data=enhanced_context,
+                event=event,
+                client=client,
+                expires_at=context.get('expires_at')
+            )
+            
+            # Deliver via enabled methods
+            for method in enabled_methods:
+                try:
+                    if method == 'in_app':
+                        # In-app notification is already created
+                        notification.add_delivery_method('in_app', success=True)
+                        
+                    elif method == 'email':
+                        NotificationService._send_email_notification(
+                            notification, notification_type, enhanced_context
+                        )
+                        
+                    elif method == 'sms':
+                        NotificationService._send_sms_notification(
+                            notification, notification_type, enhanced_context
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to deliver notification via {method}: {str(e)}")
+                    notification.add_delivery_method(method, success=False, error=str(e))
+            
+            logger.info(f"Created notification {notification_type_code} for {recipient.email}")
+            return notification
+    
+    @staticmethod
+    def _send_email_notification(notification, notification_type, context):
+        """Send email notification using the communication service"""
+        try:
+            from core.domains.communications.services import CommunicationService
+            
+            communication_service = CommunicationService()
+            
+            # Render email template
+            if notification_type.default_email_template:
+                email_body = Template(notification_type.default_email_template).render(Context(context))
+            else:
+                # Fallback to content with basic HTML wrapper
+                email_body = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>{notification.title}</h2>
+                    <div style="margin: 20px 0;">
+                        {notification.content.replace('\n', '<br>')}
+                    </div>
+                    {f'<p><a href="{context.get("action_url", "")}" style="background-color: #1976d2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">View Details</a></p>' if context.get("action_url") else ''}
+                </div>
+                """
+            
+            # Send via communication service
+            record = communication_service.send_communication_by_template(
+                template_name='Manual Email Layout',  # Use existing manual template
+                recipient=notification.recipient.email,
+                context_data={
+                    **context,
+                    'custom_subject': notification.title,
+                    'custom_body': email_body,
+                    'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
+                },
+                sent_by=None  # System notification
+            )
+            
+            if record:
+                notification.add_delivery_method('email', success=True)
+                logger.info(f"Email notification sent successfully to {notification.recipient.email}")
+            else:
+                raise Exception("Communication service returned None")
+                
+        except ImportError:
+            logger.warning("Communication service not available for email notifications")
+            raise Exception("Email service not available")
+        except Exception as e:
+            logger.error(f"Failed to send email notification: {str(e)}")
+            raise e
+    
+    @staticmethod
+    def _send_sms_notification(notification, notification_type, context):
+        """Send SMS notification using the communication service"""
+        try:
+            from core.domains.communications.services import CommunicationService
+            
+            communication_service = CommunicationService()
+            
+            # Render SMS template (limited to 160 characters)
+            if notification_type.default_sms_template:
+                sms_content = Template(notification_type.default_sms_template).render(Context(context))
+            else:
+                # Fallback to truncated title
+                sms_content = f"{notification.title[:140]}... - LifePlace"
+            
+            # Get user's phone number from profile
+            phone_number = getattr(notification.recipient.profile, 'phone', None) if hasattr(notification.recipient, 'profile') else None
+            
+            if not phone_number:
+                raise Exception("Recipient has no phone number configured")
+            
+            # Send via communication service using SMS template
+            record = communication_service.send_communication_by_template(
+                template_name='Manual SMS Layout',  # Use existing SMS template
+                recipient=phone_number,
+                context_data={
+                    **context,
+                    'custom_body': sms_content,
+                    'site_name': 'LifePlace',
+                },
+                sent_by=None  # System notification
+            )
+            
+            if record:
+                notification.add_delivery_method('sms', success=True)
+                logger.info(f"SMS notification sent successfully to {phone_number}")
+            else:
+                raise Exception("Communication service returned None")
+                
+        except ImportError:
+            logger.warning("Communication service not available for SMS notifications")
+            raise Exception("SMS service not available")
+        except Exception as e:
+            logger.error(f"Failed to send SMS notification: {str(e)}")
+            raise e
+    
+    @staticmethod
+    def bulk_action(user_id: int, notification_ids: List[int], action: str):
+        """Perform bulk actions on multiple notifications"""
+        if not notification_ids:
+            raise InvalidNotificationDataException("No notification IDs provided")
+            
+        notifications = Notification.objects.filter(
+            recipient_id=user_id,
+            id__in=notification_ids
         )
         
-        count = expired_notifications.count()
-        expired_notifications.delete()
+        if not notifications.exists():
+            raise NotificationNotFoundException("No matching notifications found")
+            
+        with transaction.atomic():
+            if action == 'mark_read':
+                now = timezone.now()
+                return notifications.filter(is_read=False).update(
+                    is_read=True, 
+                    read_at=now, 
+                    updated_at=now
+                )
+            elif action == 'mark_unread':
+                now = timezone.now()
+                return notifications.filter(is_read=True).update(
+                    is_read=False, 
+                    read_at=None, 
+                    updated_at=now
+                )
+            elif action == 'delete':
+                count = notifications.count()
+                notifications.delete()
+                return count
+    
+    @staticmethod
+    def get_notification_counts(user_id: int):
+        """Get detailed notification counts for a user"""
+        base_query = Notification.objects.filter(recipient_id=user_id)
         
-        logger.info(f"Cleaned up {count} expired in-app notifications")
-        return count
-
-
-# Celery Tasks
-@shared_task
-def process_notification_queue():
-    """Process queued notifications"""
-    logger.info("Processing notification queue...")
+        total = base_query.count()
+        unread = base_query.filter(is_read=False).count()
+        
+        # Count by category
+        by_category = {}
+        categories = base_query.values('notification_type__category').annotate(
+            count=Count('id')
+        )
+        for item in categories:
+            by_category[item['notification_type__category']] = item['count']
+        
+        # Count by priority
+        by_priority = {}
+        priorities = base_query.values('notification_type__priority').annotate(
+            count=Count('id')
+        )
+        for item in priorities:
+            by_priority[item['notification_type__priority']] = item['count']
+        
+        return {
+            'total': total,
+            'unread': unread,
+            'by_category': by_category,
+            'by_priority': by_priority
+        }
     
-    # Get pending notifications that are ready to send
-    pending_notifications = NotificationQueue.objects.filter(
-        status='PENDING',
-        scheduled_at__lte=timezone.now()
-    ).order_by('priority', 'scheduled_at')[:100]  # Process in batches
-    
-    if not pending_notifications:
-        logger.debug("No pending notifications to process")
-        return
-    
-    communication_service = CommunicationService()
-    processed_count = 0
-    
-    for notification in pending_notifications:
+    @staticmethod
+    def get_or_create_user_preferences(user_id: int):
+        """Get or create notification preferences for a user"""
         try:
-            # Mark as processing
-            notification.status = 'PROCESSING'
-            notification.attempts += 1
-            notification.save()
+            return NotificationPreference.objects.get(user_id=user_id)
+        except NotificationPreference.DoesNotExist:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                user = User.objects.get(id=user_id)
+                return NotificationPreference.objects.create(user=user)
+            except User.DoesNotExist:
+                raise NotificationPreferenceNotFoundException("User not found")
+    
+    @staticmethod
+    def update_user_preferences(user_id: int, preference_data: Dict[str, Any]):
+        """Update notification preferences for a user"""
+        with transaction.atomic():
+            preferences = NotificationService.get_or_create_user_preferences(user_id)
             
-            # Send notification based on channel
-            if notification.channel in ['EMAIL', 'SMS']:
-                # Use existing communication service
-                record = communication_service.send_communication_by_template(
-                    template=None,  # We already have rendered content
-                    recipient=notification.recipient.email if notification.channel == 'EMAIL' else getattr(notification.recipient.profile, 'phone', ''),
-                    context_data=notification.context_data,
-                    client=notification.recipient,
-                    sent_by=None
-                )
-                
-                if record:
-                    # Create notification history
-                    NotificationHistory.objects.create(
-                        template_name=notification.template.name,
-                        notification_type=notification.template.notification_type,
-                        channel=notification.channel,
-                        recipient=notification.recipient,
-                        recipient_email=notification.recipient.email,
-                        subject=notification.subject,
-                        content=notification.content,
-                        context_data=notification.context_data,
-                        external_message_id=record.external_message_id,
-                        sent_at=timezone.now(),
-                        delivery_status='SENT',
-                        content_type=notification.content_type,
-                        object_id=notification.object_id,
-                        queue_id=notification.id
+            # Update boolean fields
+            boolean_fields = [
+                'email_enabled', 'sms_enabled', 'in_app_enabled',
+                'system_email', 'system_sms', 'system_in_app',
+                'event_email', 'event_sms', 'event_in_app',
+                'task_email', 'task_sms', 'task_in_app',
+                'payment_email', 'payment_sms', 'payment_in_app',
+                'client_email', 'client_sms', 'client_in_app',
+                'contract_email', 'contract_sms', 'contract_in_app',
+                'workflow_email', 'workflow_sms', 'workflow_in_app',
+                'communication_email', 'communication_sms', 'communication_in_app',
+                'quiet_hours_enabled'
+            ]
+            
+            for field in boolean_fields:
+                if field in preference_data:
+                    setattr(preferences, field, preference_data[field])
+            
+            # Update time fields
+            if 'quiet_hours_start' in preference_data:
+                preferences.quiet_hours_start = preference_data['quiet_hours_start']
+            if 'quiet_hours_end' in preference_data:
+                preferences.quiet_hours_end = preference_data['quiet_hours_end']
+            
+            # Update digest frequency
+            if 'digest_frequency' in preference_data:
+                preferences.digest_frequency = preference_data['digest_frequency']
+            
+            # Update disabled types
+            if 'disabled_types' in preference_data:
+                preferences.disabled_types.clear()
+                if preference_data['disabled_types']:
+                    notification_types = NotificationType.objects.filter(
+                        id__in=preference_data['disabled_types'],
+                        is_active=True
                     )
-                    
-                    notification.status = 'SENT'
-                    notification.save()
-                    processed_count += 1
-                    
-                else:
-                    raise Exception("Communication service returned None")
+                    preferences.disabled_types.add(*notification_types)
             
-            elif notification.channel == 'IN_APP':
-                # Create in-app notification
-                InAppNotificationService.create_notification(
-                    recipient=notification.recipient,
-                    title=notification.subject,
-                    message=notification.content,
-                    notification_type=notification.template.notification_type,
-                    priority=notification.priority,
-                    source_object=notification.content_object
-                )
-                
-                notification.status = 'SENT'
-                notification.save()
-                processed_count += 1
-            
-            elif notification.channel == 'PUSH':
-                # TODO: Implement push notification service
-                logger.warning(f"Push notifications not yet implemented for notification {notification.id}")
-                notification.status = 'FAILED'
-                notification.error_message = "Push notifications not implemented"
-                notification.save()
-            
-        except Exception as e:
-            logger.error(f"Error processing notification {notification.id}: {str(e)}")
-            
-            notification.error_message = str(e)
-            
-            if notification.attempts >= notification.max_attempts:
-                notification.status = 'FAILED'
-            else:
-                notification.status = 'PENDING'
-                # Reschedule for retry (exponential backoff)
-                notification.scheduled_at = timezone.now() + timedelta(
-                    minutes=2 ** notification.attempts
-                )
-            
-            notification.save()
+            preferences.save()
+            return preferences
     
-    logger.info(f"Processed {processed_count} notifications")
-
-
-@shared_task
-def cleanup_notification_history(days_to_keep=90):
-    """Clean up old notification history"""
-    cutoff_date = timezone.now() - timedelta(days=days_to_keep)
-    
-    deleted_count = NotificationHistory.objects.filter(
-        sent_at__lt=cutoff_date
-    ).delete()[0]
-    
-    logger.info(f"Cleaned up {deleted_count} old notification history records")
-    return deleted_count
-
-
-@shared_task
-def cleanup_expired_in_app_notifications():
-    """Clean up expired in-app notifications"""
-    count = InAppNotificationService.cleanup_expired_notifications()
-    return count
-
-
-@shared_task
-def send_daily_digest():
-    """Send daily digest notifications"""
-    logger.info("Sending daily digest notifications...")
-    
-    # Get users who have daily digest enabled
-    users_with_digest = NotificationPreference.objects.filter(
-        digest_frequency='DAILY',
-        email_enabled=True
-    ).select_related('user')
-    
-    for preferences in users_with_digest:
-        user = preferences.user
+    @staticmethod
+    def cleanup_old_notifications(days: int = 90):
+        """Clean up old read notifications"""
+        cutoff_date = timezone.now() - timedelta(days=days)
         
-        # Get today's notifications for this user
-        today = timezone.now().date()
-        start_of_day = timezone.make_aware(datetime.combine(today, datetime.min.time()))
-        end_of_day = timezone.make_aware(datetime.combine(today, datetime.max.time()))
+        deleted_count = Notification.objects.filter(
+            created_at__lt=cutoff_date,
+            is_read=True
+        ).delete()[0]
         
-        daily_notifications = NotificationHistory.objects.filter(
+        logger.info(f"Cleaned up {deleted_count} old notifications")
+        return deleted_count
+    
+    @staticmethod
+    def auto_expire_notifications():
+        """Mark expired notifications as expired"""
+        now = timezone.now()
+        
+        updated_count = Notification.objects.filter(
+            expires_at__lt=now,
+            is_expired=False
+        ).update(is_expired=True, updated_at=now)
+        
+        logger.info(f"Marked {updated_count} notifications as expired")
+        return updated_count
+
+
+class NotificationTypeService:
+    """Service for managing notification types"""
+    
+    @staticmethod
+    def get_all_notification_types(category: Optional[str] = None, is_active: Optional[bool] = None):
+        """Get all notification types with optional filtering"""
+        queryset = NotificationType.objects.all()
+        
+        if category:
+            queryset = queryset.filter(category=category)
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active)
+            
+        return queryset.order_by('category', 'name')
+    
+    @staticmethod
+    def get_notification_type_by_code(code: str):
+        """Get notification type by code"""
+        try:
+            return NotificationType.objects.get(code=code, is_active=True)
+        except NotificationType.DoesNotExist:
+            raise NotificationTypeNotFoundException()
+    
+    @staticmethod
+    def create_notification_type(type_data: Dict[str, Any]):
+        """Create a new notification type"""
+        return NotificationType.objects.create(**type_data)
+    
+    @staticmethod
+    def update_notification_type(type_id: int, type_data: Dict[str, Any]):
+        """Update an existing notification type"""
+        try:
+            notification_type = NotificationType.objects.get(id=type_id)
+        except NotificationType.DoesNotExist:
+            raise NotificationTypeNotFoundException()
+        
+        for key, value in type_data.items():
+            setattr(notification_type, key, value)
+        
+        notification_type.save()
+        return notification_type
+
+
+class NotificationStatsService:
+    """Service for notification analytics and statistics"""
+    
+    @staticmethod
+    def get_user_stats(user_id: int, days: int = 30):
+        """Get notification statistics for a user"""
+        start_date = timezone.now() - timedelta(days=days)
+        
+        notifications = Notification.objects.filter(
+            recipient_id=user_id,
+            created_at__gte=start_date
+        )
+        
+        total_sent = notifications.count()
+        total_read = notifications.filter(is_read=True).count()
+        read_rate = (total_read / total_sent * 100) if total_sent > 0 else 0
+        
+        # Delivery rates by method
+        delivery_rates = {}
+        for method in ['email', 'sms', 'in_app']:
+            successful = notifications.filter(delivered_via__contains=[method]).count()
+            attempted = notifications.filter(
+                delivery_attempts__has_key=method
+            ).count()
+            delivery_rates[method] = (successful / attempted * 100) if attempted > 0 else 0
+        
+        # Popular notification types
+        popular_types = notifications.values(
+            'notification_type__name', 'notification_type__code'
+        ).annotate(
+            count=Count('id')
+        ).order_by('-count')[:5]
+        
+        return {
+            'period': f"{days} days",
+            'total_sent': total_sent,
+            'total_read': total_read,
+            'read_rate': round(read_rate, 2),
+            'delivery_rates': delivery_rates,
+            'popular_types': list(popular_types)
+        }
+    
+    @staticmethod
+    def get_system_stats(days: int = 30):
+        """Get system-wide notification statistics"""
+        start_date = timezone.now() - timedelta(days=days)
+        
+        notifications = Notification.objects.filter(created_at__gte=start_date)
+        
+        total_sent = notifications.count()
+        total_users = notifications.values('recipient').distinct().count()
+        total_read = notifications.filter(is_read=True).count()
+        
+        # Stats by category
+        by_category = notifications.values('notification_type__category').annotate(
+            total=Count('id'),
+            read=Count('id', filter=Q(is_read=True))
+        ).order_by('-total')
+        
+        # Stats by delivery method
+        delivery_stats = {}
+        for method in ['email', 'sms', 'in_app']:
+            delivered = notifications.filter(delivered_via__contains=[method]).count()
+            delivery_stats[method] = delivered
+        
+        return {
+            'period': f"{days} days",
+            'total_sent': total_sent,
+            'total_users': total_users,
+            'total_read': total_read,
+            'read_rate': round((total_read / total_sent * 100) if total_sent > 0 else 0, 2),
+            'by_category': list(by_category),
+            'delivery_stats': delivery_stats
+        }
+
+
+class NotificationDigestService:
+    """Service for handling notification digests"""
+    
+    @staticmethod
+    def create_digest(user, frequency: str, period_start: datetime, period_end: datetime):
+        """Create a notification digest for a user"""
+        # Get notifications for the period
+        notifications = Notification.objects.filter(
             recipient=user,
-            sent_at__range=(start_of_day, end_of_day)
-        ).order_by('-sent_at')
+            created_at__gte=period_start,
+            created_at__lt=period_end,
+            is_read=False
+        ).order_by('-created_at')
         
-        if daily_notifications.exists():
-            # Create digest context
-            context_data = {
-                'user_name': user.get_full_name() or user.email,
-                'notification_count': daily_notifications.count(),
-                'notifications': [
-                    {
-                        'title': notif.subject or notif.template_name,
-                        'content': notif.content[:100] + '...' if len(notif.content) > 100 else notif.content,
-                        'sent_at': notif.sent_at,
-                        'channel': notif.channel
-                    }
-                    for notif in daily_notifications[:10]  # Limit to 10 most recent
-                ],
-                'date': today.strftime('%B %d, %Y')
-            }
-            
-            # Send digest notification
-            NotificationDispatchService.dispatch_notification(
-                notification_type='DAILY_SUMMARY',
-                recipients=[user],
-                context_data=context_data,
-                priority='LOW'
-            )
+        if not notifications.exists():
+            return None
+        
+        # Create digest
+        digest = NotificationDigest.objects.create(
+            user=user,
+            frequency=frequency,
+            period_start=period_start,
+            period_end=period_end,
+            notification_count=notifications.count()
+        )
+        
+        # Add notifications to digest
+        digest.notifications.add(*notifications)
+        
+        return digest
     
-    logger.info("Daily digest notifications sent")
+    @staticmethod
+    def send_digest(digest_id: int):
+        """Send a notification digest"""
+        try:
+            digest = NotificationDigest.objects.get(id=digest_id)
+        except NotificationDigest.DoesNotExist:
+            raise Exception("Digest not found")
+        
+        if digest.is_sent:
+            return digest
+        
+        # Get user preferences
+        preferences = NotificationService.get_or_create_user_preferences(digest.user.id)
+        
+        # Determine delivery methods
+        delivery_methods = []
+        if preferences.email_enabled:
+            delivery_methods.append('email')
+        if preferences.sms_enabled:
+            delivery_methods.append('sms')
+        
+        # Send digest via enabled methods
+        for method in delivery_methods:
+            try:
+                if method == 'email':
+                    NotificationDigestService._send_email_digest(digest)
+                elif method == 'sms':
+                    NotificationDigestService._send_sms_digest(digest)
+            except Exception as e:
+                logger.error(f"Failed to send digest via {method}: {str(e)}")
+        
+        # Mark as sent
+        digest.is_sent = True
+        digest.sent_at = timezone.now()
+        digest.delivery_methods = delivery_methods
+        digest.save()
+        
+        return digest
+    
+    @staticmethod
+    def _send_email_digest(digest):
+        """Send email digest"""
+        try:
+            from core.domains.communications.services import CommunicationService
+            
+            communication_service = CommunicationService()
+            
+            # Prepare digest content
+            notifications_list = []
+            for notification in digest.notifications.all()[:10]:  # Limit to 10 for email
+                notifications_list.append({
+                    'title': notification.title,
+                    'content': notification.content[:100] + '...' if len(notification.content) > 100 else notification.content,
+                    'action_url': notification.action_url
+                })
+            
+            # Create email content
+            email_content = f"""
+            <h2>Your {digest.get_frequency_display()} Notification Digest</h2>
+            <p>You have {digest.notification_count} unread notifications:</p>
+            <ul>
+            """
+            
+            for notif in notifications_list:
+                email_content += f"""
+                <li>
+                    <strong>{notif['title']}</strong><br>
+                    {notif['content']}
+                    {f'<br><a href="{notif["action_url"]}">View Details</a>' if notif['action_url'] else ''}
+                </li>
+                """
+            
+            email_content += "</ul>"
+            
+            if digest.notification_count > 10:
+                email_content += f"<p>And {digest.notification_count - 10} more notifications...</p>"
+            
+            # Send via communication service
+            record = communication_service.send_communication_by_template(
+                template_name='Manual Email Layout',
+                recipient=digest.user.email,
+                context_data={
+                    'custom_subject': f'Your {digest.get_frequency_display()} Notification Digest',
+                    'custom_body': email_content,
+                    'first_name': digest.user.first_name,
+                    'last_name': digest.user.last_name,
+                    'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
+                },
+                sent_by=None
+            )
+            
+            if not record:
+                raise Exception("Failed to send digest email")
+                
+        except Exception as e:
+            logger.error(f"Failed to send email digest: {str(e)}")
+            raise e
+    
+    @staticmethod
+    def _send_sms_digest(digest):
+        """Send SMS digest summary"""
+        try:
+            from core.domains.communications.services import CommunicationService
+            
+            communication_service = CommunicationService()
+            
+            # Get user's phone number
+            phone_number = getattr(digest.user.profile, 'phone', None) if hasattr(digest.user, 'profile') else None
+            
+            if not phone_number:
+                raise Exception("User has no phone number configured")
+            
+            # Create SMS content (limited)
+            sms_content = f"You have {digest.notification_count} unread notifications. Check your portal for details. - LifePlace"
+            
+            # Send via communication service
+            record = communication_service.send_communication_by_template(
+                template_name='Manual SMS Layout',
+                recipient=phone_number,
+                context_data={
+                    'custom_body': sms_content,
+                    'first_name': digest.user.first_name,
+                    'site_name': 'LifePlace',
+                },
+                sent_by=None
+            )
+            
+            if not record:
+                raise Exception("Failed to send digest SMS")
+                
+        except Exception as e:
+            logger.error(f"Failed to send SMS digest: {str(e)}")
+            raise e

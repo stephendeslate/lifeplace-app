@@ -25,11 +25,6 @@ export const useClients = (filters?: ClientFilters) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Debug logging
-  console.log('useClients hook - clients data:', clients);
-  console.log('useClients hook - isLoading:', isLoadingClients);
-  console.log('useClients hook - error:', clientsError);
-
   const useClient = (id: number) => {
     return useQuery({
       queryKey: ['client', id],

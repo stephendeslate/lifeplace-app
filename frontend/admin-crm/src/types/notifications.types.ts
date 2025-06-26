@@ -1,24 +1,23 @@
 // frontend/admin-crm/src/types/notifications.types.ts
 
-export interface NotificationTemplate {
+export interface NotificationType {
   id: number;
+  code: string;
   name: string;
   description: string;
-  notification_type: NotificationType;
-  notification_type_display: string;
-  channels: NotificationChannel[];
-  email_subject: string;
-  email_body: string;
-  sms_body: string;
-  push_title: string;
-  push_body: string;
-  in_app_title: string;
-  in_app_body: string;
+  category: NotificationCategory;
+  icon: string;
+  color: string;
+  priority: NotificationPriority;
+  default_title_template: string;
+  default_content_template: string;
+  default_email_template: string;
+  default_sms_template: string;
   is_active: boolean;
   is_system: boolean;
-  priority: NotificationPriority;
-  priority_display: string;
-  variables_schema: Record<string, any>;
+  supports_email: boolean;
+  supports_sms: boolean;
+  auto_read_after_days: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,356 +25,305 @@ export interface NotificationTemplate {
 export interface NotificationPreference {
   id: number;
   user: number;
-  user_email: string;
-  user_name: string;
+  
+  // Global delivery method toggles
   email_enabled: boolean;
   sms_enabled: boolean;
-  push_enabled: boolean;
   in_app_enabled: boolean;
+  
+  // Category preferences
+  system_email: boolean;
+  system_sms: boolean;
+  system_in_app: boolean;
+  
+  event_email: boolean;
+  event_sms: boolean;
+  event_in_app: boolean;
+  
+  task_email: boolean;
+  task_sms: boolean;
+  task_in_app: boolean;
+  
+  payment_email: boolean;
+  payment_sms: boolean;
+  payment_in_app: boolean;
+  
+  client_email: boolean;
+  client_sms: boolean;
+  client_in_app: boolean;
+  
+  contract_email: boolean;
+  contract_sms: boolean;
+  contract_in_app: boolean;
+  
+  workflow_email: boolean;
+  workflow_sms: boolean;
+  workflow_in_app: boolean;
+  
+  communication_email: boolean;
+  communication_sms: boolean;
+  communication_in_app: boolean;
+  
+  // Advanced preferences
   quiet_hours_enabled: boolean;
   quiet_hours_start: string | null;
   quiet_hours_end: string | null;
-  quiet_hours_timezone: string;
   digest_frequency: DigestFrequency;
-  digest_frequency_display: string;
-  notification_settings: Record<string, any>;
+  disabled_types: number[];
+  disabled_types_details?: NotificationType[];
+  
   created_at: string;
   updated_at: string;
 }
 
-export interface NotificationRule {
+export interface Notification {
   id: number;
-  name: string;
-  description: string;
-  event_type: string;
-  conditions: Record<string, any>;
-  template: number;
-  template_name: string;
-  template_type: string;
-  target_users: number[];
-  target_user_names: string[];
-  target_roles: string[];
-  delay_minutes: number;
-  max_frequency_hours: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface NotificationQueue {
-  id: string;
-  template: number;
-  template_name: string;
-  rule: number | null;
   recipient: number;
-  recipient_email: string;
-  recipient_name: string;
-  channel: NotificationChannel;
-  channel_display: string;
-  subject: string;
-  content: string;
-  context_data: Record<string, any>;
-  priority: NotificationPriority;
-  priority_display: string;
-  scheduled_at: string;
-  attempts: number;
-  max_attempts: number;
-  status: NotificationQueueStatus;
-  status_display: string;
-  error_message: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface NotificationHistory {
-  id: string;
-  template_name: string;
-  notification_type: string;
-  channel: NotificationChannel;
-  channel_display: string;
-  recipient: number;
-  recipient_name: string;
-  recipient_email: string;
-  recipient_phone: string;
-  subject: string;
-  content: string;
-  context_data: Record<string, any>;
-  external_message_id: string;
-  sent_at: string;
-  delivered_at: string | null;
-  opened_at: string | null;
-  clicked_at: string | null;
-  delivery_status: DeliveryStatus;
-  delivery_status_display: string;
-  is_read: boolean;
-  rule_id: string | null;
-  queue_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface InAppNotification {
-  id: string;
-  recipient: number;
-  recipient_name: string;
+  recipient_name?: string;
+  notification_type: number;
+  notification_type_details?: NotificationType;
   title: string;
-  message: string;
-  notification_type: string;
-  priority: NotificationPriority;
-  priority_display: string;
+  content: string;
   action_url: string;
-  action_data: Record<string, any>;
+  context_data: Record<string, any>;
+  event: number | null;
+  event_name?: string;
+  client: number | null;
+  client_name?: string;
   is_read: boolean;
   read_at: string | null;
+  delivered_via: string[];
+  delivery_attempts: Record<string, any>;
   expires_at: string | null;
-  time_ago: string;
+  is_expired: boolean;
+  time_since_created: string;
+  delivery_status: {
+    delivered_methods: string[];
+    total_attempts: number;
+    successful_deliveries: number;
+  };
+  can_mark_read: boolean;
   created_at: string;
   updated_at: string;
 }
 
-export interface NotificationAnalytics {
-  total_sent: number;
-  delivered: number;
-  opened: number;
-  clicked: number;
-  failed: number;
-  bounced: number;
-  delivery_rate: number;
-  open_rate: number;
-  click_rate: number;
-  failure_rate: number;
-}
+export type NotificationCategory = 
+  | 'SYSTEM'
+  | 'EVENT'
+  | 'TASK'
+  | 'PAYMENT'
+  | 'CLIENT'
+  | 'CONTRACT'
+  | 'WORKFLOW'
+  | 'COMMUNICATION';
 
-export interface ChannelPerformance {
-  channel: NotificationChannel;
-  total: number;
-  delivered: number;
-  failed: number;
-}
+export type NotificationPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
 
-export interface UserEngagement {
-  total_received: number;
-  total_opened: number;
-  total_clicked: number;
-  total_in_app: number;
-  read_in_app: number;
-}
+export type DigestFrequency = 'IMMEDIATE' | 'HOURLY' | 'DAILY' | 'WEEKLY';
 
-// Enums and Constants
-export type NotificationType = 
-  | 'CLIENT_NEW'
-  | 'CLIENT_INVITATION_SENT'
-  | 'CLIENT_INVITATION_ACCEPTED'
-  | 'EVENT_STATUS_CHANGE'
-  | 'EVENT_CREATED'
-  | 'EVENT_DEADLINE_APPROACHING'
-  | 'TASK_OVERDUE'
-  | 'TASK_COMPLETED'
-  | 'PAYMENT_RECEIVED'
-  | 'PAYMENT_FAILED'
-  | 'FEEDBACK_RECEIVED'
-  | 'WORKFLOW_STAGE_CHANGED'
-  | 'SYSTEM_ALERT'
-  | 'DAILY_SUMMARY'
-  | 'WEEKLY_REPORT'
-  | 'CUSTOM';
-
-export type NotificationChannel = 'EMAIL' | 'SMS' | 'PUSH' | 'IN_APP';
-
-export type NotificationPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-
-export type DigestFrequency = 'REAL_TIME' | 'HOURLY' | 'DAILY' | 'WEEKLY' | 'DISABLED';
-
-export type NotificationQueueStatus = 'PENDING' | 'PROCESSING' | 'SENT' | 'FAILED' | 'CANCELLED';
-
-export type DeliveryStatus = 'SENT' | 'DELIVERED' | 'OPENED' | 'CLICKED' | 'BOUNCED' | 'FAILED';
-
-export const NOTIFICATION_TYPES = [
-  { value: 'CLIENT_NEW', label: 'New Client Registration' },
-  { value: 'CLIENT_INVITATION_SENT', label: 'Client Invitation Sent' },
-  { value: 'CLIENT_INVITATION_ACCEPTED', label: 'Client Invitation Accepted' },
-  { value: 'EVENT_STATUS_CHANGE', label: 'Event Status Change' },
-  { value: 'EVENT_CREATED', label: 'New Event Created' },
-  { value: 'EVENT_DEADLINE_APPROACHING', label: 'Event Deadline Approaching' },
-  { value: 'TASK_OVERDUE', label: 'Task Overdue' },
-  { value: 'TASK_COMPLETED', label: 'Task Completed' },
-  { value: 'PAYMENT_RECEIVED', label: 'Payment Received' },
-  { value: 'PAYMENT_FAILED', label: 'Payment Failed' },
-  { value: 'FEEDBACK_RECEIVED', label: 'Feedback Received' },
-  { value: 'WORKFLOW_STAGE_CHANGED', label: 'Workflow Stage Changed' },
-  { value: 'SYSTEM_ALERT', label: 'System Alert' },
-  { value: 'DAILY_SUMMARY', label: 'Daily Summary' },
-  { value: 'WEEKLY_REPORT', label: 'Weekly Report' },
-  { value: 'CUSTOM', label: 'Custom Notification' },
-] as const;
-
-export const NOTIFICATION_CHANNELS = [
-  { value: 'EMAIL', label: 'Email' },
-  { value: 'SMS', label: 'SMS' },
-  { value: 'PUSH', label: 'Push Notification' },
-  { value: 'IN_APP', label: 'In-App Notification' },
+export const NOTIFICATION_CATEGORIES = [
+  { value: 'SYSTEM', label: 'System' },
+  { value: 'EVENT', label: 'Event Management' },
+  { value: 'TASK', label: 'Task Management' },
+  { value: 'PAYMENT', label: 'Payment Processing' },
+  { value: 'CLIENT', label: 'Client Management' },
+  { value: 'CONTRACT', label: 'Contract Management' },
+  { value: 'WORKFLOW', label: 'Workflow Updates' },
+  { value: 'COMMUNICATION', label: 'Communication Updates' },
 ] as const;
 
 export const NOTIFICATION_PRIORITIES = [
   { value: 'LOW', label: 'Low' },
-  { value: 'MEDIUM', label: 'Medium' },
+  { value: 'NORMAL', label: 'Normal' },
   { value: 'HIGH', label: 'High' },
   { value: 'URGENT', label: 'Urgent' },
 ] as const;
 
 export const DIGEST_FREQUENCIES = [
-  { value: 'REAL_TIME', label: 'Real Time' },
-  { value: 'HOURLY', label: 'Hourly' },
-  { value: 'DAILY', label: 'Daily' },
-  { value: 'WEEKLY', label: 'Weekly' },
-  { value: 'DISABLED', label: 'Disabled' },
+  { value: 'IMMEDIATE', label: 'Immediate' },
+  { value: 'HOURLY', label: 'Hourly Digest' },
+  { value: 'DAILY', label: 'Daily Digest' },
+  { value: 'WEEKLY', label: 'Weekly Digest' },
 ] as const;
 
-// Create/Update Types
-export interface CreateNotificationTemplateData {
-  name: string;
-  description?: string;
-  notification_type: NotificationType;
-  channels: NotificationChannel[];
-  email_subject?: string;
-  email_body?: string;
-  sms_body?: string;
-  push_title?: string;
-  push_body?: string;
-  in_app_title?: string;
-  in_app_body?: string;
-  is_active?: boolean;
+// Filter types
+export interface NotificationFilters {
+  is_read?: boolean;
+  type?: string;
+  category?: NotificationCategory;
   priority?: NotificationPriority;
-  variables_schema?: Record<string, any>;
+  user_id?: number;
+  limit?: number;
 }
 
-export interface UpdateNotificationTemplateData extends Partial<CreateNotificationTemplateData> {}
-
-export interface UpdateNotificationPreferenceData {
-  email_enabled?: boolean;
-  sms_enabled?: boolean;
-  push_enabled?: boolean;
-  in_app_enabled?: boolean;
-  quiet_hours_enabled?: boolean;
-  quiet_hours_start?: string | null;
-  quiet_hours_end?: string | null;
-  quiet_hours_timezone?: string;
-  digest_frequency?: DigestFrequency;
-  notification_settings?: Record<string, any>;
-}
-
-export interface CreateNotificationRuleData {
-  name: string;
-  description?: string;
-  event_type: string;
-  conditions?: Record<string, any>;
-  template: number;
-  target_users?: number[];
-  target_roles?: string[];
-  delay_minutes?: number;
-  max_frequency_hours?: number;
-  is_active?: boolean;
-}
-
-export interface UpdateNotificationRuleData extends Partial<CreateNotificationRuleData> {}
-
-export interface SendNotificationData {
-  notification_type: NotificationType;
-  recipients: number[];
-  context_data?: Record<string, any>;
-  priority?: NotificationPriority;
-  delay_minutes?: number;
-}
-
-export interface TestNotificationData {
-  template_id: number;
-  channel: NotificationChannel;
-  recipient_email: string;
-  context_data?: Record<string, any>;
-}
-
-export interface BulkNotificationActionData {
-  notification_ids: string[];
+// Action types
+export interface NotificationBulkActionData {
+  notification_ids: number[];
   action: 'mark_read' | 'mark_unread' | 'delete';
 }
 
-export interface NotificationPreferenceUpdateData {
-  notification_type: NotificationType;
-  channel: NotificationChannel;
-  enabled: boolean;
+export interface CreateNotificationData {
+  recipient_ids: number[];
+  notification_type_code: string;
+  context_data?: Record<string, any>;
+  force_delivery_methods?: ('email' | 'sms' | 'in_app')[];
 }
 
-// Filter Types
-export interface NotificationTemplateFilters {
-  search?: string;
-  notification_type?: NotificationType;
-  is_active?: boolean;
-  channel?: NotificationChannel;
+export interface UpdateNotificationPreferenceData {
+  // Global delivery method toggles
+  email_enabled?: boolean;
+  sms_enabled?: boolean;
+  in_app_enabled?: boolean;
+  
+  // Category preferences
+  system_email?: boolean;
+  system_sms?: boolean;
+  system_in_app?: boolean;
+  
+  event_email?: boolean;
+  event_sms?: boolean;
+  event_in_app?: boolean;
+  
+  task_email?: boolean;
+  task_sms?: boolean;
+  task_in_app?: boolean;
+  
+  payment_email?: boolean;
+  payment_sms?: boolean;
+  payment_in_app?: boolean;
+  
+  client_email?: boolean;
+  client_sms?: boolean;
+  client_in_app?: boolean;
+  
+  contract_email?: boolean;
+  contract_sms?: boolean;
+  contract_in_app?: boolean;
+  
+  workflow_email?: boolean;
+  workflow_sms?: boolean;
+  workflow_in_app?: boolean;
+  
+  communication_email?: boolean;
+  communication_sms?: boolean;
+  communication_in_app?: boolean;
+  
+  // Advanced preferences
+  quiet_hours_enabled?: boolean;
+  quiet_hours_start?: string | null;
+  quiet_hours_end?: string | null;
+  digest_frequency?: DigestFrequency;
+  disabled_types?: number[];
 }
 
-export interface NotificationRuleFilters {
-  search?: string;
-  event_type?: string;
-  is_active?: boolean;
-  template_id?: number;
+// Stats and analytics types
+export interface NotificationCounts {
+  total: number;
+  unread: number;
+  by_category: Record<string, number>;
+  by_priority: Record<string, number>;
 }
 
-export interface NotificationQueueFilters {
-  search?: string;
-  status?: NotificationQueueStatus;
-  channel?: NotificationChannel;
-  priority?: NotificationPriority;
-  recipient_id?: number;
+export interface NotificationStats {
+  period: string;
+  total_sent: number;
+  total_read: number;
+  read_rate: number;
+  delivery_rates: Record<string, number>;
+  popular_types: Array<{
+    notification_type__name: string;
+    notification_type__code: string;
+    count: number;
+  }>;
 }
 
-export interface NotificationHistoryFilters {
-  search?: string;
-  notification_type?: string;
-  channel?: NotificationChannel;
-  delivery_status?: DeliveryStatus;
-  recipient_id?: number;
-  start_date?: string;
-  end_date?: string;
-}
-
-export interface InAppNotificationFilters {
-  is_read?: boolean;
-  notification_type?: string;
-  priority?: NotificationPriority;
-}
-
-// Form Data Types
-export interface NotificationTemplateFormData {
-  name: string;
-  description: string;
-  notification_type: NotificationType;
-  channels: NotificationChannel[];
-  email_subject: string;
-  email_body: string;
-  sms_body: string;
-  push_title: string;
-  push_body: string;
-  in_app_title: string;
-  in_app_body: string;
-  is_active: boolean;
-  priority: NotificationPriority;
-  variables_schema: Record<string, any>;
-}
-
+// Form data types
 export interface NotificationPreferenceFormData {
+  // Global delivery method toggles
   email_enabled: boolean;
   sms_enabled: boolean;
-  push_enabled: boolean;
   in_app_enabled: boolean;
+  
+  // Category preferences  
+  system_email: boolean;
+  system_sms: boolean;
+  system_in_app: boolean;
+  
+  event_email: boolean;
+  event_sms: boolean;
+  event_in_app: boolean;
+  
+  task_email: boolean;
+  task_sms: boolean;
+  task_in_app: boolean;
+  
+  payment_email: boolean;
+  payment_sms: boolean;
+  payment_in_app: boolean;
+  
+  client_email: boolean;
+  client_sms: boolean;
+  client_in_app: boolean;
+  
+  contract_email: boolean;
+  contract_sms: boolean;
+  contract_in_app: boolean;
+  
+  workflow_email: boolean;
+  workflow_sms: boolean;
+  workflow_in_app: boolean;
+  
+  communication_email: boolean;
+  communication_sms: boolean;
+  communication_in_app: boolean;
+  
+  // Advanced preferences
   quiet_hours_enabled: boolean;
   quiet_hours_start: string;
   quiet_hours_end: string;
-  quiet_hours_timezone: string;
   digest_frequency: DigestFrequency;
-  notification_settings: Record<string, Record<string, boolean>>;
+  disabled_types: number[];
 }
 
-// Paginated Response Interface
+// Component prop types
+export interface NotificationListProps {
+  notifications: Notification[];
+  isLoading: boolean;
+  onMarkRead: (id: number) => void;
+  onMarkUnread: (id: number) => void;
+  onDelete: (id: number) => void;
+  onBulkAction: (data: NotificationBulkActionData) => void;
+  isPerformingAction?: boolean;
+}
+
+export interface NotificationCardProps {
+  notification: Notification;
+  onMarkRead: (id: number) => void;
+  onMarkUnread: (id: number) => void;
+  onDelete: (id: number) => void;
+  compact?: boolean;
+}
+
+export interface NotificationPreferenceFormProps {
+  preferences: NotificationPreference;
+  onSubmit: (data: UpdateNotificationPreferenceData) => void;
+  isLoading: boolean;
+  notificationTypes?: NotificationType[];
+  categories?: Array<{ value: string; label: string }>;
+  digestFrequencies?: Array<{ value: string; label: string }>;
+}
+
+export interface NotificationCountsDisplayProps {
+  counts: NotificationCounts;
+  isLoading: boolean;
+}
+
+export interface NotificationStatsDisplayProps {
+  stats: NotificationStats;
+  isLoading: boolean;
+}
+
+// Paginated response interface
 export interface PaginatedResponse<T> {
   count: number;
   next: string | null;

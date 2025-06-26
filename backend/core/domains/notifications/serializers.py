@@ -1,327 +1,254 @@
 # backend/core/domains/notifications/serializers.py
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from core.domains.users.serializers import UserSerializer
 
 from .models import (
-    NotificationTemplate,
+    Notification,
+    NotificationDigest,
     NotificationPreference,
-    NotificationRule,
-    NotificationQueue,
-    NotificationHistory,
-    InAppNotification
+    NotificationType,
 )
 
-User = get_user_model()
 
-
-class NotificationTemplateSerializer(serializers.ModelSerializer):
-    """Serializer for notification templates"""
+class NotificationTypeSerializer(serializers.ModelSerializer):
+    """Serializer for notification types"""
     
     class Meta:
-        model = NotificationTemplate
+        model = NotificationType
         fields = [
-            'id', 'name', 'description', 'notification_type', 'channels',
-            'email_subject', 'email_body', 'sms_body', 'push_title', 'push_body',
-            'in_app_title', 'in_app_body', 'is_active', 'is_system', 'priority',
-            'variables_schema', 'created_at', 'updated_at'
+            'id', 'code', 'name', 'description', 'category', 'icon', 'color',
+            'priority', 'default_title_template', 'default_content_template',
+            'default_email_template', 'default_sms_template', 'is_active',
+            'is_system', 'supports_email', 'supports_sms', 'auto_read_after_days',
+            'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-    
-    def validate_channels(self, value):
-        """Validate that channels are valid"""
-        valid_channels = [choice[0] for choice in NotificationTemplate.CHANNEL_CHOICES]
-        for channel in value:
-            if channel not in valid_channels:
-                raise serializers.ValidationError(f"Invalid channel: {channel}")
-        return value
-    
-    def validate(self, data):
-        """Validate template content based on supported channels"""
-        channels = data.get('channels', [])
-        
-        if 'EMAIL' in channels:
-            if not data.get('email_subject') or not data.get('email_body'):
-                raise serializers.ValidationError(
-                    "Email subject and body are required when EMAIL channel is enabled"
-                )
-        
-        if 'SMS' in channels and not data.get('sms_body'):
-            raise serializers.ValidationError(
-                "SMS body is required when SMS channel is enabled"
-            )
-        
-        if 'PUSH' in channels:
-            if not data.get('push_title') or not data.get('push_body'):
-                raise serializers.ValidationError(
-                    "Push title and body are required when PUSH channel is enabled"
-                )
-        
-        if 'IN_APP' in channels:
-            if not data.get('in_app_title') or not data.get('in_app_body'):
-                raise serializers.ValidationError(
-                    "In-app title and body are required when IN_APP channel is enabled"
-                )
-        
-        return data
+        read_only_fields = ['created_at', 'updated_at']
 
 
 class NotificationPreferenceSerializer(serializers.ModelSerializer):
-    """Serializer for user notification preferences"""
-    user_email = serializers.EmailField(source='user.email', read_only=True)
-    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    """Serializer for notification preferences"""
+    disabled_types = serializers.PrimaryKeyRelatedField(
+        many=True, 
+        queryset=NotificationType.objects.filter(is_active=True),
+        required=False
+    )
+    disabled_types_details = NotificationTypeSerializer(
+        source='disabled_types',
+        many=True,
+        read_only=True
+    )
     
     class Meta:
         model = NotificationPreference
         fields = [
-            'id', 'user', 'user_email', 'user_name', 'email_enabled', 'sms_enabled',
-            'push_enabled', 'in_app_enabled', 'quiet_hours_enabled',
-            'quiet_hours_start', 'quiet_hours_end', 'quiet_hours_timezone',
-            'digest_frequency', 'notification_settings', 'created_at', 'updated_at'
+            'id', 'user', 'email_enabled', 'sms_enabled', 'in_app_enabled',
+            
+            # Category preferences
+            'system_email', 'system_sms', 'system_in_app',
+            'event_email', 'event_sms', 'event_in_app',
+            'task_email', 'task_sms', 'task_in_app',
+            'payment_email', 'payment_sms', 'payment_in_app',
+            'client_email', 'client_sms', 'client_in_app',
+            'contract_email', 'contract_sms', 'contract_in_app',
+            'workflow_email', 'workflow_sms', 'workflow_in_app',
+            'communication_email', 'communication_sms', 'communication_in_app',
+            
+            # Advanced preferences
+            'quiet_hours_enabled', 'quiet_hours_start', 'quiet_hours_end',
+            'digest_frequency', 'disabled_types', 'disabled_types_details',
+            
+            'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """Serializer for notifications"""
+    notification_type_details = NotificationTypeSerializer(source='notification_type', read_only=True)
+    recipient_name = serializers.CharField(source='recipient.get_display_name', read_only=True)
+    client_name = serializers.CharField(source='client.get_display_name', read_only=True)
+    event_name = serializers.CharField(source='event.name', read_only=True)
     
-    def validate(self, data):
-        """Validate quiet hours configuration"""
-        if data.get('quiet_hours_enabled'):
-            if not data.get('quiet_hours_start') or not data.get('quiet_hours_end'):
-                raise serializers.ValidationError(
-                    "Quiet hours start and end times are required when quiet hours are enabled"
-                )
-        
-        return data
-
-
-class NotificationRuleSerializer(serializers.ModelSerializer):
-    """Serializer for notification rules"""
-    template_name = serializers.CharField(source='template.name', read_only=True)
-    template_type = serializers.CharField(source='template.notification_type', read_only=True)
-    target_user_names = serializers.SerializerMethodField()
+    # Computed fields
+    time_since_created = serializers.SerializerMethodField()
+    delivery_status = serializers.SerializerMethodField()
+    can_mark_read = serializers.SerializerMethodField()
     
     class Meta:
-        model = NotificationRule
+        model = Notification
         fields = [
-            'id', 'name', 'description', 'event_type', 'conditions',
-            'template', 'template_name', 'template_type', 'target_users',
-            'target_user_names', 'target_roles', 'delay_minutes',
-            'max_frequency_hours', 'is_active', 'created_at', 'updated_at'
+            'id', 'recipient', 'recipient_name', 'notification_type', 
+            'notification_type_details', 'title', 'content', 'action_url',
+            'context_data', 'event', 'event_name', 'client', 'client_name',
+            'is_read', 'read_at', 'delivered_via', 'delivery_attempts',
+            'expires_at', 'is_expired', 'time_since_created', 'delivery_status',
+            'can_mark_read', 'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'id', 'delivered_via', 'delivery_attempts', 'is_expired',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_time_since_created(self, obj):
+        """Get human-readable time since creation"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        now = timezone.now()
+        diff = now - obj.created_at
+        
+        if diff < timedelta(minutes=1):
+            return "Just now"
+        elif diff < timedelta(hours=1):
+            minutes = int(diff.total_seconds() / 60)
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        elif diff < timedelta(days=1):
+            hours = int(diff.total_seconds() / 3600)
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        elif diff < timedelta(days=7):
+            days = int(diff.days)
+            return f"{days} day{'s' if days != 1 else ''} ago"
+        else:
+            return obj.created_at.strftime("%b %d, %Y")
+    
+    def get_delivery_status(self, obj):
+        """Get delivery status summary"""
+        return {
+            'delivered_methods': obj.delivered_via,
+            'total_attempts': sum(len(attempts) for attempts in obj.delivery_attempts.values()),
+            'successful_deliveries': len(obj.delivered_via)
+        }
+    
+    def get_can_mark_read(self, obj):
+        """Check if notification can be marked as read"""
+        request = self.context.get('request')
+        if not request:
+            return False
+        return obj.recipient == request.user and not obj.is_read
+
+
+class NotificationListSerializer(NotificationSerializer):
+    """Lightweight serializer for notification lists"""
+    
+    class Meta(NotificationSerializer.Meta):
+        fields = [
+            'id', 'notification_type_details', 'title', 'content', 'action_url',
+            'is_read', 'read_at', 'time_since_created', 'can_mark_read',
+            'created_at'
+        ]
+
+
+class NotificationDigestSerializer(serializers.ModelSerializer):
+    """Serializer for notification digests"""
+    user_name = serializers.CharField(source='user.get_display_name', read_only=True)
+    notifications_preview = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = NotificationDigest
+        fields = [
+            'id', 'user', 'user_name', 'frequency', 'period_start', 'period_end',
+            'notification_count', 'notifications_preview', 'is_sent', 'sent_at',
+            'delivery_methods', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
-    def get_target_user_names(self, obj):
-        """Get names of target users"""
+    def get_notifications_preview(self, obj):
+        """Get preview of notifications in digest"""
+        notifications = obj.notifications.all()[:3]
         return [
-            user.get_full_name() or user.email 
-            for user in obj.target_users.all()
-        ]
-    
-    def validate_conditions(self, value):
-        """Validate conditions JSON structure"""
-        if not isinstance(value, dict):
-            raise serializers.ValidationError("Conditions must be a JSON object")
-        return value
-    
-    def validate_target_roles(self, value):
-        """Validate target roles"""
-        if not isinstance(value, list):
-            raise serializers.ValidationError("Target roles must be a list")
-        
-        valid_roles = ['ADMIN', 'CLIENT']  # Add other roles as needed
-        for role in value:
-            if role not in valid_roles:
-                raise serializers.ValidationError(f"Invalid role: {role}")
-        
-        return value
-
-
-class NotificationRuleCreateSerializer(NotificationRuleSerializer):
-    """Serializer for creating notification rules"""
-    
-    def validate(self, data):
-        """Validate rule data"""
-        # Ensure either target_users or target_roles is specified
-        target_users = data.get('target_users', [])
-        target_roles = data.get('target_roles', [])
-        
-        if not target_users and not target_roles:
-            raise serializers.ValidationError(
-                "Either target_users or target_roles must be specified"
-            )
-        
-        return data
-
-
-class NotificationQueueSerializer(serializers.ModelSerializer):
-    """Serializer for notification queue"""
-    template_name = serializers.CharField(source='template.name', read_only=True)
-    recipient_email = serializers.EmailField(source='recipient.email', read_only=True)
-    recipient_name = serializers.CharField(source='recipient.get_full_name', read_only=True)
-    
-    class Meta:
-        model = NotificationQueue
-        fields = [
-            'id', 'template', 'template_name', 'rule', 'recipient',
-            'recipient_email', 'recipient_name', 'channel', 'subject',
-            'content', 'context_data', 'priority', 'scheduled_at',
-            'attempts', 'max_attempts', 'status', 'error_message',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = [
-            'id', 'attempts', 'status', 'error_message', 'created_at', 'updated_at'
+            {
+                'id': n.id,
+                'title': n.title,
+                'type': n.notification_type.name
+            }
+            for n in notifications
         ]
 
 
-class NotificationHistorySerializer(serializers.ModelSerializer):
-    """Serializer for notification history"""
-    recipient_name = serializers.CharField(source='recipient.get_full_name', read_only=True)
-    
-    class Meta:
-        model = NotificationHistory
-        fields = [
-            'id', 'template_name', 'notification_type', 'channel',
-            'recipient', 'recipient_name', 'recipient_email', 'recipient_phone',
-            'subject', 'content', 'context_data', 'external_message_id',
-            'sent_at', 'delivered_at', 'opened_at', 'clicked_at',
-            'delivery_status', 'is_read', 'rule_id', 'queue_id',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = [
-            'id', 'external_message_id', 'sent_at', 'delivered_at',
-            'opened_at', 'clicked_at', 'delivery_status', 'created_at', 'updated_at'
-        ]
-
-
-class InAppNotificationSerializer(serializers.ModelSerializer):
-    """Serializer for in-app notifications"""
-    recipient_name = serializers.CharField(source='recipient.get_full_name', read_only=True)
-    time_ago = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = InAppNotification
-        fields = [
-            'id', 'recipient', 'recipient_name', 'title', 'message',
-            'notification_type', 'priority', 'action_url', 'action_data',
-            'is_read', 'read_at', 'expires_at', 'time_ago',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = [
-            'id', 'recipient', 'read_at', 'created_at', 'updated_at'
-        ]
-    
-    def get_time_ago(self, obj):
-        """Get human-readable time since creation"""
-        from django.utils.timesince import timesince
-        return timesince(obj.created_at)
-
-
-class SendNotificationSerializer(serializers.Serializer):
-    """Serializer for manually sending notifications"""
-    notification_type = serializers.CharField()
-    recipients = serializers.ListField(
-        child=serializers.IntegerField(),
-        help_text="List of user IDs to send notification to"
-    )
-    context_data = serializers.JSONField(required=False, default=dict)
-    priority = serializers.ChoiceField(
-        choices=[('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High'), ('URGENT', 'Urgent')],
-        default='MEDIUM'
-    )
-    delay_minutes = serializers.IntegerField(default=0, min_value=0)
-    
-    def validate_recipients(self, value):
-        """Validate that all recipient IDs exist"""
-        if not value:
-            raise serializers.ValidationError("At least one recipient is required")
-        
-        existing_users = User.objects.filter(id__in=value, is_active=True)
-        existing_ids = set(existing_users.values_list('id', flat=True))
-        provided_ids = set(value)
-        
-        missing_ids = provided_ids - existing_ids
-        if missing_ids:
-            raise serializers.ValidationError(
-                f"Invalid user IDs: {list(missing_ids)}"
-            )
-        
-        return value
-
-
-class NotificationAnalyticsSerializer(serializers.Serializer):
-    """Serializer for notification analytics"""
-    total_sent = serializers.IntegerField()
-    delivered = serializers.IntegerField()
-    opened = serializers.IntegerField()
-    clicked = serializers.IntegerField()
-    failed = serializers.IntegerField()
-    bounced = serializers.IntegerField()
-    delivery_rate = serializers.FloatField()
-    open_rate = serializers.FloatField()
-    click_rate = serializers.FloatField()
-    failure_rate = serializers.FloatField()
-
-
-class ChannelPerformanceSerializer(serializers.Serializer):
-    """Serializer for channel performance analytics"""
-    channel = serializers.CharField()
-    total = serializers.IntegerField()
-    delivered = serializers.IntegerField()
-    failed = serializers.IntegerField()
-
-
-class UserEngagementSerializer(serializers.Serializer):
-    """Serializer for user engagement analytics"""
-    total_received = serializers.IntegerField()
-    total_opened = serializers.IntegerField()
-    total_clicked = serializers.IntegerField()
-    total_in_app = serializers.IntegerField()
-    read_in_app = serializers.IntegerField()
-
-
-class NotificationPreferenceUpdateSerializer(serializers.Serializer):
-    """Serializer for updating specific notification preferences"""
-    notification_type = serializers.CharField()
-    channel = serializers.ChoiceField(choices=NotificationTemplate.CHANNEL_CHOICES)
-    enabled = serializers.BooleanField()
-    
-    def validate_notification_type(self, value):
-        """Validate notification type exists"""
-        valid_types = [choice[0] for choice in NotificationTemplate.NOTIFICATION_TYPES]
-        if value not in valid_types:
-            raise serializers.ValidationError(f"Invalid notification type: {value}")
-        return value
-
-
-class TestNotificationSerializer(serializers.Serializer):
-    """Serializer for sending test notifications"""
-    template_id = serializers.IntegerField()
-    channel = serializers.ChoiceField(choices=NotificationTemplate.CHANNEL_CHOICES)
-    recipient_email = serializers.EmailField()
-    context_data = serializers.JSONField(required=False, default=dict)
-    
-    def validate_template_id(self, value):
-        """Validate template exists"""
-        try:
-            NotificationTemplate.objects.get(id=value, is_active=True)
-        except NotificationTemplate.DoesNotExist:
-            raise serializers.ValidationError("Template not found or inactive")
-        return value
-
-
-class BulkNotificationActionSerializer(serializers.Serializer):
-    """Serializer for bulk actions on notifications"""
+class NotificationBulkActionSerializer(serializers.Serializer):
+    """Serializer for bulk notification actions"""
     notification_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        help_text="List of notification IDs"
+        child=serializers.IntegerField(),
+        required=True,
+        min_length=1
     )
     action = serializers.ChoiceField(
-        choices=[
-            ('mark_read', 'Mark as Read'),
-            ('mark_unread', 'Mark as Unread'),
-            ('delete', 'Delete')
-        ]
+        choices=['mark_read', 'mark_unread', 'delete'],
+        required=True
     )
     
     def validate_notification_ids(self, value):
-        """Validate notification IDs exist"""
-        if not value:
-            raise serializers.ValidationError("At least one notification ID is required")
+        """Validate that notification IDs exist and belong to the user"""
+        request = self.context.get('request')
+        if not request:
+            raise serializers.ValidationError("Request context required")
+        
+        user_notification_ids = set(
+            Notification.objects.filter(
+                recipient=request.user,
+                id__in=value
+            ).values_list('id', flat=True)
+        )
+        
+        invalid_ids = set(value) - user_notification_ids
+        if invalid_ids:
+            raise serializers.ValidationError(
+                f"Invalid notification IDs: {list(invalid_ids)}"
+            )
+        
+        return value
+
+
+class NotificationCountSerializer(serializers.Serializer):
+    """Serializer for notification counts"""
+    total = serializers.IntegerField()
+    unread = serializers.IntegerField()
+    by_category = serializers.DictField()
+    by_priority = serializers.DictField()
+
+
+class NotificationStatsSerializer(serializers.Serializer):
+    """Serializer for notification statistics"""
+    period = serializers.CharField()
+    total_sent = serializers.IntegerField()
+    total_read = serializers.IntegerField()
+    read_rate = serializers.FloatField()
+    delivery_rates = serializers.DictField()
+    popular_types = serializers.ListField()
+
+
+class CreateNotificationSerializer(serializers.Serializer):
+    """Serializer for creating notifications via API"""
+    recipient_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=True
+    )
+    notification_type_code = serializers.CharField(required=True)
+    context_data = serializers.DictField(required=False, default=dict)
+    force_delivery_methods = serializers.ListField(
+        child=serializers.ChoiceField(choices=['email', 'sms', 'in_app']),
+        required=False,
+        default=list
+    )
+    
+    def validate_notification_type_code(self, value):
+        """Validate notification type exists and is active"""
+        try:
+            notification_type = NotificationType.objects.get(code=value, is_active=True)
+            self.notification_type = notification_type
+            return value
+        except NotificationType.DoesNotExist:
+            raise serializers.ValidationError(f"Notification type '{value}' not found")
+    
+    def validate_recipient_ids(self, value):
+        """Validate recipient IDs exist"""
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        existing_ids = set(User.objects.filter(id__in=value).values_list('id', flat=True))
+        invalid_ids = set(value) - existing_ids
+        
+        if invalid_ids:
+            raise serializers.ValidationError(f"Invalid user IDs: {list(invalid_ids)}")
+        
         return value

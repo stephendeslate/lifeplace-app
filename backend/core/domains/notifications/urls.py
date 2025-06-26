@@ -2,18 +2,18 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from . import views
+from .views import (
+    NotificationPreferenceViewSet,
+    NotificationTypeViewSet,
+    NotificationViewSet,
+)
 
 app_name = 'notifications'
 
 router = DefaultRouter()
-router.register(r'templates', views.NotificationTemplateViewSet, basename='template')
-router.register(r'preferences', views.NotificationPreferenceViewSet, basename='preference')
-router.register(r'rules', views.NotificationRuleViewSet, basename='rule')
-router.register(r'queue', views.NotificationQueueViewSet, basename='queue')
-router.register(r'history', views.NotificationHistoryViewSet, basename='history')
-router.register(r'in-app', views.InAppNotificationViewSet, basename='in-app')
-router.register(r'analytics', views.NotificationAnalyticsViewSet, basename='analytics')
+router.register(r'notifications', NotificationViewSet, basename='notification')
+router.register(r'types', NotificationTypeViewSet, basename='notification-type')
+router.register(r'preferences', NotificationPreferenceViewSet, basename='notification-preference')
 
 urlpatterns = [
     path('', include(router.urls)),

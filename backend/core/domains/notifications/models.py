@@ -1,333 +1,272 @@
 # backend/core/domains/notifications/models.py
-import uuid
 from core.utils.models import BaseModel
-from django.contrib.auth import get_user_model
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.conf import settings
 from django.db import models
-from django.utils import timezone
-
-User = get_user_model()
 
 
-class NotificationTemplate(BaseModel):
-    """Templates for different types of notifications"""
-    name = models.CharField(max_length=100, unique=True)
+class NotificationType(BaseModel):
+    """Defines types of notifications that can be sent"""
+    code = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    
-    NOTIFICATION_TYPES = (
-        ('CLIENT_NEW', 'New Client Registration'),
-        ('CLIENT_INVITATION_SENT', 'Client Invitation Sent'),
-        ('CLIENT_INVITATION_ACCEPTED', 'Client Invitation Accepted'),
-        ('EVENT_STATUS_CHANGE', 'Event Status Change'),
-        ('EVENT_CREATED', 'New Event Created'),
-        ('EVENT_DEADLINE_APPROACHING', 'Event Deadline Approaching'),
-        ('TASK_OVERDUE', 'Task Overdue'),
-        ('TASK_COMPLETED', 'Task Completed'),
-        ('PAYMENT_RECEIVED', 'Payment Received'),
-        ('PAYMENT_FAILED', 'Payment Failed'),
-        ('FEEDBACK_RECEIVED', 'Feedback Received'),
-        ('WORKFLOW_STAGE_CHANGED', 'Workflow Stage Changed'),
-        ('SYSTEM_ALERT', 'System Alert'),
-        ('DAILY_SUMMARY', 'Daily Summary'),
-        ('WEEKLY_REPORT', 'Weekly Report'),
-        ('CUSTOM', 'Custom Notification'),
+    category = models.CharField(max_length=100, 
+        choices=[
+            ('SYSTEM', 'System'),
+            ('EVENT', 'Event Management'),
+            ('TASK', 'Task Management'),
+            ('PAYMENT', 'Payment Processing'),
+            ('CLIENT', 'Client Management'),
+            ('CONTRACT', 'Contract Management'),
+            ('WORKFLOW', 'Workflow Updates'),
+            ('COMMUNICATION', 'Communication Updates'),
+        ],
+        default='SYSTEM'
     )
-    notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
-    
-    CHANNEL_CHOICES = (
-        ('EMAIL', 'Email'),
-        ('SMS', 'SMS'),
-        ('PUSH', 'Push Notification'),
-        ('IN_APP', 'In-App Notification'),
+    # Visual properties for frontend display
+    icon = models.CharField(max_length=50, blank=True, help_text="Material UI icon name")
+    color = models.CharField(max_length=7, blank=True, help_text="Hex color code")
+    priority = models.CharField(max_length=20,
+        choices=[
+            ('LOW', 'Low'),
+            ('NORMAL', 'Normal'), 
+            ('HIGH', 'High'),
+            ('URGENT', 'Urgent'),
+        ],
+        default='NORMAL'
     )
-    channels = models.JSONField(default=list, help_text="Supported channels for this template")
     
-    # Template content for different channels
-    email_subject = models.CharField(max_length=200, blank=True)
-    email_body = models.TextField(blank=True)
-    sms_body = models.CharField(max_length=160, blank=True)
-    push_title = models.CharField(max_length=100, blank=True)
-    push_body = models.CharField(max_length=200, blank=True)
-    in_app_title = models.CharField(max_length=100, blank=True)
-    in_app_body = models.TextField(blank=True)
+    # Template settings
+    default_title_template = models.CharField(max_length=255)
+    default_content_template = models.TextField()
+    default_email_template = models.TextField(blank=True)
+    default_sms_template = models.CharField(max_length=160, blank=True)
     
-    # Configuration
+    # Business settings
     is_active = models.BooleanField(default=True)
-    is_system = models.BooleanField(default=False)
-    priority = models.CharField(max_length=20, choices=[
-        ('LOW', 'Low'),
-        ('MEDIUM', 'Medium'),
-        ('HIGH', 'High'),
-        ('URGENT', 'Urgent')
-    ], default='MEDIUM')
-    
-    # Template variables schema
-    variables_schema = models.JSONField(default=dict, blank=True)
+    is_system = models.BooleanField(default=False, help_text="System notifications cannot be disabled")
+    supports_email = models.BooleanField(default=True)
+    supports_sms = models.BooleanField(default=False)
+    auto_read_after_days = models.PositiveIntegerField(null=True, blank=True)
     
     class Meta:
-        ordering = ['notification_type', 'name']
+        ordering = ['category', 'name']
     
     def __str__(self):
-        return f"{self.name} ({self.get_notification_type_display()})"
+        return self.name
 
 
 class NotificationPreference(BaseModel):
-    """User-specific notification preferences"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_preferences')
+    """Enhanced user preferences for receiving notifications"""
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='notification_preferences'
+    )
     
-    # Global settings
+    # Global delivery method toggles
     email_enabled = models.BooleanField(default=True)
     sms_enabled = models.BooleanField(default=False)
-    push_enabled = models.BooleanField(default=True)
     in_app_enabled = models.BooleanField(default=True)
     
-    # Quiet hours
+    # Delivery preferences by category
+    system_email = models.BooleanField(default=True)
+    system_sms = models.BooleanField(default=False)
+    system_in_app = models.BooleanField(default=True)
+    
+    event_email = models.BooleanField(default=True)
+    event_sms = models.BooleanField(default=False)
+    event_in_app = models.BooleanField(default=True)
+    
+    task_email = models.BooleanField(default=True)
+    task_sms = models.BooleanField(default=False)
+    task_in_app = models.BooleanField(default=True)
+    
+    payment_email = models.BooleanField(default=True)
+    payment_sms = models.BooleanField(default=True)  # Important for payments
+    payment_in_app = models.BooleanField(default=True)
+    
+    client_email = models.BooleanField(default=True)
+    client_sms = models.BooleanField(default=False)
+    client_in_app = models.BooleanField(default=True)
+    
+    contract_email = models.BooleanField(default=True)
+    contract_sms = models.BooleanField(default=False)
+    contract_in_app = models.BooleanField(default=True)
+    
+    workflow_email = models.BooleanField(default=False)  # Less critical
+    workflow_sms = models.BooleanField(default=False)
+    workflow_in_app = models.BooleanField(default=True)
+    
+    communication_email = models.BooleanField(default=False)
+    communication_sms = models.BooleanField(default=False)
+    communication_in_app = models.BooleanField(default=True)
+    
+    # Advanced preferences
     quiet_hours_enabled = models.BooleanField(default=False)
     quiet_hours_start = models.TimeField(null=True, blank=True)
     quiet_hours_end = models.TimeField(null=True, blank=True)
-    quiet_hours_timezone = models.CharField(max_length=50, default='UTC')
+    digest_frequency = models.CharField(max_length=20,
+        choices=[
+            ('IMMEDIATE', 'Immediate'),
+            ('HOURLY', 'Hourly Digest'),
+            ('DAILY', 'Daily Digest'),
+            ('WEEKLY', 'Weekly Digest'),
+        ],
+        default='IMMEDIATE'
+    )
     
-    # Frequency settings
-    digest_frequency = models.CharField(max_length=20, choices=[
-        ('REAL_TIME', 'Real Time'),
-        ('HOURLY', 'Hourly'),
-        ('DAILY', 'Daily'),
-        ('WEEKLY', 'Weekly'),
-        ('DISABLED', 'Disabled')
-    ], default='REAL_TIME')
-    
-    # Specific notification type preferences
-    notification_settings = models.JSONField(default=dict, help_text="Per-notification-type settings")
-    
-    class Meta:
-        verbose_name = 'Notification Preference'
-        verbose_name_plural = 'Notification Preferences'
+    # Specific notification type overrides
+    disabled_types = models.ManyToManyField(
+        NotificationType, 
+        blank=True,
+        related_name='users_disabled',
+        help_text="Specific notification types to disable"
+    )
     
     def __str__(self):
-        return f"Preferences for {self.user.get_full_name() or self.user.email}"
+        return f"Preferences for {self.user.email}"
     
-    def is_channel_enabled(self, channel):
-        """Check if a specific channel is enabled"""
-        channel_mapping = {
-            'EMAIL': self.email_enabled,
-            'SMS': self.sms_enabled,
-            'PUSH': self.push_enabled,
-            'IN_APP': self.in_app_enabled
-        }
-        return channel_mapping.get(channel, False)
-    
-    def is_notification_enabled(self, notification_type, channel):
-        """Check if a specific notification type and channel is enabled"""
-        if not self.is_channel_enabled(channel):
+    def is_delivery_method_enabled(self, category, method):
+        """Check if a delivery method is enabled for a category"""
+        if not getattr(self, f"{method}_enabled", True):
             return False
-        
-        # Check specific notification settings
-        type_settings = self.notification_settings.get(notification_type, {})
-        return type_settings.get(f'{channel.lower()}_enabled', True)
+            
+        return getattr(self, f"{category.lower()}_{method}", True)
+    
+    def is_notification_enabled(self, notification_type, method):
+        """Check if a specific notification type and method is enabled"""
+        # Check if type is specifically disabled
+        if self.disabled_types.filter(id=notification_type.id).exists():
+            return False
+            
+        # Check if delivery method is supported by notification type
+        if method == 'email' and not notification_type.supports_email:
+            return False
+        if method == 'sms' and not notification_type.supports_sms:
+            return False
+            
+        # Check category and global preferences
+        return self.is_delivery_method_enabled(notification_type.category, method)
 
 
-class NotificationRule(BaseModel):
-    """Rules that define when notifications should be triggered"""
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    
-    # Rule configuration
-    event_type = models.CharField(max_length=50, help_text="Domain event that triggers this rule")
-    conditions = models.JSONField(default=dict, help_text="Conditions that must be met")
-    
-    # Target configuration
-    template = models.ForeignKey(NotificationTemplate, on_delete=models.CASCADE, related_name='rules')
-    target_users = models.ManyToManyField(User, blank=True, related_name='notification_rules')
-    target_roles = models.JSONField(default=list, help_text="User roles to notify")
-    
-    # Timing configuration
-    delay_minutes = models.PositiveIntegerField(default=0, help_text="Delay before sending notification")
-    max_frequency_hours = models.PositiveIntegerField(
-        default=0, 
-        help_text="Minimum hours between notifications of this type (0 = no limit)"
+class Notification(BaseModel):
+    """Individual notifications sent to users"""
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        related_name='notifications'
     )
-    
-    # Status
-    is_active = models.BooleanField(default=True)
-    
-    class Meta:
-        ordering = ['event_type', 'name']
-        indexes = [
-            models.Index(fields=['event_type', 'is_active'])
-        ]
-    
-    def __str__(self):
-        return f"{self.name} ({self.event_type})"
-
-
-class NotificationQueue(BaseModel):
-    """Queue for notifications awaiting delivery"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Notification details
-    template = models.ForeignKey(NotificationTemplate, on_delete=models.CASCADE)
-    rule = models.ForeignKey(NotificationRule, on_delete=models.CASCADE, null=True, blank=True)
-    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='queued_notifications')
-    
-    # Channel and content
-    channel = models.CharField(max_length=10, choices=NotificationTemplate.CHANNEL_CHOICES)
-    subject = models.CharField(max_length=200, blank=True)
-    content = models.TextField()
-    
-    # Context and metadata
-    context_data = models.JSONField(default=dict)
-    priority = models.CharField(max_length=20, choices=[
-        ('LOW', 'Low'),
-        ('MEDIUM', 'Medium'),
-        ('HIGH', 'High'),
-        ('URGENT', 'Urgent')
-    ], default='MEDIUM')
-    
-    # Scheduling
-    scheduled_at = models.DateTimeField(default=timezone.now)
-    attempts = models.PositiveIntegerField(default=0)
-    max_attempts = models.PositiveIntegerField(default=3)
-    
-    # Status
-    STATUS_CHOICES = (
-        ('PENDING', 'Pending'),
-        ('PROCESSING', 'Processing'),
-        ('SENT', 'Sent'),
-        ('FAILED', 'Failed'),
-        ('CANCELLED', 'Cancelled'),
+    notification_type = models.ForeignKey(
+        NotificationType, 
+        on_delete=models.CASCADE,
+        related_name='notifications'
     )
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
-    error_message = models.TextField(blank=True)
-    
-    # References to source object
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
-    object_id = models.PositiveIntegerField(null=True, blank=True)
-    content_object = GenericForeignKey('content_type', 'object_id')
-    
-    class Meta:
-        ordering = ['-priority', 'scheduled_at']
-        indexes = [
-            models.Index(fields=['status', 'scheduled_at']),
-            models.Index(fields=['recipient', 'status'])
-        ]
-    
-    def __str__(self):
-        return f"{self.template.name} to {self.recipient.email} ({self.status})"
-
-
-class NotificationHistory(BaseModel):
-    """History of sent notifications"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Notification details
-    template_name = models.CharField(max_length=100)
-    notification_type = models.CharField(max_length=50)
-    channel = models.CharField(max_length=10, choices=NotificationTemplate.CHANNEL_CHOICES)
-    
-    # Recipient details
-    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notification_history')
-    recipient_email = models.EmailField(blank=True)
-    recipient_phone = models.CharField(max_length=20, blank=True)
     
     # Content
-    subject = models.CharField(max_length=200, blank=True)
+    title = models.CharField(max_length=255)
     content = models.TextField()
-    context_data = models.JSONField(default=dict)
+    action_url = models.CharField(max_length=500, blank=True)
     
-    # Delivery information
-    external_message_id = models.CharField(max_length=100, blank=True)
-    sent_at = models.DateTimeField()
-    delivered_at = models.DateTimeField(null=True, blank=True)
-    opened_at = models.DateTimeField(null=True, blank=True)
-    clicked_at = models.DateTimeField(null=True, blank=True)
+    # Context and targeting
+    context_data = models.JSONField(default=dict, blank=True)
+    event = models.ForeignKey(
+        'events.Event', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        related_name='notifications'
+    )
+    client = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='client_notifications',
+        limit_choices_to={'role': 'CLIENT'}
+    )
     
     # Status tracking
-    DELIVERY_STATUS_CHOICES = (
-        ('SENT', 'Sent'),
-        ('DELIVERED', 'Delivered'),
-        ('OPENED', 'Opened'),
-        ('CLICKED', 'Clicked'),
-        ('BOUNCED', 'Bounced'),
-        ('FAILED', 'Failed'),
-    )
-    delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, default='SENT')
-    is_read = models.BooleanField(default=False)
-    
-    # References to source object
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
-    object_id = models.PositiveIntegerField(null=True, blank=True)
-    content_object = GenericForeignKey('content_type', 'object_id')
-    
-    # Metadata
-    rule_id = models.UUIDField(null=True, blank=True)
-    queue_id = models.UUIDField(null=True, blank=True)
-    
-    class Meta:
-        ordering = ['-sent_at']
-        indexes = [
-            models.Index(fields=['recipient', '-sent_at']),
-            models.Index(fields=['notification_type', '-sent_at']),
-            models.Index(fields=['delivery_status', '-sent_at'])
-        ]
-    
-    def __str__(self):
-        return f"{self.template_name} to {self.recipient.email} at {self.sent_at}"
-
-
-class InAppNotification(BaseModel):
-    """In-app notifications for real-time display"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Notification details
-    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='in_app_notifications')
-    title = models.CharField(max_length=100)
-    message = models.TextField()
-    
-    # Metadata
-    notification_type = models.CharField(max_length=50)
-    priority = models.CharField(max_length=20, choices=[
-        ('LOW', 'Low'),
-        ('MEDIUM', 'Medium'),
-        ('HIGH', 'High'),
-        ('URGENT', 'Urgent')
-    ], default='MEDIUM')
-    
-    # Action configuration
-    action_url = models.URLField(blank=True, help_text="URL to navigate when notification is clicked")
-    action_data = models.JSONField(default=dict, blank=True)
-    
-    # Status
     is_read = models.BooleanField(default=False)
     read_at = models.DateTimeField(null=True, blank=True)
-    expires_at = models.DateTimeField(null=True, blank=True)
     
-    # References to source object
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
-    object_id = models.PositiveIntegerField(null=True, blank=True)
-    content_object = GenericForeignKey('content_type', 'object_id')
+    # Delivery tracking
+    delivered_via = models.JSONField(default=list, blank=True, help_text="List of delivery methods used")
+    delivery_attempts = models.JSONField(default=dict, blank=True)
+    
+    # Auto-expire functionality
+    expires_at = models.DateTimeField(null=True, blank=True)
+    is_expired = models.BooleanField(default=False)
     
     class Meta:
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['recipient', 'is_read', '-created_at']),
-            models.Index(fields=['expires_at'])
+            models.Index(fields=['recipient', '-created_at']),
+            models.Index(fields=['recipient', 'is_read']),
+            models.Index(fields=['notification_type', '-created_at']),
         ]
-    
+        
     def __str__(self):
-        return f"{self.title} to {self.recipient.email}"
+        return f"{self.notification_type.name} for {self.recipient.email}"
     
     def mark_as_read(self):
         """Mark notification as read"""
         if not self.is_read:
+            from django.utils import timezone
             self.is_read = True
             self.read_at = timezone.now()
-            self.save(update_fields=['is_read', 'read_at'])
+            self.save(update_fields=['is_read', 'read_at', 'updated_at'])
     
-    @property
-    def is_expired(self):
-        """Check if notification has expired"""
-        if self.expires_at:
-            return timezone.now() > self.expires_at
-        return False
+    def is_delivery_successful(self, method):
+        """Check if delivery was successful for a method"""
+        return method in self.delivered_via
+    
+    def add_delivery_method(self, method, success=True, error=None):
+        """Record delivery attempt"""
+        if success and method not in self.delivered_via:
+            self.delivered_via.append(method)
+        
+        if method not in self.delivery_attempts:
+            self.delivery_attempts[method] = []
+
+        from django.utils import timezone
+        self.delivery_attempts[method].append({
+            'timestamp': timezone.now().isoformat(),
+            'success': success,
+            'error': error
+        })
+        
+        self.save(update_fields=['delivered_via', 'delivery_attempts', 'updated_at'])
+
+
+class NotificationDigest(BaseModel):
+    """Digest notifications for users who prefer batched delivery"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notification_digests'
+    )
+    frequency = models.CharField(max_length=20, choices=[
+        ('HOURLY', 'Hourly'),
+        ('DAILY', 'Daily'),
+        ('WEEKLY', 'Weekly'),
+    ])
+    
+    # Period this digest covers
+    period_start = models.DateTimeField()
+    period_end = models.DateTimeField()
+    
+    # Notifications included
+    notifications = models.ManyToManyField(Notification, related_name='digests')
+    notification_count = models.PositiveIntegerField(default=0)
+    
+    # Delivery status
+    is_sent = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    delivery_methods = models.JSONField(default=list)
+    
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = [['user', 'frequency', 'period_start']]
+    
+    def __str__(self):
+        return f"{self.frequency} digest for {self.user.email} ({self.notification_count} notifications)"

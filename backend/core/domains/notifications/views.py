@@ -1,196 +1,361 @@
 # backend/core/domains/notifications/views.py
-from core.utils import models
 from core.utils.permissions import IsAdmin, IsAdminOrClient
 from django.contrib.auth import get_user_model
-from django.db import transaction
 from django.utils import timezone
-from rest_framework import status, viewsets, filters
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import (
-    NotificationTemplate,
+    Notification,
     NotificationPreference,
-    NotificationRule,
-    NotificationQueue,
-    NotificationHistory,
-    InAppNotification
+    NotificationType,
 )
 from .serializers import (
-    NotificationTemplateSerializer,
+    CreateNotificationSerializer,
+    NotificationBulkActionSerializer,
+    NotificationCountSerializer,
+    NotificationListSerializer,
     NotificationPreferenceSerializer,
-    NotificationRuleSerializer,
-    NotificationRuleCreateSerializer,
-    NotificationQueueSerializer,
-    NotificationHistorySerializer,
-    InAppNotificationSerializer,
-    SendNotificationSerializer,
-    NotificationAnalyticsSerializer,
-    ChannelPerformanceSerializer,
-    UserEngagementSerializer,
-    NotificationPreferenceUpdateSerializer,
-    TestNotificationSerializer,
-    BulkNotificationActionSerializer
+    NotificationSerializer,
+    NotificationStatsSerializer,
+    NotificationTypeSerializer,
 )
 from .services import (
-    NotificationTemplateService,
-    NotificationPreferenceService,
-    NotificationRuleService,
-    NotificationDispatchService,
-    NotificationAnalyticsService,
-    InAppNotificationService
+    NotificationService,
+    NotificationStatsService,
+    NotificationTypeService,
 )
 
 User = get_user_model()
 
 
-class NotificationTemplateViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing notification templates"""
-    serializer_class = NotificationTemplateSerializer
-    permission_classes = [IsAdmin]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'description', 'notification_type']
-    ordering_fields = ['name', 'notification_type', 'created_at']
-    ordering = ['notification_type', 'name']
+class NotificationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing user notifications"""
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        queryset = NotificationTemplate.objects.all()
+        """Get notifications for the current user with filtering"""
+        user = self.request.user
         
-        # Filter by notification type
-        notification_type = self.request.query_params.get('notification_type')
+        # Base queryset - users can only see their own notifications
+        if user.role == 'CLIENT':
+            queryset = Notification.objects.filter(recipient=user)
+        else:
+            # Admins can see all notifications, but default to their own
+            user_filter = self.request.query_params.get('user_id')
+            if user_filter and user.role == 'ADMIN':
+                queryset = Notification.objects.filter(recipient_id=user_filter)
+            else:
+                queryset = Notification.objects.filter(recipient=user)
+        
+        # Apply filters
+        is_read = self.request.query_params.get('is_read')
+        if is_read is not None:
+            is_read = is_read.lower() == 'true'
+            queryset = queryset.filter(is_read=is_read)
+        
+        notification_type = self.request.query_params.get('type')
         if notification_type:
-            queryset = queryset.filter(notification_type=notification_type)
+            queryset = queryset.filter(notification_type__code=notification_type)
         
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(notification_type__category=category)
+        
+        priority = self.request.query_params.get('priority')
+        if priority:
+            queryset = queryset.filter(notification_type__priority=priority)
+        
+        return queryset.select_related(
+            'notification_type', 'recipient', 'event', 'client'
+        ).order_by('-created_at')
+    
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action"""
+        if self.action == 'list':
+            return NotificationListSerializer
+        elif self.action == 'create_notification':
+            return CreateNotificationSerializer
+        return NotificationSerializer
+    
+    def list(self, request, *args, **kwargs):
+        """Get notifications for the current user"""
+        return super().list(request, *args, **kwargs)
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Get a specific notification and mark it as read"""
+        notification = self.get_object()
+        
+        # Ensure user can only access their own notifications (unless admin)
+        if notification.recipient != request.user and request.user.role != 'ADMIN':
+            return Response(
+                {"detail": "You do not have permission to access this notification."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Mark as read if not already read and user is the recipient
+        if not notification.is_read and notification.recipient == request.user:
+            notification.mark_as_read()
+        
+        serializer = self.get_serializer(notification)
+        return Response(serializer.data)
+    
+    def create(self, request, *args, **kwargs):
+        """Create notification - restricted to admin users"""
+        if not request.user.is_staff:
+            return Response(
+                {"detail": "You do not have permission to create notifications."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().create(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        """Update notification - restricted to admin users"""
+        if not request.user.is_staff:
+            return Response(
+                {"detail": "You do not have permission to update notifications."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Delete a notification"""
+        notification = self.get_object()
+        
+        # Allow users to delete their own notifications, admins can delete any
+        if notification.recipient != request.user and not request.user.is_staff:
+            return Response(
+                {"detail": "You do not have permission to delete this notification."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().destroy(request, *args, **kwargs)
+    
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        """Mark a notification as read"""
+        try:
+            notification = NotificationService.mark_as_read(pk, request.user)
+            serializer = self.get_serializer(notification)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=True, methods=['post'])
+    def mark_unread(self, request, pk=None):
+        """Mark a notification as unread"""
+        try:
+            notification = NotificationService.mark_as_unread(pk, request.user)
+            serializer = self.get_serializer(notification)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        """Mark all notifications as read for the current user"""
+        try:
+            count = NotificationService.mark_all_as_read(request.user)
+            return Response({'marked_read': count})
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['post'])
+    def bulk_action(self, request):
+        """Perform bulk actions on notifications"""
+        serializer = NotificationBulkActionSerializer(
+            data=request.data, 
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            count = NotificationService.bulk_action(
+                request.user.id,
+                serializer.validated_data['notification_ids'],
+                serializer.validated_data['action']
+            )
+            
+            return Response({
+                'action': serializer.validated_data['action'],
+                'count': count,
+                'message': f"Successfully {serializer.validated_data['action'].replace('_', ' ')} {count} notifications"
+            })
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'])
+    def counts(self, request):
+        """Get notification counts for the current user"""
+        try:
+            counts = NotificationService.get_notification_counts(request.user.id)
+            serializer = NotificationCountSerializer(counts)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'])
+    def unread(self, request):
+        """Get unread notifications for the current user"""
+        try:
+            limit = int(request.query_params.get('limit', 20))
+            notifications = NotificationService.get_notifications(
+                request.user, 
+                is_read=False, 
+                limit=limit
+            )
+            
+            serializer = NotificationListSerializer(notifications, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'])
+    def recent(self, request):
+        """Get recent notifications for the current user"""
+        try:
+            limit = int(request.query_params.get('limit', 5))
+            notifications = NotificationService.get_notifications(
+                request.user, 
+                limit=limit
+            )
+            
+            serializer = NotificationListSerializer(notifications, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['post'])
+    def create_notification(self, request):
+        """Create notifications for multiple recipients - admin only"""
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"detail": "Only administrators can create notifications."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = CreateNotificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            recipient_ids = serializer.validated_data['recipient_ids']
+            notification_type_code = serializer.validated_data['notification_type_code']
+            context_data = serializer.validated_data.get('context_data', {})
+            force_delivery = serializer.validated_data.get('force_delivery_methods', [])
+            
+            recipients = User.objects.filter(id__in=recipient_ids)
+            created_notifications = []
+            
+            for recipient in recipients:
+                try:
+                    notification = NotificationService.create_notification(
+                        recipient=recipient,
+                        notification_type_code=notification_type_code,
+                        context=context_data,
+                        delivery_methods=force_delivery if force_delivery else None
+                    )
+                    if notification:
+                        created_notifications.append(notification)
+                except Exception as e:
+                    # Continue with other recipients if one fails
+                    pass
+            
+            return Response({
+                'created_count': len(created_notifications),
+                'total_recipients': len(recipients),
+                'notifications': NotificationListSerializer(created_notifications, many=True).data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """Get notification statistics for the current user"""
+        try:
+            days = int(request.query_params.get('days', 30))
+            stats = NotificationStatsService.get_user_stats(request.user.id, days)
+            serializer = NotificationStatsSerializer(stats)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class NotificationTypeViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing notification types - admin only"""
+    queryset = NotificationType.objects.all()
+    serializer_class = NotificationTypeSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    
+    def get_queryset(self):
+        """Filter notification types based on query parameters"""
+        queryset = super().get_queryset()
+        
+        # Filter by category
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+            
         # Filter by active status
         is_active = self.request.query_params.get('is_active')
         if is_active is not None:
             is_active = is_active.lower() == 'true'
             queryset = queryset.filter(is_active=is_active)
         
-        # Filter by channel
-        channel = self.request.query_params.get('channel')
-        if channel:
-            queryset = queryset.filter(channels__contains=[channel])
-        
+        # Filter by system status
+        is_system = self.request.query_params.get('is_system')
+        if is_system is not None:
+            is_system = is_system.lower() == 'true'
+            queryset = queryset.filter(is_system=is_system)
+            
         return queryset
     
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        with transaction.atomic():
-            template = NotificationTemplateService.create_template(serializer.validated_data)
-        
-        return Response(
-            self.get_serializer(template).data,
-            status=status.HTTP_201_CREATED
-        )
-    
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        
-        with transaction.atomic():
-            template = NotificationTemplateService.update_template(
-                instance.id, serializer.validated_data
-            )
-        
-        return Response(self.get_serializer(template).data)
-    
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        
-        with transaction.atomic():
-            NotificationTemplateService.delete_template(instance.id)
-        
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    
-    @action(detail=True, methods=['post'])
-    def preview(self, request, pk=None):
-        """Preview template content for a specific channel"""
-        template = self.get_object()
-        channel = request.data.get('channel')
-        context_data = request.data.get('context_data', {})
-        
-        if not channel:
-            return Response(
-                {'error': 'Channel is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            rendered = NotificationTemplateService.render_template_content(
-                template, channel, context_data
-            )
-            return Response(rendered)
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-    
-    @action(detail=True, methods=['post'])
-    def test_send(self, request, pk=None):
-        """Send a test notification"""
-        serializer = TestNotificationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        template = self.get_object()
-        channel = serializer.validated_data['channel']
-        recipient_email = serializer.validated_data['recipient_email']
-        context_data = serializer.validated_data.get('context_data', {})
-        
-        try:
-            # Get or create test user
-            test_user, created = User.objects.get_or_create(
-                email=recipient_email,
-                defaults={
-                    'first_name': 'Test',
-                    'last_name': 'User',
-                    'role': 'ADMIN',
-                    'is_active': True
-                }
-            )
-            
-            # Send test notification
-            notifications = NotificationDispatchService.dispatch_notification(
-                notification_type=template.notification_type,
-                recipients=[test_user],
-                context_data=context_data,
-                priority='LOW'
-            )
-            
-            return Response({
-                'message': 'Test notification sent successfully',
-                'notifications_queued': len(notifications)
-            })
-            
-        except Exception as e:
-            return Response(
-                {'error': f'Failed to send test notification: {str(e)}'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    @action(detail=False, methods=['get'])
+    def categories(self, request):
+        """Get available notification categories"""
+        categories = [
+            {'value': choice[0], 'label': choice[1]}
+            for choice in NotificationType._meta.get_field('category').choices
+        ]
+        return Response(categories)
     
     @action(detail=False, methods=['get'])
-    def notification_types(self, request):
-        """Get available notification types"""
-        types = [
+    def priorities(self, request):
+        """Get available notification priorities"""
+        priorities = [
             {'value': choice[0], 'label': choice[1]}
-            for choice in NotificationTemplate.NOTIFICATION_TYPES
+            for choice in NotificationType._meta.get_field('priority').choices
         ]
-        return Response(types)
-    
-    @action(detail=False, methods=['get'])
-    def channels(self, request):
-        """Get available channels"""
-        channels = [
-            {'value': choice[0], 'label': choice[1]}
-            for choice in NotificationTemplate.CHANNEL_CHOICES
-        ]
-        return Response(channels)
+        return Response(priorities)
 
 
 class NotificationPreferenceViewSet(viewsets.ModelViewSet):
@@ -199,475 +364,122 @@ class NotificationPreferenceViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        # Admins can see all preferences, users can only see their own
-        if self.request.user.role == 'ADMIN':
-            return NotificationPreference.objects.select_related('user').all()
-        else:
+        """Users can only see their own preferences, admins can see all"""
+        if not self.request.user.is_staff:
             return NotificationPreference.objects.filter(user=self.request.user)
-    
-    def get_object(self):
-        """Get or create preferences for the user"""
-        if self.request.user.role == 'ADMIN' and 'pk' in self.kwargs:
-            # Admin accessing specific user's preferences
-            return super().get_object()
-        else:
-            # User accessing their own preferences
-            preferences, created = NotificationPreference.objects.get_or_create(
-                user=self.request.user
-            )
-            return preferences
-    
-    @action(detail=False, methods=['get', 'put'])
-    def my_preferences(self, request):
-        """Get or update current user's preferences"""
-        preferences = NotificationPreferenceService.get_or_create_preferences(request.user)
         
-        if request.method == 'GET':
-            serializer = self.get_serializer(preferences)
-            return Response(serializer.data)
-        
-        elif request.method == 'PUT':
-            serializer = self.get_serializer(preferences, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
+        # Admins can see all preferences, optionally filtered by user
+        queryset = NotificationPreference.objects.all()
+        user_id = self.request.query_params.get('user_id')
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
             
-            with transaction.atomic():
-                updated_preferences = NotificationPreferenceService.update_preferences(
-                    request.user, serializer.validated_data
-                )
-            
-            return Response(self.get_serializer(updated_preferences).data)
-    
-    @action(detail=False, methods=['post'])
-    def update_notification_setting(self, request):
-        """Update a specific notification setting"""
-        serializer = NotificationPreferenceUpdateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        notification_type = serializer.validated_data['notification_type']
-        channel = serializer.validated_data['channel']
-        enabled = serializer.validated_data['enabled']
-        
-        with transaction.atomic():
-            preferences = NotificationPreferenceService.update_notification_setting(
-                request.user, notification_type, channel, enabled
-            )
-        
-        return Response(self.get_serializer(preferences).data)
-    
-    @action(detail=False, methods=['get'])
-    def available_settings(self, request):
-        """Get available notification types and channels for preferences"""
-        notification_types = [
-            {'value': choice[0], 'label': choice[1]}
-            for choice in NotificationTemplate.NOTIFICATION_TYPES
-        ]
-        
-        channels = [
-            {'value': choice[0], 'label': choice[1]}
-            for choice in NotificationTemplate.CHANNEL_CHOICES
-        ]
-        
-        return Response({
-            'notification_types': notification_types,
-            'channels': channels
-        })
-
-
-class NotificationRuleViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing notification rules"""
-    permission_classes = [IsAdmin]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'description', 'event_type']
-    ordering_fields = ['name', 'event_type', 'created_at']
-    ordering = ['event_type', 'name']
-    
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return NotificationRuleCreateSerializer
-        return NotificationRuleSerializer
-    
-    def get_queryset(self):
-        queryset = NotificationRule.objects.select_related('template').prefetch_related('target_users')
-        
-        # Filter by event type
-        event_type = self.request.query_params.get('event_type')
-        if event_type:
-            queryset = queryset.filter(event_type=event_type)
-        
-        # Filter by active status
-        is_active = self.request.query_params.get('is_active')
-        if is_active is not None:
-            is_active = is_active.lower() == 'true'
-            queryset = queryset.filter(is_active=is_active)
-        
-        # Filter by template
-        template_id = self.request.query_params.get('template_id')
-        if template_id:
-            queryset = queryset.filter(template_id=template_id)
-        
         return queryset
     
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        with transaction.atomic():
-            rule = NotificationRuleService.create_rule(serializer.validated_data)
-        
+        """Prevent manual creation - preferences are auto-created"""
         return Response(
-            NotificationRuleSerializer(rule).data,
-            status=status.HTTP_201_CREATED
+            {"detail": "Notification preferences are automatically created for users."},
+            status=status.HTTP_400_BAD_REQUEST
         )
-    
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        
-        with transaction.atomic():
-            rule = NotificationRuleService.update_rule(
-                instance.id, serializer.validated_data
-            )
-        
-        return Response(NotificationRuleSerializer(rule).data)
     
     def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        
-        with transaction.atomic():
-            NotificationRuleService.delete_rule(instance.id)
-        
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    
-    @action(detail=False, methods=['get'])
-    def event_types(self, request):
-        """Get available event types for rules"""
-        # Define available event types from different domains
-        event_types = [
-            {'value': 'client.created', 'label': 'Client Created'},
-            {'value': 'client.invitation_sent', 'label': 'Client Invitation Sent'},
-            {'value': 'client.invitation_accepted', 'label': 'Client Invitation Accepted'},
-            {'value': 'event.created', 'label': 'Event Created'},
-            {'value': 'event.status_changed', 'label': 'Event Status Changed'},
-            {'value': 'event.deadline_approaching', 'label': 'Event Deadline Approaching'},
-            {'value': 'task.created', 'label': 'Task Created'},
-            {'value': 'task.completed', 'label': 'Task Completed'},
-            {'value': 'task.overdue', 'label': 'Task Overdue'},
-            {'value': 'payment.received', 'label': 'Payment Received'},
-            {'value': 'payment.failed', 'label': 'Payment Failed'},
-            {'value': 'feedback.received', 'label': 'Feedback Received'},
-            {'value': 'workflow.stage_changed', 'label': 'Workflow Stage Changed'},
-            {'value': 'system.alert', 'label': 'System Alert'},
-        ]
-        return Response(event_types)
-
-
-class NotificationQueueViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for viewing notification queue (admin only)"""
-    serializer_class = NotificationQueueSerializer
-    permission_classes = [IsAdmin]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['template__name', 'recipient__email', 'subject']
-    ordering_fields = ['scheduled_at', 'priority', 'status', 'created_at']
-    ordering = ['-priority', 'scheduled_at']
-    
-    def get_queryset(self):
-        queryset = NotificationQueue.objects.select_related(
-            'template', 'recipient', 'rule'
-        ).all()
-        
-        # Filter by status
-        status_filter = self.request.query_params.get('status')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-        
-        # Filter by channel
-        channel = self.request.query_params.get('channel')
-        if channel:
-            queryset = queryset.filter(channel=channel)
-        
-        # Filter by priority
-        priority = self.request.query_params.get('priority')
-        if priority:
-            queryset = queryset.filter(priority=priority)
-        
-        # Filter by recipient
-        recipient_id = self.request.query_params.get('recipient_id')
-        if recipient_id:
-            queryset = queryset.filter(recipient_id=recipient_id)
-        
-        return queryset
-    
-    @action(detail=True, methods=['post'])
-    def retry(self, request, pk=None):
-        """Retry a failed notification"""
-        notification = self.get_object()
-        
-        if notification.status not in ['FAILED', 'CANCELLED']:
-            return Response(
-                {'error': 'Only failed or cancelled notifications can be retried'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Reset notification for retry
-        notification.status = 'PENDING'
-        notification.attempts = 0
-        notification.scheduled_at = timezone.now()
-        notification.error_message = ''
-        notification.save()
-        
-        # Trigger queue processing
-        from .services import process_notification_queue
-        process_notification_queue.delay()
-        
-        return Response({'message': 'Notification queued for retry'})
-    
-    @action(detail=True, methods=['post'])
-    def cancel(self, request, pk=None):
-        """Cancel a pending notification"""
-        notification = self.get_object()
-        
-        if notification.status not in ['PENDING', 'PROCESSING']:
-            return Response(
-                {'error': 'Only pending or processing notifications can be cancelled'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        notification.status = 'CANCELLED'
-        notification.save()
-        
-        return Response({'message': 'Notification cancelled'})
-
-
-class NotificationHistoryViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for viewing notification history"""
-    serializer_class = NotificationHistorySerializer
-    permission_classes = [IsAdminOrClient]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['template_name', 'subject', 'recipient__email']
-    ordering_fields = ['sent_at', 'delivery_status', 'notification_type']
-    ordering = ['-sent_at']
-    
-    def get_queryset(self):
-        queryset = NotificationHistory.objects.select_related('recipient').all()
-        
-        # Clients can only see their own notification history
-        if self.request.user.role == 'CLIENT':
-            queryset = queryset.filter(recipient=self.request.user)
-        
-        # Filter by notification type
-        notification_type = self.request.query_params.get('notification_type')
-        if notification_type:
-            queryset = queryset.filter(notification_type=notification_type)
-        
-        # Filter by channel
-        channel = self.request.query_params.get('channel')
-        if channel:
-            queryset = queryset.filter(channel=channel)
-        
-        # Filter by delivery status
-        delivery_status = self.request.query_params.get('delivery_status')
-        if delivery_status:
-            queryset = queryset.filter(delivery_status=delivery_status)
-        
-        # Filter by recipient (admin only)
-        recipient_id = self.request.query_params.get('recipient_id')
-        if recipient_id and self.request.user.role == 'ADMIN':
-            queryset = queryset.filter(recipient_id=recipient_id)
-        
-        # Filter by date range
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
-        if start_date:
-            queryset = queryset.filter(sent_at__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(sent_at__lte=end_date)
-        
-        return queryset
-
-
-class InAppNotificationViewSet(viewsets.ModelViewSet):
-    """ViewSet for in-app notifications"""
-    serializer_class = InAppNotificationSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.OrderingFilter]
-    ordering_fields = ['created_at', 'priority', 'is_read']
-    ordering = ['-created_at']
-    
-    def get_queryset(self):
-        # Users can only see their own in-app notifications
-        queryset = InAppNotification.objects.filter(recipient=self.request.user)
-        
-        # Filter by read status
-        is_read = self.request.query_params.get('is_read')
-        if is_read is not None:
-            is_read = is_read.lower() == 'true'
-            queryset = queryset.filter(is_read=is_read)
-        
-        # Filter by notification type
-        notification_type = self.request.query_params.get('notification_type')
-        if notification_type:
-            queryset = queryset.filter(notification_type=notification_type)
-        
-        # Filter by priority
-        priority = self.request.query_params.get('priority')
-        if priority:
-            queryset = queryset.filter(priority=priority)
-        
-        # Exclude expired notifications
-        queryset = queryset.filter(
-            models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=timezone.now())
+        """Prevent deletion of preferences"""
+        return Response(
+            {"detail": "Notification preferences cannot be deleted."},
+            status=status.HTTP_400_BAD_REQUEST
         )
-        
-        return queryset
-    
-    def create(self, request, *args, **kwargs):
-        """Only admins can create in-app notifications for other users"""
-        if request.user.role != 'ADMIN':
-            return Response(
-                {'error': 'Only administrators can create notifications'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        return super().create(request, *args, **kwargs)
-    
-    @action(detail=True, methods=['post'])
-    def mark_read(self, request, pk=None):
-        """Mark notification as read"""
-        notification = self.get_object()
-        notification.mark_as_read()
-        
-        return Response(self.get_serializer(notification).data)
-    
-    @action(detail=False, methods=['post'])
-    def mark_all_read(self, request):
-        """Mark all notifications as read for current user"""
-        count = InAppNotificationService.mark_all_as_read(request.user)
-        return Response({'message': f'Marked {count} notifications as read'})
-    
-    @action(detail=False, methods=['post'])
-    def bulk_action(self, request):
-        """Perform bulk actions on notifications"""
-        serializer = BulkNotificationActionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        notification_ids = serializer.validated_data['notification_ids']
-        action = serializer.validated_data['action']
-        
-        # Get notifications belonging to current user
-        notifications = InAppNotification.objects.filter(
-            id__in=notification_ids,
-            recipient=request.user
-        )
-        
-        if action == 'mark_read':
-            count = notifications.update(is_read=True, read_at=timezone.now())
-            message = f'Marked {count} notifications as read'
-        elif action == 'mark_unread':
-            count = notifications.update(is_read=False, read_at=None)
-            message = f'Marked {count} notifications as unread'
-        elif action == 'delete':
-            count = notifications.count()
-            notifications.delete()
-            message = f'Deleted {count} notifications'
-        
-        return Response({'message': message})
     
     @action(detail=False, methods=['get'])
-    def unread_count(self, request):
-        """Get count of unread notifications"""
-        count = InAppNotification.objects.filter(
-            recipient=request.user,
-            is_read=False
-        ).exclude(
-            expires_at__lt=timezone.now()
-        ).count()
-        
-        return Response({'unread_count': count})
-
-
-class NotificationAnalyticsViewSet(viewsets.ViewSet):
-    """ViewSet for notification analytics"""
-    permission_classes = [IsAdmin]
-    
-    @action(detail=False, methods=['get'])
-    def delivery_stats(self, request):
-        """Get delivery statistics"""
-        days = int(request.query_params.get('days', 30))
-        notification_type = request.query_params.get('notification_type')
-        user_id = request.query_params.get('user_id')
-        
-        stats = NotificationAnalyticsService.get_delivery_stats(
-            days=days,
-            notification_type=notification_type,
-            user_id=user_id
-        )
-        
-        serializer = NotificationAnalyticsSerializer(stats)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def channel_performance(self, request):
-        """Get channel performance statistics"""
-        days = int(request.query_params.get('days', 30))
-        
-        stats = NotificationAnalyticsService.get_channel_performance(days=days)
-        serializer = ChannelPerformanceSerializer(stats, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def user_engagement(self, request):
-        """Get user engagement statistics"""
-        user_id = request.query_params.get('user_id')
-        if not user_id:
-            return Response(
-                {'error': 'user_id parameter is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        days = int(request.query_params.get('days', 30))
-        
-        stats = NotificationAnalyticsService.get_user_engagement(
-            user_id=user_id,
-            days=days
-        )
-        
-        serializer = UserEngagementSerializer(stats)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['post'])
-    def send_manual(self, request):
-        """Send manual notification to specific users"""
-        serializer = SendNotificationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        notification_type = serializer.validated_data['notification_type']
-        recipient_ids = serializer.validated_data['recipients']
-        context_data = serializer.validated_data.get('context_data', {})
-        priority = serializer.validated_data.get('priority', 'MEDIUM')
-        delay_minutes = serializer.validated_data.get('delay_minutes', 0)
-        
-        # Get recipients
-        recipients = User.objects.filter(id__in=recipient_ids, is_active=True)
-        
+    def my_preferences(self, request):
+        """Get preferences for the current user"""
         try:
-            notifications = NotificationDispatchService.dispatch_notification(
-                notification_type=notification_type,
-                recipients=recipients,
-                context_data=context_data,
-                priority=priority,
-                delay_minutes=delay_minutes
-            )
-            
-            return Response({
-                'message': 'Notifications sent successfully',
-                'notifications_queued': len(notifications),
-                'recipients': len(recipients)
-            })
-            
+            preferences = NotificationService.get_or_create_user_preferences(request.user.id)
+            serializer = self.get_serializer(preferences)
+            return Response(serializer.data)
         except Exception as e:
             return Response(
-                {'error': f'Failed to send notifications: {str(e)}'},
+                {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+    
+    @action(detail=False, methods=['put', 'patch'])
+    def update_preferences(self, request):
+        """Update preferences for the current user"""
+        try:
+            preferences = NotificationService.update_user_preferences(
+                request.user.id, 
+                request.data
+            )
+            serializer = self.get_serializer(preferences)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['post'])
+    def reset_to_defaults(self, request):
+        """Reset preferences to default values"""
+        try:
+            preferences = NotificationService.get_or_create_user_preferences(request.user.id)
+            
+            # Reset to default values
+            default_data = {
+                'email_enabled': True,
+                'sms_enabled': False,
+                'in_app_enabled': True,
+                'system_email': True,
+                'system_sms': False,
+                'system_in_app': True,
+                'event_email': True,
+                'event_sms': False,
+                'event_in_app': True,
+                'task_email': True,
+                'task_sms': False,
+                'task_in_app': True,
+                'payment_email': True,
+                'payment_sms': True,
+                'payment_in_app': True,
+                'client_email': True,
+                'client_sms': False,
+                'client_in_app': True,
+                'contract_email': True,
+                'contract_sms': False,
+                'contract_in_app': True,
+                'workflow_email': False,
+                'workflow_sms': False,
+                'workflow_in_app': True,
+                'communication_email': False,
+                'communication_sms': False,
+                'communication_in_app': True,
+                'quiet_hours_enabled': False,
+                'digest_frequency': 'IMMEDIATE',
+                'disabled_types': []
+            }
+            
+            preferences = NotificationService.update_user_preferences(
+                request.user.id, 
+                default_data
+            )
+            
+            serializer = self.get_serializer(preferences)
+            return Response({
+                'message': 'Preferences reset to defaults',
+                'preferences': serializer.data
+            })
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'])
+    def digest_frequencies(self, request):
+        """Get available digest frequency options"""
+        frequencies = [
+            {'value': choice[0], 'label': choice[1]}
+            for choice in NotificationPreference._meta.get_field('digest_frequency').choices
+        ]
+        return Response(frequencies)
