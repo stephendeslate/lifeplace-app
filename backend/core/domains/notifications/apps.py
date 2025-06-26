@@ -1,14 +1,23 @@
 # backend/core/domains/notifications/apps.py
 from django.apps import AppConfig
-from django.core.management import call_command
 
 
 class NotificationsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'core.domains.notifications'
     label = 'notifications'
-    verbose_name = 'Notifications'
-    
+
     def ready(self):
-        # Import signal handlers when Django starts
-        import core.domains.notifications.signals
+        """Import and connect all notification signals when the app is ready"""
+        try:
+            # Import signals to register them
+            from .signals import connect_all_signals
+            
+            # Connect all signals
+            connect_all_signals()
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to connect notification signals: {str(e)}")
+            # Don't raise to avoid breaking app startup
