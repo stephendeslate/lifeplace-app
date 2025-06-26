@@ -87,6 +87,7 @@ export const NotificationsPage: React.FC = () => {
   const { preferences, isLoadingPreferences } = useNotificationPreferences();
   const { data: counts, isLoading: isLoadingCounts } = useNotificationCounts();
 
+  // @ts-ignore
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };

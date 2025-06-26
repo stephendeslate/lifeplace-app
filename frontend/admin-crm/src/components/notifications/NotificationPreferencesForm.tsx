@@ -8,7 +8,6 @@ import {
   CardContent,
   FormControl,
   FormControlLabel,
-  FormGroup,
   Switch,
   Select,
   MenuItem,
@@ -22,7 +21,6 @@ import {
   Chip,
   Stack,
   Paper,
-  Grid,
 } from '@mui/material';
 import {
   ExpandMore,
@@ -35,7 +33,6 @@ import {
   Block,
   Settings,
   NotificationsActive,
-  NotificationsOff,
 } from '@mui/icons-material';
 import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -44,7 +41,7 @@ import type {
   NotificationPreference,
   UpdateNotificationPreferenceData,
 } from '../../types/notifications.types';
-import { NOTIFICATION_CATEGORIES, DIGEST_FREQUENCIES } from '../../types/notifications.types';
+import { DIGEST_FREQUENCIES } from '../../types/notifications.types';
 
 interface NotificationPreferencesFormProps {
   preferences: NotificationPreference;
