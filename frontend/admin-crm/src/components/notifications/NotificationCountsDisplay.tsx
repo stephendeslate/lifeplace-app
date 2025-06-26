@@ -8,13 +8,15 @@ import {
   CardContent,
   Chip,
   Stack,
-  useTheme,
+  Paper,
+  Divider,
 } from '@mui/material';
 import {
   Notifications,
   MarkEmailUnread,
   Category,
   PriorityHigh,
+  TrendingUp,
 } from '@mui/icons-material';
 import type { NotificationCounts } from '../../types/notifications.types';
 
@@ -27,8 +29,6 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
   counts,
   isLoading,
 }) => {
-  const theme = useTheme();
-
   if (isLoading) {
     return (
       <Box sx={{ mb: 2 }}>
@@ -78,45 +78,70 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
   };
 
   return (
-    <Card sx={{ mb: 3, bgcolor: 'grey.50' }}>
-      <CardContent sx={{ py: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
-          {/* Total and Unread */}
-          <Box display="flex" alignItems="center" gap={2}>
-            <Box display="flex" alignItems="center" gap={1}>
-              <Notifications color="primary" />
-              <Typography variant="h6" fontWeight="bold">
-                {counts.total}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                total
-              </Typography>
-            </Box>
+    <Card sx={{ bgcolor: 'grey.50', border: '1px solid', borderColor: 'grey.200' }}>
+      <CardContent>
+        <Stack spacing={3}>
+          {/* Overview Stats */}
+          <Box>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
+              {/* Total and Unread - Main Stats */}
+              <Stack direction="row" spacing={3} alignItems="center">
+                <Paper sx={{ p: 2, textAlign: 'center', minWidth: 100, bgcolor: 'primary.50' }}>
+                  <Box display="flex" alignItems="center" justifyContent="center" gap={1} mb={1}>
+                    <Notifications color="primary" />
+                    <Typography variant="h5" fontWeight="bold" color="primary.main">
+                      {counts.total}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Total
+                  </Typography>
+                </Paper>
 
-            {counts.unread > 0 && (
-              <Box display="flex" alignItems="center" gap={1}>
-                <MarkEmailUnread color="warning" />
-                <Typography variant="h6" fontWeight="bold" color="warning.main">
-                  {counts.unread}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  unread
-                </Typography>
-              </Box>
-            )}
+                {counts.unread > 0 && (
+                  <Paper sx={{ p: 2, textAlign: 'center', minWidth: 100, bgcolor: 'warning.50' }}>
+                    <Box display="flex" alignItems="center" justifyContent="center" gap={1} mb={1}>
+                      <MarkEmailUnread color="warning" />
+                      <Typography variant="h5" fontWeight="bold" color="warning.main">
+                        {counts.unread}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Unread
+                    </Typography>
+                  </Paper>
+                )}
+              </Stack>
+
+              {/* Read Status Indicator */}
+              {counts.unread === 0 && counts.total > 0 && (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Chip
+                    label="All Caught Up!"
+                    color="success"
+                    variant="filled"
+                    icon={<TrendingUp />}
+                  />
+                </Box>
+              )}
+            </Stack>
           </Box>
 
-          {/* Categories */}
+          {/* Categories Breakdown */}
           {Object.keys(counts.by_category).length > 0 && (
             <Box>
-              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+              <Divider sx={{ mb: 2 }} />
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
                 <Category fontSize="small" color="action" />
-                <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                  By category:
+                <Typography variant="subtitle2" fontWeight="medium" color="text.secondary">
+                  By Category
                 </Typography>
+              </Box>
+              
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {Object.entries(counts.by_category)
                   .sort(([, a], [, b]) => b - a)
-                  .slice(0, 4)
+                  .slice(0, 6)
                   .map(([category, count]) => (
                     <Chip
                       key={category}
@@ -127,28 +152,38 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
                         borderColor: getCategoryColor(category),
                         color: getCategoryColor(category),
                         fontSize: '0.75rem',
+                        '&:hover': {
+                          bgcolor: getCategoryColor(category) + '10',
+                        }
                       }}
                     />
                   ))}
-                {Object.keys(counts.by_category).length > 4 && (
-                  <Typography variant="caption" color="text.secondary">
-                    +{Object.keys(counts.by_category).length - 4} more
-                  </Typography>
+                {Object.keys(counts.by_category).length > 6 && (
+                  <Chip
+                    label={`+${Object.keys(counts.by_category).length - 6} more`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ fontSize: '0.75rem' }}
+                  />
                 )}
               </Stack>
             </Box>
           )}
 
-          {/* Priorities */}
+          {/* Priorities Breakdown */}
           {Object.keys(counts.by_priority).length > 0 && (
             <Box>
-              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+              <Divider sx={{ mb: 2 }} />
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
                 <PriorityHigh fontSize="small" color="action" />
-                <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                  By priority:
+                <Typography variant="subtitle2" fontWeight="medium" color="text.secondary">
+                  By Priority
                 </Typography>
+              </Box>
+              
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {Object.entries(counts.by_priority)
-                  .filter(([priority]) => priority !== 'NORMAL')
+                  .filter(([priority]) => priority !== 'NORMAL' || counts.by_priority[priority] > 0)
                   .sort(([, a], [, b]) => b - a)
                   .map(([priority, count]) => (
                     <Chip
@@ -163,16 +198,17 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
               </Stack>
             </Box>
           )}
-        </Stack>
 
-        {/* Empty State */}
-        {counts.total === 0 && (
-          <Box display="flex" alignItems="center" justifyContent="center" py={2}>
-            <Typography variant="body2" color="text.secondary">
-              No notifications to display
-            </Typography>
-          </Box>
-        )}
+          {/* Empty State */}
+          {counts.total === 0 && (
+            <Box textAlign="center" py={2}>
+              <Notifications sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
+              <Typography variant="body2" color="text.secondary">
+                No notifications to display
+              </Typography>
+            </Box>
+          )}
+        </Stack>
       </CardContent>
     </Card>
   );

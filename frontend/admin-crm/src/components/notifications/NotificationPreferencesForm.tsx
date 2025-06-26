@@ -21,6 +21,8 @@ import {
   AccordionDetails,
   Chip,
   Stack,
+  Paper,
+  Grid,
 } from '@mui/material';
 import {
   ExpandMore,
@@ -31,6 +33,9 @@ import {
   Notifications,
   Schedule,
   Block,
+  Settings,
+  NotificationsActive,
+  NotificationsOff,
 } from '@mui/icons-material';
 import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -38,7 +43,6 @@ import { useNotificationPreferences, useNotificationTypes } from '../../hooks/us
 import type {
   NotificationPreference,
   UpdateNotificationPreferenceData,
-  DigestFrequency,
 } from '../../types/notifications.types';
 import { NOTIFICATION_CATEGORIES, DIGEST_FREQUENCIES } from '../../types/notifications.types';
 
@@ -61,11 +65,9 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
     resetToDefaults,
     isUpdatingPreferences,
     isResettingPreferences,
-    useDigestFrequencies,
   } = useNotificationPreferences();
 
   const { notificationTypes } = useNotificationTypes({ is_active: true });
-  const { data: digestFrequencies = [] } = useDigestFrequencies();
 
   // Initialize form data
   useEffect(() => {
@@ -166,63 +168,69 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
     setHasChanges(false);
   };
 
-  const renderCategoryPreferences = (category: string, label: string) => {
+  const renderCategoryPreferences = (category: string, label: string, icon: React.ReactNode) => {
     const categoryKey = category.toLowerCase();
     return (
-      <Box key={category} sx={{ mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          {label}
-        </Typography>
-        <Stack direction="row" spacing={3}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData[`${categoryKey}_email` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
-                onChange={(e) => handleFieldChange(`${categoryKey}_email` as keyof UpdateNotificationPreferenceData, e.target.checked)}
-                disabled={!formData.email_enabled}
-              />
-            }
-            label={
-              <Box display="flex" alignItems="center" gap={1}>
-                <Email fontSize="small" />
-                Email
-              </Box>
-            }
-          />
+      <Card key={category} variant="outlined" sx={{ mb: 2 }}>
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            {icon}
+            <Typography variant="h6" fontWeight="medium">
+              {label}
+            </Typography>
+          </Box>
           
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData[`${categoryKey}_sms` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
-                onChange={(e) => handleFieldChange(`${categoryKey}_sms` as keyof UpdateNotificationPreferenceData, e.target.checked)}
-                disabled={!formData.sms_enabled}
-              />
-            }
-            label={
-              <Box display="flex" alignItems="center" gap={1}>
-                <Sms fontSize="small" />
-                SMS
-              </Box>
-            }
-          />
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData[`${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
-                onChange={(e) => handleFieldChange(`${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData, e.target.checked)}
-                disabled={!formData.in_app_enabled}
-              />
-            }
-            label={
-              <Box display="flex" alignItems="center" gap={1}>
-                <Notifications fontSize="small" />
-                In-App
-              </Box>
-            }
-          />
-        </Stack>
-      </Box>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData[`${categoryKey}_email` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
+                  onChange={(e) => handleFieldChange(`${categoryKey}_email` as keyof UpdateNotificationPreferenceData, e.target.checked)}
+                  disabled={!formData.email_enabled}
+                />
+              }
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Email fontSize="small" />
+                  <Typography variant="body2">Email</Typography>
+                </Box>
+              }
+            />
+            
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData[`${categoryKey}_sms` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
+                  onChange={(e) => handleFieldChange(`${categoryKey}_sms` as keyof UpdateNotificationPreferenceData, e.target.checked)}
+                  disabled={!formData.sms_enabled}
+                />
+              }
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Sms fontSize="small" />
+                  <Typography variant="body2">SMS</Typography>
+                </Box>
+              }
+            />
+            
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData[`${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
+                  onChange={(e) => handleFieldChange(`${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData, e.target.checked)}
+                  disabled={!formData.in_app_enabled}
+                />
+              }
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Notifications fontSize="small" />
+                  <Typography variant="body2">In-App</Typography>
+                </Box>
+              }
+            />
+          </Stack>
+        </CardContent>
+      </Card>
     );
   };
 
@@ -239,9 +247,17 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
       <Box component="form" onSubmit={handleSubmit}>
         {/* Header */}
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-          <Typography variant="h5" fontWeight="bold">
-            Notification Preferences
-          </Typography>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Settings color="primary" />
+            <Box>
+              <Typography variant="h5" fontWeight="bold">
+                Notification Preferences
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Configure how and when you receive notifications
+              </Typography>
+            </Box>
+          </Box>
           
           <Stack direction="row" spacing={2}>
             <Button
@@ -268,58 +284,67 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
           {/* Global Settings */}
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Global Delivery Methods
-              </Typography>
+              <Box display="flex" alignItems="center" gap={2} mb={2}>
+                <NotificationsActive color="primary" />
+                <Typography variant="h6" fontWeight="bold">
+                  Global Delivery Methods
+                </Typography>
+              </Box>
               <Typography variant="body2" color="text.secondary" paragraph>
                 Control which delivery methods are available for notifications
               </Typography>
               
-              <Stack direction="row" spacing={3}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.email_enabled ?? true}
-                      onChange={(e) => handleFieldChange('email_enabled', e.target.checked)}
-                    />
-                  }
-                  label={
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Email fontSize="small" />
-                      Email Notifications
-                    </Box>
-                  }
-                />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
+                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.email_enabled ? 'primary.50' : 'grey.50', flex: 1 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.email_enabled ?? true}
+                        onChange={(e) => handleFieldChange('email_enabled', e.target.checked)}
+                      />
+                    }
+                    label={
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Email fontSize="small" />
+                        <Typography variant="body2" fontWeight="medium">Email Notifications</Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
                 
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.sms_enabled ?? false}
-                      onChange={(e) => handleFieldChange('sms_enabled', e.target.checked)}
-                    />
-                  }
-                  label={
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Sms fontSize="small" />
-                      SMS Notifications
-                    </Box>
-                  }
-                />
+                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.sms_enabled ? 'warning.50' : 'grey.50', flex: 1 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.sms_enabled ?? false}
+                        onChange={(e) => handleFieldChange('sms_enabled', e.target.checked)}
+                      />
+                    }
+                    label={
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Sms fontSize="small" />
+                        <Typography variant="body2" fontWeight="medium">SMS Notifications</Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
                 
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.in_app_enabled ?? true}
-                      onChange={(e) => handleFieldChange('in_app_enabled', e.target.checked)}
-                    />
-                  }
-                  label={
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Notifications fontSize="small" />
-                      In-App Notifications
-                    </Box>
-                  }
-                />
+                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.in_app_enabled ? 'success.50' : 'grey.50', flex: 1 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.in_app_enabled ?? true}
+                        onChange={(e) => handleFieldChange('in_app_enabled', e.target.checked)}
+                      />
+                    }
+                    label={
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Notifications fontSize="small" />
+                        <Typography variant="body2" fontWeight="medium">In-App Notifications</Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
               </Stack>
             </CardContent>
           </Card>
@@ -327,17 +352,22 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
           {/* Category Preferences */}
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
                 Notification Categories
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
                 Configure delivery methods for different types of notifications
               </Typography>
               
-              <Stack spacing={3}>
-                {NOTIFICATION_CATEGORIES.map((category) =>
-                  renderCategoryPreferences(category.value, category.label)
-                )}
+              <Stack spacing={2}>
+                {renderCategoryPreferences('SYSTEM', 'System Updates', <Settings color="action" />)}
+                {renderCategoryPreferences('EVENT', 'Event Management', <Schedule color="action" />)}
+                {renderCategoryPreferences('TASK', 'Task Assignments', <Notifications color="action" />)}
+                {renderCategoryPreferences('PAYMENT', 'Payment Processing', <Notifications color="action" />)}
+                {renderCategoryPreferences('CLIENT', 'Client Management', <Notifications color="action" />)}
+                {renderCategoryPreferences('CONTRACT', 'Contract Updates', <Notifications color="action" />)}
+                {renderCategoryPreferences('WORKFLOW', 'Workflow Progress', <Notifications color="action" />)}
+                {renderCategoryPreferences('COMMUNICATION', 'Communication Alerts', <Email color="action" />)}
               </Stack>
             </CardContent>
           </Card>
@@ -345,13 +375,16 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
           {/* Advanced Settings */}
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
                 Advanced Settings
               </Typography>
               
               <Stack spacing={3}>
                 {/* Digest Frequency */}
                 <Box>
+                  <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                    Digest Frequency
+                  </Typography>
                   <FormControl size="small" sx={{ minWidth: 200 }}>
                     <InputLabel>Digest Frequency</InputLabel>
                     <Select
@@ -371,8 +404,17 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                   </Typography>
                 </Box>
 
+                <Divider />
+
                 {/* Quiet Hours */}
                 <Box>
+                  <Box display="flex" alignItems="center" gap={1} mb={2}>
+                    <Schedule color="primary" />
+                    <Typography variant="subtitle1" fontWeight="medium">
+                      Quiet Hours
+                    </Typography>
+                  </Box>
+                  
                   <FormControlLabel
                     control={
                       <Switch
@@ -380,17 +422,13 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                         onChange={(e) => handleFieldChange('quiet_hours_enabled', e.target.checked)}
                       />
                     }
-                    label={
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Schedule fontSize="small" />
-                        Enable Quiet Hours
-                      </Box>
-                    }
+                    label="Enable Quiet Hours"
+                    sx={{ mb: 2 }}
                   />
                   
                   {formData.quiet_hours_enabled && (
-                    <Box sx={{ mt: 2 }}>
-                      <Stack direction="row" spacing={2} alignItems="center">
+                    <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
                         <TimePicker
                           label="Start Time"
                           value={quietHoursStart}
@@ -400,7 +438,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                           }}
                         />
                         
-                        <Typography variant="body2">to</Typography>
+                        <Typography variant="body2" color="text.secondary">to</Typography>
                         
                         <TimePicker
                           label="End Time"
@@ -414,7 +452,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                         Notifications will not be sent during these hours
                       </Typography>
-                    </Box>
+                    </Paper>
                   )}
                 </Box>
               </Stack>
@@ -447,25 +485,28 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                 
                 <Stack spacing={1}>
                   {notificationTypes.map((type) => (
-                    <FormControlLabel
-                      key={type.id}
-                      control={
-                        <Switch
-                          checked={!formData.disabled_types?.includes(type.id)}
-                          onChange={(e) => handleDisabledTypesChange(type.id, !e.target.checked)}
+                    <Card key={type.id} variant="outlined" sx={{ bgcolor: 'grey.50' }}>
+                      <CardContent sx={{ py: 1.5 }}>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={!formData.disabled_types?.includes(type.id)}
+                              onChange={(e) => handleDisabledTypesChange(type.id, !e.target.checked)}
+                            />
+                          }
+                          label={
+                            <Box>
+                              <Typography variant="body2" fontWeight="medium">
+                                {type.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {type.description}
+                              </Typography>
+                            </Box>
+                          }
                         />
-                      }
-                      label={
-                        <Box>
-                          <Typography variant="body2" fontWeight="medium">
-                            {type.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {type.description}
-                          </Typography>
-                        </Box>
-                      }
-                    />
+                      </CardContent>
+                    </Card>
                   ))}
                 </Stack>
               </AccordionDetails>
@@ -474,7 +515,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
         </Stack>
 
         {hasChanges && (
-          <Alert severity="info" sx={{ mt: 3 }}>
+          <Alert severity="info" sx={{ mt: 3 }} icon={<Save />}>
             You have unsaved changes. Click "Save Changes" to apply your preferences.
           </Alert>
         )}

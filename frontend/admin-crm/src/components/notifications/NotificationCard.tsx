@@ -12,8 +12,9 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  Link,
   useTheme,
+  Stack,
+  Tooltip,
 } from '@mui/material';
 import {
   MoreVert,
@@ -22,6 +23,9 @@ import {
   Delete,
   OpenInNew,
   Circle,
+  Schedule,
+  Person,
+  Notifications as NotificationIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { Notification } from '../../types/notifications.types';
@@ -109,18 +113,41 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     }
   };
 
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'SYSTEM': return <NotificationIcon fontSize="small" />;
+      case 'EVENT': return <Schedule fontSize="small" />;
+      case 'TASK': return <NotificationIcon fontSize="small" />;
+      case 'PAYMENT': return <NotificationIcon fontSize="small" />;
+      case 'CLIENT': return <Person fontSize="small" />;
+      case 'CONTRACT': return <NotificationIcon fontSize="small" />;
+      case 'WORKFLOW': return <NotificationIcon fontSize="small" />;
+      case 'COMMUNICATION': return <NotificationIcon fontSize="small" />;
+      default: return <NotificationIcon fontSize="small" />;
+    }
+  };
+
   return (
     <Card
-      elevation={notification.is_read ? 1 : 2}
+      elevation={notification.is_read ? 1 : 3}
       sx={{
         cursor: notification.action_url ? 'pointer' : 'default',
-        transition: 'all 0.2s',
-        bgcolor: notification.is_read ? 'background.paper' : 'primary.light',
+        transition: 'all 0.2s ease-in-out',
+        bgcolor: notification.is_read ? 'background.paper' : 'background.paper',
         borderLeft: `4px solid ${getCategoryColor(notification.notification_type_details?.category || 'SYSTEM')}`,
         '&:hover': {
-          elevation: 3,
+          elevation: 4,
           transform: 'translateY(-1px)',
+          boxShadow: theme.shadows[4],
         },
+        ...(notification.is_read 
+          ? { opacity: 0.8 }
+          : { 
+              border: '1px solid',
+              borderColor: 'primary.light',
+              bgcolor: 'primary.50'
+            }
+        ),
       }}
       onClick={handleCardClick}
     >
@@ -138,11 +165,21 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 />
               )}
 
+              <Box 
+                sx={{ 
+                  color: getCategoryColor(notification.notification_type_details?.category || 'SYSTEM'),
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                {getCategoryIcon(notification.notification_type_details?.category || 'SYSTEM')}
+              </Box>
+
               <Typography
                 variant={compact ? 'body2' : 'subtitle2'}
-                fontWeight={notification.is_read ? 'normal' : 'bold'}
+                fontWeight={notification.is_read ? 'medium' : 'bold'}
                 sx={{
-                  color: notification.is_read ? 'text.primary' : 'primary.contrastText',
+                  color: notification.is_read ? 'text.primary' : 'text.primary',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -179,33 +216,36 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             {/* Content */}
             <Typography
               variant="body2"
-              color={notification.is_read ? 'text.secondary' : 'primary.contrastText'}
+              color={notification.is_read ? 'text.secondary' : 'text.primary'}
               sx={{
                 mb: 1,
                 overflow: 'hidden',
                 display: '-webkit-box',
                 WebkitLineClamp: compact ? 2 : 3,
                 WebkitBoxOrient: 'vertical',
-                opacity: notification.is_read ? 0.8 : 1,
+                lineHeight: 1.4,
               }}
             >
               {notification.content}
             </Typography>
 
             {/* Footer */}
-            <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box display="flex" alignItems="center" gap={2}>
-                <Typography
-                  variant="caption"
-                  color={notification.is_read ? 'text.secondary' : 'primary.contrastText'}
-                  sx={{ opacity: 0.8 }}
-                >
-                  {notification.time_since_created}
-                </Typography>
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  <Schedule fontSize="small" sx={{ color: 'text.secondary', fontSize: 14 }} />
+                  <Typography
+                    variant="caption"
+                    color={notification.is_read ? 'text.secondary' : 'text.secondary'}
+                    sx={{ opacity: 0.8 }}
+                  >
+                    {notification.time_since_created}
+                  </Typography>
+                </Box>
 
                 {/* Delivery Status */}
                 {Array.isArray(notification.delivered_via) && notification.delivered_via.length > 0 && (
-                  <Box display="flex" alignItems="center" gap={0.5}>
+                  <Stack direction="row" spacing={0.5}>
                     {notification.delivered_via.map((method) => (
                       <Chip
                         key={method}
@@ -222,26 +262,34 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         }}
                       />
                     ))}
-                  </Box>
+                  </Stack>
                 )}
               </Box>
 
               {notification.action_url && (
-                <Typography
-                  variant="caption"
-                  color="primary"
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    opacity: 0.8,
-                  }}
-                >
-                  <OpenInNew sx={{ fontSize: 12 }} />
-                  View
-                </Typography>
+                <Tooltip title="Click to view details">
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={0.5}
+                    sx={{
+                      color: 'primary.main',
+                      opacity: 0.8,
+                      '&:hover': { opacity: 1 }
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="primary"
+                      fontWeight="medium"
+                    >
+                      View
+                    </Typography>
+                    <OpenInNew sx={{ fontSize: 12 }} />
+                  </Box>
+                </Tooltip>
               )}
-            </Box>
+            </Stack>
           </Box>
 
           {/* Actions Menu */}
@@ -250,7 +298,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
               size="small"
               onClick={handleMenuOpen}
               sx={{
-                color: notification.is_read ? 'text.secondary' : 'primary.contrastText',
+                color: notification.is_read ? 'text.secondary' : 'text.secondary',
                 opacity: 0.7,
                 '&:hover': { opacity: 1 },
               }}
@@ -263,6 +311,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
               open={Boolean(menuAnchor)}
               onClose={handleMenuClose}
               onClick={(e) => e.stopPropagation()}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
               {notification.is_read ? (
                 <MenuItem onClick={handleMarkUnread}>

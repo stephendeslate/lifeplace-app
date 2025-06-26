@@ -13,12 +13,16 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  Paper,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
   Info,
   Refresh,
   BugReport,
+  Settings,
+  CheckCircle,
+  Warning,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -35,14 +39,11 @@ export const Notifications: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
   const { user } = useAuth();
   const [isTestingNotification, setIsTestingNotification] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const {
     preferences,
     isLoadingPreferences,
-    updatePreferences,
-    resetToDefaults,
-    isUpdatingPreferences,
-    isResettingPreferences,
     refetchPreferences,
   } = useNotificationPreferences();
 
@@ -69,6 +70,7 @@ export const Notifications: React.FC = () => {
     if (!user?.id) return;
     
     setIsTestingNotification(true);
+    setTestResult(null);
     
     try {
       const testData: CreateNotificationData = {
@@ -85,6 +87,11 @@ export const Notifications: React.FC = () => {
       
       await createNotification(testData);
       
+      setTestResult({
+        success: true,
+        message: 'Test notification sent successfully! Check your notifications.'
+      });
+      
       // Refresh counts after creating test notification
       setTimeout(() => {
         refetchCounts();
@@ -92,6 +99,10 @@ export const Notifications: React.FC = () => {
       
     } catch (error) {
       console.error('Failed to send test notification:', error);
+      setTestResult({
+        success: false,
+        message: 'Failed to send test notification. Please try again.'
+      });
     } finally {
       setIsTestingNotification(false);
     }
@@ -127,6 +138,11 @@ export const Notifications: React.FC = () => {
                 <IconButton
                   onClick={handleRefresh}
                   disabled={isLoading}
+                  color="primary"
+                  sx={{ 
+                    bgcolor: 'primary.50',
+                    '&:hover': { bgcolor: 'primary.100' }
+                  }}
                 >
                   <Refresh />
                 </IconButton>
@@ -144,6 +160,18 @@ export const Notifications: React.FC = () => {
             </Button>
           </Stack>
         </Box>
+
+        {/* Test Result Alert */}
+        {testResult && (
+          <Alert 
+            severity={testResult.success ? 'success' : 'error'} 
+            sx={{ mb: 2 }}
+            icon={testResult.success ? <CheckCircle /> : <Warning />}
+            onClose={() => setTestResult(null)}
+          >
+            {testResult.message}
+          </Alert>
+        )}
 
         {/* Info Alert */}
         <Alert 
@@ -163,10 +191,13 @@ export const Notifications: React.FC = () => {
         {counts && (
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="between" mb={2}>
-                <Typography variant="h6" fontWeight="bold">
-                  Current Notifications
-                </Typography>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <NotificationsIcon color="primary" />
+                  <Typography variant="h6" fontWeight="bold">
+                    Current Notifications
+                  </Typography>
+                </Box>
                 
                 <Stack direction="row" spacing={1}>
                   <Chip
@@ -196,9 +227,12 @@ export const Notifications: React.FC = () => {
         {notificationTypes.length > 0 && (
           <Card>
             <CardContent>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Available Notification Types
-              </Typography>
+              <Box display="flex" alignItems="center" gap={2} mb={2}>
+                <Settings color="primary" />
+                <Typography variant="h6" fontWeight="bold">
+                  Available Notification Types
+                </Typography>
+              </Box>
               <Typography variant="body2" color="text.secondary" paragraph>
                 Your system has {notificationTypes.length} different types of notifications configured.
               </Typography>
@@ -263,16 +297,42 @@ export const Notifications: React.FC = () => {
               How Notifications Work
             </Typography>
             
-            <Stack spacing={2}>
+            <Stack spacing={3}>
               <Box>
                 <Typography variant="subtitle2" fontWeight="medium" gutterBottom>
                   Delivery Methods
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  • <strong>In-App:</strong> Notifications appear in your dashboard and notification center<br/>
-                  • <strong>Email:</strong> Notifications sent to your registered email address<br/>
-                  • <strong>SMS:</strong> Text messages sent to your phone number (if configured)
-                </Typography>
+                <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  <Stack spacing={1}>
+                    <Box display="flex" alignItems="flex-start" gap={2}>
+                      <NotificationsIcon fontSize="small" color="primary" sx={{ mt: 0.5 }} />
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">In-App Notifications</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Notifications appear in your dashboard and notification center
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box display="flex" alignItems="flex-start" gap={2}>
+                      <NotificationsIcon fontSize="small" color="warning" sx={{ mt: 0.5 }} />
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">Email Notifications</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Notifications sent to your registered email address
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box display="flex" alignItems="flex-start" gap={2}>
+                      <NotificationsIcon fontSize="small" color="success" sx={{ mt: 0.5 }} />
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">SMS Notifications</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Text messages sent to your phone number (if configured)
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Stack>
+                </Paper>
               </Box>
 
               <Divider />
