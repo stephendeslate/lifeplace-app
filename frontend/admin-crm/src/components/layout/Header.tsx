@@ -30,6 +30,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
+import { NotificationBadge } from '../notifications/NotificationBadge';
 
 export const Header: React.FC = () => {
   const theme = useTheme();
@@ -219,8 +220,11 @@ export const Header: React.FC = () => {
           )}
         </Box>
 
-        {/* Right Section: User Menu */}
+        {/* Right Section: Notifications + User Menu */}
         <Box display="flex" alignItems="center" gap={1}>
+          {/* Notifications */}
+          <NotificationBadge />
+          
           {/* User Role Chip */}
           {user?.role && !isMobile && (
             <Chip
