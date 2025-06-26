@@ -192,7 +192,6 @@ export const useNotificationTypes = (filters?: {
   is_active?: boolean;
   is_system?: boolean;
 }) => {
-  const queryClient = useQueryClient();
 
   // Queries
   const {
