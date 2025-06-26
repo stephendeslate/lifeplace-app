@@ -45,15 +45,15 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <ToastProvider>
-            <AuthProvider>
-              <LayoutProvider>
+          <AuthProvider>
+            <LayoutProvider>
+              <ToastProvider>
                 {children}
                 {/* Only show React Query devtools in development */}
                 {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-              </LayoutProvider>
-            </AuthProvider>
-          </ToastProvider>
+              </ToastProvider>
+            </LayoutProvider>
+          </AuthProvider>
         </LocalizationProvider>
       </ThemeProvider>
     </QueryClientProvider>

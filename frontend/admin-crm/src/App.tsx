@@ -1,5 +1,5 @@
 // frontend/admin-crm/src/App.tsx
-// UPDATED: Added calendar route
+// UPDATED: Added notifications route
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -12,16 +12,17 @@ import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
 import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
 import { CommunicationRecords } from './pages/records';
+import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
 
 // Settings imports
 import { SettingsLayout } from './pages/settings';
 import { Settings } from './pages/settings';
 import { AccountSettings, AdminUsers } from './pages/settings/account';
+import { Notifications } from './pages/settings/account/Notifications';
 import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
-import { CommunicationNotifications } from './pages/settings/account/Notifications';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
 
 // Protected Route Component
@@ -139,7 +140,7 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Calendar Route - NEW */}
+      {/* Calendar Route */}
       <Route
         path="/calendar"
         element={
@@ -177,6 +178,16 @@ const AppRouter: React.FC = () => {
         }
       />
 
+      {/* Notifications Route */}
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Settings Routes */}
       <Route
         path="/settings"
@@ -208,7 +219,7 @@ const AppRouter: React.FC = () => {
         path="/settings/account/notifications"
         element={
           <SettingsRoute>
-            <CommunicationNotifications />
+            <Notifications />
           </SettingsRoute>
         }
       />
@@ -363,18 +374,6 @@ const AppRouter: React.FC = () => {
           <ProtectedRoute>
             <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
               <Typography variant="h4">Organizations</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/notifications"
-        element={
-          <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Notifications</Typography>
               <Typography color="text.secondary">Coming soon...</Typography>
             </Box>
           </ProtectedRoute>
