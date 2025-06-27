@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/components/payments/index.ts
 
-export { PaymentGatewayTable } from './PaymentGatewayTable';
+export { PaymentForm } from './PaymentForm';
 export { PaymentGatewayFormDialog } from './PaymentGatewayFormDialog';
-export { TaxRateTable } from './TaxRateTable';
+export { PaymentGatewayTable } from './PaymentGatewayTable';
 export { TaxRateFormDialog } from './TaxRateFormDialog';
+export { TaxRateTable } from './TaxRateTable';
