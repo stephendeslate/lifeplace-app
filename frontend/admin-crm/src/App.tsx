@@ -24,6 +24,7 @@ import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } 
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
+import { PaymentsOverview } from './pages/payments';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -167,6 +168,17 @@ const AppRouter: React.FC = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* Payments Route */}
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute>
+            <PaymentsOverview />
+          </ProtectedRoute>
+        }
+      />
+
 
       {/* Records Route */}
       <Route

@@ -74,7 +74,6 @@ export const navigationConfig: NavigationGroup[] = [
         path: '/payments',
         icon: Payment,
         roles: ['ADMIN'],
-        disabled: true, // Coming soon
       },
     ],
     roles: ['ADMIN'],
