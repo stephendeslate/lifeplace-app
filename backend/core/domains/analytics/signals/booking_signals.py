@@ -41,6 +41,9 @@ def track_booking_session_events(sender, instance, created, **kwargs):
             logger.debug(f"Could not track funnel event: {e}")
     
     elif instance.is_completed and not getattr(instance, '_completion_tracked', False):
+        # Calculate total price from booking session data
+        total_price = instance.calculate_total_price()
+        
         # Track completion
         EventTrackingService.track_event(
             event_name='booking_session_completed',
@@ -53,10 +56,10 @@ def track_booking_session_events(sender, instance, created, **kwargs):
             event_data={
                 'booking_flow_id': instance.booking_flow.id,
                 'booking_flow_name': instance.booking_flow.name,
-                'total_price': str(instance.total_price),
+                'total_price': str(total_price),
                 'created_event_id': instance.created_event.id if instance.created_event else None,
             },
-            numeric_value=instance.total_price
+            numeric_value=total_price
         )
         
         # Track funnel event
@@ -68,7 +71,7 @@ def track_booking_session_events(sender, instance, created, **kwargs):
                 event_name='booking_completed',
                 event_data={
                     'session_id': str(instance.session_id),
-                    'total_price': str(instance.total_price)
+                    'total_price': str(total_price)
                 }
             )
         except Exception as e:
@@ -114,7 +117,7 @@ def track_booking_flow_events(sender, instance, created, **kwargs):
                 'flow_name': instance.name,
                 'event_type': instance.event_type.name if instance.event_type else None,
                 'is_active': instance.is_active,
-                'total_steps': instance.total_steps,
+                'total_steps': instance.calculate_total_steps(),
             }
         )
     else:

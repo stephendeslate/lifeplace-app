@@ -18,22 +18,22 @@ def track_event_changes(sender, instance, created, **kwargs):
             source_domain='events',
             source_model='Event',
             source_id=instance.id,
-            user=getattr(instance, 'client', None),
+            user=instance.client,
             event_data={
                 'event_type': instance.event_type.name if instance.event_type else None,
                 'status': instance.status,
                 'total_price': str(instance.total_price) if instance.total_price else None,
                 'start_date': instance.start_date.isoformat() if instance.start_date else None,
+                'event_name': instance.name,
             },
             numeric_value=instance.total_price
         )
         
         # Track funnel event for event creation
         try:
-            funnel = ConversionFunnelService.get_funnel_by_id(1)  # Default business funnel
             ConversionFunnelService.track_funnel_event(
-                funnel_id=1,
-                user=getattr(instance, 'client', None),
+                funnel_id=1,  # Default business funnel
+                user=instance.client,
                 event_name='event_created',
                 event_data={'event_id': instance.id}
             )
@@ -49,11 +49,12 @@ def track_event_changes(sender, instance, created, **kwargs):
                 source_domain='events',
                 source_model='Event',
                 source_id=instance.id,
-                user=getattr(instance, 'client', None),
+                user=instance.client,
                 event_data={
                     'old_status': old_status,
                     'new_status': instance.status,
                     'event_type': instance.event_type.name if instance.event_type else None,
+                    'event_name': instance.name,
                 }
             )
 
@@ -82,10 +83,11 @@ def track_task_events(sender, instance, created, **kwargs):
             user=instance.assigned_to,
             event_data={
                 'event_id': instance.event.id,
-                'task_name': instance.name,
+                'task_title': instance.title,
                 'priority': instance.priority,
                 'due_date': instance.due_date.isoformat() if instance.due_date else None,
                 'status': instance.status,
+                'is_visible_to_client': instance.is_visible_to_client,
             }
         )
     else:
@@ -97,12 +99,35 @@ def track_task_events(sender, instance, created, **kwargs):
                 source_domain='events',
                 source_model='EventTask',
                 source_id=instance.id,
-                user=instance.assigned_to,
+                user=instance.completed_by or instance.assigned_to,
                 event_data={
                     'event_id': instance.event.id,
-                    'task_name': instance.name,
+                    'task_title': instance.title,
                     'priority': instance.priority,
                     'completion_notes': instance.completion_notes or '',
+                    'assigned_to': instance.assigned_to.email if instance.assigned_to else None,
                 }
             )
             instance._completion_tracked = True
+
+
+@receiver(post_save, sender='events.EventFeedback')
+def track_feedback_events(sender, instance, created, **kwargs):
+    """Track event feedback submission"""
+    if created:
+        EventTrackingService.track_event(
+            event_name='event_feedback_submitted',
+            event_category='BUSINESS_EVENT',
+            source_domain='events',
+            source_model='EventFeedback',
+            source_id=instance.id,
+            user=instance.submitted_by,
+            event_data={
+                'event_id': instance.event.id,
+                'overall_rating': instance.overall_rating,
+                'is_public': instance.is_public,
+                'has_testimonial': bool(instance.testimonial),
+                'comment_length': len(instance.comments) if instance.comments else 0,
+            },
+            numeric_value=instance.overall_rating
+        )

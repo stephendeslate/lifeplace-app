@@ -18,12 +18,14 @@ def track_payment_events(sender, instance, created, **kwargs):
             source_domain='payments',
             source_model='Payment',
             source_id=instance.id,
-            user=getattr(instance.event, 'client', None) if instance.event else None,
+            user=instance.event.client if instance.event else None,
             event_data={
                 'amount': str(instance.amount),
                 'status': instance.status,
                 'payment_method': instance.payment_method.type if instance.payment_method else None,
                 'event_id': instance.event.id if instance.event else None,
+                'payment_number': instance.payment_number,
+                'due_date': instance.due_date.isoformat() if instance.due_date else None,
             },
             numeric_value=instance.amount
         )
@@ -38,11 +40,13 @@ def track_payment_events(sender, instance, created, **kwargs):
                     source_domain='payments',
                     source_model='Payment',
                     source_id=instance.id,
-                    user=getattr(instance.event, 'client', None) if instance.event else None,
+                    user=instance.event.client if instance.event else None,
                     event_data={
                         'amount': str(instance.amount),
                         'payment_method': instance.payment_method.type if instance.payment_method else None,
                         'event_id': instance.event.id if instance.event else None,
+                        'paid_on': instance.paid_on.isoformat() if instance.paid_on else None,
+                        'reference_number': instance.reference_number,
                     },
                     numeric_value=instance.amount
                 )
@@ -51,7 +55,7 @@ def track_payment_events(sender, instance, created, **kwargs):
                 try:
                     ConversionFunnelService.track_funnel_event(
                         funnel_id=1,  # Default business funnel
-                        user=getattr(instance.event, 'client', None) if instance.event else None,
+                        user=instance.event.client if instance.event else None,
                         event_name='payment_completed',
                         event_data={
                             'payment_id': instance.id,
@@ -68,7 +72,7 @@ def track_payment_events(sender, instance, created, **kwargs):
                     source_domain='payments',
                     source_model='Payment',
                     source_id=instance.id,
-                    user=getattr(instance.event, 'client', None) if instance.event else None,
+                    user=instance.event.client if instance.event else None,
                     event_data={
                         'old_status': old_status,
                         'new_status': instance.status,
@@ -99,12 +103,13 @@ def track_refund_events(sender, instance, created, **kwargs):
             source_domain='payments',
             source_model='Refund',
             source_id=instance.id,
-            user=getattr(instance.payment.event, 'client', None) if instance.payment.event else None,
+            user=instance.payment.event.client if instance.payment.event else None,
             event_data={
                 'amount': str(instance.amount),
                 'reason': instance.reason,
                 'payment_id': instance.payment.id,
                 'status': instance.status,
+                'refunded_by': instance.refunded_by.email if instance.refunded_by else None,
             },
             numeric_value=instance.amount
         )
@@ -117,7 +122,7 @@ def track_refund_events(sender, instance, created, **kwargs):
                 source_domain='payments',
                 source_model='Refund',
                 source_id=instance.id,
-                user=getattr(instance.payment.event, 'client', None) if instance.payment.event else None,
+                user=instance.payment.event.client if instance.payment.event else None,
                 event_data={
                     'amount': str(instance.amount),
                     'reason': instance.reason,
@@ -127,3 +132,25 @@ def track_refund_events(sender, instance, created, **kwargs):
                 numeric_value=instance.amount
             )
             instance._completion_tracked = True
+
+
+@receiver(post_save, sender='payments.Invoice')
+def track_invoice_events(sender, instance, created, **kwargs):
+    """Track invoice creation and status changes"""
+    if created:
+        EventTrackingService.track_event(
+            event_name='invoice_created',
+            event_category='BUSINESS_EVENT',
+            source_domain='payments',
+            source_model='Invoice',
+            source_id=instance.id,
+            user=instance.client,
+            event_data={
+                'invoice_id': instance.invoice_id,
+                'total_amount': str(instance.total_amount),
+                'event_id': instance.event.id if instance.event else None,
+                'due_date': instance.due_date.isoformat() if instance.due_date else None,
+                'status': instance.status,
+            },
+            numeric_value=instance.total_amount
+        )
