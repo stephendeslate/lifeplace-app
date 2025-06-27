@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'core.domains.bookingflow',
     'core.domains.notes',
     'core.domains.notifications',
+    'core.domains.analytics',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
