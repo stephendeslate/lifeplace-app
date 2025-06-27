@@ -8,7 +8,7 @@ from ..services import EventTrackingService
 logger = logging.getLogger(__name__)
 
 
-@receiver(post_save, sender='communications.Communication')
+@receiver(post_save, sender='communications.CommunicationRecord')
 def track_communication_events(sender, instance, created, **kwargs):
     """Track communication events"""
     if created:
@@ -16,14 +16,15 @@ def track_communication_events(sender, instance, created, **kwargs):
             event_name='communication_sent',
             event_category='SYSTEM_EVENT',
             source_domain='communications',
-            source_model='Communication',
+            source_model='CommunicationRecord',
             source_id=instance.id,
-            user=getattr(instance, 'recipient', None),
+            user=instance.client,
             event_data={
                 'channel': instance.channel,
-                'template_name': instance.template.name if instance.template else None,
-                'recipient_email': instance.recipient_email,
+                'template_name': instance.template_name,
+                'recipient': instance.recipient,
                 'subject': instance.subject,
-                'status': instance.status,
+                'delivery_status': instance.delivery_status,
+                'category': instance.category,
             }
         )

@@ -46,7 +46,7 @@ def track_user_events(sender, instance, created, **kwargs):
         changes = {}
         
         # Check for field changes
-        fields_to_track = ['first_name', 'last_name', 'email', 'phone', 'role']
+        fields_to_track = ['first_name', 'last_name', 'email', 'role']
         for field in fields_to_track:
             old_value = old_data.get(field)
             new_value = getattr(instance, field, None)
@@ -78,7 +78,6 @@ def store_user_previous_data(sender, instance, **kwargs):
                 'first_name': previous.first_name,
                 'last_name': previous.last_name,
                 'email': previous.email,
-                'phone': getattr(previous, 'phone', None),
                 'role': previous.role,
             }
         except sender.DoesNotExist:

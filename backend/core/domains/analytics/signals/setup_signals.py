@@ -44,6 +44,7 @@ def _create_default_metrics():
             'source_model': 'Event',
             'aggregation_period': 'DAILY',
             'display_format': 'number',
+            'is_active': True,
         },
         {
             'name': 'Event Conversion Rate',
@@ -57,6 +58,7 @@ def _create_default_metrics():
             },
             'aggregation_period': 'DAILY',
             'display_format': 'percentage',
+            'is_active': True,
         },
         {
             'name': 'Total Revenue',
@@ -68,6 +70,7 @@ def _create_default_metrics():
             'filters': {'status': 'COMPLETED'},
             'aggregation_period': 'DAILY',
             'display_format': 'currency',
+            'is_active': True,
         },
         {
             'name': 'Average Payment Value',
@@ -79,6 +82,7 @@ def _create_default_metrics():
             'filters': {'status': 'COMPLETED'},
             'aggregation_period': 'DAILY',
             'display_format': 'currency',
+            'is_active': True,
         },
         {
             'name': 'Booking Conversion Rate',
@@ -92,6 +96,7 @@ def _create_default_metrics():
             },
             'aggregation_period': 'DAILY',
             'display_format': 'percentage',
+            'is_active': True,
         },
         {
             'name': 'New Users',
@@ -101,6 +106,7 @@ def _create_default_metrics():
             'source_model': 'User',
             'aggregation_period': 'DAILY',
             'display_format': 'number',
+            'is_active': True,
         },
         {
             'name': 'Active Booking Sessions',
@@ -115,6 +121,7 @@ def _create_default_metrics():
             'aggregation_period': 'REAL_TIME',
             'is_real_time': True,
             'display_format': 'number',
+            'is_active': True,
         },
         {
             'name': 'Payment Success Rate',
@@ -128,6 +135,35 @@ def _create_default_metrics():
             },
             'aggregation_period': 'DAILY',
             'display_format': 'percentage',
+            'is_active': True,
+        },
+        {
+            'name': 'Quote Acceptance Rate',
+            'description': 'Percentage of quotes that get accepted',
+            'metric_type': 'CONVERSION_RATE',
+            'source_domain': 'sales',
+            'source_model': 'EventQuote',
+            'calculation_rules': {
+                'numerator_filter': {'status': 'ACCEPTED'},
+                'denominator_filter': {}
+            },
+            'aggregation_period': 'DAILY',
+            'display_format': 'percentage',
+            'is_active': True,
+        },
+        {
+            'name': 'Contract Signing Rate',
+            'description': 'Percentage of contracts that get signed',
+            'metric_type': 'CONVERSION_RATE',
+            'source_domain': 'contracts',
+            'source_model': 'EventContract',
+            'calculation_rules': {
+                'numerator_filter': {'status': 'SIGNED'},
+                'denominator_filter': {}
+            },
+            'aggregation_period': 'DAILY',
+            'display_format': 'percentage',
+            'is_active': True,
         },
     ]
     
@@ -153,37 +189,44 @@ def _create_default_funnel():
             {
                 'event_name': 'user_registered',
                 'name': 'User Registration',
-                'description': 'User creates an account'
+                'description': 'User creates an account',
+                'order': 1
             },
             {
                 'event_name': 'booking_session_started',
                 'name': 'Booking Started',
-                'description': 'User starts a booking session'
+                'description': 'User starts a booking session',
+                'order': 2
             },
             {
                 'event_name': 'booking_completed',
                 'name': 'Booking Completed',
-                'description': 'User completes booking flow'
+                'description': 'User completes booking flow',
+                'order': 3
             },
             {
                 'event_name': 'event_created',
                 'name': 'Event Created',
-                'description': 'Event is created from booking'
+                'description': 'Event is created from booking',
+                'order': 4
             },
             {
                 'event_name': 'quote_accepted',
                 'name': 'Quote Accepted',
-                'description': 'Customer accepts quote'
+                'description': 'Customer accepts quote',
+                'order': 5
             },
             {
                 'event_name': 'contract_signed',
                 'name': 'Contract Signed',
-                'description': 'Contract is signed'
+                'description': 'Contract is signed',
+                'order': 6
             },
             {
                 'event_name': 'payment_completed',
                 'name': 'Payment Completed',
-                'description': 'Payment is successfully processed'
+                'description': 'Payment is successfully processed',
+                'order': 7
             }
         ],
         'time_window_hours': 168,  # 7 days
@@ -246,8 +289,9 @@ def _create_default_widgets(dashboard):
     # Get metrics for widgets (with error handling)
     metrics = {}
     metric_names = [
-        'Total Events', 'Total Revenue', 'Event Conversion Rate', 
-        'Booking Conversion Rate', 'New Users', 'Active Booking Sessions'
+        'Total Revenue', 'Total Events', 'Event Conversion Rate', 
+        'Booking Conversion Rate', 'New Users', 'Active Booking Sessions',
+        'Payment Success Rate', 'Quote Acceptance Rate'
     ]
     
     for name in metric_names:
@@ -284,7 +328,7 @@ def _create_default_widgets(dashboard):
             'widget_type': 'METRIC_CARD',
             'title': 'Total Events',
             'size': 'MEDIUM',
-            'position_x': 2,
+            'position_x': 1,
             'position_y': 0,
             'order': 2,
             'time_range': 'last_30_days',
@@ -300,8 +344,8 @@ def _create_default_widgets(dashboard):
             'widget_type': 'GAUGE',
             'title': 'Event Conversion Rate',
             'size': 'MEDIUM',
-            'position_x': 0,
-            'position_y': 1,
+            'position_x': 2,
+            'position_y': 0,
             'order': 3,
             'time_range': 'last_30_days',
             'chart_config': {
@@ -317,8 +361,8 @@ def _create_default_widgets(dashboard):
             'widget_type': 'GAUGE',
             'title': 'Booking Conversion Rate',
             'size': 'MEDIUM',
-            'position_x': 2,
-            'position_y': 1,
+            'position_x': 3,
+            'position_y': 0,
             'order': 4,
             'time_range': 'last_30_days',
             'chart_config': {
@@ -335,12 +379,29 @@ def _create_default_widgets(dashboard):
             'title': 'New Users Over Time',
             'size': 'WIDE',
             'position_x': 0,
-            'position_y': 2,
+            'position_y': 1,
             'order': 5,
             'time_range': 'last_30_days',
             'chart_config': {
                 'line_color': '#3F51B5',
                 'show_dots': True
+            }
+        })
+    
+    if 'Payment Success Rate' in metrics:
+        default_widgets.append({
+            'metric_definition': metrics['Payment Success Rate'],
+            'widget_type': 'GAUGE',
+            'title': 'Payment Success Rate',
+            'size': 'MEDIUM',
+            'position_x': 2,
+            'position_y': 1,
+            'order': 6,
+            'time_range': 'last_30_days',
+            'chart_config': {
+                'min_value': 0,
+                'max_value': 100,
+                'color': '#4CAF50'
             }
         })
     
@@ -351,13 +412,30 @@ def _create_default_widgets(dashboard):
             'title': 'Active Sessions',
             'size': 'MEDIUM',
             'position_x': 3,
-            'position_y': 2,
-            'order': 6,
+            'position_y': 1,
+            'order': 7,
             'time_range': 'real_time',
             'chart_config': {
                 'color': '#F44336',
                 'icon': 'Timeline',
                 'animate': True
+            }
+        })
+    
+    if 'Quote Acceptance Rate' in metrics:
+        default_widgets.append({
+            'metric_definition': metrics['Quote Acceptance Rate'],
+            'widget_type': 'GAUGE',
+            'title': 'Quote Acceptance Rate',
+            'size': 'MEDIUM',
+            'position_x': 0,
+            'position_y': 2,
+            'order': 8,
+            'time_range': 'last_30_days',
+            'chart_config': {
+                'min_value': 0,
+                'max_value': 100,
+                'color': '#795548'
             }
         })
     
@@ -441,5 +519,6 @@ def _create_default_reports():
         if created:
             # Associate first 5 active metrics with the report
             metrics = MetricDefinition.objects.filter(is_active=True)[:5]
-            report.metrics.set(metrics)
+            if metrics:
+                report.metrics.set(metrics)
             logger.info(f"Created report: {report.name}")

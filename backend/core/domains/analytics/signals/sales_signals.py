@@ -18,13 +18,14 @@ def track_quote_events(sender, instance, created, **kwargs):
             source_domain='sales',
             source_model='EventQuote',
             source_id=instance.id,
-            user=getattr(instance.event, 'client', None) if instance.event else None,
+            user=instance.event.client if instance.event else None,
             event_data={
                 'event_id': instance.event.id if instance.event else None,
                 'total_amount': str(instance.total_amount),
                 'status': instance.status,
                 'valid_until': instance.valid_until.isoformat() if instance.valid_until else None,
-                'quote_number': getattr(instance, 'quote_number', None),
+                'version': instance.version,
+                'template_name': instance.template.name if instance.template else None,
             },
             numeric_value=instance.total_amount
         )
@@ -38,12 +39,13 @@ def track_quote_events(sender, instance, created, **kwargs):
                 source_domain='sales',
                 source_model='EventQuote',
                 source_id=instance.id,
-                user=getattr(instance.event, 'client', None) if instance.event else None,
+                user=instance.event.client if instance.event else None,
                 event_data={
                     'old_status': old_status,
                     'new_status': instance.status,
                     'total_amount': str(instance.total_amount),
                     'event_id': instance.event.id if instance.event else None,
+                    'version': instance.version,
                 }
             )
             
@@ -52,7 +54,7 @@ def track_quote_events(sender, instance, created, **kwargs):
                 try:
                     ConversionFunnelService.track_funnel_event(
                         funnel_id=1,  # Default business funnel
-                        user=getattr(instance.event, 'client', None) if instance.event else None,
+                        user=instance.event.client if instance.event else None,
                         event_name='quote_accepted',
                         event_data={
                             'quote_id': instance.id,
@@ -84,10 +86,10 @@ def track_quote_line_item_events(sender, instance, created, **kwargs):
             source_domain='sales',
             source_model='QuoteLineItem',
             source_id=instance.id,
-            user=getattr(instance.quote.event, 'client', None) if instance.quote.event else None,
+            user=instance.quote.event.client if instance.quote.event else None,
             event_data={
                 'quote_id': instance.quote.id,
-                'product_name': instance.product_option.name if instance.product_option else instance.description,
+                'product_name': instance.product.name if instance.product else instance.description,
                 'quantity': instance.quantity,
                 'unit_price': str(instance.unit_price),
                 'total': str(instance.total),
