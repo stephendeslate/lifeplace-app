@@ -6,8 +6,8 @@ import {
   Typography,
   Card,
   CardContent,
-  CardActionArea,
-  Chip,
+  Button,
+  Divider,
 } from '@mui/material';
 import { Settings as SettingsIcon, ChevronRight } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -25,20 +25,8 @@ export const Settings: React.FC = () => {
     ]);
   }, [setBreadcrumbs]);
 
-  const handleCategoryClick = (path: string) => {
+  const handleItemClick = (path: string) => {
     navigate(path);
-  };
-
-  const getImplementationStatus = (groupId: string) => {
-    if (groupId === 'account') {
-      // Account Settings is ready, Admin Users is coming soon
-      return { label: 'Partial', color: 'info' as const };
-    }
-    if (groupId === 'communication') {
-      // Communication templates and records are ready
-      return { label: 'Ready', color: 'success' as const };
-    }
-    return { label: 'Coming Soon', color: 'warning' as const };
   };
 
   return (
@@ -73,17 +61,14 @@ export const Settings: React.FC = () => {
             gap: 3,
           }}
         >
-          {settingsNavigationConfig.map((group) => {
-            const status = getImplementationStatus(group.id);
-            
-            return (
-              <Box 
-                key={group.id}
-                sx={{ 
-                  flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)', lg: '1 1 calc(33.333% - 16px)' },
-                  minWidth: 300,
-                }}
-              >
+          {settingsNavigationConfig.map((group) => (
+            <Box 
+              key={group.id}
+              sx={{ 
+                flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)', lg: '1 1 calc(33.333% - 16px)' },
+                minWidth: 300,
+              }}
+            >
               <Card 
                 elevation={2}
                 sx={{ 
@@ -95,73 +80,73 @@ export const Settings: React.FC = () => {
                   },
                 }}
               >
-                <CardActionArea 
-                  onClick={() => handleCategoryClick(group.items[0]?.path || '/settings')}
-                  sx={{ height: '100%' }}
-                >
-                  <CardContent sx={{ p: 3, height: '100%' }}>
-                    <Box display="flex" flexDirection="column" height="100%">
-                      {/* Header */}
-                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                        <Typography variant="h6" fontWeight="bold">
-                          {group.label}
-                        </Typography>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Chip
-                            label={status.label}
-                            size="small"
-                            color={status.color}
-                            variant="outlined"
-                          />
-                          <ChevronRight color="action" />
-                        </Box>
-                      </Box>
+                <CardContent sx={{ p: 3, height: '100%' }}>
+                  <Box display="flex" flexDirection="column" height="100%">
+                    {/* Header */}
+                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+                      <Typography variant="h6" fontWeight="bold">
+                        {group.label}
+                      </Typography>
+                    </Box>
 
-                      {/* Items List */}
-                      <Box sx={{ flex: 1 }}>
-                        {group.items.map((item, index) => (
-                          <Box 
-                            key={item.id}
-                            sx={{ 
+                    {/* Items List */}
+                    <Box sx={{ flex: 1 }}>
+                      {group.items.map((item, index) => (
+                        <Box key={item.id}>
+                          <Button
+                            fullWidth
+                            onClick={() => handleItemClick(item.path)}
+                            sx={{
+                              justifyContent: 'space-between',
+                              p: 2,
                               mb: index < group.items.length - 1 ? 1 : 0,
-                              pb: index < group.items.length - 1 ? 1 : 0,
-                              borderBottom: index < group.items.length - 1 ? 1 : 0,
+                              bgcolor: 'transparent',
+                              border: 1,
                               borderColor: 'divider',
+                              borderRadius: 1,
+                              color: 'text.primary',
+                              '&:hover': {
+                                bgcolor: 'action.hover',
+                                borderColor: 'primary.main',
+                              },
                             }}
                           >
-                            <Typography 
-                              variant="body2" 
-                              fontWeight="medium"
-                              sx={{ mb: 0.5 }}
-                            >
-                              {item.label}
-                            </Typography>
-                            {item.description && (
+                            <Box sx={{ textAlign: 'left', flex: 1 }}>
                               <Typography 
-                                variant="caption" 
-                                color="text.secondary"
-                                sx={{ display: 'block' }}
+                                variant="body2" 
+                                fontWeight="medium"
+                                sx={{ mb: 0.5 }}
                               >
-                                {item.description}
+                                {item.label}
                               </Typography>
-                            )}
-                          </Box>
-                        ))}
-                      </Box>
-
-                      {/* Footer */}
-                      <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {group.items.length} setting{group.items.length !== 1 ? 's' : ''} available
-                        </Typography>
-                      </Box>
+                              {item.description && (
+                                <Typography 
+                                  variant="caption" 
+                                  color="text.secondary"
+                                  sx={{ display: 'block', textAlign: 'left' }}
+                                >
+                                  {item.description}
+                                </Typography>
+                              )}
+                            </Box>
+                            <ChevronRight color="action" sx={{ ml: 1 }} />
+                          </Button>
+                        </Box>
+                      ))}
                     </Box>
-                  </CardContent>
-                </CardActionArea>
+
+                    {/* Footer */}
+                    <Box sx={{ mt: 2, pt: 2 }}>
+                      <Divider sx={{ mb: 2 }} />
+                      <Typography variant="caption" color="text.secondary">
+                        {group.items.length} setting{group.items.length !== 1 ? 's' : ''} available
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
               </Card>
             </Box>
-          );
-        })}
+          ))}
         </Box>
       </Box>
     </Box>
