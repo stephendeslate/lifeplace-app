@@ -403,9 +403,9 @@ class MetricValueSerializer(serializers.Serializer):
     """Serializer for metric calculation results"""
     metric_id = serializers.IntegerField()
     metric_name = serializers.CharField()
-    value = serializers.DecimalField(max_digits=15, decimal_places=2)
+    value = serializers.CharField()
     display_format = serializers.CharField()
-    calculation_time = serializers.DateTimeField()
+    calculation_time = serializers.CharField()
     time_range = serializers.DictField()
 
 
@@ -414,7 +414,7 @@ class DashboardDataSerializer(serializers.Serializer):
     dashboard = DashboardDetailSerializer()
     widgets_data = serializers.ListField()
     time_range = serializers.DictField()
-    last_updated = serializers.DateTimeField()
+    last_updated = serializers.CharField()
 
 
 class FunnelAnalyticsSerializer(serializers.Serializer):
@@ -432,25 +432,24 @@ class BusinessMetricsSerializer(serializers.Serializer):
     total_events = serializers.IntegerField()
     confirmed_events = serializers.IntegerField()
     completed_events = serializers.IntegerField()
-    event_conversion_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
+    event_conversion_rate = serializers.CharField()
     total_payments = serializers.IntegerField()
     completed_payments = serializers.IntegerField()
-    total_revenue = serializers.DecimalField(max_digits=15, decimal_places=2)
-    average_payment_value = serializers.DecimalField(max_digits=15, decimal_places=2)
+    total_revenue = serializers.CharField()
+    average_payment_value = serializers.CharField()
     total_booking_sessions = serializers.IntegerField()
     completed_booking_sessions = serializers.IntegerField()
     abandoned_booking_sessions = serializers.IntegerField()
-    booking_conversion_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
+    booking_conversion_rate = serializers.CharField()
     new_users = serializers.IntegerField()
     new_clients = serializers.IntegerField()
-    calculation_time = serializers.DateTimeField()
+    calculation_time = serializers.CharField()
     time_range = serializers.DictField()
 
 
 # Request serializers for API endpoints
 class MetricCalculationRequestSerializer(serializers.Serializer):
     """Serializer for metric calculation requests"""
-    metric_id = serializers.IntegerField()
     start_date = serializers.DateTimeField(required=False)
     end_date = serializers.DateTimeField(required=False)
     filters = serializers.DictField(required=False)
@@ -496,7 +495,6 @@ class EventTrackingRequestSerializer(serializers.Serializer):
 
 class FunnelTrackingRequestSerializer(serializers.Serializer):
     """Serializer for funnel tracking requests"""
-    funnel_id = serializers.IntegerField()
     event_name = serializers.CharField(max_length=255)
     session_id = serializers.CharField(max_length=255, required=False)
     event_data = serializers.DictField(required=False)
