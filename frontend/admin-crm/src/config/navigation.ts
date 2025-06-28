@@ -10,6 +10,12 @@ import {
   Payment,
   Description,
   Notifications,
+  Assessment,
+  Timeline,
+  NotificationsActive,
+  Explore,
+  BarChart,
+  TrendingUp,
 } from '@mui/icons-material';
 import type { NavigationGroup } from '../types/layout.types';
 
@@ -31,7 +37,64 @@ export const navigationConfig: NavigationGroup[] = [
         path: '/analytics',
         icon: Analytics,
         roles: ['ADMIN'],
-        disabled: true, // Coming soon
+        children: [
+          {
+            id: 'analytics-overview',
+            label: 'Overview',
+            path: '/analytics',
+            icon: BarChart,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'metrics',
+            label: 'Metrics',
+            path: '/analytics/metrics',
+            icon: TrendingUp,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'dashboards',
+            label: 'Dashboards',
+            path: '/analytics/dashboards',
+            icon: Dashboard,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'reports',
+            label: 'Reports',
+            path: '/analytics/reports',
+            icon: Assessment,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'funnels',
+            label: 'Funnels',
+            path: '/analytics/funnels',
+            icon: Timeline,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'alerts',
+            label: 'Alerts',
+            path: '/analytics/alerts',
+            icon: NotificationsActive,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'events-explorer',
+            label: 'Events',
+            path: '/analytics/events',
+            icon: Explore,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'analytics-settings',
+            label: 'Settings',
+            path: '/analytics/settings',
+            icon: Settings,
+            roles: ['ADMIN'],
+          },
+        ],
       },
      ],
     roles: ['ADMIN'],
@@ -111,9 +174,19 @@ export const navigationConfig: NavigationGroup[] = [
 // Helper function to get navigation item by path
 export const getNavigationItemByPath = (path: string) => {
   for (const group of navigationConfig) {
-    const item = group.items.find(item => item.path === path);
-    if (item) {
-      return { group, item };
+    for (const item of group.items) {
+      if (item.path === path) {
+        return { group, item };
+      }
+      
+      // Check children
+      if (item.children) {
+        for (const child of item.children) {
+          if (child.path === path) {
+            return { group, item: child, parent: item };
+          }
+        }
+      }
     }
   }
   return null;
@@ -125,7 +198,12 @@ export const filterNavigationByRole = (role: string): NavigationGroup[] => {
     .filter(group => !group.roles || group.roles.includes(role as any))
     .map(group => ({
       ...group,
-      items: group.items.filter(item => !item.roles || item.roles.includes(role as any))
+      items: group.items
+        .filter(item => !item.roles || item.roles.includes(role as any))
+        .map(item => ({
+          ...item,
+          children: item.children?.filter(child => !child.roles || child.roles.includes(role as any))
+        }))
     }))
     .filter(group => group.items.length > 0);
 };

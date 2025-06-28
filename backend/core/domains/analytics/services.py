@@ -1145,94 +1145,174 @@ class DataAggregationService:
         if not start_date:
             start_date = end_date - timedelta(days=30)
         
-        metrics = {}
+        # Initialize all metrics with default values to ensure they exist
+        metrics = {
+            'total_events': 0,
+            'confirmed_events': 0,
+            'completed_events': 0,
+            'event_conversion_rate': Decimal('0.00'),
+            'total_payments': 0,
+            'completed_payments': 0,
+            'total_revenue': Decimal('0.00'),
+            'average_payment_value': Decimal('0.00'),
+            'total_booking_sessions': 0,
+            'completed_booking_sessions': 0,
+            'abandoned_booking_sessions': 0,
+            'booking_conversion_rate': Decimal('0.00'),
+            'new_users': 0,
+            'new_clients': 0,
+        }
         
         try:
             # Events domain metrics
-            Event = apps.get_model('events', 'Event')
-            events_qs = Event.objects.filter(
-                created_at__gte=start_date,
-                created_at__lte=end_date
-            )
+            # Try multiple possible model names/locations
+            Event = None
+            try:
+                Event = apps.get_model('events', 'Event')
+            except LookupError:
+                try:
+                    Event = apps.get_model('core.domains.events', 'Event')
+                except LookupError:
+                    logger.warning("Event model not found, skipping events metrics")
             
-            metrics['total_events'] = events_qs.count()
-            metrics['confirmed_events'] = events_qs.filter(status='CONFIRMED').count()
-            metrics['completed_events'] = events_qs.filter(status='COMPLETED').count()
-            
-            # Calculate event conversion rate
-            if metrics['total_events'] > 0:
-                metrics['event_conversion_rate'] = (
-                    metrics['confirmed_events'] / metrics['total_events'] * 100
+            if Event:
+                events_qs = Event.objects.filter(
+                    created_at__gte=start_date,
+                    created_at__lte=end_date
                 )
-            else:
-                metrics['event_conversion_rate'] = 0
-            
+                
+                metrics['total_events'] = events_qs.count()
+                metrics['confirmed_events'] = events_qs.filter(status='CONFIRMED').count()
+                metrics['completed_events'] = events_qs.filter(status='COMPLETED').count()
+                
+                # Calculate event conversion rate
+                if metrics['total_events'] > 0:
+                    metrics['event_conversion_rate'] = Decimal(str(
+                        (metrics['confirmed_events'] / metrics['total_events']) * 100
+                    ))
+                
         except Exception as e:
             logger.error(f"Error aggregating events metrics: {str(e)}")
         
         try:
             # Payments domain metrics
-            Payment = apps.get_model('payments', 'Payment')
-            payments_qs = Payment.objects.filter(
-                created_at__gte=start_date,
-                created_at__lte=end_date
-            )
+            Payment = None
+            try:
+                Payment = apps.get_model('payments', 'Payment')
+            except LookupError:
+                try:
+                    Payment = apps.get_model('core.domains.payments', 'Payment')
+                except LookupError:
+                    logger.warning("Payment model not found, skipping payments metrics")
             
-            metrics['total_payments'] = payments_qs.count()
-            metrics['completed_payments'] = payments_qs.filter(status='COMPLETED').count()
-            
-            # Calculate total revenue
-            total_revenue = payments_qs.filter(status='COMPLETED').aggregate(
-                total=Sum('amount')
-            )['total'] or Decimal('0.00')
-            metrics['total_revenue'] = total_revenue
-            
-            # Calculate average payment value
-            if metrics['completed_payments'] > 0:
-                metrics['average_payment_value'] = total_revenue / metrics['completed_payments']
-            else:
-                metrics['average_payment_value'] = Decimal('0.00')
-            
+            if Payment:
+                payments_qs = Payment.objects.filter(
+                    created_at__gte=start_date,
+                    created_at__lte=end_date
+                )
+                
+                metrics['total_payments'] = payments_qs.count()
+                metrics['completed_payments'] = payments_qs.filter(status='COMPLETED').count()
+                
+                # Calculate total revenue
+                total_revenue = payments_qs.filter(status='COMPLETED').aggregate(
+                    total=Sum('amount')
+                )['total'] or Decimal('0.00')
+                metrics['total_revenue'] = total_revenue
+                
+                # Calculate average payment value
+                if metrics['completed_payments'] > 0:
+                    metrics['average_payment_value'] = total_revenue / metrics['completed_payments']
+                
         except Exception as e:
             logger.error(f"Error aggregating payments metrics: {str(e)}")
         
         try:
             # Booking flow metrics
-            BookingSession = apps.get_model('bookingflow', 'BookingSession')
-            sessions_qs = BookingSession.objects.filter(
-                created_at__gte=start_date,
-                created_at__lte=end_date
-            )
+            BookingSession = None
+            try:
+                BookingSession = apps.get_model('bookingflow', 'BookingSession')
+            except LookupError:
+                try:
+                    BookingSession = apps.get_model('core.domains.bookingflow', 'BookingSession')
+                except LookupError:
+                    logger.warning("BookingSession model not found, skipping booking metrics")
             
-            metrics['total_booking_sessions'] = sessions_qs.count()
-            metrics['completed_booking_sessions'] = sessions_qs.filter(is_completed=True).count()
-            metrics['abandoned_booking_sessions'] = sessions_qs.filter(is_abandoned=True).count()
-            
-            # Calculate booking conversion rate
-            if metrics['total_booking_sessions'] > 0:
-                metrics['booking_conversion_rate'] = (
-                    metrics['completed_booking_sessions'] / metrics['total_booking_sessions'] * 100
+            if BookingSession:
+                sessions_qs = BookingSession.objects.filter(
+                    created_at__gte=start_date,
+                    created_at__lte=end_date
                 )
-            else:
-                metrics['booking_conversion_rate'] = 0
-            
+                
+                metrics['total_booking_sessions'] = sessions_qs.count()
+                metrics['completed_booking_sessions'] = sessions_qs.filter(is_completed=True).count()
+                metrics['abandoned_booking_sessions'] = sessions_qs.filter(is_abandoned=True).count()
+                
+                # Calculate booking conversion rate
+                if metrics['total_booking_sessions'] > 0:
+                    metrics['booking_conversion_rate'] = Decimal(str(
+                        (metrics['completed_booking_sessions'] / metrics['total_booking_sessions']) * 100
+                    ))
+                
         except Exception as e:
             logger.error(f"Error aggregating booking flow metrics: {str(e)}")
         
         try:
             # Users domain metrics
-            User = apps.get_model('users', 'User')
-            users_qs = User.objects.filter(
-                created_at__gte=start_date,
-                created_at__lte=end_date
-            )
+            User = None
+            try:
+                User = apps.get_model('users', 'User')
+            except LookupError:
+                try:
+                    User = apps.get_model('core.domains.users', 'User')
+                except LookupError:
+                    try:
+                        # Try the auth user model
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                    except:
+                        logger.warning("User model not found, skipping user metrics")
             
-            metrics['new_users'] = users_qs.count()
-            metrics['new_clients'] = users_qs.filter(role='CLIENT').count()
-            
+            if User:
+                # Check if the User model has the expected fields
+                if hasattr(User, 'date_joined'):
+                    date_field = 'date_joined'
+                elif hasattr(User, 'created_at'):
+                    date_field = 'created_at'
+                else:
+                    logger.warning("User model missing date field, skipping user metrics")
+                    User = None
+                
+                if User:
+                    users_qs = User.objects.filter(
+                        **{f'{date_field}__gte': start_date, f'{date_field}__lte': end_date}
+                    )
+                    
+                    metrics['new_users'] = users_qs.count()
+                    
+                    # Check if role field exists
+                    if hasattr(User, 'role'):
+                        metrics['new_clients'] = users_qs.filter(role='CLIENT').count()
+                    else:
+                        # Fallback: assume all non-staff users are clients
+                        if hasattr(User, 'is_staff'):
+                            metrics['new_clients'] = users_qs.filter(is_staff=False).count()
+                        else:
+                            metrics['new_clients'] = metrics['new_users']  # Fallback
+                
         except Exception as e:
             logger.error(f"Error aggregating users metrics: {str(e)}")
         
+        # Ensure all values are properly typed for serialization
+        for key, value in metrics.items():
+            if isinstance(value, Decimal):
+                # Keep Decimal for numeric calculations but ensure it's JSON serializable
+                metrics[key] = value
+            elif key.endswith('_rate') and not isinstance(value, Decimal):
+                # Convert rate percentages to Decimal
+                metrics[key] = Decimal(str(value))
+        
+        logger.info(f"Aggregated business metrics: {metrics}")
         return metrics
     
     @staticmethod

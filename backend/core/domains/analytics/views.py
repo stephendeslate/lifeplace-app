@@ -5,6 +5,7 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from .models import (
     AlertRule,
@@ -57,6 +58,13 @@ from .services import (
 )
 
 
+class StandardResultsSetPagination(PageNumberPagination):
+    """Standard pagination for analytics endpoints"""
+    page_size = 25
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 class MetricDefinitionViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing metric definitions
@@ -64,6 +72,7 @@ class MetricDefinitionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         source_domain = self.request.query_params.get('source_domain')
@@ -153,12 +162,12 @@ class MetricDefinitionViewSet(viewsets.ModelViewSet):
             result_data = {
                 'metric_id': metric.id,
                 'metric_name': metric.name,
-                'value': value,
+                'value': str(value),
                 'display_format': metric.display_format,
-                'calculation_time': timezone.now(),
+                'calculation_time': timezone.now().isoformat(),
                 'time_range': {
-                    'start_date': serializer.validated_data.get('start_date'),
-                    'end_date': serializer.validated_data.get('end_date')
+                    'start_date': serializer.validated_data.get('start_date').isoformat() if serializer.validated_data.get('start_date') else None,
+                    'end_date': serializer.validated_data.get('end_date').isoformat() if serializer.validated_data.get('end_date') else None
                 }
             }
             
@@ -192,6 +201,7 @@ class DashboardViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrClient]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         dashboard_type = self.request.query_params.get('dashboard_type')
@@ -279,7 +289,7 @@ class DashboardViewSet(viewsets.ModelViewSet):
                 time_range=serializer.validated_data.get('time_range', 'last_30_days')
             )
             
-            dashboard_data['last_updated'] = timezone.now()
+            dashboard_data['last_updated'] = timezone.now().isoformat()
             result_serializer = DashboardDataSerializer(dashboard_data)
             return Response(result_serializer.data)
             
@@ -318,6 +328,7 @@ class WidgetViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsAdminOrClient]
     serializer_class = WidgetSerializer
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         dashboard_id = self.request.query_params.get('dashboard_id')
@@ -381,6 +392,7 @@ class AnalyticsReportViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         report_type = self.request.query_params.get('report_type')
@@ -508,6 +520,7 @@ class ReportExecutionViewSet(viewsets.ReadOnlyModelViewSet):
     """
     permission_classes = [IsAdmin]
     serializer_class = ReportExecutionSerializer
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         return ReportExecution.objects.filter(
@@ -537,6 +550,7 @@ class AnalyticsEventViewSet(viewsets.ModelViewSet):
     serializer_class = AnalyticsEventSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['event_name', 'source_domain', 'source_model']
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         event_category = self.request.query_params.get('event_category')
@@ -597,6 +611,7 @@ class ConversionFunnelViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsAdmin]
     serializer_class = ConversionFunnelSerializer
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         is_active = self.request.query_params.get('is_active')
@@ -677,7 +692,7 @@ class ConversionFunnelViewSet(viewsets.ModelViewSet):
                 )
             else:
                 return Response(
-                    {"detail": "Funnel tracking failed"},
+                    {"success": False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         except Exception as e:
@@ -722,6 +737,7 @@ class AlertRuleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         is_active = self.request.query_params.get('is_active')
@@ -799,10 +815,9 @@ class AlertRuleViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         
         try:
-            # This would trigger a test evaluation of the alert rule
             alert_rule = self.get_object()
             
-            # For now, just return the current metric value
+            # Calculate current metric value
             from datetime import timedelta
             end_date = timezone.now()
             start_date = end_date - timedelta(hours=1)  # Default test period
@@ -817,11 +832,11 @@ class AlertRuleViewSet(viewsets.ModelViewSet):
             
             return Response({
                 'alert_rule': alert_rule.name,
-                'current_value': current_value,
-                'threshold_value': alert_rule.threshold_value,
+                'current_value': float(current_value),
+                'threshold_value': float(alert_rule.threshold_value),
                 'operator': alert_rule.operator,
                 'threshold_met': threshold_met,
-                'test_time': timezone.now()
+                'test_time': timezone.now().isoformat()
             })
             
         except Exception as e:
@@ -837,6 +852,7 @@ class EventAggregationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     permission_classes = [IsAdmin]
     serializer_class = EventAggregationSerializer
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         metric_id = self.request.query_params.get('metric_id')
@@ -877,10 +893,10 @@ class AnalyticsAPIViewSet(viewsets.ViewSet):
             )
             
             # Add metadata
-            metrics['calculation_time'] = timezone.now()
+            metrics['calculation_time'] = timezone.now().isoformat()
             metrics['time_range'] = {
-                'start_date': start_date,
-                'end_date': end_date
+                'start_date': start_date.isoformat() if start_date else None,
+                'end_date': end_date.isoformat() if end_date else None
             }
             
             serializer = BusinessMetricsSerializer(metrics)

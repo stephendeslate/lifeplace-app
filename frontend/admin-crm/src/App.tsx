@@ -1,5 +1,5 @@
 // frontend/admin-crm/src/App.tsx
-// UPDATED: Added notifications route
+// UPDATED: Added comprehensive analytics routes
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -14,6 +14,20 @@ import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
+
+// Analytics imports
+import { 
+  AnalyticsOverview,
+  MetricsManagement,
+  DashboardsManagement,
+  DashboardView,
+  ReportsManagement,
+  ReportView,
+  FunnelsManagement,
+  AlertsManagement,
+  EventsExplorer,
+  AnalyticsSettings,
+} from './pages/analytics';
 
 // Settings imports
 import { SettingsLayout } from './pages/settings';
@@ -123,6 +137,88 @@ const AppRouter: React.FC = () => {
         }
       />
 
+      {/* Analytics Routes */}
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <AnalyticsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/metrics"
+        element={
+          <ProtectedRoute>
+            <MetricsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/dashboards"
+        element={
+          <ProtectedRoute>
+            <DashboardsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/dashboards/:id"
+        element={
+          <ProtectedRoute>
+            <DashboardView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/reports"
+        element={
+          <ProtectedRoute>
+            <ReportsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/reports/:id"
+        element={
+          <ProtectedRoute>
+            <ReportView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/funnels"
+        element={
+          <ProtectedRoute>
+            <FunnelsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/alerts"
+        element={
+          <ProtectedRoute>
+            <AlertsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/events"
+        element={
+          <ProtectedRoute>
+            <EventsExplorer />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/settings"
+        element={
+          <ProtectedRoute>
+            <AnalyticsSettings />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Event Management Routes */}
       <Route
         path="/events"
@@ -178,7 +274,6 @@ const AppRouter: React.FC = () => {
           </ProtectedRoute>
         }
       />
-
 
       {/* Records Route */}
       <Route
@@ -327,31 +422,6 @@ const AppRouter: React.FC = () => {
           <SettingsRoute>
             <Sales />
           </SettingsRoute>
-        }
-      />
-
-      {/* Placeholder Protected Routes */}
-      <Route
-        path="/analytics"
-        element={
-          <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Analytics</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/payments"
-        element={
-          <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Payments</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
-          </ProtectedRoute>
         }
       />
 

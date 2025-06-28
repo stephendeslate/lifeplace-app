@@ -10,6 +10,7 @@ export interface NavigationItem {
   badge?: string | number;
   disabled?: boolean;
   roles?: ('ADMIN' | 'CLIENT')[];
+  children?: NavigationItem[];
 }
 
 export interface NavigationGroup {
