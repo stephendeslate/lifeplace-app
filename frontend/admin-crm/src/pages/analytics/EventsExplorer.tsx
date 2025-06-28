@@ -37,9 +37,6 @@ import {
   ExpandLess as ExpandLessIcon,
   Info as InfoIcon,
   Person as UserIcon,
-  Business as DomainIcon,
-  Schedule as TimeIcon,
-  Code as DataIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useAnalyticsEvents } from '../../hooks/useAnalytics';

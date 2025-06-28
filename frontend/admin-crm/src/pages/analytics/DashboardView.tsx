@@ -7,7 +7,6 @@ import {
   Typography,
   Button,
   Paper,
-  Stack,
   Alert,
   Chip,
   IconButton,
@@ -18,74 +17,24 @@ import {
   MenuItem,
   CircularProgress,
   Skeleton,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
-  Edit as EditIcon,
   ArrowBack as BackIcon,
   Settings as SettingsIcon,
   Fullscreen as FullscreenIcon,
   DateRange as DateRangeIcon,
   Public as PublicIcon,
   Lock as PrivateIcon,
+  Build as BuildIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
-import { useDashboards } from '../../hooks/useAnalytics';
+import { useDashboards, useWidgets } from '../../hooks/useAnalytics';
+import { DashboardGrid } from '../../components/analytics/dashboards/DashboardGrid';
 import { LoadingTable } from '../../components/common/LoadingTable';
 import { EmptyState } from '../../components/common/EmptyState';
-import type { DashboardDataRequest } from '../../types/analytics.types';
-
-interface WidgetPlaceholderProps {
-  title: string;
-  size: string;
-  type: string;
-}
-
-const WidgetPlaceholder: React.FC<WidgetPlaceholderProps> = ({ title, size, type }) => {
-  const getWidgetHeight = (size: string) => {
-    switch (size) {
-      case 'SMALL': return 200;
-      case 'MEDIUM': return 250;
-      case 'LARGE': return 400;
-      case 'TALL': return 350;
-      default: return 250;
-    }
-  };
-
-  return (
-    <Paper 
-      variant="outlined" 
-      sx={{ 
-        p: 2, 
-        height: getWidgetHeight(size),
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6" fontWeight="medium">
-          {title}
-        </Typography>
-        <Chip label={type} size="small" variant="outlined" />
-      </Box>
-      
-      <Box 
-        flex={1} 
-        display="flex" 
-        alignItems="center" 
-        justifyContent="center"
-        sx={{ bgcolor: 'action.hover', borderRadius: 1 }}
-      >
-        <Stack alignItems="center" spacing={2}>
-          <CircularProgress size={40} />
-          <Typography variant="body2" color="text.secondary">
-            Loading widget data...
-          </Typography>
-        </Stack>
-      </Box>
-    </Paper>
-  );
-};
 
 export const DashboardView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -93,6 +42,7 @@ export const DashboardView: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
   const [timeRange, setTimeRange] = useState<string>('last_30_days');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const { useDashboard, useDashboardData } = useDashboards();
   
@@ -111,6 +61,8 @@ export const DashboardView: React.FC = () => {
     refetch: refetchData
   } = useDashboardData(dashboardId, { time_range: timeRange });
 
+  const { widgets, refetchWidgets } = useWidgets({ dashboard_id: dashboardId });
+
   useEffect(() => {
     if (dashboard) {
       setBreadcrumbs([
@@ -126,11 +78,12 @@ export const DashboardView: React.FC = () => {
   };
 
   const handleEdit = () => {
-    navigate(`/analytics/dashboards/${dashboardId}/edit`);
+    setIsEditMode(!isEditMode);
   };
 
   const handleRefresh = () => {
     refetchData();
+    refetchWidgets();
   };
 
   const handleBack = () => {
@@ -139,6 +92,19 @@ export const DashboardView: React.FC = () => {
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+  };
+
+  const handleWidgetUpdate = () => {
+    refetchWidgets();
+  };
+
+  const handleWidgetDelete = () => {
+    refetchWidgets();
+  };
+
+  const handleWidgetAdd = () => {
+    // Widget add is handled within DashboardGrid
+    refetchWidgets();
   };
 
   if (isLoadingDashboard) {
@@ -200,15 +166,24 @@ export const DashboardView: React.FC = () => {
                   <PrivateIcon color="action" />
                 </Tooltip>
               )}
+              {isEditMode && (
+                <Chip
+                  icon={<BuildIcon />}
+                  label="Edit Mode"
+                  size="small"
+                  color="warning"
+                  variant="filled"
+                />
+              )}
             </Box>
             
             <Box display="flex" alignItems="center" gap={1}>
               <Typography variant="body2" color="text.secondary">
                 {dashboard.description || 'No description'}
               </Typography>
-              {dashboard.widgets && (
+              {widgets && (
                 <Chip
-                  label={`${dashboard.widgets.length} widget${dashboard.widgets.length !== 1 ? 's' : ''}`}
+                  label={`${widgets.length} widget${widgets.length !== 1 ? 's' : ''}`}
                   size="small"
                   variant="outlined"
                 />
@@ -247,16 +222,22 @@ export const DashboardView: React.FC = () => {
             </IconButton>
           </Tooltip>
           
-          <Tooltip title="Edit dashboard">
-            <IconButton onClick={handleEdit}>
-              <EditIcon />
-            </IconButton>
-          </Tooltip>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isEditMode}
+                onChange={handleEdit}
+                size="small"
+              />
+            }
+            label="Edit"
+            sx={{ ml: 1 }}
+          />
         </Box>
       </Box>
 
       {/* Dashboard Info */}
-      {dashboardData && (
+      {dashboardData && !isFullscreen && (
         <Alert severity="info" sx={{ mb: 3 }}>
           <Box display="flex" alignItems="center" gap={2}>
             <Typography variant="body2">
@@ -274,7 +255,7 @@ export const DashboardView: React.FC = () => {
         <Alert severity="error" sx={{ mb: 3 }}>
           Failed to load dashboard data. Please try refreshing.
         </Alert>
-      ) : !dashboard.widgets || dashboard.widgets.length === 0 ? (
+      ) : !widgets || widgets.length === 0 ? (
         <EmptyState
           icon={SettingsIcon}
           title="No widgets configured"
@@ -282,56 +263,26 @@ export const DashboardView: React.FC = () => {
           action={
             <Button
               variant="contained"
-              startIcon={<EditIcon />}
-              onClick={handleEdit}
+              startIcon={<BuildIcon />}
+              onClick={() => setIsEditMode(true)}
             >
-              Configure Dashboard
+              Add Widgets
             </Button>
           }
         />
       ) : (
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            flexDirection: { xs: 'column', md: 'row' }, 
-            flexWrap: { md: 'wrap' },
-            gap: 3 
-          }}
-        >
-          {dashboard.widgets.map((widget) => {
-            const getWidgetWidth = (size: string) => {
-              switch (size) {
-                case 'SMALL': return { xs: '100%', md: 'calc(25% - 18px)' };
-                case 'MEDIUM': return { xs: '100%', md: 'calc(50% - 12px)' };
-                case 'LARGE': return { xs: '100%', md: 'calc(50% - 12px)' };
-                case 'WIDE': return { xs: '100%', md: 'calc(75% - 9px)' };
-                case 'EXTRA_WIDE': return { xs: '100%', md: '100%' };
-                case 'TALL': return { xs: '100%', md: 'calc(25% - 18px)' };
-                default: return { xs: '100%', md: 'calc(50% - 12px)' };
-              }
-            };
-
-            return (
-              <Box 
-                key={widget.id}
-                sx={{ 
-                  flex: `1 1 ${getWidgetWidth(widget.size).md}`,
-                  minWidth: 300
-                }}
-              >
-                <WidgetPlaceholder
-                  title={widget.title}
-                  size={widget.size}
-                  type={widget.widget_type}
-                />
-              </Box>
-            );
-          })}
-        </Box>
+        <DashboardGrid
+          dashboard={dashboard}
+          widgets={widgets}
+          isEditable={isEditMode}
+          onWidgetUpdate={handleWidgetUpdate}
+          onWidgetDelete={handleWidgetDelete}
+          onWidgetAdd={handleWidgetAdd}
+        />
       )}
 
       {/* Auto-refresh indicator */}
-      {dashboard.auto_refresh_interval > 0 && (
+      {dashboard.auto_refresh_interval > 0 && !isFullscreen && (
         <Box 
           sx={{ 
             position: 'fixed', 
@@ -348,6 +299,29 @@ export const DashboardView: React.FC = () => {
             variant="filled"
           />
         </Box>
+      )}
+
+      {/* Edit Mode Help */}
+      {isEditMode && !isFullscreen && (
+        <Paper 
+          sx={{ 
+            position: 'fixed', 
+            bottom: 16, 
+            left: 16, 
+            p: 2,
+            zIndex: 1000,
+            maxWidth: 300,
+          }}
+        >
+          <Typography variant="subtitle2" gutterBottom>
+            Edit Mode Active
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • Click the menu (⋮) on widgets to edit or delete them
+            • Use the floating (+) button to add new widgets
+            • Toggle off Edit mode when you're done
+          </Typography>
+        </Paper>
       )}
     </Box>
   );
