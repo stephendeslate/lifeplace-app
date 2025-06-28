@@ -312,6 +312,49 @@ export const useWidgets = (filters?: { dashboard_id?: number }) => {
   };
 
   // Mutations
+  const addWidgetMutation = useMutation({
+    mutationFn: ({ dashboardId, data }: { dashboardId: number; data: CreateWidgetData }) =>
+      analyticsApi.addWidgetToDashboard(dashboardId, data),
+    onSuccess: (newWidget) => {
+      queryClient.invalidateQueries({ queryKey: ['widgets'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboards'] });
+      // Update the specific dashboard's widgets cache
+      if (filters?.dashboard_id) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['widgets', { dashboard_id: filters.dashboard_id }] 
+        });
+      }
+      showSuccess('Widget Added', `${newWidget.title} has been added to the dashboard successfully.`);
+    },
+    onError: (error: any) => {
+      console.error('Add widget error:', error);
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        if (errorData.title) {
+          showError('Title Error', Array.isArray(errorData.title) ? errorData.title[0] : errorData.title);
+        } else if (errorData.metric_definition) {
+          showError('Metric Error', Array.isArray(errorData.metric_definition) ? errorData.metric_definition[0] : errorData.metric_definition);
+        } else if (errorData.detail) {
+          showError('Add Failed', errorData.detail);
+        } else if (errorData.non_field_errors) {
+          showError('Validation Error', errorData.non_field_errors[0] || 'A validation error occurred.');
+        } else {
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, messages]) => {
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              return `${field}: ${messageText}`;
+            })
+            .join('\n');
+          showError('Validation Errors', fieldErrors);
+        }
+      } else {
+        showError('Add Failed', 'Failed to add widget to dashboard. Please try again.');
+      }
+    },
+  });
+
   const updateWidgetMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateWidgetData }) =>
       analyticsApi.updateWidget(id, data),
@@ -319,11 +362,38 @@ export const useWidgets = (filters?: { dashboard_id?: number }) => {
       queryClient.invalidateQueries({ queryKey: ['widgets'] });
       queryClient.invalidateQueries({ queryKey: ['widget', updatedWidget.id] });
       queryClient.invalidateQueries({ queryKey: ['dashboards'] });
+      // Update the specific dashboard's widgets cache
+      if (filters?.dashboard_id) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['widgets', { dashboard_id: filters.dashboard_id }] 
+        });
+      }
       showSuccess('Widget Updated', `${updatedWidget.title} has been updated successfully.`);
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update widget';
-      showError('Update Failed', message);
+      console.error('Update widget error:', error);
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        if (errorData.title) {
+          showError('Title Error', Array.isArray(errorData.title) ? errorData.title[0] : errorData.title);
+        } else if (errorData.detail) {
+          showError('Update Failed', errorData.detail);
+        } else if (errorData.non_field_errors) {
+          showError('Validation Error', errorData.non_field_errors[0] || 'A validation error occurred.');
+        } else {
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, messages]) => {
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              return `${field}: ${messageText}`;
+            })
+            .join('\n');
+          showError('Validation Errors', fieldErrors);
+        }
+      } else {
+        showError('Update Failed', 'Failed to update widget. Please try again.');
+      }
     },
   });
 
@@ -332,10 +402,17 @@ export const useWidgets = (filters?: { dashboard_id?: number }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['widgets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboards'] });
+      // Update the specific dashboard's widgets cache
+      if (filters?.dashboard_id) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['widgets', { dashboard_id: filters.dashboard_id }] 
+        });
+      }
       showSuccess('Widget Deleted', 'Widget has been deleted successfully.');
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete widget';
+      console.error('Delete widget error:', error);
+      const message = error.response?.data?.detail || 'Failed to delete widget. Please try again.';
       showError('Delete Failed', message);
     },
   });
@@ -346,21 +423,27 @@ export const useWidgets = (filters?: { dashboard_id?: number }) => {
     
     // Loading states
     isLoadingWidgets,
+    isAddingWidget: addWidgetMutation.isPending,
     isUpdatingWidget: updateWidgetMutation.isPending,
     isDeletingWidget: deleteWidgetMutation.isPending,
     
     // Error states
     widgetsError,
+    addError: addWidgetMutation.error,
     updateError: updateWidgetMutation.error,
     deleteError: deleteWidgetMutation.error,
     
     // Actions
+    addWidget: addWidgetMutation.mutate,
     updateWidget: updateWidgetMutation.mutate,
     deleteWidget: deleteWidgetMutation.mutate,
     refetchWidgets,
     
     // Hooks for specific queries
     useWidget,
+    
+    // Success data
+    addedWidget: addWidgetMutation.data,
   };
 };
 
@@ -501,7 +584,6 @@ export const useReportExecution = (executionId: string) => {
 
 export const useAnalyticsEvents = (filters?: EventFilters) => {
   const queryClient = useQueryClient();
-  
   useToastActions();
 
   // Queries
@@ -923,4 +1005,85 @@ export const usePublicAnalytics = () => {
       }
     },
   };
+};
+
+// Additional hooks for metadata and helper functions
+export const useActiveMetrics = () => {
+  return useQuery({
+    queryKey: ['metric-definitions', 'active'],
+    queryFn: () => analyticsApi.getActiveMetrics(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Hook for getting source domain options
+export const useSourceDomains = () => {
+  return useQuery({
+    queryKey: ['analytics', 'source-domains'],
+    queryFn: async () => {
+      // This could be expanded to fetch from backend or use static list
+      return [
+        'bookings',
+        'events', 
+        'payments',
+        'clients',
+        'workflows',
+        'products',
+        'communications',
+        'analytics',
+      ];
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour - these don't change often
+  });
+};
+
+// Hook for getting available source models for a domain
+export const useSourceModels = (domain?: string) => {
+  return useQuery({
+    queryKey: ['analytics', 'source-models', domain],
+    queryFn: async () => {
+      // This could be expanded to fetch from backend based on domain
+      const modelsByDomain: Record<string, string[]> = {
+        bookings: ['BookingSession', 'BookingConfirmation'],
+        events: ['Event', 'EventBooking', 'EventType'],
+        payments: ['Payment', 'PaymentIntent', 'Refund'],
+        clients: ['Client', 'ClientProfile', 'ClientInteraction'],
+        workflows: ['WorkflowExecution', 'WorkflowStep', 'WorkflowTemplate'],
+        products: ['Product', 'Package', 'ProductVariant'],
+        communications: ['Notification', 'Email', 'SMS'],
+        analytics: ['AnalyticsEvent', 'MetricDefinition', 'Dashboard'],
+      };
+      
+      return domain ? modelsByDomain[domain] || [] : [];
+    },
+    enabled: !!domain,
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
+// Hook for getting available fields for a model
+export const useSourceFields = (domain?: string, model?: string) => {
+  return useQuery({
+    queryKey: ['analytics', 'source-fields', domain, model],
+    queryFn: async () => {
+      // This could be expanded to fetch actual field metadata from backend
+      const commonFields = [
+        'id',
+        'created_at',
+        'updated_at',
+        'status',
+      ];
+      
+      const fieldsByModel: Record<string, string[]> = {
+        Payment: [...commonFields, 'amount', 'currency', 'payment_method'],
+        Event: [...commonFields, 'duration_minutes', 'capacity', 'price'],
+        Client: [...commonFields, 'total_spent', 'events_attended'],
+        BookingSession: [...commonFields, 'session_duration', 'pages_viewed'],
+      };
+      
+      return model ? fieldsByModel[model] || commonFields : [];
+    },
+    enabled: !!domain && !!model,
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
 };

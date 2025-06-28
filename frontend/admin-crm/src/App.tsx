@@ -39,6 +39,7 @@ import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
 import { PaymentsOverview } from './pages/payments';
+import { FunnelAnalytics } from './pages/analytics/funnels/FunnelAnalytics';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -191,6 +192,14 @@ const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <FunnelsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics/funnels/:id/analytics"
+        element={
+          <ProtectedRoute>
+            <FunnelAnalytics />
           </ProtectedRoute>
         }
       />

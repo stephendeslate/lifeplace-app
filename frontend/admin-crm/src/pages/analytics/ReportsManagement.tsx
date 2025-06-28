@@ -37,7 +37,6 @@ import {
   Delete as DeleteIcon,
   Assessment as ReportIcon,
   Schedule as ScheduleIcon,
-  GetApp as DownloadIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
@@ -284,7 +283,6 @@ export const ReportsManagement: React.FC = () => {
     executeReport,
     refetchReports,
     isCreatingReport,
-    isUpdatingReport,
     isDeletingReport,
     isExecutingReport,
   } = useAnalyticsReports(filters);
@@ -336,6 +334,7 @@ export const ReportsManagement: React.FC = () => {
     setEditingReport(null);
   };
 
+  // @ts-ignore
   const handleSubmit = (data: any) => {
     if (editingReport) {
       updateReport({ id: editingReport.id, data });

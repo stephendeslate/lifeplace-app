@@ -11,169 +11,42 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  Menu,
-  MenuItem,
   FormControl,
   InputLabel,
   Select,
   TextField,
   InputAdornment,
+  MenuItem,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
   Search as SearchIcon,
-  MoreVert as MoreVertIcon,
-  PlayArrow as CalculateIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Analytics as MetricsIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useMetricDefinitions } from '../../hooks/useAnalytics';
+import { 
+  MetricDefinitionTable, 
+  MetricDefinitionForm, 
+  MetricCalculationModal 
+} from '../../components/analytics/metrics';
 import { LoadingTable } from '../../components/common/LoadingTable';
-import { EmptyState } from '../../components/common/EmptyState';
-import type { MetricDefinition, MetricDefinitionFilters } from '../../types/analytics.types';
-
-interface MetricRowActionsProps {
-  metric: MetricDefinition;
-  onEdit: (metric: MetricDefinition) => void;
-  onDelete: (id: number) => void;
-  onCalculate: (metric: MetricDefinition) => void;
-}
-
-const MetricRowActions: React.FC<MetricRowActionsProps> = ({
-  metric,
-  onEdit,
-  onDelete,
-  onCalculate,
-}) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleEdit = () => {
-    onEdit(metric);
-    handleClose();
-  };
-
-  const handleDelete = () => {
-    onDelete(metric.id);
-    handleClose();
-  };
-
-  const handleCalculate = () => {
-    onCalculate(metric);
-    handleClose();
-  };
-
-  return (
-    <>
-      <IconButton size="small" onClick={handleClick}>
-        <MoreVertIcon />
-      </IconButton>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      >
-        <MenuItem onClick={handleCalculate}>
-          <CalculateIcon sx={{ mr: 1 }} fontSize="small" />
-          Calculate
-        </MenuItem>
-        <MenuItem onClick={handleEdit}>
-          <EditIcon sx={{ mr: 1 }} fontSize="small" />
-          Edit
-        </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
-          Delete
-        </MenuItem>
-      </Menu>
-    </>
-  );
-};
-
-interface MetricRowProps {
-  metric: MetricDefinition;
-  onEdit: (metric: MetricDefinition) => void;
-  onDelete: (id: number) => void;
-  onCalculate: (metric: MetricDefinition) => void;
-}
-
-const MetricRow: React.FC<MetricRowProps> = ({ metric, onEdit, onDelete, onCalculate }) => {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        p: 2,
-        borderBottom: 1,
-        borderColor: 'divider',
-        '&:hover': {
-          bgcolor: 'action.hover',
-        },
-      }}
-    >
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-          {metric.name}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          {metric.description || 'No description'}
-        </Typography>
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          <Chip
-            label={metric.metric_type}
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
-          <Chip
-            label={`${metric.source_domain}.${metric.source_model}`}
-            size="small"
-            variant="outlined"
-          />
-          <Chip
-            label={metric.aggregation_period}
-            size="small"
-            color={metric.is_real_time ? 'warning' : 'default'}
-            variant="outlined"
-          />
-          <Chip
-            label={metric.is_active ? 'Active' : 'Inactive'}
-            size="small"
-            color={metric.is_active ? 'success' : 'default'}
-            variant={metric.is_active ? 'filled' : 'outlined'}
-          />
-        </Stack>
-      </Box>
-      <Box sx={{ ml: 2 }}>
-        <MetricRowActions
-          metric={metric}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onCalculate={onCalculate}
-        />
-      </Box>
-    </Box>
-  );
-};
+import { NoMetricsEmptyState } from '../../components/common/EmptyState';
+import type { 
+  MetricDefinition, 
+  MetricDefinitionFilters,
+  CreateMetricDefinitionData,
+  UpdateMetricDefinitionData,
+  MetricCalculationRequest,
+} from '../../types/analytics.types';
 
 export const MetricsManagement: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCalculationModal, setShowCalculationModal] = useState(false);
   const [editingMetric, setEditingMetric] = useState<MetricDefinition | null>(null);
+  const [calculatingMetric, setCalculatingMetric] = useState<MetricDefinition | null>(null);
   const [filters, setFilters] = useState<MetricDefinitionFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -189,6 +62,8 @@ export const MetricsManagement: React.FC = () => {
     isUpdatingMetric,
     isDeletingMetric,
     isCalculatingMetric,
+    calculationResult,
+    // calculationError, // Remove this line or add calculationError to the hook's return type
   } = useMetricDefinitions(filters);
 
   useEffect(() => {
@@ -226,7 +101,14 @@ export const MetricsManagement: React.FC = () => {
   };
 
   const handleCalculate = (metric: MetricDefinition) => {
-    calculateMetric({ id: metric.id, request: {} });
+    setCalculatingMetric(metric);
+    setShowCalculationModal(true);
+  };
+
+  const handleCalculateMetric = (request: MetricCalculationRequest) => {
+    if (calculatingMetric) {
+      calculateMetric({ id: calculatingMetric.id, request });
+    }
   };
 
   const handleCloseDialog = () => {
@@ -234,11 +116,18 @@ export const MetricsManagement: React.FC = () => {
     setEditingMetric(null);
   };
 
-  const handleSubmit = (data: any) => {
+  const handleCloseCalculationModal = () => {
+    setShowCalculationModal(false);
+    setCalculatingMetric(null);
+  };
+
+  const handleSubmit = (data: CreateMetricDefinitionData | UpdateMetricDefinitionData) => {
     if (editingMetric) {
       updateMetric({ id: editingMetric.id, data });
     } else {
-      createMetric(data);
+      // Only pass CreateMetricDefinitionData to createMetric
+      const { name, description, source_domain, ...rest } = data as CreateMetricDefinitionData;
+      createMetric({ name, description, source_domain, ...rest });
     }
     handleCloseDialog();
   };
@@ -335,44 +224,25 @@ export const MetricsManagement: React.FC = () => {
       </Paper>
 
       {/* Content */}
-      <Paper variant="outlined">
-        {isLoadingMetrics ? (
-          <LoadingTable />
-        ) : metrics.length === 0 ? (
-          <EmptyState
-            icon={MetricsIcon}
-            title="No metrics found"
-            description={
-              Object.keys(filters).length > 0
-                ? "No metrics match your current filters. Try adjusting your search criteria."
-                : "Get started by creating your first metric definition to track business performance."
-            }
-            action={
-              Object.keys(filters).length === 0 && (
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => setShowCreateDialog(true)}
-                >
-                  Create First Metric
-                </Button>
-              )
-            }
-          />
+      {isLoadingMetrics ? (
+        <LoadingTable />
+      ) : metrics.length === 0 ? (
+        Object.keys(filters).length > 0 ? (
+          <NoMetricsEmptyState />
         ) : (
-          <Box>
-            {metrics.map((metric) => (
-              <MetricRow
-                key={metric.id}
-                metric={metric}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onCalculate={handleCalculate}
-              />
-            ))}
-          </Box>
-        )}
-      </Paper>
+          <NoMetricsEmptyState 
+            onCreateClick={() => setShowCreateDialog(true)}
+          />
+        )
+      ) : (
+        <MetricDefinitionTable
+          metrics={metrics}
+          isLoading={isLoadingMetrics}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onCalculate={handleCalculate}
+        />
+      )}
 
       {/* Status Messages */}
       {isDeletingMetric && (
@@ -381,18 +251,31 @@ export const MetricsManagement: React.FC = () => {
         </Alert>
       )}
 
-      {isCalculatingMetric && (
+      {isCalculatingMetric && !showCalculationModal && (
         <Alert severity="info" sx={{ mt: 2 }}>
           Calculating metric...
         </Alert>
       )}
 
-      {/* TODO: Add MetricDefinitionFormDialog component */}
-      {showCreateDialog && (
-        <Alert severity="warning" sx={{ mt: 2 }}>
-          Metric form dialog not yet implemented. Coming soon!
-        </Alert>
-      )}
+      {/* Metric Form Dialog */}
+      <MetricDefinitionForm
+        open={showCreateDialog}
+        onClose={handleCloseDialog}
+        editingMetric={editingMetric}
+        onSubmit={handleSubmit}
+        isLoading={isCreatingMetric || isUpdatingMetric}
+      />
+
+      {/* Calculation Modal */}
+      <MetricCalculationModal
+        open={showCalculationModal}
+        onClose={handleCloseCalculationModal}
+        metric={calculatingMetric}
+        onCalculate={handleCalculateMetric}
+        isCalculating={isCalculatingMetric}
+        calculationResult={calculationResult}
+        // calculationError={calculationError} // Remove this prop if not available
+      />
     </Box>
   );
 };

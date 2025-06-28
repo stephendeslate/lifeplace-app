@@ -40,9 +40,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useDashboards } from '../../hooks/useAnalytics';
+import { DashboardForm } from '../../components/analytics/dashboards/DashboardForm';
 import { LoadingTable } from '../../components/common/LoadingTable';
 import { EmptyState } from '../../components/common/EmptyState';
-import type { Dashboard, DashboardFilters, DASHBOARD_TYPES } from '../../types/analytics.types';
+import type { Dashboard, DashboardFilters } from '../../types/analytics.types';
 
 interface DashboardCardActionsProps {
   dashboard: Dashboard;
@@ -474,12 +475,14 @@ export const DashboardsManagement: React.FC = () => {
         </Alert>
       )}
 
-      {/* TODO: Add DashboardFormDialog component */}
-      {showCreateDialog && (
-        <Alert severity="warning" sx={{ mt: 2 }}>
-          Dashboard form dialog not yet implemented. Coming soon!
-        </Alert>
-      )}
+      {/* Dashboard Form Dialog */}
+      <DashboardForm
+        open={showCreateDialog}
+        onClose={handleCloseDialog}
+        editingDashboard={editingDashboard}
+        onSubmit={handleSubmit}
+        isLoading={isCreatingDashboard || isUpdatingDashboard}
+      />
     </Box>
   );
 };
