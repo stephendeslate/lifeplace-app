@@ -10,6 +10,11 @@ from django.utils import timezone
 from core.domains.events.models import Event, EventProductOption
 from core.domains.products.models import ProductOption
 
+# FIX: Simplified import approach to avoid potential path issues
+from core.domains.payments.services import PaymentService, PaymentGatewayService
+from core.domains.payments.models import PaymentGateway
+from core.domains.payments.exceptions import PaymentGatewayException
+
 from ..exceptions import (
     BookingFlowNotActive,
     BookingSessionNotFound,
@@ -173,9 +178,6 @@ class BookingSessionService:
     @staticmethod
     def _process_booking_payment(session, event, payment_data):
         """Process payment for completed booking"""
-        from core.domains.payments.services import PaymentService
-        from core.domains.payments.models import PaymentGateway
-        
         gateway_id = payment_data.get('gateway_id')
         if not gateway_id:
             raise ValueError("No payment gateway specified")
@@ -188,9 +190,9 @@ class BookingSessionService:
         # Calculate total amount from session
         total_amount = session.calculate_total_price()
         
-        # Create payment record
+        # FIX: Create payment record with proper data structure
         payment_record_data = {
-            'event': event.id,
+            'event': event.id,  # Pass ID, not object
             'amount': total_amount,
             'status': 'PENDING',
             'due_date': timezone.now().date(),
@@ -215,8 +217,8 @@ class BookingSessionService:
         if payment_data.get('billing_address'):
             gateway_data['billing_address'] = payment_data['billing_address']
         
-        # Route to appropriate payment processor based on gateway code
-        transaction_result = PaymentService.process_gateway_payment(
+        # FIX: Use correct service method
+        transaction_result = PaymentGatewayService.process_gateway_payment(
             payment.id,
             gateway.code,
             gateway_data,
@@ -233,13 +235,14 @@ class BookingSessionService:
         # Extract event data from session
         booking_data = session.booking_data
         
-        # Build event data
+        # Build event data with required fields
         event_data = {
             'client': session.client,
             'event_type': session.booking_flow.event_type,
             'status': 'LEAD',
             'workflow_template': session.booking_flow.workflow_template,
             'name': 'Booking from Client Portal',  # Default name
+            'start_date': timezone.now(),  # FIX: Default start date - will be overridden if provided
         }
         
         # Extract basic event info from various steps
@@ -248,14 +251,40 @@ class BookingSessionService:
                 # Extract event name, dates, etc.
                 if 'event_name' in step_data:
                     event_data['name'] = step_data['event_name']
+                
+                # FIX: Handle date/time properly - combine date and time if both provided
                 if 'start_date' in step_data:
-                    event_data['start_date'] = step_data['start_date']
+                    start_date = step_data['start_date']
+                    start_time = step_data.get('start_time')
+                    
+                    if start_time:
+                        # Combine date and time into datetime
+                        from datetime import datetime, time
+                        if isinstance(start_date, str):
+                            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                        if isinstance(start_time, str):
+                            start_time = datetime.strptime(start_time, '%H:%M:%S').time()
+                        
+                        event_data['start_date'] = datetime.combine(start_date, start_time)
+                    else:
+                        event_data['start_date'] = start_date
+                
                 if 'end_date' in step_data:
-                    event_data['end_date'] = step_data['end_date']
-                if 'start_time' in step_data:
-                    event_data['start_time'] = step_data['start_time']
-                if 'end_time' in step_data:
-                    event_data['end_time'] = step_data['end_time']
+                    end_date = step_data['end_date']
+                    end_time = step_data.get('end_time')
+                    
+                    if end_time:
+                        # Combine date and time into datetime
+                        from datetime import datetime, time
+                        if isinstance(end_date, str):
+                            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+                        if isinstance(end_time, str):
+                            end_time = datetime.strptime(end_time, '%H:%M:%S').time()
+                        
+                        event_data['end_date'] = datetime.combine(end_date, end_time)
+                    else:
+                        event_data['end_date'] = end_date
+                
                 if 'guest_count' in step_data:
                     event_data['guest_count'] = step_data['guest_count']
                 if 'description' in step_data:
@@ -263,7 +292,7 @@ class BookingSessionService:
                 if 'venue_preference' in step_data:
                     event_data['venue'] = step_data['venue_preference']
         
-        # Prepare event products
+        # FIX: Prepare event products with correct structure
         event_products = []
         total_price = Decimal('0.00')
         
@@ -278,7 +307,7 @@ class BookingSessionService:
                             price = Decimal(str(package_data.get('price', product_option.base_price)))
                             
                             event_products.append({
-                                'product_option': product_option,
+                                'product_option': product_option.id,  # Pass ID, not object
                                 'quantity': quantity,
                                 'final_price': price,
                                 'num_participants': event_data.get('guest_count'),
@@ -296,7 +325,7 @@ class BookingSessionService:
                             price = Decimal(str(addon_data.get('price', product_option.base_price)))
                             
                             event_products.append({
-                                'product_option': product_option,
+                                'product_option': product_option.id,  # Pass ID, not object
                                 'quantity': quantity,
                                 'final_price': price,
                             })

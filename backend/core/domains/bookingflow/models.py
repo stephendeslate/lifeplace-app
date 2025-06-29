@@ -177,9 +177,13 @@ class BookingFlow(BaseModel):
         if self.allowed_payment_gateways.exists():
             return self.allowed_payment_gateways.filter(is_active=True)
         else:
-            # Fallback to all active gateways
-            from core.domains.payments.models import PaymentGateway
-            return PaymentGateway.objects.filter(is_active=True)
+            # FIX: Import here to avoid circular imports
+            try:
+                from core.domains.payments.models import PaymentGateway
+                return PaymentGateway.objects.filter(is_active=True)
+            except ImportError:
+                # Return empty queryset if payments domain not available
+                return self.allowed_payment_gateways.none()
 
 
 class BookingFlowStep(BaseModel):
@@ -544,11 +548,13 @@ class PaymentInfoStepConfiguration(BaseModel):
         help_text="Available payment methods"
     )
     
-    # Payment processing - NEW
+    # Payment processing - FIXED
     require_immediate_payment = models.BooleanField(
         default=False,
         help_text="Process payment immediately during booking"
     )
+    
+    # FIX: Use string references to avoid import issues
     allowed_gateways = models.ManyToManyField(
         'payments.PaymentGateway',
         blank=True,
@@ -569,6 +575,24 @@ class PaymentInfoStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Payment config for {self.step}"
+    
+    def get_available_gateways(self):
+        """Get available payment gateways for this step"""
+        if self.allowed_gateways.exists():
+            return self.allowed_gateways.filter(is_active=True)
+        elif self.default_gateway and self.default_gateway.is_active:
+            return [self.default_gateway]
+        elif self.step.booking_flow.allowed_payment_gateways.exists():
+            return self.step.booking_flow.allowed_payment_gateways.filter(is_active=True)
+        elif self.step.booking_flow.default_payment_gateway and self.step.booking_flow.default_payment_gateway.is_active:
+            return [self.step.booking_flow.default_payment_gateway]
+        else:
+            # Fallback to all active gateways
+            try:
+                from core.domains.payments.models import PaymentGateway
+                return PaymentGateway.objects.filter(is_active=True)
+            except ImportError:
+                return []
 
 
 class ConfirmationStepConfiguration(BaseModel):
