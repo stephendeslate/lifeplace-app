@@ -69,6 +69,26 @@ class BookingFlow(BaseModel):
         related_name='booking_flows'
     )
     
+    # Payment configuration - NEW
+    allowed_payment_gateways = models.ManyToManyField(
+        'payments.PaymentGateway',
+        blank=True,
+        related_name='booking_flows',
+        help_text="Payment gateways available for this booking flow"
+    )
+    default_payment_gateway = models.ForeignKey(
+        'payments.PaymentGateway',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='default_booking_flows',
+        help_text="Default payment gateway for this booking flow"
+    )
+    require_immediate_payment = models.BooleanField(
+        default=False,
+        help_text="Require payment during booking completion"
+    )
+    
     # Completion actions
     redirect_url = models.URLField(blank=True, help_text="URL to redirect after successful booking")
     success_message = models.TextField(blank=True)
@@ -82,8 +102,6 @@ class BookingFlow(BaseModel):
 
     class Meta:
         ordering = ['name']
-        # REMOVED: unique_together constraint since we want to allow multiple flows per event type
-        # but we'll add custom validation instead
         indexes = [
             models.Index(fields=['event_type', 'is_active']),
             models.Index(fields=['is_active']),
@@ -153,6 +171,15 @@ class BookingFlow(BaseModel):
     def event_type_name(self):
         """Get event type name or 'Any Event Type'"""
         return self.event_type.name if self.event_type else 'Any Event Type'
+    
+    def get_available_payment_gateways(self):
+        """Get available payment gateways for this flow"""
+        if self.allowed_payment_gateways.exists():
+            return self.allowed_payment_gateways.filter(is_active=True)
+        else:
+            # Fallback to all active gateways
+            from core.domains.payments.models import PaymentGateway
+            return PaymentGateway.objects.filter(is_active=True)
 
 
 class BookingFlowStep(BaseModel):
@@ -231,6 +258,7 @@ class BookingFlowStep(BaseModel):
         return True
 
 
+# Step configurations remain the same as before...
 class IntroductionStepConfiguration(BaseModel):
     """Configuration for introduction step"""
     step = models.OneToOneField(
@@ -488,7 +516,7 @@ class ContactInfoStepConfiguration(BaseModel):
 
 
 class PaymentInfoStepConfiguration(BaseModel):
-    """Configuration for payment information step"""
+    """Configuration for payment information step - UPDATED"""
     step = models.OneToOneField(
         BookingFlowStep,
         on_delete=models.CASCADE,
@@ -516,8 +544,26 @@ class PaymentInfoStepConfiguration(BaseModel):
         help_text="Available payment methods"
     )
     
-    # Payment processing
-    require_immediate_payment = models.BooleanField(default=False)
+    # Payment processing - NEW
+    require_immediate_payment = models.BooleanField(
+        default=False,
+        help_text="Process payment immediately during booking"
+    )
+    allowed_gateways = models.ManyToManyField(
+        'payments.PaymentGateway',
+        blank=True,
+        related_name='payment_step_configs',
+        help_text="Payment gateways available for this step"
+    )
+    default_gateway = models.ForeignKey(
+        'payments.PaymentGateway',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='default_payment_steps',
+        help_text="Default payment gateway for this step"
+    )
+    
     allow_payment_plans = models.BooleanField(default=False)
     payment_terms = models.TextField(blank=True)
 
