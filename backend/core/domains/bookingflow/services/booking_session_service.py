@@ -285,6 +285,7 @@ class BookingSessionService:
                     else:
                         event_data['end_date'] = end_date
                 
+                # Extract other event info that might be in various steps
                 if 'guest_count' in step_data:
                     event_data['guest_count'] = step_data['guest_count']
                 if 'description' in step_data:
@@ -367,16 +368,6 @@ class BookingSessionService:
                     errors['address'] = 'Address is required'
                 if config.require_company and not step_data.get('company'):
                     errors['company'] = 'Company is required'
-        
-        elif step.step_type == 'event_details':
-            config = getattr(step, 'event_details_config', None)
-            if config:
-                if config.require_event_name and not step_data.get('event_name'):
-                    errors['event_name'] = 'Event name is required'
-                if config.require_guest_count and not step_data.get('guest_count'):
-                    errors['guest_count'] = 'Guest count is required'
-                if config.max_guest_count and step_data.get('guest_count', 0) > config.max_guest_count:
-                    errors['guest_count'] = f'Guest count cannot exceed {config.max_guest_count}'
         
         elif step.step_type == 'package_selection':
             config = getattr(step, 'package_config', None)

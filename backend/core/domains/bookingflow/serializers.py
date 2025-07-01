@@ -1,58 +1,4 @@
-def validate(self, data):
-        """Validate booking flow update data"""
-        # Get current instance for validation
-        instance = getattr(self, 'instance', None)
-        
-        if instance:
-            # Merge current data with update data for validation
-            current_data = {
-                'min_advance_booking_days': instance.min_advance_booking_days,
-                'max_advance_booking_days': instance.max_advance_booking_days,
-                'event_type': instance.event_type_id,
-                'is_active': instance.is_active,
-            }
-            current_data.update(data)
-            
-            min_days = current_data.get('min_advance_booking_days', 1)
-            max_days = current_data.get('max_advance_booking_days', 365)
-            
-            if min_days >= max_days:
-                raise serializers.ValidationError({
-                    'max_advance_booking_days': 'Maximum days must be greater than minimum days'
-                })
-            
-            # Check for active booking flows with same event type
-            event_type = current_data.get('event_type')
-            is_active = current_data.get('is_active', True)
-            
-            if is_active:
-                # Check for existing active flows with same event type (excluding current instance)
-                existing_flows = BookingFlow.objects.filter(
-                    event_type=event_type,
-                    is_active=True
-                ).exclude(pk=instance.pk)
-                
-                if existing_flows.exists():
-                    if event_type:
-                        # Get event type name for better error message
-                        try:
-                            from core.domains.events.models import EventType
-                            event_type_obj = EventType.objects.get(id=event_type)
-                            event_type_name = event_type_obj.name
-                        except EventType.DoesNotExist:
-                            event_type_name = f"Event Type ID {event_type}"
-                        
-                        raise serializers.ValidationError({
-                            'event_type': f'An active booking flow already exists for {event_type_name}. '
-                                        'Only one active flow per event type is allowed.'
-                        })
-                    else:
-                        raise serializers.ValidationError({
-                            'event_type': 'An active booking flow already exists for "Any Event Type". '
-                                        'Only one active flow for "Any Event Type" is allowed.'
-                        })
-        
-        return data# backend/core/domains/bookingflow/serializers.py
+# backend/core/domains/bookingflow/serializers.py
 from core.domains.communications.serializers import CommunicationTemplateSerializer
 from core.domains.events.basic_serializers import EventTypeSerializer
 from core.domains.products.serializers import (
@@ -73,7 +19,6 @@ from .models import (
     ConfirmationStepConfiguration,
     ContactInfoStepConfiguration,
     DateTimeStepConfiguration,
-    EventDetailsStepConfiguration,
     IntroductionStepConfiguration,
     PackageSelectionStepConfiguration,
     PaymentInfoStepConfiguration,
@@ -90,17 +35,6 @@ class IntroductionStepConfigurationSerializer(serializers.ModelSerializer):
             'id', 'step', 'title', 'content', 'show_event_details',
             'show_pricing_overview', 'custom_css', 'background_image',
             'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
-
-
-class EventDetailsStepConfigurationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EventDetailsStepConfiguration
-        fields = [
-            'id', 'step', 'show_event_type_selection', 'require_event_name',
-            'require_description', 'require_guest_count', 'max_guest_count',
-            'require_venue_preference', 'venue_options', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
@@ -237,8 +171,6 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
         try:
             if obj.step_type == 'introduction' and hasattr(obj, 'introduction_config'):
                 return IntroductionStepConfigurationSerializer(obj.introduction_config).data
-            elif obj.step_type == 'event_details' and hasattr(obj, 'event_details_config'):
-                return EventDetailsStepConfigurationSerializer(obj.event_details_config).data
             elif obj.step_type == 'date_time' and hasattr(obj, 'datetime_config'):
                 return DateTimeStepConfigurationSerializer(obj.datetime_config).data
             elif obj.step_type == 'questionnaire' and hasattr(obj, 'questionnaire_config'):

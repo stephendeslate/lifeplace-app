@@ -192,7 +192,6 @@ class BookingFlowStep(BaseModel):
     """
     STEP_TYPES = [
         ('introduction', 'Introduction'),
-        ('event_details', 'Event Details'),
         ('date_time', 'Date & Time Selection'),
         ('questionnaire', 'Questionnaire'),
         ('package_selection', 'Package Selection'),
@@ -262,7 +261,6 @@ class BookingFlowStep(BaseModel):
         return True
 
 
-# Step configurations remain the same as before...
 class IntroductionStepConfiguration(BaseModel):
     """Configuration for introduction step"""
     step = models.OneToOneField(
@@ -279,30 +277,6 @@ class IntroductionStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Intro config for {self.step}"
-
-
-class EventDetailsStepConfiguration(BaseModel):
-    """Configuration for event details step"""
-    step = models.OneToOneField(
-        BookingFlowStep,
-        on_delete=models.CASCADE,
-        related_name='event_details_config'
-    )
-    show_event_type_selection = models.BooleanField(default=False)
-    require_event_name = models.BooleanField(default=True)
-    require_description = models.BooleanField(default=False)
-    require_guest_count = models.BooleanField(default=True)
-    max_guest_count = models.PositiveIntegerField(null=True, blank=True)
-    require_venue_preference = models.BooleanField(default=False)
-    venue_options = ArrayField(
-        models.CharField(max_length=255),
-        blank=True,
-        default=list,
-        help_text="Predefined venue options"
-    )
-
-    def __str__(self):
-        return f"Event details config for {self.step}"
 
 
 class DateTimeStepConfiguration(BaseModel):
