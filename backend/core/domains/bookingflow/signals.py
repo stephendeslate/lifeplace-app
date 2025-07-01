@@ -52,6 +52,13 @@ def handle_step_changes(sender, instance, created, **kwargs):
     """Handle changes to booking flow steps"""
     if created:
         logger.info(f"New step created: {instance.name} in flow: {instance.booking_flow.name}")
+        
+        # Log warning if someone somehow creates an availability_check step
+        if instance.step_type == 'availability_check':
+            logger.warning(
+                f"Availability check step created: {instance.name}. "
+                "This step type should be migrated to date_time with availability features."
+            )
     else:
         logger.info(f"Step updated: {instance.name} in flow: {instance.booking_flow.name}")
 
@@ -244,6 +251,15 @@ def update_session_analytics(sender, instance, created, **kwargs):
 @receiver(pre_save, sender=BookingFlowStep)
 def validate_step_configuration(sender, instance, **kwargs):
     """Validate step configuration before saving"""
+    # Prevent creation/update of availability_check steps
+    if instance.step_type == 'availability_check':
+        logger.warning(
+            f"Attempting to save availability_check step: {instance.name}. "
+            "This step type should be migrated to date_time with availability features."
+        )
+        # You could raise an exception here if you want to completely block it:
+        # raise ValueError("Availability check step type is no longer supported")
+    
     # Validate display conditions
     if instance.display_conditions:
         try:
@@ -262,3 +278,62 @@ def validate_step_configuration(sender, instance, **kwargs):
         except Exception as e:
             logger.error(f"Invalid validation rules for step {instance.name}: {e}")
             instance.validation_rules = {}
+
+
+# Handle migration of existing availability_check steps
+@receiver(post_save, sender=BookingFlowStep)
+def auto_migrate_availability_check_steps(sender, instance, created, **kwargs):
+    """Automatically migrate availability_check steps to date_time steps"""
+    if instance.step_type == 'availability_check' and not getattr(instance, '_migrating', False):
+        logger.info(f"Auto-migrating availability_check step to date_time: {instance.name}")
+        
+        try:
+            # Prevent infinite recursion
+            instance._migrating = True
+            
+            # Check if there's already a date_time step in this flow
+            existing_datetime_step = BookingFlowStep.objects.filter(
+                booking_flow=instance.booking_flow,
+                step_type='date_time'
+            ).exclude(id=instance.id).first()
+            
+            if existing_datetime_step:
+                # If date_time step exists, enhance its configuration and remove this step
+                from .models import DateTimeStepConfiguration
+                
+                try:
+                    datetime_config = DateTimeStepConfiguration.objects.get(step=existing_datetime_step)
+                    # Update existing config to include availability features
+                    datetime_config.enable_real_time_availability = True
+                    datetime_config.show_availability_status = True
+                    datetime_config.auto_check_conflicts = True
+                    datetime_config.check_venue_availability = True
+                    datetime_config.check_resource_availability = True
+                    datetime_config.check_staff_availability = True
+                    datetime_config.save()
+                except DateTimeStepConfiguration.DoesNotExist:
+                    # Create new configuration with availability features
+                    DateTimeStepConfiguration.objects.create(
+                        step=existing_datetime_step,
+                        enable_real_time_availability=True,
+                        show_availability_status=True,
+                        auto_check_conflicts=True,
+                        check_venue_availability=True,
+                        check_resource_availability=True,
+                        check_staff_availability=True
+                    )
+                
+                logger.info(f"Enhanced existing date_time step and removing redundant availability_check step")
+                instance.delete()
+                
+            else:
+                # Convert this step to date_time
+                from .services import BookingFlowStepConfigurationService
+                BookingFlowStepConfigurationService.migrate_availability_check_to_datetime(instance.id)
+                
+        except Exception as e:
+            logger.error(f"Failed to auto-migrate availability_check step: {e}")
+        finally:
+            # Reset migration flag
+            if hasattr(instance, '_migrating'):
+                delattr(instance, '_migrating')

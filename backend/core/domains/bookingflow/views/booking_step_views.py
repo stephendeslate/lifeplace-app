@@ -11,7 +11,7 @@ from ..serializers import (
     BookingFlowStepSerializer,
     BookingFlowStepUpdateSerializer,
     ReorderStepsSerializer,
-    # Configuration serializers - EventDetailsStepConfigurationSerializer removed
+    # Configuration serializers
     IntroductionStepConfigurationSerializer,
     DateTimeStepConfigurationSerializer,
     QuestionnaireStepConfigurationSerializer,
@@ -35,7 +35,7 @@ from ..exceptions import (
 class BookingFlowStepViewSet(viewsets.ModelViewSet):
     """
     Enhanced ViewSet for managing booking flow steps with detailed configurations
-    EventDetails step has been removed completely
+    Availability check step has been removed and integrated into date_time step
     """
     permission_classes = [IsAdmin]
     
@@ -69,11 +69,11 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Validate step_type to ensure event_details is not being created
+        # Validate step_type to ensure availability_check is not being created
         step_type = request_data.get('step_type')
-        if step_type == 'event_details':
+        if step_type == 'availability_check':
             return Response(
-                {"detail": "EventDetails step type is no longer supported"},
+                {"detail": "Availability check step type is no longer supported. Use date_time step with availability checking enabled instead."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -121,10 +121,10 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         
-        # Prevent updating to event_details step type
-        if 'step_type' in request.data and request.data['step_type'] == 'event_details':
+        # Prevent updating to availability_check step type
+        if 'step_type' in request.data and request.data['step_type'] == 'availability_check':
             return Response(
-                {"detail": "EventDetails step type is no longer supported"},
+                {"detail": "Availability check step type is no longer supported. Use date_time step with availability checking enabled instead."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -183,21 +183,21 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def configuration(self, request, pk=None):
-        """Get configuration for a step - EventDetails removed from mapping"""
+        """Get configuration for a step - availability_check removed from mapping"""
         try:
             step = self.get_object()
             
-            # Return error if someone tries to access event_details configuration
-            if step.step_type == 'event_details':
+            # Return error if someone tries to access availability_check configuration
+            if step.step_type == 'availability_check':
                 return Response(
-                    {"detail": "EventDetails step type is no longer supported"},
+                    {"detail": "Availability check step type is no longer supported. Use date_time step with availability checking enabled instead."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
             config = BookingFlowStepConfigurationService.get_step_configuration(pk)
             
             if config:
-                # Updated serializer mapping without event_details
+                # Updated serializer mapping without availability_check
                 serializer_map = {
                     'introduction': IntroductionStepConfigurationSerializer,
                     'date_time': DateTimeStepConfigurationSerializer,
@@ -223,14 +223,14 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def update_configuration(self, request, pk=None):
-        """Update configuration for a step - EventDetails blocked"""
+        """Update configuration for a step - availability_check blocked"""
         try:
             step = self.get_object()
             
-            # Block event_details configuration updates
-            if step.step_type == 'event_details':
+            # Block availability_check configuration updates
+            if step.step_type == 'availability_check':
                 return Response(
-                    {"detail": "EventDetails step type is no longer supported"},
+                    {"detail": "Availability check step type is no longer supported. Use date_time step with availability checking enabled instead."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -242,6 +242,33 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
             
             return self.configuration(request, pk)
         except (BookingFlowStepNotFound, InvalidStepConfiguration) as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['post'])
+    def migrate_availability_to_datetime(self, request, pk=None):
+        """Migrate an availability_check step to date_time with availability features"""
+        try:
+            step = self.get_object()
+            
+            if step.step_type != 'availability_check':
+                return Response(
+                    {"detail": "This migration is only available for availability_check steps"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            with transaction.atomic():
+                config = BookingFlowStepConfigurationService.migrate_availability_check_to_datetime(pk)
+            
+            # Return updated step data
+            updated_step = BookingFlowStep.objects.get(id=pk)
+            return Response(
+                BookingFlowStepSerializer(updated_step, context=self.get_serializer_context()).data,
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
             return Response(
                 {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
@@ -344,6 +371,51 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
             )
 
     @action(detail=True, methods=['get'])
+    def availability_settings(self, request, pk=None):
+        """Get availability settings for date_time step"""
+        try:
+            step = self.get_object()
+            
+            if step.step_type != 'date_time':
+                return Response(
+                    {"detail": "This action is only available for date_time steps"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get step configuration
+            config = getattr(step, 'datetime_config', None)
+            if not config:
+                return Response(
+                    {"detail": "DateTime configuration not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            return Response({
+                'enable_real_time_availability': config.enable_real_time_availability,
+                'show_availability_status': config.show_availability_status,
+                'auto_check_conflicts': config.auto_check_conflicts,
+                'check_venue_availability': config.check_venue_availability,
+                'check_resource_availability': config.check_resource_availability,
+                'check_staff_availability': config.check_staff_availability,
+                'availability_display_mode': config.availability_display_mode,
+                'allow_overbooking': config.allow_overbooking,
+                'overbooking_threshold': config.overbooking_threshold,
+                'sync_with_calendar': config.sync_with_calendar,
+                'calendar_source': config.calendar_source,
+                'blocked_dates': config.blocked_dates,
+                'available_days_of_week': config.available_days_of_week,
+                'available_time_slots': config.available_time_slots,
+                'buffer_before_hours': config.buffer_before_hours,
+                'buffer_after_hours': config.buffer_after_hours
+            })
+            
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['get'])
     def available_questionnaires(self, request, pk=None):
         """Get available questionnaires for questionnaire step configuration"""
         from core.domains.questionnaires.models import Questionnaire
@@ -420,19 +492,27 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def available_step_types(self, request):
-        """Get all available step types (excludes event_details)"""
+        """Get all available step types (excludes availability_check)"""
         from ..models import BookingFlowStep
         
-        # Filter out event_details from the choices
+        # Filter out availability_check from the choices
         available_types = [
             {'value': choice[0], 'label': choice[1]} 
             for choice in BookingFlowStep.STEP_TYPES 
-            if choice[0] != 'event_details'  # Explicitly exclude event_details
+            if choice[0] != 'availability_check'  # Explicitly exclude availability_check
         ]
         
         return Response({
             'step_types': available_types,
-            'total_count': len(available_types)
+            'total_count': len(available_types),
+            'removed_types': [
+                {
+                    'value': 'availability_check',
+                    'label': 'Availability Check',
+                    'reason': 'Integrated into date_time step',
+                    'migration_available': True
+                }
+            ]
         })
 
     @action(detail=True, methods=['get'])
@@ -441,10 +521,10 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
         try:
             step = self.get_object()
             
-            # Block access to event_details validation rules
-            if step.step_type == 'event_details':
+            # Block access to availability_check validation rules
+            if step.step_type == 'availability_check':
                 return Response(
-                    {"detail": "EventDetails step type is no longer supported"},
+                    {"detail": "Availability check step type is no longer supported. Use date_time step with availability checking enabled instead."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -456,7 +536,10 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
                 },
                 'date_time': {
                     'required_fields': ['start_date'],
-                    'optional_fields': ['start_time', 'end_date', 'end_time', 'duration']
+                    'optional_fields': ['start_time', 'end_date', 'end_time', 'duration'],
+                    'availability_fields': [
+                        'venue_preference', 'resource_requirements', 'staff_requirements'
+                    ]
                 },
                 'questionnaire': {
                     'required_fields': [],
