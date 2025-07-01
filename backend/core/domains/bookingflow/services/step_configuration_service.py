@@ -36,6 +36,13 @@ class BookingFlowStepConfigurationService:
         except BookingFlowStep.DoesNotExist:
             raise BookingFlowStepNotFound()
         
+        # Prevent access to removed step types
+        if step.step_type == 'availability_check':
+            raise InvalidStepConfiguration(
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
+        
         config_map = {
             'introduction': lambda s: getattr(s, 'introduction_config', None),
             'date_time': lambda s: getattr(s, 'datetime_config', None),
@@ -69,6 +76,13 @@ class BookingFlowStepConfigurationService:
         except BookingFlowStep.DoesNotExist:
             raise BookingFlowStepNotFound()
         
+        # Prevent updating removed step types
+        if step.step_type == 'availability_check':
+            raise InvalidStepConfiguration(
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
+        
         with transaction.atomic():
             config_updaters = {
                 'introduction': BookingFlowStepConfigurationService._update_introduction_config,
@@ -97,6 +111,13 @@ class BookingFlowStepConfigurationService:
             target_step = BookingFlowStep.objects.get(id=target_step_id)
         except BookingFlowStep.DoesNotExist:
             raise BookingFlowStepNotFound()
+        
+        # Prevent operations on removed step types
+        if source_step.step_type == 'availability_check' or target_step.step_type == 'availability_check':
+            raise InvalidStepConfiguration(
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
         
         if source_step.step_type != target_step.step_type:
             raise InvalidStepConfiguration("Cannot duplicate configuration between different step types")
@@ -163,15 +184,63 @@ class BookingFlowStepConfigurationService:
             return config
     
     @staticmethod
+    def migrate_availability_check_to_datetime(step_id):
+        """Migrate an availability_check step to a date_time step with availability features"""
+        try:
+            step = BookingFlowStep.objects.get(id=step_id)
+        except BookingFlowStep.DoesNotExist:
+            raise BookingFlowStepNotFound()
+        
+        if step.step_type != 'availability_check':
+            raise InvalidStepConfiguration("This migration is only for availability_check steps")
+        
+        with transaction.atomic():
+            # Update step type
+            step.step_type = 'date_time'
+            step.name = step.name.replace('Availability Check', 'Date & Time Selection')
+            step.save()
+            
+            # Create enhanced datetime configuration with availability features
+            datetime_config = DateTimeStepConfiguration.objects.create(
+                step=step,
+                allow_time_selection=True,
+                show_calendar_view=True,
+                enable_real_time_availability=True,
+                show_availability_status=True,
+                auto_check_conflicts=True,
+                check_venue_availability=True,
+                check_resource_availability=True,
+                check_staff_availability=True,
+                availability_display_mode='FULL',
+                allow_overbooking=False,
+                overbooking_threshold=0
+            )
+            
+            logger.info(f"Migrated availability_check step to date_time: {step.name}")
+            return datetime_config
+    
+    @staticmethod
     def _create_default_configuration(step):
         """Create default configuration for a step"""
+        # Block creation of availability_check configurations
+        if step.step_type == 'availability_check':
+            raise InvalidStepConfiguration(
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
+        
         config_creators = {
             'introduction': lambda s: IntroductionStepConfiguration.objects.create(
                 step=s,
                 title=f"Welcome to {s.booking_flow.event_type.name if s.booking_flow.event_type else 'Event'} Booking",
                 content="We're excited to help you plan your perfect event!"
             ),
-            'date_time': lambda s: DateTimeStepConfiguration.objects.create(step=s),
+            'date_time': lambda s: DateTimeStepConfiguration.objects.create(
+                step=s,
+                enable_real_time_availability=True,
+                show_availability_status=True,
+                auto_check_conflicts=True
+            ),
             'questionnaire': lambda s: QuestionnaireStepConfiguration.objects.create(step=s),
             'package_selection': lambda s: PackageSelectionStepConfiguration.objects.create(step=s),
             'addon_selection': lambda s: AddonSelectionStepConfiguration.objects.create(step=s),
@@ -205,8 +274,15 @@ class BookingFlowStepConfigurationService:
     
     @staticmethod
     def _update_datetime_config(step, config_data):
-        """Update datetime step configuration"""
-        config, created = DateTimeStepConfiguration.objects.get_or_create(step=step)
+        """Update datetime step configuration with enhanced availability features"""
+        config, created = DateTimeStepConfiguration.objects.get_or_create(
+            step=step,
+            defaults={
+                'enable_real_time_availability': True,
+                'show_availability_status': True,
+                'auto_check_conflicts': True
+            }
+        )
         for key, value in config_data.items():
             if hasattr(config, key):
                 setattr(config, key, value)

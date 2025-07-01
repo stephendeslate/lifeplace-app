@@ -46,8 +46,14 @@ class DateTimeStepConfigurationSerializer(serializers.ModelSerializer):
             'id', 'step', 'allow_time_selection', 'allow_multi_day',
             'show_calendar_view', 'min_duration_hours', 'max_duration_hours',
             'default_duration_hours', 'enable_real_time_availability',
+            'show_availability_status', 'auto_check_conflicts',
             'blocked_dates', 'available_days_of_week', 'available_time_slots',
-            'buffer_before_hours', 'buffer_after_hours', 'created_at', 'updated_at'
+            'buffer_before_hours', 'buffer_after_hours',
+            'check_venue_availability', 'check_resource_availability',
+            'check_staff_availability', 'availability_display_mode',
+            'allow_overbooking', 'overbooking_threshold',
+            'sync_with_calendar', 'calendar_source',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
@@ -492,6 +498,15 @@ class BookingFlowStepCreateSerializer(serializers.ModelSerializer):
                 'order': {'required': False, 'allow_null': True}
             }
 
+    def validate_step_type(self, value):
+        """Validate that availability_check step type is not being created"""
+        if value == 'availability_check':
+            raise serializers.ValidationError(
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
+        return value
+
     def validate(self, data):
         """Validate step data"""
         booking_flow = data.get('booking_flow')
@@ -522,6 +537,15 @@ class BookingFlowStepUpdateSerializer(serializers.ModelSerializer):
             'is_enabled', 'is_required', 'is_skippable', 'display_conditions',
             'configuration', 'validation_rules'
         ]
+
+    def validate_step_type(self, value):
+        """Validate that availability_check step type is not being set"""
+        if value == 'availability_check':
+            raise serializers.ValidationError(
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
+        return value
 
     def validate(self, data):
         """Validate step update data"""

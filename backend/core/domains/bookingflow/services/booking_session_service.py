@@ -354,6 +354,14 @@ class BookingSessionService:
         """Validate step data against step configuration"""
         errors = {}
         
+        # Block validation for removed step types
+        if step.step_type == 'availability_check':
+            errors['step_type'] = (
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
+            return errors
+        
         # Basic validation based on step type
         if step.step_type == 'contact_info':
             config = getattr(step, 'contact_config', None)
@@ -368,6 +376,20 @@ class BookingSessionService:
                     errors['address'] = 'Address is required'
                 if config.require_company and not step_data.get('company'):
                     errors['company'] = 'Company is required'
+        
+        elif step.step_type == 'date_time':
+            # Enhanced validation for date_time steps with availability checking
+            config = getattr(step, 'datetime_config', None)
+            if config:
+                # Basic date/time validation
+                if not step_data.get('start_date'):
+                    errors['start_date'] = 'Start date is required'
+                
+                # Availability validation if enabled
+                if config.enable_real_time_availability and config.auto_check_conflicts:
+                    availability_result = BookingSessionService._check_availability(step_data, config)
+                    if not availability_result['available']:
+                        errors['availability'] = availability_result['message']
         
         elif step.step_type == 'package_selection':
             config = getattr(step, 'package_config', None)
@@ -405,3 +427,71 @@ class BookingSessionService:
                             errors[field] = f'{field.replace("_", " ").title()} is required'
         
         return errors
+    
+    @staticmethod
+    def _check_availability(step_data, config):
+        """Check availability for date/time step with enhanced availability features"""
+    @staticmethod
+    def _check_availability(step_data, config):
+        """Check availability for date/time step with enhanced availability features"""
+        # This is a placeholder for actual availability checking logic
+        # In a real implementation, this would integrate with:
+        # - Venue availability systems
+        # - Resource management systems
+        # - Staff scheduling systems
+        
+        start_date = step_data.get('start_date')
+        start_time = step_data.get('start_time')
+        end_date = step_data.get('end_date')
+        end_time = step_data.get('end_time')
+        
+        if not start_date:
+            return {'available': False, 'message': 'Start date is required'}
+        
+        # Check blocked dates
+        from datetime import datetime
+        if isinstance(start_date, str):
+            check_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        else:
+            check_date = start_date
+        
+        if config.blocked_dates and check_date in config.blocked_dates:
+            return {'available': False, 'message': 'Selected date is not available'}
+        
+        # Check available days of week
+        if config.available_days_of_week:
+            weekday = check_date.weekday()  # 0=Monday, 6=Sunday
+            if weekday not in config.available_days_of_week:
+                return {'available': False, 'message': 'Selected day of the week is not available'}
+        
+        # Check time slots if time is provided
+        if start_time and config.available_time_slots:
+            # This would check against configured time slots
+            # For now, assume availability
+            pass
+        
+        # Check venue availability if enabled
+        if config.check_venue_availability:
+            # This would integrate with venue management system
+            # For now, assume available
+            pass
+        
+        # Check resource availability if enabled
+        if config.check_resource_availability:
+            # This would integrate with resource management system
+            # For now, assume available
+            pass
+        
+        # Check staff availability if enabled
+        if config.check_staff_availability:
+            # This would integrate with staff scheduling system
+            # For now, assume available
+            pass
+        
+        # Check for overbooking limits
+        if not config.allow_overbooking:
+            # This would check existing bookings for conflicts
+            # For now, assume no conflicts
+            pass
+        
+        return {'available': True, 'message': 'Time slot is available'}

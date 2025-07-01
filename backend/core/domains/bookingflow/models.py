@@ -196,7 +196,6 @@ class BookingFlowStep(BaseModel):
         ('questionnaire', 'Questionnaire'),
         ('package_selection', 'Package Selection'),
         ('addon_selection', 'Add-on Selection'),
-        ('availability_check', 'Availability Check'),
         ('pricing_summary', 'Pricing Summary'),
         ('contact_info', 'Contact Information'),
         ('payment_info', 'Payment Information'),
@@ -280,7 +279,7 @@ class IntroductionStepConfiguration(BaseModel):
 
 
 class DateTimeStepConfiguration(BaseModel):
-    """Configuration for date and time selection step"""
+    """Enhanced configuration for date and time selection step with availability checking"""
     step = models.OneToOneField(
         BookingFlowStep,
         on_delete=models.CASCADE,
@@ -293,8 +292,11 @@ class DateTimeStepConfiguration(BaseModel):
     max_duration_hours = models.PositiveIntegerField(default=24)
     default_duration_hours = models.PositiveIntegerField(default=4)
     
-    # Availability settings
+    # Availability settings - Enhanced from availability_check step
     enable_real_time_availability = models.BooleanField(default=True)
+    show_availability_status = models.BooleanField(default=True)
+    auto_check_conflicts = models.BooleanField(default=True)
+    
     blocked_dates = ArrayField(
         models.DateField(),
         blank=True,
@@ -316,6 +318,42 @@ class DateTimeStepConfiguration(BaseModel):
     # Buffer settings
     buffer_before_hours = models.PositiveIntegerField(default=0)
     buffer_after_hours = models.PositiveIntegerField(default=0)
+    
+    # Availability checking configuration
+    check_venue_availability = models.BooleanField(default=True)
+    check_resource_availability = models.BooleanField(default=True)
+    check_staff_availability = models.BooleanField(default=True)
+    
+    # Availability display settings
+    availability_display_mode = models.CharField(
+        max_length=20,
+        choices=[
+            ('FULL', 'Show Full Availability'),
+            ('LIMITED', 'Show Limited Availability'),
+            ('SIMPLE', 'Show Simple Yes/No'),
+        ],
+        default='FULL'
+    )
+    
+    # Conflict resolution
+    allow_overbooking = models.BooleanField(default=False)
+    overbooking_threshold = models.PositiveIntegerField(
+        default=0,
+        help_text="Maximum allowed conflicts before blocking"
+    )
+    
+    # Integration settings
+    sync_with_calendar = models.BooleanField(default=False)
+    calendar_source = models.CharField(
+        max_length=50,
+        choices=[
+            ('GOOGLE', 'Google Calendar'),
+            ('OUTLOOK', 'Outlook Calendar'),
+            ('EXTERNAL', 'External System'),
+        ],
+        blank=True,
+        help_text="Calendar system to sync availability with"
+    )
 
     def __str__(self):
         return f"DateTime config for {self.step}"
