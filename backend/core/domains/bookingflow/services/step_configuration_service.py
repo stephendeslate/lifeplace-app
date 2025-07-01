@@ -18,7 +18,6 @@ from ..models import (
     ContactInfoStepConfiguration,
     PaymentInfoStepConfiguration,
     IntroductionStepConfiguration,
-    EventDetailsStepConfiguration,
     DateTimeStepConfiguration,
     ConfirmationStepConfiguration,
 )
@@ -39,7 +38,6 @@ class BookingFlowStepConfigurationService:
         
         config_map = {
             'introduction': lambda s: getattr(s, 'introduction_config', None),
-            'event_details': lambda s: getattr(s, 'event_details_config', None),
             'date_time': lambda s: getattr(s, 'datetime_config', None),
             'questionnaire': lambda s: getattr(s, 'questionnaire_config', None),
             'package_selection': lambda s: getattr(s, 'package_config', None),
@@ -74,7 +72,6 @@ class BookingFlowStepConfigurationService:
         with transaction.atomic():
             config_updaters = {
                 'introduction': BookingFlowStepConfigurationService._update_introduction_config,
-                'event_details': BookingFlowStepConfigurationService._update_event_details_config,
                 'date_time': BookingFlowStepConfigurationService._update_datetime_config,
                 'questionnaire': BookingFlowStepConfigurationService._update_questionnaire_config,
                 'package_selection': BookingFlowStepConfigurationService._update_package_config,
@@ -174,7 +171,6 @@ class BookingFlowStepConfigurationService:
                 title=f"Welcome to {s.booking_flow.event_type.name if s.booking_flow.event_type else 'Event'} Booking",
                 content="We're excited to help you plan your perfect event!"
             ),
-            'event_details': lambda s: EventDetailsStepConfiguration.objects.create(step=s),
             'date_time': lambda s: DateTimeStepConfiguration.objects.create(step=s),
             'questionnaire': lambda s: QuestionnaireStepConfiguration.objects.create(step=s),
             'package_selection': lambda s: PackageSelectionStepConfiguration.objects.create(step=s),
@@ -201,16 +197,6 @@ class BookingFlowStepConfigurationService:
                 'content': "We're excited to help you plan your perfect event!"
             }
         )
-        for key, value in config_data.items():
-            if hasattr(config, key):
-                setattr(config, key, value)
-        config.save()
-        return config
-    
-    @staticmethod
-    def _update_event_details_config(step, config_data):
-        """Update event details step configuration"""
-        config, created = EventDetailsStepConfiguration.objects.get_or_create(step=step)
         for key, value in config_data.items():
             if hasattr(config, key):
                 setattr(config, key, value)

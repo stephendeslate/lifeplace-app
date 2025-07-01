@@ -11,9 +11,8 @@ from ..serializers import (
     BookingFlowStepSerializer,
     BookingFlowStepUpdateSerializer,
     ReorderStepsSerializer,
-    # Configuration serializers
+    # Configuration serializers - EventDetailsStepConfigurationSerializer removed
     IntroductionStepConfigurationSerializer,
-    EventDetailsStepConfigurationSerializer,
     DateTimeStepConfigurationSerializer,
     QuestionnaireStepConfigurationSerializer,
     PackageSelectionStepConfigurationSerializer,
@@ -36,6 +35,7 @@ from ..exceptions import (
 class BookingFlowStepViewSet(viewsets.ModelViewSet):
     """
     Enhanced ViewSet for managing booking flow steps with detailed configurations
+    EventDetails step has been removed completely
     """
     permission_classes = [IsAdmin]
     
@@ -66,6 +66,14 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
         if not booking_flow_id:
             return Response(
                 {"detail": "booking_flow is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate step_type to ensure event_details is not being created
+        step_type = request_data.get('step_type')
+        if step_type == 'event_details':
+            return Response(
+                {"detail": "EventDetails step type is no longer supported"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -112,6 +120,14 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+        
+        # Prevent updating to event_details step type
+        if 'step_type' in request.data and request.data['step_type'] == 'event_details':
+            return Response(
+                {"detail": "EventDetails step type is no longer supported"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         
@@ -167,15 +183,23 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def configuration(self, request, pk=None):
-        """Get configuration for a step"""
+        """Get configuration for a step - EventDetails removed from mapping"""
         try:
             step = self.get_object()
+            
+            # Return error if someone tries to access event_details configuration
+            if step.step_type == 'event_details':
+                return Response(
+                    {"detail": "EventDetails step type is no longer supported"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             config = BookingFlowStepConfigurationService.get_step_configuration(pk)
             
             if config:
+                # Updated serializer mapping without event_details
                 serializer_map = {
                     'introduction': IntroductionStepConfigurationSerializer,
-                    'event_details': EventDetailsStepConfigurationSerializer,
                     'date_time': DateTimeStepConfigurationSerializer,
                     'questionnaire': QuestionnaireStepConfigurationSerializer,
                     'package_selection': PackageSelectionStepConfigurationSerializer,
@@ -199,8 +223,17 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def update_configuration(self, request, pk=None):
-        """Update configuration for a step"""
+        """Update configuration for a step - EventDetails blocked"""
         try:
+            step = self.get_object()
+            
+            # Block event_details configuration updates
+            if step.step_type == 'event_details':
+                return Response(
+                    {"detail": "EventDetails step type is no longer supported"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             with transaction.atomic():
                 config = BookingFlowStepConfigurationService.update_step_configuration(
                     pk, 
@@ -384,3 +417,87 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
         categories = ProductCategory.objects.filter(is_active=True).order_by('name')
         serializer = ProductCategorySerializer(categories, many=True, context=self.get_serializer_context())
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def available_step_types(self, request):
+        """Get all available step types (excludes event_details)"""
+        from ..models import BookingFlowStep
+        
+        # Filter out event_details from the choices
+        available_types = [
+            {'value': choice[0], 'label': choice[1]} 
+            for choice in BookingFlowStep.STEP_TYPES 
+            if choice[0] != 'event_details'  # Explicitly exclude event_details
+        ]
+        
+        return Response({
+            'step_types': available_types,
+            'total_count': len(available_types)
+        })
+
+    @action(detail=True, methods=['get'])
+    def step_validation_rules(self, request, pk=None):
+        """Get validation rules for a specific step type"""
+        try:
+            step = self.get_object()
+            
+            # Block access to event_details validation rules
+            if step.step_type == 'event_details':
+                return Response(
+                    {"detail": "EventDetails step type is no longer supported"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Define validation rules for each step type
+            validation_rules = {
+                'introduction': {
+                    'required_fields': [],
+                    'optional_fields': ['title', 'content', 'show_event_details', 'show_pricing_overview']
+                },
+                'date_time': {
+                    'required_fields': ['start_date'],
+                    'optional_fields': ['start_time', 'end_date', 'end_time', 'duration']
+                },
+                'questionnaire': {
+                    'required_fields': [],
+                    'optional_fields': ['responses']
+                },
+                'package_selection': {
+                    'required_fields': ['selected_packages'],
+                    'optional_fields': []
+                },
+                'addon_selection': {
+                    'required_fields': [],
+                    'optional_fields': ['selected_addons']
+                },
+                'contact_info': {
+                    'required_fields': ['full_name', 'email'],
+                    'optional_fields': ['phone', 'address', 'company']
+                },
+                'payment_info': {
+                    'required_fields': ['payment_method'],
+                    'optional_fields': ['billing_address']
+                },
+                'confirmation': {
+                    'required_fields': [],
+                    'optional_fields': []
+                }
+            }
+            
+            rules = validation_rules.get(step.step_type, {})
+            
+            # Merge with custom validation rules from step configuration
+            if step.validation_rules:
+                rules.update(step.validation_rules)
+            
+            return Response({
+                'step_type': step.step_type,
+                'validation_rules': rules,
+                'custom_rules': step.validation_rules
+            })
+            
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
