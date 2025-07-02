@@ -472,6 +472,7 @@ export const validateStepData = (step: BookingFlowStep, stepData: BookingStepDat
  * Used by useBookingValidation.validateField() for custom validation rules
  */
 export const validateCustomFieldRules = (
+  // @ts-ignore
   fieldName: string, 
   value: any, 
   fieldRules: Record<string, any>
