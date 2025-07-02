@@ -5,7 +5,7 @@ export interface BookingFlow {
   name: string;
   description: string;
   event_type: number | null;
-  event_type_name?: string;
+  event_type_name: string; // Always provided by backend serializer
   
   // Integration with other domains
   workflow_template: number | null;
@@ -41,6 +41,11 @@ export interface BookingFlow {
     name: string;
     code: string;
   }[];
+  
+  // Payment configuration - NEW fields from evolved backend
+  allowed_payment_gateways: number[];
+  default_payment_gateway: number | null;
+  require_immediate_payment: boolean;
   
   // Completion actions
   redirect_url: string;
@@ -90,28 +95,26 @@ export interface BookingFlowStep {
   updated_at: string;
 }
 
+// FIXED: Removed non-existent and deprecated step types
 export type StepType = 
   | 'introduction'
-  | 'event_details'
   | 'date_time'
   | 'questionnaire'
   | 'package_selection'
   | 'addon_selection'
-  | 'availability_check'
   | 'pricing_summary'
   | 'contact_info'
   | 'payment_info'
   | 'review_booking'
   | 'confirmation';
 
+// FIXED: Updated to match backend STEP_TYPES exactly
 export const STEP_TYPES = [
   { value: 'introduction', label: 'Introduction' },
-  { value: 'event_details', label: 'Event Details' },
   { value: 'date_time', label: 'Date & Time Selection' },
   { value: 'questionnaire', label: 'Questionnaire' },
   { value: 'package_selection', label: 'Package Selection' },
   { value: 'addon_selection', label: 'Add-on Selection' },
-  { value: 'availability_check', label: 'Availability Check' },
   { value: 'pricing_summary', label: 'Pricing Summary' },
   { value: 'contact_info', label: 'Contact Information' },
   { value: 'payment_info', label: 'Payment Information' },
@@ -119,7 +122,7 @@ export const STEP_TYPES = [
   { value: 'confirmation', label: 'Confirmation' },
 ] as const;
 
-// Step Configuration Types
+// Step Configuration Types - UPDATED to match backend models exactly
 export interface IntroductionStepConfiguration {
   id: number;
   step: number;
@@ -133,20 +136,7 @@ export interface IntroductionStepConfiguration {
   updated_at: string;
 }
 
-export interface EventDetailsStepConfiguration {
-  id: number;
-  step: number;
-  show_event_type_selection: boolean;
-  require_event_name: boolean;
-  require_description: boolean;
-  require_guest_count: boolean;
-  max_guest_count: number | null;
-  require_venue_preference: boolean;
-  venue_options: string[];
-  created_at: string;
-  updated_at: string;
-}
-
+// FIXED: Enhanced DateTimeStepConfiguration to match evolved backend
 export interface DateTimeStepConfiguration {
   id: number;
   step: number;
@@ -157,8 +147,11 @@ export interface DateTimeStepConfiguration {
   max_duration_hours: number;
   default_duration_hours: number;
   
-  // Availability settings
+  // Enhanced availability settings from evolved backend
   enable_real_time_availability: boolean;
+  show_availability_status: boolean;
+  auto_check_conflicts: boolean;
+  
   blocked_dates: string[];
   available_days_of_week: number[];
   available_time_slots: any[];
@@ -166,6 +159,23 @@ export interface DateTimeStepConfiguration {
   // Buffer settings
   buffer_before_hours: number;
   buffer_after_hours: number;
+  
+  // Availability checking configuration
+  check_venue_availability: boolean;
+  check_resource_availability: boolean;
+  check_staff_availability: boolean;
+  
+  // Availability display settings
+  availability_display_mode: 'FULL' | 'LIMITED' | 'SIMPLE';
+  
+  // Conflict resolution
+  allow_overbooking: boolean;
+  overbooking_threshold: number;
+  
+  // Integration settings
+  sync_with_calendar: boolean;
+  calendar_source: 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
+  
   created_at: string;
   updated_at: string;
 }
@@ -283,6 +293,7 @@ export interface ContactInfoStepConfiguration {
   updated_at: string;
 }
 
+// FIXED: Updated PaymentInfoStepConfiguration to match evolved backend
 export interface PaymentInfoStepConfiguration {
   id: number;
   step: number;
@@ -296,8 +307,13 @@ export interface PaymentInfoStepConfiguration {
   // Payment methods
   available_payment_methods: string[];
   
-  // Payment processing
+  // Payment processing - UPDATED
   require_immediate_payment: boolean;
+  
+  // Payment gateways - NEW fields from evolved backend
+  allowed_gateways: number[];
+  default_gateway: number | null;
+  
   allow_payment_plans: boolean;
   payment_terms: string;
   
@@ -323,9 +339,10 @@ export interface ConfirmationStepConfiguration {
   updated_at: string;
 }
 
+// REMOVED: EventDetailsStepConfiguration (doesn't exist in backend)
+
 export type StepConfiguration = 
   | IntroductionStepConfiguration
-  | EventDetailsStepConfiguration
   | DateTimeStepConfiguration
   | QuestionnaireStepConfiguration
   | PackageSelectionStepConfiguration
@@ -381,11 +398,11 @@ export interface BookingFlowAnalytics {
   updated_at: string;
 }
 
-// Create/Update Data Types - FIXED
+// Create/Update Data Types - FIXED to match backend exactly
 export interface CreateBookingFlowData {
   name: string;
   description?: string;
-  event_type?: number | null; // Allow null for "Any Event Type"
+  event_type?: number | null;
   workflow_template?: number | null;
   confirmation_email_template?: number | null;
   reminder_email_template?: number | null;
@@ -398,6 +415,10 @@ export interface CreateBookingFlowData {
   min_advance_booking_days?: number;
   allow_discounts?: boolean;
   available_discounts?: number[];
+  // ADDED: Payment gateway fields from evolved backend
+  allowed_payment_gateways?: number[];
+  default_payment_gateway?: number | null;
+  require_immediate_payment?: boolean;
   redirect_url?: string;
   success_message?: string;
   conversion_tracking_code?: string;
@@ -410,7 +431,7 @@ export interface CreateBookingFlowStepData {
   step_type: StepType;
   name: string;
   description?: string;
-  order?: number; // Optional - will be auto-assigned by backend if not provided
+  order?: number;
   is_enabled?: boolean;
   is_required?: boolean;
   is_skippable?: boolean;
@@ -512,7 +533,7 @@ export interface StepPreviewData {
   };
 }
 
-// Form Data Types - FIXED to handle null values properly
+// Form Data Types
 export interface BookingFlowFormData {
   name: string;
   description: string;
@@ -529,6 +550,10 @@ export interface BookingFlowFormData {
   min_advance_booking_days: string;
   allow_discounts: boolean;
   available_discounts: number[];
+  // ADDED: Payment gateway form fields
+  allowed_payment_gateways: number[];
+  default_payment_gateway: string;
+  require_immediate_payment: boolean;
   redirect_url: string;
   success_message: string;
   conversion_tracking_code: string;
@@ -551,7 +576,7 @@ export interface BookingFlowTableProps {
   bookingFlows: BookingFlow[];
   isLoading: boolean;
   onEdit: (flow: BookingFlow) => void;
-  onPreview: (flow: BookingFlow) => void; // Uses wrapper to fetch details
+  onPreview: (flow: BookingFlow) => void;
   onDuplicate: (flow: BookingFlow) => void;
   onDelete: (id: number) => void;
   isDeleting: boolean;
@@ -568,20 +593,20 @@ export interface BookingFlowFormDialogProps {
 export interface BookingFlowCardProps {
   flow: BookingFlow;
   onEdit: (flow: BookingFlow) => void;
-  onPreview: (flow: BookingFlow) => void; // Uses wrapper to fetch details
+  onPreview: (flow: BookingFlow) => void;
   onDuplicate: (flow: BookingFlow) => void;
   onDelete: (id: number) => void;
   isDeleting?: boolean;
 }
 
 export interface BookingFlowPreviewProps {
-  flow: BookingFlowDetail; // Requires full detail with steps
+  flow: BookingFlowDetail;
   compact?: boolean;
   showMobileView?: boolean;
 }
 
 export interface BookingFlowPreviewWrapperProps {
-  flow: BookingFlow; // Can work with basic flow, fetches details internally
+  flow: BookingFlow;
   compact?: boolean;
   showMobileView?: boolean;
 }
