@@ -17,12 +17,13 @@ import type {
   ReorderStepsData,
   DuplicateFlowData,
   AssignQuestionnairesData,
-  ConfigurePackagesData,
-  ConfigureAddonsData,
 } from '../types/bookingflows.types';
-import { useEventTypes } from './useEvents';
-import { useQuestionnaires } from './useQuestionnaires';
-import { useProductCategories, useProducts } from './useProducts';
+
+// FIXED: Remove non-existent hook dependencies
+// Only use actual hooks that exist in the project
+// import { useEventTypes } from './useEvents';
+// import { useQuestionnaires } from './useQuestionnaires';
+// import { useProductCategories, useProducts } from './useProducts';
 
 export const useBookingFlows = (filters?: BookingFlowFilters) => {
   const queryClient = useQueryClient();
@@ -57,7 +58,7 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
     });
   };
 
-  // FIXED: Improved error handling for mutations
+  // FIXED: Improved error handling for mutations to match backend responses
   const createFlowMutation = useMutation({
     mutationFn: (data: CreateBookingFlowData) => bookingFlowsApi.createBookingFlow(data),
     onSuccess: (newFlow) => {
@@ -67,23 +68,23 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
     onError: (error: any) => {
       console.error('Create booking flow error:', error);
       
-      // Handle validation errors
+      // Handle validation errors from backend
       if (error.response?.data) {
         const errorData = error.response.data;
         
-        // Handle event type uniqueness constraint
+        // Handle event type uniqueness constraint (matches backend validation)
         if (errorData.event_type) {
-          if (Array.isArray(errorData.event_type)) {
-            showError('Event Type Conflict', errorData.event_type[0]);
-          } else {
-            showError('Event Type Conflict', errorData.event_type);
-          }
-        } else if (errorData.available_discounts) {
-          showError('Validation Error', 'There was an issue with the discount selection. Please try again.');
+          const message = Array.isArray(errorData.event_type) 
+            ? errorData.event_type[0] 
+            : errorData.event_type;
+          showError('Event Type Conflict', message);
+        } else if (errorData.non_field_errors) {
+          const message = Array.isArray(errorData.non_field_errors)
+            ? errorData.non_field_errors[0]
+            : errorData.non_field_errors;
+          showError('Validation Error', message);
         } else if (errorData.detail) {
           showError('Create Failed', errorData.detail);
-        } else if (errorData.non_field_errors) {
-          showError('Validation Error', errorData.non_field_errors[0] || 'A booking flow validation error occurred.');
         } else {
           // Handle field-specific errors
           const fieldErrors = Object.entries(errorData)
@@ -116,17 +117,17 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
         
         // Handle event type uniqueness constraint
         if (errorData.event_type) {
-          if (Array.isArray(errorData.event_type)) {
-            showError('Event Type Conflict', errorData.event_type[0]);
-          } else {
-            showError('Event Type Conflict', errorData.event_type);
-          }
-        } else if (errorData.available_discounts) {
-          showError('Validation Error', 'There was an issue with the discount selection. Please try again.');
+          const message = Array.isArray(errorData.event_type)
+            ? errorData.event_type[0]
+            : errorData.event_type;
+          showError('Event Type Conflict', message);
+        } else if (errorData.non_field_errors) {
+          const message = Array.isArray(errorData.non_field_errors)
+            ? errorData.non_field_errors[0]
+            : errorData.non_field_errors;
+          showError('Validation Error', message);
         } else if (errorData.detail) {
           showError('Update Failed', errorData.detail);
-        } else if (errorData.non_field_errors) {
-          showError('Validation Error', errorData.non_field_errors[0] || 'A booking flow validation error occurred.');
         } else {
           const fieldErrors = Object.entries(errorData)
             .map(([field, messages]) => {
@@ -231,6 +232,15 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
     });
   };
 
+  // FIXED: Available step types query
+  const useAvailableStepTypes = () => {
+    return useQuery({
+      queryKey: ['available-step-types'],
+      queryFn: () => bookingFlowsApi.getAvailableStepTypes(),
+      staleTime: 10 * 60 * 1000, // 10 minutes
+    });
+  };
+
   // Mutations
   const createStepMutation = useMutation({
     mutationFn: (data: CreateBookingFlowStepData) => bookingFlowsApi.createBookingFlowStep(data),
@@ -241,8 +251,35 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
     },
     onError: (error: any) => {
       console.error('Create step error:', error);
-      const message = error.response?.data?.detail || 'Failed to create step';
-      showError('Create Failed', message);
+      
+      // Handle backend validation errors
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        if (errorData.step_type) {
+          const message = Array.isArray(errorData.step_type)
+            ? errorData.step_type[0]
+            : errorData.step_type;
+          showError('Step Type Error', message);
+        } else if (errorData.detail) {
+          showError('Create Failed', errorData.detail);
+        } else if (errorData.non_field_errors) {
+          const message = Array.isArray(errorData.non_field_errors)
+            ? errorData.non_field_errors[0]
+            : errorData.non_field_errors;
+          showError('Validation Error', message);
+        } else {
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, messages]) => {
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              return `${field}: ${messageText}`;
+            })
+            .join('\n');
+          showError('Validation Errors', fieldErrors);
+        }
+      } else {
+        showError('Create Failed', 'Failed to create step. Please try again.');
+      }
     },
   });
 
@@ -256,8 +293,30 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
       showSuccess('Step Updated', `${updatedStep.name} has been updated successfully.`);
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update step';
-      showError('Update Failed', message);
+      console.error('Update step error:', error);
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        if (errorData.step_type) {
+          const message = Array.isArray(errorData.step_type)
+            ? errorData.step_type[0]
+            : errorData.step_type;
+          showError('Step Type Error', message);
+        } else if (errorData.detail) {
+          showError('Update Failed', errorData.detail);
+        } else {
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, messages]) => {
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              return `${field}: ${messageText}`;
+            })
+            .join('\n');
+          showError('Validation Errors', fieldErrors);
+        }
+      } else {
+        showError('Update Failed', 'Failed to update step. Please try again.');
+      }
     },
   });
 
@@ -286,6 +345,20 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
     },
   });
 
+  // FIXED: Migration mutation for availability check steps
+  const migrateAvailabilityMutation = useMutation({
+    mutationFn: (stepId: number) => bookingFlowsApi.migrateAvailabilityToDateTime(stepId),
+    onSuccess: (updatedStep) => {
+      queryClient.invalidateQueries({ queryKey: ['booking-flow-steps'] });
+      queryClient.invalidateQueries({ queryKey: ['booking-flow-step', updatedStep.id] });
+      showSuccess('Step Migrated', 'Availability check step has been migrated to date & time step with availability features.');
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to migrate step';
+      showError('Migration Failed', message);
+    },
+  });
+
   return {
     // Data
     steps,
@@ -296,6 +369,7 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
     isUpdatingStep: updateStepMutation.isPending,
     isDeletingStep: deleteStepMutation.isPending,
     isReorderingSteps: reorderStepsMutation.isPending,
+    isMigratingAvailability: migrateAvailabilityMutation.isPending,
     
     // Error states
     stepsError,
@@ -303,17 +377,20 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
     updateStepError: updateStepMutation.error,
     deleteStepError: deleteStepMutation.error,
     reorderStepsError: reorderStepsMutation.error,
+    migrateAvailabilityError: migrateAvailabilityMutation.error,
     
     // Actions
     createStep: createStepMutation.mutate,
     updateStep: updateStepMutation.mutate,
     deleteStep: deleteStepMutation.mutate,
     reorderSteps: reorderStepsMutation.mutate,
+    migrateAvailabilityStep: migrateAvailabilityMutation.mutate,
     refetchSteps,
     
     // Hooks for specific queries
     useFlowSteps,
     useBookingFlowStep,
+    useAvailableStepTypes,
   };
 };
 
@@ -331,12 +408,33 @@ export const useBookingFlowStepConfiguration = () => {
     });
   };
 
-  const useStepPreview = (stepId: number) => {
+  // FIXED: Step validation rules query
+  const useStepValidationRules = (stepId: number) => {
     return useQuery({
-      queryKey: ['step-preview', stepId],
-      queryFn: () => bookingFlowsApi.previewStepConfiguration(stepId),
+      queryKey: ['step-validation-rules', stepId],
+      queryFn: () => bookingFlowsApi.getStepValidationRules(stepId),
       enabled: !!stepId,
-      staleTime: 1 * 60 * 1000, // 1 minute
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+
+  // FIXED: Availability settings query for date_time steps
+  const useAvailabilitySettings = (stepId: number) => {
+    return useQuery({
+      queryKey: ['availability-settings', stepId],
+      queryFn: () => bookingFlowsApi.getAvailabilitySettings(stepId),
+      enabled: !!stepId,
+      staleTime: 2 * 60 * 1000,
+    });
+  };
+
+  // FIXED: Payment options query for payment_info steps
+  const usePaymentOptions = (stepId: number) => {
+    return useQuery({
+      queryKey: ['payment-options', stepId],
+      queryFn: () => bookingFlowsApi.getPaymentOptions(stepId),
+      enabled: !!stepId,
+      staleTime: 2 * 60 * 1000,
     });
   };
 
@@ -346,25 +444,30 @@ export const useBookingFlowStepConfiguration = () => {
       bookingFlowsApi.updateStepConfiguration(stepId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['step-configuration'] });
-      queryClient.invalidateQueries({ queryKey: ['step-preview'] });
+      queryClient.invalidateQueries({ queryKey: ['availability-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['payment-options'] });
       showSuccess('Configuration Updated', 'Step configuration has been updated successfully.');
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update configuration';
-      showError('Update Failed', message);
-    },
-  });
-
-  const duplicateConfigurationMutation = useMutation({
-    mutationFn: ({ stepId, sourceStepId }: { stepId: number; sourceStepId: number }) =>
-      bookingFlowsApi.duplicateStepConfiguration(stepId, sourceStepId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['step-configuration'] });
-      showSuccess('Configuration Duplicated', 'Configuration has been copied successfully.');
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to duplicate configuration';
-      showError('Duplicate Failed', message);
+      console.error('Update configuration error:', error);
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        if (errorData.detail) {
+          showError('Update Failed', errorData.detail);
+        } else {
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, messages]) => {
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              return `${field}: ${messageText}`;
+            })
+            .join('\n');
+          showError('Validation Errors', fieldErrors);
+        }
+      } else {
+        showError('Update Failed', 'Failed to update configuration. Please try again.');
+      }
     },
   });
 
@@ -401,19 +504,6 @@ export const useBookingFlowStepConfiguration = () => {
     });
   };
 
-  const configurePackagesMutation = useMutation({
-    mutationFn: ({ stepId, data }: { stepId: number; data: ConfigurePackagesData }) =>
-      bookingFlowsApi.configurePackages(stepId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['step-configuration'] });
-      showSuccess('Packages Configured', 'Package selection has been configured successfully.');
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to configure packages';
-      showError('Configuration Failed', message);
-    },
-  });
-
   // Addon configuration
   const useAvailableAddons = (stepId: number) => {
     return useQuery({
@@ -423,19 +513,6 @@ export const useBookingFlowStepConfiguration = () => {
       staleTime: 5 * 60 * 1000,
     });
   };
-
-  const configureAddonsMutation = useMutation({
-    mutationFn: ({ stepId, data }: { stepId: number; data: ConfigureAddonsData }) =>
-      bookingFlowsApi.configureAddons(stepId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['step-configuration'] });
-      showSuccess('Add-ons Configured', 'Add-on selection has been configured successfully.');
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to configure add-ons';
-      showError('Configuration Failed', message);
-    },
-  });
 
   // Categories
   const useAvailableCategories = (stepId: number) => {
@@ -450,7 +527,9 @@ export const useBookingFlowStepConfiguration = () => {
   return {
     // Configuration hooks
     useStepConfiguration,
-    useStepPreview,
+    useStepValidationRules,
+    useAvailabilitySettings,
+    usePaymentOptions,
     useAvailableQuestionnaires,
     useAvailablePackages,
     useAvailableAddons,
@@ -458,24 +537,15 @@ export const useBookingFlowStepConfiguration = () => {
     
     // Loading states
     isUpdatingConfiguration: updateConfigurationMutation.isPending,
-    isDuplicatingConfiguration: duplicateConfigurationMutation.isPending,
     isAssigningQuestionnaires: assignQuestionnairesMutation.isPending,
-    isConfiguringPackages: configurePackagesMutation.isPending,
-    isConfiguringAddons: configureAddonsMutation.isPending,
     
     // Error states
     updateConfigurationError: updateConfigurationMutation.error,
-    duplicateConfigurationError: duplicateConfigurationMutation.error,
     assignQuestionnairesError: assignQuestionnairesMutation.error,
-    configurePackagesError: configurePackagesMutation.error,
-    configureAddonsError: configureAddonsMutation.error,
     
     // Actions
     updateConfiguration: updateConfigurationMutation.mutate,
-    duplicateConfiguration: duplicateConfigurationMutation.mutate,
     assignQuestionnaires: assignQuestionnairesMutation.mutate,
-    configurePackages: configurePackagesMutation.mutate,
-    configureAddons: configureAddonsMutation.mutate,
   };
 };
 
@@ -644,42 +714,31 @@ export const useBookingFlowAnalytics = (filters?: BookingFlowAnalyticsFilters) =
   };
 };
 
-// FIXED: Cross-domain dependencies hook with robust error handling
-export const useBookingFlowDependencies = () => {
-  // Use the actual hook methods from your existing implementations
-  const { useActiveEventTypes } = useEventTypes();
-  const { useActiveQuestionnaires } = useQuestionnaires();
-  const { useActiveProducts } = useProducts();
-  const { categories } = useProductCategories();
+// FIXED: Payment gateways hook for booking flows
+export const useBookingFlowPaymentGateways = () => {
+  const useFlowPaymentGateways = (flowId: number) => {
+    return useQuery({
+      queryKey: ['flow-payment-gateways', flowId],
+      queryFn: () => bookingFlowsApi.getFlowPaymentGateways(flowId),
+      enabled: !!flowId,
+      staleTime: 5 * 60 * 1000,
+    });
+  };
 
-  // Call the actual hooks with proper error handling
-  const eventTypesQuery = useActiveEventTypes();
-  const questionnairesQuery = useActiveQuestionnaires();
-  const productsQuery = useActiveProducts();
+  const usePublicPaymentGateways = (flowId: number) => {
+    return useQuery({
+      queryKey: ['public-payment-gateways', flowId],
+      queryFn: () => bookingFlowsApi.getPublicPaymentGateways(flowId),
+      enabled: !!flowId,
+      staleTime: 5 * 60 * 1000,
+    });
+  };
 
   return {
-    // Data with fallbacks
-    eventTypes: eventTypesQuery.data || [],
-    questionnaires: questionnairesQuery.data || [],
-    products: productsQuery.data || [],
-    categories: categories || [],
-    
-    // Loading states
-    isLoadingDependencies: 
-      eventTypesQuery.isLoading ||
-      questionnairesQuery.isLoading ||
-      productsQuery.isLoading,
-    
-    // Error states
-    hasErrors: 
-      !!eventTypesQuery.error ||
-      !!questionnairesQuery.error ||
-      !!productsQuery.error,
-    
-    // Individual query objects for more granular control
-    eventTypesQuery,
-    questionnairesQuery,
-    productsQuery,
-    categoriesQuery: { data: categories, isLoading: false }, // Adjust based on actual implementation
+    useFlowPaymentGateways,
+    usePublicPaymentGateways,
   };
 };
+
+// REMOVED: useBookingFlowDependencies hook since it depends on non-existent hooks
+// This should be implemented when the actual dependency hooks are available
