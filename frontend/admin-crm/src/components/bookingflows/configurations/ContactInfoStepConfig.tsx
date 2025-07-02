@@ -35,16 +35,18 @@ import {
   Home as AddressIcon,
   Business as CompanyIcon,
   AccountCircle as AccountIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import type { 
   BookingFlowStep, 
   ContactInfoStepConfiguration 
 } from '../../../types/bookingflows.types';
+import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
 interface ContactInfoStepConfigProps {
   step: BookingFlowStep;
   config?: ContactInfoStepConfiguration | null;
-  onUpdate: (data: Partial<ContactInfoStepConfiguration>) => void;
+  onUpdate: (updatedStep: BookingFlowStep) => void;
   isLoading?: boolean;
 }
 
@@ -91,6 +93,7 @@ const FIELD_TYPES = [
 ];
 
 export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
+  step,
   config,
   onUpdate,
   isLoading = false,
@@ -98,6 +101,11 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
   const [formData, setFormData] = useState<ContactInfoConfigFormData>(defaultFormData);
   const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
   const [editingField, setEditingField] = useState<CustomField | null>(null);
+
+  const {
+    updateConfiguration,
+    isUpdatingConfiguration,
+  } = useBookingFlowStepConfiguration();
 
   useEffect(() => {
     if (config) {
@@ -152,15 +160,38 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
   };
 
   const handleSave = () => {
-    onUpdate({
-      require_full_name: formData.require_full_name,
-      require_email: formData.require_email,
-      require_phone: formData.require_phone,
-      require_address: formData.require_address,
-      require_company: formData.require_company,
-      custom_fields: formData.custom_fields,
-      offer_account_creation: formData.offer_account_creation,
-      require_account_creation: formData.require_account_creation,
+    // Use the evolved hook to update step configuration
+    updateConfiguration({
+      stepId: step.id,
+      data: {
+        require_full_name: formData.require_full_name,
+        require_email: formData.require_email,
+        require_phone: formData.require_phone,
+        require_address: formData.require_address,
+        require_company: formData.require_company,
+        custom_fields: formData.custom_fields,
+        offer_account_creation: formData.offer_account_creation,
+        require_account_creation: formData.require_account_creation,
+      }
+    }, {
+      onSuccess: () => {
+        // Return updated step to parent component (matches evolved pattern)
+        const updatedStep: BookingFlowStep = {
+          ...step,
+          configuration_data: {
+            ...config,
+            require_full_name: formData.require_full_name,
+            require_email: formData.require_email,
+            require_phone: formData.require_phone,
+            require_address: formData.require_address,
+            require_company: formData.require_company,
+            custom_fields: formData.custom_fields,
+            offer_account_creation: formData.offer_account_creation,
+            require_account_creation: formData.require_account_creation,
+          } as ContactInfoStepConfiguration
+        };
+        onUpdate(updatedStep);
+      }
     });
   };
 
@@ -173,6 +204,8 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
       formData.require_company,
     ].filter(Boolean).length + formData.custom_fields.filter(f => f.required).length;
   };
+
+  const currentlyLoading = isLoading || isUpdatingConfiguration;
 
   return (
     <Box>
@@ -200,6 +233,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                     <Switch
                       checked={formData.require_full_name}
                       onChange={handleSwitchChange('require_full_name')}
+                      disabled={currentlyLoading}
                     />
                   }
                   label="Require Full Name"
@@ -213,6 +247,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                     <Switch
                       checked={formData.require_email}
                       onChange={handleSwitchChange('require_email')}
+                      disabled={currentlyLoading}
                     />
                   }
                   label="Require Email Address"
@@ -226,6 +261,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                     <Switch
                       checked={formData.require_phone}
                       onChange={handleSwitchChange('require_phone')}
+                      disabled={currentlyLoading}
                     />
                   }
                   label="Require Phone Number"
@@ -239,6 +275,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                     <Switch
                       checked={formData.require_address}
                       onChange={handleSwitchChange('require_address')}
+                      disabled={currentlyLoading}
                     />
                   }
                   label="Require Address"
@@ -252,6 +289,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                     <Switch
                       checked={formData.require_company}
                       onChange={handleSwitchChange('require_company')}
+                      disabled={currentlyLoading}
                     />
                   }
                   label="Require Company Information"
@@ -274,6 +312,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                 startIcon={<AddIcon />}
                 onClick={handleAddCustomField}
                 size="small"
+                disabled={currentlyLoading}
               >
                 Add Custom Field
               </Button>
@@ -308,6 +347,11 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                               Required
                             </Typography>
                           )}
+                          {field.type === 'select' && field.options && field.options.length > 0 && (
+                            <Typography variant="caption" component="span" color="info.main">
+                              {field.options.length} options
+                            </Typography>
+                          )}
                         </Box>
                       }
                     />
@@ -318,14 +362,18 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                         onClick={() => handleEditCustomField(field)}
                         size="small"
                         sx={{ mr: 1 }}
+                        disabled={currentlyLoading}
+                        aria-label={`Edit ${field.name}`}
                       >
-                        <AddIcon />
+                        <EditIcon />
                       </IconButton>
                       <IconButton
                         edge="end"
                         onClick={() => handleDeleteCustomField(field.id)}
                         size="small"
                         color="error"
+                        disabled={currentlyLoading}
+                        aria-label={`Delete ${field.name}`}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -352,6 +400,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                     <Switch
                       checked={formData.offer_account_creation}
                       onChange={handleSwitchChange('offer_account_creation')}
+                      disabled={currentlyLoading}
                     />
                   }
                   label="Offer Account Creation"
@@ -368,7 +417,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                     <Switch
                       checked={formData.require_account_creation}
                       onChange={handleSwitchChange('require_account_creation')}
-                      disabled={!formData.offer_account_creation}
+                      disabled={!formData.offer_account_creation || currentlyLoading}
                     />
                   }
                   label="Require Account Creation"
@@ -429,14 +478,15 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={isLoading}
+            disabled={currentlyLoading}
           >
-            {isLoading ? 'Saving...' : 'Save Configuration'}
+            {currentlyLoading ? 'Saving...' : 'Save Configuration'}
           </Button>
           
           <Button
             variant="outlined"
             onClick={() => setFormData(defaultFormData)}
+            disabled={currentlyLoading}
           >
             Reset to Defaults
           </Button>
@@ -449,6 +499,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
         onClose={() => setCustomFieldDialogOpen(false)}
         editingField={editingField}
         onSave={handleSaveCustomField}
+        disabled={currentlyLoading}
       />
     </Box>
   );
@@ -460,6 +511,7 @@ interface CustomFieldDialogProps {
   onClose: () => void;
   editingField: CustomField | null;
   onSave: (field: CustomField) => void;
+  disabled?: boolean;
 }
 
 const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
@@ -467,6 +519,7 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
   onClose,
   editingField,
   onSave,
+  disabled = false,
 }) => {
   const [fieldData, setFieldData] = useState<Omit<CustomField, 'id'>>({
     name: '',
@@ -475,6 +528,7 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
     options: [],
   });
   const [newOption, setNewOption] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (editingField) {
@@ -492,10 +546,26 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
         options: [],
       });
     }
+    setErrors({});
   }, [editingField, open]);
 
+  const validateField = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!fieldData.name.trim()) {
+      newErrors.name = 'Field name is required';
+    }
+
+    if (fieldData.type === 'select' && (!fieldData.options || fieldData.options.length === 0)) {
+      newErrors.options = 'Select fields must have at least one option';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = () => {
-    if (!fieldData.name.trim()) return;
+    if (!validateField()) return;
 
     onSave({
       id: editingField?.id || '',
@@ -513,6 +583,10 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
         options: [...(prev.options || []), newOption.trim()],
       }));
       setNewOption('');
+      // Clear options error when user adds an option
+      if (errors.options) {
+        setErrors(prev => ({ ...prev, options: '' }));
+      }
     }
   };
 
@@ -523,8 +597,25 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
     }));
   };
 
+  const handleTypeChange = (newType: string) => {
+    setFieldData(prev => ({
+      ...prev,
+      type: newType,
+      // Clear options if switching away from select
+      options: newType === 'select' ? prev.options : [],
+    }));
+    // Clear errors when type changes
+    setErrors({});
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="sm" 
+      fullWidth
+      disableEscapeKeyDown={disabled}
+    >
       <DialogTitle>
         {editingField ? 'Edit Custom Field' : 'Add Custom Field'}
       </DialogTitle>
@@ -535,16 +626,24 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
             fullWidth
             label="Field Name"
             value={fieldData.name}
-            onChange={(e) => setFieldData(prev => ({ ...prev, name: e.target.value }))}
+            onChange={(e) => {
+              setFieldData(prev => ({ ...prev, name: e.target.value }));
+              if (errors.name) {
+                setErrors(prev => ({ ...prev, name: '' }));
+              }
+            }}
+            error={!!errors.name}
+            helperText={errors.name}
             required
+            disabled={disabled}
           />
           
-          <FormControl fullWidth>
+          <FormControl fullWidth disabled={disabled}>
             <InputLabel>Field Type</InputLabel>
             <Select
               value={fieldData.type}
               label="Field Type"
-              onChange={(e) => setFieldData(prev => ({ ...prev, type: e.target.value }))}
+              onChange={(e) => handleTypeChange(e.target.value)}
             >
               {FIELD_TYPES.map((type) => (
                 <MenuItem key={type.value} value={type.value}>
@@ -559,6 +658,7 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
               <Switch
                 checked={fieldData.required}
                 onChange={(e) => setFieldData(prev => ({ ...prev, required: e.target.checked }))}
+                disabled={disabled}
               />
             }
             label="Required Field"
@@ -578,16 +678,23 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
                   onChange={(e) => setNewOption(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddOption()}
                   sx={{ flex: 1 }}
+                  disabled={disabled}
                 />
                 <Button
                   variant="outlined"
                   size="small"
                   onClick={handleAddOption}
-                  disabled={!newOption.trim()}
+                  disabled={!newOption.trim() || disabled}
                 >
                   Add
                 </Button>
               </Box>
+
+              {errors.options && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {errors.options}
+                </Alert>
+              )}
 
               {fieldData.options && fieldData.options.length > 0 ? (
                 <List dense>
@@ -609,6 +716,8 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
                           onClick={() => handleRemoveOption(option)}
                           size="small"
                           color="error"
+                          disabled={disabled}
+                          aria-label={`Remove option ${option}`}
                         >
                           <DeleteIcon />
                         </IconButton>
@@ -627,11 +736,13 @@ const CustomFieldDialog: React.FC<CustomFieldDialogProps> = ({
       </DialogContent>
       
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} disabled={disabled}>
+          Cancel
+        </Button>
         <Button 
           onClick={handleSave} 
           variant="contained"
-          disabled={!fieldData.name.trim()}
+          disabled={!fieldData.name.trim() || disabled}
         >
           {editingField ? 'Update' : 'Add'} Field
         </Button>

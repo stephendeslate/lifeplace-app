@@ -13,6 +13,7 @@ import {
   Card,
   CardContent,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import {
   CheckCircle as ConfirmIcon,
@@ -25,11 +26,12 @@ import type {
   BookingFlowStep, 
   ConfirmationStepConfiguration 
 } from '../../../types/bookingflows.types';
+import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
 interface ConfirmationStepConfigProps {
   step: BookingFlowStep;
   config?: ConfirmationStepConfiguration | null;
-  onUpdate: (data: Partial<ConfirmationStepConfiguration>) => void;
+  onUpdate: (updatedStep: BookingFlowStep) => void;
   isLoading?: boolean;
 }
 
@@ -56,12 +58,19 @@ const defaultFormData: ConfirmationConfigFormData = {
 };
 
 export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
+  step,
   config,
   onUpdate,
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState<ConfirmationConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const {
+    updateConfiguration,
+    isUpdatingConfiguration,
+    updateConfigurationError,
+  } = useBookingFlowStepConfiguration();
 
   useEffect(() => {
     if (config) {
@@ -120,20 +129,49 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateForm()) return;
 
-    onUpdate({
-      title: formData.title.trim(),
-      message: formData.message.trim(),
-      show_booking_summary: formData.show_booking_summary,
-      show_next_steps: formData.show_next_steps,
-      next_steps_content: formData.next_steps_content.trim(),
-      send_confirmation_email: formData.send_confirmation_email,
-      send_calendar_invite: formData.send_calendar_invite,
-      create_event_immediately: formData.create_event_immediately,
-    });
+    try {
+      // Use the updateConfiguration method from the hook
+      await updateConfiguration({
+        stepId: step.id,
+        data: {
+          title: formData.title.trim(),
+          message: formData.message.trim(),
+          show_booking_summary: formData.show_booking_summary,
+          show_next_steps: formData.show_next_steps,
+          next_steps_content: formData.next_steps_content.trim(),
+          send_confirmation_email: formData.send_confirmation_email,
+          send_calendar_invite: formData.send_calendar_invite,
+          create_event_immediately: formData.create_event_immediately,
+        }
+      });
+
+      // Create an updated step object to pass back to parent
+      const updatedStep: BookingFlowStep = {
+        ...step,
+        configuration_data: {
+          ...config,
+          title: formData.title.trim(),
+          message: formData.message.trim(),
+          show_booking_summary: formData.show_booking_summary,
+          show_next_steps: formData.show_next_steps,
+          next_steps_content: formData.next_steps_content.trim(),
+          send_confirmation_email: formData.send_confirmation_email,
+          send_calendar_invite: formData.send_calendar_invite,
+          create_event_immediately: formData.create_event_immediately,
+        } as ConfirmationStepConfiguration
+      };
+
+      // Call the onUpdate callback to notify parent component
+      onUpdate(updatedStep);
+    } catch (error) {
+      console.error('Failed to save confirmation step configuration:', error);
+    }
   };
+
+  const isSubmitting = isLoading || isUpdatingConfiguration;
 
   return (
     <Box>
@@ -144,6 +182,13 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
       <Alert severity="info" sx={{ mb: 3 }}>
         Configure the confirmation message and automated actions that occur when a booking is completed.
       </Alert>
+
+      {/* Display API errors */}
+      {updateConfigurationError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Failed to save configuration. Please try again.
+        </Alert>
+      )}
 
       <Stack spacing={3}>
         {/* Confirmation Message */}
@@ -162,6 +207,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 error={!!errors.title}
                 helperText={errors.title || 'Main heading displayed after successful booking'}
                 required
+                disabled={isSubmitting}
               />
               
               <TextField
@@ -174,6 +220,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 multiline
                 rows={4}
                 required
+                disabled={isSubmitting}
               />
             </Stack>
           </CardContent>
@@ -194,6 +241,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                     <Switch
                       checked={formData.show_booking_summary}
                       onChange={handleSwitchChange('show_booking_summary')}
+                      disabled={isSubmitting}
                     />
                   }
                   label="Show Booking Summary"
@@ -210,6 +258,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                     <Switch
                       checked={formData.show_next_steps}
                       onChange={handleSwitchChange('show_next_steps')}
+                      disabled={isSubmitting}
                     />
                   }
                   label="Show Next Steps"
@@ -229,6 +278,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                   rows={3}
                   helperText="Information about next steps (leave empty for default content)"
                   placeholder="What happens next:&#10;1. We'll review your booking request&#10;2. You'll receive a detailed proposal within 24 hours&#10;3. Once approved, we'll send a contract for signature"
+                  disabled={isSubmitting}
                 />
               )}
             </Stack>
@@ -250,6 +300,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                     <Switch
                       checked={formData.send_confirmation_email}
                       onChange={handleSwitchChange('send_confirmation_email')}
+                      disabled={isSubmitting}
                     />
                   }
                   label="Send Confirmation Email"
@@ -266,6 +317,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                     <Switch
                       checked={formData.send_calendar_invite}
                       onChange={handleSwitchChange('send_calendar_invite')}
+                      disabled={isSubmitting}
                     />
                   }
                   label="Send Calendar Invite"
@@ -284,6 +336,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                     <Switch
                       checked={formData.create_event_immediately}
                       onChange={handleSwitchChange('create_event_immediately')}
+                      disabled={isSubmitting}
                     />
                   }
                   label="Create Event Immediately"
@@ -393,14 +446,16 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={isLoading}
+            disabled={isSubmitting}
+            startIcon={isSubmitting ? <CircularProgress size={20} /> : undefined}
           >
-            {isLoading ? 'Saving...' : 'Save Configuration'}
+            {isSubmitting ? 'Saving...' : 'Save Configuration'}
           </Button>
           
           <Button
             variant="outlined"
             onClick={() => setFormData(defaultFormData)}
+            disabled={isSubmitting}
           >
             Reset to Defaults
           </Button>

@@ -22,6 +22,8 @@ import {
   RadioGroup,
   Radio,
   InputAdornment,
+  Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import {
   Payment as PaymentIcon,
@@ -29,7 +31,10 @@ import {
   CreditCard as CardIcon,
   Schedule as PlanIcon,
   AttachMoney as MoneyIcon,
+  Security as SecurityIcon,
+  CheckCircle as CheckIcon,
 } from '@mui/icons-material';
+import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import type { 
   BookingFlowStep, 
   PaymentInfoStepConfiguration 
@@ -42,6 +47,26 @@ interface PaymentInfoStepConfigProps {
   isLoading?: boolean;
 }
 
+interface PaymentGateway {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  supported_methods: string[];
+  public_config: Record<string, any>;
+}
+
+interface PaymentOptions {
+  available_gateways: PaymentGateway[];
+  saved_payment_methods: any[];
+  require_immediate_payment: boolean;
+  accept_deposit: boolean;
+  deposit_amount: string | null;
+  deposit_type: string | null;
+  allow_payment_plans: boolean;
+  payment_terms: string;
+}
+
 interface PaymentInfoConfigFormData {
   accept_full_payment: boolean;
   accept_deposit: boolean;
@@ -49,6 +74,8 @@ interface PaymentInfoConfigFormData {
   deposit_amount: string;
   available_payment_methods: string[];
   require_immediate_payment: boolean;
+  allowed_gateways: number[];
+  default_gateway: number | null;
   allow_payment_plans: boolean;
   payment_terms: string;
 }
@@ -60,6 +87,8 @@ const defaultFormData: PaymentInfoConfigFormData = {
   deposit_amount: '25',
   available_payment_methods: ['CREDIT_CARD', 'BANK_TRANSFER'],
   require_immediate_payment: false,
+  allowed_gateways: [],
+  default_gateway: null,
   allow_payment_plans: false,
   payment_terms: '',
 };
@@ -73,12 +102,31 @@ const PAYMENT_METHODS = [
 ];
 
 export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
+  step,
   config,
   onUpdate,
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState<PaymentInfoConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [paymentOptions, setPaymentOptions] = useState<PaymentOptions | null>(null);
+  // @ts-ignore
+  const [loadingPaymentOptions, setLoadingPaymentOptions] = useState(false);
+
+  const { usePaymentOptions } = useBookingFlowStepConfiguration();
+  
+  // Fetch payment options for this step
+  const {
+    data: paymentOptionsData,
+    isLoading: isLoadingPaymentOptions,
+    error: paymentOptionsError
+  } = usePaymentOptions(step.id);
+
+  useEffect(() => {
+    if (paymentOptionsData) {
+      setPaymentOptions(paymentOptionsData);
+    }
+  }, [paymentOptionsData]);
 
   useEffect(() => {
     if (config) {
@@ -86,9 +134,11 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
         accept_full_payment: config.accept_full_payment ?? true,
         accept_deposit: config.accept_deposit ?? true,
         deposit_type: config.deposit_type || 'PERCENTAGE',
-        deposit_amount: config.deposit_amount || '25',
+        deposit_amount: config.deposit_amount?.toString() || '25',
         available_payment_methods: config.available_payment_methods || ['CREDIT_CARD', 'BANK_TRANSFER'],
         require_immediate_payment: config.require_immediate_payment ?? false,
+        allowed_gateways: config.allowed_gateways || [],
+        default_gateway: config.default_gateway || null,
         allow_payment_plans: config.allow_payment_plans ?? false,
         payment_terms: config.payment_terms || '',
       });
@@ -138,6 +188,29 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
     }));
   };
 
+  const handleAllowedGatewaysChange = (gatewayIds: number[]) => {
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        allowed_gateways: gatewayIds,
+      };
+      
+      // Reset default gateway if it's not in the allowed list
+      if (prev.default_gateway && !gatewayIds.includes(prev.default_gateway)) {
+        newData.default_gateway = null;
+      }
+      
+      return newData;
+    });
+  };
+
+  const handleDefaultGatewayChange = (gatewayId: number | null) => {
+    setFormData(prev => ({
+      ...prev,
+      default_gateway: gatewayId,
+    }));
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -158,6 +231,14 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
       newErrors.payment_methods = 'At least one payment method must be selected';
     }
 
+    if (formData.require_immediate_payment && formData.allowed_gateways.length === 0) {
+      newErrors.payment_gateways = 'At least one payment gateway must be selected for immediate payment processing';
+    }
+
+    if (formData.default_gateway && !formData.allowed_gateways.includes(formData.default_gateway)) {
+      newErrors.default_gateway = 'Default gateway must be selected from allowed gateways';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -165,16 +246,20 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
   const handleSave = () => {
     if (!validateForm()) return;
 
-    onUpdate({
+    const updateData: Partial<PaymentInfoStepConfiguration> = {
       accept_full_payment: formData.accept_full_payment,
       accept_deposit: formData.accept_deposit,
       deposit_type: formData.deposit_type,
       deposit_amount: formData.deposit_amount,
       available_payment_methods: formData.available_payment_methods,
       require_immediate_payment: formData.require_immediate_payment,
+      allowed_gateways: formData.allowed_gateways,
+      default_gateway: formData.default_gateway,
       allow_payment_plans: formData.allow_payment_plans,
-      payment_terms: formData.payment_terms.trim() || undefined,
-    });
+      payment_terms: formData.payment_terms.trim() || '',
+    };
+
+    onUpdate(updateData);
   };
 
   const getPaymentMethodIcon = (method: string) => {
@@ -185,6 +270,15 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
     return PAYMENT_METHODS.find(pm => pm.value === method)?.label || method;
   };
 
+  const getGatewayDisplayName = (gateway: PaymentGateway) => {
+    return `${gateway.name} (${gateway.code.toUpperCase()})`;
+  };
+
+  const availableGateways = paymentOptions?.available_gateways || [];
+  const allowedGatewayObjects = availableGateways.filter(g => 
+    formData.allowed_gateways.includes(g.id)
+  );
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -192,8 +286,14 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
       </Typography>
       
       <Alert severity="info" sx={{ mb: 3 }}>
-        Configure payment options, deposit requirements, and payment processing for the booking flow.
+        Configure payment options, deposit requirements, and payment gateway settings for the booking flow.
       </Alert>
+
+      {paymentOptionsError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Failed to load payment options: {paymentOptionsError.message}
+        </Alert>
+      )}
 
       <Stack spacing={3}>
         {/* Payment Options */}
@@ -347,6 +447,104 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
           </CardContent>
         </Card>
 
+        {/* Payment Gateways */}
+        <Card variant="outlined">
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <SecurityIcon color="primary" />
+              <Typography variant="subtitle1">
+                Payment Gateway Configuration
+              </Typography>
+              {isLoadingPaymentOptions && <CircularProgress size={20} />}
+            </Box>
+            
+            <Stack spacing={2}>
+              {availableGateways.length > 0 ? (
+                <>
+                  <FormControl fullWidth error={!!errors.payment_gateways}>
+                    <Autocomplete
+                      multiple
+                      options={availableGateways}
+                      getOptionLabel={(option) => getGatewayDisplayName(option)}
+                      value={allowedGatewayObjects}
+                      onChange={(_, newValue) => {
+                        handleAllowedGatewaysChange(newValue.map(g => g.id));
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Allowed Payment Gateways"
+                          helperText={errors.payment_gateways || "Select which payment gateways are available for this step"}
+                          error={!!errors.payment_gateways}
+                        />
+                      )}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                          <Chip
+                            variant="outlined"
+                            label={getGatewayDisplayName(option)}
+                            {...getTagProps({ index })}
+                            key={option.id}
+                          />
+                        ))
+                      }
+                      renderOption={(props, option) => (
+                        <Box component="li" {...props}>
+                          <Box>
+                            <Typography variant="body2">
+                              {getGatewayDisplayName(option)}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {option.description}
+                            </Typography>
+                            {option.supported_methods.length > 0 && (
+                              <Typography variant="caption" display="block">
+                                Supports: {option.supported_methods.join(', ')}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      )}
+                    />
+                  </FormControl>
+
+                  {formData.allowed_gateways.length > 0 && (
+                    <FormControl sx={{ maxWidth: 400 }} error={!!errors.default_gateway}>
+                      <InputLabel>Default Gateway</InputLabel>
+                      <Select
+                        value={formData.default_gateway || ''}
+                        onChange={(e) => handleDefaultGatewayChange(e.target.value as number)}
+                        label="Default Gateway"
+                      >
+                        <MenuItem value="">
+                          <em>No default (let user choose)</em>
+                        </MenuItem>
+                        {allowedGatewayObjects.map((gateway) => (
+                          <MenuItem key={gateway.id} value={gateway.id}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <CheckIcon fontSize="small" color="success" />
+                              {getGatewayDisplayName(gateway)}
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors.default_gateway && (
+                        <Typography variant="caption" color="error">
+                          {errors.default_gateway}
+                        </Typography>
+                      )}
+                    </FormControl>
+                  )}
+                </>
+              ) : (
+                <Alert severity="warning">
+                  No payment gateways are configured. Please configure payment gateways in the system settings first.
+                </Alert>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+
         {/* Payment Processing */}
         <Card variant="outlined">
           <CardContent>
@@ -368,7 +566,7 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 />
               </Box>
               <Typography variant="caption" color="text.secondary">
-                Process payment immediately during booking (recommended for deposits)
+                Process payment immediately during booking completion (requires payment gateway configuration)
               </Typography>
 
               <Box display="flex" alignItems="center" gap={1}>
@@ -428,6 +626,19 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
               
               <Typography variant="body2">
                 <strong>Payment Methods:</strong> {formData.available_payment_methods.length} enabled
+              </Typography>
+              
+              <Typography variant="body2">
+                <strong>Payment Gateways:</strong>{' '}
+                {formData.allowed_gateways.length > 0 
+                  ? `${formData.allowed_gateways.length} configured`
+                  : 'None selected'
+                }
+                {formData.default_gateway && (
+                  <span> (Default: {
+                    availableGateways.find(g => g.id === formData.default_gateway)?.name || 'Unknown'
+                  })</span>
+                )}
               </Typography>
               
               <Typography variant="body2">

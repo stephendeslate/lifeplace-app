@@ -22,22 +22,26 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
+  InputLabel,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
   Schedule as TimeIcon,
   CalendarMonth as CalendarIcon,
   Block as BlockIcon,
+  CheckCircle as AvailabilityIcon,
+  Sync as SyncIcon,
 } from '@mui/icons-material';
 import type { 
   BookingFlowStep, 
   DateTimeStepConfiguration 
 } from '../../../types/bookingflows.types';
+import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
 interface DateTimeStepConfigProps {
   step: BookingFlowStep;
   config?: DateTimeStepConfiguration | null;
-  onUpdate: (data: Partial<DateTimeStepConfiguration>) => void;
+  onUpdate: (updatedStep: BookingFlowStep) => void;
   isLoading?: boolean;
 }
 
@@ -48,12 +52,35 @@ interface DateTimeConfigFormData {
   min_duration_hours: number;
   max_duration_hours: number;
   default_duration_hours: number;
+  
+  // Enhanced availability settings from evolved backend
   enable_real_time_availability: boolean;
+  show_availability_status: boolean;
+  auto_check_conflicts: boolean;
+  
   blocked_dates: string[];
   available_days_of_week: number[];
   available_time_slots: any[];
+  
+  // Buffer settings
   buffer_before_hours: number;
   buffer_after_hours: number;
+  
+  // Availability checking configuration
+  check_venue_availability: boolean;
+  check_resource_availability: boolean;
+  check_staff_availability: boolean;
+  
+  // Availability display settings
+  availability_display_mode: 'FULL' | 'LIMITED' | 'SIMPLE';
+  
+  // Conflict resolution
+  allow_overbooking: boolean;
+  overbooking_threshold: number;
+  
+  // Integration settings
+  sync_with_calendar: boolean;
+  calendar_source: 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
 }
 
 const defaultFormData: DateTimeConfigFormData = {
@@ -64,11 +91,21 @@ const defaultFormData: DateTimeConfigFormData = {
   max_duration_hours: 24,
   default_duration_hours: 4,
   enable_real_time_availability: true,
+  show_availability_status: true,
+  auto_check_conflicts: true,
   blocked_dates: [],
   available_days_of_week: [1, 2, 3, 4, 5, 6, 0], // Monday to Sunday
   available_time_slots: [],
   buffer_before_hours: 0,
   buffer_after_hours: 0,
+  check_venue_availability: true,
+  check_resource_availability: true,
+  check_staff_availability: true,
+  availability_display_mode: 'FULL',
+  allow_overbooking: false,
+  overbooking_threshold: 0,
+  sync_with_calendar: false,
+  calendar_source: '',
 };
 
 const DAYS_OF_WEEK = [
@@ -81,7 +118,21 @@ const DAYS_OF_WEEK = [
   { value: 0, label: 'Sunday' },
 ];
 
+const AVAILABILITY_DISPLAY_MODES = [
+  { value: 'FULL', label: 'Show Full Availability' },
+  { value: 'LIMITED', label: 'Show Limited Availability' },
+  { value: 'SIMPLE', label: 'Show Simple Yes/No' },
+];
+
+const CALENDAR_SOURCES = [
+  { value: '', label: 'No Calendar Sync' },
+  { value: 'GOOGLE', label: 'Google Calendar' },
+  { value: 'OUTLOOK', label: 'Outlook Calendar' },
+  { value: 'EXTERNAL', label: 'External System' },
+];
+
 export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
+  step,
   config,
   onUpdate,
   isLoading = false,
@@ -89,6 +140,11 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
   const [formData, setFormData] = useState<DateTimeConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newBlockedDate, setNewBlockedDate] = useState('');
+
+  const {
+    updateConfiguration,
+    isUpdatingConfiguration,
+  } = useBookingFlowStepConfiguration();
 
   useEffect(() => {
     if (config) {
@@ -100,22 +156,32 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
         max_duration_hours: config.max_duration_hours ?? 24,
         default_duration_hours: config.default_duration_hours ?? 4,
         enable_real_time_availability: config.enable_real_time_availability ?? true,
+        show_availability_status: config.show_availability_status ?? true,
+        auto_check_conflicts: config.auto_check_conflicts ?? true,
         blocked_dates: config.blocked_dates || [],
         available_days_of_week: config.available_days_of_week || [1, 2, 3, 4, 5, 6, 0],
         available_time_slots: config.available_time_slots || [],
         buffer_before_hours: config.buffer_before_hours ?? 0,
         buffer_after_hours: config.buffer_after_hours ?? 0,
+        check_venue_availability: config.check_venue_availability ?? true,
+        check_resource_availability: config.check_resource_availability ?? true,
+        check_staff_availability: config.check_staff_availability ?? true,
+        availability_display_mode: config.availability_display_mode ?? 'FULL',
+        allow_overbooking: config.allow_overbooking ?? false,
+        overbooking_threshold: config.overbooking_threshold ?? 0,
+        sync_with_calendar: config.sync_with_calendar ?? false,
+        calendar_source: config.calendar_source ?? '',
       });
     }
   }, [config]);
 
   const handleInputChange = (field: keyof DateTimeConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement | { value: unknown }>
   ) => {
     const value = event.target.value;
     setFormData(prev => ({
       ...prev,
-      [field]: field.includes('hours') ? parseInt(value) || 0 : value,
+      [field]: field.includes('hours') || field.includes('threshold') ? parseInt(value as string) || 0 : value,
     }));
     
     // Clear error when user starts typing
@@ -184,6 +250,10 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
       newErrors.available_days_of_week = 'At least one day of the week must be available';
     }
 
+    if (formData.allow_overbooking && formData.overbooking_threshold < 0) {
+      newErrors.overbooking_threshold = 'Overbooking threshold cannot be negative';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -191,19 +261,21 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
   const handleSave = () => {
     if (!validateForm()) return;
 
-    onUpdate({
-      allow_time_selection: formData.allow_time_selection,
-      allow_multi_day: formData.allow_multi_day,
-      show_calendar_view: formData.show_calendar_view,
-      min_duration_hours: formData.min_duration_hours,
-      max_duration_hours: formData.max_duration_hours,
-      default_duration_hours: formData.default_duration_hours,
-      enable_real_time_availability: formData.enable_real_time_availability,
-      blocked_dates: formData.blocked_dates,
-      available_days_of_week: formData.available_days_of_week,
-      available_time_slots: formData.available_time_slots,
-      buffer_before_hours: formData.buffer_before_hours,
-      buffer_after_hours: formData.buffer_after_hours,
+    updateConfiguration({
+      stepId: step.id,
+      data: formData,
+    }, {
+      onSuccess: () => {
+        // Create updated step object for parent callback
+        const updatedStep: BookingFlowStep = {
+          ...step,
+          configuration_data: {
+            ...config,
+            ...formData,
+          } as DateTimeStepConfiguration,
+        };
+        onUpdate(updatedStep);
+      }
     });
   };
 
@@ -214,7 +286,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
       </Typography>
       
       <Alert severity="info" sx={{ mb: 3 }}>
-        Configure how clients select dates and times for their events, including availability rules and restrictions.
+        Configure how clients select dates and times for their events, including advanced availability checking and conflict resolution.
       </Alert>
 
       <Stack spacing={3}>
@@ -323,26 +395,86 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
           </CardContent>
         </Card>
 
-        {/* Availability Settings */}
+        {/* Enhanced Availability Settings */}
         <Card variant="outlined">
           <CardContent>
             <Typography variant="subtitle1" gutterBottom>
-              Availability Settings
+              Real-Time Availability
             </Typography>
             
             <Stack spacing={2}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.enable_real_time_availability}
-                    onChange={handleSwitchChange('enable_real_time_availability')}
-                  />
-                }
-                label="Enable Real-Time Availability Check"
-              />
+              <Box display="flex" alignItems="center" gap={1}>
+                <AvailabilityIcon color="primary" />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.enable_real_time_availability}
+                      onChange={handleSwitchChange('enable_real_time_availability')}
+                    />
+                  }
+                  label="Enable Real-Time Availability Check"
+                />
+              </Box>
               <Typography variant="caption" color="text.secondary">
                 Check against existing bookings and block unavailable slots
               </Typography>
+
+              {formData.enable_real_time_availability && (
+                <>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.show_availability_status}
+                        onChange={handleSwitchChange('show_availability_status')}
+                      />
+                    }
+                    label="Show Availability Status"
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Display availability indicators to clients
+                  </Typography>
+
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.auto_check_conflicts}
+                        onChange={handleSwitchChange('auto_check_conflicts')}
+                      />
+                    }
+                    label="Auto-Check Conflicts"
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Automatically prevent conflicting bookings
+                  </Typography>
+
+                  <FormControl fullWidth sx={{ mt: 2 }}>
+                    <InputLabel>Availability Display Mode</InputLabel>
+                    <Select
+                      value={formData.availability_display_mode}
+                      label="Availability Display Mode"
+                      onChange={(event) => {
+                        const value = event.target.value as 'FULL' | 'LIMITED' | 'SIMPLE';
+                        setFormData(prev => ({
+                          ...prev,
+                          availability_display_mode: value,
+                        }));
+                        if (errors['availability_display_mode']) {
+                          setErrors(prev => ({
+                            ...prev,
+                            availability_display_mode: '',
+                          }));
+                        }
+                      }}
+                    >
+                      {AVAILABILITY_DISPLAY_MODES.map((mode) => (
+                        <MenuItem key={mode.value} value={mode.value}>
+                          {mode.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </>
+              )}
 
               {/* Available Days */}
               <Box>
@@ -379,6 +511,143 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                   )}
                 </FormControl>
               </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Availability Checking Configuration */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>
+              Availability Checking
+            </Typography>
+            
+            <Stack spacing={2}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.check_venue_availability}
+                    onChange={handleSwitchChange('check_venue_availability')}
+                    disabled={!formData.enable_real_time_availability}
+                  />
+                }
+                label="Check Venue Availability"
+              />
+              
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.check_resource_availability}
+                    onChange={handleSwitchChange('check_resource_availability')}
+                    disabled={!formData.enable_real_time_availability}
+                  />
+                }
+                label="Check Resource Availability"
+              />
+              
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.check_staff_availability}
+                    onChange={handleSwitchChange('check_staff_availability')}
+                    disabled={!formData.enable_real_time_availability}
+                  />
+                }
+                label="Check Staff Availability"
+              />
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Conflict Resolution */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>
+              Conflict Resolution
+            </Typography>
+            
+            <Stack spacing={2}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.allow_overbooking}
+                    onChange={handleSwitchChange('allow_overbooking')}
+                  />
+                }
+                label="Allow Overbooking"
+              />
+              <Typography variant="caption" color="text.secondary">
+                Allow bookings even when conflicts are detected
+              </Typography>
+
+              {formData.allow_overbooking && (
+                <TextField
+                  label="Overbooking Threshold"
+                  type="number"
+                  value={formData.overbooking_threshold}
+                  onChange={handleInputChange('overbooking_threshold')}
+                  error={!!errors.overbooking_threshold}
+                  helperText={errors.overbooking_threshold || 'Maximum allowed conflicts before blocking'}
+                  inputProps={{ min: 0 }}
+                  sx={{ maxWidth: 300 }}
+                />
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Calendar Integration */}
+        <Card variant="outlined">
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <SyncIcon color="primary" />
+              <Typography variant="subtitle1">
+                Calendar Integration
+              </Typography>
+            </Box>
+            
+            <Stack spacing={2}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.sync_with_calendar}
+                    onChange={handleSwitchChange('sync_with_calendar')}
+                  />
+                }
+                label="Sync with External Calendar"
+              />
+              <Typography variant="caption" color="text.secondary">
+                Sync availability with external calendar systems
+              </Typography>
+
+              {formData.sync_with_calendar && (
+                <FormControl fullWidth sx={{ maxWidth: 400 }}>
+                  <InputLabel>Calendar Source</InputLabel>
+                  <Select
+                    value={formData.calendar_source}
+                    label="Calendar Source"
+                    onChange={(event) => {
+                      const value = event.target.value as 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
+                      setFormData(prev => ({
+                        ...prev,
+                        calendar_source: value,
+                      }));
+                      if (errors['calendar_source']) {
+                        setErrors(prev => ({
+                          ...prev,
+                          calendar_source: '',
+                        }));
+                      }
+                    }}
+                  >
+                    {CALENDAR_SOURCES.map((source) => (
+                      <MenuItem key={source.value} value={source.value}>
+                        {source.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
             </Stack>
           </CardContent>
         </Card>
@@ -508,6 +777,22 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 <strong>Available Days:</strong> {formData.available_days_of_week.length} days per week
               </Typography>
               
+              <Typography variant="body2">
+                <strong>Real-Time Availability:</strong> {formData.enable_real_time_availability ? 'Enabled' : 'Disabled'}
+                {formData.enable_real_time_availability && ` (${formData.availability_display_mode})`}
+              </Typography>
+              
+              {formData.enable_real_time_availability && (
+                <Typography variant="body2">
+                  <strong>Availability Checks:</strong>{' '}
+                  {[
+                    formData.check_venue_availability && 'Venue',
+                    formData.check_resource_availability && 'Resources',
+                    formData.check_staff_availability && 'Staff'
+                  ].filter(Boolean).join(', ') || 'None'}
+                </Typography>
+              )}
+              
               {(formData.buffer_before_hours > 0 || formData.buffer_after_hours > 0) && (
                 <Typography variant="body2">
                   <strong>Buffer:</strong> {formData.buffer_before_hours}h before, {formData.buffer_after_hours}h after
@@ -520,9 +805,17 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 </Typography>
               )}
               
-              <Typography variant="body2">
-                <strong>Real-Time Availability:</strong> {formData.enable_real_time_availability ? 'Enabled' : 'Disabled'}
-              </Typography>
+              {formData.allow_overbooking && (
+                <Typography variant="body2">
+                  <strong>Overbooking:</strong> Allowed (threshold: {formData.overbooking_threshold})
+                </Typography>
+              )}
+              
+              {formData.sync_with_calendar && (
+                <Typography variant="body2">
+                  <strong>Calendar Sync:</strong> {formData.calendar_source || 'Enabled'}
+                </Typography>
+              )}
             </Stack>
           </CardContent>
         </Card>
@@ -532,9 +825,9 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={isLoading}
+            disabled={isLoading || isUpdatingConfiguration}
           >
-            {isLoading ? 'Saving...' : 'Save Configuration'}
+            {isLoading || isUpdatingConfiguration ? 'Saving...' : 'Save Configuration'}
           </Button>
           
           <Button
