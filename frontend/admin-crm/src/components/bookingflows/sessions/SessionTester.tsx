@@ -41,7 +41,10 @@ import {
 } from '@mui/icons-material';
 import type { 
   BookingFlowDetail, 
-  BookingFlowStep 
+  BookingFlowStep,
+  BookingSession,
+  CreateBookingSessionData,
+  UpdateBookingSessionData
 } from '../../../types/bookingflows.types';
 import { useBookingSessions } from '../../../hooks/useBookingFlows';
 
@@ -51,17 +54,19 @@ interface SessionTesterProps {
 }
 
 interface TestSession {
-  id: string;
+  sessionId: string;
   currentStepIndex: number;
   stepData: Record<number, any>;
   errors: Record<number, string[]>;
   startedAt: Date;
   status: 'running' | 'completed' | 'abandoned' | 'error';
+  bookingSession?: BookingSession;
 }
 
 interface StepTestResult {
   stepId: number;
   stepName: string;
+  stepType: string;
   status: 'pending' | 'testing' | 'passed' | 'failed' | 'skipped';
   errors: string[];
   warnings: string[];
@@ -82,8 +87,13 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
 
   const {
     createSession,
+    updateSessionData,
+    completeBooking,
+    abandonSession,
     isCreatingSession,
     isUpdatingSessionData,
+    isCompletingBooking,
+    isAbandoningSession,
   } = useBookingSessions();
 
   // Get enabled steps only
@@ -94,6 +104,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     setTestResults(enabledSteps.map(step => ({
       stepId: step.id,
       stepName: step.name,
+      stepType: step.step_type_display,
       status: 'pending',
       errors: [],
       warnings: [],
@@ -101,14 +112,14 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     })));
   }, [enabledSteps]);
 
-  const handleStartTest = () => {
+  const handleStartTest = async () => {
     if (!flow.is_active) {
       alert('Cannot test inactive booking flow. Please activate the flow first.');
       return;
     }
 
     const newSession: TestSession = {
-      id: `test-${Date.now()}`,
+      sessionId: `test-${Date.now()}`,
       currentStepIndex: 0,
       stepData: {},
       errors: {},
@@ -120,27 +131,49 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     setIsRunning(true);
 
     // Create actual booking session for testing
-    createSession({
+    const sessionData: CreateBookingSessionData = {
       booking_flow: flow.id,
       ip_address: '127.0.0.1',
       user_agent: 'SessionTester/1.0',
       referrer_url: window.location.href,
-    });
+    };
 
-    if (testMode === 'automated') {
-      runAutomatedTest(newSession);
+    try {
+      const bookingSession = await new Promise<BookingSession>((resolve, reject) => {
+        createSession(sessionData, {
+          onSuccess: (session) => resolve(session),
+          onError: (error) => reject(error),
+        });
+      });
+
+      setTestSession(prev => prev ? { ...prev, bookingSession } : null);
+
+      if (testMode === 'automated') {
+        runAutomatedTest(newSession, bookingSession);
+      }
+    } catch (error) {
+      console.error('Failed to create test session:', error);
+      setTestSession(prev => prev ? { ...prev, status: 'error' } : null);
+      setIsRunning(false);
     }
   };
 
   const handleStopTest = () => {
+    if (testSession?.bookingSession) {
+      abandonSession({ 
+        id: testSession.bookingSession.id, 
+        reason: 'Test stopped by user' 
+      });
+    }
+    
     if (testSession) {
       setTestSession(prev => prev ? { ...prev, status: 'abandoned' } : null);
       setIsRunning(false);
     }
   };
 
-  const handleNextStep = () => {
-    if (!testSession || testSession.currentStepIndex >= enabledSteps.length - 1) return;
+  const handleNextStep = async () => {
+    if (!testSession || !testSession.bookingSession || testSession.currentStepIndex >= enabledSteps.length - 1) return;
 
     const currentStep = enabledSteps[testSession.currentStepIndex];
     const testData = generateTestDataForStep(currentStep);
@@ -152,20 +185,71 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
       result.stepId === currentStep.id 
         ? {
             ...result,
-            status: validationResult.isValid ? 'passed' : 'failed',
-            errors: validationResult.errors,
-            warnings: validationResult.warnings,
+            status: 'testing',
             testData,
           }
         : result
     ));
 
     if (validationResult.isValid) {
-      setTestSession(prev => prev ? {
-        ...prev,
-        currentStepIndex: prev.currentStepIndex + 1,
-        stepData: { ...prev.stepData, [currentStep.id]: testData },
-      } : null);
+      try {
+        const updateData: UpdateBookingSessionData = {
+          session_id: testSession.bookingSession.session_id,
+          step_id: currentStep.id,
+          step_data: testData,
+          mark_completed: true,
+        };
+
+        await new Promise<void>((resolve, reject) => {
+          updateSessionData({ id: testSession.bookingSession!.id, data: updateData }, {
+            onSuccess: () => resolve(),
+            onError: (error) => reject(error),
+          });
+        });
+
+        // Mark step as passed
+        setTestResults(prev => prev.map(result => 
+          result.stepId === currentStep.id 
+            ? {
+                ...result,
+                status: 'passed',
+                errors: validationResult.errors,
+                warnings: validationResult.warnings,
+              }
+            : result
+        ));
+
+        // Move to next step
+        setTestSession(prev => prev ? {
+          ...prev,
+          currentStepIndex: prev.currentStepIndex + 1,
+          stepData: { ...prev.stepData, [currentStep.id]: testData },
+        } : null);
+
+      } catch (error) {
+        console.error('Failed to update session data:', error);
+        setTestResults(prev => prev.map(result => 
+          result.stepId === currentStep.id 
+            ? {
+                ...result,
+                status: 'failed',
+                errors: [...validationResult.errors, 'Failed to update session data'],
+                warnings: validationResult.warnings,
+              }
+            : result
+        ));
+      }
+    } else {
+      setTestResults(prev => prev.map(result => 
+        result.stepId === currentStep.id 
+          ? {
+              ...result,
+              status: 'failed',
+              errors: validationResult.errors,
+              warnings: validationResult.warnings,
+            }
+          : result
+      ));
     }
   };
 
@@ -178,18 +262,28 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     } : null);
   };
 
-  const handleCompleteTest = () => {
-    if (!testSession) return;
+  const handleCompleteTest = async () => {
+    if (!testSession?.bookingSession) return;
 
-    setTestSession(prev => prev ? { ...prev, status: 'completed' } : null);
-    setIsRunning(false);
-    
-    // Mark session as completed
-    // completeBooking would be called here in real implementation
+    try {
+      await new Promise<void>((resolve, reject) => {
+        completeBooking(testSession.bookingSession!.id, {
+          onSuccess: () => resolve(),
+          onError: (error) => reject(error),
+        });
+      });
+
+      setTestSession(prev => prev ? { ...prev, status: 'completed' } : null);
+      setIsRunning(false);
+    } catch (error) {
+      console.error('Failed to complete booking:', error);
+      setTestSession(prev => prev ? { ...prev, status: 'error' } : null);
+      setIsRunning(false);
+    }
   };
 
   // @ts-ignore
-  const runAutomatedTest = async (session: TestSession) => {
+  const runAutomatedTest = async (session: TestSession, bookingSession: BookingSession) => {
     const delay = testSpeed === 'fast' ? 500 : testSpeed === 'normal' ? 1500 : 3000;
 
     for (let i = 0; i < enabledSteps.length; i++) {
@@ -208,36 +302,82 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
       // Generate and validate test data
       const testData = generateTestDataForStep(step);
       const validationResult = validateStepData(step, testData);
-      
-      // Update test results
-      setTestResults(prev => prev.map(result => 
-        result.stepId === step.id 
-          ? {
-              ...result,
-              status: validationResult.isValid ? 'passed' : 'failed',
-              errors: validationResult.errors,
-              warnings: validationResult.warnings,
-              testData,
-            }
-          : result
-      ));
 
-      // If validation fails, stop automated test
-      if (!validationResult.isValid) {
+      if (validationResult.isValid) {
+        try {
+          const updateData: UpdateBookingSessionData = {
+            session_id: bookingSession.session_id,
+            step_id: step.id,
+            step_data: testData,
+            mark_completed: true,
+          };
+
+          await new Promise<void>((resolve, reject) => {
+            updateSessionData({ id: bookingSession.id, data: updateData }, {
+              onSuccess: () => resolve(),
+              onError: (error) => reject(error),
+            });
+          });
+
+          // Update test results
+          setTestResults(prev => prev.map(result => 
+            result.stepId === step.id 
+              ? {
+                  ...result,
+                  status: 'passed',
+                  errors: validationResult.errors,
+                  warnings: validationResult.warnings,
+                  testData,
+                }
+              : result
+          ));
+
+          // Update session data
+          setTestSession(prev => prev ? {
+            ...prev,
+            stepData: { ...prev.stepData, [step.id]: testData },
+          } : null);
+
+        } catch (error) {
+          console.error('Failed to update session data:', error);
+          setTestResults(prev => prev.map(result => 
+            result.stepId === step.id 
+              ? {
+                  ...result,
+                  status: 'failed',
+                  errors: [...validationResult.errors, 'Failed to update session data'],
+                  warnings: validationResult.warnings,
+                  testData,
+                }
+              : result
+          ));
+          
+          setTestSession(prev => prev ? { ...prev, status: 'error' } : null);
+          setIsRunning(false);
+          return;
+        }
+      } else {
+        // Update test results with validation errors
+        setTestResults(prev => prev.map(result => 
+          result.stepId === step.id 
+            ? {
+                ...result,
+                status: 'failed',
+                errors: validationResult.errors,
+                warnings: validationResult.warnings,
+                testData,
+              }
+            : result
+        ));
+
         setTestSession(prev => prev ? { ...prev, status: 'error' } : null);
         setIsRunning(false);
         return;
       }
-
-      // Update session data
-      setTestSession(prev => prev ? {
-        ...prev,
-        stepData: { ...prev.stepData, [step.id]: testData },
-      } : null);
     }
 
     // Complete the test
-    handleCompleteTest();
+    await handleCompleteTest();
   };
 
   const generateTestDataForStep = (step: BookingFlowStep): any => {
@@ -250,21 +390,12 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
       case 'introduction':
         return { ...baseData, acknowledged: true };
       
-      case 'event_details':
-        return {
-          ...baseData,
-          event_name: 'Test Event',
-          description: 'This is a test event for validation purposes',
-          guest_count: 50,
-          venue_preference: 'Indoor venue with parking',
-        };
-      
       case 'date_time':
         const eventDate = new Date();
         eventDate.setDate(eventDate.getDate() + 30); // 30 days from now
         return {
           ...baseData,
-          event_date: eventDate.toISOString().split('T')[0],
+          start_date: eventDate.toISOString().split('T')[0],
           start_time: '14:00',
           end_time: '18:00',
           duration: 4,
@@ -283,15 +414,33 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
       case 'package_selection':
         return {
           ...baseData,
-          selected_packages: [1], // Would use actual package IDs
-          package_customizations: {},
+          selected_packages: [
+            {
+              id: 1,
+              name: 'Test Package',
+              quantity: 1,
+              price: '1000.00',
+            }
+          ],
         };
       
       case 'addon_selection':
         return {
           ...baseData,
-          selected_addons: [2, 3], // Would use actual addon IDs
-          addon_notes: 'Test addon selections',
+          selected_addons: [
+            {
+              id: 2,
+              name: 'Test Addon 1',
+              quantity: 1,
+              price: '200.00',
+            },
+            {
+              id: 3,
+              name: 'Test Addon 2',
+              quantity: 1,
+              price: '150.00',
+            }
+          ],
         };
       
       case 'contact_info':
@@ -308,8 +457,22 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
         return {
           ...baseData,
           payment_option: 'deposit',
-          payment_method: 'credit_card',
-          billing_address: 'Same as contact address',
+          gateway_id: 1, // Test gateway ID
+          payment_method_token: 'test_token_123',
+          billing_address: {
+            street: '123 Test Street',
+            city: 'Test City',
+            state: 'TC',
+            zip: '12345',
+            country: 'US',
+          },
+        };
+      
+      case 'review_booking':
+        return {
+          ...baseData,
+          booking_reviewed: true,
+          changes_requested: false,
         };
       
       case 'confirmation':
@@ -338,22 +501,13 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
       return { isValid: false, errors, warnings };
     }
 
-    // Step-specific validation
+    // Step-specific validation based on actual step types from backend
     switch (step.step_type) {
-      case 'event_details':
-        if (step.configuration?.require_event_name && !data.event_name) {
-          errors.push('Event name is required');
-        }
-        if (step.configuration?.require_guest_count && (!data.guest_count || data.guest_count < 1)) {
-          errors.push('Valid guest count is required');
-        }
-        break;
-      
       case 'date_time':
-        if (!data.event_date) {
-          errors.push('Event date is required');
+        if (!data.start_date) {
+          errors.push('Start date is required');
         } else {
-          const eventDate = new Date(data.event_date);
+          const eventDate = new Date(data.start_date);
           const minDate = new Date();
           minDate.setDate(minDate.getDate() + (flow.min_advance_booking_days || 1));
           
@@ -364,17 +518,30 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
         break;
       
       case 'contact_info':
-        if (step.configuration?.require_email && !data.email) {
+        if (!data.email) {
           errors.push('Email address is required');
         }
-        if (step.configuration?.require_phone && !data.phone) {
-          errors.push('Phone number is required');
+        if (!data.full_name) {
+          errors.push('Full name is required');
         }
         break;
       
       case 'payment_info':
-        if (!data.payment_option || !data.payment_method) {
-          errors.push('Payment option and method are required');
+        if (!data.gateway_id) {
+          errors.push('Payment gateway is required');
+        }
+        if (!data.payment_method_token && !data.payment_method_id) {
+          errors.push('Payment method is required');
+        }
+        break;
+      
+      case 'package_selection':
+        if (!data.selected_packages || !Array.isArray(data.selected_packages) || data.selected_packages.length === 0) {
+          if (step.is_required) {
+            errors.push('At least one package must be selected');
+          } else {
+            warnings.push('No packages selected');
+          }
         }
         break;
     }
@@ -410,7 +577,6 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     if (!testSession) return 0;
     return Math.round(((testSession.currentStepIndex + 1) / enabledSteps.length) * 100);
   };
-
 
   return (
     <Box>
@@ -487,8 +653,9 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
                     startIcon={<StopIcon />}
                     onClick={handleStopTest}
                     color="error"
+                    disabled={isAbandoningSession}
                   >
-                    Stop Test
+                    {isAbandoningSession ? 'Stopping...' : 'Stop Test'}
                   </Button>
                   
                   {testMode === 'manual' && testSession && (
@@ -510,7 +677,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
                           disabled={isUpdatingSessionData}
                           size="small"
                         >
-                          Next Step
+                          {isUpdatingSessionData ? 'Processing...' : 'Next Step'}
                         </Button>
                       ) : (
                         <Button
@@ -518,9 +685,10 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
                           color="success"
                           startIcon={<CompleteIcon />}
                           onClick={handleCompleteTest}
+                          disabled={isCompletingBooking}
                           size="small"
                         >
-                          Complete
+                          {isCompletingBooking ? 'Completing...' : 'Complete'}
                         </Button>
                       )}
                     </>
@@ -560,6 +728,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
           
           <Stepper orientation="vertical" nonLinear>
             {testResults.map((result, index) => {
+              // @ts-ignore
               const step = enabledSteps.find(s => s.id === result.stepId);
               const isActive = testSession?.currentStepIndex === index;
               
@@ -574,7 +743,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
                         {result.stepName}
                       </Typography>
                       <Chip
-                        label={step?.step_type_display}
+                        label={result.stepType}
                         size="small"
                         variant="outlined"
                         color="primary"

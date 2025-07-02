@@ -16,6 +16,8 @@ import {
   Button,
   LinearProgress,
   Avatar,
+  Tooltip,
+  Badge,
 } from '@mui/material';
 import {
   MoreVert as MoreVertIcon,
@@ -29,6 +31,10 @@ import {
   Science as TestIcon,
   Schedule as TimeIcon,
   People as GuestsIcon,
+  Settings as SettingsIcon,
+  Payment as PaymentIcon,
+  Warning as WarningIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import type { BookingFlow } from '../../../types/bookingflows.types';
 
@@ -128,6 +134,67 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
     ? Math.round((flow.enabled_steps_count / flow.total_steps) * 100)
     : 0;
 
+  // UPDATED: Enhanced configuration status checking
+  const getConfigurationStatus = () => {
+    const hasSteps = flow.total_steps > 0;
+    const hasEnabledSteps = flow.enabled_steps_count > 0;
+    const hasPaymentGateways = flow.allowed_payment_gateways && flow.allowed_payment_gateways.length > 0;
+    
+    // Count configuration issues
+    let issues = 0;
+    const warnings = [];
+    
+    if (!hasSteps) {
+      issues++;
+      warnings.push('No steps configured');
+    }
+    
+    if (!hasEnabledSteps && hasSteps) {
+      issues++;
+      warnings.push('No steps enabled');
+    }
+    
+    if (flow.require_immediate_payment && (!hasPaymentGateways && !flow.default_payment_gateway)) {
+      issues++;
+      warnings.push('Payment required but no payment gateways configured');
+    }
+    
+    return {
+      isComplete: issues === 0 && hasEnabledSteps,
+      hasIssues: issues > 0,
+      warnings,
+      issueCount: issues
+    };
+  };
+
+  const configStatus = getConfigurationStatus();
+
+  // UPDATED: Enhanced event type display with proper null handling
+  const getEventTypeDisplay = () => {
+    // Use event_type_name which is always provided by backend serializer
+    return flow.event_type_name || 'Any Event Type';
+  };
+
+  // NEW: Payment configuration indicator
+  const getPaymentConfigChip = () => {
+    if (!flow.require_immediate_payment) {
+      return null;
+    }
+
+    const hasGateways = (flow.allowed_payment_gateways && flow.allowed_payment_gateways.length > 0) || 
+                       flow.default_payment_gateway;
+
+    return (
+      <Chip
+        icon={<PaymentIcon />}
+        label={hasGateways ? "Payment Ready" : "Payment Required"}
+        size="small"
+        color={hasGateways ? "success" : "warning"}
+        variant="outlined"
+      />
+    );
+  };
+
   return (
     <Card 
       sx={{ 
@@ -136,6 +203,8 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
         flexDirection: 'column',
         cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
+        border: configStatus.hasIssues ? '1px solid' : undefined,
+        borderColor: configStatus.hasIssues ? 'warning.main' : undefined,
         '&:hover': {
           transform: 'translateY(-2px)',
           boxShadow: 3,
@@ -162,9 +231,27 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
       <CardContent sx={{ flexGrow: 1 }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
-            <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-              <FlowIcon fontSize="small" />
-            </Avatar>
+            <Badge
+              badgeContent={configStatus.hasIssues ? configStatus.issueCount : 0}
+              color="warning"
+              variant="dot"
+              invisible={!configStatus.hasIssues}
+            >
+              <Avatar sx={{ 
+                bgcolor: configStatus.isComplete ? 'success.main' : 
+                        configStatus.hasIssues ? 'warning.main' : 'primary.main', 
+                width: 32, 
+                height: 32 
+              }}>
+                {configStatus.isComplete ? (
+                  <CheckCircleIcon fontSize="small" />
+                ) : configStatus.hasIssues ? (
+                  <WarningIcon fontSize="small" />
+                ) : (
+                  <FlowIcon fontSize="small" />
+                )}
+              </Avatar>
+            </Badge>
             <Box>
               <Typography variant="h6" component="div" noWrap>
                 {flow.name}
@@ -213,6 +300,23 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
           </Typography>
         )}
 
+        {/* UPDATED: Configuration warnings */}
+        {configStatus.hasIssues && (
+          <Box mb={2}>
+            <Chip
+              icon={<WarningIcon />}
+              label={`${configStatus.issueCount} Configuration Issue${configStatus.issueCount > 1 ? 's' : ''}`}
+              size="small"
+              color="warning"
+              variant="outlined"
+              sx={{ mb: 1 }}
+            />
+            <Typography variant="caption" color="warning.main" display="block">
+              {configStatus.warnings.join(', ')}
+            </Typography>
+          </Box>
+        )}
+
         {/* Status and Event Type */}
         <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
           <Chip
@@ -223,22 +327,13 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
             icon={flow.is_test_mode ? <TestIcon /> : undefined}
           />
           
-          {flow.event_type_name ? (
-            <Chip
-              icon={<EventIcon />}
-              label={flow.event_type_name}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          ) : (
-            <Chip
-              label="Any Event Type"
-              size="small"
-              variant="outlined"
-              color="default"
-            />
-          )}
+          <Chip
+            icon={<EventIcon />}
+            label={getEventTypeDisplay()}
+            size="small"
+            color={flow.event_type ? 'primary' : 'default'}
+            variant="outlined"
+          />
           
           {flow.allow_guest_booking && (
             <Chip
@@ -249,6 +344,9 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
               color="info"
             />
           )}
+
+          {/* NEW: Payment configuration chip */}
+          {getPaymentConfigChip()}
         </Box>
 
         {/* Steps Progress */}
@@ -270,7 +368,8 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
               backgroundColor: 'grey.200',
               '& .MuiLinearProgress-bar': {
                 borderRadius: 3,
-                backgroundColor: completionPercentage === 100 ? 'success.main' : 'primary.main'
+                backgroundColor: completionPercentage === 100 ? 'success.main' : 
+                                configStatus.hasIssues ? 'warning.main' : 'primary.main'
               }
             }}
             aria-label={`Configuration progress: ${completionPercentage}%`}
@@ -280,13 +379,24 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
           </Typography>
         </Box>
 
-        {/* Booking Settings */}
+        {/* UPDATED: Enhanced booking settings with new fields */}
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box display="flex" alignItems="center" gap={0.5}>
-            <TimeIcon fontSize="small" color="action" />
-            <Typography variant="caption" color="text.secondary">
-              {flow.min_advance_booking_days}-{flow.max_advance_booking_days} days
-            </Typography>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Tooltip title={`Booking window: ${flow.min_advance_booking_days}-${flow.max_advance_booking_days} days`}>
+              <Box display="flex" alignItems="center" gap={0.5}>
+                <TimeIcon fontSize="small" color="action" />
+                <Typography variant="caption" color="text.secondary">
+                  {flow.min_advance_booking_days}-{flow.max_advance_booking_days} days
+                </Typography>
+              </Box>
+            </Tooltip>
+            
+            {/* NEW: Payment requirement indicator */}
+            {flow.require_immediate_payment && (
+              <Tooltip title="Requires immediate payment">
+                <PaymentIcon fontSize="small" color="primary" />
+              </Tooltip>
+            )}
           </Box>
           
           <Typography variant="caption" color="text.secondary">
@@ -314,6 +424,24 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
         >
           Analytics
         </Button>
+
+        {/* NEW: Configuration status indicator */}
+        {configStatus.hasIssues && (
+          <Tooltip title={`Configuration issues: ${configStatus.warnings.join(', ')}`}>
+            <Button
+              size="small"
+              startIcon={<SettingsIcon />}
+              color="warning"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(flow);
+              }}
+              aria-label={`Fix configuration issues for ${flow.name}`}
+            >
+              Fix Issues
+            </Button>
+          </Tooltip>
+        )}
       </CardActions>
 
       {/* Menu */}

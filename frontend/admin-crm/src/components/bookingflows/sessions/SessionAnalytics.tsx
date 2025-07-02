@@ -37,7 +37,9 @@ import {
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import type { 
-  BookingFlowDetail} from '../../../types/bookingflows.types';
+  BookingFlowDetail,
+  BookingFlowAnalytics,
+} from '../../../types/bookingflows.types';
 import { useBookingFlowAnalytics, useBookingSessions } from '../../../hooks/useBookingFlows';
 
 interface SessionAnalyticsProps {
@@ -49,7 +51,7 @@ interface AnalyticsMetrics {
   completedBookings: number;
   abandonedSessions: number;
   conversionRate: number;
-  averageCompletionTime: number;
+  averageCompletionTime: string;
   totalRevenue: number;
   averageBookingValue: number;
   bounceRate: number;
@@ -64,7 +66,6 @@ interface StepAnalytics {
   averageTimeSpent: number;
   errorRate: number;
 }
-
 
 export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
@@ -81,7 +82,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
     refetchSessions 
   } = useBookingSessions({ booking_flow: flow.id });
 
-  // Calculate date range
+  // Calculate date range for API filters
   const getDateRange = () => {
     const endDate = new Date();
     const startDate = new Date();
@@ -113,7 +114,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
     refetch: refetchAnalytics 
   } = useFlowAnalytics(flow.id, getDateRange());
 
-  // Calculate aggregated metrics
+  // Calculate aggregated metrics from BookingFlowAnalytics[]
   const calculateMetrics = (): AnalyticsMetrics => {
     if (!analyticsData.length) {
       return {
@@ -121,14 +122,14 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
         completedBookings: 0,
         abandonedSessions: 0,
         conversionRate: 0,
-        averageCompletionTime: 0,
+        averageCompletionTime: '0',
         totalRevenue: 0,
         averageBookingValue: 0,
         bounceRate: 0,
       };
     }
 
-    const totals = analyticsData.reduce((acc, day) => ({
+    const totals = analyticsData.reduce((acc, day: BookingFlowAnalytics) => ({
       totalSessions: acc.totalSessions + day.total_sessions,
       completedBookings: acc.completedBookings + day.completed_bookings,
       abandonedSessions: acc.abandonedSessions + day.abandoned_sessions,
@@ -141,19 +142,16 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
     });
 
     const conversionRate = totals.totalSessions > 0 
-      ? (totals.completedBookings / totals.totalSessions) * 100 
+      ? parseFloat(((totals.completedBookings / totals.totalSessions) * 100).toFixed(2))
       : 0;
 
     const averageBookingValue = totals.completedBookings > 0 
       ? totals.totalRevenue / totals.completedBookings 
       : 0;
 
-    // Calculate average completion time from latest data
+    // Get latest analytics record for time-based metrics
     const latestData = analyticsData[analyticsData.length - 1];
-    const averageCompletionTime = latestData?.average_completion_time 
-      ? parseFloat(latestData.average_completion_time) 
-      : 0;
-
+    const averageCompletionTime = latestData?.average_completion_time || '0';
     const bounceRate = parseFloat(latestData?.bounce_rate || '0');
 
     return {
@@ -168,35 +166,50 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
     };
   };
 
-  // Calculate step analytics
+  // Calculate step analytics from flow steps and analytics data
   const calculateStepAnalytics = (): StepAnalytics[] => {
     const enabledSteps = flow.steps?.filter(step => step.is_enabled).sort((a, b) => a.order - b.order) || [];
     
     return enabledSteps.map(step => {
-      // In real implementation, this would come from detailed session data
-      // For now, we'll simulate based on step type and position
-      const stepPosition = enabledSteps.findIndex(s => s.id === step.id);
+      // Get step completion data from analytics
+      let completionRate = 0;
+      let dropOffRate = 0;
       
-      // Simulate realistic completion rates (earlier steps have higher completion)
-      const baseCompletionRate = Math.max(20, 95 - (stepPosition * 15));
-      const completionRate = Math.min(95, baseCompletionRate + Math.random() * 10);
-      const dropOffRate = 100 - completionRate;
+      if (analyticsData.length > 0) {
+        // Use the latest analytics data for step completion info
+        const latestAnalytics = analyticsData[analyticsData.length - 1];
+        if (latestAnalytics.step_completion_data && latestAnalytics.step_completion_data[step.id.toString()]) {
+          completionRate = latestAnalytics.step_completion_data[step.id.toString()].completion_rate || 0;
+        }
+        
+        if (latestAnalytics.step_drop_off_data && latestAnalytics.step_drop_off_data[step.id.toString()]) {
+          dropOffRate = latestAnalytics.step_drop_off_data[step.id.toString()] || 0;
+        }
+      }
+      
+      // If no real data, simulate based on step position for visualization
+      if (completionRate === 0 && dropOffRate === 0) {
+        const stepPosition = enabledSteps.findIndex(s => s.id === step.id);
+        completionRate = Math.max(20, 95 - (stepPosition * 12));
+        dropOffRate = 100 - completionRate;
+      }
       
       // Simulate average time based on step type
-      const timeByType = {
+      const timeByType: Record<string, number> = {
         introduction: 30,
-        event_details: 120,
         date_time: 180,
         questionnaire: 240,
         package_selection: 300,
         addon_selection: 180,
+        pricing_summary: 120,
         contact_info: 150,
         payment_info: 200,
+        review_booking: 90,
         confirmation: 60,
       };
       
-      const averageTimeSpent = timeByType[step.step_type as keyof typeof timeByType] || 120;
-      const errorRate = Math.random() * 5; // Simulate 0-5% error rate
+      const averageTimeSpent = timeByType[step.step_type] || 120;
+      const errorRate = Math.random() * 3; // Simulate 0-3% error rate
       
       return {
         stepId: step.id,
@@ -226,8 +239,8 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   const metrics = calculateMetrics();
   const stepAnalytics = calculateStepAnalytics();
 
-  // Prepare chart data
-  const chartData = analyticsData.map(day => ({
+  // Prepare chart data from BookingFlowAnalytics[]
+  const chartData = analyticsData.map((day: BookingFlowAnalytics) => ({
     date: new Date(day.date).toLocaleDateString(),
     sessions: day.total_sessions,
     conversions: day.completed_bookings,
@@ -258,6 +271,24 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  };
+
+  // Parse duration string from backend (e.g., "00:15:30" -> seconds)
+  const parseDurationToSeconds = (duration: string): number => {
+    if (!duration || duration === '0') return 0;
+    
+    // Handle PostgreSQL interval format like "00:15:30"
+    const parts = duration.split(':');
+    if (parts.length === 3) {
+      const hours = parseInt(parts[0]) || 0;
+      const minutes = parseInt(parts[1]) || 0;
+      const seconds = parseInt(parts[2]) || 0;
+      return hours * 3600 + minutes * 60 + seconds;
+    }
+    
+    // Handle numeric values (assume seconds)
+    const numericValue = parseFloat(duration);
+    return isNaN(numericValue) ? 0 : numericValue;
   };
 
   return (
@@ -390,7 +421,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     </Typography>
                   </Box>
                   <Typography variant="h4" fontWeight="bold">
-                    {formatDuration(metrics.averageCompletionTime)}
+                    {formatDuration(parseDurationToSeconds(metrics.averageCompletionTime))}
                   </Typography>
                   <Box display="flex" alignItems="center" gap={0.5} mt={1}>
                     <TrendingDownIcon fontSize="small" color="success" />
@@ -496,16 +527,16 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
               
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart
-                    data={conversionFunnelData as { name: string; completionRate: number; dropOff: number }[]}
-                    layout="horizontal"
+                  data={conversionFunnelData}
+                  layout="horizontal"
                 >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" domain={[0, 100]} />
-                    <YAxis dataKey="name" type="category" width={150} />
-                    <RechartsTooltip
-                        formatter={(value: number) => [`${value}%`, 'Completion Rate']}
-                    />
-                    <Bar dataKey="completionRate" fill="#8884d8" />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" domain={[0, 100]} />
+                  <YAxis dataKey="name" type="category" width={150} />
+                  <RechartsTooltip
+                    formatter={(value: number) => [`${value}%`, 'Completion Rate']}
+                  />
+                  <Bar dataKey="completionRate" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -626,7 +657,6 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                 </CardContent>
               </Card>
             </Box>
-          </Box>
 
             <Box flex="1 1 300px" minWidth={300}>
               <Card>
@@ -654,7 +684,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       </Alert>
                     )}
                     
-                    {metrics.averageCompletionTime > 900 && (
+                    {parseDurationToSeconds(metrics.averageCompletionTime) > 900 && (
                       <Alert severity="info" variant="outlined">
                         <Typography variant="body2">
                           Average completion time exceeds 15 minutes. Consider reducing the number of required steps.
@@ -664,7 +694,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     
                     {stepAnalytics.filter(s => s.dropOffRate > 30).length === 0 && 
                      metrics.conversionRate >= 20 && 
-                     metrics.averageCompletionTime <= 900 && (
+                     parseDurationToSeconds(metrics.averageCompletionTime) <= 900 && (
                       <Alert severity="success" variant="outlined">
                         <Typography variant="body2">
                           Your booking flow is performing well! All key metrics are within optimal ranges.
@@ -675,7 +705,8 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                 </CardContent>
               </Card>
             </Box>
-          </Stack>
+          </Box>
+        </Stack>
       )}
     </Box>
   );

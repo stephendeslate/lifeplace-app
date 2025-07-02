@@ -24,6 +24,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  CircularProgress,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -38,8 +39,7 @@ import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows'
 
 interface PackageSelectionStepConfigProps {
   step: BookingFlowStep;
-  config?: PackageSelectionStepConfiguration | null;
-  onUpdate: (data: Partial<PackageSelectionStepConfiguration>) => void;
+  onUpdate?: () => void;
   isLoading?: boolean;
 }
 
@@ -73,36 +73,44 @@ const defaultFormData: PackageConfigFormData = {
 
 export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProps> = ({
   step,
-  config,
+  onUpdate,
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState<PackageConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Use the correct hooks from useBookingFlowStepConfiguration
   const {
+    useStepConfiguration,
     useAvailablePackages,
     useAvailableCategories,
-    configurePackages,
-    isConfiguringPackages,
+    updateConfiguration,
+    isUpdatingConfiguration,
+    updateConfigurationError,
   } = useBookingFlowStepConfiguration();
 
-  const { data: availablePackages = [] } = useAvailablePackages(step.id);
-  const { data: availableCategories = [] } = useAvailableCategories(step.id);
+  // Get step configuration and available options
+  const { data: config, isLoading: isLoadingConfig } = useStepConfiguration(step.id);
+  const { data: availablePackages = [], isLoading: isLoadingPackages } = useAvailablePackages(step.id);
+  const { data: availableCategories = [], isLoading: isLoadingCategories } = useAvailableCategories(step.id);
 
+  // Parse the configuration when it loads
   useEffect(() => {
-    if (config) {
+    if (config && config.id) {
+      // Type assertion since we know this is a PackageSelectionStepConfiguration
+      const packageConfig = config as PackageSelectionStepConfiguration;
       setFormData({
-        available_categories: config.available_categories || [],
-        available_packages: config.available_packages || [],
-        selection_type: config.selection_type || 'SINGLE',
-        min_selection: config.min_selection || 1,
-        max_selection: config.max_selection || 1,
-        show_pricing: config.show_pricing ?? true,
-        show_descriptions: config.show_descriptions ?? true,
-        show_images: config.show_images ?? true,
-        enable_comparison: config.enable_comparison ?? false,
-        enable_dynamic_pricing: config.enable_dynamic_pricing ?? false,
-        pricing_factors: config.pricing_factors || {},
+        available_categories: packageConfig.available_categories || [],
+        available_packages: packageConfig.available_packages || [],
+        selection_type: packageConfig.selection_type || 'SINGLE',
+        min_selection: packageConfig.min_selection || 1,
+        max_selection: packageConfig.max_selection || 1,
+        show_pricing: packageConfig.show_pricing ?? true,
+        show_descriptions: packageConfig.show_descriptions ?? true,
+        show_images: packageConfig.show_images ?? true,
+        enable_comparison: packageConfig.enable_comparison ?? false,
+        enable_dynamic_pricing: packageConfig.enable_dynamic_pricing ?? false,
+        pricing_factors: packageConfig.pricing_factors || {},
       });
     }
   }, [config]);
@@ -184,23 +192,25 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
   const handleSave = () => {
     if (!validateForm()) return;
 
-    configurePackages({
+    // Use the updateConfiguration method from the hook
+    updateConfiguration({
       stepId: step.id,
-      data: {
-        available_categories: formData.available_categories,
-        available_packages: formData.available_packages,
-        selection_type: formData.selection_type,
-        min_selection: formData.min_selection,
-        max_selection: formData.max_selection,
-        show_pricing: formData.show_pricing,
-        show_descriptions: formData.show_descriptions,
-        show_images: formData.show_images,
-        enable_comparison: formData.enable_comparison,
-        enable_dynamic_pricing: formData.enable_dynamic_pricing,
-        pricing_factors: formData.pricing_factors,
-      }
+      data: formData, // Send the entire form data as the configuration update
+    }, {
+      onSuccess: () => {
+        onUpdate?.();
+      },
     });
   };
+
+  // Show loading state while fetching data
+  if (isLoadingConfig || isLoadingPackages || isLoadingCategories) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -211,6 +221,13 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
       <Alert severity="info" sx={{ mb: 3 }}>
         Configure which packages are available for selection and how clients can choose them.
       </Alert>
+
+      {/* Show configuration update errors */}
+      {updateConfigurationError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Failed to update configuration: {updateConfigurationError.message}
+        </Alert>
+      )}
 
       <Stack spacing={3}>
         {/* Package Availability */}
@@ -520,14 +537,15 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={isLoading || isConfiguringPackages}
+            disabled={isLoading || isUpdatingConfiguration}
           >
-            {isLoading || isConfiguringPackages ? 'Saving...' : 'Save Configuration'}
+            {isLoading || isUpdatingConfiguration ? 'Saving...' : 'Save Configuration'}
           </Button>
           
           <Button
             variant="outlined"
             onClick={() => setFormData(defaultFormData)}
+            disabled={isUpdatingConfiguration}
           >
             Reset to Defaults
           </Button>

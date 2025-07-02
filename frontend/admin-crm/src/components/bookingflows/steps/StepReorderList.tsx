@@ -14,6 +14,7 @@ import {
   Paper,
   Tooltip,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import {
   DragIndicator as DragIcon,
@@ -28,11 +29,12 @@ import {
   Info as InfoIcon,
 } from '@mui/icons-material';
 import type { BookingFlowStep } from '../../../types/bookingflows.types';
+import { useBookingFlowSteps } from '../../../hooks/useBookingFlows';
 
 interface StepReorderListProps {
+  flowId: number;
   steps: BookingFlowStep[];
-  onReorder: (reorderedSteps: BookingFlowStep[]) => void;
-  isLoading?: boolean;
+  onReorderComplete?: () => void;
 }
 
 interface DraggableStepProps {
@@ -57,12 +59,10 @@ const DraggableStep: React.FC<DraggableStepProps> = ({
   const getStepTypeColor = (stepType: string) => {
     const colors = {
       introduction: 'primary',
-      event_details: 'secondary',
       date_time: 'info',
       questionnaire: 'success',
       package_selection: 'warning',
       addon_selection: 'warning',
-      availability_check: 'info',
       pricing_summary: 'secondary',
       contact_info: 'success',
       payment_info: 'error',
@@ -215,12 +215,14 @@ const DraggableStep: React.FC<DraggableStepProps> = ({
 };
 
 export const StepReorderList: React.FC<StepReorderListProps> = ({
+  flowId,
   steps,
-  onReorder,
-  isLoading = false,
+  onReorderComplete,
 }) => {
   const [reorderedSteps, setReorderedSteps] = useState<BookingFlowStep[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+
+  const { reorderSteps, isReorderingSteps } = useBookingFlowSteps();
 
   useEffect(() => {
     const sortedSteps = [...steps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -247,14 +249,24 @@ export const StepReorderList: React.FC<StepReorderListProps> = ({
   };
 
   const handleSave = () => {
-    // Update order property for each step (1-based indexing)
-    const updatedSteps = reorderedSteps.map((step, index) => ({
-      ...step,
-      order: index + 1,
-    }));
+    // Create order mapping according to ReorderStepsData type
+    const orderMapping: Record<string, number> = {};
     
-    onReorder(updatedSteps);
-    setHasChanges(false);
+    reorderedSteps.forEach((step, index) => {
+      orderMapping[step.id.toString()] = index + 1;
+    });
+
+    const reorderData = {
+      flow_id: flowId,
+      order_mapping: orderMapping,
+    };
+
+    reorderSteps(reorderData, {
+      onSuccess: () => {
+        setHasChanges(false);
+        onReorderComplete?.();
+      },
+    });
   };
 
   const handleReset = () => {
@@ -289,7 +301,7 @@ export const StepReorderList: React.FC<StepReorderListProps> = ({
             variant="outlined"
             startIcon={<ResetIcon />}
             onClick={handleReset}
-            disabled={!hasChanges || isLoading}
+            disabled={!hasChanges || isReorderingSteps}
             size="small"
           >
             Reset
@@ -297,12 +309,12 @@ export const StepReorderList: React.FC<StepReorderListProps> = ({
           
           <Button
             variant="contained"
-            startIcon={<SaveIcon />}
+            startIcon={isReorderingSteps ? <CircularProgress size={16} /> : <SaveIcon />}
             onClick={handleSave}
-            disabled={!hasChanges || isLoading}
+            disabled={!hasChanges || isReorderingSteps}
             size="small"
           >
-            Save Order
+            {isReorderingSteps ? 'Saving...' : 'Save Order'}
           </Button>
         </Box>
       </Box>

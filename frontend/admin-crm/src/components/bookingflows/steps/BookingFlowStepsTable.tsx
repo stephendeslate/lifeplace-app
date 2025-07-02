@@ -22,6 +22,7 @@ import {
   Skeleton,
   Tooltip,
   Button,
+  Alert,
 } from '@mui/material';
 import {
   MoreVert as MoreVertIcon,
@@ -33,25 +34,44 @@ import {
   CheckCircle as EnabledIcon,
   RadioButtonUnchecked as DisabledIcon,
   SkipNext as SkippableIcon,
+  Warning as WarningIcon,
+  Update as MigrateIcon,
 } from '@mui/icons-material';
-import type { BookingFlowStepTableProps, BookingFlowStep } from '../../../types/bookingflows.types';
+import type { 
+  BookingFlowStep,
+  StepType,
+} from '../../../types/bookingflows.types';
+import { useBookingFlowSteps } from '../../../hooks/useBookingFlows';
 
-// Updated interface to include configure action
-interface UpdatedBookingFlowStepTableProps extends Omit<BookingFlowStepTableProps, 'onReorder'> {
-  onConfigure: (step: BookingFlowStep) => void; // New prop for configuration
-  onReorder?: (steps: BookingFlowStep[]) => void; // Make optional since reordering is separate
+interface BookingFlowStepsTableProps {
+  flowId: number;
+  onEdit: (step: BookingFlowStep) => void;
+  onConfigure: (step: BookingFlowStep) => void;
+  onReorder?: () => void; // Callback to open reorder interface
 }
 
-export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> = ({
-  steps,
-  isLoading,
+export const BookingFlowStepsTable: React.FC<BookingFlowStepsTableProps> = ({
+  flowId,
   onEdit,
-  onConfigure, // New configure handler
-  onDelete,
-  isDeleting,
+  onConfigure,
+  onReorder,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedStep, setSelectedStep] = useState<BookingFlowStep | null>(null);
+
+  const {
+    useFlowSteps,
+    deleteStep,
+    isDeletingStep,
+    migrateAvailabilityStep,
+    isMigratingAvailability,
+  } = useBookingFlowSteps();
+
+  const { 
+    data: steps = [], 
+    isLoading,
+    error,
+  } = useFlowSteps(flowId);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, step: BookingFlowStep) => {
     event.stopPropagation();
@@ -80,26 +100,47 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
 
   const handleDelete = () => {
     if (selectedStep) {
-      onDelete(selectedStep.id);
+      deleteStep(selectedStep.id);
     }
     handleMenuClose();
   };
 
-  const getStepTypeChip = (stepType: string, stepTypeDisplay: string) => {
+  const handleMigrateAvailability = () => {
+    if (
+      selectedStep &&
+      ((selectedStep.step_type as string) === 'availability_check')
+    ) {
+      migrateAvailabilityStep(selectedStep.id);
+    }
+    handleMenuClose();
+  };
+
+  const getStepTypeChip = (stepType: StepType, stepTypeDisplay: string) => {
     const colors = {
       introduction: 'primary',
-      event_details: 'secondary',
       date_time: 'info',
       questionnaire: 'success',
       package_selection: 'warning',
       addon_selection: 'warning',
-      availability_check: 'info',
       pricing_summary: 'secondary',
       contact_info: 'success',
       payment_info: 'error',
       review_booking: 'secondary',
       confirmation: 'success',
     } as const;
+
+    // Special handling for deprecated availability_check
+    if (stepType as string === 'availability_check') {
+      return (
+        <Chip
+          label={stepTypeDisplay}
+          size="small"
+          color="warning"
+          variant="filled"
+          icon={<WarningIcon />}
+        />
+      );
+    }
 
     return (
       <Chip
@@ -126,7 +167,6 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
       </Tooltip>
     );
   };
-
 
   const getBehaviorChips = (step: BookingFlowStep) => {
     const chips = [];
@@ -171,6 +211,18 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
     return step.configuration_data || (step.configuration && Object.keys(step.configuration).length > 0);
   };
 
+  const isDeprecatedStep = (step: BookingFlowStep) => {
+    return (step.step_type as string) === 'availability_check';
+  };
+
+  if (error) {
+    return (
+      <Alert severity="error">
+        Failed to load steps: {error instanceof Error ? error.message : 'Unknown error'}
+      </Alert>
+    );
+  }
+
   if (isLoading) {
     return (
       <Box p={3}>
@@ -208,13 +260,37 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
     );
   }
 
+  // Sort steps by order
+  const sortedSteps = [...steps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
   return (
     <>
+      {/* Deprecation Warning for availability_check steps */}
+      {sortedSteps.some(step => (step.step_type as string) === 'availability_check') && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Deprecated Step Type Detected
+          </Typography>
+          <Typography variant="body2">
+            "Availability Check" steps are no longer supported. They have been integrated into "Date & Time" steps with enhanced availability features.
+            You can migrate these steps automatically using the migrate option in the step menu.
+          </Typography>
+        </Alert>
+      )}
+
       <TableContainer component={Paper} elevation={0}>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell width="30px"></TableCell>
+              <TableCell width="30px">
+                {onReorder && (
+                  <Tooltip title="Reorder steps">
+                    <IconButton size="small" onClick={onReorder}>
+                      <DragIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </TableCell>
               <TableCell width="40px">Status</TableCell>
               <TableCell>
                 <TableSortLabel>
@@ -229,14 +305,13 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
             </TableRow>
           </TableHead>
           <TableBody>
-            {steps
-              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-              .map((step) => (
+            {sortedSteps.map((step) => (
               <TableRow 
                 key={step.id} 
                 hover
                 sx={{ 
                   opacity: step.is_enabled ? 1 : 0.6,
+                  backgroundColor: isDeprecatedStep(step) ? 'warning.50' : 'inherit',
                 }}
               >
                 <TableCell>
@@ -244,7 +319,14 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
                 </TableCell>
                 
                 <TableCell>
-                  {getStatusIcon(step)}
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    {getStatusIcon(step)}
+                    {isDeprecatedStep(step) && (
+                      <Tooltip title="Deprecated step type">
+                        <WarningIcon color="warning" fontSize="small" />
+                      </Tooltip>
+                    )}
+                  </Box>
                 </TableCell>
                 
                 <TableCell>
@@ -327,29 +409,50 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
                 
                 <TableCell align="right">
                   <Box display="flex" alignItems="center" gap={0.5}>
-                    {/* Quick Configure Button */}
-                    <Tooltip title="Configure Step">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<ConfigIcon />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onConfigure(step);
-                        }}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        Configure
-                      </Button>
-                    </Tooltip>
+                    {/* Special migration button for availability_check steps */}
+                    {isDeprecatedStep(step) ? (
+                      <Tooltip title="Migrate to Date & Time step">
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="warning"
+                          startIcon={isMigratingAvailability ? <CircularProgress size={16} /> : <MigrateIcon />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMigrateAvailability();
+                            setSelectedStep(step);
+                          }}
+                          disabled={isMigratingAvailability}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          Migrate
+                        </Button>
+                      </Tooltip>
+                    ) : (
+                      /* Normal configure button for supported steps */
+                      <Tooltip title="Configure Step">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<ConfigIcon />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onConfigure(step);
+                          }}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          Configure
+                        </Button>
+                      </Tooltip>
+                    )}
                     
                     {/* More Actions Menu */}
                     <IconButton
                       size="small"
                       onClick={(e) => handleMenuOpen(e, step)}
-                      disabled={isDeleting}
+                      disabled={isDeletingStep}
                     >
-                      {isDeleting && selectedStep?.id === step.id ? (
+                      {isDeletingStep && selectedStep?.id === step.id ? (
                         <CircularProgress size={16} />
                       ) : (
                         <MoreVertIcon fontSize="small" />
@@ -369,12 +472,27 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={handleConfigure}>
-          <ListItemIcon>
-            <ConfigIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Configure Step</ListItemText>
-        </MenuItem>
+        {/* Special migration option for availability_check steps */}
+        {selectedStep && isDeprecatedStep(selectedStep) && (
+          <MenuItem onClick={handleMigrateAvailability}>
+            <ListItemIcon>
+              <MigrateIcon fontSize="small" color="warning" />
+            </ListItemIcon>
+            <ListItemText>
+              Migrate to Date & Time
+            </ListItemText>
+          </MenuItem>
+        )}
+        
+        {/* Normal configure option for supported steps */}
+        {selectedStep && !isDeprecatedStep(selectedStep) && (
+          <MenuItem onClick={handleConfigure}>
+            <ListItemIcon>
+              <ConfigIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Configure Step</ListItemText>
+          </MenuItem>
+        )}
         
         <MenuItem onClick={handleEdit}>
           <ListItemIcon>
@@ -384,7 +502,7 @@ export const BookingFlowStepsTable: React.FC<UpdatedBookingFlowStepTableProps> =
         </MenuItem>
         
         <MenuItem onClick={() => {
-          // Preview step - would be handled by parent
+          // Preview step functionality would be implemented here
           handleMenuClose();
         }}>
           <ListItemIcon>

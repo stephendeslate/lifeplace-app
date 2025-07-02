@@ -22,11 +22,15 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  CircularProgress,
+  Skeleton,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
   ShoppingCart as AddonIcon,
   Category as CategoryIcon,
+  Save as SaveIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import type { 
   BookingFlowStep, 
@@ -36,8 +40,7 @@ import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows'
 
 interface AddonSelectionStepConfigProps {
   step: BookingFlowStep;
-  config?: AddonSelectionStepConfiguration | null;
-  onUpdate: (data: Partial<AddonSelectionStepConfiguration>) => void;
+  onUpdate?: (data: Partial<AddonSelectionStepConfiguration>) => void;
   isLoading?: boolean;
 }
 
@@ -63,35 +66,81 @@ const defaultFormData: AddonConfigFormData = {
 
 export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> = ({
   step,
-  config,
+  onUpdate,
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState<AddonConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hasChanges, setHasChanges] = useState(false);
 
+  // Use the evolved hooks from useBookingFlowStepConfiguration
   const {
+    useStepConfiguration,
     useAvailableAddons,
     useAvailableCategories,
-    configureAddons,
-    isConfiguringAddons,
+    updateConfiguration,
+    isUpdatingConfiguration,
+    updateConfigurationError,
   } = useBookingFlowStepConfiguration();
 
-  const { data: availableAddons = [] } = useAvailableAddons(step.id);
-  const { data: availableCategories = [] } = useAvailableCategories(step.id);
+  // Fetch current configuration and available options
+  const { 
+    data: configuration, 
+    isLoading: isLoadingConfig,
+    error: configError,
+  } = useStepConfiguration(step.id);
+  
+  const { 
+    data: availableAddons = [], 
+    isLoading: isLoadingAddons,
+    error: addonsError,
+  } = useAvailableAddons(step.id);
+  
+  const { 
+    data: availableCategories = [], 
+    isLoading: isLoadingCategories,
+    error: categoriesError,
+  } = useAvailableCategories(step.id);
 
+  // Initialize form data when configuration loads
   useEffect(() => {
-    if (config) {
-      setFormData({
-        available_categories: config.available_categories || [],
-        available_addons: config.available_addons || [],
-        min_selection: config.min_selection || 0,
-        max_selection: config.max_selection || 0,
-        group_by_category: config.group_by_category ?? true,
-        show_recommendations: config.show_recommendations ?? true,
-        recommendation_logic: config.recommendation_logic || {},
-      });
+    if (configuration && configuration.id) {
+      // Type guard to ensure we have AddonSelectionStepConfiguration
+      const addonConfig = configuration as AddonSelectionStepConfiguration;
+      
+      const newFormData: AddonConfigFormData = {
+        available_categories: addonConfig.available_categories || [],
+        available_addons: addonConfig.available_addons || [],
+        min_selection: addonConfig.min_selection || 0,
+        max_selection: addonConfig.max_selection || 0,
+        group_by_category: addonConfig.group_by_category ?? true,
+        show_recommendations: addonConfig.show_recommendations ?? true,
+        recommendation_logic: addonConfig.recommendation_logic || {},
+      };
+      
+      setFormData(newFormData);
+      setHasChanges(false);
     }
-  }, [config]);
+  }, [configuration]);
+
+  // Track changes
+  useEffect(() => {
+    if (configuration && configuration.id) {
+      const addonConfig = configuration as AddonSelectionStepConfiguration;
+      const currentData = JSON.stringify(formData);
+      const originalData = JSON.stringify({
+        available_categories: addonConfig.available_categories || [],
+        available_addons: addonConfig.available_addons || [],
+        min_selection: addonConfig.min_selection || 0,
+        max_selection: addonConfig.max_selection || 0,
+        group_by_category: addonConfig.group_by_category ?? true,
+        show_recommendations: addonConfig.show_recommendations ?? true,
+        recommendation_logic: addonConfig.recommendation_logic || {},
+      });
+      
+      setHasChanges(currentData !== originalData);
+    }
+  }, [formData, configuration]);
 
   const handleInputChange = (field: keyof AddonConfigFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
@@ -125,7 +174,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
     setFormData(prev => ({
       ...prev,
       available_categories: value,
-      // Clear specific addons when categories change
+      // Clear specific addons when categories change (logical business rule)
       available_addons: [],
     }));
   };
@@ -137,19 +186,53 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
     }));
   };
 
+  const handleRecommendationLogicChange = (value: string) => {
+    try {
+      const parsed = JSON.parse(value);
+      setFormData(prev => ({
+        ...prev,
+        recommendation_logic: parsed,
+      }));
+      
+      // Clear JSON parse error if it exists
+      if (errors.recommendation_logic) {
+        setErrors(prev => ({
+          ...prev,
+          recommendation_logic: '',
+        }));
+      }
+    } catch (e) {
+      setErrors(prev => ({
+        ...prev,
+        recommendation_logic: 'Invalid JSON format',
+      }));
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    // Business validation: Must select either categories or specific addons
     if (formData.available_categories.length === 0 && formData.available_addons.length === 0) {
-      newErrors.addons = 'Select either categories or specific add-ons';
+      newErrors.selection = 'Select either categories or specific add-ons';
     }
 
+    // Numeric validation
     if (formData.min_selection < 0) {
       newErrors.min_selection = 'Minimum selection cannot be negative';
     }
 
     if (formData.max_selection > 0 && formData.max_selection < formData.min_selection) {
       newErrors.max_selection = 'Maximum selection must be greater than or equal to minimum';
+    }
+
+    // JSON validation for recommendation logic
+    if (formData.show_recommendations) {
+      try {
+        JSON.stringify(formData.recommendation_logic);
+      } catch (e) {
+        newErrors.recommendation_logic = 'Invalid recommendation logic format';
+      }
     }
 
     setErrors(newErrors);
@@ -159,7 +242,8 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
   const handleSave = () => {
     if (!validateForm()) return;
 
-    configureAddons({
+    // Use the evolved updateConfiguration method
+    updateConfiguration({
       stepId: step.id,
       data: {
         available_categories: formData.available_categories,
@@ -171,7 +255,53 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
         recommendation_logic: formData.recommendation_logic,
       }
     });
+
+    // Call optional callback
+    if (onUpdate) {
+      onUpdate(formData);
+    }
   };
+
+  const handleReset = () => {
+    if (configuration && configuration.id) {
+      const addonConfig = configuration as AddonSelectionStepConfiguration;
+      setFormData({
+        available_categories: addonConfig.available_categories || [],
+        available_addons: addonConfig.available_addons || [],
+        min_selection: addonConfig.min_selection || 0,
+        max_selection: addonConfig.max_selection || 0,
+        group_by_category: addonConfig.group_by_category ?? true,
+        show_recommendations: addonConfig.show_recommendations ?? true,
+        recommendation_logic: addonConfig.recommendation_logic || {},
+      });
+    } else {
+      setFormData(defaultFormData);
+    }
+    setErrors({});
+  };
+
+  // Loading states
+  const isDataLoading = isLoadingConfig || isLoadingAddons || isLoadingCategories;
+  const hasErrors = configError || addonsError || categoriesError || updateConfigurationError;
+
+  // Error display
+  if (hasErrors) {
+    return (
+      <Box>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Failed to load configuration data. Please try refreshing the page.
+          {updateConfigurationError && (
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              Update Error: {updateConfigurationError.message}
+            </Typography>
+          )}
+        </Alert>
+        <Button startIcon={<RefreshIcon />} onClick={() => window.location.reload()}>
+          Refresh Page
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -200,6 +330,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                   value={formData.available_categories}
                   onChange={(e) => handleCategoriesChange(e.target.value as number[])}
                   label="Filter by Categories"
+                  disabled={isDataLoading}
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((categoryId) => {
@@ -216,26 +347,37 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                     </Box>
                   )}
                 >
-                  {availableCategories.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      <Checkbox checked={formData.available_categories.includes(category.id)} />
-                      <ListItemText primary={category.name} />
+                  {isLoadingCategories ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                      Loading categories...
                     </MenuItem>
-                  ))}
+                  ) : (
+                    availableCategories.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        <Checkbox checked={formData.available_categories.includes(category.id)} />
+                        <ListItemText 
+                          primary={category.name}
+                          secondary={category.description || `${category.sort_order} items`}
+                        />
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
                 <Typography variant="caption" color="text.secondary">
-                  Show add-ons from selected categories
+                  Show add-ons from selected categories. Leave empty to show all categories.
                 </Typography>
               </FormControl>
 
               {/* Specific Add-ons Selection */}
               <FormControl fullWidth>
-                <InputLabel>Specific Add-ons (Optional)</InputLabel>
+                <InputLabel>Specific Add-ons (Override)</InputLabel>
                 <Select
                   multiple
                   value={formData.available_addons}
                   onChange={(e) => handleAddonsChange(e.target.value as number[])}
-                  label="Specific Add-ons (Optional)"
+                  label="Specific Add-ons (Override)"
+                  disabled={isDataLoading}
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((addonId) => {
@@ -246,29 +388,37 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                             label={addon?.name || `Add-on ${addonId}`} 
                             size="small" 
                             icon={<AddonIcon />}
+                            color={addon ? 'default' : 'error'}
                           />
                         );
                       })}
                     </Box>
                   )}
                 >
-                  {availableAddons.map((addon) => (
-                    <MenuItem key={addon.id} value={addon.id}>
-                      <Checkbox checked={formData.available_addons.includes(addon.id)} />
-                      <ListItemText 
-                        primary={addon.name}
-                        secondary={`${addon.base_price}`}
-                      />
+                  {isLoadingAddons ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                      Loading add-ons...
                     </MenuItem>
-                  ))}
+                  ) : (
+                    availableAddons.map((addon) => (
+                      <MenuItem key={addon.id} value={addon.id}>
+                        <Checkbox checked={formData.available_addons.includes(addon.id)} />
+                        <ListItemText 
+                          primary={addon.name}
+                          secondary={`${addon.currency} ${addon.base_price} • ${addon.type}`}
+                        />
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
                 <Typography variant="caption" color="text.secondary">
-                  Override category filtering with specific add-ons
+                  Override category filtering with specific add-ons. This will ignore category selection.
                 </Typography>
               </FormControl>
 
-              {errors.addons && (
-                <Alert severity="error">{errors.addons}</Alert>
+              {errors.selection && (
+                <Alert severity="error">{errors.selection}</Alert>
               )}
             </Stack>
           </CardContent>
@@ -291,6 +441,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                   error={!!errors.min_selection}
                   helperText={errors.min_selection || 'Minimum add-ons clients must select (0 = none required)'}
                   inputProps={{ min: 0 }}
+                  disabled={isDataLoading}
                   sx={{ flex: 1 }}
                 />
                 
@@ -302,6 +453,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                   error={!!errors.max_selection}
                   helperText={errors.max_selection || 'Maximum add-ons allowed (0 = unlimited)'}
                   inputProps={{ min: 0 }}
+                  disabled={isDataLoading}
                   sx={{ flex: 1 }}
                 />
               </Box>
@@ -322,6 +474,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                   <Switch
                     checked={formData.group_by_category}
                     onChange={handleSwitchChange('group_by_category')}
+                    disabled={isDataLoading}
                   />
                 }
                 label="Group by Category"
@@ -335,6 +488,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                   <Switch
                     checked={formData.show_recommendations}
                     onChange={handleSwitchChange('show_recommendations')}
+                    disabled={isDataLoading}
                   />
                 }
                 label="Show Recommendations"
@@ -366,21 +520,17 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 fullWidth
                 label="Recommendation Logic (JSON)"
                 value={JSON.stringify(formData.recommendation_logic, null, 2)}
-                onChange={(e) => {
-                  try {
-                    const parsed = JSON.parse(e.target.value);
-                    setFormData(prev => ({
-                      ...prev,
-                      recommendation_logic: parsed,
-                    }));
-                  } catch {
-                    // Invalid JSON, ignore
-                  }
-                }}
+                onChange={(e) => handleRecommendationLogicChange(e.target.value)}
                 multiline
-                rows={4}
-                helperText="Define recommendation rules (e.g., suggest specific add-ons for certain packages or guest counts)"
-                disabled={!formData.show_recommendations}
+                rows={6}
+                error={!!errors.recommendation_logic}
+                helperText={errors.recommendation_logic || 'Define recommendation rules using JSON format'}
+                disabled={!formData.show_recommendations || isDataLoading}
+                placeholder={JSON.stringify({
+                  "wedding_packages": ["photography", "videography"],
+                  "guest_count_above_50": ["sound_equipment", "extra_tables"],
+                  "outdoor_events": ["tent_rentals", "lighting"]
+                }, null, 2)}
               />
               
               <Typography variant="body2" color="text.secondary">
@@ -397,54 +547,72 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
               Configuration Summary
             </Typography>
             
-            <Stack spacing={1}>
-              <Typography variant="body2">
-                <strong>Add-on Source:</strong>{' '}
-                {formData.available_addons.length > 0 
-                  ? `${formData.available_addons.length} specific add-ons` 
-                  : formData.available_categories.length > 0 
-                    ? `${formData.available_categories.length} categories`
-                    : 'All add-ons'
-                }
-              </Typography>
-              
-              <Typography variant="body2">
-                <strong>Selection:</strong> {formData.min_selection}-{formData.max_selection || '∞'} add-ons
-              </Typography>
-              
-              <Typography variant="body2">
-                <strong>Display:</strong>{' '}
-                {[
-                  formData.group_by_category && 'Grouped by Category',
-                  formData.show_recommendations && 'Recommendations Enabled'
-                ].filter(Boolean).join(', ') || 'Basic display'}
-              </Typography>
-              
-              {formData.show_recommendations && Object.keys(formData.recommendation_logic).length > 0 && (
+            {isDataLoading ? (
+              <Stack spacing={1}>
+                <Skeleton variant="text" width="60%" />
+                <Skeleton variant="text" width="40%" />
+                <Skeleton variant="text" width="50%" />
+              </Stack>
+            ) : (
+              <Stack spacing={1}>
                 <Typography variant="body2">
-                  <strong>Recommendation Logic:</strong> Custom rules configured
+                  <strong>Add-on Source:</strong>{' '}
+                  {formData.available_addons.length > 0 
+                    ? `${formData.available_addons.length} specific add-ons` 
+                    : formData.available_categories.length > 0 
+                      ? `${formData.available_categories.length} categories (${availableCategories.filter(c => formData.available_categories.includes(c.id)).map(c => c.name).join(', ')})`
+                      : 'All add-ons'
+                  }
                 </Typography>
-              )}
-            </Stack>
+                
+                <Typography variant="body2">
+                  <strong>Selection:</strong> {formData.min_selection}-{formData.max_selection || '∞'} add-ons
+                  {formData.min_selection === 0 && formData.max_selection === 0 && ' (optional)'}
+                </Typography>
+                
+                <Typography variant="body2">
+                  <strong>Display:</strong>{' '}
+                  {[
+                    formData.group_by_category && 'Grouped by Category',
+                    formData.show_recommendations && 'Recommendations Enabled'
+                  ].filter(Boolean).join(', ') || 'Basic display'}
+                </Typography>
+                
+                {formData.show_recommendations && Object.keys(formData.recommendation_logic).length > 0 && (
+                  <Typography variant="body2">
+                    <strong>Recommendation Logic:</strong> Custom rules configured
+                  </Typography>
+                )}
+              </Stack>
+            )}
           </CardContent>
         </Card>
 
         {/* Actions */}
-        <Box display="flex" gap={2}>
+        <Box display="flex" gap={2} alignItems="center">
           <Button
             variant="contained"
+            startIcon={<SaveIcon />}
             onClick={handleSave}
-            disabled={isLoading || isConfiguringAddons}
+            disabled={isLoading || isUpdatingConfiguration || isDataLoading || !hasChanges}
           >
-            {isLoading || isConfiguringAddons ? 'Saving...' : 'Save Configuration'}
+            {isLoading || isUpdatingConfiguration ? 'Saving...' : 'Save Configuration'}
           </Button>
           
           <Button
             variant="outlined"
-            onClick={() => setFormData(defaultFormData)}
+            startIcon={<RefreshIcon />}
+            onClick={handleReset}
+            disabled={isLoading || isUpdatingConfiguration || isDataLoading}
           >
-            Reset to Defaults
+            Reset Changes
           </Button>
+
+          {hasChanges && (
+            <Typography variant="caption" color="primary">
+              Unsaved changes
+            </Typography>
+          )}
         </Box>
       </Stack>
     </Box>
