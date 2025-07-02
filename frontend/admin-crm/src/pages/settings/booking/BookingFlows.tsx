@@ -69,6 +69,7 @@ export const BookingFlows: React.FC = () => {
   const createButtonRef = useRef<HTMLButtonElement>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
 
+  // FIXED: Use the evolved hooks with proper mutation syntax
   const {
     bookingFlows,
     isLoadingFlows,
@@ -79,10 +80,21 @@ export const BookingFlows: React.FC = () => {
     isCreatingFlow,
     isUpdatingFlow,
     isDeletingFlow,
+    isDuplicatingFlow,
     refetchFlows,
+    flowsError,
+    createError,
+    updateError,
+    deleteError,
+    duplicateError,
   } = useBookingFlows(filters);
 
-  const { eventTypes } = useEventTypes();
+  // FIXED: Ensure this hook exists and is imported correctly
+  const { 
+    eventTypes = [],
+    isLoadingEventTypes,
+    eventTypesError,
+  } = useEventTypes();
 
   useEffect(() => {
     setBreadcrumbs([
@@ -92,11 +104,27 @@ export const BookingFlows: React.FC = () => {
     ]);
   }, [setBreadcrumbs]);
 
+  // FIXED: Updated filter handling to match evolved types
   const handleFilterChange = (key: keyof BookingFlowFilters, value: string | boolean) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value === 'all' ? undefined : value
-    }));
+    setFilters(prev => {
+      const newFilters = { ...prev };
+      
+      if (value === 'all' || value === '' || value === undefined) {
+        delete newFilters[key];
+      } else {
+        if (key === 'event_type') {
+          // Convert string to number for event_type
+          newFilters[key] = parseInt(value as string, 10);
+        } else if (key === 'is_active') {
+          // Convert string to boolean for is_active
+          newFilters[key] = value === 'true' || value === true;
+        } else {
+          newFilters[key] = value as any;
+        }
+      }
+      
+      return newFilters;
+    });
   };
 
   const handleClearFilters = () => {
@@ -121,16 +149,19 @@ export const BookingFlows: React.FC = () => {
     setPreviewDialogOpen(true);
   };
 
+  // FIXED: Use the evolved mutation syntax with proper error handling
   const handleDuplicate = (flow: BookingFlow) => {
     const newName = `${flow.name} (Copy)`;
-    duplicateFlow({ 
-      id: flow.id, 
-      data: { 
-        name: newName,
-        copy_steps: true,
-        copy_configuration: true 
-      } 
-    });
+    duplicateFlow(
+      { 
+        id: flow.id, 
+        data: { 
+          name: newName,
+          copy_steps: true,
+          copy_configuration: true 
+        } 
+      }
+    );
   };
 
   const handleDelete = (id: number) => {
@@ -143,13 +174,12 @@ export const BookingFlows: React.FC = () => {
     }
   };
 
+  // FIXED: Use the evolved mutation syntax
   const handleDeleteConfirm = () => {
     if (flowToDelete) {
-      deleteFlow(flowToDelete.id, {
-        onSuccess: () => {
-          handleDeleteCancel(); // This will handle cleanup and focus restoration
-        }
-      });
+      deleteFlow(flowToDelete.id);
+      // The success handling is done in the hook via toast notifications
+      handleDeleteCancel();
     }
   };
 
@@ -233,28 +263,26 @@ export const BookingFlows: React.FC = () => {
     }, 100);
   };
 
+  // FIXED: Use the evolved mutation syntax
   const handleSubmit = (data: CreateBookingFlowData | UpdateBookingFlowData) => {
     if (editingFlow) {
       updateFlow({ 
         id: editingFlow.id, 
         data: data as UpdateBookingFlowData 
-      }, {
-        onSuccess: () => {
-          handleDialogClose();
-        }
       });
+      // Success handling is done via toast notifications in the hook
+      handleDialogClose();
     } else {
-      createFlow(data as CreateBookingFlowData, {
-        onSuccess: () => {
-          handleDialogClose();
-        }
-      });
+      createFlow(data as CreateBookingFlowData);
+      // Success handling is done via toast notifications in the hook
+      handleDialogClose();
     }
   };
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
-  const isLoading = isCreatingFlow || isUpdatingFlow;
+  const isLoading = isCreatingFlow || isUpdatingFlow || isDuplicatingFlow;
 
+  // FIXED: Updated to use evolved BookingFlow type properties
   const getStatusCounts = () => {
     const active = bookingFlows.filter(f => f.is_active).length;
     const inactive = bookingFlows.filter(f => !f.is_active).length;
@@ -263,6 +291,9 @@ export const BookingFlows: React.FC = () => {
   };
 
   const statusCounts = getStatusCounts();
+
+  // FIXED: Better error handling display
+  const hasErrors = flowsError || eventTypesError || createError || updateError || deleteError || duplicateError;
 
   return (
     <Box>
@@ -282,10 +313,24 @@ export const BookingFlows: React.FC = () => {
           startIcon={<AddIcon />}
           onClick={handleCreateNew}
           sx={{ minWidth: 160 }}
+          disabled={isLoading}
         >
           New Booking Flow
         </Button>
       </Box>
+
+      {/* Error Display */}
+      {hasErrors && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {flowsError?.message || 
+           eventTypesError?.message || 
+           createError?.message || 
+           updateError?.message || 
+           deleteError?.message || 
+           duplicateError?.message || 
+           'An error occurred while managing booking flows'}
+        </Alert>
+      )}
 
       {/* Info Alert */}
       <Alert 
@@ -350,6 +395,7 @@ export const BookingFlows: React.FC = () => {
               value={filters.search || ''}
               onChange={(e) => handleFilterChange('search', e.target.value)}
               sx={{ flex: 1, minWidth: 250 }}
+              disabled={isLoading}
             />
             
             <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -357,9 +403,11 @@ export const BookingFlows: React.FC = () => {
               <Select
                 value={filters.event_type?.toString() || 'all'}
                 label="Event Type"
-                onChange={(e) => handleFilterChange('event_type', e.target.value === 'all' ? 'all' : e.target.value)}
+                onChange={(e) => handleFilterChange('event_type', e.target.value)}
+                disabled={isLoading || isLoadingEventTypes}
               >
                 <MenuItem value="all">All Event Types</MenuItem>
+                <MenuItem value="">Any Event Type</MenuItem>
                 {eventTypes.map((eventType) => (
                   <MenuItem key={eventType.id} value={eventType.id.toString()}>
                     {eventType.name}
@@ -373,7 +421,8 @@ export const BookingFlows: React.FC = () => {
               <Select
                 value={filters.is_active === undefined ? 'all' : filters.is_active.toString()}
                 label="Status"
-                onChange={(e) => handleFilterChange('is_active', e.target.value === 'true')}
+                onChange={(e) => handleFilterChange('is_active', e.target.value)}
+                disabled={isLoading}
               >
                 <MenuItem value="all">All Status</MenuItem>
                 <MenuItem value="true">Active</MenuItem>
@@ -402,6 +451,7 @@ export const BookingFlows: React.FC = () => {
                   size="small"
                   onClick={handleClearFilters}
                   startIcon={<FilterIcon />}
+                  disabled={isLoading}
                 >
                   Clear
                 </Button>
@@ -411,7 +461,7 @@ export const BookingFlows: React.FC = () => {
                 size="small"
                 onClick={() => refetchFlows()}
                 startIcon={isLoadingFlows ? <CircularProgress size={16} /> : <RefreshIcon />}
-                disabled={isLoadingFlows}
+                disabled={isLoadingFlows || isLoading}
               >
                 Refresh
               </Button>
@@ -480,18 +530,31 @@ export const BookingFlows: React.FC = () => {
               >
                 <FlowIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No booking flows found
+                  {hasActiveFilters ? 'No booking flows match your filters' : 'No booking flows found'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mb={3}>
-                  Create your first booking flow to guide clients through the booking process
+                  {hasActiveFilters 
+                    ? 'Try adjusting your search criteria or clearing the filters'
+                    : 'Create your first booking flow to guide clients through the booking process'
+                  }
                 </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={handleCreateNew}
-                >
-                  Create Booking Flow
-                </Button>
+                {hasActiveFilters ? (
+                  <Button
+                    variant="outlined"
+                    startIcon={<FilterIcon />}
+                    onClick={handleClearFilters}
+                  >
+                    Clear Filters
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleCreateNew}
+                  >
+                    Create Booking Flow
+                  </Button>
+                )}
               </Box>
             ) : (
               <Box 
@@ -538,6 +601,25 @@ export const BookingFlows: React.FC = () => {
           <DialogContentText>
             Are you sure you want to delete "{flowToDelete?.name}"? This action cannot be undone and will affect any active booking sessions.
           </DialogContentText>
+          {/* FIXED: Show additional flow details for better context */}
+          {flowToDelete && (
+            <Box mt={2}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Event Type:</strong> {flowToDelete.event_type_name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Total Steps:</strong> {flowToDelete.total_steps}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Status:</strong> {flowToDelete.is_active ? 'Active' : 'Inactive'}
+              </Typography>
+              {flowToDelete.is_test_mode && (
+                <Typography variant="body2" color="warning.main">
+                  <strong>Test Mode</strong>
+                </Typography>
+              )}
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteCancel} disabled={isDeletingFlow}>
@@ -569,6 +651,9 @@ export const BookingFlows: React.FC = () => {
           <Box display="flex" alignItems="center" gap={1}>
             <PreviewIcon color="primary" />
             Preview: {flowToPreview?.name}
+            {flowToPreview?.is_test_mode && (
+              <Chip label="Test Mode" size="small" color="warning" />
+            )}
           </Box>
         </DialogTitle>
         <DialogContent>
