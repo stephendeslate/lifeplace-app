@@ -8,7 +8,6 @@ import {
   CardContent,
   Typography,
   Alert,
-  CircularProgress,
   ToggleButton,
   ToggleButtonGroup,
   IconButton,
@@ -18,6 +17,8 @@ import {
   Chip,
   Stack,
   Fab,
+  Skeleton,
+  Divider,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -27,11 +28,16 @@ import {
   Settings as SettingsIcon,
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
+  Timeline as StepsIcon,
+  Payment as PaymentIcon,
+  Security as SecurityIcon,
+  CheckCircle as ActiveIcon,
+  Cancel as InactiveIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { useBookingFlows } from '../../../hooks/useBookingFlows';
-import { BookingFlowPreview } from '../../../components/bookingflows/flows';
+import { useBookingFlows, useBookingFlowPaymentGateways } from '../../../hooks/useBookingFlows';
+import type { BookingFlowDetail } from '../../../types/bookingflows.types';
 
 type ViewMode = 'desktop' | 'mobile';
 
@@ -44,7 +50,10 @@ export const BookingFlowPreviewPage: React.FC = () => {
 
   const flowId = parseInt(id || '0');
 
+  // Use the evolved hooks
   const { useBookingFlow } = useBookingFlows();
+  const { useFlowPaymentGateways } = useBookingFlowPaymentGateways();
+
   const { 
     data: flow, 
     isLoading: isLoadingFlow, 
@@ -52,6 +61,12 @@ export const BookingFlowPreviewPage: React.FC = () => {
     refetch: refetchFlow 
   } = useBookingFlow(flowId);
 
+  const {
+    data: paymentGateways,
+    isLoading: isLoadingPaymentGateways,
+  } = useFlowPaymentGateways(flowId);
+
+  // Set breadcrumbs when flow loads
   useEffect(() => {
     if (flow) {
       setBreadcrumbs([
@@ -65,8 +80,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
   }, [flow, setBreadcrumbs]);
 
   const handleViewModeChange = (
-    // @ts-ignore
-    event: React.MouseEvent<HTMLElement>,
+    _event: React.MouseEvent<HTMLElement>,
     newMode: ViewMode,
   ) => {
     if (newMode !== null) {
@@ -106,19 +120,31 @@ export const BookingFlowPreviewPage: React.FC = () => {
     };
   }, []);
 
+  // Loading state
   if (isLoadingFlow) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-        <CircularProgress />
+      <Box sx={{ minHeight: '100vh', backgroundColor: 'grey.50' }}>
+        <AppBar position="sticky" color="default" elevation={1}>
+          <Toolbar>
+            <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
+            <Skeleton variant="text" width={200} height={32} sx={{ flexGrow: 1 }} />
+            <Skeleton variant="rectangular" width={80} height={32} sx={{ mr: 1 }} />
+            <Skeleton variant="rectangular" width={100} height={36} />
+          </Toolbar>
+        </AppBar>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+          <Skeleton variant="rectangular" height={400} />
+        </Container>
       </Box>
     );
   }
 
+  // Error state
   if (flowError || !flow) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to load booking flow preview. Please check the URL and try again.
+          Failed to load booking flow preview. The flow may not exist or you may not have permission to view it.
         </Alert>
         <Button
           startIcon={<BackIcon />}
@@ -145,7 +171,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
         <IconButton
           edge="start"
           onClick={handleBackToFlow}
-          aria-label="back"
+          aria-label="back to flow details"
         >
           <BackIcon />
         </IconButton>
@@ -154,20 +180,37 @@ export const BookingFlowPreviewPage: React.FC = () => {
           <Typography variant="h6" component="div" noWrap>
             Preview: {flow.name}
           </Typography>
-          <Box display="flex" alignItems="center" gap={1}>
-            {flow.event_type_name && (
-              <Chip
-                label={flow.event_type_name}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
-            )}
+          <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+            {/* Event Type Chip */}
             <Chip
+              label={flow.event_type_name || 'Any Event Type'}
+              size="small"
+              color={flow.event_type ? 'primary' : 'default'}
+              variant="outlined"
+            />
+            
+            {/* Status Chip */}
+            <Chip
+              icon={flow.is_active ? <ActiveIcon /> : <InactiveIcon />}
               label={flow.is_test_mode ? 'Test Mode' : flow.is_active ? 'Active' : 'Inactive'}
               size="small"
-              color={flow.is_test_mode ? 'warning' : flow.is_active ? 'success' : 'default'}
-              variant={flow.is_active ? 'filled' : 'outlined'}
+              color={
+                flow.is_test_mode 
+                  ? 'warning' 
+                  : flow.is_active 
+                    ? 'success' 
+                    : 'default'
+              }
+              variant={flow.is_active || flow.is_test_mode ? 'filled' : 'outlined'}
+            />
+
+            {/* Steps Count Chip */}
+            <Chip
+              icon={<StepsIcon />}
+              label={`${flow.enabled_steps_count}/${flow.total_steps} steps`}
+              size="small"
+              color={flow.enabled_steps_count === flow.total_steps ? 'success' : 'warning'}
+              variant="outlined"
             />
           </Box>
         </Box>
@@ -177,6 +220,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
           exclusive
           onChange={handleViewModeChange}
           size="small"
+          aria-label="view mode"
         >
           <ToggleButton value="desktop" aria-label="desktop view">
             <DesktopIcon />
@@ -186,11 +230,11 @@ export const BookingFlowPreviewPage: React.FC = () => {
           </ToggleButton>
         </ToggleButtonGroup>
 
-        <IconButton onClick={handleRefresh} aria-label="refresh">
+        <IconButton onClick={handleRefresh} aria-label="refresh preview">
           <RefreshIcon />
         </IconButton>
 
-        <IconButton onClick={toggleFullscreen} aria-label="fullscreen">
+        <IconButton onClick={toggleFullscreen} aria-label="toggle fullscreen">
           {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
         </IconButton>
 
@@ -203,6 +247,347 @@ export const BookingFlowPreviewPage: React.FC = () => {
         </Button>
       </Toolbar>
     </AppBar>
+  );
+
+  const FlowStepsPreview = ({ flow }: { flow: BookingFlowDetail }) => (
+    <Card sx={{ mt: 3 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
+          <StepsIcon color="primary" />
+          Flow Steps ({flow.steps?.length || 0})
+        </Typography>
+        
+        {flow.steps && flow.steps.length > 0 ? (
+          <Stack spacing={1}>
+            {flow.steps
+              .sort((a, b) => a.order - b.order)
+              .map((step, index) => (
+              <Box
+                key={step.id}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  p: 1.5,
+                  border: 1,
+                  borderColor: step.is_enabled ? 'primary.light' : 'grey.300',
+                  borderRadius: 1,
+                  backgroundColor: step.is_enabled ? 'primary.50' : 'grey.50',
+                  opacity: step.is_enabled ? 1 : 0.6,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    backgroundColor: step.is_enabled ? 'primary.main' : 'grey.400',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {index + 1}
+                </Box>
+                
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body2" fontWeight="medium">
+                    {step.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {step.step_type_display}
+                  </Typography>
+                </Box>
+                
+                <Box display="flex" gap={1}>
+                  {step.is_required && (
+                    <Chip
+                      label="Required"
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                    />
+                  )}
+                  {step.is_skippable && (
+                    <Chip
+                      label="Skippable"
+                      size="small"
+                      color="info"
+                      variant="outlined"
+                    />
+                  )}
+                  {!step.is_enabled && (
+                    <Chip
+                      label="Disabled"
+                      size="small"
+                      color="default"
+                      variant="outlined"
+                    />
+                  )}
+                </Box>
+              </Box>
+            ))}
+          </Stack>
+        ) : (
+          <Alert severity="warning">
+            No steps configured for this booking flow. Add steps to provide a complete booking experience.
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const PaymentGatewaysInfo = () => (
+    <Card sx={{ mt: 3 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
+          <PaymentIcon color="primary" />
+          Payment Configuration
+        </Typography>
+        
+        {isLoadingPaymentGateways ? (
+          <Stack spacing={1}>
+            <Skeleton variant="text" height={24} />
+            <Skeleton variant="text" height={24} />
+            <Skeleton variant="text" height={24} />
+          </Stack>
+        ) : paymentGateways ? (
+          <Stack spacing={2}>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="body2" color="text.secondary">
+                Available Gateways:
+              </Typography>
+              <Typography variant="body2" fontWeight="medium">
+                {paymentGateways.available_gateways.length} configured
+              </Typography>
+            </Box>
+            
+            {paymentGateways.available_gateways.length > 0 && (
+              <Box display="flex" flexWrap="wrap" gap={1}>
+                {paymentGateways.available_gateways.map((gateway) => (
+                  <Chip
+                    key={gateway.id}
+                    label={gateway.name}
+                    size="small"
+                    color={gateway.id === paymentGateways.default_gateway ? 'primary' : 'default'}
+                    variant={gateway.id === paymentGateways.default_gateway ? 'filled' : 'outlined'}
+                  />
+                ))}
+              </Box>
+            )}
+            
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="body2" color="text.secondary">
+                Default Gateway:
+              </Typography>
+              <Typography variant="body2" fontWeight="medium">
+                {paymentGateways.default_gateway 
+                  ? paymentGateways.available_gateways.find(g => g.id === paymentGateways.default_gateway)?.name || 'Unknown'
+                  : 'None (user choice)'
+                }
+              </Typography>
+            </Box>
+            
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="body2" color="text.secondary">
+                Immediate Payment:
+              </Typography>
+              <Chip
+                label={paymentGateways.require_immediate_payment ? 'Required' : 'Optional'}
+                size="small"
+                color={paymentGateways.require_immediate_payment ? 'warning' : 'success'}
+                variant="outlined"
+              />
+            </Box>
+          </Stack>
+        ) : (
+          <Alert severity="info">
+            No payment gateway configuration available for this flow.
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const FlowConfigurationInfo = ({ flow }: { flow: BookingFlowDetail }) => (
+    <Card sx={{ mt: 3 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
+          <SecurityIcon color="primary" />
+          Flow Configuration
+        </Typography>
+        
+        <Stack spacing={2}>
+          <Box display="flex" justifyContent="space-between">
+            <Typography variant="body2" color="text.secondary">
+              Guest Booking:
+            </Typography>
+            <Chip
+              label={flow.allow_guest_booking ? 'Allowed' : 'Requires Account'}
+              size="small"
+              color={flow.allow_guest_booking ? 'success' : 'warning'}
+              variant="outlined"
+            />
+          </Box>
+          
+          <Box display="flex" justifyContent="space-between">
+            <Typography variant="body2" color="text.secondary">
+              Account Creation:
+            </Typography>
+            <Chip
+              label={flow.require_account_creation ? 'Required' : 'Optional'}
+              size="small"
+              color={flow.require_account_creation ? 'error' : 'default'}
+              variant="outlined"
+            />
+          </Box>
+          
+          <Box display="flex" justifyContent="space-between">
+            <Typography variant="body2" color="text.secondary">
+              Auto Approval:
+            </Typography>
+            <Chip
+              label={flow.auto_approve_bookings ? 'Enabled' : 'Manual Review'}
+              size="small"
+              color={flow.auto_approve_bookings ? 'success' : 'info'}
+              variant="outlined"
+            />
+          </Box>
+          
+          <Box display="flex" justifyContent="space-between">
+            <Typography variant="body2" color="text.secondary">
+              Progress Saving:
+            </Typography>
+            <Chip
+              label={flow.enable_progress_saving ? 'Enabled' : 'Disabled'}
+              size="small"
+              color={flow.enable_progress_saving ? 'success' : 'default'}
+              variant="outlined"
+            />
+          </Box>
+          
+          <Divider />
+          
+          <Box display="flex" justifyContent="space-between">
+            <Typography variant="body2" color="text.secondary">
+              Advance Booking:
+            </Typography>
+            <Typography variant="body2" fontWeight="medium">
+              {flow.min_advance_booking_days}-{flow.max_advance_booking_days} days
+            </Typography>
+          </Box>
+          
+          <Box display="flex" justifyContent="space-between">
+            <Typography variant="body2" color="text.secondary">
+              Discounts:
+            </Typography>
+            <Chip
+              label={flow.allow_discounts ? 'Allowed' : 'Not Allowed'}
+              size="small"
+              color={flow.allow_discounts ? 'success' : 'default'}
+              variant="outlined"
+            />
+          </Box>
+          
+          {flow.redirect_url && (
+            <Box display="flex" justifyContent="space-between">
+              <Typography variant="body2" color="text.secondary">
+                Success Redirect:
+              </Typography>
+              <Typography variant="body2" fontWeight="medium" sx={{ 
+                maxWidth: 200,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {flow.redirect_url}
+              </Typography>
+            </Box>
+          )}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+
+  const PreviewSimulationNote = () => (
+    <Alert 
+      severity="info" 
+      sx={{ 
+        mb: 3,
+        ...(viewMode === 'mobile' && {
+          '& .MuiAlert-message': {
+            fontSize: '0.875rem',
+          }
+        })
+      }}
+    >
+      <Typography variant="body2">
+        <strong>Preview Mode:</strong> This shows how your booking flow will appear to clients. 
+        Interactive elements are simulated for demonstration purposes only.
+      </Typography>
+    </Alert>
+  );
+
+  const FlowStatusWarnings = ({ flow }: { flow: BookingFlowDetail }) => (
+    <>
+      {!flow.is_active && (
+        <Alert 
+          severity="warning" 
+          sx={{ 
+            mb: 2,
+            ...(viewMode === 'mobile' && {
+              '& .MuiAlert-message': {
+                fontSize: '0.875rem',
+              }
+            })
+          }}
+        >
+          <Typography variant="body2">
+            <strong>Inactive Flow:</strong> This booking flow is currently inactive and not available to clients.
+          </Typography>
+        </Alert>
+      )}
+      
+      {flow.enabled_steps_count === 0 && (
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mb: 2,
+            ...(viewMode === 'mobile' && {
+              '& .MuiAlert-message': {
+                fontSize: '0.875rem',
+              }
+            })
+          }}
+        >
+          <Typography variant="body2">
+            <strong>No Enabled Steps:</strong> This booking flow has no enabled steps and cannot process bookings.
+          </Typography>
+        </Alert>
+      )}
+      
+      {flow.enabled_steps_count < flow.total_steps && flow.enabled_steps_count > 0 && (
+        <Alert 
+          severity="warning" 
+          sx={{ 
+            mb: 2,
+            ...(viewMode === 'mobile' && {
+              '& .MuiAlert-message': {
+                fontSize: '0.875rem',
+              }
+            })
+          }}
+        >
+          <Typography variant="body2">
+            <strong>Incomplete Configuration:</strong> Some steps are disabled. 
+            Only {flow.enabled_steps_count} of {flow.total_steps} steps are active.
+          </Typography>
+        </Alert>
+      )}
+    </>
   );
 
   const PreviewContent = () => (
@@ -220,42 +605,10 @@ export const BookingFlowPreviewPage: React.FC = () => {
           transition: 'max-width 0.3s ease-in-out',
         }}
       >
-        {/* Preview Instructions */}
-        <Alert 
-          severity="info" 
-          sx={{ 
-            mb: 3,
-            ...(viewMode === 'mobile' && {
-              '& .MuiAlert-message': {
-                fontSize: '0.875rem',
-              }
-            })
-          }}
-        >
-          <Typography variant="body2">
-            This is a preview of how clients will experience your booking flow. 
-            Interactive elements are simulated and non-functional.
-          </Typography>
-        </Alert>
+        <PreviewSimulationNote />
+        <FlowStatusWarnings flow={flow} />
 
-        {/* Flow Status Warning */}
-        {!flow.is_active && (
-          <Alert 
-            severity="warning" 
-            sx={{ 
-              mb: 3,
-              ...(viewMode === 'mobile' && {
-                '& .MuiAlert-message': {
-                  fontSize: '0.875rem',
-                }
-              })
-            }}
-          >
-            This booking flow is currently inactive and not available to clients.
-          </Alert>
-        )}
-
-        {/* Preview Component */}
+        {/* Main Preview Card - Placeholder for actual preview component */}
         <Card
           sx={{
             ...(viewMode === 'mobile' && {
@@ -266,69 +619,34 @@ export const BookingFlowPreviewPage: React.FC = () => {
             })
           }}
         >
-          <BookingFlowPreview
-            flow={flow}
-            compact={false}
-            showMobileView={viewMode === 'mobile'}
-          />
-        </Card>
-
-        {/* Flow Information */}
-        <Card sx={{ mt: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Flow Information
+          <CardContent sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h4" gutterBottom color="text.secondary">
+              📋 Booking Flow Preview
             </Typography>
-            <Stack spacing={2}>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="text.secondary">
-                  Total Steps:
-                </Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {flow.total_steps}
-                </Typography>
-              </Box>
-              
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="text.secondary">
-                  Enabled Steps:
-                </Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {flow.enabled_steps_count}
-                </Typography>
-              </Box>
-              
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="text.secondary">
-                  Completion Rate:
-                </Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {flow.total_steps > 0 
-                    ? Math.round((flow.enabled_steps_count / flow.total_steps) * 100)
-                    : 0}% configured
-                </Typography>
-              </Box>
-              
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="text.secondary">
-                  Guest Booking:
-                </Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {flow.allow_guest_booking ? 'Allowed' : 'Not Allowed'}
-                </Typography>
-              </Box>
-              
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="text.secondary">
-                  Auto Approval:
-                </Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {flow.auto_approve_bookings ? 'Enabled' : 'Manual Review'}
-                </Typography>
-              </Box>
-            </Stack>
+            <Typography variant="h5" gutterBottom>
+              {flow.name}
+            </Typography>
+            <Typography variant="body1" color="text.secondary" paragraph>
+              {flow.description || 'No description provided'}
+            </Typography>
+            
+            <Alert severity="info" sx={{ mt: 3 }}>
+              <Typography variant="body2">
+                Interactive booking flow preview will be implemented here. 
+                This would show the actual step-by-step client experience.
+              </Typography>
+            </Alert>
           </CardContent>
         </Card>
+
+        {/* Flow Steps Information */}
+        <FlowStepsPreview flow={flow} />
+
+        {/* Payment Configuration */}
+        <PaymentGatewaysInfo />
+
+        {/* Flow Configuration */}
+        <FlowConfigurationInfo flow={flow} />
       </Container>
     </Box>
   );
@@ -342,7 +660,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
       {viewMode === 'mobile' && (
         <Fab
           color="primary"
-          aria-label="edit"
+          aria-label="edit flow"
           sx={{
             position: 'fixed',
             bottom: 16,

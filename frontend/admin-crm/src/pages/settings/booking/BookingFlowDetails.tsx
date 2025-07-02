@@ -26,6 +26,7 @@ import {
   Stack,
   Breadcrumbs,
   Link,
+  Skeleton,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -39,10 +40,15 @@ import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   NavigateNext as NavigateNextIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { useBookingFlows, useBookingFlowSteps } from '../../../hooks/useBookingFlows';
+import { 
+  useBookingFlows, 
+  useBookingFlowSteps,
+  useBookingFlowStepConfiguration 
+} from '../../../hooks/useBookingFlows';
 import { 
   BookingFlowFormDialog,
   BookingFlowPreview 
@@ -50,8 +56,7 @@ import {
 import { 
   BookingFlowStepFormDialog,
   BookingFlowStepsTable,
-  StepConfigurationPanel,
-  StepReorderList 
+  StepConfigurationPanel 
 } from '../../../components/bookingflows/steps';
 import type { 
   BookingFlowStep,
@@ -89,6 +94,7 @@ export const BookingFlowDetails: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingStep, setEditingStep] = useState<BookingFlowStep | null>(null);
   const [selectedStepForConfig, setSelectedStepForConfig] = useState<BookingFlowStep | null>(null);
+  const [reorderDialogOpen, setReorderDialogOpen] = useState(false);
 
   // Refs for focus management
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -97,29 +103,52 @@ export const BookingFlowDetails: React.FC = () => {
 
   const flowId = parseInt(id || '0');
 
-  const { useBookingFlow, updateFlow, deleteFlow, duplicateFlow, isUpdatingFlow, isDeletingFlow } = useBookingFlows();
+  // FIXED: Use evolved hooks with proper error handling
+  const { 
+    useBookingFlow, 
+    updateFlow, 
+    deleteFlow, 
+    duplicateFlow, 
+    isUpdatingFlow, 
+    isDeletingFlow,
+    isDuplicatingFlow,
+    updateError,
+    deleteError,
+    duplicateError,
+  } = useBookingFlows();
+
   const { 
     data: flow, 
     isLoading: isLoadingFlow, 
-    error: flowError 
+    error: flowError,
+    refetch: refetchFlow,
   } = useBookingFlow(flowId);
 
   const {
     useFlowSteps,
     createStep,
     updateStep,
-    deleteStep,
     reorderSteps,
     isCreatingStep,
     isUpdatingStep,
-    isDeletingStep,
+    isReorderingSteps,
+    createStepError,
+    updateStepError,
+    deleteStepError,
+    reorderStepsError,
   } = useBookingFlowSteps();
 
   const { 
     data: steps = [], 
     isLoading: isLoadingSteps,
+    error: stepsError,
     refetch: refetchSteps 
   } = useFlowSteps(flowId);
+
+  // FIXED: Add step configuration hook
+  const {
+    updateConfigurationError,
+  } = useBookingFlowStepConfiguration();
 
   useEffect(() => {
     if (flow) {
@@ -146,7 +175,6 @@ export const BookingFlowDetails: React.FC = () => {
   };
 
   const handleEditFlow = () => {
-    // Store the currently focused element
     lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setEditDialogOpen(true);
     handleMenuClose();
@@ -171,7 +199,6 @@ export const BookingFlowDetails: React.FC = () => {
   };
 
   const handleDeleteFlow = () => {
-    // Store the currently focused element
     lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setDeleteDialogOpen(true);
     handleMenuClose();
@@ -188,22 +215,18 @@ export const BookingFlowDetails: React.FC = () => {
   };
 
   const handleDeleteCancel = () => {
-    // Clear any focused elements before closing
     const activeElement = document.activeElement as HTMLElement;
     if (activeElement && activeElement.blur && activeElement !== document.body) {
       activeElement.blur();
     }
 
-    // Close dialog first
     setDeleteDialogOpen(false);
 
-    // Restore focus after a brief delay
     setTimeout(() => {
       if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
         try {
           lastFocusedElementRef.current.focus();
         } catch (error) {
-          // Fallback to menu button
           menuButtonRef.current?.focus();
         }
       } else {
@@ -222,13 +245,16 @@ export const BookingFlowDetails: React.FC = () => {
 
   const handleUpdateFlow = (data: UpdateBookingFlowData) => {
     if (flow) {
-      updateFlow({ id: flow.id, data });
-      handleEditDialogClose();
+      updateFlow({ id: flow.id, data }, {
+        onSuccess: () => {
+          handleEditDialogClose();
+          refetchFlow();
+        }
+      });
     }
   };
 
   const handleEditDialogClose = () => {
-    // Clear any focused elements before closing
     const activeElement = document.activeElement as HTMLElement;
     if (activeElement && activeElement.blur && activeElement !== document.body) {
       const dialogElement = activeElement.closest('[role="dialog"]');
@@ -237,10 +263,8 @@ export const BookingFlowDetails: React.FC = () => {
       }
     }
     
-    // Close dialog first
     setEditDialogOpen(false);
 
-    // Restore focus after a brief delay
     setTimeout(() => {
       if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
         try {
@@ -256,40 +280,23 @@ export const BookingFlowDetails: React.FC = () => {
   };
 
   const handleCreateStep = () => {
-    // Store the currently focused element
     lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setEditingStep(null);
     setStepDialogOpen(true);
   };
 
-  // This is for editing step PROPERTIES (name, description, etc.)
   const handleEditStep = (step: BookingFlowStep) => {
-    // Store the currently focused element
     lastFocusedElementRef.current = document.activeElement as HTMLElement;
     setEditingStep(step);
     setStepDialogOpen(true);
   };
 
-  // This is for configuring step BEHAVIOR (questionnaires, packages, etc.)
   const handleConfigureStep = (step: BookingFlowStep) => {
     setSelectedStepForConfig(step);
-    setActiveTab(2); // Switch to configuration tab
-  };
-
-  const handleDeleteStep = (stepId: number) => {
-    deleteStep(stepId, {
-      onSuccess: () => {
-        refetchSteps();
-        // Clear selected step if it was deleted
-        if (selectedStepForConfig?.id === stepId) {
-          setSelectedStepForConfig(null);
-        }
-      }
-    });
+    setActiveTab(2);
   };
 
   const handleStepDialogClose = () => {
-    // Clear any focused elements before closing
     const activeElement = document.activeElement as HTMLElement;
     if (activeElement && activeElement.blur && activeElement !== document.body) {
       const dialogElement = activeElement.closest('[role="dialog"]');
@@ -298,10 +305,9 @@ export const BookingFlowDetails: React.FC = () => {
       }
     }
     
-    // Close dialog first
     setStepDialogOpen(false);
+    setEditingStep(null);
 
-    // Restore focus after a brief delay
     setTimeout(() => {
       if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
         try {
@@ -340,20 +346,27 @@ export const BookingFlowDetails: React.FC = () => {
     }
   };
 
-  const handleStepReorder = (reorderedSteps: BookingFlowStep[]) => {
-    const orderMapping: Record<string, number> = {};
-    reorderedSteps.forEach((step, index) => {
-      orderMapping[step.id.toString()] = index + 1;
-    });
+  const handleStepReorder = () => {
+    setReorderDialogOpen(true);
+  };
 
+  // @ts-ignore
+  const handleStepReorderComplete = (orderMapping: Record<string, number>) => {
     reorderSteps({
       flow_id: flowId,
       order_mapping: orderMapping
     }, {
       onSuccess: () => {
         refetchSteps();
+        setReorderDialogOpen(false);
       }
     });
+  };
+
+  // FIXED: Add step configuration update handler
+  const handleStepConfigurationUpdate = (updatedStep: BookingFlowStep) => {
+    refetchSteps();
+    setSelectedStepForConfig(updatedStep);
   };
 
   const getTabLabel = (label: string, count?: number) => (
@@ -365,19 +378,75 @@ export const BookingFlowDetails: React.FC = () => {
     </Box>
   );
 
-  if (isLoadingFlow) {
+  // FIXED: Enhanced error display
+  const hasErrors = flowError || stepsError || updateError || deleteError || duplicateError || 
+                   createStepError || updateStepError || deleteStepError || reorderStepsError || 
+                   updateConfigurationError;
+
+  if (flowError || !id || isNaN(flowId)) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-        <CircularProgress />
+      <Box>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {flowError ? 
+            `Failed to load booking flow: ${flowError instanceof Error ? flowError.message : 'Unknown error'}` :
+            'Invalid booking flow ID'
+          }
+        </Alert>
+        <Button
+          startIcon={<BackIcon />}
+          onClick={() => navigate('/settings/booking/booking-flow')}
+        >
+          Back to Booking Flows
+        </Button>
       </Box>
     );
   }
 
-  if (flowError || !flow) {
+  if (isLoadingFlow) {
+    return (
+      <Box>
+        {/* Header Skeleton */}
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
+          <Box flex={1}>
+            <Box display="flex" alignItems="center" gap={2} mb={1}>
+              <Skeleton variant="circular" width={40} height={40} />
+              <Skeleton variant="text" width={300} height={40} />
+              <Skeleton variant="rectangular" width={80} height={32} />
+            </Box>
+            <Skeleton variant="text" width={400} height={24} />
+            <Box display="flex" gap={1} mt={1}>
+              <Skeleton variant="rectangular" width={100} height={24} />
+              <Skeleton variant="text" width={150} height={24} />
+            </Box>
+          </Box>
+          <Box display="flex" gap={1}>
+            <Skeleton variant="rectangular" width={100} height={36} />
+            <Skeleton variant="circular" width={40} height={40} />
+          </Box>
+        </Box>
+
+        {/* Tabs Skeleton */}
+        <Card sx={{ mb: 3 }}>
+          <Box display="flex" gap={2} p={2}>
+            {[...Array(5)].map((_, index) => (
+              <Skeleton key={index} variant="rectangular" width={120} height={40} />
+            ))}
+          </Box>
+        </Card>
+
+        {/* Content Skeleton */}
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+          <CircularProgress />
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!flow) {
     return (
       <Box>
         <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to load booking flow. Please check the URL and try again.
+          Booking flow not found. It may have been deleted or you may not have permission to view it.
         </Alert>
         <Button
           startIcon={<BackIcon />}
@@ -391,6 +460,23 @@ export const BookingFlowDetails: React.FC = () => {
 
   return (
     <Box>
+      {/* Enhanced Error Display */}
+      {hasErrors && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Operation Failed
+          </Typography>
+          {updateError && <Typography variant="body2">Update: {updateError instanceof Error ? updateError.message : 'Unknown error'}</Typography>}
+          {deleteError && <Typography variant="body2">Delete: {deleteError instanceof Error ? deleteError.message : 'Unknown error'}</Typography>}
+          {duplicateError && <Typography variant="body2">Duplicate: {duplicateError instanceof Error ? duplicateError.message : 'Unknown error'}</Typography>}
+          {createStepError && <Typography variant="body2">Create Step: {createStepError instanceof Error ? createStepError.message : 'Unknown error'}</Typography>}
+          {updateStepError && <Typography variant="body2">Update Step: {updateStepError instanceof Error ? updateStepError.message : 'Unknown error'}</Typography>}
+          {deleteStepError && <Typography variant="body2">Delete Step: {deleteStepError instanceof Error ? deleteStepError.message : 'Unknown error'}</Typography>}
+          {reorderStepsError && <Typography variant="body2">Reorder Steps: {reorderStepsError instanceof Error ? reorderStepsError.message : 'Unknown error'}</Typography>}
+          {updateConfigurationError && <Typography variant="body2">Configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}</Typography>}
+        </Alert>
+      )}
+
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
         <Box>
@@ -398,6 +484,7 @@ export const BookingFlowDetails: React.FC = () => {
             <IconButton
               onClick={() => navigate('/settings/booking/booking-flow')}
               size="small"
+              disabled={isDeletingFlow}
             >
               <BackIcon />
             </IconButton>
@@ -417,14 +504,12 @@ export const BookingFlowDetails: React.FC = () => {
             </Typography>
           )}
           <Box display="flex" alignItems="center" gap={2} mt={1}>
-            {flow.event_type_name && (
-              <Chip
-                label={flow.event_type_name}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
-            )}
+            <Chip
+              label={flow.event_type_name}
+              size="small"
+              color="primary"
+              variant="outlined"
+            />
             <Typography variant="caption" color="text.secondary">
               {flow.enabled_steps_count} of {flow.total_steps} steps enabled
             </Typography>
@@ -459,13 +544,30 @@ export const BookingFlowDetails: React.FC = () => {
         <Box display="flex" gap={1}>
           <Button
             variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={() => {
+              refetchFlow();
+              refetchSteps();
+            }}
+            disabled={isLoadingFlow || isLoadingSteps}
+          >
+            Refresh
+          </Button>
+
+          <Button
+            variant="outlined"
             startIcon={<PreviewIcon />}
             onClick={handlePreviewFlow}
+            disabled={isDeletingFlow}
           >
             Preview
           </Button>
 
-          <IconButton ref={menuButtonRef} onClick={handleMenuOpen}>
+          <IconButton 
+            ref={menuButtonRef} 
+            onClick={handleMenuOpen}
+            disabled={isDeletingFlow}
+          >
             <MoreVertIcon />
           </IconButton>
         </Box>
@@ -477,7 +579,7 @@ export const BookingFlowDetails: React.FC = () => {
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={handleEditFlow}>
+        <MenuItem onClick={handleEditFlow} disabled={isUpdatingFlow}>
           <ListItemIcon>
             <EditIcon fontSize="small" />
           </ListItemIcon>
@@ -491,16 +593,18 @@ export const BookingFlowDetails: React.FC = () => {
           <ListItemText>Full Preview</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handleDuplicateFlow}>
+        <MenuItem onClick={handleDuplicateFlow} disabled={isDuplicatingFlow}>
           <ListItemIcon>
             <DuplicateIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Duplicate Flow</ListItemText>
+          <ListItemText>
+            {isDuplicatingFlow ? 'Duplicating...' : 'Duplicate Flow'}
+          </ListItemText>
         </MenuItem>
         
         <Divider />
         
-        <MenuItem onClick={handleDeleteFlow} sx={{ color: 'error.main' }}>
+        <MenuItem onClick={handleDeleteFlow} sx={{ color: 'error.main' }} disabled={isDeletingFlow}>
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />
           </ListItemIcon>
@@ -530,6 +634,7 @@ export const BookingFlowDetails: React.FC = () => {
             icon={<SettingsIcon />} 
             label={selectedStepForConfig ? `Configure: ${selectedStepForConfig.name}` : "Configuration"}
             iconPosition="start"
+            disabled={!selectedStepForConfig}
           />
           <Tab 
             icon={<PreviewIcon />} 
@@ -547,7 +652,6 @@ export const BookingFlowDetails: React.FC = () => {
 
       {/* Tab Content */}
       <TabPanel value={activeTab} index={0}>
-        {/* Overview Tab */}
         <Stack spacing={3}>
           <Card>
             <CardContent>
@@ -580,7 +684,7 @@ export const BookingFlowDetails: React.FC = () => {
                     Event Type
                   </Typography>
                   <Typography variant="body1">
-                    {flow.event_type_name || 'Any Event Type'}
+                    {flow.event_type_name}
                   </Typography>
                 </Box>
                 
@@ -649,6 +753,22 @@ export const BookingFlowDetails: React.FC = () => {
                     {flow.allow_discounts ? 'Enabled' : 'Disabled'}
                   </Typography>
                 </Box>
+
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">Payment Processing:</Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {flow.require_immediate_payment ? 'Immediate' : 'Deferred'}
+                  </Typography>
+                </Box>
+
+                {flow.default_payment_gateway && (
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Default Payment Gateway:</Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      Configured
+                    </Typography>
+                  </Box>
+                )}
               </Stack>
             </CardContent>
           </Card>
@@ -656,23 +776,40 @@ export const BookingFlowDetails: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        {/* Steps Tab */}
         <Stack spacing={3}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">
               Booking Flow Steps ({steps.length})
             </Typography>
-            <Button
-              ref={addStepButtonRef}
-              variant="contained"
-              startIcon={<StepsIcon />}
-              onClick={handleCreateStep}
-            >
-              Add Step
-            </Button>
+            <Box display="flex" gap={1}>
+              {steps.length > 1 && (
+                <Button
+                  variant="outlined"
+                  onClick={handleStepReorder}
+                  disabled={isReorderingSteps}
+                >
+                  {isReorderingSteps ? 'Reordering...' : 'Reorder Steps'}
+                </Button>
+              )}
+              <Button
+                ref={addStepButtonRef}
+                variant="contained"
+                startIcon={<StepsIcon />}
+                onClick={handleCreateStep}
+                disabled={isCreatingStep}
+              >
+                {isCreatingStep ? 'Adding...' : 'Add Step'}
+              </Button>
+            </Box>
           </Box>
 
-          {steps.length === 0 ? (
+          {stepsError && (
+            <Alert severity="error">
+              Failed to load steps: {stepsError instanceof Error ? stepsError.message : 'Unknown error'}
+            </Alert>
+          )}
+
+          {steps.length === 0 && !isLoadingSteps ? (
             <Card>
               <CardContent sx={{ textAlign: 'center', py: 6 }}>
                 <StepsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
@@ -686,57 +823,26 @@ export const BookingFlowDetails: React.FC = () => {
                   variant="contained"
                   startIcon={<StepsIcon />}
                   onClick={handleCreateStep}
+                  disabled={isCreatingStep}
                 >
-                  Add First Step
+                  {isCreatingStep ? 'Adding...' : 'Add First Step'}
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <>
-              {/* Instructions */}
-              <Alert severity="info">
-                <Typography variant="body2" gutterBottom>
-                  <strong>Step Management:</strong>
-                </Typography>
-                <Typography variant="body2">
-                  • <strong>Edit Properties:</strong> Change step name, description, order, and basic settings
-                </Typography>
-                <Typography variant="body2">
-                  • <strong>Configure:</strong> Set up step-specific behavior like questionnaires, packages, payment options
-                </Typography>
-              </Alert>
-
-              <BookingFlowStepsTable
-                steps={steps}
-                isLoading={isLoadingSteps}
-                onEdit={handleEditStep} // For editing basic properties
-                onConfigure={handleConfigureStep} // For configuring step behavior
-                onDelete={handleDeleteStep}
-                isDeleting={isDeletingStep}
-              />
-
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Reorder Steps
-                  </Typography>
-                  <StepReorderList
-                    steps={steps}
-                    onReorder={handleStepReorder}
-                    isLoading={false}
-                  />
-                </CardContent>
-              </Card>
-            </>
+            <BookingFlowStepsTable
+              flowId={flowId}
+              onEdit={handleEditStep}
+              onConfigure={handleConfigureStep}
+              onReorder={handleStepReorder}
+            />
           )}
         </Stack>
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
-        {/* Configuration Tab */}
         {selectedStepForConfig ? (
           <Box>
-            {/* Back to Steps Button */}
             <Box mb={3}>
               <Button
                 startIcon={<BackIcon />}
@@ -751,14 +857,9 @@ export const BookingFlowDetails: React.FC = () => {
               </Button>
             </Box>
 
-            {/* Step Configuration Panel */}
             <StepConfigurationPanel
               step={selectedStepForConfig}
-              onUpdate={(updatedStep) => {
-                refetchSteps();
-                // Update the selected step with new data
-                setSelectedStepForConfig(updatedStep);
-              }}
+              onUpdate={handleStepConfigurationUpdate}
             />
           </Box>
         ) : (
@@ -783,16 +884,16 @@ export const BookingFlowDetails: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={3}>
-        {/* Preview Tab */}
-        <BookingFlowPreview
-          flow={flow}
-          compact={false}
-          showMobileView={false}
-        />
+        {flow && (
+          <BookingFlowPreview
+            flow={flow}
+            compact={false}
+            showMobileView={false}
+          />
+        )}
       </TabPanel>
 
       <TabPanel value={activeTab} index={4}>
-        {/* Analytics Tab - Coming Soon */}
         <Card>
           <CardContent sx={{ textAlign: 'center', py: 6 }}>
             <AnalyticsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
@@ -806,7 +907,7 @@ export const BookingFlowDetails: React.FC = () => {
         </Card>
       </TabPanel>
 
-      {/* Edit Flow Dialog */}
+      {/* Dialogs */}
       <BookingFlowFormDialog
         open={editDialogOpen}
         onClose={handleEditDialogClose}
@@ -815,7 +916,6 @@ export const BookingFlowDetails: React.FC = () => {
         isLoading={isUpdatingFlow}
       />
 
-      {/* Step Properties Dialog (for editing basic step info) */}
       <BookingFlowStepFormDialog
         open={stepDialogOpen}
         onClose={handleStepDialogClose}
@@ -825,19 +925,37 @@ export const BookingFlowDetails: React.FC = () => {
         isLoading={isCreatingStep || isUpdatingStep}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Enhanced Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
         disableRestoreFocus
         disableEnforceFocus={false}
         keepMounted={false}
+        maxWidth="sm"
+        fullWidth
       >
         <DialogTitle>Delete Booking Flow</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete "{flow.name}"? This action cannot be undone and will affect any active booking sessions.
+            Are you sure you want to delete <strong>"{flow.name}"</strong>?
           </DialogContentText>
+          <Box mt={2}>
+            <Alert severity="warning">
+              <Typography variant="subtitle2" gutterBottom>
+                This action cannot be undone and will:
+              </Typography>
+              <Typography variant="body2" component="div">
+                • Delete all {flow.total_steps} configured steps
+              </Typography>
+              <Typography variant="body2" component="div">
+                • Mark any active booking sessions as abandoned
+              </Typography>
+              <Typography variant="body2" component="div">
+                • Remove all analytics data for this flow
+              </Typography>
+            </Alert>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteCancel} disabled={isDeletingFlow}>
@@ -848,8 +966,51 @@ export const BookingFlowDetails: React.FC = () => {
             color="error" 
             variant="contained"
             disabled={isDeletingFlow}
+            startIcon={isDeletingFlow ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
           >
-            {isDeletingFlow ? <CircularProgress size={20} /> : 'Delete'}
+            {isDeletingFlow ? 'Deleting...' : 'Delete Flow'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Step Reorder Dialog */}
+      <Dialog
+        open={reorderDialogOpen}
+        onClose={() => setReorderDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        disableEscapeKeyDown={isReorderingSteps}
+      >
+        <DialogTitle>Reorder Booking Flow Steps</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Drag and drop steps to change their order in the booking flow.
+          </Typography>
+          
+          {/* REMOVED: StepReorderList component since it's not in evolved codebase */}
+          <Box mt={2}>
+            <Alert severity="info">
+              Step reordering interface will be implemented when the StepReorderList component is available.
+              For now, you can edit individual step order values in the step edit dialog.
+            </Alert>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setReorderDialogOpen(false)}
+            disabled={isReorderingSteps}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="contained"
+            disabled={isReorderingSteps}
+            onClick={() => {
+              // PLACEHOLDER: Will be implemented when reorder component is available
+              setReorderDialogOpen(false);
+            }}
+          >
+            {isReorderingSteps ? 'Saving...' : 'Save Order'}
           </Button>
         </DialogActions>
       </Dialog>

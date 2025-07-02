@@ -39,6 +39,11 @@ import {
   type CreateBookingFlowData,
   type UpdateBookingFlowData,
 } from '../../../types/bookingflows.types';
+import { useEventTypes } from '../../../hooks/useEvents';
+import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
+import { useCommunications } from '../../../hooks/useCommunications';
+import { useDiscounts } from '../../../hooks/useProducts';
+import { usePaymentGateways } from '../../../hooks/usePayments';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -58,7 +63,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
   </div>
 );
 
-// UPDATED: Enhanced form data interface to match evolved backend
+// Enhanced form data interface to match evolved backend
 interface EnhancedBookingFlowFormData extends BookingFlowFormData {
   // Payment gateway fields from evolved backend
   allowed_payment_gateways: number[];
@@ -82,7 +87,7 @@ const defaultFormData: EnhancedBookingFlowFormData = {
   min_advance_booking_days: '1',
   allow_discounts: true,
   available_discounts: [],
-  // ADDED: Payment gateway fields from evolved backend
+  // Payment gateway fields from evolved backend
   allowed_payment_gateways: [],
   default_payment_gateway: '',
   require_immediate_payment: false,
@@ -106,37 +111,47 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
   const firstInputRef = useRef<HTMLInputElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
-  // FIXED: Mock dependencies since useBookingFlowDependencies doesn't exist
-  // In a real implementation, you would fetch these from your APIs
-  const eventTypes = [
-    { id: 1, name: 'Wedding' },
-    { id: 2, name: 'Corporate Event' },
-    { id: 3, name: 'Birthday Party' },
-  ];
+  // Load dependencies using existing hooks
+  const { 
+    eventTypes: eventTypesData = [], 
+    isLoadingEventTypes 
+  } = useEventTypes({ is_active: true });
+
+  const { 
+    templates: workflowTemplatesData = [], 
+    isLoadingTemplates: isLoadingWorkflows 
+  } = useWorkflowTemplates({ is_active: true });
+
+  // Get email templates - filtering communication templates by EMAIL channel
+  const { 
+    useTemplates 
+  } = useCommunications();
   
-  const workflowTemplates = [
-    { id: 1, name: 'Standard Wedding Workflow' },
-    { id: 2, name: 'Corporate Event Workflow' },
-  ];
-  
-  const emailTemplates = [
-    { id: 1, name: 'Booking Confirmation Template' },
-    { id: 2, name: 'Wedding Confirmation Template' },
-  ];
-  
-  // ADDED: Payment gateways for evolved backend integration
-  const paymentGateways = [
-    { id: 1, name: 'Stripe', code: 'stripe', is_active: true },
-    { id: 2, name: 'PayPal', code: 'paypal', is_active: true },
-    { id: 3, name: 'Square', code: 'square', is_active: true },
-  ];
-  
-  const discounts = [
-    { id: 1, name: 'Early Bird 10%', code: 'EARLY10' },
-    { id: 2, name: 'Returning Client 15%', code: 'RETURN15' },
-  ];
-  
-  const isLoadingDependencies = false; // Mock loading state
+  const { 
+    data: emailTemplatesData = [], 
+    isLoading: isLoadingEmailTemplates 
+  } = useTemplates({ 
+    channel: 'EMAIL',
+    category: 'SYSTEM' // or 'MANUAL' depending on your needs
+  });
+
+  const { 
+    discounts: discountsData = [], 
+    isLoadingDiscounts 
+  } = useDiscounts({ is_active: true });
+
+  const { 
+    data: paymentGatewaysData = [], 
+    isLoading: isLoadingPaymentGateways 
+  } = usePaymentGateways();
+
+  // Check if any dependencies are still loading
+  const isLoadingDependencies = 
+    isLoadingEventTypes || 
+    isLoadingWorkflows || 
+    isLoadingEmailTemplates || 
+    isLoadingDiscounts || 
+    isLoadingPaymentGateways;
 
   useEffect(() => {
     if (open) {
@@ -144,7 +159,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
         setFormData({
           name: editingFlow.name || '',
           description: editingFlow.description || '',
-          // FIXED: Handle null event_type properly
+          // Handle null event_type properly
           event_type: editingFlow.event_type?.toString() || '',
           workflow_template: editingFlow.workflow_template?.toString() || '',
           confirmation_email_template: editingFlow.confirmation_email_template?.toString() || '',
@@ -158,7 +173,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
           min_advance_booking_days: editingFlow.min_advance_booking_days?.toString() || '1',
           allow_discounts: editingFlow.allow_discounts ?? true,
           available_discounts: editingFlow.available_discounts || [],
-          // ADDED: Payment gateway fields from evolved backend
+          // Payment gateway fields from evolved backend
           allowed_payment_gateways: editingFlow.allowed_payment_gateways || [],
           default_payment_gateway: editingFlow.default_payment_gateway?.toString() || '',
           require_immediate_payment: editingFlow.require_immediate_payment ?? false,
@@ -210,7 +225,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     }));
   };
 
-  // ADDED: Handler for multi-select fields like payment gateways and discounts
+  // Handler for multi-select fields like payment gateways and discounts
   const handleMultiSelectChange = (field: keyof EnhancedBookingFlowFormData) => (
     event: SelectChangeEvent<number[]>
   ) => {
@@ -256,7 +271,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       newErrors.max_advance_booking_days = 'Maximum days must be greater than minimum days';
     }
 
-    // ADDED: Validate payment gateway configuration
+    // Validate payment gateway configuration
     if (formData.require_immediate_payment && formData.allowed_payment_gateways.length === 0) {
       newErrors.allowed_payment_gateways = 'At least one payment gateway is required when immediate payment is enabled';
     }
@@ -298,11 +313,11 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       return;
     }
 
-    // UPDATED: Convert form data to API data format matching evolved backend
+    // Convert form data to API data format matching evolved backend
     const submitData: CreateBookingFlowData | UpdateBookingFlowData = {
       name: formData.name.trim(),
       description: formData.description.trim() || undefined,
-      // FIXED: Convert empty string to null for "Any Event Type"
+      // Convert empty string to null for "Any Event Type"
       event_type: formData.event_type === '' || formData.event_type === 'null' 
         ? null 
         : parseInt(formData.event_type) || null,
@@ -318,7 +333,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       min_advance_booking_days: parseInt(formData.min_advance_booking_days) || 1,
       allow_discounts: formData.allow_discounts,
       available_discounts: formData.available_discounts,
-      // ADDED: Payment gateway fields for evolved backend
+      // Payment gateway fields for evolved backend
       allowed_payment_gateways: formData.allowed_payment_gateways,
       default_payment_gateway: formData.default_payment_gateway ? parseInt(formData.default_payment_gateway) : null,
       require_immediate_payment: formData.require_immediate_payment,
@@ -371,7 +386,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
               </Box>
             ) : (
               <Box sx={{ mt: 1 }}>
-                {/* Tab Navigation - UPDATED with Payment tab */}
+                {/* Tab Navigation */}
                 <Tabs 
                   value={activeTab} 
                   onChange={handleTabChange}
@@ -441,17 +456,11 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>Any Event Type</em>
                         </MenuItem>
-                        {eventTypes && eventTypes.length > 0 ? (
-                          eventTypes.map((eventType: { id: number; name: string }) => (
-                            <MenuItem key={eventType.id} value={eventType.id.toString()}>
-                              {eventType.name}
-                            </MenuItem>
-                          ))
-                        ) : (
-                          <MenuItem disabled>
-                            <em>No event types available</em>
+                        {eventTypesData.map((eventType) => (
+                          <MenuItem key={eventType.id} value={eventType.id.toString()}>
+                            {eventType.name}
                           </MenuItem>
-                        )}
+                        ))}
                       </Select>
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
                         Only one active booking flow is allowed per event type. 
@@ -588,7 +597,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       </Typography>
                     </Box>
 
-                    {/* UPDATED: Discounts multi-select */}
+                    {/* Discounts multi-select */}
                     {formData.allow_discounts && (
                       <FormControl fullWidth>
                         <InputLabel>Available Discounts</InputLabel>
@@ -600,7 +609,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                           renderValue={(selected) => (
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                               {(selected as number[]).map((value) => {
-                                const discount = discounts.find(d => d.id === value);
+                                const discount = discountsData.find(d => d.id === value);
                                 return (
                                   <Chip 
                                     key={value} 
@@ -612,12 +621,12 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                             </Box>
                           )}
                         >
-                          {discounts.map((discount) => (
+                          {discountsData.map((discount) => (
                             <MenuItem key={discount.id} value={discount.id}>
                               <Box>
                                 <Typography variant="body2">{discount.name}</Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                  Code: {discount.code}
+                                  Code: {discount.code || 'No code required'}
                                 </Typography>
                               </Box>
                             </MenuItem>
@@ -628,7 +637,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                   </Stack>
                 </TabPanel>
 
-                {/* ADDED: Payment Configuration Tab for evolved backend */}
+                {/* Payment Configuration Tab */}
                 <TabPanel value={activeTab} index={2}>
                   <Stack spacing={3}>
                     <Typography variant="h6" gutterBottom>
@@ -649,7 +658,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         renderValue={(selected) => (
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                             {(selected as number[]).map((value) => {
-                              const gateway = paymentGateways.find(g => g.id === value);
+                              const gateway = paymentGatewaysData.find(g => g.id === value);
                               return (
                                 <Chip 
                                   key={value} 
@@ -663,7 +672,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                           </Box>
                         )}
                       >
-                        {paymentGateways.filter(g => g.is_active).map((gateway) => (
+                        {paymentGatewaysData.filter(g => g.is_active).map((gateway) => (
                           <MenuItem key={gateway.id} value={gateway.id}>
                             <Box>
                               <Typography variant="body2">{gateway.name}</Typography>
@@ -698,7 +707,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>No Default</em>
                         </MenuItem>
-                        {paymentGateways
+                        {paymentGatewaysData
                           .filter(g => 
                             g.is_active && 
                             (formData.allowed_payment_gateways.length === 0 || 
@@ -745,7 +754,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                   </Stack>
                 </TabPanel>
 
-                {/* Templates Tab - UPDATED index */}
+                {/* Templates Tab */}
                 <TabPanel value={activeTab} index={3}>
                   <Stack spacing={3}>
                     <Alert severity="info">
@@ -762,7 +771,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>No Workflow</em>
                         </MenuItem>
-                        {workflowTemplates.map((template) => (
+                        {workflowTemplatesData.map((template) => (
                           <MenuItem key={template.id} value={template.id.toString()}>
                             {template.name}
                           </MenuItem>
@@ -783,7 +792,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>No Email</em>
                         </MenuItem>
-                        {emailTemplates.map((template) => (
+                        {emailTemplatesData.map((template) => (
                           <MenuItem key={template.id} value={template.id.toString()}>
                             {template.name}
                           </MenuItem>
@@ -804,7 +813,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>No Reminders</em>
                         </MenuItem>
-                        {emailTemplates.map((template) => (
+                        {emailTemplatesData.map((template) => (
                           <MenuItem key={template.id} value={template.id.toString()}>
                             {template.name}
                           </MenuItem>
@@ -817,7 +826,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                   </Stack>
                 </TabPanel>
 
-                {/* Advanced Tab - UPDATED index */}
+                {/* Advanced Tab */}
                 <TabPanel value={activeTab} index={4}>
                   <Stack spacing={3}>
                     <Typography variant="h6" gutterBottom>
