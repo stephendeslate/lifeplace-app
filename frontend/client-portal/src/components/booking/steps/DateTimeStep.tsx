@@ -59,9 +59,6 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
     start_time: data.start_time || '',
     end_date: data.end_date || '',
     end_time: data.end_time || '',
-    duration: data.duration || config?.default_duration_hours || 4,
-    guest_count: data.guest_count || 1,
-    venue_preference: data.venue_preference || '',
     resource_requirements: data.resource_requirements || [],
     staff_requirements: data.staff_requirements || [],
     special_requirements: data.special_requirements || '',
@@ -97,9 +94,6 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
           start_time: newData.start_time,
           end_date: newData.end_date,
           end_time: newData.end_time,
-          duration: newData.duration,
-          guest_count: newData.guest_count,
-          venue_preference: newData.venue_preference,
           resource_requirements: newData.resource_requirements,
           staff_requirements: newData.staff_requirements,
           special_requirements: newData.special_requirements,
@@ -335,27 +329,6 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                   }}
                 />
               </Box>
-              
-              {/* Duration Selection */}
-              <Box sx={{ mt: 3 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Duration (Hours)</InputLabel>
-                  <Select
-                    value={formData.duration}
-                    onChange={(e) => handleFormChange({ duration: Number(e.target.value) })}
-                    label="Duration (Hours)"
-                  >
-                    {Array.from(
-                      { length: (config?.max_duration_hours || 12) - (config?.min_duration_hours || 1) + 1 },
-                      (_, i) => (config?.min_duration_hours || 1) + i
-                    ).map((hours) => (
-                      <MenuItem key={hours} value={hours}>
-                        {hours} {hours === 1 ? 'hour' : 'hours'}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
             </CardContent>
           </Card>
         )}
@@ -368,27 +341,6 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
             </Typography>
             
             <Stack spacing={3}>
-              <TextField
-                label="Number of Guests"
-                type="number"
-                value={formData.guest_count}
-                onChange={(e) => handleFormChange({ guest_count: Number(e.target.value) })}
-                inputProps={{ min: 1, max: 1000 }}
-                error={!!validationErrors.guest_count}
-                helperText={validationErrors.guest_count?.[0]}
-                fullWidth
-              />
-              
-              <TextField
-                label="Venue Preference (Optional)"
-                value={formData.venue_preference}
-                onChange={(e) => handleFormChange({ venue_preference: e.target.value })}
-                error={!!validationErrors.venue_preference}
-                helperText={validationErrors.venue_preference?.[0]}
-                fullWidth
-                multiline
-                rows={2}
-              />
               
               <TextField
                 label="Special Requirements (Optional)"

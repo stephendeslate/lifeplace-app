@@ -30,10 +30,31 @@ const api = axios.create({
   withCredentials: true, // Important for CSRF cookies to be included
 });
 
+// Check if a URL is for a public endpoint that doesn't require authentication
+const isPublicEndpoint = (url: string): boolean => {
+  const publicPaths = [
+    '/bookingflow/public/',
+    '/events/event-types/',
+    '/auth/', // Add auth endpoints
+    '/users/register/',
+    '/users/login/',
+    '/users/logout/',
+    '/users/password-reset/',
+    // Add other public paths as needed
+  ];
+  
+  return publicPaths.some(path => url.includes(path));
+};
+
+// Check if we're currently on a booking page
+const isBookingPage = (): boolean => {
+  return window.location.pathname.startsWith('/booking');
+};
+
 // Add request interceptor to add authorization header and CSRF token
 api.interceptors.request.use(
   (config: any) => {
-    // Add Authorization header if token exists
+    // Add Authorization header if token exists (but not required for public endpoints)
     const tokens = storage.getTokens();
     if (tokens?.access) {
       config.headers.Authorization = `Bearer ${tokens.access}`;
@@ -61,15 +82,32 @@ api.interceptors.response.use(
 
     // If the error is 401 and not a retry, attempt to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
+      
+      // Check if this is a public endpoint - if so, don't try to refresh or redirect
+      if (isPublicEndpoint(originalRequest.url)) {
+        // For public endpoints, just return the error without redirecting
+        console.warn('Public endpoint returned 401, this might indicate a backend configuration issue');
+        return Promise.reject(error);
+      }
+
+      // If we're on a booking page, don't redirect to login immediately
+      // Booking should work for guests
+      if (isBookingPage()) {
+        console.warn('401 error on booking page, continuing without authentication');
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       try {
         const tokens = storage.getTokens();
 
         if (!tokens?.refresh) {
-          // No refresh token, clear tokens and redirect to login
+          // No refresh token, clear tokens but don't redirect if on booking page
           storage.clearAuth();
-          window.location.href = "/login";
+          if (!isBookingPage()) {
+            window.location.href = "/login";
+          }
           return Promise.reject(error);
         }
 
@@ -94,9 +132,11 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // If refresh fails, clear tokens and redirect to login
+        // If refresh fails, clear tokens but don't redirect if on booking page
         storage.clearAuth();
-        window.location.href = "/login";
+        if (!isBookingPage()) {
+          window.location.href = "/login";
+        }
         return Promise.reject(error);
       }
     }

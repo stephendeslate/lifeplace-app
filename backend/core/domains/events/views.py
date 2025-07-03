@@ -44,9 +44,23 @@ class EventTypeViewSet(viewsets.ModelViewSet):
     ViewSet for managing event types
     """
     serializer_class = EventTypeSerializer
-    permission_classes = [IsAdminOrClient]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
+    pagination_class = None
+
+    
+    def get_permissions(self):
+        """
+        Different permissions for different actions:
+        - List/retrieve: Public access (for booking flows)
+        - Create/update/delete: Admin only
+        """
+        if self.action in ['list', 'retrieve', 'active']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAdmin]
+        
+        return [permission() for permission in permission_classes]
     
     def get_queryset(self):
         is_active = self.request.query_params.get('is_active')
@@ -55,6 +69,11 @@ class EventTypeViewSet(viewsets.ModelViewSet):
         # Convert is_active to boolean if provided
         if is_active is not None:
             is_active = is_active.lower() == 'true'
+        
+        # For public access (list/retrieve), only show active event types
+        if self.action in ['list', 'retrieve', 'active']:
+            if is_active is None:
+                is_active = True  # Default to active only for public access
         
         return EventTypeService.get_all_event_types(
             search_query=search_query,
@@ -101,7 +120,7 @@ class EventTypeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def active(self, request):
         """
-        Get only active event types
+        Get only active event types (public endpoint)
         """
         active_types = EventTypeService.get_all_event_types(is_active=True)
         serializer = self.get_serializer(active_types, many=True)

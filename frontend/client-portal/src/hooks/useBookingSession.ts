@@ -3,15 +3,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { bookingSessionAPI } from '../apis/booking-session.api';
+import { bookingFlowAPI } from '../apis/bookingflow.api';
+import { saveSessionData, loadSessionData, updateStepData, clearSessionData } from '../utils/session-storage';
 import type { 
   BookingSession,
   CompleteBookingResponse,
+  SessionStorageData,
 } from '../types/booking-session.types';
 
 interface UseBookingSessionOptions {
   sessionUUID?: string;
   enableAutoSave?: boolean;
   autoSaveInterval?: number; // milliseconds
+  flowId?: number; // Add flowId to help with guest bookings
 }
 
 interface UseBookingSessionReturn {
@@ -24,6 +28,7 @@ interface UseBookingSessionReturn {
   isUpdating: boolean;
   isCompleting: boolean;
   isSaving: boolean;
+  isGuestSession: boolean; // New flag to indicate guest booking
   
   // Session data management
   updateSessionData: (stepId: number, stepData: Record<string, any>, markCompleted?: boolean) => Promise<BookingSession | null>;
@@ -52,7 +57,8 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
   const { 
     sessionUUID, 
     enableAutoSave = false, 
-    autoSaveInterval = 30000 // 30 seconds
+    autoSaveInterval = 30000,
+    flowId
   } = options;
   
   const queryClient = useQueryClient();
@@ -62,59 +68,133 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
   const [validationErrors, setValidationErrors] = useState<Record<string, any>>({});
   const [error, setError] = useState<Error | null>(null);
   const [isAutoSaveActive, setIsAutoSaveActive] = useState(enableAutoSave);
+  const [isGuestSession, setIsGuestSession] = useState(true); // Default to guest session
+  const [localSession, setLocalSession] = useState<BookingSession | null>(null);
   
   // Auto-save refs
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingDataRef = useRef<Record<string, any> | null>(null);
 
-  // Query: Get session data
+  // Try to get session data using public endpoint
   const {
-    data: session,
+    data: serverSession,
     isLoading,
     error: queryError,
-    // @ts-ignore
     refetch: refetchSession
   } = useQuery({
-    queryKey: ['booking-session', currentSessionUUID],
-    queryFn: () => currentSessionUUID ? bookingSessionAPI.getSessionByUUID(currentSessionUUID) : Promise.resolve(null),
-    enabled: !!currentSessionUUID,
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: (query) => {
-      // Refetch more frequently if session is about to expire
-      if (query.state.data?.expires_at) {
-        const expiresAt = new Date(query.state.data.expires_at);
-        const now = new Date();
-        const timeUntilExpiry = expiresAt.getTime() - now.getTime();
-        
-        // If less than 10 minutes until expiry, check every minute
-        if (timeUntilExpiry < 10 * 60 * 1000) {
-          return 60 * 1000; // 1 minute
-        }
-      }
+    queryKey: ['booking-session-public', currentSessionUUID],
+    queryFn: async () => {
+      if (!currentSessionUUID) return null;
       
-      // Otherwise check every 5 minutes
-      return 5 * 60 * 1000;
+      try {
+        // Use public endpoint to get session data
+        const session = await bookingFlowAPI.getSessionByUUID(currentSessionUUID);
+        
+        // Check if this is a guest session
+        if (!session.user && session.id === 0) {
+          setIsGuestSession(true);
+          
+          // Try to load from local storage for guest sessions
+          const storedData = loadSessionData();
+          if (storedData && storedData.sessionId === currentSessionUUID) {
+            const enrichedSession: BookingSession = {
+              ...session,
+              booking_flow: storedData.flowId,
+              booking_data: storedData.stepData,
+            };
+            return enrichedSession;
+          }
+        } else {
+          setIsGuestSession(false);
+        }
+        
+        return session;
+      } catch (error: any) {
+        // This is likely a guest session
+        setIsGuestSession(true);
+        
+        // Create a guest session object
+        const guestSession: BookingSession = {
+          id: 0,
+          session_id: currentSessionUUID,
+          booking_flow: flowId || 0,
+          booking_data: {},
+          validation_errors: {},
+          is_completed: false,
+          is_abandoned: false,
+          current_step: null,
+          total_price: '0.00',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        };
+        
+        // Try to load from local storage
+        const storedData = loadSessionData();
+        if (storedData && storedData.sessionId === currentSessionUUID) {
+          guestSession.booking_flow = storedData.flowId;
+          guestSession.booking_data = storedData.stepData;
+        }
+        
+        return guestSession;
+      }
     },
+    enabled: !!currentSessionUUID,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: false, // Don't retry for guest sessions
   });
 
-  // Mutation: Update session data
+  // Use local session for guest bookings, server session for authenticated
+  const session = isGuestSession ? (localSession || serverSession) : serverSession;
+
+  // Update local session when server session changes
+  useEffect(() => {
+    if (serverSession && (!isGuestSession || !localSession)) {
+      setLocalSession(serverSession);
+    }
+  }, [serverSession, isGuestSession, localSession]);
+
+  // Save guest session data to local storage
+  const saveGuestSessionData = useCallback((sessionData: BookingSession) => {
+    if (isGuestSession && sessionData.session_id) {
+      const storageData: SessionStorageData = {
+        sessionId: sessionData.session_id,
+        flowId: sessionData.booking_flow,
+        stepData: sessionData.booking_data,
+        lastUpdated: new Date().toISOString(),
+        expiresAt: sessionData.expires_at,
+      };
+      saveSessionData(storageData);
+    }
+  }, [isGuestSession]);
+
+  // Mutation: Update session data using public endpoint
   const updateSessionMutation = useMutation({
-    mutationFn: ({ stepId, stepData, markCompleted }: { 
+    mutationFn: async ({ stepId, stepData, markCompleted }: { 
       stepId: number; 
       stepData: Record<string, any>; 
       markCompleted?: boolean;
     }) => {
       if (!currentSessionUUID) throw new Error('No active session');
-      return bookingSessionAPI.updateSessionDataByUUID(currentSessionUUID, {
-        step_id: stepId,
-        step_data: stepData,
-        mark_completed: markCompleted
-      });
+      
+      // Use public endpoint for all session updates
+      return bookingFlowAPI.updateSessionDataByUUID(
+        currentSessionUUID,
+        stepId,
+        stepData,
+        markCompleted || false
+      );
     },
     onSuccess: (data) => {
-      // Update cache
-      queryClient.setQueryData(['booking-session', currentSessionUUID], data);
+      // For guest sessions, save to local storage
+      if (isGuestSession) {
+        setLocalSession(data);
+        saveGuestSessionData(data);
+      } else {
+        // Update cache for authenticated sessions
+        queryClient.setQueryData(['booking-session-public', currentSessionUUID], data);
+      }
       
       // Update validation errors from response
       setValidationErrors(data.validation_errors || {});
@@ -125,16 +205,19 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     },
   });
 
-  // Mutation: Complete booking
+  // Mutation: Complete booking using public endpoint
   const completeBookingMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!currentSessionUUID) throw new Error('No active session');
-      return bookingSessionAPI.completeBookingByUUID(currentSessionUUID);
+      
+      // Use public completion endpoint
+      return bookingFlowAPI.completeBookingByUUID(currentSessionUUID);
     },
     onSuccess: () => {
       setError(null);
-      // Invalidate session query since booking is completed
-      queryClient.invalidateQueries({ queryKey: ['booking-session', currentSessionUUID] });
+      if (!isGuestSession) {
+        queryClient.invalidateQueries({ queryKey: ['booking-session-public', currentSessionUUID] });
+      }
     },
     onError: (error: Error) => {
       setError(error);
@@ -143,13 +226,19 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
 
   // Mutation: Abandon session
   const abandonSessionMutation = useMutation({
-    mutationFn: (reason?: string) => {
+    mutationFn: async (reason?: string) => {
       if (!currentSessionUUID) throw new Error('No active session');
+      
       return bookingSessionAPI.abandonSessionByUUID(currentSessionUUID, { reason });
     },
     onSuccess: (data) => {
       setError(null);
-      queryClient.setQueryData(['booking-session', currentSessionUUID], data);
+      if (isGuestSession) {
+        setLocalSession(data);
+        clearSessionData(); // Clear from storage
+      } else {
+        queryClient.setQueryData(['booking-session-public', currentSessionUUID], data);
+      }
     },
     onError: (error: Error) => {
       setError(error);
@@ -172,14 +261,19 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     autoSaveTimeoutRef.current = setTimeout(async () => {
       if (pendingDataRef.current && currentSessionUUID) {
         try {
-          await bookingSessionAPI.saveProgress(currentSessionUUID, pendingDataRef.current);
+          if (isGuestSession) {
+            // For guest sessions, just update local storage
+            updateStepData(0, pendingDataRef.current);
+          } else {
+            await bookingSessionAPI.saveProgress(currentSessionUUID, pendingDataRef.current);
+          }
           pendingDataRef.current = null;
         } catch (error) {
           console.warn('Auto-save failed:', error);
         }
       }
     }, autoSaveInterval);
-  }, [isAutoSaveActive, currentSessionUUID, autoSaveInterval]);
+  }, [isAutoSaveActive, currentSessionUUID, autoSaveInterval, isGuestSession]);
 
   // Session data update handler
   const updateSessionData = useCallback(async (
@@ -214,10 +308,26 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     }
 
     try {
+      if (isGuestSession) {
+        // For guest sessions, save to local storage
+        updateStepData(0, stepData);
+        const updatedSession: BookingSession = {
+          ...session!,
+          booking_data: {
+            ...session!.booking_data,
+            progress: stepData,
+          },
+          updated_at: new Date().toISOString(),
+        };
+        setLocalSession(updatedSession);
+        saveGuestSessionData(updatedSession);
+        return updatedSession;
+      }
+      
       const result = await bookingSessionAPI.saveProgress(currentSessionUUID, stepData);
       
       // Update cache
-      queryClient.setQueryData(['booking-session', currentSessionUUID], result);
+      queryClient.setQueryData(['booking-session-public', currentSessionUUID], result);
       setError(null);
       
       return result;
@@ -225,9 +335,9 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
       setError(error as Error);
       return null;
     }
-  }, [currentSessionUUID, queryClient]);
+  }, [currentSessionUUID, queryClient, isGuestSession, session, saveGuestSessionData]);
 
-  // Validation handler
+  // Validation handler using public endpoint
   const validateStepData = useCallback(async (
     stepId: number, 
     stepData: Record<string, any>
@@ -237,7 +347,7 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     }
 
     try {
-      const result = await bookingSessionAPI.validateStepData(currentSessionUUID, stepId, stepData);
+      const result = await bookingFlowAPI.validateStepData(currentSessionUUID, stepId, stepData);
       setValidationErrors(result.errors);
       return result;
     } catch (error) {
@@ -316,13 +426,6 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     }
   }, [session?.validation_errors]);
 
-  // Update error from query
-  useEffect(() => {
-    if (queryError) {
-      setError(queryError as Error);
-    }
-  }, [queryError]);
-
   // Cleanup auto-save on unmount
   useEffect(() => {
     return () => {
@@ -332,7 +435,7 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     };
   }, []);
 
-  const combinedError = error || queryError;
+  const combinedError = error || (queryError && !isGuestSession ? queryError as Error : null);
 
   return {
     // Session data
@@ -340,10 +443,11 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     sessionUUID: currentSessionUUID,
     
     // Session state
-    isLoading,
+    isLoading: isLoading && !isGuestSession,
     isUpdating: updateSessionMutation.isPending,
     isCompleting: completeBookingMutation.isPending,
     isSaving: updateSessionMutation.isPending,
+    isGuestSession,
     
     // Session data management
     updateSessionData,
