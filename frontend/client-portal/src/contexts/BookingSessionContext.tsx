@@ -1,6 +1,6 @@
 // frontend/client-portal/src/contexts/BookingSessionContext.tsx
 
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useMemo } from 'react';
 import { useBookingSession } from '../hooks/useBookingSession';
 import { useBookingSteps } from '../hooks/useBookingSteps';
 import { useBookingValidation } from '../hooks/useBookingValidation';
@@ -94,7 +94,7 @@ interface BookingSessionProviderProps {
   allowJumpToStep?: boolean;
 }
 
-export const BookingSessionProvider: React.FC<BookingSessionProviderProps> = ({ 
+export const BookingSessionProvider: React.FC<BookingSessionProviderProps> = React.memo(({ 
   children,
   sessionUUID,
   flow,
@@ -102,34 +102,38 @@ export const BookingSessionProvider: React.FC<BookingSessionProviderProps> = ({
   autoSaveInterval = 30000,
   allowJumpToStep = false
 }) => {
-  // Use session hook
+  // ALWAYS call all hooks in the same order - no conditional hooks
   const bookingSession = useBookingSession({
     sessionUUID,
     enableAutoSave,
     autoSaveInterval
   });
 
-  // Use steps hook
   const bookingSteps = useBookingSteps({
     flow,
     session: bookingSession.session,
     allowJumpToStep
   });
 
-  // Use validation hook
   const bookingValidation = useBookingValidation({
     sessionUUID,
     validateOnChange: false,
     debounceMs: 300
   });
 
-  // Combined validation function that uses session validation
+  // ALWAYS call useCallback hooks
   const validateStepData = useCallback(async (stepId: number, stepData: Record<string, any>): Promise<StepValidationResult> => {
     return bookingValidation.validateStep(stepId, stepData);
   }, [bookingValidation.validateStep]);
 
-  // Memoize the context value to prevent unnecessary re-renders
-  const contextValue: BookingSessionContextValue = React.useMemo(() => ({
+  const resetAll = useCallback(() => {
+    bookingSession.clearError();
+    bookingValidation.clearValidation();
+    bookingSteps.reset();
+  }, [bookingSession.clearError, bookingValidation.clearValidation, bookingSteps.reset]);
+
+  // ALWAYS call useMemo hook
+  const contextValue = useMemo<BookingSessionContextValue>(() => ({
     // Session data
     session: bookingSession.session,
     sessionUUID: bookingSession.sessionUUID,
@@ -182,9 +186,7 @@ export const BookingSessionProvider: React.FC<BookingSessionProviderProps> = ({
     
     // Error handling - only from bookingSession
     error: bookingSession.error,
-    clearError: () => {
-      bookingSession.clearError();
-    },
+    clearError: bookingSession.clearError,
     
     // Auto-save
     enableAutoSave: bookingSession.enableAutoSave,
@@ -192,17 +194,52 @@ export const BookingSessionProvider: React.FC<BookingSessionProviderProps> = ({
     isAutoSaveEnabled: bookingSession.isAutoSaveEnabled,
     
     // Actions
-    reset: () => {
-      bookingSession.clearError();
-      bookingValidation.clearValidation();
-      bookingSteps.reset();
-    },
+    reset: resetAll,
   }), [
-    bookingSession,
-    bookingSteps,
-    bookingValidation,
+    // Session dependencies
+    bookingSession.session,
+    bookingSession.sessionUUID,
+    bookingSession.isLoading,
+    bookingSession.isUpdating,
+    bookingSession.isCompleting,
+    bookingSession.isSaving,
+    bookingSession.updateSessionData,
+    bookingSession.saveProgress,
+    bookingSession.completeBooking,
+    bookingSession.abandonSession,
+    bookingSession.getPricing,
+    bookingSession.error,
+    bookingSession.clearError,
+    bookingSession.enableAutoSave,
+    bookingSession.disableAutoSave,
+    bookingSession.isAutoSaveEnabled,
+    
+    // Steps dependencies
+    bookingSteps.currentStep,
+    bookingSteps.currentStepIndex,
+    bookingSteps.navigationState,
+    bookingSteps.progress,
+    bookingSteps.availableSteps,
+    bookingSteps.goToNextStep,
+    bookingSteps.goToPreviousStep,
+    bookingSteps.goToStep,
+    bookingSteps.goToStepById,
+    bookingSteps.getStepMetadata,
+    bookingSteps.isStepAccessible,
+    bookingSteps.isStepCompleted,
+    bookingSteps.isStepCurrent,
+    bookingSteps.canProceedToNext,
+    bookingSteps.canGoToPrevious,
+    bookingSteps.reset,
+    
+    // Validation dependencies
+    bookingValidation.validationErrors,
+    bookingValidation.clearValidation,
+    
+    // Other dependencies
     flow,
-    validateStepData
+    validateStepData,
+    resetAll,
   ]);
 
   return (
@@ -210,7 +247,9 @@ export const BookingSessionProvider: React.FC<BookingSessionProviderProps> = ({
       {children}
     </BookingSessionContext.Provider>
   );
-};
+});
+
+BookingSessionProvider.displayName = 'BookingSessionProvider';
 
 export const useBookingSessionContext = (): BookingSessionContextValue => {
   const context = useContext(BookingSessionContext);

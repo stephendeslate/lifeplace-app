@@ -61,11 +61,18 @@ class BookingSessionService:
     
     @staticmethod
     def get_session_by_id(session_id):
-        """Get a booking session by session ID"""
+        """Get a booking session by session ID (UUID)"""
         try:
-            session = BookingSession.objects.select_related(
-                'booking_flow', 'client', 'current_step'
-            ).get(session_id=session_id)
+            # Support both UUID and string session IDs
+            if isinstance(session_id, str):
+                session = BookingSession.objects.select_related(
+                    'booking_flow', 'client', 'current_step'
+                ).get(session_id=session_id)
+            else:
+                # Assume it's a numeric ID (for backward compatibility)
+                session = BookingSession.objects.select_related(
+                    'booking_flow', 'client', 'current_step'
+                ).get(id=session_id)
             
             # Check if session is expired
             if session.is_expired():
@@ -86,7 +93,11 @@ class BookingSessionService:
                 session.current_step, step_data
             )
             if validation_errors:
-                raise StepValidationError(detail=validation_errors)
+                # Store validation errors but don't raise exception
+                session.validation_errors = validation_errors
+                session.save()
+                # Still return the session with errors
+                return session
         
         with transaction.atomic():
             # Update booking data
@@ -97,6 +108,9 @@ class BookingSessionService:
                 session.booking_data[current_step_key] = {}
             
             session.booking_data[current_step_key].update(step_data)
+            
+            # Clear validation errors on successful update
+            session.validation_errors = {}
             session.save()
             
             # Mark step as completed if requested
@@ -428,9 +442,6 @@ class BookingSessionService:
         
         return errors
     
-    @staticmethod
-    def _check_availability(step_data, config):
-        """Check availability for date/time step with enhanced availability features"""
     @staticmethod
     def _check_availability(step_data, config):
         """Check availability for date/time step with enhanced availability features"""

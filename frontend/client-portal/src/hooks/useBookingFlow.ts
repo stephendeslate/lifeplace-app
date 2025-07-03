@@ -1,6 +1,6 @@
 // frontend/client-portal/src/hooks/useBookingFlow.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { bookingFlowAPI } from '../apis/bookingflow.api';
 import type { 
@@ -50,16 +50,19 @@ interface UseBookingFlowReturn {
 
 export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingFlowReturn => {
   const { eventTypeId, autoStart = false } = options;
-  // @ts-ignore
   const queryClient = useQueryClient();
   
-  // Local state
+  // ALWAYS call useState hooks - no conditional calls
   const [selectedFlow, setSelectedFlow] = useState<PublicBookingFlow | null>(null);
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<number | undefined>(eventTypeId);
   const [currentSession, setCurrentSession] = useState<StartSessionResponse | null>(null);
   const [sessionError, setSessionError] = useState<Error | null>(null);
+  
+  // ALWAYS call useRef hooks
+  const hasAutoSelectedFlowRef = useRef(false);
+  const hasAutoSelectedEventTypeRef = useRef(false);
 
-  // Query: Get all active booking flows
+  // ALWAYS call useQuery hooks in the same order (even if disabled)
   const {
     data: availableFlows,
     isLoading: isLoadingFlows,
@@ -67,11 +70,11 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
   } = useQuery({
     queryKey: ['booking-flows', 'active'],
     queryFn: () => bookingFlowAPI.getActiveFlows(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // Query: Get flows by event type (conditional)
   const {
     data: filteredFlows,
     isLoading: isLoadingFilteredFlows
@@ -81,9 +84,9 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
     enabled: !!selectedEventTypeId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // Query: Get event types
   const {
     data: eventTypes,
     isLoading: isLoadingEventTypes,
@@ -91,11 +94,11 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
   } = useQuery({
     queryKey: ['event-types'],
     queryFn: () => bookingFlowAPI.getEventTypes(),
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // Query: Get selected flow details (conditional)
   const {
     data: flowDetails,
     isLoading: isLoadingFlow,
@@ -106,9 +109,9 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
     enabled: !!selectedFlow,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // Query: Get payment gateways for selected flow (conditional)
   const {
     data: paymentGateways,
     isLoading: isLoadingPaymentGateways,
@@ -119,9 +122,10 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
     enabled: !!selectedFlow,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // Mutation: Start booking session
+  // ALWAYS call useMutation hooks
   const startSessionMutation = useMutation({
     mutationFn: (flowId: number) => bookingFlowAPI.startSession(flowId),
     onSuccess: (data) => {
@@ -133,7 +137,7 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
     },
   });
 
-  // Flow selection handler
+  // ALWAYS call useCallback hooks in the same order
   const selectFlow = useCallback(async (flowId: number) => {
     try {
       const flow = availableFlows?.find(f => f.id === flowId) || 
@@ -145,7 +149,6 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
 
       setSelectedFlow(flow);
       
-      // Auto-start session if requested
       if (autoStart) {
         await startSessionMutation.mutateAsync(flowId);
       }
@@ -154,63 +157,86 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
     }
   }, [availableFlows, filteredFlows, autoStart, startSessionMutation]);
 
-  // Event type selection handler
   const selectEventType = useCallback((eventTypeId: number) => {
     setSelectedEventTypeId(eventTypeId);
-    setSelectedFlow(null); // Reset flow selection
-    setCurrentSession(null); // Reset session
+    setSelectedFlow(null);
+    setCurrentSession(null);
   }, []);
 
-  // Start session handler
   const startSession = useCallback(async (): Promise<StartSessionResponse | null> => {
     if (!selectedFlow) {
-      setSessionError(new Error('No booking flow selected'));
+      const error = new Error('No booking flow selected');
+      setSessionError(error);
       return null;
     }
 
     try {
+      console.log('useBookingFlow: Starting session for flow', selectedFlow.id);
       const session = await startSessionMutation.mutateAsync(selectedFlow.id);
+      console.log('useBookingFlow: Session started successfully', session);
       return session;
     } catch (error) {
+      console.error('useBookingFlow: Error starting session', error);
       setSessionError(error as Error);
       return null;
     }
   }, [selectedFlow, startSessionMutation]);
 
-  // Clear error handler
   const clearError = useCallback(() => {
     setSessionError(null);
   }, []);
 
-  // Reset handler
   const reset = useCallback(() => {
     setSelectedFlow(null);
     setSelectedEventTypeId(undefined);
     setCurrentSession(null);
     setSessionError(null);
+    hasAutoSelectedFlowRef.current = false;
+    hasAutoSelectedEventTypeRef.current = false;
     startSessionMutation.reset();
   }, [startSessionMutation]);
 
-  // Auto-select flow if only one is available for event type
+  // ALWAYS call useMemo hooks in the same order
+  const displayFlows = useMemo(() => {
+    return selectedEventTypeId ? filteredFlows : availableFlows;
+  }, [selectedEventTypeId, filteredFlows, availableFlows]);
+
+  const isLoadingDisplayFlows = useMemo(() => {
+    return selectedEventTypeId ? isLoadingFilteredFlows : isLoadingFlows;
+  }, [selectedEventTypeId, isLoadingFilteredFlows, isLoadingFlows]);
+
+  const combinedFlowError = useMemo(() => {
+    return flowsError || eventTypesError || flowError || paymentGatewaysError;
+  }, [flowsError, eventTypesError, flowError, paymentGatewaysError]);
+
+  // ALWAYS call useEffect hooks in the same order
   useEffect(() => {
-    if (selectedEventTypeId && filteredFlows && filteredFlows.length === 1 && !selectedFlow) {
+    if (selectedEventTypeId && 
+        filteredFlows && 
+        filteredFlows.length === 1 && 
+        !selectedFlow &&
+        !hasAutoSelectedFlowRef.current) {
+      
+      hasAutoSelectedFlowRef.current = true;
       setSelectedFlow(filteredFlows[0]);
     }
   }, [selectedEventTypeId, filteredFlows, selectedFlow]);
 
-  // Update selected flow when flow details are loaded
+  useEffect(() => {
+    if (eventTypeId && 
+        !selectedEventTypeId && 
+        !hasAutoSelectedEventTypeRef.current) {
+      
+      hasAutoSelectedEventTypeRef.current = true;
+      setSelectedEventTypeId(eventTypeId);
+    }
+  }, [eventTypeId, selectedEventTypeId]);
+
   useEffect(() => {
     if (flowDetails && selectedFlow && flowDetails.id === selectedFlow.id) {
       setSelectedFlow(flowDetails);
     }
   }, [flowDetails, selectedFlow]);
-
-  // Determine which flows to use (filtered by event type or all)
-  const displayFlows = selectedEventTypeId ? filteredFlows : availableFlows;
-  const isLoadingDisplayFlows = selectedEventTypeId ? isLoadingFilteredFlows : isLoadingFlows;
-
-  // Combine all errors
-  const combinedFlowError = flowsError || eventTypesError || flowError || paymentGatewaysError;
 
   return {
     // Flow data
@@ -244,4 +270,4 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
     clearError,
     reset,
   };
-};
+}

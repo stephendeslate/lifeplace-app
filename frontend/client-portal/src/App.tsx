@@ -11,6 +11,7 @@ import { Home } from './pages/home';
 import { Login, Register } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { Messages } from './pages/messages';
+import { Booking, BookingSuccess } from './pages/booking';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 
 // Loading component
@@ -110,13 +111,10 @@ const AppRouter: React.FC = () => {
   const handleNavigateToHome = () => navigate('/');
   const handleNavigateToLogin = () => navigate('/login');
   const handleNavigateToRegister = () => navigate('/register');
+  
+  // Updated booking handler - direct navigation to booking flow
   const handleNavigateToBooking = () => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    } else {
-      showInfo('Login Required', 'Please log in to access your dashboard.');
-      navigate('/login');
-    }
+    navigate('/booking');
   };
 
   if (isLoading) {
@@ -134,6 +132,49 @@ const AppRouter: React.FC = () => {
               onNavigateToLogin={handleNavigateToLogin}
               onNavigateToRegister={handleNavigateToRegister}
               onNavigateToBooking={handleNavigateToBooking}
+            />
+          </PublicLayout>
+        } 
+      />
+      
+      {/* Booking Flow Routes - Public access */}
+      <Route 
+        path="/booking" 
+        element={
+          <PublicLayout>
+            <Booking 
+              maxWidth="lg"
+              enableAutoSave={true}
+              showBackButton={true}
+              onBackNavigation={() => navigate('/')}
+            />
+          </PublicLayout>
+        } 
+      />
+
+      <Route 
+        path="/booking/:sessionId" 
+        element={
+          <PublicLayout>
+            <Booking 
+              maxWidth="lg"
+              enableAutoSave={true}
+              showBackButton={true}
+              onBackNavigation={() => navigate('/')}
+            />
+          </PublicLayout>
+        } 
+      />
+
+      <Route 
+        path="/booking/success/:sessionId" 
+        element={
+          <PublicLayout>
+            <BookingSuccess 
+              maxWidth="md"
+              showPrintOption={true}
+              showShareOption={false}
+              onHomeNavigation={() => navigate('/')}
             />
           </PublicLayout>
         } 

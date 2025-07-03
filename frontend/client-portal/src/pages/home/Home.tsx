@@ -22,7 +22,6 @@ import {
   Email,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { useToastActions } from '../../contexts/ToastContext';
 
 interface HomeProps {
   onNavigateToLogin?: () => void;
@@ -36,16 +35,11 @@ const Home: React.FC<HomeProps> = ({
   onNavigateToBooking,
 }) => {
   const { isAuthenticated, user } = useAuth();
-  const { showInfo } = useToastActions();
   const theme = useTheme();
 
+  // Updated to always navigate to booking flow
   const handleBookNow = () => {
-    if (!isAuthenticated) {
-      showInfo('Login Required', 'Please log in to access your client dashboard and manage bookings.');
-      onNavigateToLogin?.();
-    } else {
-      onNavigateToBooking?.();
-    }
+    onNavigateToBooking?.();
   };
 
   const venues = [
@@ -266,29 +260,59 @@ const Home: React.FC<HomeProps> = ({
                 <Typography variant="h6" sx={{ opacity: 0.95 }}>
                   Welcome back, {user?.first_name || user?.email}! 🌿
                 </Typography>
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={handleBookNow}
-                  endIcon={<ArrowForward />}
-                  sx={{
-                    backgroundColor: 'white',
-                    color: theme.palette.primary.main,
-                    px: 4,
-                    py: 2,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                    '&:hover': {
-                      backgroundColor: alpha('#fff', 0.9),
-                      transform: 'translateY(-3px)',
-                      boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={3}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
                 >
-                  Go to Dashboard
-                </Button>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={handleBookNow}
+                    endIcon={<ArrowForward />}
+                    sx={{
+                      backgroundColor: 'white',
+                      color: theme.palette.primary.main,
+                      px: 4,
+                      py: 2,
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                      '&:hover': {
+                        backgroundColor: alpha('#fff', 0.9),
+                        transform: 'translateY(-3px)',
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    Book Your Event
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={() => window.location.href = '/dashboard'}
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      px: 4,
+                      py: 2,
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      borderWidth: 2,
+                      backdropFilter: 'blur(10px)',
+                      '&:hover': {
+                        borderColor: 'white',
+                        backgroundColor: alpha('#fff', 0.15),
+                        borderWidth: 2,
+                        transform: 'translateY(-3px)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    Go to Dashboard
+                  </Button>
+                </Stack>
               </Stack>
             )}
           </Stack>

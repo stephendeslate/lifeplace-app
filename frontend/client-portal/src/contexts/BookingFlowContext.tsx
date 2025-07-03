@@ -1,6 +1,6 @@
 // frontend/client-portal/src/contexts/BookingFlowContext.tsx
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useBookingFlow } from '../hooks/useBookingFlow';
 import type { 
   PublicBookingFlow, 
@@ -50,7 +50,7 @@ interface BookingFlowProviderProps {
   autoStart?: boolean;
 }
 
-export const BookingFlowProvider: React.FC<BookingFlowProviderProps> = ({ 
+export const BookingFlowProvider: React.FC<BookingFlowProviderProps> = React.memo(({ 
   children, 
   eventTypeId,
   autoStart = false 
@@ -58,7 +58,7 @@ export const BookingFlowProvider: React.FC<BookingFlowProviderProps> = ({
   const bookingFlow = useBookingFlow({ eventTypeId, autoStart });
 
   // Memoize the context value to prevent unnecessary re-renders
-  const contextValue: BookingFlowContextValue = React.useMemo(() => ({
+  const contextValue = useMemo<BookingFlowContextValue>(() => ({
     // Flow data
     availableFlows: bookingFlow.availableFlows,
     selectedFlow: bookingFlow.selectedFlow,
@@ -89,14 +89,34 @@ export const BookingFlowProvider: React.FC<BookingFlowProviderProps> = ({
     // Actions
     clearError: bookingFlow.clearError,
     reset: bookingFlow.reset,
-  }), [bookingFlow]);
+  }), [
+    bookingFlow.availableFlows,
+    bookingFlow.selectedFlow,
+    bookingFlow.eventTypes,
+    bookingFlow.selectFlow,
+    bookingFlow.selectEventType,
+    bookingFlow.startSession,
+    bookingFlow.currentSession,
+    bookingFlow.paymentGateways,
+    bookingFlow.isLoadingFlows,
+    bookingFlow.isLoadingFlow,
+    bookingFlow.isLoadingEventTypes,
+    bookingFlow.isLoadingPaymentGateways,
+    bookingFlow.isStartingSession,
+    bookingFlow.flowError,
+    bookingFlow.sessionError,
+    bookingFlow.clearError,
+    bookingFlow.reset,
+  ]);
 
   return (
     <BookingFlowContext.Provider value={contextValue}>
       {children}
     </BookingFlowContext.Provider>
   );
-};
+});
+
+BookingFlowProvider.displayName = 'BookingFlowProvider';
 
 export const useBookingFlowContext = (): BookingFlowContextValue => {
   const context = useContext(BookingFlowContext);

@@ -111,9 +111,7 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
     return availableSteps[currentStepIndex] || null;
   }, [availableSteps, currentStepIndex]);
 
-  // Get completed step IDs from session data
-  // Since completed_steps is not in the serializer, we need to infer completion 
-  // from session state and current_step position
+  // Get completed step IDs from session data - FIXED: Move this before functions that depend on it
   const completedStepIds = useMemo(() => {
     if (!session || !availableSteps.length) return [];
     
@@ -122,28 +120,41 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
       return availableSteps.map(step => step.id);
     }
     
-    // Find current step index
-    const currentStepIdx = session.current_step_details ? 
-      availableSteps.findIndex(step => step.id === session.current_step_details!.id) : -1;
+    // Find current step index based on session current_step
+    let sessionCurrentStepIndex = -1;
+    if (session.current_step !== null) {
+      sessionCurrentStepIndex = availableSteps.findIndex(step => step.id === session.current_step);
+    }
+    
+    // If we can't find the current step, use the currentStepIndex
+    const effectiveCurrentStepIndex = sessionCurrentStepIndex >= 0 ? sessionCurrentStepIndex : currentStepIndex;
     
     // All steps before current step are considered completed
-    if (currentStepIdx > 0) {
-      return availableSteps.slice(0, currentStepIdx).map(step => step.id);
+    if (effectiveCurrentStepIndex > 0) {
+      return availableSteps.slice(0, effectiveCurrentStepIndex).map(step => step.id);
     }
     
     return [];
-  }, [session, availableSteps]);
+  }, [session, availableSteps, currentStepIndex]);
+
+  // Define utility functions AFTER completedStepIds is available
+  const isStepCompleted = useCallback((stepId: number): boolean => {
+    return completedStepIds.includes(stepId);
+  }, [completedStepIds]);
+
+  const isStepCurrent = useCallback((stepId: number): boolean => {
+    return currentStep?.id === stepId;
+  }, [currentStep?.id]);
 
   // Calculate progress
   const progress = useMemo((): BookingProgress => {
     const totalSteps = availableSteps.length;
-    const completedSteps = completedStepIds;
-    const completedCount = completedSteps.length;
+    const completedCount = completedStepIds.length;
     
     return {
       currentStep: currentStepIndex + 1,
       totalSteps,
-      completedSteps,
+      completedSteps: completedStepIds,
       percentage: totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0,
     };
   }, [availableSteps.length, completedStepIds, currentStepIndex]);
@@ -169,7 +180,7 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
     };
   }, [availableSteps, currentStepIndex]);
 
-  // Check if we can proceed to next step
+  // Check if we can proceed to next step - NOW this can safely use isStepCompleted
   const canProceedToNext = useMemo(() => {
     if (!currentStep) return false;
     if (navigationState.isLastStep) return false;
@@ -180,25 +191,48 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
     }
     
     return true;
-  }, [currentStep, navigationState.isLastStep, completedStepIds]);
+  }, [currentStep, navigationState.isLastStep, isStepCompleted]);
 
   // Check if we can go to previous step
   const canGoToPrevious = useMemo(() => {
     return !navigationState.isFirstStep;
   }, [navigationState.isFirstStep]);
 
+  // Define isStepAccessible AFTER isStepCompleted is available
+  const isStepAccessible = useCallback((stepIndex: number): boolean => {
+    if (stepIndex < 0 || stepIndex >= availableSteps.length) {
+      return false;
+    }
+
+    if (!allowJumpToStep) {
+      // Can only access current step or next step if current is completed
+      if (stepIndex > currentStepIndex + 1) {
+        return false;
+      }
+      
+      if (stepIndex === currentStepIndex + 1) {
+        // Can access next step if current step is completed or skippable
+        const currentStepObj = availableSteps[currentStepIndex];
+        return !currentStepObj?.is_required || isStepCompleted(currentStepObj.id) || currentStepObj?.is_skippable;
+      }
+    }
+
+    // Can access previous steps or current step
+    return stepIndex <= currentStepIndex;
+  }, [availableSteps, allowJumpToStep, currentStepIndex, isStepCompleted]);
+
   // Sync current step with session
   useEffect(() => {
-    if (session?.current_step_details && availableSteps.length > 0) {
+    if (session?.current_step !== null && session?.current_step !== undefined && availableSteps.length > 0) {
       const sessionStepIndex = availableSteps.findIndex(
-        step => step.id === session.current_step_details?.id
+        step => step.id === session.current_step
       );
       
       if (sessionStepIndex >= 0 && sessionStepIndex !== currentStepIndex) {
         setCurrentStepIndex(sessionStepIndex);
       }
     }
-  }, [session?.current_step_details, availableSteps, currentStepIndex]);
+  }, [session?.current_step, availableSteps, currentStepIndex]);
 
   // Navigation handlers
   const goToNextStep = useCallback(() => {
@@ -222,7 +256,7 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
     if (isStepAccessible(targetIndex)) {
       setCurrentStepIndex(targetIndex);
     }
-  }, [allowJumpToStep, availableSteps.length]);
+  }, [allowJumpToStep, availableSteps.length, isStepAccessible]);
 
   const goToStepById = useCallback((stepId: number) => {
     const stepIndex = availableSteps.findIndex(step => step.id === stepId);
@@ -301,36 +335,6 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
       icon: metadata.icon,
     };
   }, []);
-
-  const isStepAccessible = useCallback((stepIndex: number): boolean => {
-    if (stepIndex < 0 || stepIndex >= availableSteps.length) {
-      return false;
-    }
-
-    if (!allowJumpToStep) {
-      // Can only access current step or next step if current is completed
-      if (stepIndex > currentStepIndex + 1) {
-        return false;
-      }
-      
-      if (stepIndex === currentStepIndex + 1) {
-        // Can access next step if current step is completed or skippable
-        const currentStepObj = availableSteps[currentStepIndex];
-        return !currentStepObj?.is_required || isStepCompleted(currentStepObj.id) || currentStepObj?.is_skippable;
-      }
-    }
-
-    // Can access previous steps or current step
-    return stepIndex <= currentStepIndex;
-  }, [availableSteps, allowJumpToStep, currentStepIndex, completedStepIds]);
-
-  const isStepCompleted = useCallback((stepId: number): boolean => {
-    return completedStepIds.includes(stepId);
-  }, [completedStepIds]);
-
-  const isStepCurrent = useCallback((stepId: number): boolean => {
-    return currentStep?.id === stepId;
-  }, [currentStep?.id]);
 
   // Reset handler
   const reset = useCallback(() => {

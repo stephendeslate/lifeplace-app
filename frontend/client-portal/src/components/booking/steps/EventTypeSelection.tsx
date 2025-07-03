@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/EventTypeSelection.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -46,10 +46,68 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<number | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
+  // Debug logging for data validation
+  useEffect(() => {
+    console.log('EventTypeSelection Debug:', {
+      eventTypes,
+      availableFlows,
+      isLoadingEventTypes,
+      isLoadingFlows,
+      flowError
+    });
+  }, [eventTypes, availableFlows, isLoadingEventTypes, isLoadingFlows, flowError]);
+
+  // Get flows for selected event type - add extensive safety checks
+  const flowsForSelectedType = useMemo(() => {
+    console.log('Computing flowsForSelectedType:', {
+      selectedEventTypeId,
+      availableFlows: availableFlows ? `Array with ${availableFlows.length} items` : 'null/undefined',
+      eventTypes: eventTypes ? `Array with ${eventTypes.length} items` : 'null/undefined'
+    });
+
+    if (!selectedEventTypeId || !availableFlows || !Array.isArray(availableFlows) || !eventTypes || !Array.isArray(eventTypes)) {
+      console.log('Returning empty array due to missing data');
+      return [];
+    }
+    
+    const selectedEventType = eventTypes.find(et => et.id === selectedEventTypeId);
+    if (!selectedEventType) {
+      console.log('Selected event type not found:', selectedEventTypeId);
+      return [];
+    }
+    
+    const filtered = availableFlows.filter(flow => 
+      flow.event_type_name === selectedEventType.name
+    );
+    
+    console.log('Filtered flows for selected type:', filtered);
+    return filtered;
+  }, [selectedEventTypeId, availableFlows, eventTypes]);
+
+  // Get universal flows (those without specific event type) - add extensive safety checks
+  const universalFlows = useMemo(() => {
+    console.log('Computing universalFlows:', {
+      availableFlows: availableFlows ? `Array with ${availableFlows.length} items` : 'null/undefined'
+    });
+
+    if (!availableFlows || !Array.isArray(availableFlows)) {
+      console.log('Returning empty array for universalFlows due to missing data');
+      return [];
+    }
+    
+    const universal = availableFlows.filter(flow => 
+      !flow.event_type_name || flow.event_type_name === 'Any Event Type'
+    );
+    
+    console.log('Universal flows found:', universal);
+    return universal;
+  }, [availableFlows]);
+
   // Auto-select if only one event type is available
   useEffect(() => {
-    if (eventTypes && eventTypes.length === 1 && !selectedEventTypeId) {
+    if (eventTypes && Array.isArray(eventTypes) && eventTypes.length === 1 && !selectedEventTypeId) {
       const singleEventType = eventTypes[0];
+      console.log('Auto-selecting single event type:', singleEventType);
       setSelectedEventTypeId(singleEventType.id);
       selectEventType(singleEventType.id);
     }
@@ -57,14 +115,16 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
 
   // Auto-select flow if only one is available for selected event type
   useEffect(() => {
-    if (availableFlows && availableFlows.length === 1 && !selectedFlow && selectedEventTypeId) {
-      const singleFlow = availableFlows[0];
+    if (selectedEventTypeId && flowsForSelectedType.length === 1 && !selectedFlow) {
+      const singleFlow = flowsForSelectedType[0];
+      console.log('Auto-selecting single flow:', singleFlow);
       handleFlowSelection(singleFlow);
     }
-  }, [availableFlows, selectedFlow, selectedEventTypeId]);
+  }, [flowsForSelectedType, selectedFlow, selectedEventTypeId]);
 
   const handleEventTypeSelection = async (eventType: EventType) => {
     try {
+      console.log('Selecting event type:', eventType);
       setIsSelecting(true);
       setSelectedEventTypeId(eventType.id);
       selectEventType(eventType.id);
@@ -78,6 +138,7 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
 
   const handleFlowSelection = async (flow: PublicBookingFlow) => {
     try {
+      console.log('Selecting flow:', flow);
       setIsSelecting(true);
       await selectFlow(flow.id);
       
@@ -99,12 +160,10 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   };
 
   const handleUniversalFlowSelection = async () => {
-    // Look for universal flows (those without specific event type)
-    const universalFlows = availableFlows?.filter(flow => !flow.event_type_name || flow.event_type_name === 'Any Event Type');
-    
     if (universalFlows && universalFlows.length > 0) {
       const universalFlow = universalFlows[0];
       try {
+        console.log('Selecting universal flow:', universalFlow);
         setIsSelecting(true);
         await selectFlow(universalFlow.id);
         
@@ -122,12 +181,14 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   };
 
   const handleRetry = () => {
+    console.log('Retrying data load...');
     clearError();
     // The queries will automatically retry due to React Query
   };
 
   // Show loading skeleton
   if (isLoadingEventTypes || isLoadingFlows) {
+    console.log('Showing loading state');
     return (
       <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
         <Typography variant="h4" sx={{ mb: 4, textAlign: 'center' }}>
@@ -151,6 +212,7 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
 
   // Show error state
   if (flowError) {
+    console.log('Showing error state:', flowError);
     return (
       <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
         <Alert 
@@ -168,13 +230,43 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
           sx={{ mb: 3 }}
         >
           Unable to load booking options. Please try again.
+          {process.env.NODE_ENV === 'development' && (
+            <Typography variant="caption" component="div" sx={{ mt: 1 }}>
+              Error: {flowError.message}
+            </Typography>
+          )}
         </Alert>
       </Box>
     );
   }
 
-  // Show event type selection if no event type is selected
-  if (!selectedEventTypeId && eventTypes && eventTypes.length > 1) {
+  // Enhanced data validation check
+  const hasValidData = availableFlows && Array.isArray(availableFlows);
+  const hasEventTypes = eventTypes && Array.isArray(eventTypes);
+  
+  console.log('Data validation check:', { hasValidData, hasEventTypes, availableFlows, eventTypes });
+
+  if (!hasValidData) {
+    console.log('No valid flows data, showing loading');
+    return (
+      <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, textAlign: 'center' }}>
+        <CircularProgress size={40} sx={{ mb: 2 }} />
+        <Typography variant="h6" color="text.secondary">
+          Loading booking options...
+        </Typography>
+        {process.env.NODE_ENV === 'development' && (
+          <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
+            Debug: availableFlows={availableFlows ? 'exists' : 'null'}, 
+            isArray={Array.isArray(availableFlows)}
+          </Typography>
+        )}
+      </Box>
+    );
+  }
+
+  // Show event type selection if no event type is selected and we have multiple types
+  if (!selectedEventTypeId && hasEventTypes && eventTypes.length > 1) {
+    console.log('Showing event type selection');
     return (
       <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
         <Typography 
@@ -271,7 +363,7 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
           <Button
             variant="outlined"
             onClick={handleUniversalFlowSelection}
-            disabled={isSelecting}
+            disabled={isSelecting || universalFlows.length === 0}
             sx={{ minWidth: 200 }}
           >
             {isSelecting ? (
@@ -295,7 +387,8 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   }
 
   // Show flow selection if multiple flows are available for selected event type
-  if (selectedEventTypeId && availableFlows && availableFlows.length > 1) {
+  if (selectedEventTypeId && flowsForSelectedType.length > 1) {
+    console.log('Showing flow selection for event type');
     const selectedEventType = eventTypes?.find(et => et.id === selectedEventTypeId);
     
     return (
@@ -327,7 +420,7 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
         </Typography>
 
         <Stack spacing={3}>
-          {availableFlows.map((flow) => (
+          {flowsForSelectedType.map((flow) => (
             <Card 
               key={flow.id}
               sx={{ 
@@ -439,6 +532,7 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
 
   // Show loading state when selection is being processed
   if (isSelecting) {
+    console.log('Showing selection processing state');
     return (
       <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, textAlign: 'center' }}>
         <CircularProgress size={40} sx={{ mb: 2 }} />
@@ -449,20 +543,105 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
     );
   }
 
+  // Handle single event type case - show ready to book message
+  if (hasEventTypes && eventTypes.length === 1 && universalFlows.length > 0) {
+    console.log('Showing single event type booking');
+    const singleEventType = eventTypes[0];
+    return (
+      <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, textAlign: 'center' }}>
+        <Box sx={{
+          p: 4,
+          backgroundColor: 'primary.light',
+          borderRadius: 2,
+          mb: 3,
+        }}>
+          <EventIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
+          <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main', mb: 2 }}>
+            Ready to Book Your {singleEventType.name}?
+          </Typography>
+          {singleEventType.description && (
+            <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
+              {singleEventType.description}
+            </Typography>
+          )}
+          <Button
+            variant="contained"
+            size="large"
+            onClick={handleUniversalFlowSelection}
+            disabled={isSelecting}
+            sx={{ minWidth: 200 }}
+          >
+            {isSelecting ? (
+              <>
+                <CircularProgress size={20} sx={{ mr: 1 }} />
+                Loading...
+              </>
+            ) : (
+              'Start Booking Process'
+            )}
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
   // Fallback for no event types or flows available
+  console.log('Showing fallback state');
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, textAlign: 'center' }}>
-      <Alert severity="info" sx={{ mb: 3 }}>
-        No booking options are currently available. Please contact us directly to schedule your event.
-      </Alert>
-      
-      <Button
-        variant="outlined"
-        onClick={handleRetry}
-        startIcon={<RefreshIcon />}
-      >
-        Refresh
-      </Button>
+      {universalFlows.length > 0 ? (
+        // No event types but have universal flows
+        <Box sx={{
+          p: 4,
+          backgroundColor: 'primary.light',
+          borderRadius: 2,
+          mb: 3,
+        }}>
+          <EventIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
+          <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main', mb: 2 }}>
+            Ready to Book Your Event?
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
+            Start the booking process for your event.
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={handleUniversalFlowSelection}
+            disabled={isSelecting}
+            sx={{ minWidth: 200 }}
+          >
+            {isSelecting ? (
+              <>
+                <CircularProgress size={20} sx={{ mr: 1 }} />
+                Loading...
+              </>
+            ) : (
+              'Start Booking Process'
+            )}
+          </Button>
+        </Box>
+      ) : (
+        // No booking options available
+        <>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            No booking options are currently available. Please contact us directly to schedule your event.
+            {process.env.NODE_ENV === 'development' && (
+              <Typography variant="caption" component="div" sx={{ mt: 1 }}>
+                Debug: flows={availableFlows?.length || 0}, universal={universalFlows.length}
+              </Typography>
+            )}
+          </Alert>
+          
+          <Button
+            variant="outlined"
+            onClick={handleRetry}
+            startIcon={<RefreshIcon />}
+          >
+            Refresh
+          </Button>
+        </>
+      )}
     </Box>
   );
 };

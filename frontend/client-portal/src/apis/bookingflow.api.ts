@@ -19,10 +19,25 @@ class BookingFlowAPI {
   /**
    * Get all active booking flows (public endpoint)
    * Calls PublicBookingFlowViewSet.list()
+   * UPDATED: Handle direct array response (no pagination)
    */
   async getActiveFlows() {
     const response = await api.get<PublicBookingFlow[]>(`${this.baseUrl}/public/flows/`);
-    return response.data;
+    
+    // Handle both paginated and non-paginated responses
+    if (Array.isArray(response.data)) {
+      return response.data;
+    } else if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'results' in response.data &&
+      Array.isArray((response.data as { results?: unknown }).results)
+    ) {
+      // Fallback for paginated response
+      return (response.data as { results: PublicBookingFlow[] }).results;
+    } else {
+      return [];
+    }
   }
 
   /**
@@ -49,62 +64,176 @@ class BookingFlowAPI {
    * Start a new booking session for a specific flow (public endpoint)
    * Calls PublicBookingFlowViewSet.start_session()
    * Returns session_id UUID for further operations
+   * FIXED: Use public endpoint
    */
-  async startSession(flowId: number) {
-    const response = await api.post<StartSessionResponse>(
+  async startSession(flowId: number): Promise<StartSessionResponse> {
+    console.log('API: Starting session for flow', flowId);
+    
+    const response = await api.post<any>(
       `${this.baseUrl}/public/flows/${flowId}/start_session/`,
-      {},
+      {} // Empty body for POST request
+    );
+    
+    console.log('API: Raw response from start_session:', response.data);
+    
+    // Handle different possible response structures
+    const data = response.data;
+    
+    // The backend returns a structured response
+    let sessionId: string;
+    let expiresAt: string;
+    let currentStep: number | null = null;
+
+    if (data && typeof data === 'object') {
+      // Response is an object
+      sessionId = data.session_id;
+      expiresAt = data.expires_at;
+      currentStep = data.current_step?.id || null;
+      
+      if (!sessionId) {
+        console.error('API: No session ID found in response:', data);
+        throw new Error('Invalid session response: missing session_id');
+      }
+    } else {
+      console.error('API: Invalid response structure:', data);
+      throw new Error('Invalid session response structure');
+    }
+    
+    const result: StartSessionResponse = {
+      session_id: sessionId,
+      expires_at: expiresAt,
+      current_step: currentStep,
+      message: data.message || 'Session started successfully'
+    };
+    
+    console.log('API: Normalized response:', result);
+    return result;
+  }
+
+  /**
+   * Get session data by UUID (public endpoint)
+   * Calls PublicBookingFlowViewSet.get_session()
+   */
+  async getSessionByUUID(sessionUUID: string) {
+    const response = await api.get<any>(
+      `${this.baseUrl}/public/flows/session/${sessionUUID}/`
+    );
+    return response.data;
+  }
+
+  /**
+   * Update session data (public endpoint)
+   * Calls PublicBookingFlowViewSet.update_session_data()
+   */
+  async updateSessionDataByUUID(
+    sessionUUID: string, 
+    stepId: number, 
+    stepData: Record<string, any>, 
+    markCompleted: boolean = false
+  ) {
+    const response = await api.patch<any>(
+      `${this.baseUrl}/public/flows/session/${sessionUUID}/update/`,
       {
-        headers: {
-          'X-Forwarded-For': this.getClientIP(),
-          'User-Agent': navigator.userAgent,
-          'Referer': window.location.href,
-        }
+        step_id: stepId,
+        step_data: stepData,
+        mark_completed: markCompleted,
       }
     );
     return response.data;
   }
 
   /**
-   * Get available event types for flow selection
-   * NOTE: This should call /events/event-types/ endpoint 
-   * (assuming EventType endpoint exists in events domain)
+   * Validate step data (public endpoint)
+   * Calls PublicBookingFlowViewSet.validate_step_data()
    */
-  async getEventTypes() {
-    const response = await api.get<EventType[]>('/events/event-types/');
-    return response.data;
-  }
-
-  /**
-   * Get booking flows by event type
-   * Uses query parameter on public flows endpoint
-   */
-  async getFlowsByEventType(eventTypeId: number) {
-    const response = await api.get<PublicBookingFlow[]>(
-      `${this.baseUrl}/public/flows/?event_type=${eventTypeId}`
+  async validateStepData(
+    sessionUUID: string, 
+    stepId: number, 
+    stepData: Record<string, any>
+  ) {
+    const response = await api.post<{ isValid: boolean; errors: Record<string, any> }>(
+      `${this.baseUrl}/public/flows/session/${sessionUUID}/validate/`,
+      {
+        step_id: stepId,
+        step_data: stepData,
+      }
     );
     return response.data;
   }
 
   /**
+   * Complete booking (public endpoint)
+   * Calls PublicBookingFlowViewSet.complete_booking_public()
+   */
+  async completeBookingByUUID(sessionUUID: string) {
+    const response = await api.post<any>(
+      `${this.baseUrl}/public/flows/session/${sessionUUID}/complete/`,
+      {}
+    );
+    return response.data;
+  }
+
+  /**
+   * Get available event types for flow selection
+   * NOTE: This calls /events/event-types/ endpoint 
+   * UPDATED: Handle direct array response (no pagination)
+   */
+  async getEventTypes() {
+    const response = await api.get<EventType[]>('/events/event-types/');
+    
+    // Handle both paginated and non-paginated responses
+    if (Array.isArray(response.data)) {
+      return response.data;
+    } else if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'results' in response.data &&
+      Array.isArray((response.data as { results?: unknown }).results)
+    ) {
+      // Fallback for paginated response
+      return (response.data as { results: EventType[] }).results;
+    } else {
+      return [];
+    }
+  }
+
+  /**
+   * Get booking flows by event type
+   * Uses query parameter on public flows endpoint
+   * UPDATED: Handle direct array response (no pagination)
+   */
+  async getFlowsByEventType(eventTypeId: number) {
+    const response = await api.get<PublicBookingFlow[]>(
+      `${this.baseUrl}/public/flows/?event_type=${eventTypeId}`
+    );
+    
+    // Handle both paginated and non-paginated responses
+    if (Array.isArray(response.data)) {
+      return response.data;
+    } else if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'results' in response.data
+    ) {
+      // Fallback for paginated response
+      return (response.data as { results: PublicBookingFlow[] }).results;
+    } else {
+      return [];
+    }
+  }
+
+  /**
    * Check availability for date/time step
    * Uses session validation instead of separate endpoint
-   * Calls updateSessionDataByUUID and checks validation_errors
+   * Calls validateStepData and checks validation_errors
    */
   async checkAvailability(sessionUUID: string, stepId: number, request: AvailabilityCheckRequest): Promise<AvailabilityCheckResponse> {
     try {
-      // Import session API to avoid circular dependency
-      const { bookingSessionAPI } = await import('./booking-session.api');
-      
-      // Update session with date/time data and check for validation errors
-      const session = await bookingSessionAPI.updateSessionDataByUUID(sessionUUID, {
-        step_id: stepId,
-        step_data: request,
-        mark_completed: false
-      });
+      // Use the public validate endpoint
+      const result = await this.validateStepData(sessionUUID, stepId, request);
 
       // Check if there are availability-related validation errors
-      const availabilityError = session.validation_errors?.availability;
+      const availabilityError = result.errors?.availability;
       
       if (availabilityError) {
         return {
@@ -219,14 +348,6 @@ class BookingFlowAPI {
     );
     return response.data;
   }
-
-  /**
-   * Helper method to get client IP (best effort)
-   */
-  private getClientIP(): string {
-    // This is a best effort attempt to get client IP
-    // In production, this might come from server-side headers
-    return 'unknown';
-  }
 }
+
 export const bookingFlowAPI = new BookingFlowAPI();
