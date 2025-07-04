@@ -113,47 +113,75 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
     }
   }, [eventTypes, selectedEventTypeId, selectEventType]);
 
+  // FIXED: Separate function that takes the eventType as parameter instead of relying on state
+  const handleFlowSelection = async (flow: PublicBookingFlow, eventType?: EventType) => {
+    try {
+      console.log('handleFlowSelection called with flow:', flow, 'eventType:', eventType);
+      setIsSelecting(true);
+      
+      console.log('Calling selectFlow with ID:', flow.id);
+      await selectFlow(flow.id);
+      console.log('selectFlow completed successfully');
+      
+      // Use the provided eventType parameter or find it from selectedEventTypeId
+      const targetEventType = eventType || eventTypes?.find(et => et.id === selectedEventTypeId);
+      console.log('Target event type:', targetEventType);
+      
+      if (targetEventType && onEventTypeSelected) {
+        console.log('Calling onEventTypeSelected');
+        onEventTypeSelected(targetEventType, flow);
+      } else if (!targetEventType && onContinueWithoutEventType) {
+        console.log('Calling onContinueWithoutEventType');
+        onContinueWithoutEventType(flow);
+      } else {
+        console.log('No callback to call - eventType:', targetEventType, 'callbacks:', {
+          onEventTypeSelected: !!onEventTypeSelected,
+          onContinueWithoutEventType: !!onContinueWithoutEventType
+        });
+      }
+      
+      clearError();
+    } catch (error) {
+      console.error('Error selecting flow:', error);
+    } finally {
+      setIsSelecting(false);
+    }
+  };
+
   // Auto-select flow if only one is available for selected event type
   useEffect(() => {
-    if (selectedEventTypeId && flowsForSelectedType.length === 1 && !selectedFlow) {
+    if (selectedEventTypeId && flowsForSelectedType && flowsForSelectedType.length === 1 && !selectedFlow) {
       const singleFlow = flowsForSelectedType[0];
-      console.log('Auto-selecting single flow:', singleFlow);
-      handleFlowSelection(singleFlow);
+      const eventType = eventTypes?.find(et => et.id === selectedEventTypeId);
+      console.log('Auto-selecting single flow via useEffect:', singleFlow, 'for event type:', eventType);
+      handleFlowSelection(singleFlow, eventType);
     }
-  }, [flowsForSelectedType, selectedFlow, selectedEventTypeId]);
+  }, [selectedEventTypeId, flowsForSelectedType, selectedFlow, eventTypes]);
 
+  // FIXED: Updated to pass the eventType directly to handleFlowSelection
   const handleEventTypeSelection = async (eventType: EventType) => {
     try {
       console.log('Selecting event type:', eventType);
       setIsSelecting(true);
       setSelectedEventTypeId(eventType.id);
       selectEventType(eventType.id);
-      clearError();
-    } catch (error) {
-      console.error('Error selecting event type:', error);
-    } finally {
-      setIsSelecting(false);
-    }
-  };
-
-  const handleFlowSelection = async (flow: PublicBookingFlow) => {
-    try {
-      console.log('Selecting flow:', flow);
-      setIsSelecting(true);
-      await selectFlow(flow.id);
       
-      // Find the selected event type
-      const eventType = eventTypes?.find(et => et.id === selectedEventTypeId);
+      // After selecting event type, check if there's exactly one matching flow
+      const matchingFlows = availableFlows?.filter(flow => 
+        flow.event_type_name === eventType.name
+      ) || [];
       
-      if (eventType && onEventTypeSelected) {
-        onEventTypeSelected(eventType, flow);
-      } else if (!eventType && onContinueWithoutEventType) {
-        onContinueWithoutEventType(flow);
+      console.log('Matching flows for event type:', matchingFlows);
+      
+      if (matchingFlows.length === 1) {
+        console.log('Auto-selecting single matching flow:', matchingFlows[0]);
+        // FIXED: Pass the eventType directly instead of relying on state
+        await handleFlowSelection(matchingFlows[0], eventType);
       }
       
       clearError();
     } catch (error) {
-      console.error('Error selecting flow:', error);
+      console.error('Error selecting event type:', error);
     } finally {
       setIsSelecting(false);
     }
@@ -432,7 +460,7 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
               }}
             >
               <CardActionArea
-                onClick={() => handleFlowSelection(flow)}
+                onClick={() => handleFlowSelection(flow, selectedEventType)}
                 disabled={isSelecting}
                 sx={{ p: 3 }}
               >
