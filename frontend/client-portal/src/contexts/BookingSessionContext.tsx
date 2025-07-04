@@ -102,17 +102,40 @@ export const BookingSessionProvider: React.FC<BookingSessionProviderProps> = Rea
   autoSaveInterval = 30000,
   allowJumpToStep = false
 }) => {
+  console.log('BookingSessionProvider render:', {
+    sessionUUID,
+    flowId: flow?.id,
+    flowName: flow?.name,
+    enableAutoSave,
+  });
+
   // ALWAYS call all hooks in the same order - no conditional hooks
   const bookingSession = useBookingSession({
     sessionUUID,
     enableAutoSave,
-    autoSaveInterval
+    autoSaveInterval,
+    flowId: flow?.id // Pass flowId to help with guest bookings
+  });
+
+  console.log('BookingSessionProvider - bookingSession hook result:', {
+    hasSession: !!bookingSession.session,
+    sessionUUID: bookingSession.sessionUUID,
+    isLoading: bookingSession.isLoading,
+    isGuestSession: bookingSession.isGuestSession,
+    error: bookingSession.error?.message,
   });
 
   const bookingSteps = useBookingSteps({
     flow,
     session: bookingSession.session,
     allowJumpToStep
+  });
+
+  console.log('BookingSessionProvider - bookingSteps hook result:', {
+    availableStepsCount: bookingSteps.availableSteps.length,
+    currentStepIndex: bookingSteps.currentStepIndex,
+    currentStepType: bookingSteps.currentStep?.step_type,
+    canProceedToNext: bookingSteps.canProceedToNext,
   });
 
   const bookingValidation = useBookingValidation({
@@ -133,69 +156,79 @@ export const BookingSessionProvider: React.FC<BookingSessionProviderProps> = Rea
   }, [bookingSession.clearError, bookingValidation.clearValidation, bookingSteps.reset]);
 
   // ALWAYS call useMemo hook
-  const contextValue = useMemo<BookingSessionContextValue>(() => ({
-    // Session data
-    session: bookingSession.session,
-    sessionUUID: bookingSession.sessionUUID,
-    flow: flow ?? null,
-    
-    // Step management
-    currentStep: bookingSteps.currentStep,
-    currentStepIndex: bookingSteps.currentStepIndex,
-    navigationState: bookingSteps.navigationState,
-    progress: bookingSteps.progress,
-    availableSteps: bookingSteps.availableSteps,
-    
-    // Session state
-    isLoading: bookingSession.isLoading,
-    isUpdating: bookingSession.isUpdating,
-    isCompleting: bookingSession.isCompleting,
-    isSaving: bookingSession.isSaving,
-    
-    // Session data management
-    updateSessionData: bookingSession.updateSessionData,
-    saveProgress: bookingSession.saveProgress,
-    
-    // Session completion
-    completeBooking: bookingSession.completeBooking,
-    abandonSession: bookingSession.abandonSession,
-    
-    // Step navigation
-    goToNextStep: bookingSteps.goToNextStep,
-    goToPreviousStep: bookingSteps.goToPreviousStep,
-    goToStep: bookingSteps.goToStep,
-    goToStepById: bookingSteps.goToStepById,
-    
-    // Step utilities
-    getStepMetadata: bookingSteps.getStepMetadata,
-    isStepAccessible: bookingSteps.isStepAccessible,
-    isStepCompleted: bookingSteps.isStepCompleted,
-    isStepCurrent: bookingSteps.isStepCurrent,
-    
-    // Validation
-    validateStepData,
-    validationErrors: bookingValidation.validationErrors,
-    clearValidation: bookingValidation.clearValidation,
-    
-    // Navigation validation
-    canProceedToNext: bookingSteps.canProceedToNext,
-    canGoToPrevious: bookingSteps.canGoToPrevious,
-    
-    // Pricing
-    getPricing: bookingSession.getPricing,
-    
-    // Error handling - only from bookingSession
-    error: bookingSession.error,
-    clearError: bookingSession.clearError,
-    
-    // Auto-save
-    enableAutoSave: bookingSession.enableAutoSave,
-    disableAutoSave: bookingSession.disableAutoSave,
-    isAutoSaveEnabled: bookingSession.isAutoSaveEnabled,
-    
-    // Actions
-    reset: resetAll,
-  }), [
+  const contextValue = useMemo<BookingSessionContextValue>(() => {
+    console.log('BookingSessionProvider - creating context value:', {
+      hasSession: !!bookingSession.session,
+      hasFlow: !!flow,
+      currentStepType: bookingSteps.currentStep?.step_type,
+      availableStepsCount: bookingSteps.availableSteps.length,
+      isLoading: bookingSession.isLoading,
+    });
+
+    return {
+      // Session data
+      session: bookingSession.session,
+      sessionUUID: bookingSession.sessionUUID,
+      flow: flow ?? null,
+      
+      // Step management
+      currentStep: bookingSteps.currentStep,
+      currentStepIndex: bookingSteps.currentStepIndex,
+      navigationState: bookingSteps.navigationState,
+      progress: bookingSteps.progress,
+      availableSteps: bookingSteps.availableSteps,
+      
+      // Session state
+      isLoading: bookingSession.isLoading,
+      isUpdating: bookingSession.isUpdating,
+      isCompleting: bookingSession.isCompleting,
+      isSaving: bookingSession.isSaving,
+      
+      // Session data management
+      updateSessionData: bookingSession.updateSessionData,
+      saveProgress: bookingSession.saveProgress,
+      
+      // Session completion
+      completeBooking: bookingSession.completeBooking,
+      abandonSession: bookingSession.abandonSession,
+      
+      // Step navigation
+      goToNextStep: bookingSteps.goToNextStep,
+      goToPreviousStep: bookingSteps.goToPreviousStep,
+      goToStep: bookingSteps.goToStep,
+      goToStepById: bookingSteps.goToStepById,
+      
+      // Step utilities
+      getStepMetadata: bookingSteps.getStepMetadata,
+      isStepAccessible: bookingSteps.isStepAccessible,
+      isStepCompleted: bookingSteps.isStepCompleted,
+      isStepCurrent: bookingSteps.isStepCurrent,
+      
+      // Validation
+      validateStepData,
+      validationErrors: bookingValidation.validationErrors,
+      clearValidation: bookingValidation.clearValidation,
+      
+      // Navigation validation
+      canProceedToNext: bookingSteps.canProceedToNext,
+      canGoToPrevious: bookingSteps.canGoToPrevious,
+      
+      // Pricing
+      getPricing: bookingSession.getPricing,
+      
+      // Error handling - only from bookingSession
+      error: bookingSession.error,
+      clearError: bookingSession.clearError,
+      
+      // Auto-save
+      enableAutoSave: bookingSession.enableAutoSave,
+      disableAutoSave: bookingSession.disableAutoSave,
+      isAutoSaveEnabled: bookingSession.isAutoSaveEnabled,
+      
+      // Actions
+      reset: resetAll,
+    };
+  }, [
     // Session dependencies
     bookingSession.session,
     bookingSession.sessionUUID,
@@ -242,6 +275,14 @@ export const BookingSessionProvider: React.FC<BookingSessionProviderProps> = Rea
     resetAll,
   ]);
 
+  console.log('BookingSessionProvider - final context value:', {
+    hasSession: !!contextValue.session,
+    hasCurrentStep: !!contextValue.currentStep,
+    availableStepsCount: contextValue.availableSteps.length,
+    isLoading: contextValue.isLoading,
+    currentStepType: contextValue.currentStep?.step_type,
+  });
+
   return (
     <BookingSessionContext.Provider value={contextValue}>
       {children}
@@ -259,4 +300,4 @@ export const useBookingSessionContext = (): BookingSessionContextValue => {
   }
   
   return context;
-};
+}
