@@ -109,13 +109,12 @@ export const useAvailabilityCheck = (options: UseAvailabilityCheckOptions = {}):
     }, debounceMs);
   }, [autoCheck, debounceMs, checkAvailability]);
 
-  // Clear result
+  // Clear result - stable function without dependencies to prevent loops
   const clearResult = useCallback(() => {
     setLastResult(null);
     setHasChecked(false);
     setError(null);
-    checkMutation.reset();
-  }, [checkMutation]);
+  }, []);
 
   // Clear error
   const clearError = useCallback(() => {
@@ -130,6 +129,16 @@ export const useAvailabilityCheck = (options: UseAvailabilityCheckOptions = {}):
       }
     };
   }, []);
+
+  // Reset state when session or step changes
+  React.useEffect(() => {
+    if (sessionUUID && stepId) {
+      setLastResult(null);
+      setHasChecked(false);
+      setError(null);
+      checkMutation.reset();
+    }
+  }, [sessionUUID, stepId]); // Removed checkMutation from dependencies
 
   // Convenience computed values
   const isAvailable = lastResult?.available ?? false;

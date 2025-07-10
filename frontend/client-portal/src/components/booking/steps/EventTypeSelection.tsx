@@ -46,33 +46,15 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<number | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
-  // Debug logging for data validation
-  useEffect(() => {
-    console.log('EventTypeSelection Debug:', {
-      eventTypes,
-      availableFlows,
-      isLoadingEventTypes,
-      isLoadingFlows,
-      flowError
-    });
-  }, [eventTypes, availableFlows, isLoadingEventTypes, isLoadingFlows, flowError]);
 
   // Get flows for selected event type - add extensive safety checks
   const flowsForSelectedType = useMemo(() => {
-    console.log('Computing flowsForSelectedType:', {
-      selectedEventTypeId,
-      availableFlows: availableFlows ? `Array with ${availableFlows.length} items` : 'null/undefined',
-      eventTypes: eventTypes ? `Array with ${eventTypes.length} items` : 'null/undefined'
-    });
-
     if (!selectedEventTypeId || !availableFlows || !Array.isArray(availableFlows) || !eventTypes || !Array.isArray(eventTypes)) {
-      console.log('Returning empty array due to missing data');
       return [];
     }
     
     const selectedEventType = eventTypes.find(et => et.id === selectedEventTypeId);
     if (!selectedEventType) {
-      console.log('Selected event type not found:', selectedEventTypeId);
       return [];
     }
     
@@ -80,18 +62,12 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
       flow.event_type_name === selectedEventType.name
     );
     
-    console.log('Filtered flows for selected type:', filtered);
     return filtered;
   }, [selectedEventTypeId, availableFlows, eventTypes]);
 
   // Get universal flows (those without specific event type) - add extensive safety checks
   const universalFlows = useMemo(() => {
-    console.log('Computing universalFlows:', {
-      availableFlows: availableFlows ? `Array with ${availableFlows.length} items` : 'null/undefined'
-    });
-
     if (!availableFlows || !Array.isArray(availableFlows)) {
-      console.log('Returning empty array for universalFlows due to missing data');
       return [];
     }
     
@@ -99,7 +75,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
       !flow.event_type_name || flow.event_type_name === 'Any Event Type'
     );
     
-    console.log('Universal flows found:', universal);
     return universal;
   }, [availableFlows]);
 
@@ -107,7 +82,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   useEffect(() => {
     if (eventTypes && Array.isArray(eventTypes) && eventTypes.length === 1 && !selectedEventTypeId) {
       const singleEventType = eventTypes[0];
-      console.log('Auto-selecting single event type:', singleEventType);
       setSelectedEventTypeId(singleEventType.id);
       selectEventType(singleEventType.id);
     }
@@ -116,22 +90,16 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   // FIXED: Separate function that takes the eventType as parameter instead of relying on state
   const handleFlowSelection = async (flow: PublicBookingFlow, eventType?: EventType) => {
     try {
-      console.log('handleFlowSelection called with flow:', flow, 'eventType:', eventType);
       setIsSelecting(true);
       
-      console.log('Calling selectFlow with ID:', flow.id);
       await selectFlow(flow.id);
-      console.log('selectFlow completed successfully');
       
       // Use the provided eventType parameter or find it from selectedEventTypeId
       const targetEventType = eventType || eventTypes?.find(et => et.id === selectedEventTypeId);
-      console.log('Target event type:', targetEventType);
       
       if (targetEventType && onEventTypeSelected) {
-        console.log('Calling onEventTypeSelected');
         onEventTypeSelected(targetEventType, flow);
       } else if (!targetEventType && onContinueWithoutEventType) {
-        console.log('Calling onContinueWithoutEventType');
         onContinueWithoutEventType(flow);
       } else {
         console.log('No callback to call - eventType:', targetEventType, 'callbacks:', {
@@ -153,7 +121,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
     if (selectedEventTypeId && flowsForSelectedType && flowsForSelectedType.length === 1 && !selectedFlow) {
       const singleFlow = flowsForSelectedType[0];
       const eventType = eventTypes?.find(et => et.id === selectedEventTypeId);
-      console.log('Auto-selecting single flow via useEffect:', singleFlow, 'for event type:', eventType);
       handleFlowSelection(singleFlow, eventType);
     }
   }, [selectedEventTypeId, flowsForSelectedType, selectedFlow, eventTypes]);
@@ -161,7 +128,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   // FIXED: Updated to pass the eventType directly to handleFlowSelection
   const handleEventTypeSelection = async (eventType: EventType) => {
     try {
-      console.log('Selecting event type:', eventType);
       setIsSelecting(true);
       setSelectedEventTypeId(eventType.id);
       selectEventType(eventType.id);
@@ -171,10 +137,8 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
         flow.event_type_name === eventType.name
       ) || [];
       
-      console.log('Matching flows for event type:', matchingFlows);
       
       if (matchingFlows.length === 1) {
-        console.log('Auto-selecting single matching flow:', matchingFlows[0]);
         // FIXED: Pass the eventType directly instead of relying on state
         await handleFlowSelection(matchingFlows[0], eventType);
       }
@@ -191,7 +155,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
     if (universalFlows && universalFlows.length > 0) {
       const universalFlow = universalFlows[0];
       try {
-        console.log('Selecting universal flow:', universalFlow);
         setIsSelecting(true);
         await selectFlow(universalFlow.id);
         
@@ -209,14 +172,12 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   };
 
   const handleRetry = () => {
-    console.log('Retrying data load...');
     clearError();
     // The queries will automatically retry due to React Query
   };
 
   // Show loading skeleton
   if (isLoadingEventTypes || isLoadingFlows) {
-    console.log('Showing loading state');
     return (
       <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
         <Typography variant="h4" sx={{ mb: 4, textAlign: 'center' }}>
@@ -240,7 +201,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
 
   // Show error state
   if (flowError) {
-    console.log('Showing error state:', flowError);
     return (
       <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
         <Alert 
@@ -272,10 +232,8 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   const hasValidData = availableFlows && Array.isArray(availableFlows);
   const hasEventTypes = eventTypes && Array.isArray(eventTypes);
   
-  console.log('Data validation check:', { hasValidData, hasEventTypes, availableFlows, eventTypes });
 
   if (!hasValidData) {
-    console.log('No valid flows data, showing loading');
     return (
       <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, textAlign: 'center' }}>
         <CircularProgress size={40} sx={{ mb: 2 }} />
@@ -294,7 +252,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
 
   // Show event type selection if no event type is selected and we have multiple types
   if (!selectedEventTypeId && hasEventTypes && eventTypes.length > 1) {
-    console.log('Showing event type selection');
     return (
       <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
         <Typography 
@@ -416,7 +373,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
 
   // Show flow selection if multiple flows are available for selected event type
   if (selectedEventTypeId && flowsForSelectedType.length > 1) {
-    console.log('Showing flow selection for event type');
     const selectedEventType = eventTypes?.find(et => et.id === selectedEventTypeId);
     
     return (
@@ -560,7 +516,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
 
   // Show loading state when selection is being processed
   if (isSelecting) {
-    console.log('Showing selection processing state');
     return (
       <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, textAlign: 'center' }}>
         <CircularProgress size={40} sx={{ mb: 2 }} />
@@ -573,7 +528,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
 
   // Handle single event type case - show ready to book message
   if (hasEventTypes && eventTypes.length === 1 && universalFlows.length > 0) {
-    console.log('Showing single event type booking');
     const singleEventType = eventTypes[0];
     return (
       <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, textAlign: 'center' }}>
@@ -614,7 +568,6 @@ const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
   }
 
   // Fallback for no event types or flows available
-  console.log('Showing fallback state');
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, textAlign: 'center' }}>
       {universalFlows.length > 0 ? (
