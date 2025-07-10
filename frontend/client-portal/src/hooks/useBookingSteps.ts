@@ -1,6 +1,6 @@
 // frontend/client-portal/src/hooks/useBookingSteps.ts
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { 
   BookingFlowStep,
   PublicBookingFlow 
@@ -29,11 +29,11 @@ interface UseBookingStepsReturn {
   navigationState: StepNavigationState;
   progress: BookingProgress;
   
-  // Navigation actions
-  goToNextStep: () => void;
-  goToPreviousStep: () => void;
-  goToStep: (stepIndex: number) => void;
-  goToStepById: (stepId: number) => void;
+  // Navigation actions - these only update session, local state follows
+  goToNextStep: () => Promise<void>;
+  goToPreviousStep: () => Promise<void>;
+  goToStep: (stepIndex: number) => Promise<void>;
+  goToStepById: (stepId: number) => Promise<void>;
   
   // Step utilities
   getStepMetadata: (step: BookingFlowStep) => StepMetadata;
@@ -52,44 +52,48 @@ interface UseBookingStepsReturn {
   
   // Actions
   reset: () => void;
+
+  // Internal API for useBookingSession (optional)
+  _internal?: {
+    registerNavigationCallbacks: (callbacks: {
+      updateCurrentStep: (stepId: number) => Promise<void>;
+    }) => void;
+  };
 }
 
 export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookingStepsReturn => {
   const { flow, session, allowJumpToStep = false } = options;
   
-  // Local state for current step tracking
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  // ALWAYS call all hooks in the same order, regardless of conditions
+  
+  // Navigation action callbacks - provided by parent (useBookingSession)
+  const [navigationCallbacks, setNavigationCallbacks] = useState<{
+    updateCurrentStep: (stepId: number) => Promise<void>;
+  } | null>(null);
 
-  console.log('useBookingSteps - input:', {
-    hasFlow: !!flow,
-    flowStepsCount: flow?.enabled_steps?.length || 0,
-    hasSession: !!session,
-    sessionCurrentStep: session?.current_step,
-    currentStepIndex,
-  });
+  // Local display state - derived from session, never drives session
+  const [localStepIndex, setLocalStepIndex] = useState(0);
+  
+  // Navigation lock to prevent concurrent navigation actions
+  const navigationLockRef = useRef(false);
 
-  // Get enabled steps from flow
+  // Get enabled steps from flow - ALWAYS call useMemo
   const enabledSteps = useMemo(() => {
     if (!flow?.enabled_steps) {
-      console.log('useBookingSteps - no flow or enabled_steps');
       return [];
     }
-    const steps = flow.enabled_steps
+    return flow.enabled_steps
       .filter(step => step.is_enabled)
       .sort((a, b) => a.order - b.order);
-    
-    console.log('useBookingSteps - enabled steps:', steps.map(s => `${s.id}:${s.step_type}`));
-    return steps;
   }, [flow?.enabled_steps]);
 
-  // Get available steps (enabled steps filtered by display conditions)
+  // Get available steps (enabled steps filtered by display conditions) - ALWAYS call useMemo
   const availableSteps = useMemo(() => {
     if (!session?.booking_data) {
-      console.log('useBookingSteps - no session booking_data, using all enabled steps');
       return enabledSteps;
     }
 
-    const filtered = enabledSteps.filter(step => {
+    return enabledSteps.filter(step => {
       // Check display conditions
       if (!step.display_conditions || Object.keys(step.display_conditions).length === 0) {
         return true;
@@ -97,7 +101,6 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
 
       // Check if step should be visible based on booking data
       for (const [conditionKey, conditionValue] of Object.entries(step.display_conditions)) {
-        // Look through all step data for the condition
         let conditionMet = false;
         
         for (const stepData of Object.values(session.booking_data)) {
@@ -116,27 +119,47 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
 
       return true;
     });
-
-    console.log('useBookingSteps - available steps after filtering:', filtered.map(s => `${s.id}:${s.step_type}`));
-    return filtered;
   }, [enabledSteps, session?.booking_data]);
 
-  // Get required steps
+  // Get required steps - ALWAYS call useMemo
   const requiredSteps = useMemo(() => {
     return availableSteps.filter(step => step.is_required);
   }, [availableSteps]);
 
-  // Get current step
+  // Derive current step index from session (single source of truth) - ALWAYS call useMemo
+  const currentStepIndex = useMemo(() => {
+    if (!session || !availableSteps.length) {
+      return 0;
+    }
+    
+    // If session has a current step, find its index
+    if (session.current_step !== null) {
+      const sessionStepIndex = availableSteps.findIndex(
+        step => step.id === session.current_step
+      );
+      
+      if (sessionStepIndex >= 0) {
+        return sessionStepIndex;
+      }
+    }
+    
+    // Default to first step
+    return 0;
+  }, [session?.current_step, availableSteps]);
+
+  // ALWAYS call useEffect for local state sync
+  useEffect(() => {
+    setLocalStepIndex(currentStepIndex);
+  }, [currentStepIndex]);
+
+  // Get current step - ALWAYS call useMemo
   const currentStep = useMemo(() => {
-    const step = availableSteps[currentStepIndex] || null;
-    console.log('useBookingSteps - current step:', step ? `${step.id}:${step.step_type}` : 'null');
-    return step;
+    return availableSteps[currentStepIndex] || null;
   }, [availableSteps, currentStepIndex]);
 
-  // Get completed step IDs from session data
+  // Get completed step IDs from session data - ALWAYS call useMemo
   const completedStepIds = useMemo(() => {
     if (!session || !availableSteps.length) {
-      console.log('useBookingSteps - no session or available steps for completion check');
       return [];
     }
     
@@ -145,26 +168,15 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
       return availableSteps.map(step => step.id);
     }
     
-    // Find current step index based on session current_step
-    let sessionCurrentStepIndex = -1;
-    if (session.current_step !== null) {
-      sessionCurrentStepIndex = availableSteps.findIndex(step => step.id === session.current_step);
-    }
-    
-    // If we can't find the current step, use the currentStepIndex
-    const effectiveCurrentStepIndex = sessionCurrentStepIndex >= 0 ? sessionCurrentStepIndex : currentStepIndex;
-    
     // All steps before current step are considered completed
-    if (effectiveCurrentStepIndex > 0) {
-      const completed = availableSteps.slice(0, effectiveCurrentStepIndex).map(step => step.id);
-      console.log('useBookingSteps - completed step IDs:', completed);
-      return completed;
+    if (currentStepIndex > 0) {
+      return availableSteps.slice(0, currentStepIndex).map(step => step.id);
     }
     
     return [];
-  }, [session, availableSteps, currentStepIndex]);
+  }, [session?.is_completed, availableSteps, currentStepIndex]);
 
-  // Define utility functions AFTER completedStepIds is available
+  // Step utility functions - ALWAYS call useCallback
   const isStepCompleted = useCallback((stepId: number): boolean => {
     return completedStepIds.includes(stepId);
   }, [completedStepIds]);
@@ -173,59 +185,6 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
     return currentStep?.id === stepId;
   }, [currentStep?.id]);
 
-  // Calculate progress
-  const progress = useMemo((): BookingProgress => {
-    const totalSteps = availableSteps.length;
-    const completedCount = completedStepIds.length;
-    
-    return {
-      currentStep: currentStepIndex + 1,
-      totalSteps,
-      completedSteps: completedStepIds,
-      percentage: totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0,
-    };
-  }, [availableSteps.length, completedStepIds, currentStepIndex]);
-
-  // Calculate navigation state
-  const navigationState = useMemo((): StepNavigationState => {
-    const totalSteps = availableSteps.length;
-    const isFirstStep = currentStepIndex === 0;
-    const isLastStep = currentStepIndex === totalSteps - 1;
-    
-    const nextStep = availableSteps[currentStepIndex + 1];
-    const previousStep = availableSteps[currentStepIndex - 1];
-    
-    return {
-      currentStepIndex,
-      totalSteps,
-      canGoNext: !isLastStep,
-      canGoPrevious: !isFirstStep,
-      isFirstStep,
-      isLastStep,
-      nextStepId: nextStep?.id || null,
-      previousStepId: previousStep?.id || null,
-    };
-  }, [availableSteps, currentStepIndex]);
-
-  // Check if we can proceed to next step
-  const canProceedToNext = useMemo(() => {
-    if (!currentStep) return false;
-    if (navigationState.isLastStep) return false;
-    
-    // If step is required, it must be completed
-    if (currentStep.is_required && !isStepCompleted(currentStep.id)) {
-      return false;
-    }
-    
-    return true;
-  }, [currentStep, navigationState.isLastStep, isStepCompleted]);
-
-  // Check if we can go to previous step
-  const canGoToPrevious = useMemo(() => {
-    return !navigationState.isFirstStep;
-  }, [navigationState.isFirstStep]);
-
-  // Define isStepAccessible AFTER isStepCompleted is available
   const isStepAccessible = useCallback((stepIndex: number): boolean => {
     if (stepIndex < 0 || stepIndex >= availableSteps.length) {
       return false;
@@ -248,76 +207,131 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
     return stepIndex <= currentStepIndex;
   }, [availableSteps, allowJumpToStep, currentStepIndex, isStepCompleted]);
 
-  // FIXED: Better sync with session current_step
-  useEffect(() => {
-    if (!availableSteps.length) {
-      console.log('useBookingSteps - no available steps, keeping current index 0');
-      return;
-    }
+  // Calculate progress - ALWAYS call useMemo
+  const progress = useMemo((): BookingProgress => {
+    const totalSteps = availableSteps.length;
+    const completedCount = completedStepIds.length;
+    
+    return {
+      currentStep: currentStepIndex + 1,
+      totalSteps,
+      completedSteps: completedStepIds,
+      percentage: totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0,
+    };
+  }, [availableSteps.length, completedStepIds, currentStepIndex]);
 
-    // If we have a session with a current_step, sync to that
-    if (session?.current_step !== null && session?.current_step !== undefined) {
-      const sessionStepIndex = availableSteps.findIndex(
-        step => step.id === session.current_step
-      );
+  // Calculate navigation state - ALWAYS call useMemo
+  const navigationState = useMemo((): StepNavigationState => {
+    const totalSteps = availableSteps.length;
+    const isFirstStep = currentStepIndex === 0;
+    const isLastStep = currentStepIndex === totalSteps - 1;
+    
+    const nextStep = availableSteps[currentStepIndex + 1];
+    const previousStep = availableSteps[currentStepIndex - 1];
+    
+    return {
+      currentStepIndex,
+      totalSteps,
+      canGoNext: !isLastStep,
+      canGoPrevious: !isFirstStep,
+      isFirstStep,
+      isLastStep,
+      nextStepId: nextStep?.id || null,
+      previousStepId: previousStep?.id || null,
+    };
+  }, [availableSteps, currentStepIndex]);
+
+  // Check if we can proceed to next step - ALWAYS call useMemo
+  const canProceedToNext = useMemo(() => {
+    if (!currentStep) return false;
+    if (navigationState.isLastStep) return false;
+    
+    // If step is required, it must be completed
+    if (currentStep.is_required && !isStepCompleted(currentStep.id)) {
+      return false;
+    }
+    
+    return true;
+  }, [currentStep, navigationState.isLastStep, isStepCompleted]);
+
+  // Check if we can go to previous step - ALWAYS call useMemo
+  const canGoToPrevious = useMemo(() => {
+    return !navigationState.isFirstStep;
+  }, [navigationState.isFirstStep]);
+
+  // Navigation actions - ALWAYS call useCallback for all of these
+  const goToNextStep = useCallback(async () => {
+    if (navigationLockRef.current || !canProceedToNext) return;
+    if (!navigationCallbacks?.updateCurrentStep) return;
+    
+    navigationLockRef.current = true;
+    
+    try {
+      const nextStepIndex = Math.min(currentStepIndex + 1, availableSteps.length - 1);
+      const nextStep = availableSteps[nextStepIndex];
       
-      if (sessionStepIndex >= 0 && sessionStepIndex !== currentStepIndex) {
-        console.log('useBookingSteps - syncing to session current_step:', {
-          sessionCurrentStep: session.current_step,
-          newIndex: sessionStepIndex,
-          oldIndex: currentStepIndex
-        });
-        setCurrentStepIndex(sessionStepIndex);
-        return;
+      if (nextStep) {
+        await navigationCallbacks.updateCurrentStep(nextStep.id);
       }
+    } catch (error) {
+      console.error('Failed to navigate to next step:', error);
+    } finally {
+      navigationLockRef.current = false;
     }
+  }, [canProceedToNext, currentStepIndex, availableSteps, navigationCallbacks]);
 
-    // FIXED: If no session current_step but we have steps, ensure we're at step 0
-    if ((!session?.current_step || session.current_step === null) && currentStepIndex !== 0) {
-      console.log('useBookingSteps - no session current_step, resetting to 0');
-      setCurrentStepIndex(0);
+  const goToPreviousStep = useCallback(async () => {
+    if (navigationLockRef.current || !canGoToPrevious) return;
+    if (!navigationCallbacks?.updateCurrentStep) return;
+    
+    navigationLockRef.current = true;
+    
+    try {
+      const prevStepIndex = Math.max(currentStepIndex - 1, 0);
+      const prevStep = availableSteps[prevStepIndex];
+      
+      if (prevStep) {
+        await navigationCallbacks.updateCurrentStep(prevStep.id);
+      }
+    } catch (error) {
+      console.error('Failed to navigate to previous step:', error);
+    } finally {
+      navigationLockRef.current = false;
     }
-  }, [session?.current_step, availableSteps, currentStepIndex]);
+  }, [canGoToPrevious, currentStepIndex, availableSteps, navigationCallbacks]);
 
-  // Navigation handlers
-  const goToNextStep = useCallback(() => {
-    if (canProceedToNext) {
-      const newIndex = Math.min(currentStepIndex + 1, availableSteps.length - 1);
-      console.log('useBookingSteps - goToNextStep:', { from: currentStepIndex, to: newIndex });
-      setCurrentStepIndex(newIndex);
-    }
-  }, [canProceedToNext, currentStepIndex, availableSteps.length]);
-
-  const goToPreviousStep = useCallback(() => {
-    if (canGoToPrevious) {
-      const newIndex = Math.max(currentStepIndex - 1, 0);
-      console.log('useBookingSteps - goToPreviousStep:', { from: currentStepIndex, to: newIndex });
-      setCurrentStepIndex(newIndex);
-    }
-  }, [canGoToPrevious, currentStepIndex]);
-
-  const goToStep = useCallback((stepIndex: number) => {
-    if (!allowJumpToStep) return;
+  const goToStep = useCallback(async (stepIndex: number) => {
+    if (navigationLockRef.current || !allowJumpToStep) return;
+    if (!navigationCallbacks?.updateCurrentStep) return;
     
     const targetIndex = Math.max(0, Math.min(stepIndex, availableSteps.length - 1));
     
     // Check if step is accessible
-    if (isStepAccessible(targetIndex)) {
-      console.log('useBookingSteps - goToStep:', { from: currentStepIndex, to: targetIndex });
-      setCurrentStepIndex(targetIndex);
+    if (!isStepAccessible(targetIndex)) return;
+    
+    navigationLockRef.current = true;
+    
+    try {
+      const targetStep = availableSteps[targetIndex];
+      if (targetStep) {
+        await navigationCallbacks.updateCurrentStep(targetStep.id);
+      }
+    } catch (error) {
+      console.error('Failed to navigate to step:', error);
+    } finally {
+      navigationLockRef.current = false;
     }
-  }, [allowJumpToStep, availableSteps.length, isStepAccessible, currentStepIndex]);
+  }, [allowJumpToStep, availableSteps, isStepAccessible, navigationCallbacks]);
 
-  const goToStepById = useCallback((stepId: number) => {
+  const goToStepById = useCallback(async (stepId: number) => {
     const stepIndex = availableSteps.findIndex(step => step.id === stepId);
     if (stepIndex >= 0) {
-      goToStep(stepIndex);
+      await goToStep(stepIndex);
     }
   }, [availableSteps, goToStep]);
 
-  // Step utility functions
+  // Step metadata function - ALWAYS call useCallback
   const getStepMetadata = useCallback((step: BookingFlowStep): StepMetadata => {
-    // Map step types to human-readable titles and descriptions
     const stepTypeMetadata: Record<string, { title: string; description: string; icon?: string }> = {
       introduction: {
         title: 'Welcome',
@@ -386,20 +400,25 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
     };
   }, []);
 
-  // Reset handler
+  // Reset handler - ALWAYS call useCallback
   const reset = useCallback(() => {
-    console.log('useBookingSteps - reset called');
-    setCurrentStepIndex(0);
+    setLocalStepIndex(0);
+    navigationLockRef.current = false;
   }, []);
 
-  console.log('useBookingSteps - final state:', {
-    availableStepsCount: availableSteps.length,
-    currentStepIndex,
-    currentStepType: currentStep?.step_type,
-    canProceedToNext,
-    canGoToPrevious,
-  });
+  // Register navigation callbacks - ALWAYS call useCallback
+  const registerNavigationCallbacks = useCallback((callbacks: {
+    updateCurrentStep: (stepId: number) => Promise<void>;
+  }) => {
+    setNavigationCallbacks(callbacks);
+  }, []);
 
+  // ALWAYS create the _internal object
+  const internalAPI = useMemo(() => ({
+    registerNavigationCallbacks,
+  }), [registerNavigationCallbacks]);
+
+  // ALWAYS return the same structure
   return {
     // Current step
     currentStep,
@@ -432,5 +451,8 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
     
     // Actions
     reset,
+    
+    // Internal API for useBookingSession
+    _internal: internalAPI
   };
 };

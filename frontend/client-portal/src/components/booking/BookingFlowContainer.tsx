@@ -141,19 +141,9 @@ const BookingFlowContent: React.FC<{
     }
   }, [sessionContext, onFlowComplete, onFlowError]);
 
-  console.log('BookingFlowContent render state:', {
-    hasSession: !!sessionContext?.session,
-    hasCurrentStep: !!sessionContext?.currentStep,
-    sessionData: sessionContext?.session?.booking_data ? 'exists' : 'missing',
-    currentStepType: sessionContext?.currentStep?.step_type,
-    isLoading: sessionContext?.isLoading,
-    isUpdating: sessionContext?.isUpdating,
-    availableStepsCount: sessionContext?.availableSteps?.length || 0,
-  });
 
   // FIXED: More comprehensive loading check
   if (!sessionContext?.session || sessionContext.isLoading) {
-    console.log('BookingFlowContent: Still loading session context');
     return (
       <Box
         sx={{
@@ -175,7 +165,6 @@ const BookingFlowContent: React.FC<{
 
   // FIXED: Check for available steps instead of just current step
   if (!sessionContext.availableSteps || sessionContext.availableSteps.length === 0) {
-    console.log('BookingFlowContent: No available steps found');
     return (
       <Box
         sx={{
@@ -197,7 +186,6 @@ const BookingFlowContent: React.FC<{
 
   // FIXED: Check current step after we know steps are available
   if (!sessionContext.currentStep) {
-    console.log('BookingFlowContent: No current step set, available steps:', sessionContext.availableSteps.length);
     
     // If we have available steps but no current step, this is an initialization issue
     return (
@@ -218,8 +206,6 @@ const BookingFlowContent: React.FC<{
       </Box>
     );
   }
-
-  console.log('BookingFlowContent: Rendering step component for:', sessionContext.currentStep.step_type);
 
   // Get current step and component
   const currentStep = sessionContext.currentStep;
@@ -348,13 +334,12 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
     initializationAttemptRef.current += 1;
 
     try {
-      console.log('Initializing flow with:', { flowId, eventTypeId });
+    
       setIsInitializing(true);
       setInitializationError(null);
       clearError();
 
       if (flowId) {
-        console.log('Selecting flow by ID:', flowId);
         await selectFlow(flowId);
         hasSelectedFlowRef.current = true;
         hasInitializedRef.current = true;
@@ -362,7 +347,6 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
       }
 
       if (eventTypeId) {
-        console.log('Selecting event type:', eventTypeId);
         selectEventType(eventTypeId);
         hasInitializedRef.current = true;
         return;
@@ -371,7 +355,6 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
       setShowEventTypeSelection(true);
       hasInitializedRef.current = true;
     } catch (error) {
-      console.error('Error initializing flow:', error);
       const err = error as Error;
       setInitializationError(err);
       onFlowError?.(err);
@@ -389,7 +372,6 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
 
   const handleEventTypeSelected = useCallback(
     (eventType: EventType, flow: PublicBookingFlow) => {
-      console.log('BookingFlowContainer: Event type selected, hiding selection and proceeding');
       setShowEventTypeSelection(false);
       selectEventType(eventType.id);
       selectFlow(flow.id);
@@ -409,23 +391,10 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
     return localSessionUUID || sessionUUID || currentSession?.session_id;
   }, [localSessionUUID, sessionUUID, currentSession?.session_id]);
 
-  console.log('BookingFlowContainer render state:', {
-    selectedFlow: selectedFlow ? `Flow ${selectedFlow.id}: ${selectedFlow.name}` : 'none',
-    currentSessionUUID,
-    showEventTypeSelection,
-    isInitializing,
-    isLoadingFlows,
-    isLoadingFlow,
-    isStartingSession,
-    hasInitialized: hasInitializedRef.current,
-    hasSelectedFlow: hasSelectedFlowRef.current,
-    hasStartedSession: hasStartedSessionRef.current,
-  });
 
   // Always call useEffect hooks in the same order
   useEffect(() => {
     if (!isLoadingFlows && !isLoadingFlow && !hasInitializedRef.current) {
-      console.log('BookingFlowContainer: Triggering initialization');
       initializeFlow();
     }
   }, [isLoadingFlows, isLoadingFlow, initializeFlow]);
@@ -434,24 +403,16 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
     const startBookingSession = async () => {
       // FIXED: Only start session if we don't already have one
       if (!selectedFlow || currentSessionUUID || hasStartedSessionRef.current) {
-        console.log('BookingFlowContainer: Skipping session start:', {
-          hasSelectedFlow: !!selectedFlow,
-          hasCurrentSession: !!currentSessionUUID,
-          hasStartedSession: hasStartedSessionRef.current
-        });
         return;
       }
 
       hasStartedSessionRef.current = true;
 
       try {
-        console.log('BookingFlowContainer: Starting booking session for flow:', selectedFlow.id);
         const sessionResponse = await startSession();
-        console.log('BookingFlowContainer: Session response received:', sessionResponse);
         
         if (sessionResponse && sessionResponse.session_id) {
           const sessionId = sessionResponse.session_id;
-          console.log('BookingFlowContainer: Setting session UUID:', sessionId);
           setLocalSessionUUID(sessionId);
           
           const minimalSession: BookingSession = {
@@ -469,7 +430,6 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
             expires_at: sessionResponse.expires_at,
           };
           
-          console.log('BookingFlowContainer: Calling onSessionCreated with minimal session');
           onSessionCreated?.(minimalSession);
         } else {
           throw new Error('Invalid session response: missing session_id');
@@ -500,7 +460,6 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
   const displayError = initializationError || flowError || sessionError;
 
   if (isLoading) {
-    console.log('BookingFlowContainer: Showing loading state');
     return (
       <Box
         sx={{
@@ -524,7 +483,6 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
   }
 
   if (displayError) {
-    console.log('BookingFlowContainer: Showing error state:', displayError);
     return (
       <Paper sx={{ p: 3, textAlign: 'center' }}>
         <Alert
@@ -559,12 +517,10 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
   }
 
   if (showEventTypeSelection) {
-    console.log('BookingFlowContainer: Showing event type selection');
     return (
       <EventTypeSelection
         onEventTypeSelected={handleEventTypeSelected}
         onContinueWithoutEventType={(flow) => {
-          console.log('BookingFlowContainer: Continuing without event type');
           setShowEventTypeSelection(false);
           selectFlow(flow.id);
         }}
@@ -573,7 +529,6 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
   }
 
   if (!selectedFlow) {
-    console.log('BookingFlowContainer: No selected flow, showing loading');
     return (
       <Box
         sx={{
@@ -594,7 +549,6 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
   }
 
   if (!currentSessionUUID) {
-    console.log('BookingFlowContainer: No session UUID, showing loading');
     return (
       <Box
         sx={{
@@ -612,12 +566,7 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
         </Typography>
       </Box>
     );
-  }
-
-  console.log('BookingFlowContainer: Rendering BookingSessionProvider with:', {
-    sessionUUID: currentSessionUUID,
-    flowName: selectedFlow.name,
-  });
+  };
 
   return (
     <BookingSessionProvider
