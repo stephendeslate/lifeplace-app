@@ -75,6 +75,12 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingDataRef = useRef<Record<string, any> | null>(null);
 
+  console.log('useBookingSession - init:', {
+    sessionUUID: currentSessionUUID,
+    flowId,
+    enableAutoSave,
+  });
+
   // Try to get session data using public endpoint
   const {
     data: serverSession,
@@ -86,17 +92,22 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     queryFn: async () => {
       if (!currentSessionUUID) return null;
       
+      console.log('useBookingSession - fetching session:', currentSessionUUID);
+      
       try {
         // Use public endpoint to get session data
         const session = await bookingFlowAPI.getSessionByUUID(currentSessionUUID);
+        console.log('useBookingSession - fetched session:', session);
         
         // Check if this is a guest session
         if (!session.user && session.id === 0) {
+          console.log('useBookingSession - detected guest session');
           setIsGuestSession(true);
           
           // Try to load from local storage for guest sessions
           const storedData = loadSessionData();
           if (storedData && storedData.sessionId === currentSessionUUID) {
+            console.log('useBookingSession - found stored data:', storedData);
             const enrichedSession: BookingSession = {
               ...session,
               booking_flow: storedData.flowId,
@@ -110,6 +121,7 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
         
         return session;
       } catch (error: any) {
+        console.log('useBookingSession - session fetch failed, creating guest session');
         // This is likely a guest session
         setIsGuestSession(true);
         
@@ -148,9 +160,18 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
   // Use local session for guest bookings, server session for authenticated
   const session = isGuestSession ? (localSession || serverSession) : serverSession;
 
+  console.log('useBookingSession - current state:', {
+    hasSession: !!session,
+    sessionId: session?.session_id,
+    isGuestSession,
+    currentStep: session?.current_step,
+    bookingDataKeys: session?.booking_data ? Object.keys(session.booking_data) : [],
+  });
+
   // Update local session when server session changes
   useEffect(() => {
     if (serverSession && (!isGuestSession || !localSession)) {
+      console.log('useBookingSession - updating local session from server');
       setLocalSession(serverSession);
     }
   }, [serverSession, isGuestSession, localSession]);
@@ -158,6 +179,7 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
   // Save guest session data to local storage
   const saveGuestSessionData = useCallback((sessionData: BookingSession) => {
     if (isGuestSession && sessionData.session_id) {
+      console.log('useBookingSession - saving guest session to local storage');
       const storageData: SessionStorageData = {
         sessionId: sessionData.session_id,
         flowId: sessionData.booking_flow,
@@ -178,7 +200,29 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     }) => {
       if (!currentSessionUUID) throw new Error('No active session');
       
-      // Use public endpoint for all session updates
+      console.log('useBookingSession - updating session data:', {
+        sessionUUID: currentSessionUUID,
+        stepId,
+        stepData,
+        markCompleted,
+      });
+      
+      // For guest sessions, simulate the update
+      if (isGuestSession) {
+        console.log('useBookingSession - simulating guest session update');
+        const updatedSession: BookingSession = {
+          ...session!,
+          booking_data: {
+            ...session!.booking_data,
+            [stepId]: stepData,
+          },
+          current_step: markCompleted ? stepId : session!.current_step,
+          updated_at: new Date().toISOString(),
+        };
+        return updatedSession;
+      }
+      
+      // Use public endpoint for authenticated sessions
       return bookingFlowAPI.updateSessionDataByUUID(
         currentSessionUUID,
         stepId,
@@ -187,6 +231,8 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
       );
     },
     onSuccess: (data) => {
+      console.log('useBookingSession - session update success:', data);
+      
       // For guest sessions, save to local storage
       if (isGuestSession) {
         setLocalSession(data);
@@ -201,6 +247,7 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
       setError(null);
     },
     onError: (error: Error) => {
+      console.error('useBookingSession - session update error:', error);
       setError(error);
     },
   });
@@ -210,16 +257,20 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     mutationFn: async () => {
       if (!currentSessionUUID) throw new Error('No active session');
       
+      console.log('useBookingSession - completing booking:', currentSessionUUID);
+      
       // Use public completion endpoint
       return bookingFlowAPI.completeBookingByUUID(currentSessionUUID);
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('useBookingSession - booking completion success:', result);
       setError(null);
       if (!isGuestSession) {
         queryClient.invalidateQueries({ queryKey: ['booking-session-public', currentSessionUUID] });
       }
     },
     onError: (error: Error) => {
+      console.error('useBookingSession - booking completion error:', error);
       setError(error);
     },
   });
@@ -282,11 +333,19 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
     markCompleted = false
   ): Promise<BookingSession | null> => {
     try {
+      console.log('useBookingSession - updateSessionData called:', {
+        stepId,
+        stepData,
+        markCompleted,
+      });
+
       const result = await updateSessionMutation.mutateAsync({
         stepId,
         stepData,
         markCompleted
       });
+
+      console.log('useBookingSession - updateSessionData result:', result);
 
       // Schedule auto-save for future changes if not marking completed
       if (!markCompleted && isAutoSaveActive) {
@@ -295,6 +354,7 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
 
       return result;
     } catch (error) {
+      console.error('useBookingSession - updateSessionData error:', error);
       setError(error as Error);
       return null;
     }
@@ -436,6 +496,15 @@ export const useBookingSession = (options: UseBookingSessionOptions = {}): UseBo
   }, []);
 
   const combinedError = error || (queryError && !isGuestSession ? queryError as Error : null);
+
+  console.log('useBookingSession - final return:', {
+    hasSession: !!session,
+    sessionUUID: currentSessionUUID,
+    isLoading: isLoading && !isGuestSession,
+    isUpdating: updateSessionMutation.isPending,
+    isGuestSession,
+    error: combinedError?.message,
+  });
 
   return {
     // Session data

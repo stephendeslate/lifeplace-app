@@ -47,7 +47,6 @@ class BookingFlowService:
                 'default_payment_gateway'
             ).prefetch_related(
                 'steps__introduction_config',
-                'steps__event_details_config',
                 'steps__datetime_config',
                 'steps__questionnaire_config__questionnaire_items__questionnaire',
                 'steps__package_config__available_categories',

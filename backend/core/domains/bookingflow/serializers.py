@@ -140,7 +140,10 @@ class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
             'id', 'step', 'accept_full_payment', 'accept_deposit',
             'deposit_type', 'deposit_amount', 'available_payment_methods',
             'require_immediate_payment', 'allow_payment_plans',
-            'payment_terms', 'created_at', 'updated_at'
+            'payment_terms', 
+            'allowed_gateways',
+            'default_gateway',   
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
