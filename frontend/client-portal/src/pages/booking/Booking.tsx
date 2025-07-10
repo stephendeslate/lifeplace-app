@@ -1,12 +1,11 @@
 // frontend/client-portal/src/pages/booking/Booking.tsx
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Box, 
   Container, 
   Typography, 
-  Alert,
   Button,
   Paper,
   Breadcrumbs,
@@ -41,11 +40,15 @@ const Booking: React.FC<BookingProps> = ({
   const { sessionId } = useParams<{ sessionId?: string }>();
   const navigate = useNavigate();
 
+  // Track current selections for development info
+  const [currentEventTypeId, setCurrentEventTypeId] = useState<number | undefined>(eventTypeId);
+  const [currentFlowId, setCurrentFlowId] = useState<number | undefined>(flowId);
+
   // Memoize the session UUID to prevent unnecessary re-renders
   const sessionUUID = useMemo(() => sessionId, [sessionId]);
 
   // Handle flow completion
-  const handleFlowComplete = (result: CompleteBookingResponse) => {
+  const handleFlowComplete = useCallback((result: CompleteBookingResponse) => {
     console.log('Booking completed:', result);
     
     // Navigate to success page with session ID
@@ -55,41 +58,53 @@ const Booking: React.FC<BookingProps> = ({
       // Fallback navigation
       navigate('/booking/success/completed', { replace: true });
     }
-  };
+  }, [navigate]);
 
   // Handle flow errors
-  const handleFlowError = (error: Error) => {
+  const handleFlowError = useCallback((error: Error) => {
     console.error('Booking flow error:', error);
     // Error is handled by the error boundary
-  };
+  }, []);
 
   // Handle session creation
-  const handleSessionCreated = (session: BookingSession) => {
+  const handleSessionCreated = useCallback((session: BookingSession) => {
     console.log('Session created:', session);
     
     // Update URL with session ID if not already present
     if (!sessionId && session.session_id) {
       navigate(`/booking/${session.session_id}`, { replace: true });
     }
-  };
+  }, [sessionId, navigate]);
+
+  // Handle event type selection
+  const handleEventTypeSelected = useCallback((eventTypeId: number) => {
+    console.log('Event type selected:', eventTypeId);
+    setCurrentEventTypeId(eventTypeId);
+  }, []);
+
+  // Handle flow selection
+  const handleFlowSelected = useCallback((flowId: number) => {
+    console.log('Flow selected:', flowId);
+    setCurrentFlowId(flowId);
+  }, []);
 
   // Handle back navigation
-  const handleBackNavigation = () => {
+  const handleBackNavigation = useCallback(() => {
     if (onBackNavigation) {
       onBackNavigation();
     } else {
       navigate('/');
     }
-  };
+  }, [onBackNavigation, navigate]);
 
   // Create reset keys array filtering out undefined values
   const resetKeys = useMemo(() => {
     const keys: Array<string | number> = [];
     if (sessionUUID) keys.push(sessionUUID);
-    if (eventTypeId) keys.push(eventTypeId);
-    if (flowId) keys.push(flowId);
+    if (currentEventTypeId) keys.push(currentEventTypeId);
+    if (currentFlowId) keys.push(currentFlowId);
     return keys;
-  }, [sessionUUID, eventTypeId, flowId]);
+  }, [sessionUUID, currentEventTypeId, currentFlowId]);
 
   return (
     <Container maxWidth={maxWidth} sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
@@ -157,7 +172,11 @@ const Booking: React.FC<BookingProps> = ({
           console.log('Booking flow reset');
         }}
       >
-        <BookingFlowProvider eventTypeId={eventTypeId} autoStart={false}>
+        <BookingFlowProvider 
+          eventTypeId={eventTypeId} 
+          flowId={flowId}
+          autoStart={false}
+        >
           <BookingFlowContainer
             eventTypeId={eventTypeId}
             flowId={flowId}
@@ -166,11 +185,13 @@ const Booking: React.FC<BookingProps> = ({
             onFlowComplete={handleFlowComplete}
             onFlowError={handleFlowError}
             onSessionCreated={handleSessionCreated}
+            onEventTypeSelected={handleEventTypeSelected}
+            onFlowSelected={handleFlowSelected}
           />
         </BookingFlowProvider>
       </BookingErrorBoundary>
 
-      {/* Development Info */}
+      {/* Development Info - Simplified */}
       {process.env.NODE_ENV === 'development' && (
         <Paper sx={{ mt: 4, p: 2, bgcolor: 'grey.50' }}>
           <Typography variant="caption" color="text.secondary">
@@ -179,8 +200,8 @@ const Booking: React.FC<BookingProps> = ({
           <Typography variant="body2" component="pre" sx={{ fontSize: '0.75rem', mt: 1 }}>
             {JSON.stringify({
               sessionUUID: sessionUUID || 'undefined',
-              eventTypeId: eventTypeId || 'undefined',
-              flowId: flowId || 'undefined',
+              eventTypeId: currentEventTypeId || 'undefined',
+              flowId: currentFlowId || 'undefined',
               enableAutoSave,
             }, null, 2)}
           </Typography>

@@ -72,6 +72,7 @@ export const useBookingSteps = (options: UseBookingStepsOptions = {}): UseBookin
   } | null>(null);
 
   // Local display state - derived from session, never drives session
+  // @ts-ignore
   const [localStepIndex, setLocalStepIndex] = useState(0);
   
   // Navigation lock to prevent concurrent navigation actions

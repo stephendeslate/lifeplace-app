@@ -15,6 +15,10 @@ interface BookingFlowContextValue {
   selectedFlow: PublicBookingFlow | null;
   eventTypes: EventType[] | undefined;
   
+  // ADDED: Current selections (for tracking)
+  currentEventTypeId: number | undefined;
+  currentFlowId: number | undefined;
+  
   // Flow selection
   selectFlow: (flowId: number) => Promise<void>;
   selectEventType: (eventTypeId: number) => void;
@@ -47,15 +51,17 @@ const BookingFlowContext = createContext<BookingFlowContextValue | undefined>(un
 interface BookingFlowProviderProps {
   children: React.ReactNode;
   eventTypeId?: number;
+  flowId?: number;
   autoStart?: boolean;
 }
 
 export const BookingFlowProvider: React.FC<BookingFlowProviderProps> = React.memo(({ 
   children, 
   eventTypeId,
+  flowId,
   autoStart = false 
 }) => {
-  const bookingFlow = useBookingFlow({ eventTypeId, autoStart });
+  const bookingFlow = useBookingFlow({ eventTypeId, flowId, autoStart });
 
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo<BookingFlowContextValue>(() => ({
@@ -63,6 +69,10 @@ export const BookingFlowProvider: React.FC<BookingFlowProviderProps> = React.mem
     availableFlows: bookingFlow.availableFlows,
     selectedFlow: bookingFlow.selectedFlow,
     eventTypes: bookingFlow.eventTypes,
+    
+    // Current selections
+    currentEventTypeId: bookingFlow.currentEventTypeId,
+    currentFlowId: bookingFlow.currentFlowId,
     
     // Flow selection
     selectFlow: bookingFlow.selectFlow,
@@ -93,6 +103,8 @@ export const BookingFlowProvider: React.FC<BookingFlowProviderProps> = React.mem
     bookingFlow.availableFlows,
     bookingFlow.selectedFlow,
     bookingFlow.eventTypes,
+    bookingFlow.currentEventTypeId,
+    bookingFlow.currentFlowId,
     bookingFlow.selectFlow,
     bookingFlow.selectEventType,
     bookingFlow.startSession,
