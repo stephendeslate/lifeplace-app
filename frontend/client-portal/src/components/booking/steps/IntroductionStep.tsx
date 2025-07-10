@@ -58,6 +58,16 @@ const IntroductionStep: React.FC<IntroductionStepProps> = ({
   // Get step configuration
   const config = step.configuration_data as IntroductionStepConfiguration | null;
 
+  console.log('IntroductionStep render:', {
+    stepId: step.id,
+    isAcknowledged,
+    canGoNext,
+    isLoading,
+    isUpdating,
+    hasOnNext: !!onNext,
+    dataAcknowledged: data.acknowledged,
+  });
+
   // Update local state when data changes
   useEffect(() => {
     setIsAcknowledged(data.acknowledged || false);
@@ -68,6 +78,7 @@ const IntroductionStep: React.FC<IntroductionStepProps> = ({
     if (isAcknowledged || isUpdating) return;
 
     try {
+      console.log('IntroductionStep: Starting acknowledgment');
       setIsSaving(true);
       
       const stepData: IntroductionStepData = {
@@ -75,16 +86,20 @@ const IntroductionStep: React.FC<IntroductionStepProps> = ({
         start_time: new Date().toISOString(),
       };
 
+      console.log('IntroductionStep: Updating session data with:', stepData);
+
       // Update through context
-      await updateSessionData(step.id, stepData, false);
+      const result = await updateSessionData(step.id, stepData, false);
+      console.log('IntroductionStep: Session update result:', result);
       
       // Update local state
       setIsAcknowledged(true);
       onUpdate(stepData);
       
       clearError();
+      console.log('IntroductionStep: Acknowledgment completed successfully');
     } catch (error) {
-      console.error('Error acknowledging introduction:', error);
+      console.error('IntroductionStep: Error acknowledging introduction:', error);
     } finally {
       setIsSaving(false);
     }
@@ -92,6 +107,7 @@ const IntroductionStep: React.FC<IntroductionStepProps> = ({
 
   // Handle save progress
   const handleSave = async () => {
+    console.log('IntroductionStep: Save progress called');
     if (onSave) {
       onSave();
     }
@@ -99,12 +115,27 @@ const IntroductionStep: React.FC<IntroductionStepProps> = ({
 
   // Handle next step
   const handleNext = async () => {
-    if (!isAcknowledged) {
-      await handleAcknowledge();
-    }
-    
-    if (onNext) {
-      onNext();
+    console.log('IntroductionStep: Next step called', {
+      isAcknowledged,
+      hasOnNext: !!onNext,
+    });
+
+    try {
+      // If not acknowledged yet, acknowledge first
+      if (!isAcknowledged) {
+        console.log('IntroductionStep: Not acknowledged yet, acknowledging first');
+        await handleAcknowledge();
+      }
+      
+      // Always call onNext if available
+      if (onNext) {
+        console.log('IntroductionStep: Calling onNext');
+        onNext();
+      } else {
+        console.warn('IntroductionStep: onNext not available');
+      }
+    } catch (error) {
+      console.error('IntroductionStep: Error in handleNext:', error);
     }
   };
 
@@ -346,9 +377,9 @@ const IntroductionStep: React.FC<IntroductionStepProps> = ({
           <Button
             variant="contained"
             onClick={handleNext}
-            disabled={!canGoNext || isLoading || isUpdating}
+            disabled={!canGoNext || isLoading || isUpdating || isSaving}
             endIcon={
-              (isLoading || isUpdating) ? (
+              (isLoading || isUpdating || isSaving) ? (
                 <CircularProgress size={16} />
               ) : (
                 <ArrowForwardIcon />
@@ -356,7 +387,7 @@ const IntroductionStep: React.FC<IntroductionStepProps> = ({
             }
             sx={{ minWidth: 140 }}
           >
-            {(isLoading || isUpdating) ? 'Loading...' : 'Continue'}
+            {(isLoading || isUpdating || isSaving) ? 'Loading...' : 'Continue'}
           </Button>
         </Box>
       </Box>

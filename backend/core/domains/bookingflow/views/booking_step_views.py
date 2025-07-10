@@ -223,7 +223,7 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def update_configuration(self, request, pk=None):
-        """Update configuration for a step - availability_check blocked"""
+        """Update configuration for a step - ENHANCED ERROR HANDLING"""
         try:
             step = self.get_object()
             
@@ -241,10 +241,42 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
                 )
             
             return self.configuration(request, pk)
+            
         except (BookingFlowStepNotFound, InvalidStepConfiguration) as e:
             return Response(
                 {"detail": str(e)},
+                status=e.status_code if hasattr(e, 'status_code') else status.HTTP_400_BAD_REQUEST
+            )
+        except ValueError as e:
+            # Handle specific Django model validation errors
+            error_message = str(e)
+            
+            # Provide more specific error messages for common issues
+            if "must be a" in error_message and "instance" in error_message:
+                field_name = error_message.split('"')[1] if '"' in error_message else "field"
+                return Response(
+                    {
+                        "detail": f"Invalid value for {field_name}. Please ensure you're providing valid data.",
+                        "error_type": "invalid_field_value",
+                        "field": field_name
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            return Response(
+                {
+                    "detail": f"Validation error: {error_message}",
+                    "error_type": "validation_error"
+                },
                 status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "detail": "An unexpected error occurred while updating the configuration. Please try again.",
+                    "error": str(e)
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     @action(detail=True, methods=['post'])

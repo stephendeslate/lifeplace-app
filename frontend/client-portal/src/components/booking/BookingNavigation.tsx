@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/BookingNavigation.tsx
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Box,
   Button,
@@ -49,6 +49,42 @@ export const BookingNavigation: React.FC<BookingNavigationProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Wrap handlers to add logging
+  const handleNext = useCallback(() => {
+    console.log('BookingNavigation: Next button clicked', {
+      canGoNext,
+      isLoading,
+      hasOnNext: !!onNext,
+    });
+    
+    if (onNext && canGoNext && !isLoading) {
+      onNext();
+    }
+  }, [onNext, canGoNext, isLoading]);
+
+  const handlePrevious = useCallback(() => {
+    console.log('BookingNavigation: Previous button clicked', {
+      canGoPrevious,
+      isLoading,
+      hasOnPrevious: !!onPrevious,
+    });
+    
+    if (onPrevious && canGoPrevious && !isLoading) {
+      onPrevious();
+    }
+  }, [onPrevious, canGoPrevious, isLoading]);
+
+  const handleSave = useCallback(() => {
+    console.log('BookingNavigation: Save button clicked', {
+      isLoading,
+      hasOnSave: !!onSave,
+    });
+    
+    if (onSave && !isLoading) {
+      onSave();
+    }
+  }, [onSave, isLoading]);
+
   // Mobile layout - stacked buttons
   if (isMobile) {
     return (
@@ -57,7 +93,7 @@ export const BookingNavigation: React.FC<BookingNavigationProps> = ({
         {onNext && (
           <Button
             variant="contained"
-            onClick={onNext}
+            onClick={handleNext}
             disabled={!canGoNext || isLoading}
             fullWidth
             size="large"
@@ -81,7 +117,7 @@ export const BookingNavigation: React.FC<BookingNavigationProps> = ({
           {onPrevious && (
             <Button
               variant="outlined"
-              onClick={onPrevious}
+              onClick={handlePrevious}
               disabled={!canGoPrevious || isLoading}
               startIcon={<ArrowBackIcon />}
               size="large"
@@ -96,7 +132,7 @@ export const BookingNavigation: React.FC<BookingNavigationProps> = ({
           {showSaveButton && onSave && (
             <Button
               variant="outlined"
-              onClick={onSave}
+              onClick={handleSave}
               disabled={isLoading}
               startIcon={<SaveIcon />}
               size="large"
@@ -132,7 +168,7 @@ export const BookingNavigation: React.FC<BookingNavigationProps> = ({
           {onPrevious ? (
             <Button
               variant="outlined"
-              onClick={onPrevious}
+              onClick={handlePrevious}
               disabled={!canGoPrevious || isLoading}
               startIcon={<ArrowBackIcon />}
               size="large"
@@ -151,7 +187,7 @@ export const BookingNavigation: React.FC<BookingNavigationProps> = ({
           {showSaveButton && onSave && (
             <Button
               variant="outlined"
-              onClick={onSave}
+              onClick={handleSave}
               disabled={isLoading}
               startIcon={<SaveIcon />}
               size="large"
@@ -165,7 +201,7 @@ export const BookingNavigation: React.FC<BookingNavigationProps> = ({
           {onNext && (
             <Button
               variant="contained"
-              onClick={onNext}
+              onClick={handleNext}
               disabled={!canGoNext || isLoading}
               endIcon={
                 isLoading ? (

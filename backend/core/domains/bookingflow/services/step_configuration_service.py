@@ -367,26 +367,69 @@ class BookingFlowStepConfigurationService:
     
     @staticmethod
     def _update_payment_config(step, config_data):
-        """Update payment info step configuration - UPDATED"""
+        """Update payment info step configuration - FIXED"""
         config, created = PaymentInfoStepConfiguration.objects.get_or_create(step=step)
         
-        # Handle many-to-many fields separately
+        # Handle many-to-many and foreign key fields separately
         m2m_fields = ['allowed_gateways']
+        fk_fields = ['default_gateway']
         
         for key, value in config_data.items():
             if hasattr(config, key):
                 if key in m2m_fields:
-                    # Validate the IDs exist
+                    # Handle many-to-many fields - validate IDs exist
                     if key == 'allowed_gateways':
-                        from core.domains.payments.models import PaymentGateway
-                        valid_ids = PaymentGateway.objects.filter(
-                            id__in=value, is_active=True
-                        ).values_list('id', flat=True)
-                        getattr(config, key).set(valid_ids)
+                        try:
+                            from core.domains.payments.models import PaymentGateway
+                            valid_ids = PaymentGateway.objects.filter(
+                                id__in=value, is_active=True
+                            ).values_list('id', flat=True)
+                            getattr(config, key).set(valid_ids)
+                            logger.debug(f"Set allowed_gateways to {list(valid_ids)}")
+                        except ImportError:
+                            logger.warning("Payment domain not available, skipping gateway validation")
+                        except Exception as e:
+                            logger.error(f"Error setting allowed_gateways: {e}")
+                            # Skip this field if there's an error
+                            continue
+                
+                elif key in fk_fields:
+                    # Handle foreign key fields - convert ID to instance
+                    if key == 'default_gateway':
+                        if value is not None:
+                            try:
+                                from core.domains.payments.models import PaymentGateway
+                                gateway_instance = PaymentGateway.objects.get(
+                                    id=value, is_active=True
+                                )
+                                setattr(config, key, gateway_instance)
+                                logger.debug(f"Set default_gateway to {gateway_instance}")
+                            except ImportError:
+                                logger.warning("Payment domain not available, skipping gateway assignment")
+                                continue
+                            except PaymentGateway.DoesNotExist:
+                                logger.error(f"Payment gateway with ID {value} not found or inactive")
+                                # Set to None if gateway doesn't exist
+                                setattr(config, key, None)
+                            except Exception as e:
+                                logger.error(f"Error setting default_gateway: {e}")
+                                continue
+                        else:
+                            # Value is None, set to None
+                            setattr(config, key, None)
+                            logger.debug("Set default_gateway to None")
+                
                 else:
+                    # Handle regular fields
                     setattr(config, key, value)
         
-        config.save()
+        try:
+            config.save()
+            logger.info(f"Successfully updated payment configuration for step: {step.name}")
+        except Exception as e:
+            logger.error(f"Error saving payment configuration: {e}")
+            raise InvalidStepConfiguration(f"Failed to save payment configuration: {str(e)}")
+        
         return config
     
     @staticmethod
