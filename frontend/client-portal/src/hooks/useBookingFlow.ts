@@ -12,6 +12,7 @@ import type { StartSessionResponse } from '../types/booking-session.types';
 
 interface UseBookingFlowOptions {
   eventTypeId?: number;
+  flowId?: number;
   autoStart?: boolean;
 }
 
@@ -20,6 +21,10 @@ interface UseBookingFlowReturn {
   availableFlows: PublicBookingFlow[] | undefined;
   selectedFlow: PublicBookingFlow | null;
   eventTypes: EventType[] | undefined;
+  
+  // Current selections for tracking
+  currentEventTypeId: number | undefined;
+  currentFlowId: number | undefined;
   
   // Flow selection
   selectFlow: (flowId: number) => Promise<void>;
@@ -49,18 +54,20 @@ interface UseBookingFlowReturn {
 }
 
 export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingFlowReturn => {
-  const { eventTypeId, autoStart = false } = options;
+  const { eventTypeId, flowId, autoStart = false } = options;
   const queryClient = useQueryClient();
   
   // ALWAYS call useState hooks - no conditional calls
   const [selectedFlow, setSelectedFlow] = useState<PublicBookingFlow | null>(null);
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<number | undefined>(eventTypeId);
+  const [selectedFlowId, setSelectedFlowId] = useState<number | undefined>(flowId);
   const [currentSession, setCurrentSession] = useState<StartSessionResponse | null>(null);
   const [sessionError, setSessionError] = useState<Error | null>(null);
   
   // ALWAYS call useRef hooks
   const hasAutoSelectedFlowRef = useRef(false);
   const hasAutoSelectedEventTypeRef = useRef(false);
+  const hasProcessedInitialPropsRef = useRef(false);
 
   // ALWAYS call useQuery hooks in the same order (even if disabled)
   const {
@@ -139,27 +146,51 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
 
   // ALWAYS call useCallback hooks in the same order
   const selectFlow = useCallback(async (flowId: number) => {
+    console.log('useBookingFlow: selectFlow called with flowId:', flowId);
+    
     try {
-      const flow = availableFlows?.find(f => f.id === flowId) || 
-                   filteredFlows?.find(f => f.id === flowId);
-      
-      if (!flow) {
-        throw new Error('Flow not found');
+      // First check if we already have this flow selected
+      if (selectedFlow && selectedFlow.id === flowId) {
+        console.log('useBookingFlow: Flow already selected:', flowId);
+        setSelectedFlowId(flowId);
+        return;
       }
 
+      // Find the flow in available flows or filtered flows
+      let flow = availableFlows?.find(f => f.id === flowId);
+      if (!flow && filteredFlows) {
+        flow = filteredFlows.find(f => f.id === flowId);
+      }
+      
+      if (!flow) {
+        // If not found in current lists, try to fetch it directly
+        console.log('useBookingFlow: Flow not found in lists, fetching directly:', flowId);
+        flow = await bookingFlowAPI.getFlow(flowId);
+      }
+
+      if (!flow) {
+        throw new Error(`Flow with ID ${flowId} not found`);
+      }
+
+      console.log('useBookingFlow: Setting selected flow:', flow);
       setSelectedFlow(flow);
+      setSelectedFlowId(flowId);
       
       if (autoStart) {
+        console.log('useBookingFlow: Auto-starting session for flow:', flowId);
         await startSessionMutation.mutateAsync(flowId);
       }
     } catch (error) {
+      console.error('useBookingFlow: Error selecting flow:', error);
       setSessionError(error as Error);
     }
-  }, [availableFlows, filteredFlows, autoStart, startSessionMutation]);
+  }, [availableFlows, filteredFlows, selectedFlow, autoStart, startSessionMutation]);
 
   const selectEventType = useCallback((eventTypeId: number) => {
+    console.log('useBookingFlow: selectEventType called with eventTypeId:', eventTypeId);
     setSelectedEventTypeId(eventTypeId);
     setSelectedFlow(null);
+    setSelectedFlowId(undefined);
     setCurrentSession(null);
   }, []);
 
@@ -187,12 +218,15 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
   }, []);
 
   const reset = useCallback(() => {
+    console.log('useBookingFlow: Resetting state');
     setSelectedFlow(null);
     setSelectedEventTypeId(undefined);
+    setSelectedFlowId(undefined);
     setCurrentSession(null);
     setSessionError(null);
     hasAutoSelectedFlowRef.current = false;
     hasAutoSelectedEventTypeRef.current = false;
+    hasProcessedInitialPropsRef.current = false;
     startSessionMutation.reset();
   }, [startSessionMutation]);
 
@@ -210,6 +244,42 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
   }, [flowsError, eventTypesError, flowError, paymentGatewaysError]);
 
   // ALWAYS call useEffect hooks in the same order
+  
+  // Process initial props on first load
+  useEffect(() => {
+    if (hasProcessedInitialPropsRef.current || isLoadingFlows) {
+      return;
+    }
+
+    console.log('useBookingFlow: Processing initial props', { eventTypeId, flowId });
+    
+    if (flowId && availableFlows) {
+      // If a specific flow ID is provided, select it immediately
+      const flow = availableFlows.find(f => f.id === flowId);
+      if (flow && !hasAutoSelectedFlowRef.current) {
+        console.log('useBookingFlow: Auto-selecting flow from props:', flowId);
+        hasAutoSelectedFlowRef.current = true;
+        hasProcessedInitialPropsRef.current = true;
+        setSelectedFlow(flow);
+        setSelectedFlowId(flowId);
+        return;
+      }
+    }
+
+    if (eventTypeId && !hasAutoSelectedEventTypeRef.current) {
+      console.log('useBookingFlow: Auto-selecting event type from props:', eventTypeId);
+      hasAutoSelectedEventTypeRef.current = true;
+      hasProcessedInitialPropsRef.current = true;
+      setSelectedEventTypeId(eventTypeId);
+      return;
+    }
+
+    if (!eventTypeId && !flowId) {
+      hasProcessedInitialPropsRef.current = true;
+    }
+  }, [eventTypeId, flowId, availableFlows, isLoadingFlows]);
+
+  // Auto-select flow when only one is available for event type
   useEffect(() => {
     if (selectedEventTypeId && 
         filteredFlows && 
@@ -217,32 +287,40 @@ export const useBookingFlow = (options: UseBookingFlowOptions = {}): UseBookingF
         !selectedFlow &&
         !hasAutoSelectedFlowRef.current) {
       
+      console.log('useBookingFlow: Auto-selecting single flow for event type:', filteredFlows[0]);
       hasAutoSelectedFlowRef.current = true;
       setSelectedFlow(filteredFlows[0]);
+      setSelectedFlowId(filteredFlows[0].id);
     }
   }, [selectedEventTypeId, filteredFlows, selectedFlow]);
 
-  useEffect(() => {
-    if (eventTypeId && 
-        !selectedEventTypeId && 
-        !hasAutoSelectedEventTypeRef.current) {
-      
-      hasAutoSelectedEventTypeRef.current = true;
-      setSelectedEventTypeId(eventTypeId);
-    }
-  }, [eventTypeId, selectedEventTypeId]);
-
+  // Update flow details when fetched
   useEffect(() => {
     if (flowDetails && selectedFlow && flowDetails.id === selectedFlow.id) {
+      console.log('useBookingFlow: Updating flow with detailed data:', flowDetails);
       setSelectedFlow(flowDetails);
     }
   }, [flowDetails, selectedFlow]);
+
+  // Reset refs when options change
+  useEffect(() => {
+    if (eventTypeId !== options.eventTypeId || flowId !== options.flowId) {
+      console.log('useBookingFlow: Options changed, resetting refs');
+      hasAutoSelectedFlowRef.current = false;
+      hasAutoSelectedEventTypeRef.current = false;
+      hasProcessedInitialPropsRef.current = false;
+    }
+  }, [eventTypeId, flowId, options.eventTypeId, options.flowId]);
 
   return {
     // Flow data
     availableFlows: displayFlows,
     selectedFlow,
     eventTypes,
+    
+    // Current selections for tracking
+    currentEventTypeId: selectedEventTypeId,
+    currentFlowId: selectedFlowId,
     
     // Flow selection
     selectFlow,

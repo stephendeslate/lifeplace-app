@@ -53,6 +53,8 @@ interface BookingFlowContainerProps {
   onFlowComplete?: (result: CompleteBookingResponse) => void;
   onFlowError?: (error: Error) => void;
   onSessionCreated?: (session: BookingSession) => void;
+  onFlowSelected?: (flowId: number) => void;
+  onEventTypeSelected?: (eventTypeId: number) => void;
 }
 
 // Step component registry
@@ -297,6 +299,8 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
   onFlowComplete,
   onFlowError,
   onSessionCreated,
+  onFlowSelected,
+  onEventTypeSelected,
 }) => {
   // ALWAYS call all hooks in the same order - no conditional hook calls
   const {
@@ -318,6 +322,8 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
   const [initializationError, setInitializationError] = useState<Error | null>(null);
   const [showEventTypeSelection, setShowEventTypeSelection] = useState(false);
   const [localSessionUUID, setLocalSessionUUID] = useState<string | undefined>(sessionUUID);
+  const [currentEventTypeId, setCurrentEventTypeId] = useState<number | undefined>(eventTypeId);
+  const [currentFlowId, setCurrentFlowId] = useState<number | undefined>(flowId);
   
   // Always call useRef hooks
   const hasInitializedRef = useRef(false);
@@ -334,28 +340,44 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
     initializationAttemptRef.current += 1;
 
     try {
-    
+      console.log('BookingFlowContainer: Initializing flow', { eventTypeId, flowId });
       setIsInitializing(true);
       setInitializationError(null);
       clearError();
 
       if (flowId) {
+        console.log('BookingFlowContainer: Selecting flow by ID', flowId);
         await selectFlow(flowId);
+        setCurrentFlowId(flowId);
         hasSelectedFlowRef.current = true;
         hasInitializedRef.current = true;
+        
+        // Notify parent of flow selection
+        if (onFlowSelected) {
+          onFlowSelected(flowId);
+        }
         return;
       }
 
       if (eventTypeId) {
+        console.log('BookingFlowContainer: Selecting event type', eventTypeId);
         selectEventType(eventTypeId);
+        setCurrentEventTypeId(eventTypeId);
         hasInitializedRef.current = true;
+        
+        // Notify parent of event type selection
+        if (onEventTypeSelected) {
+          onEventTypeSelected(eventTypeId);
+        }
         return;
       }
 
+      console.log('BookingFlowContainer: No specific flow or event type, showing selection');
       setShowEventTypeSelection(true);
       hasInitializedRef.current = true;
     } catch (error) {
       const err = error as Error;
+      console.error('BookingFlowContainer: Initialization error', err);
       setInitializationError(err);
       onFlowError?.(err);
     } finally {
@@ -368,15 +390,29 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
     selectEventType,
     clearError,
     onFlowError,
+    onFlowSelected,
+    onEventTypeSelected,
   ]);
 
   const handleEventTypeSelected = useCallback(
     (eventType: EventType, flow: PublicBookingFlow) => {
+      console.log('BookingFlowContainer: Event type selected', { eventType, flow });
       setShowEventTypeSelection(false);
+      setCurrentEventTypeId(eventType.id);
+      setCurrentFlowId(flow.id);
+      
       selectEventType(eventType.id);
       selectFlow(flow.id);
+      
+      // Notify parent of selections
+      if (onEventTypeSelected) {
+        onEventTypeSelected(eventType.id);
+      }
+      if (onFlowSelected) {
+        onFlowSelected(flow.id);
+      }
     },
-    [selectEventType, selectFlow]
+    [selectEventType, selectFlow, onEventTypeSelected, onFlowSelected]
   );
 
   const handleFlowComplete = useCallback(
@@ -391,6 +427,17 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
     return localSessionUUID || sessionUUID || currentSession?.session_id;
   }, [localSessionUUID, sessionUUID, currentSession?.session_id]);
 
+  // Track the current flow and event type from context
+  useEffect(() => {
+    if (selectedFlow && selectedFlow.id !== currentFlowId) {
+      console.log('BookingFlowContainer: Flow selected from context', selectedFlow.id);
+      setCurrentFlowId(selectedFlow.id);
+      
+      if (onFlowSelected) {
+        onFlowSelected(selectedFlow.id);
+      }
+    }
+  }, [selectedFlow, currentFlowId, onFlowSelected]);
 
   // Always call useEffect hooks in the same order
   useEffect(() => {
@@ -401,7 +448,7 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
 
   useEffect(() => {
     const startBookingSession = async () => {
-      // FIXED: Only start session if we don't already have one
+      // FIXED: Only start session if we have a selected flow and don't already have one
       if (!selectedFlow || currentSessionUUID || hasStartedSessionRef.current) {
         return;
       }
@@ -409,6 +456,7 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
       hasStartedSessionRef.current = true;
 
       try {
+        console.log('BookingFlowContainer: Starting session for flow', selectedFlow.id);
         const sessionResponse = await startSession();
         
         if (sessionResponse && sessionResponse.session_id) {
@@ -430,6 +478,7 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
             expires_at: sessionResponse.expires_at,
           };
           
+          console.log('BookingFlowContainer: Session created successfully', minimalSession);
           onSessionCreated?.(minimalSession);
         } else {
           throw new Error('Invalid session response: missing session_id');
@@ -521,8 +570,14 @@ export const BookingFlowContainer: React.FC<BookingFlowContainerProps> = ({
       <EventTypeSelection
         onEventTypeSelected={handleEventTypeSelected}
         onContinueWithoutEventType={(flow) => {
+          console.log('BookingFlowContainer: Continue without event type', flow);
           setShowEventTypeSelection(false);
+          setCurrentFlowId(flow.id);
           selectFlow(flow.id);
+          
+          if (onFlowSelected) {
+            onFlowSelected(flow.id);
+          }
         }}
       />
     );
