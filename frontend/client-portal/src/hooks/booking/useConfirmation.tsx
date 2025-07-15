@@ -1,0 +1,255 @@
+// frontend/client-portal/src/hooks/booking/useConfirmation.ts
+
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { ConfirmationApi } from '../../apis/booking/confirmation.api';
+import type {
+  BookingCompletionResult,
+  ConfirmationStepConfiguration,
+} from '../../types/booking';
+
+// Hook for managing confirmation step and booking completion
+export const useConfirmation = (
+  sessionId?: string,
+  config?: ConfirmationStepConfiguration | null
+) => {
+  const [loading, setLoading] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [completionResult, setCompletionResult] = useState<BookingCompletionResult | null>(null);
+  const [sessionDetails, setSessionDetails] = useState<any>(null);
+  const [confirmationData, setConfirmationData] = useState<any>(null);
+
+  // Load session details for display
+  const loadSessionDetails = useCallback(async () => {
+    if (!sessionId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const details = await ConfirmationApi.getSessionDetails(sessionId);
+      setSessionDetails(details);
+      
+      // Format confirmation data for display
+      const formatted = ConfirmationApi.formatConfirmationData(details);
+      setConfirmationData(formatted);
+    } catch (err) {
+      const errorMessage = ConfirmationApi.handleApiError(err);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionId]);
+
+  // Complete the booking
+  const completeBooking = useCallback(async (): Promise<boolean> => {
+    if (!sessionId) {
+      setError('Session information missing');
+      return false;
+    }
+
+    setCompleting(true);
+    setError(null);
+
+    try {
+      const result = await ConfirmationApi.completeBooking(sessionId);
+      setCompletionResult(result);
+      
+      // Reload session details to get updated information
+      await loadSessionDetails();
+      
+      return true;
+    } catch (err) {
+      const errorMessage = ConfirmationApi.handleApiError(err);
+      setError(errorMessage);
+      return false;
+    } finally {
+      setCompleting(false);
+    }
+  }, [sessionId, loadSessionDetails]);
+
+  // Send confirmation email
+  const sendConfirmationEmail = useCallback(async (): Promise<boolean> => {
+    if (!sessionId) return false;
+
+    setSendingEmail(true);
+
+    try {
+      await ConfirmationApi.sendConfirmationEmail(sessionId);
+      return true;
+    } catch (err) {
+      // Email sending is optional, so we don't set error state
+      console.warn('Failed to send confirmation email:', err);
+      return false;
+    } finally {
+      setSendingEmail(false);
+    }
+  }, [sessionId]);
+
+  // Get booking reference number
+  const bookingReference = useMemo(() => {
+    if (!sessionId) return '';
+    return ConfirmationApi.generateBookingReference(sessionId);
+  }, [sessionId]);
+
+  // Get next steps content
+  const nextSteps = useMemo(() => {
+    return ConfirmationApi.getNextStepsContent(config);
+  }, [config]);
+
+  // Get support contact information
+  const supportContact = useMemo(() => {
+    return ConfirmationApi.getSupportContact();
+  }, []);
+
+  // Get formatted confirmation title and message
+  const confirmationContent = useMemo(() => ({
+    title: config?.title || 'Booking Confirmed!',
+    message: config?.message || 'Thank you for your booking. We\'ll be in touch soon!',
+  }), [config]);
+
+  // Check if booking is completed
+  const isCompleted = useMemo(() => {
+    return !!completionResult || sessionDetails?.is_completed;
+  }, [completionResult, sessionDetails]);
+
+  // Format event details for display
+  const eventSummary = useMemo(() => {
+    if (!confirmationData) return null;
+
+    const { eventDetails, contactInfo, packages, addons, totalPrice } = confirmationData;
+
+    return {
+      date: eventDetails.date ? ConfirmationApi.formatDate(eventDetails.date) : '',
+      time: eventDetails.time ? ConfirmationApi.formatTime(eventDetails.time) : '',
+      duration: eventDetails.duration ? `${eventDetails.duration} hours` : '',
+      venue: eventDetails.venue || '',
+      contact: {
+        name: contactInfo.name || '',
+        email: contactInfo.email || '',
+        phone: contactInfo.phone || '',
+      },
+      items: [
+        ...packages.map((pkg: any) => ({
+          type: 'Package',
+          name: pkg.name,
+          price: pkg.price,
+          quantity: pkg.quantity,
+        })),
+        ...addons.map((addon: any) => ({
+          type: 'Add-on',
+          name: addon.name,
+          price: addon.price,
+          quantity: addon.quantity,
+        })),
+      ],
+      totalPrice,
+    };
+  }, [confirmationData]);
+
+  // Auto-load session details on mount
+  useEffect(() => {
+    if (sessionId) {
+      loadSessionDetails();
+    }
+  }, [sessionId, loadSessionDetails]);
+
+  // Auto-send confirmation email if configured
+  useEffect(() => {
+    if (config?.send_confirmation_email && 
+        isCompleted && 
+        sessionDetails?.client?.email) {
+      sendConfirmationEmail();
+    }
+  }, [config?.send_confirmation_email, isCompleted, sessionDetails, sendConfirmationEmail]);
+
+  // Clear errors
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // Navigation helpers
+  const navigateToDashboard = useCallback(() => {
+    window.location.href = '/dashboard';
+  }, []);
+
+  const navigateToHome = useCallback(() => {
+    window.location.href = '/';
+  }, []);
+
+  return {
+    // Data
+    sessionDetails,
+    confirmationData,
+    completionResult,
+    eventSummary,
+    bookingReference,
+    nextSteps,
+    supportContact,
+    confirmationContent,
+    
+    // Actions
+    completeBooking,
+    sendConfirmationEmail,
+    loadSessionDetails,
+    clearError,
+    navigateToDashboard,
+    navigateToHome,
+    
+    // State
+    loading,
+    completing,
+    sendingEmail,
+    error,
+    
+    // Status
+    isCompleted,
+    
+    // Configuration flags
+    showBookingSummary: config?.show_booking_summary !== false,
+    showNextSteps: config?.show_next_steps !== false,
+    autoSendEmail: config?.send_confirmation_email === true,
+    autoSendCalendarInvite: config?.send_calendar_invite === true,
+    createEventImmediately: config?.create_event_immediately !== false,
+  };
+};
+
+// Hook for displaying confirmation information without session management
+export const useConfirmationDisplay = (
+  bookingData: any,
+  config?: ConfirmationStepConfiguration | null
+) => {
+  const confirmationContent = useMemo(() => ({
+    title: config?.title || 'Booking Confirmed!',
+    message: config?.message || 'Thank you for your booking. We\'ll be in touch soon!',
+  }), [config]);
+
+  const nextSteps = useMemo(() => {
+    return ConfirmationApi.getNextStepsContent(config);
+  }, [config]);
+
+  const supportContact = useMemo(() => {
+    return ConfirmationApi.getSupportContact();
+  }, []);
+
+  const formattedBookingData = useMemo(() => {
+    if (!bookingData) return null;
+    return ConfirmationApi.formatConfirmationData(bookingData);
+  }, [bookingData]);
+
+  const bookingReference = useMemo(() => {
+    if (!bookingData?.session_id) return '';
+    return ConfirmationApi.generateBookingReference(bookingData.session_id);
+  }, [bookingData]);
+
+  return {
+    confirmationContent,
+    nextSteps,
+    supportContact,
+    formattedBookingData,
+    bookingReference,
+    showBookingSummary: config?.show_booking_summary !== false,
+    showNextSteps: config?.show_next_steps !== false,
+  };
+};

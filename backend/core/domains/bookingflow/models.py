@@ -723,23 +723,29 @@ class BookingSession(BaseModel):
         """Calculate total price from booking data"""
         total = Decimal('0.00')
         
-        # Add package prices
-        if 'selected_packages' in self.booking_data:
-            for package_data in self.booking_data['selected_packages']:
-                total += Decimal(str(package_data.get('price', 0)))
+        # Look through all step data for packages and addons
+        for step_key, step_data in self.booking_data.items():
+            if isinstance(step_data, dict):
+                # Add package prices
+                if 'selected_packages' in step_data:
+                    for package_data in step_data['selected_packages']:
+                        price = Decimal(str(package_data.get('price', 0)))
+                        quantity = package_data.get('quantity', 1)
+                        total += price * quantity
+                        
+                        # Handle excess hours for packages
+                        if 'excess_hours' in package_data and 'excess_hour_price' in package_data:
+                            excess_cost = Decimal(str(package_data['excess_hour_price'])) * package_data['excess_hours'] * quantity
+                            total += excess_cost
+                
+                # Add addon prices
+                if 'selected_addons' in step_data:
+                    for addon_data in step_data['selected_addons']:
+                        price = Decimal(str(addon_data.get('price', 0)))
+                        quantity = addon_data.get('quantity', 1)
+                        total += price * quantity
         
-        # Add addon prices
-        if 'selected_addons' in self.booking_data:
-            for addon_data in self.booking_data['selected_addons']:
-                total += Decimal(str(addon_data.get('price', 0)))
-        
-        # Apply discounts
-        if 'applied_discount' in self.booking_data:
-            discount_data = self.booking_data['applied_discount']
-            discount_amount = Decimal(str(discount_data.get('amount', 0)))
-            total -= discount_amount
-        
-        return max(total, Decimal('0.00'))
+        return total
 
 
 class BookingFlowAnalytics(BaseModel):

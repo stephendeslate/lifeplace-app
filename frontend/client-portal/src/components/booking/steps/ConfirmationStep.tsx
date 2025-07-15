@@ -1,430 +1,475 @@
 // frontend/client-portal/src/components/booking/steps/ConfirmationStep.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
+  Paper,
   Button,
   Alert,
-  Stack,
-  Divider,
-  Chip,
   CircularProgress,
+  Card,
+  CardContent,
+  Chip,
 } from '@mui/material';
-import {
-  CheckCircle as CheckCircleIcon,
-  Event as EventIcon,
-  Person as PersonIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  Download as DownloadIcon,
-  Home as HomeIcon,
+import { 
+  CheckCircle, 
+  CalendarToday, 
+  Email, 
+  Phone, 
+  LocationOn,
+  AccessTime,
+  Group,
+  Receipt,
+  AttachMoney,
 } from '@mui/icons-material';
-import { useBookingSessionContext } from '../../../contexts/BookingSessionContext';
-import { formatCurrency } from '../../../utils/payment-helpers';
+import { useBooking } from '../../../contexts/BookingContext';
+import { useConfirmation } from '../../../hooks/booking/useConfirmation';
 import type { 
-  ConfirmationStepConfiguration 
-} from '../../../types/booking.types';
-import type { 
+  ConfirmationStepConfiguration,
   ConfirmationStepData,
-  CompleteBookingResponse 
-} from '../../../types/booking-session.types';
-import type { BaseStepProps } from '../../../types/booking-steps.types';
+  StepValidationResult,
+  BookingSession
+} from '../../../types/booking';
 
-interface ConfirmationStepProps extends BaseStepProps<ConfirmationStepData> {
-  completedBooking?: CompleteBookingResponse | null;
+interface ConfirmationStepProps {
+  stepData?: ConfirmationStepData;
+  config: ConfirmationStepConfiguration | null;
+  onDataChange: (data: ConfirmationStepData) => void;
+  validationErrors: Record<string, string[]>;
+  isValidating: boolean;
+  session?: BookingSession | null;
+  completedBooking?: any;
+  onValidate?: (data: any) => Promise<StepValidationResult>;
 }
 
-const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
-  step,
-  data,
-  onUpdate,
+export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
+  stepData = { 
+    booking_reference: '', 
+    completion_status: 'pending',
+    confirmation_email_sent: false 
+  },
+  config,
+  onDataChange,
+  validationErrors,
+  isValidating,
+  session,
   completedBooking,
-  isLoading = false,
+  onValidate,
 }) => {
-  const { session } = useBookingSessionContext();
-  const [isAcknowledged, setIsAcknowledged] = useState(data.acknowledged || false);
-  const [feedback, setFeedback] = useState(data.feedback || '');
+  const { state } = useBooking();
+  const currentSession = session || state.currentSession;
 
-  // Get step configuration
-  const config = step.configuration_data as ConfirmationStepConfiguration;
+  // Use stepData as single source of truth
+  const confirmationData = useMemo(() => ({
+    booking_reference: stepData.booking_reference || '',
+    completion_status: stepData.completion_status || 'pending',
+    confirmation_email_sent: stepData.confirmation_email_sent || false,
+    completed_at: stepData.completed_at,
+    booking_completion_result: stepData.booking_completion_result,
+  }), [stepData]);
 
-  // Update parent data when local state changes
-  useEffect(() => {
-    onUpdate({
-      acknowledged: isAcknowledged,
-      feedback: feedback,
-    });
-  }, [isAcknowledged, feedback, onUpdate]);
+  // Use the confirmation hook for enhanced functionality
+  const {
+    sessionDetails,
+    eventSummary,
+    nextSteps,
+    supportContact,
+    confirmationContent,
+    completeBooking,
+    sendConfirmationEmail,
+    navigateToDashboard,
+    navigateToHome,
+    completing,
+    sendingEmail,
+    error,
+    completionResult, // Get the actual completion result
+    bookingReference, // Get the booking reference from hook
+  } = useConfirmation(
+    currentSession?.session_id,
+    config
+  );
 
-  const handleAcknowledge = () => {
-    setIsAcknowledged(true);
-  };
+  // Computed values
+  const isCompleted = useMemo(() => 
+    confirmationData.completion_status === 'completed' || !!completionResult,
+    [confirmationData.completion_status, completionResult]
+  );
 
-  const handleFeedbackChange = (newFeedback: string) => {
-    setFeedback(newFeedback);
-  };
+  const isProcessing = useMemo(() => 
+    confirmationData.completion_status === 'processing' || completing,
+    [confirmationData.completion_status, completing]
+  );
 
-  // Extract booking details from session or completed booking
-  const bookingDetails = React.useMemo(() => {
-    if (completedBooking?.event) {
-      return {
-        eventName: completedBooking.event.name,
-        eventId: completedBooking.event.id,
-        startDate: completedBooking.event.start_date,
-        endDate: completedBooking.event.end_date,
-        status: completedBooking.event.status,
-        totalPrice: completedBooking.event.total_price,
-      };
-    }
+  // Use config properties with proper fallbacks
+  const showBookingSummary = config?.show_booking_summary !== false;
+  const showNextSteps = config?.show_next_steps !== false;
+  const shouldSendConfirmationEmail = config?.send_confirmation_email !== false;
 
-    if (session?.booking_data) {
-      // Extract details from session data
-      let eventName = 'Your Event';
-      let startDate = '';
-      let endDate = '';
-      let totalPrice = session.total_price;
+  // Handle completion - use callback to avoid unnecessary re-renders
+  const handleCompleteBooking = useCallback(async () => {
+    if (isCompleted || isProcessing) return;
 
-      // Look through session data for event details
-      Object.values(session.booking_data).forEach(stepData => {
-        if (typeof stepData === 'object' && stepData !== null) {
-          if ('event_name' in stepData && stepData.event_name) {
-            eventName = stepData.event_name as string;
-          }
-          if ('start_date' in stepData && stepData.start_date) {
-            startDate = stepData.start_date as string;
-          }
-          if ('end_date' in stepData && stepData.end_date) {
-            endDate = stepData.end_date as string;
-          }
-        }
+    try {
+      // Update status to processing
+      onDataChange({
+        ...confirmationData,
+        completion_status: 'processing'
       });
 
-      return {
-        eventName,
-        startDate,
-        endDate,
-        totalPrice,
-        status: session.is_completed ? 'CONFIRMED' : 'PENDING',
-      };
-    }
-
-    return null;
-  }, [completedBooking, session]);
-
-  // Extract contact information from session
-  const contactInfo = React.useMemo(() => {
-    if (!session?.booking_data) return null;
-
-    let email = '';
-    let phone = '';
-    let fullName = '';
-
-    Object.values(session.booking_data).forEach(stepData => {
-      if (typeof stepData === 'object' && stepData !== null) {
-        if ('email' in stepData && stepData.email) {
-          email = stepData.email as string;
-        }
-        if ('phone' in stepData && stepData.phone) {
-          phone = stepData.phone as string;
-        }
-        if ('full_name' in stepData && stepData.full_name) {
-          fullName = stepData.full_name as string;
-        }
+      const success = await completeBooking();
+      
+      if (success) {
+        // The hook will set completionResult, so we wait for it to update
+        // and then update our step data in the useEffect below
+        onDataChange({
+          ...confirmationData,
+          completion_status: 'completed',
+          completed_at: new Date().toISOString(),
+        });
+      } else {
+        // Handle completion failure
+        onDataChange({
+          ...confirmationData,
+          completion_status: 'failed'
+        });
       }
-    });
-
-    return { email, phone, fullName };
-  }, [session?.booking_data]);
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+    } catch (error) {
+      console.error('Failed to complete booking:', error);
+      onDataChange({
+        ...confirmationData,
+        completion_status: 'failed'
       });
-    } catch {
-      return dateString;
     }
-  };
+  }, [isCompleted, isProcessing, confirmationData, onDataChange, completeBooking]);
 
-  // Format date and time for display
-  const formatDateTime = (dateString: string) => {
+  // Handle email sending
+  const handleSendEmail = useCallback(async () => {
+    if (!confirmationData.booking_reference || 
+        confirmationData.confirmation_email_sent || 
+        !shouldSendConfirmationEmail) {
+      return;
+    }
+
     try {
-      const date = new Date(dateString);
-      return date.toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
+      await sendConfirmationEmail();
+      onDataChange({
+        ...confirmationData,
+        confirmation_email_sent: true
       });
-    } catch {
-      return dateString;
+    } catch (error) {
+      console.error('Failed to send confirmation email:', error);
     }
-  };
+  }, [confirmationData, sendConfirmationEmail, onDataChange, shouldSendConfirmationEmail]);
 
-  if (isLoading) {
+  // Auto-complete booking when component mounts/session changes
+  React.useEffect(() => {
+    if (currentSession && !isCompleted && !isProcessing) {
+      handleCompleteBooking();
+    }
+  }, [currentSession?.session_id, isCompleted, isProcessing, handleCompleteBooking]);
+
+  // Auto-send email when booking is completed
+  React.useEffect(() => {
+    if (isCompleted && confirmationData.booking_reference && !confirmationData.confirmation_email_sent) {
+      handleSendEmail();
+    }
+  }, [isCompleted, confirmationData.booking_reference, confirmationData.confirmation_email_sent, handleSendEmail]);
+
+  // Update step data when completion result is available
+  React.useEffect(() => {
+    if (completionResult && confirmationData.completion_status === 'completed') {
+      onDataChange({
+        ...confirmationData,
+        booking_reference: completionResult.session_id, // Use session_id as reference
+        booking_completion_result: completionResult,
+      });
+    }
+  }, [completionResult, confirmationData, onDataChange]);
+
+  // Show loading state while processing
+  if (isProcessing) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
         <CircularProgress size={60} sx={{ mb: 3 }} />
-        <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-          Processing your booking...
+        <Typography variant="h5" sx={{ mb: 2 }}>
+          Completing Your Booking...
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Please wait while we finalize your event booking.
         </Typography>
       </Box>
     );
   }
 
-  return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
-      {/* Success Header */}
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <CheckCircleIcon 
-          sx={{ 
-            fontSize: 80, 
-            color: 'success.main',
-            mb: 2 
-          }} 
-        />
-        
-        <Typography 
-          variant="h3" 
-          sx={{ 
-            fontWeight: 600,
-            color: 'success.main',
-            mb: 2
-          }}
-        >
-          {config?.title || 'Booking Confirmed!'}
+  // Show error state
+  if (confirmationData.completion_status === 'failed' || error) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 4 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error || 'Failed to complete your booking. Please try again.'}
+        </Alert>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Booking Completion Failed
         </Typography>
-        
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            color: 'text.secondary',
-            maxWidth: 600,
-            mx: 'auto'
-          }}
-        >
-          {config?.message || 'Thank you for your booking. We\'ll be in touch soon with more details about your event.'}
-        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+          <Button variant="outlined" onClick={handleCompleteBooking}>
+            Try Again
+          </Button>
+          <Button variant="text" onClick={navigateToHome}>
+            Return Home
+          </Button>
+        </Box>
       </Box>
+    );
+  }
 
-      {/* Booking Summary */}
-      {config?.show_booking_summary && bookingDetails && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <EventIcon color="primary" />
-              Booking Summary
-            </Typography>
+  // Show success confirmation
+  return (
+    <Box sx={{ textAlign: 'center' }}>
+      {/* Success Icon */}
+      <CheckCircle sx={{ fontSize: 80, color: 'success.main', mb: 3 }} />
 
-            <Stack spacing={2}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Event Name:
-                </Typography>
-                <Typography variant="body1">
-                  {bookingDetails.eventName}
-                </Typography>
-              </Box>
+      {/* Title - Use config title with fallback */}
+      <Typography variant="h3" sx={{ mb: 2, fontWeight: 700, color: 'success.main' }}>
+        {config?.title || 'Booking Confirmed!'}
+      </Typography>
 
-              {bookingDetails.eventId && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    Booking ID:
+      {/* Main Message - Use config message with fallback */}
+      <Typography variant="h6" sx={{ mb: 4, color: 'text.secondary', maxWidth: 600, mx: 'auto' }}>
+        {config?.message || 'Thank you for your booking. We\'ll be in touch soon with more details!'}
+      </Typography>
+
+      {/* Booking Reference */}
+      <Paper elevation={0} sx={{ p: 4, mb: 4, border: 2, borderColor: 'success.main', backgroundColor: 'success.light' }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          Booking Reference
+        </Typography>
+        <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main', mb: 2 }}>
+          {confirmationData.booking_reference || bookingReference || 'Generating...'}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Please save this reference number for your records
+        </Typography>
+      </Paper>
+
+      {/* Booking Summary - Only show if config allows */}
+      {showBookingSummary && eventSummary && (
+        <Paper elevation={0} sx={{ p: 3, mb: 4, border: 1, borderColor: 'divider', textAlign: 'left' }}>
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
+            Booking Summary
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+            {/* Event Details */}
+            <Box sx={{ flex: 1 }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CalendarToday color="primary" />
+                    Event Details
                   </Typography>
-                  <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                    #{bookingDetails.eventId}
-                  </Typography>
-                </Box>
-              )}
+                  
+                  {eventSummary.date && (
+                    <Box sx={{ mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Date:</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{eventSummary.date}</Typography>
+                    </Box>
+                  )}
+                  
+                  {eventSummary.time && (
+                    <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AccessTime fontSize="small" color="action" />
+                      <Typography variant="body2">{eventSummary.time}</Typography>
+                    </Box>
+                  )}
+                  
+                  {eventSummary.duration && (
+                    <Box sx={{ mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Duration:</Typography>
+                      <Typography variant="body2">{eventSummary.duration}</Typography>
+                    </Box>
+                  )}
+                  
+                  {eventSummary.venue && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LocationOn fontSize="small" color="action" />
+                      <Typography variant="body2">{eventSummary.venue}</Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Box>
 
-              {bookingDetails.startDate && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    Event Date:
+            {/* Contact Information */}
+            <Box sx={{ flex: 1 }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Group color="primary" />
+                    Contact Information
                   </Typography>
-                  <Typography variant="body1">
-                    {bookingDetails.endDate ? 
-                      `${formatDate(bookingDetails.startDate)} - ${formatDate(bookingDetails.endDate)}` :
-                      formatDateTime(bookingDetails.startDate)
-                    }
-                  </Typography>
-                </Box>
-              )}
+                  
+                  {eventSummary.contact.name && (
+                    <Box sx={{ mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Name:</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{eventSummary.contact.name}</Typography>
+                    </Box>
+                  )}
+                  
+                  {eventSummary.contact.email && (
+                    <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Email fontSize="small" color="action" />
+                      <Typography variant="body2">{eventSummary.contact.email}</Typography>
+                    </Box>
+                  )}
+                  
+                  {eventSummary.contact.phone && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Phone fontSize="small" color="action" />
+                      <Typography variant="body2">{eventSummary.contact.phone}</Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Box>
+          </Box>
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Status:
-                </Typography>
-                <Chip 
-                  label={bookingDetails.status}
-                  color={bookingDetails.status === 'CONFIRMED' ? 'success' : 'warning'}
-                  size="small"
-                />
-              </Box>
-
-              {bookingDetails.totalPrice && (
-                <>
-                  <Divider />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Total:
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                      {formatCurrency(bookingDetails.totalPrice)}
-                    </Typography>
+          {/* Selected Items */}
+          {eventSummary.items?.length > 0 && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Receipt color="primary" />
+                Selected Items
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {eventSummary.items.map((item, index) => (
+                  <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {item.name}
+                      </Typography>
+                      <Chip label={item.type} size="small" variant="outlined" sx={{ mt: 0.5 }} />
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="body2">Qty: {item.quantity}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.price}</Typography>
+                    </Box>
                   </Box>
-                </>
-              )}
-            </Stack>
-          </CardContent>
-        </Card>
+                ))}
+              </Box>
+              
+              {/* Total Price */}
+              <Box sx={{ mt: 2, p: 2, backgroundColor: 'primary.light', borderRadius: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AttachMoney color="primary" />
+                    Total Amount:
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                    {eventSummary.totalPrice}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          )}
+        </Paper>
       )}
 
-      {/* Contact Information */}
-      {contactInfo && (contactInfo.email || contactInfo.phone || contactInfo.fullName) && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PersonIcon color="primary" />
-              Contact Information
-            </Typography>
+      {/* Next Steps - Only show if config allows */}
+      {showNextSteps && (
+        <Paper elevation={0} sx={{ p: 3, mb: 4, border: 1, borderColor: 'divider', textAlign: 'left' }}>
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
+            What Happens Next?
+          </Typography>
 
-            <Stack spacing={2}>
-              {contactInfo.fullName && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <PersonIcon sx={{ color: 'text.secondary' }} />
-                  <Typography variant="body1">
-                    {contactInfo.fullName}
-                  </Typography>
-                </Box>
-              )}
-
-              {contactInfo.email && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <EmailIcon sx={{ color: 'text.secondary' }} />
-                  <Typography variant="body1">
-                    {contactInfo.email}
-                  </Typography>
-                </Box>
-              )}
-
-              {contactInfo.phone && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <PhoneIcon sx={{ color: 'text.secondary' }} />
-                  <Typography variant="body1">
-                    {contactInfo.phone}
-                  </Typography>
-                </Box>
-              )}
-            </Stack>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Next Steps */}
-      {config?.show_next_steps && config.next_steps_content && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CheckCircleIcon color="primary" />
-              What Happens Next
-            </Typography>
-
+          {/* Use config next_steps_content if available, otherwise use hook data */}
+          {config?.next_steps_content ? (
             <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
               {config.next_steps_content}
             </Typography>
-          </CardContent>
-        </Card>
+          ) : (
+            nextSteps.map((step, index) => (
+              <Box key={index} sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 3 }}>
+                {step.icon === 'email' && <Email sx={{ color: 'primary.main', mt: 0.5 }} />}
+                {step.icon === 'phone' && <Phone sx={{ color: 'primary.main', mt: 0.5 }} />}
+                {step.icon === 'calendar' && <CalendarToday sx={{ color: 'primary.main', mt: 0.5 }} />}
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    {step.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {step.description}
+                  </Typography>
+                </Box>
+              </Box>
+            ))
+          )}
+        </Paper>
       )}
 
-      {/* Confirmation Email Notice */}
-      {config?.send_confirmation_email && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          <Typography variant="body2">
-            A confirmation email has been sent to {contactInfo?.email || 'your email address'} with all the details of your booking.
-          </Typography>
+      {/* Contact Information */}
+      <Alert severity="info" sx={{ mb: 4, textAlign: 'left' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          Need to contact us?
+        </Typography>
+        <Typography variant="body2">
+          <strong>Phone:</strong> {supportContact.phone}<br />
+          <strong>Email:</strong> {supportContact.email}<br />
+          {supportContact.message}
+        </Typography>
+      </Alert>
+
+      {/* Email Status */}
+      {shouldSendConfirmationEmail && sendingEmail && (
+        <Alert severity="info" sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CircularProgress size={16} />
+            Sending confirmation email...
+          </Box>
         </Alert>
       )}
 
-      {/* Calendar Invite Notice */}
-      {config?.send_calendar_invite && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          <Typography variant="body2">
-            A calendar invite will be sent to help you keep track of your event date.
+      {shouldSendConfirmationEmail && confirmationData.confirmation_email_sent && (
+        <Alert severity="success" sx={{ mb: 4 }}>
+          Confirmation email sent successfully!
+        </Alert>
+      )}
+
+      {/* Validation Errors */}
+      {Object.keys(validationErrors).length > 0 && (
+        <Alert severity="warning" sx={{ mb: 4, textAlign: 'left' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+            Please note:
           </Typography>
+          {Object.entries(validationErrors).map(([field, errors]) => (
+            <Typography key={field} variant="body2">
+              {errors.join(', ')}
+            </Typography>
+          ))}
         </Alert>
       )}
 
       {/* Action Buttons */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 4 }}>
+      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
         <Button
           variant="contained"
           size="large"
-          startIcon={<HomeIcon />}
-          onClick={() => window.location.href = '/'}
-          sx={{ flex: 1 }}
+          onClick={navigateToDashboard}
+          sx={{ minWidth: 160 }}
         >
-          Return to Home
+          View Dashboard
         </Button>
-
         <Button
           variant="outlined"
           size="large"
-          startIcon={<DownloadIcon />}
-          onClick={() => {
-            // This would typically generate and download a booking confirmation PDF
-            // For now, we'll just acknowledge the action
-            handleAcknowledge();
-          }}
-          sx={{ flex: 1 }}
+          onClick={navigateToHome}
+          sx={{ minWidth: 160 }}
         >
-          Download Confirmation
+          Return Home
         </Button>
-      </Stack>
-
-      {/* Feedback Section (if enabled) */}
-      <Card sx={{ mt: 4 }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            How was your booking experience?
-          </Typography>
-          
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-            Your feedback helps us improve our booking process for future clients.
-          </Typography>
-
-          <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
-            {['Excellent', 'Good', 'Fair', 'Needs Improvement'].map((rating) => (
-              <Button
-                key={rating}
-                variant={feedback === rating ? 'contained' : 'outlined'}
-                size="small"
-                onClick={() => handleFeedbackChange(rating)}
-              >
-                {rating}
-              </Button>
-            ))}
-          </Stack>
-
-          {feedback && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              Thank you for your feedback! We appreciate you taking the time to help us improve.
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+      </Box>
     </Box>
   );
 };
-
-export default ConfirmationStep;

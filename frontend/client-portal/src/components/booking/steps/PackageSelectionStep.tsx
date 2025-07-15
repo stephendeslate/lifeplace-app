@@ -1,9 +1,10 @@
 // frontend/client-portal/src/components/booking/steps/PackageSelectionStep.tsx
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
+  Paper,
   Card,
   CardContent,
   CardActions,
@@ -11,528 +12,315 @@ import {
   Chip,
   Alert,
   CircularProgress,
-  Stack,
-  IconButton,
   Divider,
-  Skeleton,
+  IconButton,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Remove as RemoveIcon,
-  CheckCircle as CheckCircleIcon,
-  Info as InfoIcon,
+import { 
+  Add, 
+  Remove, 
+  Check, 
+  LocalOffer,
+  AccessTime,
 } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
-import { useBookingSessionContext } from '../../../contexts/BookingSessionContext';
-import { bookingFlowAPI } from '../../../apis/bookingflow.api';
-import { formatCurrency } from '../../../utils/payment-helpers';
+import { ProductsApi } from '../../../apis/booking/products.api';
 import type { 
-  BookingFlowStep,
+  PackageSelectionStepData, 
   PackageSelectionStepConfiguration,
-  ProductOption 
-} from '../../../types/booking.types';
-import type { 
-  BaseStepProps,
-  ProductSelection 
-} from '../../../types/booking-steps.types';
-import type { PackageSelectionStepData } from '../../../types/booking-session.types';
+  ProductOption,
+  SelectedPackage,
+} from '../../../types/booking';
 
-interface PackageSelectionStepProps extends BaseStepProps<PackageSelectionStepData> {
-  step: BookingFlowStep;
+interface PackageSelectionStepProps {
+  stepData?: PackageSelectionStepData;
+  config: PackageSelectionStepConfiguration | null;
+  onDataChange: (data: PackageSelectionStepData) => void;
+  validationErrors: Record<string, string[]>;
+  isValidating: boolean;
 }
 
-const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
-  step,
-  data,
-  onUpdate,
-  onNext,
-  onPrevious,
-  onSave,
-  isLoading = false,
-  validationErrors = {},
-  canGoNext = true,
-  canGoPrevious = true,
-  showSaveButton = false,
+export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
+  stepData = { selected_packages: [] },
+  config,
+  onDataChange,
+  validationErrors,
+  isValidating,
 }) => {
-  const { validateStepData } = useBookingSessionContext();
-  
-  const [selectedPackages, setSelectedPackages] = useState<ProductSelection[]>(
-    data?.selected_packages || []
-  );
-  const [localValidationErrors, setLocalValidationErrors] = useState<Record<string, string[]>>({});
+  const availablePackages = config?.available_packages_details || [];
+  const selectionType = config?.selection_type || 'SINGLE';
+  const minSelection = config?.min_selection || 1;
+  const maxSelection = config?.max_selection || 1;
 
-  // Get step configuration
-  const config = step.configuration_data as PackageSelectionStepConfiguration | null;
-
-  // Query: Get available packages for this step
-  const {
-    data: availablePackages,
-    isLoading: isLoadingPackages,
-    error: packagesError
-  } = useQuery({
-    queryKey: ['available-packages', step.id],
-    queryFn: () => bookingFlowAPI.getAvailablePackages(step.id),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-  });
-
-  // Filter packages based on configuration
-  const filteredPackages = useMemo(() => {
-    if (!availablePackages) return [];
-    
-    // If specific packages are configured, use those
-    if (config?.available_packages_details && config.available_packages_details.length > 0) {
-      return config.available_packages_details;
-    }
-    
-    // Otherwise use all available packages
-    return availablePackages;
-  }, [availablePackages, config]);
-
-  // Group packages by category if configured
-  const groupedPackages = useMemo(() => {
-    if (!config?.available_categories_details || config.available_categories_details.length === 0) {
-      return { 'All Packages': filteredPackages };
-    }
-
-    const grouped: Record<string, ProductOption[]> = {};
-    
-    config.available_categories_details.forEach(category => {
-      grouped[category.name] = filteredPackages.filter(
-        pkg => pkg.category === category.id
-      );
-    });
-
-    // Add uncategorized packages
-    const categorizedPackageIds = Object.values(grouped).flat().map(pkg => pkg.id);
-    const uncategorized = filteredPackages.filter(
-      pkg => !categorizedPackageIds.includes(pkg.id)
-    );
-    
-    if (uncategorized.length > 0) {
-      grouped['Other'] = uncategorized;
-    }
-
-    return grouped;
-  }, [filteredPackages, config]);
-
-  // Update parent component when selections change
-  useEffect(() => {
-    onUpdate({ selected_packages: selectedPackages });
-  }, [selectedPackages, onUpdate]);
-
-  // Sync with external data changes
-  useEffect(() => {
-    if (data?.selected_packages && JSON.stringify(data.selected_packages) !== JSON.stringify(selectedPackages)) {
-      setSelectedPackages(data.selected_packages);
-    }
-  }, [data?.selected_packages]);
-
-  // Validate selections
-  const validateSelections = async () => {
-    const stepData = { selected_packages: selectedPackages };
-    
-    try {
-      const result = await validateStepData(step.id, stepData);
-      setLocalValidationErrors(result.errors);
-      return result.isValid;
-    } catch (error) {
-      console.error('Validation error:', error);
-      return false;
-    }
-  };
-
-  // Handle package selection
-  const handlePackageSelect = (packageOption: ProductOption) => {
-    const existingIndex = selectedPackages.findIndex(p => p.id === packageOption.id);
-    
-    if (existingIndex >= 0) {
-      // Package already selected, increase quantity or remove if single selection
-      if (config?.selection_type === 'SINGLE') {
-        // Remove if single selection type
-        setSelectedPackages(prev => prev.filter(p => p.id !== packageOption.id));
-      } else {
-        // Increase quantity for multiple selection
-        setSelectedPackages(prev =>
-          prev.map((p, index) =>
-            index === existingIndex
-              ? { ...p, quantity: p.quantity + 1 }
-              : p
-          )
-        );
-      }
-    } else {
-      // New package selection
-      const newSelection: ProductSelection = {
-        id: packageOption.id,
-        name: packageOption.name,
-        quantity: 1,
-        price: packageOption.base_price,
-      };
-
-      if (config?.selection_type === 'SINGLE') {
-        // Replace existing selection for single selection type
-        setSelectedPackages([newSelection]);
-      } else {
-        // Add to existing selections for multiple selection type
-        setSelectedPackages(prev => [...prev, newSelection]);
-      }
-    }
-  };
-
-  // Handle quantity change
-  const handleQuantityChange = (packageId: number, change: number) => {
-    setSelectedPackages(prev =>
-      prev.map(p => {
-        if (p.id === packageId) {
-          const newQuantity = Math.max(0, p.quantity + change);
-          return newQuantity === 0 ? null : { ...p, quantity: newQuantity };
-        }
-        return p;
-      }).filter(Boolean) as ProductSelection[]
-    );
-  };
+  // Use props stepData as single source of truth
+  const selectedPackages = stepData.selected_packages || [];
 
   // Check if package is selected
-  const isPackageSelected = (packageId: number) => {
+  const isPackageSelected = useCallback((packageId: number) => {
     return selectedPackages.some(p => p.id === packageId);
-  };
+  }, [selectedPackages]);
 
-  // Get selected quantity for package
-  const getSelectedQuantity = (packageId: number) => {
-    const selected = selectedPackages.find(p => p.id === packageId);
-    return selected?.quantity || 0;
-  };
+  // Get selected package details
+  const getSelectedPackage = useCallback((packageId: number) => {
+    return selectedPackages.find(p => p.id === packageId);
+  }, [selectedPackages]);
 
-  // Check if selection limits are met
-  const canSelectMore = useMemo(() => {
-    if (!config) return true;
+  // Handle package toggle
+  const handlePackageToggle = useCallback((packageOption: ProductOption) => {
+    let newSelectedPackages: SelectedPackage[];
     
-    if (config.max_selection === 0) return true; // Unlimited
-    return selectedPackages.length < config.max_selection;
-  }, [selectedPackages.length, config]);
-
-  const hasMinimumSelection = useMemo(() => {
-    if (!config) return true;
-    return selectedPackages.length >= config.min_selection;
-  }, [selectedPackages.length, config]);
-
-  // Handle next step
-  const handleNext = async () => {
-    const isValid = await validateSelections();
-    if (isValid) {
-      onNext();
+    if (isPackageSelected(packageOption.id)) {
+      // Remove package
+      newSelectedPackages = selectedPackages.filter(p => p.id !== packageOption.id);
+    } else {
+      // Create new package selection
+      const newPackage: SelectedPackage = {
+        id: packageOption.id,
+        name: packageOption.name,
+        price: packageOption.base_price,
+        quantity: 1,
+        included_hours: packageOption.included_hours ?? undefined,
+        excess_hour_price: packageOption.excess_hour_price ?? undefined,
+      };
+      
+      if (selectionType === 'SINGLE') {
+        // Replace existing selection
+        newSelectedPackages = [newPackage];
+      } else {
+        // Check max selection limit
+        if (maxSelection > 0 && selectedPackages.length >= maxSelection) {
+          return; // Don't add if at max
+        }
+        // Add to multiple selection
+        newSelectedPackages = [...selectedPackages, newPackage];
+      }
     }
+    
+    onDataChange({ selected_packages: newSelectedPackages });
+  }, [selectedPackages, selectionType, maxSelection, isPackageSelected, onDataChange]);
+
+  // Handle quantity change
+  const handleQuantityChange = useCallback((packageId: number, delta: number) => {
+    const newSelectedPackages = selectedPackages.map(pkg => {
+      if (pkg.id === packageId) {
+        const newQuantity = Math.max(1, pkg.quantity + delta);
+        return { ...pkg, quantity: newQuantity };
+      }
+      return pkg;
+    });
+    
+    onDataChange({ selected_packages: newSelectedPackages });
+  }, [selectedPackages, onDataChange]);
+
+  // Validation status
+  const validationStatus = useMemo(() => {
+    const errors: string[] = [];
+    
+    if (minSelection > 0 && selectedPackages.length < minSelection) {
+      errors.push(`Must select at least ${minSelection} package${minSelection > 1 ? 's' : ''}`);
+    }
+    
+    if (maxSelection > 0 && selectedPackages.length > maxSelection) {
+      errors.push(`Cannot select more than ${maxSelection} package${maxSelection > 1 ? 's' : ''}`);
+    }
+    
+    // Merge with external validation errors
+    const allErrors = [
+      ...errors,
+      ...Object.values(validationErrors).flat()
+    ];
+    
+    return {
+      isValid: allErrors.length === 0,
+      errors: allErrors
+    };
+  }, [selectedPackages, minSelection, maxSelection, validationErrors]);
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    const subtotal = selectedPackages.reduce((total, pkg) => {
+      const price = parseFloat(pkg.price);
+      return total + (price * pkg.quantity);
+    }, 0);
+    
+    return {
+      subtotal,
+      formatted: ProductsApi.formatPrice(subtotal.toString()),
+    };
+  }, [selectedPackages]);
+
+  const formatPrice = (price: string) => {
+    return ProductsApi.formatPrice(price);
   };
 
-  // Handle save
-  const handleSave = async () => {
-    await validateSelections();
-    onSave();
-  };
-
-  // Render package card
-  const renderPackageCard = (packageOption: ProductOption) => {
-    const isSelected = isPackageSelected(packageOption.id);
-    const quantity = getSelectedQuantity(packageOption.id);
-    const canSelect = canSelectMore || isSelected;
-
+  if (!config) {
     return (
-      <Card
-        key={packageOption.id}
-        sx={{
-          position: 'relative',
-          transition: 'all 0.2s ease-in-out',
-          border: isSelected ? 2 : 1,
-          borderColor: isSelected ? 'primary.main' : 'divider',
-          '&:hover': {
-            boxShadow: 3,
-            transform: 'translateY(-2px)',
-          },
-        }}
-      >
-        {isSelected && (
-          <CheckCircleIcon
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              color: 'primary.main',
-              zIndex: 1,
-            }}
-          />
-        )}
-
-        <CardContent sx={{ pb: 1 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 600,
-              mb: 1,
-              pr: isSelected ? 4 : 0,
-            }}
-          >
-            {packageOption.name}
-          </Typography>
-
-          {packageOption.description && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 2 }}
-            >
-              {packageOption.description}
-            </Typography>
-          )}
-
-          {config?.show_pricing && (
-            <Typography
-              variant="h6"
-              color="primary.main"
-              sx={{ fontWeight: 600 }}
-            >
-              {formatCurrency(packageOption.base_price)}
-            </Typography>
-          )}
-        </CardContent>
-
-        <CardActions sx={{ pt: 0, justifyContent: 'space-between' }}>
-          <Button
-            variant={isSelected ? 'contained' : 'outlined'}
-            onClick={() => handlePackageSelect(packageOption)}
-            disabled={!canSelect && !isSelected}
-            sx={{ flex: 1 }}
-          >
-            {isSelected ? 'Selected' : 'Select Package'}
-          </Button>
-
-          {isSelected && config?.selection_type !== 'SINGLE' && (
-            <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-              <IconButton
-                size="small"
-                onClick={() => handleQuantityChange(packageOption.id, -1)}
-                disabled={quantity <= 1}
-              >
-                <RemoveIcon />
-              </IconButton>
-              
-              <Typography
-                variant="body2"
-                sx={{ mx: 1, minWidth: 20, textAlign: 'center' }}
-              >
-                {quantity}
-              </Typography>
-              
-              <IconButton
-                size="small"
-                onClick={() => handleQuantityChange(packageOption.id, 1)}
-              >
-                <AddIcon />
-              </IconButton>
-            </Box>
-          )}
-        </CardActions>
-      </Card>
-    );
-  };
-
-  // Show loading state
-  if (isLoadingPackages) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h5" sx={{ mb: 3 }}>
-          <Skeleton width="40%" />
-        </Typography>
-        
-        <Stack spacing={3}>
-          {[1, 2, 3].map((index) => (
-            <Card key={index}>
-              <CardContent>
-                <Skeleton variant="text" width="60%" height={32} />
-                <Skeleton variant="text" width="100%" height={24} sx={{ mt: 1 }} />
-                <Skeleton variant="text" width="40%" height={28} sx={{ mt: 2 }} />
-              </CardContent>
-            </Card>
-          ))}
-        </Stack>
+      <Box display="flex" justifyContent="center" p={3}>
+        <CircularProgress />
       </Box>
     );
   }
 
-  // Show error state
-  if (packagesError) {
+  if (!availablePackages.length) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          Unable to load package options. Please try again or contact support.
-        </Alert>
-      </Box>
-    );
-  }
-
-  // Show no packages available
-  if (!filteredPackages || filteredPackages.length === 0) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="info" sx={{ mb: 3 }}>
-          No packages are currently available for selection.
-        </Alert>
-      </Box>
+      <Alert severity="info">
+        No packages are currently available for selection.
+      </Alert>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography
-        variant="h5"
-        sx={{
-          mb: 2,
-          fontWeight: 600,
-          color: 'primary.main',
-        }}
-      >
-        {step.name}
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        Select a Package
+      </Typography>
+      
+      <Typography variant="body2" color="text.secondary" gutterBottom>
+        Choose {selectionType === 'SINGLE' ? 'one package' : `${minSelection}-${maxSelection === 0 ? 'unlimited' : maxSelection} packages`} for your event.
       </Typography>
 
-      {step.description && (
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={{ mb: 3 }}
-        >
-          {step.description}
-        </Typography>
-      )}
-
-      {/* Selection requirements info */}
-      {config && (
-        <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 3 }}>
-          <Typography variant="body2">
-            {config.selection_type === 'SINGLE' ? (
-              'Please select one package.'
-            ) : (
-              `Select ${config.min_selection === config.max_selection 
-                ? `exactly ${config.min_selection}` 
-                : `${config.min_selection} to ${config.max_selection === 0 ? 'unlimited' : config.max_selection}`
-              } package${config.max_selection === 1 ? '' : 's'}.`
-            )}
-          </Typography>
+      {/* Display validation errors */}
+      {!validationStatus.isValid && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {validationStatus.errors.map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
         </Alert>
       )}
 
-      {/* Selection summary */}
-      {selectedPackages.length > 0 && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Selected Packages ({selectedPackages.length})
-          </Typography>
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-            {selectedPackages.map((pkg) => (
-              <Chip
-                key={pkg.id}
-                label={`${pkg.name} ${pkg.quantity > 1 ? `(${pkg.quantity})` : ''}`}
-                color="primary"
-                variant="outlined"
-              />
-            ))}
-          </Stack>
-        </Box>
-      )}
+      <Box display="flex" flexWrap="wrap" gap={2}>
+        {availablePackages.map((pkg: ProductOption) => {
+          const isSelected = isPackageSelected(pkg.id);
+          const selectedPackage = getSelectedPackage(pkg.id);
 
-      {/* Validation errors */}
-      {(Object.keys(validationErrors).length > 0 || Object.keys(localValidationErrors).length > 0) && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {Object.values({ ...validationErrors, ...localValidationErrors })
-            .flat()
-            .map((error, index) => (
-              <Typography key={index} variant="body2">
-                {error}
-              </Typography>
-            ))}
-        </Alert>
-      )}
-
-      {/* Package groups */}
-      {Object.entries(groupedPackages).map(([categoryName, packages]) => (
-        <Box key={categoryName} sx={{ mb: 4 }}>
-          {Object.keys(groupedPackages).length > 1 && (
-            <>
-              <Typography
-                variant="h6"
-                sx={{
-                  mb: 2,
-                  fontWeight: 600,
-                  color: 'text.primary',
+          return (
+            <Box key={pkg.id} sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 8px)' }, minWidth: 0 }}>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  border: isSelected ? 2 : 1,
+                  borderColor: isSelected ? 'primary.main' : 'divider',
+                  position: 'relative',
                 }}
               >
-                {categoryName}
-              </Typography>
-              <Divider sx={{ mb: 3 }} />
-            </>
-          )}
+                {isSelected && (
+                  <Chip
+                    icon={<Check />}
+                    label="Selected"
+                    color="primary"
+                    size="small"
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      zIndex: 1,
+                    }}
+                  />
+                )}
 
-          <Stack spacing={3}>
-            {packages.map(renderPackageCard)}
-          </Stack>
-        </Box>
-      ))}
+                <CardContent>
+                  <Typography variant="h6" component="h3" gutterBottom>
+                    {pkg.name}
+                  </Typography>
 
-      {/* Navigation buttons */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mt: 4,
-          pt: 3,
-          borderTop: 1,
-          borderColor: 'divider',
-        }}
-      >
-        <Button
-          variant="outlined"
-          onClick={onPrevious}
-          disabled={!canGoPrevious || isLoading}
-        >
-          Previous
-        </Button>
+                  {config.show_descriptions && pkg.description && (
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      {pkg.description}
+                    </Typography>
+                  )}
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          {showSaveButton && (
-            <Button
-              variant="outlined"
-              onClick={handleSave}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <CircularProgress size={16} sx={{ mr: 1 }} />
-                  Saving...
-                </>
-              ) : (
-                'Save Progress'
-              )}
-            </Button>
-          )}
+                  {config.show_pricing && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="h6" color="primary">
+                        {formatPrice(pkg.base_price)}
+                      </Typography>
+                      
+                      {pkg.has_excess_hours && pkg.included_hours && (
+                        <Typography variant="body2" color="text.secondary">
+                          <AccessTime sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
+                          Includes {pkg.included_hours} hours
+                          {pkg.excess_hour_price && (
+                            <span> • Additional hours: {formatPrice(pkg.excess_hour_price)}</span>
+                          )}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
 
-          <Button
-            variant="contained"
-            onClick={handleNext}
-            disabled={!canGoNext || !hasMinimumSelection || isLoading}
-          >
-            {isLoading ? (
-              <>
-                <CircularProgress size={16} sx={{ mr: 1 }} />
-                Loading...
-              </>
-            ) : (
-              'Continue'
-            )}
-          </Button>
-        </Box>
+                  {pkg.is_featured && (
+                    <Chip 
+                      icon={<LocalOffer />}
+                      label="Featured" 
+                      color="secondary" 
+                      size="small" 
+                      sx={{ mb: 1 }}
+                    />
+                  )}
+                </CardContent>
+
+                <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
+                  <Button
+                    variant={isSelected ? "contained" : "outlined"}
+                    onClick={() => handlePackageToggle(pkg)}
+                    disabled={isValidating}
+                  >
+                    {isSelected ? "Selected" : "Select Package"}
+                  </Button>
+
+                  {isSelected && pkg.allow_multiple && selectedPackage && (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconButton 
+                        size="small" 
+                        onClick={() => handleQuantityChange(pkg.id, -1)}
+                        disabled={selectedPackage.quantity <= 1}
+                      >
+                        <Remove />
+                      </IconButton>
+                      
+                      <Typography variant="body2" sx={{ minWidth: 20, textAlign: 'center' }}>
+                        {selectedPackage.quantity}
+                      </Typography>
+                      
+                      <IconButton 
+                        size="small" 
+                        onClick={() => handleQuantityChange(pkg.id, 1)}
+                      >
+                        <Add />
+                      </IconButton>
+                    </Box>
+                  )}
+                </CardActions>
+              </Card>
+            </Box>
+          );
+        })}
       </Box>
+
+      {selectedPackages.length > 0 && (
+        <Paper sx={{ mt: 3, p: 2 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Selected Packages
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
+          
+          {selectedPackages.map((pkg) => (
+            <Box key={pkg.id} display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+              <Typography variant="body2">
+                {pkg.name} {pkg.quantity > 1 && `× ${pkg.quantity}`}
+              </Typography>
+              <Typography variant="body2" fontWeight="medium">
+                {formatPrice((parseFloat(pkg.price) * pkg.quantity).toString())}
+              </Typography>
+            </Box>
+          ))}
+          
+          <Divider sx={{ my: 1 }} />
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="subtitle2">Subtotal</Typography>
+            <Typography variant="subtitle2" fontWeight="bold">
+              {totals.formatted}
+            </Typography>
+          </Box>
+        </Paper>
+      )}
     </Box>
   );
 };
-
-export default PackageSelectionStep;

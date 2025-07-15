@@ -1,610 +1,690 @@
 // frontend/client-portal/src/components/booking/steps/QuestionnaireStep.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   TextField,
+  Paper,
   FormControl,
   FormLabel,
   FormControlLabel,
-  FormGroup,
-  Radio,
   RadioGroup,
+  Radio,
   Checkbox,
   Select,
   MenuItem,
-  Button,
-  Chip,
+  FormHelperText,
   Alert,
-  Divider,
-  LinearProgress,
+  CircularProgress,
   InputLabel,
-  Stack,
-  Paper,
+  Chip,
+  OutlinedInput,
+  LinearProgress,
 } from '@mui/material';
+import { DatePicker, TimePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { CheckCircle, Warning } from '@mui/icons-material';
 import {
-  CloudUpload as CloudUploadIcon,
-  Delete as DeleteIcon,
-  Error as ErrorIcon,
-} from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
-import { bookingFlowAPI } from '../../../apis/bookingflow.api';
-import { useBookingSessionContext } from '../../../contexts/BookingSessionContext';
+  useQuestionnaireDetail,
+  useQuestionnaireFileUpload,
+  useDynamicQuestionnaire,
+  useQuestionnaireSummary
+} from '../../../hooks/booking/useQuestionnaire';
 import type { 
-  BaseStepProps,
-  QuestionnaireQuestion,
-} from '../../../types/booking-steps.types';
-import type { 
-  QuestionnaireStepData 
-} from '../../../types/booking-session.types';
-import type {
-  QuestionnaireStepConfiguration
-} from '../../../types/booking.types';
+  QuestionnaireStepConfiguration,
+  QuestionnaireStepItem,
+  QuestionnaireField,
+  QuestionnaireDetailResponse,
+  StepValidationResult
+} from '../../../types/booking';
 
-const QuestionnaireStep: React.FC<BaseStepProps<QuestionnaireStepData>> = ({
-  step,
-  data,
-  onUpdate,
-  onNext,
-  onPrevious,
-  onSave,
-  isLoading = false,
-  validationErrors = {},
-  canGoNext = true,
-  canGoPrevious = true,
-  showSaveButton = true,
+interface QuestionnaireStepProps {
+  stepData?: Record<string, any>;
+  config: QuestionnaireStepConfiguration | null;
+  onDataChange: (data: Record<string, any>) => void;
+  validationErrors: Record<string, string[]>;
+  isValidating: boolean;
+  onValidate?: (data: any) => Promise<StepValidationResult>;
+}
+
+export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
+  stepData = {},
+  config,
+  onDataChange,
+  validationErrors,
+  isValidating,
+  onValidate,
 }) => {
-  const { validateStepData } = useBookingSessionContext();
-  
-  const [responses, setResponses] = useState<Record<string, any>>(data.responses || {});
-  const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({});
-  const [localErrors, setLocalErrors] = useState<Record<string, string[]>>({});
-  const [isValidating, setIsValidating] = useState(false);
+  const [questionnairesWithFields, setQuestionnairesWithFields] = useState<Map<number, QuestionnaireDetailResponse>>(new Map());
+  const [loadingQuestionnaires, setLoadingQuestionnaires] = useState<Set<number>>(new Set());
+  const [loadErrors, setLoadErrors] = useState<Map<number, string>>(new Map());
 
-  const config = step.configuration_data as QuestionnaireStepConfiguration;
+  // Use props stepData as single source of truth
+  const responses = stepData;
 
-  // Get available questionnaires for this step
+  // File upload hook
   const {
-    data: questionnaires = [],
-    isLoading: isLoadingQuestionnaires,
-    error: questionnairesError
-  } = useQuery({
-    queryKey: ['questionnaire-step', step.id, 'questionnaires'],
-    queryFn: () => bookingFlowAPI.getAvailableQuestionnaires(step.id),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-  });
+    uploadFiles,
+    removeFile,
+    getUploadedFiles,
+    isUploading,
+    getUploadError,
+  } = useQuestionnaireFileUpload();
 
-  // Get questionnaire items from config, sorted by order
-  const questionnaireItems = config?.questionnaire_items 
-    ? [...config.questionnaire_items].sort((a, b) => a.order - b.order)
-    : [];
-
-  // Collect all questions from all questionnaires
-  const allQuestions: QuestionnaireQuestion[] = React.useMemo(() => {
-    if (!questionnaires.length || !questionnaireItems.length) return [];
-
-    const questions: QuestionnaireQuestion[] = [];
-    
-    questionnaireItems.forEach(item => {
-      const questionnaire = questionnaires.find(q => q.id === item.questionnaire);
-      if (questionnaire) {
-        // Since we don't have the full questionnaire details with questions,
-        // we'll create placeholder questions based on the questionnaire
-        // In a real implementation, you'd fetch the full questionnaire details
-        questions.push({
-          id: questionnaire.id,
-          question_text: questionnaire.name,
-          question_type: 'TEXTAREA',
-          is_required: true,
-          help_text: questionnaire.description,
-        });
-      }
-    });
-
-    return questions;
-  }, [questionnaires, questionnaireItems]);
-
-  // Update parent component when responses change
-  useEffect(() => {
-    const updatedData: QuestionnaireStepData = {
-      responses,
-      uploaded_files: Object.values(uploadedFiles).flat(),
+  // Update response helper that directly calls parent's onDataChange
+  const updateResponse = useCallback((fieldId: string | number, value: any) => {
+    const updatedData = {
+      ...responses,
+      [`field_${fieldId}`]: value,
     };
-    onUpdate(updatedData);
-  }, [responses, uploadedFiles, onUpdate]);
+    onDataChange(updatedData);
 
-  // Handle response change
-  const handleResponseChange = useCallback((questionId: number, value: any) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: value,
-    }));
-    
-    // Clear local error for this field
-    if (localErrors[questionId.toString()]) {
-      setLocalErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[questionId.toString()];
-        return newErrors;
+    // Auto-validate if onValidate is provided
+    if (onValidate) {
+      onValidate(updatedData).catch(error => {
+        console.warn('Validation failed:', error);
       });
     }
-  }, [localErrors]);
+  }, [responses, onDataChange, onValidate]);
 
-  // Handle file upload
-  const handleFileUpload = useCallback((questionId: number, files: FileList | null) => {
-    if (!files || !config?.allow_file_uploads) return;
+  // Get response for a specific field
+  const getResponse = useCallback((fieldKey: string) => {
+    return responses[fieldKey];
+  }, [responses]);
 
-    const fileArray = Array.from(files);
-    const maxSize = (config.max_file_size_mb || 10) * 1024 * 1024; // Convert to bytes
-    const allowedTypes = config.allowed_file_types || [];
+  // Check if a field has a response
+  const hasResponse = useCallback((fieldKey: string) => {
+    const response = responses[fieldKey];
+    return response !== undefined && response !== null && response !== '';
+  }, [responses]);
 
-    // Validate files
-    const validFiles: File[] = [];
-    const errors: string[] = [];
+  // Get validation error for a field
+  const getFieldError = useCallback((fieldKey: string) => {
+    return validationErrors[fieldKey]?.[0];
+  }, [validationErrors]);
 
-    fileArray.forEach(file => {
-      // Check file size
-      if (file.size > maxSize) {
-        errors.push(`${file.name} is too large (max ${config.max_file_size_mb}MB)`);
-        return;
-      }
+  // Check if a field has validation errors
+  const hasFieldError = useCallback((fieldKey: string) => {
+    return !!(validationErrors[fieldKey]?.length > 0);
+  }, [validationErrors]);
 
-      // Check file type if restrictions exist
-      if (allowedTypes.length > 0) {
-        const fileExtension = file.name.split('.').pop()?.toLowerCase();
-        if (!fileExtension || !allowedTypes.includes(fileExtension)) {
-          errors.push(`${file.name} type not allowed (allowed: ${allowedTypes.join(', ')})`);
-          return;
-        }
-      }
-
-      validFiles.push(file);
+  // Calculate completion percentage
+  const completionPercentage = useMemo(() => {
+    const allFields: QuestionnaireField[] = [];
+    questionnairesWithFields.forEach(q => {
+      allFields.push(...q.fields);
     });
+    
+    if (allFields.length === 0) return 0;
+    
+    const responseCount = allFields.filter(field => 
+      hasResponse(`field_${field.id}`)
+    ).length;
+    
+    return Math.round((responseCount / allFields.length) * 100);
+  }, [questionnairesWithFields, hasResponse]);
 
-    if (errors.length > 0) {
-      setLocalErrors(prev => ({
-        ...prev,
-        [questionId.toString()]: errors,
-      }));
+  // Get required fields that are missing responses
+  const missingRequiredFields = useMemo(() => {
+    const allFields: QuestionnaireField[] = [];
+    questionnairesWithFields.forEach(q => {
+      allFields.push(...q.fields);
+    });
+    
+    return allFields.filter(field => 
+      field.required && !hasResponse(`field_${field.id}`)
+    );
+  }, [questionnairesWithFields, hasResponse]);
+
+  // Load questionnaire details
+  const loadQuestionnaireDetails = useCallback(async (questionnaireId: number) => {
+    if (questionnairesWithFields.has(questionnaireId) || loadingQuestionnaires.has(questionnaireId)) {
       return;
     }
 
-    setUploadedFiles(prev => ({
-      ...prev,
-      [questionId]: validFiles,
-    }));
-
-    // Update responses to include file references
-    handleResponseChange(questionId, validFiles.map(f => f.name));
-  }, [config, handleResponseChange]);
-
-  // Remove uploaded file
-  const handleFileRemove = useCallback((questionId: number, fileIndex: number) => {
-    setUploadedFiles(prev => {
-      const questionFiles = prev[questionId] || [];
-      const newFiles = questionFiles.filter((_, index) => index !== fileIndex);
-      
-      return {
-        ...prev,
-        [questionId]: newFiles,
-      };
+    setLoadingQuestionnaires(prev => new Set([...prev, questionnaireId]));
+    setLoadErrors(prev => {
+      const newErrors = new Map(prev);
+      newErrors.delete(questionnaireId);
+      return newErrors;
     });
 
-    // Update responses
-    const questionFiles = uploadedFiles[questionId] || [];
-    const newFileNames = questionFiles
-      .filter((_, index) => index !== fileIndex)
-      .map(f => f.name);
-    
-    handleResponseChange(questionId, newFileNames);
-  }, [uploadedFiles, handleResponseChange]);
-
-  // Validate responses
-  const validateResponses = useCallback(async () => {
-    setIsValidating(true);
-    const errors: Record<string, string[]> = {};
-
-    // Client-side validation
-    allQuestions.forEach(question => {
-      const response = responses[question.id];
-      
-      if (question.is_required && (!response || response === '')) {
-        errors[question.id.toString()] = ['This field is required'];
-      }
-    });
-
-    setLocalErrors(errors);
-
-    // Server-side validation
     try {
-      const result = await validateStepData(step.id, { responses });
-      if (!result.isValid) {
-        setLocalErrors(prev => ({
-          ...prev,
-          ...result.errors,
-        }));
+      // Use the questionnaire detail hook
+      const { questionnaire } = useQuestionnaireDetail(questionnaireId);
+      
+      if (questionnaire) {
+        setQuestionnairesWithFields(prev => new Map([...prev, [questionnaireId, questionnaire]]));
       }
     } catch (error) {
-      console.error('Validation failed:', error);
+      console.error(`Failed to load questionnaire ${questionnaireId}:`, error);
+      setLoadErrors(prev => new Map([...prev, [questionnaireId, 'Failed to load questionnaire']]));
+    } finally {
+      setLoadingQuestionnaires(prev => {
+        const newLoading = new Set(prev);
+        newLoading.delete(questionnaireId);
+        return newLoading;
+      });
+    }
+  }, [questionnairesWithFields, loadingQuestionnaires]);
+
+  // Load all questionnaires on mount
+  React.useEffect(() => {
+    if (config?.questionnaire_items) {
+      config.questionnaire_items.forEach(item => {
+        loadQuestionnaireDetails(item.questionnaire);
+      });
+    }
+  }, [config?.questionnaire_items, loadQuestionnaireDetails]);
+
+  // Dynamic questionnaire logic
+  const allQuestionnaires = Array.from(questionnairesWithFields.values());
+  const {
+    visibleQuestionnaires,
+    getVisibleFields,
+    shouldShowQuestionnaire,
+    shouldShowField,
+  } = useDynamicQuestionnaire(allQuestionnaires, responses);
+
+  // Summary for validation
+  const { summary, hasAnyResponses, responseCount } = useQuestionnaireSummary(
+    visibleQuestionnaires,
+    responses
+  );
+
+  const handleFieldChange = async (fieldId: string, value: any) => {
+    updateResponse(fieldId.replace('field_', ''), value);
+  };
+
+  const handleFileUpload = async (fieldId: number, files: File[]) => {
+    const questionnaireId = findQuestionnaireForField(fieldId);
+    if (!questionnaireId) return;
+
+    try {
+      const uploadedUrls = await uploadFiles(questionnaireId, fieldId, files);
+      updateResponse(fieldId, uploadedUrls);
+    } catch (error) {
+      console.error('File upload failed:', error);
+    }
+  };
+
+  const findQuestionnaireForField = (fieldId: number): number | null => {
+    for (const [qId, questionnaire] of questionnairesWithFields) {
+      if (questionnaire.fields.some(field => field.id === fieldId)) {
+        return qId;
+      }
+    }
+    return null;
+  };
+
+  const renderField = (field: QuestionnaireField, questionnaire: QuestionnaireDetailResponse) => {
+    const fieldKey = `field_${field.id}`;
+    const value = getResponse(fieldKey) || '';
+    const error = getFieldError(fieldKey) || validationErrors[fieldKey]?.[0];
+    const hasError = hasFieldError(fieldKey) || !!validationErrors[fieldKey];
+
+    // Check if field should be visible
+    if (!shouldShowField(questionnaire, field)) {
+      return null;
     }
 
-    setIsValidating(false);
-    return Object.keys(errors).length === 0;
-  }, [allQuestions, responses, step.id, validateStepData]);
-
-  // Handle next step
-  const handleNext = useCallback(async () => {
-    const isValid = await validateResponses();
-    if (isValid) {
-      onNext();
-    }
-  }, [validateResponses, onNext]);
-
-  // Render question input based on type
-  const renderQuestionInput = (question: QuestionnaireQuestion) => {
-    const questionId = question.id.toString();
-    const value = responses[question.id] || '';
-    const error = localErrors[questionId] || validationErrors[questionId] || [];
-    const hasError = error.length > 0;
-
-    switch (question.question_type) {
-      case 'TEXT':
+    switch (field.type) {
+      case 'text':
         return (
           <TextField
             fullWidth
+            label={field.name}
             value={value}
-            onChange={(e) => handleResponseChange(question.id, e.target.value)}
+            onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+            required={field.required}
             error={hasError}
-            helperText={hasError ? error[0] : question.help_text}
-            required={question.is_required}
-            disabled={isLoading}
+            helperText={error || field.help_text}
+            placeholder={field.placeholder}
+            multiline={false}
           />
         );
 
-      case 'TEXTAREA':
+      case 'textarea':
         return (
           <TextField
             fullWidth
+            label={field.name}
+            value={value}
+            onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+            required={field.required}
+            error={hasError}
+            helperText={error || field.help_text}
+            placeholder={field.placeholder}
             multiline
             rows={4}
-            value={value}
-            onChange={(e) => handleResponseChange(question.id, e.target.value)}
-            error={hasError}
-            helperText={hasError ? error[0] : question.help_text}
-            required={question.is_required}
-            disabled={isLoading}
           />
         );
 
-      case 'SELECT':
-        return (
-          <FormControl fullWidth error={hasError} required={question.is_required}>
-            <InputLabel>Select an option</InputLabel>
-            <Select
-              value={value}
-              onChange={(e) => handleResponseChange(question.id, e.target.value)}
-              disabled={isLoading}
-            >
-              {question.options?.map((option) => (
-                <MenuItem key={option.id} value={option.value}>
-                  {option.text}
-                </MenuItem>
-              ))}
-            </Select>
-            {(hasError || question.help_text) && (
-              <Typography variant="caption" color={hasError ? 'error' : 'text.secondary'} sx={{ mt: 0.5, ml: 1.75 }}>
-                {hasError ? error[0] : question.help_text}
-              </Typography>
-            )}
-          </FormControl>
-        );
-
-      case 'RADIO':
-        return (
-          <FormControl error={hasError} required={question.is_required}>
-            <RadioGroup
-              value={value}
-              onChange={(e) => handleResponseChange(question.id, e.target.value)}
-            >
-              {question.options?.map((option) => (
-                <FormControlLabel
-                  key={option.id}
-                  value={option.value}
-                  control={<Radio disabled={isLoading} />}
-                  label={option.text}
-                />
-              ))}
-            </RadioGroup>
-            {(hasError || question.help_text) && (
-              <Typography variant="caption" color={hasError ? 'error' : 'text.secondary'}>
-                {hasError ? error[0] : question.help_text}
-              </Typography>
-            )}
-          </FormControl>
-        );
-
-      case 'CHECKBOX':
-        const checkboxValues = Array.isArray(value) ? value : [];
-        return (
-          <FormControl error={hasError} required={question.is_required}>
-            <FormGroup>
-              {question.options?.map((option) => (
-                <FormControlLabel
-                  key={option.id}
-                  control={
-                    <Checkbox
-                      checked={checkboxValues.includes(option.value)}
-                      onChange={(e) => {
-                        const newValues = e.target.checked
-                          ? [...checkboxValues, option.value]
-                          : checkboxValues.filter(v => v !== option.value);
-                        handleResponseChange(question.id, newValues);
-                      }}
-                      disabled={isLoading}
-                    />
-                  }
-                  label={option.text}
-                />
-              ))}
-            </FormGroup>
-            {(hasError || question.help_text) && (
-              <Typography variant="caption" color={hasError ? 'error' : 'text.secondary'}>
-                {hasError ? error[0] : question.help_text}
-              </Typography>
-            )}
-          </FormControl>
-        );
-
-      case 'DATE':
-        return (
-          <TextField
-            fullWidth
-            type="date"
-            value={value}
-            onChange={(e) => handleResponseChange(question.id, e.target.value)}
-            error={hasError}
-            helperText={hasError ? error[0] : question.help_text}
-            required={question.is_required}
-            disabled={isLoading}
-            InputLabelProps={{ shrink: true }}
-          />
-        );
-
-      case 'NUMBER':
+      case 'number':
         return (
           <TextField
             fullWidth
             type="number"
+            label={field.name}
             value={value}
-            onChange={(e) => handleResponseChange(question.id, e.target.value)}
+            onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+            required={field.required}
             error={hasError}
-            helperText={hasError ? error[0] : question.help_text}
-            required={question.is_required}
-            disabled={isLoading}
+            helperText={error || field.help_text}
+            placeholder={field.placeholder}
           />
         );
 
-      case 'FILE':
+      case 'email':
+        return (
+          <TextField
+            fullWidth
+            type="email"
+            label={field.name}
+            value={value}
+            onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+            required={field.required}
+            error={hasError}
+            helperText={error || field.help_text}
+            placeholder={field.placeholder}
+          />
+        );
+
+      case 'phone':
+        return (
+          <TextField
+            fullWidth
+            type="tel"
+            label={field.name}
+            value={value}
+            onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+            required={field.required}
+            error={hasError}
+            helperText={error || field.help_text}
+            placeholder={field.placeholder}
+          />
+        );
+
+      case 'date':
+        return (
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label={field.name}
+              value={value ? new Date(value) : null}
+              onChange={(date) => handleFieldChange(fieldKey, date?.toISOString().split('T')[0] || '')}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  required: field.required,
+                  error: hasError,
+                  helperText: error || field.help_text,
+                },
+              }}
+            />
+          </LocalizationProvider>
+        );
+
+      case 'time':
+        return (
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <TimePicker
+              label={field.name}
+              value={value ? new Date(`2000-01-01T${value}`) : null}
+              onChange={(time) => handleFieldChange(fieldKey, time?.toTimeString().split(' ')[0] || '')}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  required: field.required,
+                  error: hasError,
+                  helperText: error || field.help_text,
+                },
+              }}
+            />
+          </LocalizationProvider>
+        );
+
+      case 'boolean':
+        return (
+          <FormControl error={hasError}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={value === 'true' || value === true}
+                  onChange={(e) => handleFieldChange(fieldKey, e.target.checked)}
+                />
+              }
+              label={field.name}
+            />
+            {(error || field.help_text) && (
+              <FormHelperText>{error || field.help_text}</FormHelperText>
+            )}
+          </FormControl>
+        );
+
+      case 'select':
+        return (
+          <FormControl fullWidth error={hasError}>
+            <InputLabel>{field.name}</InputLabel>
+            <Select
+              value={value}
+              onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+              label={field.name}
+              required={field.required}
+            >
+              {field.options?.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </Select>
+            {(error || field.help_text) && (
+              <FormHelperText>{error || field.help_text}</FormHelperText>
+            )}
+          </FormControl>
+        );
+
+      case 'multi-select':
+        return (
+          <FormControl fullWidth error={hasError}>
+            <InputLabel>{field.name}</InputLabel>
+            <Select
+              multiple
+              value={Array.isArray(value) ? value : []}
+              onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+              input={<OutlinedInput label={field.name} />}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {(selected as string[]).map((val) => (
+                    <Chip key={val} label={val} size="small" />
+                  ))}
+                </Box>
+              )}
+              required={field.required}
+            >
+              {field.options?.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </Select>
+            {(error || field.help_text) && (
+              <FormHelperText>{error || field.help_text}</FormHelperText>
+            )}
+          </FormControl>
+        );
+
+      case 'radio':
+        return (
+          <FormControl error={hasError}>
+            <FormLabel component="legend">{field.name}</FormLabel>
+            <RadioGroup
+              value={value}
+              onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+            >
+              {field.options?.map((option) => (
+                <FormControlLabel
+                  key={option}
+                  value={option}
+                  control={<Radio />}
+                  label={option}
+                />
+              ))}
+            </RadioGroup>
+            {(error || field.help_text) && (
+              <FormHelperText>{error || field.help_text}</FormHelperText>
+            )}
+          </FormControl>
+        );
+
+      case 'file':
         if (!config?.allow_file_uploads) {
           return (
             <Alert severity="info">
-              File uploads are not enabled for this questionnaire.
+              File uploads are not enabled for this questionnaire
             </Alert>
           );
         }
 
-        const questionFiles = uploadedFiles[question.id] || [];
+        const uploadError = getUploadError(field.id);
+        const uploading = isUploading(field.id);
+        const uploadedFiles = getUploadedFiles(field.id);
+
         return (
-          <Box>
-            <Button
-              variant="outlined"
-              component="label"
-              startIcon={<CloudUploadIcon />}
-              disabled={isLoading}
-              sx={{ mb: 2 }}
-            >
-              Upload Files
-              <input
-                type="file"
-                hidden
-                multiple
-                onChange={(e) => handleFileUpload(question.id, e.target.files)}
-                accept={config.allowed_file_types?.map(type => `.${type}`).join(',')}
-              />
-            </Button>
+          <FormControl fullWidth error={hasError}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {field.name} {field.required && '*'}
+            </Typography>
+            
+            <TextField
+              type="file"
+              fullWidth
+              onChange={(e: any) => {
+                const files = Array.from(e.target.files || []) as File[];
+                if (files.length > 0) {
+                  // Validate file size
+                  const maxSizeMB = config?.max_file_size_mb || 10;
+                  const oversizedFiles = files.filter(file => file.size > maxSizeMB * 1024 * 1024);
+                  
+                  if (oversizedFiles.length > 0) {
+                    alert(`Some files are too large. Maximum file size is ${maxSizeMB}MB`);
+                    return;
+                  }
 
-            {questionFiles.length > 0 && (
-              <Stack spacing={1}>
-                {questionFiles.map((file, index) => (
-                  <Paper key={index} sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="body2" sx={{ flex: 1 }}>
-                      {file.name}
-                    </Typography>
-                    <Chip
-                      label={`${Math.round(file.size / 1024)} KB`}
-                      size="small"
-                      variant="outlined"
-                    />
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() => handleFileRemove(question.id, index)}
-                      startIcon={<DeleteIcon />}
-                    >
-                      Remove
-                    </Button>
-                  </Paper>
-                ))}
-              </Stack>
+                  // Validate file types
+                  if (config?.allowed_file_types && config.allowed_file_types.length > 0) {
+                    const invalidFiles = files.filter(file => {
+                      const fileExt = file.name.split('.').pop()?.toLowerCase();
+                      return !fileExt || !config.allowed_file_types.includes(fileExt);
+                    });
+
+                    if (invalidFiles.length > 0) {
+                      alert(`Some files have invalid types. Allowed types: ${config.allowed_file_types.join(', ')}`);
+                      return;
+                    }
+                  }
+
+                  handleFileUpload(field.id, files);
+                }
+              }}
+              inputProps={{
+                accept: config?.allowed_file_types?.map(ext => `.${ext}`).join(','),
+                multiple: true,
+              }}
+              error={hasError}
+              helperText={error || field.help_text || `Max file size: ${config?.max_file_size_mb || 10}MB`}
+              disabled={uploading}
+            />
+
+            {uploading && (
+              <Box sx={{ mt: 1 }}>
+                <LinearProgress />
+                <Typography variant="caption" color="text.secondary">
+                  Uploading files...
+                </Typography>
+              </Box>
             )}
 
-            {config.allowed_file_types && config.allowed_file_types.length > 0 && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                Allowed file types: {config.allowed_file_types.join(', ')}
-              </Typography>
+            {uploadError && (
+              <Alert severity="error" sx={{ mt: 1 }}>
+                {uploadError}
+              </Alert>
             )}
 
-            {config.max_file_size_mb && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                Maximum file size: {config.max_file_size_mb}MB
-              </Typography>
+            {uploadedFiles.length > 0 && (
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Uploaded files: {uploadedFiles.length}
+                </Typography>
+              </Box>
             )}
+          </FormControl>
+        );
 
-            {hasError && (
-              <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
-                {error[0]}
-              </Typography>
-            )}
-
-            {question.help_text && !hasError && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                {question.help_text}
-              </Typography>
-            )}
-          </Box>
+      case 'rating':
+        return (
+          <FormControl fullWidth error={hasError}>
+            <FormLabel component="legend">{field.name}</FormLabel>
+            <TextField
+              type="number"
+              value={value}
+              onChange={(e) => handleFieldChange(fieldKey, parseInt(e.target.value) || 0)}
+              inputProps={{ min: 1, max: 5 }}
+              helperText={error || field.help_text || "Rate from 1 to 5"}
+              error={hasError}
+            />
+          </FormControl>
         );
 
       default:
         return (
           <Alert severity="warning">
-            Unsupported question type: {question.question_type}
+            Unsupported field type: {field.type}
           </Alert>
         );
     }
   };
 
-  if (isLoadingQuestionnaires) {
+  // Loading state
+  if (loadingQuestionnaires.size > 0) {
     return (
-      <Box sx={{ p: 3 }}>
-        <LinearProgress sx={{ mb: 3 }} />
-        <Typography>Loading questionnaire...</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+        <Typography variant="body1" sx={{ ml: 2 }}>
+          Loading questionnaire fields...
+        </Typography>
       </Box>
     );
   }
 
-  if (questionnairesError) {
+  // Error state
+  if (loadErrors.size > 0) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          Failed to load questionnaire. Please try again.
-        </Alert>
-      </Box>
+      <Alert severity="error">
+        Failed to load some questionnaires. Please try again.
+        <br />
+        {Array.from(loadErrors.values()).join(', ')}
+      </Alert>
     );
   }
 
-  if (!allQuestions.length) {
+  if (!config || !config.questionnaire_items || config.questionnaire_items.length === 0) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="info">
-          No questionnaire has been configured for this step.
-        </Alert>
-        
-        <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-          {canGoPrevious && (
-            <Button
-              variant="outlined"
-              onClick={onPrevious}
-              disabled={isLoading}
-            >
-              Previous
-            </Button>
-          )}
-          
-          {canGoNext && (
-            <Button
-              variant="contained"
-              onClick={onNext}
-              disabled={isLoading}
-            >
-              Continue
-            </Button>
-          )}
-        </Box>
-      </Box>
+      <Alert severity="info">
+        No questionnaires configured for this step
+      </Alert>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
-        {step.name}
+    <Box>
+      <Typography variant="h4" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
+        Event Information
       </Typography>
 
-      {step.description && (
-        <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
-          {step.description}
-        </Typography>
+      <Typography variant="body1" sx={{ mb: 4, textAlign: 'center', color: 'text.secondary' }}>
+        Please provide the following information about your event
+      </Typography>
+
+      {/* Progress indicator */}
+      {visibleQuestionnaires.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Completion Progress
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {completionPercentage}%
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={completionPercentage}
+            sx={{ height: 8, borderRadius: 4 }}
+          />
+        </Box>
       )}
 
-      <Stack spacing={4}>
-        {allQuestions.map((question, index) => (
-          <Card key={question.id}>
-            <CardContent>
-              <FormLabel
-                required={question.is_required}
-                error={!!(localErrors[question.id.toString()] || validationErrors[question.id.toString()])}
-                sx={{ mb: 2, display: 'block', fontWeight: 600 }}
-              >
-                {question.question_text}
-              </FormLabel>
-              
-              {renderQuestionInput(question)}
-              
-              {index < allQuestions.length - 1 && <Divider sx={{ mt: 3 }} />}
-            </CardContent>
-          </Card>
-        ))}
-      </Stack>
-
-      {/* Navigation */}
-      <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'space-between' }}>
-        <Box>
-          {canGoPrevious && (
-            <Button
-              variant="outlined"
-              onClick={onPrevious}
-              disabled={isLoading || isValidating}
-            >
-              Previous
-            </Button>
-          )}
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          {showSaveButton && (
-            <Button
-              variant="outlined"
-              onClick={onSave}
-              disabled={isLoading || isValidating}
-            >
-              Save Progress
-            </Button>
-          )}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {config.questionnaire_items.map((questionnaireItem) => {
+          const questionnaire = questionnairesWithFields.get(questionnaireItem.questionnaire);
           
-          {canGoNext && (
-            <Button
-              variant="contained"
-              onClick={handleNext}
-              disabled={isLoading || isValidating}
-            >
-              {isValidating ? 'Validating...' : 'Continue'}
-            </Button>
-          )}
-        </Box>
+          if (!questionnaire) {
+            const error = loadErrors.get(questionnaireItem.questionnaire);
+            return (
+              <Paper key={questionnaireItem.id} elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+                <Alert severity="warning">
+                  {error || 'Unable to load questionnaire'}
+                </Alert>
+              </Paper>
+            );
+          }
+
+          // Check if questionnaire should be displayed
+          if (!shouldShowQuestionnaire(questionnaire)) {
+            return null;
+          }
+
+          const visibleFields = getVisibleFields(questionnaire);
+          
+          if (visibleFields.length === 0) {
+            return null;
+          }
+
+          return (
+            <Paper key={questionnaireItem.id} elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+                {questionnaire.name}
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {visibleFields
+                  .sort((a, b) => a.order - b.order)
+                  .map((field) => (
+                    <Box key={field.id}>
+                      {renderField(field, questionnaire)}
+                    </Box>
+                  ))}
+              </Box>
+            </Paper>
+          );
+        })}
       </Box>
 
-      {/* Validation errors */}
-      {Object.keys(localErrors).length > 0 && (
-        <Alert severity="error" sx={{ mt: 3 }} icon={<ErrorIcon />}>
-          Please correct the errors above before continuing.
+      {/* Validation summary */}
+      {missingRequiredFields.length > 0 && (
+        <Alert severity="warning" sx={{ mt: 3 }} icon={<Warning />}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+            Missing Required Information:
+          </Typography>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            {missingRequiredFields.map(field => (
+              <li key={field.id}>{field.name}</li>
+            ))}
+          </ul>
+        </Alert>
+      )}
+
+      {/* Completion status */}
+      {missingRequiredFields.length === 0 && hasAnyResponses && (
+        <Alert severity="success" sx={{ mt: 3 }} icon={<CheckCircle />}>
+          All required information has been provided ({responseCount} responses).
+        </Alert>
+      )}
+
+      {/* File upload information */}
+      {config.allow_file_uploads && (
+        <Alert severity="info" sx={{ mt: 3 }}>
+          <Typography variant="body2">
+            <strong>File Upload Information:</strong><br />
+            Maximum file size: {config.max_file_size_mb}MB<br />
+            {config.allowed_file_types && config.allowed_file_types.length > 0 && (
+              <>Allowed file types: {config.allowed_file_types.join(', ')}</>
+            )}
+          </Typography>
         </Alert>
       )}
     </Box>
   );
 };
-
-export default QuestionnaireStep;
