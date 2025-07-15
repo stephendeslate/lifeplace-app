@@ -21,6 +21,7 @@ from ..exceptions import (
     BookingSessionExpired,
     StepValidationError,
     EventCreationFailed,
+    ValidationFailed,  # Added import for ValidationFailed
 )
 from ..models import BookingFlow, BookingSession
 
@@ -109,6 +110,9 @@ class BookingSessionService:
             
             session.booking_data[current_step_key].update(step_data)
             
+            # ADDED: Recalculate total price after any data update
+            session.total_price = session.calculate_total_price()
+            
             # Clear validation errors on successful update
             session.validation_errors = {}
             session.save()
@@ -117,8 +121,9 @@ class BookingSessionService:
             if mark_completed and session.current_step:
                 session.mark_step_completed(session.current_step)
             
-            logger.info(f"Updated session data for session: {session.session_id}")
+            logger.info(f"Updated session data for session: {session.session_id} with new total: {session.total_price}")
             return session
+    
     
     @staticmethod
     def complete_booking(session_id):

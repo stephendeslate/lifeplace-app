@@ -1,514 +1,295 @@
 // frontend/client-portal/src/components/booking/steps/ContactInfoStep.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
   TextField,
+  Paper,
   FormControlLabel,
   Checkbox,
-  Button,
   Alert,
-  CircularProgress,
-  Stack,
-  Card,
-  CardContent,
-  Divider,
-  FormHelperText,
-  InputAdornment,
-  IconButton,
 } from '@mui/material';
-import {
-  Person as PersonIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  Business as BusinessIcon,
-  Home as HomeIcon,
-  Visibility,
-  VisibilityOff,
-} from '@mui/icons-material';
-import { useBookingSessionContext } from '../../../contexts/BookingSessionContext';
+import { useContactInfo } from '../../../hooks/booking/useContactInfo';
 import type { 
-  ContactInfoStepConfiguration,
-  BookingFlowStep 
-} from '../../../types/booking.types';
-import type { 
-  BaseStepProps 
-} from '../../../types/booking-steps.types';
-import type { ContactInfoStepData } from '../../../types/booking-session.types';
+  ContactInfoStepData, 
+  ContactInfoStepConfiguration, 
+  BookingFlow,
+  StepValidationResult
+} from '../../../types/booking';
 
-interface ContactInfoStepProps extends BaseStepProps<ContactInfoStepData> {
-  step: BookingFlowStep;
+interface ContactInfoStepProps {
+  stepData?: ContactInfoStepData;
+  config?: ContactInfoStepConfiguration;
+  onDataChange: (data: ContactInfoStepData) => void;
+  validationErrors: Record<string, string[]>;
+  isValidating: boolean;
+  flowConfig: BookingFlow | null;
+  onValidate?: (data: any) => Promise<StepValidationResult>;
 }
 
-const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
-  step,
-  data,
-  onUpdate,
-  onNext,
-  onPrevious,
-  onSave,
-  isLoading = false,
-  validationErrors = {},
-  canGoNext = true,
-  canGoPrevious = true,
-  showSaveButton = true,
+export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
+  stepData,
+  config,
+  onDataChange,
+  validationErrors: externalValidationErrors,
+  isValidating,
+  flowConfig,
+  onValidate,
 }) => {
   const {
-    updateSessionData,
-    validateStepData,
-    isUpdating,
-    error: sessionError,
-  } = useBookingSessionContext();
+    getInitialData,
+    fieldRequirements,
+    accountCreationOptions,
+    isAuthenticated,
+    user,
+  } = useContactInfo(config);
 
-  // Get step configuration
-  const config = step.configuration_data as ContactInfoStepConfiguration;
-
-  // Form state
-  const [formData, setFormData] = useState<ContactInfoStepData>({
-    full_name: data.full_name || '',
-    email: data.email || '',
-    phone: data.phone || '',
-    address: data.address || '',
-    company: data.company || '',
-    custom_fields: data.custom_fields || {},
-    create_account: data.create_account || false,
-    password: data.password || '',
-    password_confirm: data.password_confirm || '',
-    marketing_consent: data.marketing_consent || false,
-  });
-
-  // Local validation state
-  const [localErrors, setLocalErrors] = useState<Record<string, string[]>>({});
-  const [isValidating, setIsValidating] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
-
-  // Update parent component when form data changes
-  useEffect(() => {
-    onUpdate(formData);
-  }, [formData, onUpdate]);
-
-  // Handle field changes
-  const handleFieldChange = useCallback((field: keyof ContactInfoStepData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear local error for this field
-    if (localErrors[field]) {
-      setLocalErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
+  // Use props stepData as single source of truth, with defaults from user if authenticated
+  const formData: ContactInfoStepData = useMemo(() => {
+    // If we have step data, use it
+    if (stepData && (stepData.full_name || stepData.email)) {
+      return {
+        full_name: stepData.full_name || '',
+        email: stepData.email || '',
+        phone: stepData.phone || '',
+        address: stepData.address || '',
+        company: stepData.company || '',
+        create_account: stepData.create_account || false,
+        password: stepData.password || '',
+        custom_fields: stepData.custom_fields || {},
+      };
     }
-  }, [localErrors]);
-
-  // Handle custom field changes
-  const handleCustomFieldChange = useCallback((fieldName: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      custom_fields: {
-        ...prev.custom_fields,
-        [fieldName]: value,
-      },
-    }));
-  }, []);
-
-  // Validate form data
-  const validateForm = useCallback(async () => {
-    setIsValidating(true);
     
-    try {
-      const result = await validateStepData(step.id, formData);
-      
-      if (!result.isValid) {
-        setLocalErrors(result.errors);
-        return false;
-      }
-      
-      setLocalErrors({});
-      return true;
-    } catch (error) {
-      console.error('Validation failed:', error);
-      return false;
-    } finally {
-      setIsValidating(false);
+    // If authenticated and no step data, get defaults from user
+    if (isAuthenticated && user) {
+      return getInitialData();
     }
-  }, [step.id, formData, validateStepData]);
+    
+    // Otherwise return empty defaults
+    return {
+      full_name: '',
+      email: '',
+      phone: '',
+      address: '',
+      company: '',
+      create_account: false,
+      password: '',
+      custom_fields: {},
+    };
+  }, [stepData, isAuthenticated, user, getInitialData]);
 
-  // Handle save
-  const handleSave = useCallback(async () => {
-    const isValid = await validateForm();
-    if (isValid) {
+  // Handle field change - directly update parent
+  const handleFieldChange = useCallback(async (field: keyof ContactInfoStepData, value: any) => {
+    const updatedData = {
+      ...formData,
+      [field]: value === undefined || value === null ? '' : value,
+    };
+
+    onDataChange(updatedData);
+
+    // Auto-validate if onValidate is provided
+    if (onValidate) {
       try {
-        await updateSessionData(step.id, formData, false);
-        onSave();
+        await onValidate(updatedData);
       } catch (error) {
-        console.error('Save failed:', error);
+        console.warn('Validation failed:', error);
       }
     }
-  }, [validateForm, updateSessionData, step.id, formData, onSave]);
+  }, [formData, onDataChange, onValidate]);
 
-  // Handle next
-  const handleNext = useCallback(async () => {
-    const isValid = await validateForm();
-    if (isValid) {
-      try {
-        await updateSessionData(step.id, formData, true);
-        onNext();
-      } catch (error) {
-        console.error('Next step failed:', error);
-      }
-    }
-  }, [validateForm, updateSessionData, step.id, formData, onNext]);
-
-  // Combine validation errors (local + from context)
-  const allErrors = { ...localErrors, ...validationErrors };
-
-  // Helper to get field error
-  const getFieldError = (fieldName: string): string | undefined => {
-    const errors = allErrors[fieldName];
-    return errors && errors.length > 0 ? errors[0] : undefined;
-  };
+  // Helper to get field error (prioritize external validation errors)
+  const getFieldErrorMessage = useCallback((fieldName: string): string | undefined => {
+    return externalValidationErrors[fieldName]?.[0];
+  }, [externalValidationErrors]);
 
   // Helper to check if field has error
-  const hasFieldError = (fieldName: string): boolean => {
-    return !!getFieldError(fieldName);
-  };
+  const hasFieldErrorMessage = useCallback((fieldName: string): boolean => {
+    return !!(externalValidationErrors[fieldName]?.length > 0);
+  }, [externalValidationErrors]);
 
-  // Check if field is required
-  const isFieldRequired = (fieldName: keyof ContactInfoStepConfiguration): boolean => {
-    return config ? Boolean(config[fieldName]) : false;
-  };
+  const showAccountCreation = 
+    accountCreationOptions.canCreateAccount && 
+    flowConfig?.allow_guest_booking && 
+    !accountCreationOptions.isAlreadyAuthenticated;
+
+  const mustCreateAccount = 
+    accountCreationOptions.mustCreateAccount || 
+    flowConfig?.require_account_creation;
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
-      <Typography 
-        variant="h4" 
-        sx={{ 
-          mb: 2, 
-          fontWeight: 600,
-          color: 'primary.main',
-          textAlign: 'center'
-        }}
-      >
-        {step.name || 'Contact Information'}
+    <Box>
+      <Typography variant="h4" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
+        Contact Information
       </Typography>
 
-      {step.description && (
-        <Typography 
-          variant="body1" 
-          sx={{ 
-            mb: 4, 
-            color: 'text.secondary',
-            textAlign: 'center'
-          }}
-        >
-          {step.description}
-        </Typography>
-      )}
+      <Typography variant="body1" sx={{ mb: 4, textAlign: 'center', color: 'text.secondary' }}>
+        Please provide your contact details so we can reach you about your event.
+      </Typography>
 
-      {sessionError && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {sessionError.message || 'An error occurred. Please try again.'}
+      {/* Show authenticated user info */}
+      {isAuthenticated && user && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          You are logged in as {user.email}. Your information has been pre-filled below.
         </Alert>
       )}
 
-      <Card>
-        <CardContent sx={{ p: 4 }}>
-          <Stack spacing={3}>
-            {/* Full Name */}
-            {(isFieldRequired('require_full_name') || formData.full_name) && (
-              <TextField
-                fullWidth
-                label="Full Name"
-                value={formData.full_name}
-                onChange={(e) => handleFieldChange('full_name', e.target.value)}
-                required={isFieldRequired('require_full_name')}
-                error={hasFieldError('full_name')}
-                helperText={getFieldError('full_name')}
-                disabled={isLoading || isUpdating}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            )}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Basic Information */}
+        <Box>
+          <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+              Basic Information
+            </Typography>
 
-            {/* Email */}
-            {(isFieldRequired('require_email') || formData.email) && (
-              <TextField
-                fullWidth
-                type="email"
-                label="Email Address"
-                value={formData.email}
-                onChange={(e) => handleFieldChange('email', e.target.value)}
-                required={isFieldRequired('require_email')}
-                error={hasFieldError('email')}
-                helperText={getFieldError('email')}
-                disabled={isLoading || isUpdating}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <EmailIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            )}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              {/* Full Name */}
+              {fieldRequirements.full_name && (
+                <Box sx={{ width: { xs: '100%', md: 'calc(50% - 16px)' } }}>
+                  <TextField
+                    label="Full Name"
+                    fullWidth
+                    required
+                    value={formData.full_name}
+                    onChange={(e) => handleFieldChange('full_name', e.target.value)}
+                    error={hasFieldErrorMessage('full_name')}
+                    helperText={getFieldErrorMessage('full_name')}
+                  />
+                </Box>
+              )}
 
-            {/* Phone */}
-            {(isFieldRequired('require_phone') || formData.phone) && (
-              <TextField
-                fullWidth
-                type="tel"
-                label="Phone Number"
-                value={formData.phone}
-                onChange={(e) => handleFieldChange('phone', e.target.value)}
-                required={isFieldRequired('require_phone')}
-                error={hasFieldError('phone')}
-                helperText={getFieldError('phone')}
-                disabled={isLoading || isUpdating}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PhoneIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            )}
+              {/* Email */}
+              {fieldRequirements.email && (
+                <Box sx={{ width: { xs: '100%', md: 'calc(50% - 16px)' } }}>
+                  <TextField
+                    label="Email Address"
+                    type="email"
+                    fullWidth
+                    required
+                    value={formData.email}
+                    onChange={(e) => handleFieldChange('email', e.target.value)}
+                    error={hasFieldErrorMessage('email')}
+                    helperText={getFieldErrorMessage('email')}
+                    disabled={isAuthenticated} // Disable if logged in
+                  />
+                </Box>
+              )}
 
-            {/* Address */}
-            {(isFieldRequired('require_address') || formData.address) && (
+              {/* Phone */}
+              {fieldRequirements.phone && (
+                <Box sx={{ width: { xs: '100%', md: 'calc(50% - 16px)' } }}>
+                  <TextField
+                    label="Phone Number"
+                    fullWidth
+                    required
+                    value={formData.phone}
+                    onChange={(e) => handleFieldChange('phone', e.target.value)}
+                    error={hasFieldErrorMessage('phone')}
+                    helperText={getFieldErrorMessage('phone')}
+                    placeholder="+63 9XX XXX XXXX"
+                  />
+                </Box>
+              )}
+
+              {/* Company */}
+              {fieldRequirements.company && (
+                <Box sx={{ width: { xs: '100%', md: 'calc(50% - 16px)' } }}>
+                  <TextField
+                    label="Company/Organization"
+                    fullWidth
+                    required
+                    value={formData.company}
+                    onChange={(e) => handleFieldChange('company', e.target.value)}
+                    error={hasFieldErrorMessage('company')}
+                    helperText={getFieldErrorMessage('company')}
+                  />
+                </Box>
+              )}
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Address (if required) */}
+        {fieldRequirements.address && (
+          <Box>
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+                Address Information
+              </Typography>
+
               <TextField
-                fullWidth
-                multiline
-                rows={2}
                 label="Address"
+                multiline
+                rows={3}
+                fullWidth
+                required
                 value={formData.address}
                 onChange={(e) => handleFieldChange('address', e.target.value)}
-                required={isFieldRequired('require_address')}
-                error={hasFieldError('address')}
-                helperText={getFieldError('address')}
-                disabled={isLoading || isUpdating}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1 }}>
-                      <HomeIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
+                error={hasFieldErrorMessage('address')}
+                helperText={getFieldErrorMessage('address')}
               />
-            )}
+            </Paper>
+          </Box>
+        )}
 
-            {/* Company */}
-            {(isFieldRequired('require_company') || formData.company) && (
-              <TextField
-                fullWidth
-                label="Company"
-                value={formData.company}
-                onChange={(e) => handleFieldChange('company', e.target.value)}
-                required={isFieldRequired('require_company')}
-                error={hasFieldError('company')}
-                helperText={getFieldError('company')}
-                disabled={isLoading || isUpdating}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <BusinessIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            )}
+        {/* Account Creation */}
+        {showAccountCreation && (
+          <Box>
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+                Account Creation {mustCreateAccount ? '(Required)' : '(Optional)'}
+              </Typography>
 
-            {/* Custom Fields */}
-            {config?.custom_fields && config.custom_fields.length > 0 && (
-              <>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="h6" sx={{ color: 'text.primary' }}>
-                  Additional Information
-                </Typography>
-                
-                {config.custom_fields.map((field: any, index: number) => (
-                  <TextField
-                    key={index}
-                    fullWidth
-                    label={field.label || field.name}
-                    value={formData.custom_fields?.[field.name] || ''}
-                    onChange={(e) => handleCustomFieldChange(field.name, e.target.value)}
-                    required={field.required || false}
-                    multiline={field.type === 'textarea'}
-                    rows={field.type === 'textarea' ? 3 : 1}
-                    disabled={isLoading || isUpdating}
-                    helperText={field.help_text}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* Account Creation */}
-            {config?.offer_account_creation && (
-              <>
-                <Divider sx={{ my: 2 }} />
-                
+              {mustCreateAccount ? (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  An account will be created for you to manage your booking and receive updates.
+                </Alert>
+              ) : (
                 <FormControlLabel
                   control={
                     <Checkbox
                       checked={formData.create_account}
                       onChange={(e) => handleFieldChange('create_account', e.target.checked)}
-                      disabled={isLoading || isUpdating}
                     />
                   }
-                  label="Create an account to save your information and track your booking"
+                  label="Create an account to manage your bookings and receive updates"
+                  sx={{ mb: 2 }}
                 />
-
-                {formData.create_account && (
-                  <Stack spacing={2} sx={{ mt: 2 }}>
-                    <TextField
-                      fullWidth
-                      type={showPassword ? 'text' : 'password'}
-                      label="Password"
-                      value={formData.password}
-                      onChange={(e) => handleFieldChange('password', e.target.value)}
-                      required={formData.create_account}
-                      error={hasFieldError('password')}
-                      helperText={getFieldError('password') || 'Password must be at least 8 characters'}
-                      disabled={isLoading || isUpdating}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                            >
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-
-                    <TextField
-                      fullWidth
-                      type={showPasswordConfirm ? 'text' : 'password'}
-                      label="Confirm Password"
-                      value={formData.password_confirm}
-                      onChange={(e) => handleFieldChange('password_confirm', e.target.value)}
-                      required={formData.create_account}
-                      error={hasFieldError('password_confirm')}
-                      helperText={getFieldError('password_confirm')}
-                      disabled={isLoading || isUpdating}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                              edge="end"
-                            >
-                              {showPasswordConfirm ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Stack>
-                )}
-              </>
-            )}
-
-            {/* Marketing Consent */}
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formData.marketing_consent}
-                  onChange={(e) => handleFieldChange('marketing_consent', e.target.checked)}
-                  disabled={isLoading || isUpdating}
-                />
-              }
-              label="I'd like to receive updates about events and special offers"
-            />
-
-            {/* Form-level errors */}
-            {allErrors.general && (
-              <Alert severity="error">
-                {allErrors.general[0]}
-              </Alert>
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
-
-      {/* Navigation Buttons */}
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mt: 4,
-          gap: 2
-        }}
-      >
-        <Button
-          variant="outlined"
-          onClick={onPrevious}
-          disabled={!canGoPrevious || isLoading || isUpdating || isValidating}
-          sx={{ minWidth: 120 }}
-        >
-          Previous
-        </Button>
-
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          {showSaveButton && (
-            <Button
-              variant="text"
-              onClick={handleSave}
-              disabled={isLoading || isUpdating || isValidating}
-            >
-              {isUpdating ? (
-                <>
-                  <CircularProgress size={16} sx={{ mr: 1 }} />
-                  Saving...
-                </>
-              ) : (
-                'Save Progress'
               )}
-            </Button>
-          )}
 
-          <Button
-            variant="contained"
-            onClick={handleNext}
-            disabled={!canGoNext || isLoading || isUpdating || isValidating}
-            sx={{ minWidth: 120 }}
-          >
-            {isValidating || isUpdating ? (
-              <>
-                <CircularProgress size={16} sx={{ mr: 1 }} />
-                {isValidating ? 'Validating...' : 'Saving...'}
-              </>
-            ) : (
-              'Next'
-            )}
-          </Button>
-        </Box>
+              {(formData.create_account || mustCreateAccount) && (
+                <Box>
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    Creating an account will allow you to view your booking status, receive updates, 
+                    and easily book future events.
+                  </Alert>
+
+                  <TextField
+                    label="Password"
+                    type="password"
+                    fullWidth
+                    required
+                    value={formData.password}
+                    onChange={(e) => handleFieldChange('password', e.target.value)}
+                    error={hasFieldErrorMessage('password')}
+                    helperText={getFieldErrorMessage('password') || 'Minimum 8 characters'}
+                    sx={{ maxWidth: 400 }}
+                  />
+                </Box>
+              )}
+            </Paper>
+          </Box>
+        )}
+
+        {/* Account Already Exists Notice */}
+        {isAuthenticated && (
+          <Box>
+            <Alert severity="success">
+              You are logged in with your existing account. Your booking will be associated with this account automatically.
+            </Alert>
+          </Box>
+        )}
       </Box>
-
-      {/* Required fields notice */}
-      {config && (
-        <FormHelperText sx={{ textAlign: 'center', mt: 2 }}>
-          * Required fields
-        </FormHelperText>
-      )}
     </Box>
   );
 };
-
-export default ContactInfoStep;

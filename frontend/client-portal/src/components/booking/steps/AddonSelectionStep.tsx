@@ -1,567 +1,352 @@
 // frontend/client-portal/src/components/booking/steps/AddonSelectionStep.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
+  Paper,
   Card,
   CardContent,
-  CardActions,
   Button,
-  IconButton,
   Chip,
   Alert,
-  Skeleton,
-  Stack,
+  CircularProgress,
   Divider,
-  Collapse,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  IconButton,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Remove as RemoveIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Info as InfoIcon,
+import { 
+  Add, 
+  Remove, 
+  ExpandMore,
+  Star,
+  ShoppingCart,
 } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
-import { bookingFlowAPI } from '../../../apis/bookingflow.api';
-import { useBookingSessionContext } from '../../../contexts/BookingSessionContext';
-import { formatCurrency } from '../../../utils/payment-helpers';
+import { ProductsApi } from '../../../apis/booking/products.api';
 import type { 
-  BookingFlowStep,
+  AddonSelectionStepData, 
+  AddonSelectionStepConfiguration,
   ProductOption,
-  AddonSelectionStepConfiguration 
-} from '../../../types/booking.types';
-import type { 
-  AddonSelectionStepData,
-  SelectedAddon 
-} from '../../../types/booking-session.types';
-import type { BaseStepProps } from '../../../types/booking-steps.types';
+  SelectedAddon,
+} from '../../../types/booking';
 
-interface AddonSelectionStepProps extends BaseStepProps<AddonSelectionStepData> {
-  step: BookingFlowStep;
+interface AddonSelectionStepProps {
+  stepData?: AddonSelectionStepData;
+  config: AddonSelectionStepConfiguration | null;
+  onDataChange: (data: AddonSelectionStepData) => void;
+  validationErrors: Record<string, string[]>;
+  isValidating: boolean;
 }
 
-interface AddonWithQuantity extends ProductOption {
-  selectedQuantity: number;
-}
-
-const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
-  step,
-  data,
-  onUpdate,
-  onNext,
-  onPrevious,
-  onSave,
-  isLoading = false,
-  validationErrors = {},
-  canGoNext = true,
-  canGoPrevious = true,
-  showSaveButton = false,
+export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
+  stepData = { selected_addons: [] },
+  config,
+  onDataChange,
+  validationErrors,
+  isValidating,
 }) => {
-  const { saveProgress } = useBookingSessionContext();
-  
-  const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>(data.selected_addons || []);
-  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
-  const [isUpdating, setIsUpdating] = useState(false);
+  const availableAddons = config?.available_addons_details || [];
+  const minSelection = config?.min_selection || 0;
+  const maxSelection = config?.max_selection || 0; // 0 means unlimited
+  const groupByCategory = config?.group_by_category || false;
 
-  // Get step configuration
-  const config = step.configuration_data as AddonSelectionStepConfiguration;
+  // Use props stepData as single source of truth
+  const selectedAddons = stepData.selected_addons || [];
 
-  // Fetch available add-ons
-  const {
-    data: availableAddons,
-    isLoading: isLoadingAddons,
-    error: addonsError
-  } = useQuery({
-    queryKey: ['available-addons', step.id],
-    queryFn: () => bookingFlowAPI.getAvailableAddons(step.id),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-  });
-
-  // Fetch available categories if grouping by category
-  const {
-    data: availableCategories,
-    isLoading: isLoadingCategories,
-    error: categoriesError
-  } = useQuery({
-    queryKey: ['available-categories', step.id],
-    queryFn: () => bookingFlowAPI.getAvailableCategories(step.id),
-    enabled: config?.group_by_category || false,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
-
-  // Transform available add-ons to include quantity
-  const addonsWithQuantity: AddonWithQuantity[] = React.useMemo(() => {
-    if (!availableAddons) return [];
-    
-    return availableAddons.map(addon => ({
-      ...addon,
-      selectedQuantity: selectedAddons.find(selected => selected.id === addon.id)?.quantity || 0,
-    }));
-  }, [availableAddons, selectedAddons]);
-
-  // Group add-ons by category if enabled
-  const groupedAddons = React.useMemo(() => {
-    if (!config?.group_by_category || !availableCategories) {
-      return { ungrouped: addonsWithQuantity };
+  // Group addons by category if enabled
+  const groupedAddons = useMemo(() => {
+    if (!groupByCategory) {
+      return { 'All Add-ons': availableAddons };
     }
+    return ProductsApi.groupProductsByCategory(availableAddons);
+  }, [availableAddons, groupByCategory]);
 
-    const grouped: Record<string, AddonWithQuantity[]> = {};
-    const categoryMap = new Map(availableCategories.map(cat => [cat.id, cat.name]));
+  // Check if addon is selected
+  const isAddonSelected = useCallback((addonId: number) => {
+    return selectedAddons.some(a => a.id === addonId);
+  }, [selectedAddons]);
 
-    addonsWithQuantity.forEach(addon => {
-      const categoryName = categoryMap.get(addon.category) || 'Other';
-      if (!grouped[categoryName]) {
-        grouped[categoryName] = [];
-      }
-      grouped[categoryName].push(addon);
-    });
+  // Get selected addon details
+  const getSelectedAddon = useCallback((addonId: number) => {
+    return selectedAddons.find(a => a.id === addonId);
+  }, [selectedAddons]);
 
-    return grouped;
-  }, [addonsWithQuantity, availableCategories, config?.group_by_category]);
-
-  // Auto-expand first category
-  useEffect(() => {
-    if (config?.group_by_category && availableCategories && expandedCategories.size === 0) {
-      const firstCategory = availableCategories[0];
-      if (firstCategory) {
-        setExpandedCategories(new Set([firstCategory.id]));
-      }
-    }
-  }, [config?.group_by_category, availableCategories, expandedCategories.size]);
-
-  // Update parent component when selection changes
-  useEffect(() => {
-    const stepData: AddonSelectionStepData = {
-      selected_addons: selectedAddons,
-    };
+  // Handle addon toggle
+  const handleAddonToggle = useCallback((addon: ProductOption) => {
+    let newSelectedAddons: SelectedAddon[];
     
-    onUpdate(stepData);
-  }, [selectedAddons, onUpdate]);
-
-  const handleQuantityChange = useCallback(async (addon: ProductOption, newQuantity: number) => {
-    setIsUpdating(true);
-    
-    try {
-      let updatedAddons: SelectedAddon[];
-      
-      if (newQuantity <= 0) {
-        // Remove addon
-        updatedAddons = selectedAddons.filter(selected => selected.id !== addon.id);
-      } else {
-        // Add or update addon
-        const existingIndex = selectedAddons.findIndex(selected => selected.id === addon.id);
-        
-        const newSelectedAddon: SelectedAddon = {
-          id: addon.id,
-          name: addon.name,
-          quantity: newQuantity,
-          price: addon.base_price,
-          options: {}, // Could be expanded for addon-specific options
-        };
-        
-        if (existingIndex >= 0) {
-          updatedAddons = [...selectedAddons];
-          updatedAddons[existingIndex] = newSelectedAddon;
-        } else {
-          updatedAddons = [...selectedAddons, newSelectedAddon];
-        }
+    if (isAddonSelected(addon.id)) {
+      // Remove addon
+      newSelectedAddons = selectedAddons.filter(a => a.id !== addon.id);
+    } else {
+      // Check max selection limit
+      if (maxSelection > 0 && selectedAddons.length >= maxSelection) {
+        return; // Don't add if at max
       }
       
-      setSelectedAddons(updatedAddons);
-      
-      // Auto-save progress
-      const stepData: AddonSelectionStepData = {
-        selected_addons: updatedAddons,
+      // Add addon
+      const newAddon: SelectedAddon = {
+        id: addon.id,
+        name: addon.name,
+        price: addon.base_price,
+        quantity: 1,
       };
       
-      await saveProgress(stepData);
-    } catch (error) {
-      console.warn('Failed to save addon selection progress:', error);
-    } finally {
-      setIsUpdating(false);
+      newSelectedAddons = [...selectedAddons, newAddon];
     }
-  }, [selectedAddons, saveProgress]);
-
-  const toggleCategoryExpansion = (categoryId: number) => {
-    setExpandedCategories(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId);
-      } else {
-        newSet.add(categoryId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleIncrement = (addon: AddonWithQuantity) => {
-    const currentQuantity = addon.selectedQuantity;
-    const maxAllowed = config?.max_selection || 999;
-    const totalSelected = selectedAddons.reduce((sum, selected) => sum + selected.quantity, 0);
     
-    if (totalSelected < maxAllowed) {
-      handleQuantityChange(addon, currentQuantity + 1);
-    }
-  };
+    onDataChange({ selected_addons: newSelectedAddons });
+  }, [selectedAddons, maxSelection, isAddonSelected, onDataChange]);
 
-  const handleDecrement = (addon: AddonWithQuantity) => {
-    const currentQuantity = addon.selectedQuantity;
-    if (currentQuantity > 0) {
-      handleQuantityChange(addon, currentQuantity - 1);
-    }
-  };
+  // Handle quantity change
+  const handleQuantityChange = useCallback((addonId: number, delta: number) => {
+    const newSelectedAddons = selectedAddons.map(addon => {
+      if (addon.id === addonId) {
+        const newQuantity = Math.max(1, addon.quantity + delta);
+        return { ...addon, quantity: newQuantity };
+      }
+      return addon;
+    });
+    
+    onDataChange({ selected_addons: newSelectedAddons });
+  }, [selectedAddons, onDataChange]);
 
-  const calculateTotalPrice = (): string => {
-    const total = selectedAddons.reduce((sum, addon) => {
-      const price = parseFloat(addon.price) || 0;
-      return sum + (price * addon.quantity);
+  // Validation status
+  const validationStatus = useMemo(() => {
+    const errors: string[] = [];
+    
+    if (minSelection > 0 && selectedAddons.length < minSelection) {
+      errors.push(`Must select at least ${minSelection} add-on${minSelection > 1 ? 's' : ''}`);
+    }
+    
+    if (maxSelection > 0 && selectedAddons.length > maxSelection) {
+      errors.push(`Cannot select more than ${maxSelection} add-on${maxSelection > 1 ? 's' : ''}`);
+    }
+    
+    // Merge with external validation errors
+    const allErrors = [
+      ...errors,
+      ...Object.values(validationErrors).flat()
+    ];
+    
+    return {
+      isValid: allErrors.length === 0,
+      errors: allErrors
+    };
+  }, [selectedAddons, minSelection, maxSelection, validationErrors]);
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    const subtotal = selectedAddons.reduce((total, addon) => {
+      const price = parseFloat(addon.price);
+      return total + (price * addon.quantity);
     }, 0);
     
-    return total.toFixed(2);
+    return {
+      subtotal,
+      formatted: ProductsApi.formatPrice(subtotal.toString()),
+    };
+  }, [selectedAddons]);
+
+  const formatPrice = (price: string) => {
+    return ProductsApi.formatPrice(price);
   };
 
-  const canSelectMore = (): boolean => {
-    if (!config?.max_selection || config.max_selection === 0) return true;
-    
-    const totalSelected = selectedAddons.reduce((sum, selected) => sum + selected.quantity, 0);
-    return totalSelected < config.max_selection;
-  };
-
-  const hasMinimumSelection = (): boolean => {
-    if (!config?.min_selection) return true;
-    
-    const totalSelected = selectedAddons.reduce((sum, selected) => sum + selected.quantity, 0);
-    return totalSelected >= config.min_selection;
-  };
-
-  // Show loading state
-  if (isLoadingAddons || isLoadingCategories) {
+  if (!config) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h5" sx={{ mb: 3 }}>
-          <Skeleton width="60%" />
-        </Typography>
-        
-        <Stack spacing={2}>
-          {[1, 2, 3].map((index) => (
-            <Card key={index}>
-              <CardContent>
-                <Skeleton variant="text" width="40%" height={32} />
-                <Skeleton variant="text" width="80%" height={24} sx={{ mt: 1 }} />
-                <Skeleton variant="text" width="30%" height={20} sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          ))}
-        </Stack>
+      <Box display="flex" justifyContent="center" p={3}>
+        <CircularProgress />
       </Box>
     );
   }
 
-  // Show error state
-  if (addonsError || categoriesError) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          Unable to load available add-ons. Please try again or continue without add-ons.
-        </Alert>
-        
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-          {canGoPrevious && (
-            <Button variant="outlined" onClick={onPrevious}>
-              Back
-            </Button>
-          )}
-          <Button variant="contained" onClick={onNext}>
-            Continue Without Add-ons
-          </Button>
-        </Box>
-      </Box>
-    );
-  }
-
-  const renderAddonCard = (addon: AddonWithQuantity) => (
-    <Card 
-      key={addon.id}
-      sx={{ 
-        mb: 2,
-        opacity: (!canSelectMore() && addon.selectedQuantity === 0) ? 0.6 : 1,
-      }}
-    >
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-              {addon.name}
-            </Typography>
-            
-            {addon.description && (
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                {addon.description}
-              </Typography>
-            )}
-            
-            <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
-              {formatCurrency(addon.base_price)}
-            </Typography>
-          </Box>
-          
-          {addon.selectedQuantity > 0 && (
-            <Chip 
-              label={`${addon.selectedQuantity} selected`}
-              color="primary"
-              size="small"
-            />
-          )}
-        </Box>
-      </CardContent>
-      
-      <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton
-            size="small"
-            onClick={() => handleDecrement(addon)}
-            disabled={addon.selectedQuantity === 0 || isUpdating}
-            sx={{ 
-              border: 1, 
-              borderColor: 'divider',
-              '&:disabled': { opacity: 0.5 }
-            }}
-          >
-            <RemoveIcon fontSize="small" />
-          </IconButton>
-          
-          <Typography 
-            sx={{ 
-              minWidth: 40, 
-              textAlign: 'center', 
-              fontWeight: 600,
-              fontSize: '1.1rem'
-            }}
-          >
-            {addon.selectedQuantity}
-          </Typography>
-          
-          <IconButton
-            size="small"
-            onClick={() => handleIncrement(addon)}
-            disabled={(!canSelectMore() && addon.selectedQuantity === 0) || isUpdating}
-            sx={{ 
-              border: 1, 
-              borderColor: 'divider',
-              '&:disabled': { opacity: 0.5 }
-            }}
-          >
-            <AddIcon fontSize="small" />
-          </IconButton>
-        </Box>
-        
-        {addon.selectedQuantity > 0 && (
-          <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-            Subtotal: {formatCurrency(parseFloat(addon.base_price) * addon.selectedQuantity)}
-          </Typography>
-        )}
-      </CardActions>
-    </Card>
-  );
-
-  const renderGroupedAddons = () => {
-    if (!config?.group_by_category) {
-      return (
-        <Box>
-          {groupedAddons.ungrouped?.map(renderAddonCard)}
-        </Box>
-      );
-    }
-
-    return (
-      <Box>
-        {Object.entries(groupedAddons).map(([categoryName, addons]) => {
-          const category = availableCategories?.find(cat => cat.name === categoryName);
-          const isExpanded = category ? expandedCategories.has(category.id) : true;
-          
-          return (
-            <Box key={categoryName} sx={{ mb: 3 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  mb: 2,
-                  p: 1,
-                  borderRadius: 1,
-                  '&:hover': { bgcolor: 'action.hover' }
-                }}
-                onClick={() => category && toggleCategoryExpansion(category.id)}
-              >
-                <Typography variant="h6" sx={{ flex: 1, fontWeight: 600 }}>
-                  {categoryName}
-                </Typography>
-                
-                <Chip 
-                  label={`${addons.length} available`}
-                  size="small"
-                  variant="outlined"
-                  sx={{ mr: 1 }}
-                />
-                
-                {category && (
-                  isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />
-                )}
-              </Box>
-              
-              <Collapse in={isExpanded}>
-                <Box sx={{ pl: 2 }}>
-                  {addons.map(renderAddonCard)}
-                </Box>
-              </Collapse>
-            </Box>
-          );
-        })}
-      </Box>
-    );
-  };
+  const totalAddons = availableAddons.length;
+  const selectedCount = selectedAddons.length;
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
-        {step.name}
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        Add-on Services
       </Typography>
       
-      {step.description && (
-        <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
-          {step.description}
-        </Typography>
-      )}
+      <Typography variant="body2" color="text.secondary" gutterBottom>
+        {totalAddons === 0 
+          ? "No add-ons are currently available."
+          : `Choose additional services to enhance your event. ${minSelection > 0 ? `Minimum ${minSelection} required.` : 'All optional.'}`
+        }
+      </Typography>
 
-      {/* Selection requirements */}
-      {(config?.min_selection || config?.max_selection) && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          <Box>
-            {config.min_selection && config.min_selection > 0 && (
-              <Typography variant="body2" component="div">
-                • Minimum selection: {config.min_selection} add-on{config.min_selection !== 1 ? 's' : ''}
-              </Typography>
-            )}
-            {config.max_selection && config.max_selection > 0 && (
-              <Typography variant="body2" component="div">
-                • Maximum selection: {config.max_selection} add-on{config.max_selection !== 1 ? 's' : ''}
-              </Typography>
-            )}
-          </Box>
+      {/* Display validation errors */}
+      {!validationStatus.isValid && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {validationStatus.errors.map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
         </Alert>
       )}
 
-      {/* Validation errors */}
-      {validationErrors.selected_addons && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {Array.isArray(validationErrors.selected_addons) 
-            ? validationErrors.selected_addons.join(', ')
-            : validationErrors.selected_addons}
-        </Alert>
+      {/* Selection summary */}
+      {totalAddons > 0 && (
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+          <Typography variant="body2">
+            <ShoppingCart sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
+            {selectedCount} of {totalAddons} add-ons selected
+            {maxSelection > 0 && ` (max ${maxSelection})`}
+          </Typography>
+        </Box>
       )}
 
-      {/* Add-ons selection */}
-      {availableAddons && availableAddons.length > 0 ? (
-        <>
-          {renderGroupedAddons()}
-          
-          {/* Selection summary */}
-          {selectedAddons.length > 0 && (
-            <Card sx={{ mt: 3, bgcolor: 'primary.50' }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                  Selected Add-ons ({selectedAddons.length})
-                </Typography>
-                
-                <Stack spacing={1} sx={{ mb: 2 }}>
-                  {selectedAddons.map((addon) => (
-                    <Box 
-                      key={addon.id}
-                      sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                    >
-                      <Typography variant="body2">
-                        {addon.name} × {addon.quantity}
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatCurrency(parseFloat(addon.price) * addon.quantity)}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Stack>
-                
-                <Divider sx={{ mb: 2 }} />
-                
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Total Add-ons:
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                    {formatCurrency(calculateTotalPrice())}
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-        </>
+      {totalAddons === 0 ? (
+        <Alert severity="info">
+          No add-on services are currently available for this event type.
+        </Alert>
       ) : (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <InfoIcon />
-            <Typography>No add-ons are available for this booking.</Typography>
+        <Box>
+          {Object.entries(groupedAddons).map(([categoryName, addons]) => {
+            const CategoryContent = (
+              <Box display="flex" flexWrap="wrap" gap={2}>
+                {addons.map((addon: ProductOption) => {
+                  const isSelected = isAddonSelected(addon.id);
+                  const selectedAddon = getSelectedAddon(addon.id);
+
+                  return (
+                    <Box key={addon.id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.333% - 11px)' }, minWidth: 0 }}>
+                      <Card 
+                        sx={{ 
+                          height: '100%',
+                          border: isSelected ? 2 : 1,
+                          borderColor: isSelected ? 'primary.main' : 'divider',
+                          position: 'relative',
+                        }}
+                      >
+                        {addon.is_featured && (
+                          <Chip
+                            icon={<Star />}
+                            label="Recommended"
+                            color="secondary"
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              zIndex: 1,
+                            }}
+                          />
+                        )}
+
+                        <CardContent sx={{ pb: 1 }}>
+                          <Typography variant="subtitle1" component="h3" gutterBottom>
+                            {addon.name}
+                          </Typography>
+
+                          {addon.description && (
+                            <Typography variant="body2" color="text.secondary" paragraph>
+                              {addon.description}
+                            </Typography>
+                          )}
+
+                          <Box sx={{ mb: 2 }}>
+                            <Typography variant="h6" color="primary">
+                              {formatPrice(addon.base_price)}
+                            </Typography>
+                          </Box>
+
+                          <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Button
+                              variant={isSelected ? "contained" : "outlined"}
+                              size="small"
+                              onClick={() => handleAddonToggle(addon)}
+                              disabled={isValidating || (!isSelected && maxSelection > 0 && selectedCount >= maxSelection)}
+                            >
+                              {isSelected ? "Added" : "Add"}
+                            </Button>
+
+                            {isSelected && addon.allow_multiple && selectedAddon && (
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                <IconButton 
+                                  size="small" 
+                                  onClick={() => handleQuantityChange(addon.id, -1)}
+                                  disabled={selectedAddon.quantity <= 1}
+                                >
+                                  <Remove fontSize="small" />
+                                </IconButton>
+                                
+                                <Typography variant="body2" sx={{ minWidth: 20, textAlign: 'center' }}>
+                                  {selectedAddon.quantity}
+                                </Typography>
+                                
+                                <IconButton 
+                                  size="small" 
+                                  onClick={() => handleQuantityChange(addon.id, 1)}
+                                >
+                                  <Add fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            )}
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Box>
+                  );
+                })}
+              </Box>
+            );
+
+            return groupByCategory && Object.keys(groupedAddons).length > 1 ? (
+              <Accordion key={categoryName} defaultExpanded sx={{ mb: 2 }}>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Typography variant="subtitle1" fontWeight="medium">
+                    {categoryName} ({addons.length})
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {CategoryContent}
+                </AccordionDetails>
+              </Accordion>
+            ) : (
+              <Box key={categoryName}>
+                {Object.keys(groupedAddons).length > 1 && (
+                  <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                    {categoryName}
+                  </Typography>
+                )}
+                {CategoryContent}
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+
+      {/* Selected addons summary */}
+      {selectedAddons.length > 0 && (
+        <Paper sx={{ mt: 3, p: 2 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Selected Add-ons
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
+          
+          {selectedAddons.map((addon) => (
+            <Box key={addon.id} display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+              <Typography variant="body2">
+                {addon.name} {addon.quantity > 1 && `× ${addon.quantity}`}
+              </Typography>
+              <Typography variant="body2" fontWeight="medium">
+                {formatPrice((parseFloat(addon.price) * addon.quantity).toString())}
+              </Typography>
+            </Box>
+          ))}
+          
+          <Divider sx={{ my: 1 }} />
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="subtitle2">Add-ons Subtotal</Typography>
+            <Typography variant="subtitle2" fontWeight="bold">
+              {totals.formatted}
+            </Typography>
           </Box>
-        </Alert>
+        </Paper>
       )}
-
-      {/* Minimum selection warning */}
-      {config?.min_selection && config.min_selection > 0 && !hasMinimumSelection() && (
-        <Alert severity="warning" sx={{ mt: 3 }}>
-          Please select at least {config.min_selection} add-on{config.min_selection !== 1 ? 's' : ''} to continue.
-        </Alert>
-      )}
-
-      {/* Navigation buttons */}
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 4 }}>
-        {canGoPrevious && (
-          <Button 
-            variant="outlined" 
-            onClick={onPrevious}
-            disabled={isLoading || isUpdating}
-          >
-            Back
-          </Button>
-        )}
-        
-        {showSaveButton && (
-          <Button 
-            variant="outlined" 
-            onClick={onSave}
-            disabled={isLoading || isUpdating}
-          >
-            Save Progress
-          </Button>
-        )}
-        
-        <Button 
-          variant="contained" 
-          onClick={onNext}
-          disabled={
-            Boolean(
-              isLoading || 
-              isUpdating || 
-              !canGoNext || 
-              (config?.min_selection && config.min_selection > 0 && !hasMinimumSelection())
-            )
-          }
-        >
-          {selectedAddons.length > 0 ? 'Continue with Add-ons' : 'Continue Without Add-ons'}
-        </Button>
-      </Box>
     </Box>
   );
 };
-
-export default AddonSelectionStep;

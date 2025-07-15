@@ -11,8 +11,10 @@ import { Home } from './pages/home';
 import { Login, Register } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { Messages } from './pages/messages';
-import { Booking, BookingSuccess } from './pages/booking';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
+
+// Import booking components
+import BookingPage, { BookingComplete } from './pages/booking';
 
 // Loading component
 const LoadingSpinner: React.FC = () => (
@@ -137,45 +139,21 @@ const AppRouter: React.FC = () => {
         } 
       />
       
-      {/* Booking Flow Routes - Public access */}
+      {/* Booking Routes - Public with consistent layout */}
       <Route 
         path="/booking" 
         element={
           <PublicLayout>
-            <Booking 
-              maxWidth="lg"
-              enableAutoSave={true}
-              showBackButton={true}
-              onBackNavigation={() => navigate('/')}
-            />
+            <BookingPage />
           </PublicLayout>
         } 
       />
-
+      
       <Route 
-        path="/booking/:sessionId" 
+        path="/booking/complete" 
         element={
           <PublicLayout>
-            <Booking 
-              maxWidth="lg"
-              enableAutoSave={true}
-              showBackButton={true}
-              onBackNavigation={() => navigate('/')}
-            />
-          </PublicLayout>
-        } 
-      />
-
-      <Route 
-        path="/booking/success/:sessionId" 
-        element={
-          <PublicLayout>
-            <BookingSuccess 
-              maxWidth="md"
-              showPrintOption={true}
-              showShareOption={false}
-              onHomeNavigation={() => navigate('/')}
-            />
+            <BookingComplete />
           </PublicLayout>
         } 
       />
@@ -340,7 +318,8 @@ const AppRouter: React.FC = () => {
                 My Bookings
               </Typography>
               <Typography color="text.secondary">
-                Booking management coming soon!
+                Booking management coming soon! In the meantime, you can{' '}
+                <a href="/booking" style={{ color: 'blue' }}>create a new booking</a>.
               </Typography>
             </Box>
           </ProtectedRoute>

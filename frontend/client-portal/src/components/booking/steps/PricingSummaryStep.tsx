@@ -1,520 +1,626 @@
 // frontend/client-portal/src/components/booking/steps/PricingSummaryStep.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
+  Paper,
   Divider,
-  TextField,
-  Button,
   Alert,
-  Stack,
-  Chip,
-  CircularProgress,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
+  TableHead,
   TableRow,
-  Collapse,
+  TextField,
+  Button,
+  CircularProgress,
+  IconButton,
 } from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  LocalOffer as DiscountIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
+import { 
+  Receipt, 
+  LocalOffer, 
+  CheckCircle,
+  Close as CloseIcon
 } from '@mui/icons-material';
-import { useBookingSessionContext } from '../../../contexts/BookingSessionContext';
-import type { 
-  BookingFlowStep 
-} from '../../../types/booking.types';
-import type { 
-  PricingSummaryStepData 
-} from '../../../types/booking-session.types';
-import { formatCurrency } from '../../../utils/payment-helpers';
+import { useBooking } from '../../../contexts/BookingContext';
+import { ProductsApi } from '../../../apis/booking/products.api';
+import type {
+  PricingSummaryStepData,
+  Discount,
+  SelectedPackage,
+  SelectedAddon,
+} from '../../../types/booking';
 
 interface PricingSummaryStepProps {
-  step: BookingFlowStep;
-  onNext: () => void;
-  onPrevious: () => void;
+  stepData?: PricingSummaryStepData;
+  config: any; // Configuration not yet implemented in backend
+  onDataChange: (data: PricingSummaryStepData) => void;
+  validationErrors: Record<string, string[]>;
+  isValidating: boolean;
 }
 
-const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
-  step,
-  onNext,
-  onPrevious,
+interface PricingBreakdown {
+  packages: Array<{
+    id: number;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+    includedHours?: number;
+    excessHours?: number;
+    excessCost?: number;
+  }>;
+  addons: Array<{
+    id: number;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }>;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+}
+
+export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
+  stepData = {
+    subtotal: '0.00',
+    tax: '0.00',
+    discount: '0.00',
+    total: '0.00',
+    applied_discount: null,
+  },
+  config,
+  onDataChange,
+  validationErrors,
+  isValidating,
 }) => {
-  const {
-    session,
-    updateSessionData,
-    getPricing,
-    isUpdating,
-    validationErrors,
-    clearValidation,
-  } = useBookingSessionContext();
-
-  // Local state
-  const [discountCode, setDiscountCode] = useState('');
-  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+  const { state } = useBooking();
+  const [discountCodeInput, setDiscountCodeInput] = useState<string>('');
+  const [validatingDiscount, setValidatingDiscount] = useState(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
-  const [appliedDiscount, setAppliedDiscount] = useState<{
-    code: string;
-    amount: string;
-    type: 'PERCENTAGE' | 'FIXED';
-  } | null>(null);
-  const [pricingData, setPricingData] = useState<{
-    total_price: string;
-    breakdown: {
-      packages: Array<{ name: string; quantity: number; price: string }>;
-      addons: Array<{ name: string; quantity: number; price: string }>;
-      subtotal: string;
-      discounts: Array<{ name: string; amount: string; type: string }>;
-      total: string;
-    };
-  } | null>(null);
-  const [isLoadingPricing, setIsLoadingPricing] = useState(false);
-  const [showBreakdown, setShowBreakdown] = useState(false);
 
-  // Get current step data from session
-  const currentStepData = session?.booking_data?.[`step_${step.id}`] as PricingSummaryStepData | undefined;
+  // Get selected packages and addons from step data
+  const selectedPackages = state.stepData.package_selection?.selected_packages || [];
+  const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
+  const eventDuration = state.stepData.date_time?.duration;
 
-  // Load pricing data on component mount
-  useEffect(() => {
-    loadPricingData();
-  }, []);
+  // Use stepData's applied_discount as single source of truth
+  const appliedDiscount = stepData.applied_discount;
 
-  // Initialize state from session data
-  useEffect(() => {
-    if (currentStepData) {
-      if (currentStepData.discount_code) {
-        setDiscountCode(currentStepData.discount_code);
-      }
-      if (currentStepData.applied_discount) {
-        setAppliedDiscount(currentStepData.applied_discount);
-      }
-    }
-  }, [currentStepData]);
-
-  const loadPricingData = useCallback(async () => {
-    try {
-      setIsLoadingPricing(true);
-      const pricing = await getPricing();
-      if (pricing) {
-        setPricingData(pricing);
-      }
-    } catch (error) {
-      console.error('Error loading pricing data:', error);
-    } finally {
-      setIsLoadingPricing(false);
-    }
-  }, [getPricing]);
-
-  const handleApplyDiscount = async () => {
-    if (!discountCode.trim()) {
-      setDiscountError('Please enter a discount code');
-      return;
-    }
-
-    try {
-      setIsApplyingDiscount(true);
-      setDiscountError(null);
-      clearValidation();
-
-      // Update session with discount code attempt
-      const stepData: PricingSummaryStepData = {
-        ...currentStepData,
-        discount_code: discountCode.trim(),
-        acknowledged: currentStepData?.acknowledged,
-      };
-
-      await updateSessionData(step.id, stepData, false);
-
-      // Note: In a real implementation, the backend would validate the discount code
-      // and return either success with discount details or an error
-      // For now, we'll simulate this based on the session validation response
-
-      // Check if there are validation errors for the discount
-      if (validationErrors?.discount_code) {
-        const errorMessage = Array.isArray(validationErrors.discount_code) 
-          ? validationErrors.discount_code[0] 
-          : validationErrors.discount_code;
-        setDiscountError(errorMessage);
-      } else {
-        // Simulate successful discount application
-        // In reality, this would come from the backend response
-        const mockDiscount = {
-          code: discountCode.trim(),
-          amount: '50.00', // This would come from backend
-          type: 'FIXED' as const,
-        };
-        
-        setAppliedDiscount(mockDiscount);
-        
-        // Update session with applied discount
-        const updatedStepData: PricingSummaryStepData = {
-          ...stepData,
-          applied_discount: mockDiscount,
-        };
-        
-        await updateSessionData(step.id, updatedStepData, false);
-        
-        // Reload pricing to reflect discount
-        await loadPricingData();
-      }
-    } catch (error) {
-      console.error('Error applying discount:', error);
-      setDiscountError('Failed to apply discount code. Please try again.');
-    } finally {
-      setIsApplyingDiscount(false);
-    }
-  };
-
-  const handleRemoveDiscount = async () => {
-    try {
-      setAppliedDiscount(null);
-      setDiscountCode('');
-      setDiscountError(null);
-
-      const stepData: PricingSummaryStepData = {
-        ...currentStepData,
-        discount_code: '',
-        applied_discount: undefined,
-        acknowledged: currentStepData?.acknowledged,
-      };
-
-      await updateSessionData(step.id, stepData, false);
-      await loadPricingData();
-    } catch (error) {
-      console.error('Error removing discount:', error);
-    }
-  };
-
-  const handleAcknowledge = async () => {
-    try {
-      const stepData: PricingSummaryStepData = {
-        ...currentStepData,
-        acknowledged: true,
-        discount_code: discountCode,
-        applied_discount: appliedDiscount || undefined,
-      };
-
-      await updateSessionData(step.id, stepData, true);
-      onNext();
-    } catch (error) {
-      console.error('Error acknowledging pricing:', error);
-    }
-  };
-
-  const calculateSubtotal = (): number => {
-    if (!pricingData) return 0;
-    
+  // Calculate pricing breakdown
+  const breakdown = useMemo((): PricingBreakdown => {
     let subtotal = 0;
-    
-    // Add package prices
-    pricingData.breakdown.packages.forEach(pkg => {
-      subtotal += parseFloat(pkg.price) * pkg.quantity;
-    });
-    
-    // Add addon prices
-    pricingData.breakdown.addons.forEach(addon => {
-      subtotal += parseFloat(addon.price) * addon.quantity;
-    });
-    
-    return subtotal;
-  };
+    const calculatedPackages = [];
+    const calculatedAddons = [];
 
-  const calculateDiscountAmount = (): number => {
-    if (!appliedDiscount) return 0;
-    
-    const discountValue = parseFloat(appliedDiscount.amount);
-    
-    if (appliedDiscount.type === 'PERCENTAGE') {
-      const subtotal = calculateSubtotal();
-      return (subtotal * discountValue) / 100;
+    // Calculate packages with duration considerations
+    for (const pkg of selectedPackages) {
+      const unitPrice = parseFloat(pkg.price);
+      let packageTotal = unitPrice * pkg.quantity;
+      let excessHours = 0;
+      let excessCost = 0;
+
+      // Handle excess hours if package has this feature and duration is provided
+      if (eventDuration && pkg.included_hours && pkg.excess_hour_price) {
+        if (eventDuration > pkg.included_hours) {
+          excessHours = eventDuration - pkg.included_hours;
+          excessCost = excessHours * parseFloat(pkg.excess_hour_price) * pkg.quantity;
+          packageTotal += excessCost;
+        }
+      }
+
+      const packageItem = {
+        id: pkg.id,
+        name: pkg.name,
+        quantity: pkg.quantity,
+        unitPrice: unitPrice,
+        total: packageTotal,
+        includedHours: pkg.included_hours,
+        excessHours: excessHours > 0 ? excessHours : undefined,
+        excessCost: excessCost > 0 ? excessCost : undefined,
+      };
+
+      calculatedPackages.push(packageItem);
+      subtotal += packageTotal;
     }
+
+    // Calculate addons
+    for (const addon of selectedAddons) {
+      const unitPrice = parseFloat(addon.price);
+      const addonTotal = unitPrice * addon.quantity;
+
+      const addonItem = {
+        id: addon.id,
+        name: addon.name,
+        quantity: addon.quantity,
+        unitPrice: unitPrice,
+        total: addonTotal,
+      };
+
+      calculatedAddons.push(addonItem);
+      subtotal += addonTotal;
+    }
+
+    // Calculate discount
+    let discountAmount = 0;
+    if (appliedDiscount) {
+      switch (appliedDiscount.discount_type) {
+        case 'PERCENTAGE':
+          const percentage = parseFloat(appliedDiscount.value.toString());
+          discountAmount = subtotal * (percentage / 100);
+          break;
+        
+        case 'FIXED':
+          const fixedAmount = parseFloat(appliedDiscount.value.toString());
+          discountAmount = Math.min(fixedAmount, subtotal); // Don't exceed subtotal
+          break;
+        
+        case 'FREE_HOURS':
+          // For MVP, we'll just return 0 for free hours discounts
+          // This could be enhanced later to calculate based on hourly rates
+          discountAmount = 0;
+          break;
+      }
+    }
+
+    // Calculate tax (applied after discount)
+    const taxableAmount = subtotal - discountAmount;
+    const taxAmount = taxableAmount * 0.12; // 12% tax rate
+
+    // Calculate total
+    const total = subtotal + taxAmount - discountAmount;
+
+    return {
+      packages: calculatedPackages,
+      addons: calculatedAddons,
+      subtotal,
+      tax: taxAmount,
+      discount: discountAmount,
+      total: Math.max(0, total), // Ensure total is not negative
+    };
+  }, [selectedPackages, selectedAddons, eventDuration, appliedDiscount]);
+
+  // Format currency
+  const formatCurrency = (amount: number): string => {
+    return ProductsApi.formatPrice(amount.toString());
+  };
+
+  // Get formatted breakdown for display
+  const formattedBreakdown = useMemo(() => ({
+    packages: breakdown.packages,
+    addons: breakdown.addons,
+    subtotal: formatCurrency(breakdown.subtotal),
+    tax: formatCurrency(breakdown.tax),
+    discount: formatCurrency(breakdown.discount),
+    total: formatCurrency(breakdown.total),
+    rawTotal: breakdown.total,
+  }), [breakdown]);
+
+  // Update parent with calculated values when breakdown changes
+  const updatePricingData = useCallback(() => {
+    const newStepData: PricingSummaryStepData = {
+      subtotal: breakdown.subtotal.toFixed(2),
+      tax: breakdown.tax.toFixed(2),
+      discount: breakdown.discount.toFixed(2),
+      total: breakdown.total.toFixed(2),
+      applied_discount: appliedDiscount,
+    };
     
-    return discountValue;
+    // Only update if values have actually changed
+    if (
+      newStepData.total !== stepData.total ||
+      newStepData.subtotal !== stepData.subtotal ||
+      newStepData.tax !== stepData.tax ||
+      newStepData.discount !== stepData.discount ||
+      JSON.stringify(newStepData.applied_discount) !== JSON.stringify(stepData.applied_discount)
+    ) {
+      onDataChange(newStepData);
+    }
+  }, [breakdown, appliedDiscount, stepData, onDataChange]);
+
+  // Update pricing data when breakdown changes
+  React.useEffect(() => {
+    updatePricingData();
+  }, [updatePricingData]);
+
+  // Apply discount code
+  const handleApplyDiscount = async () => {
+    const code = discountCodeInput.trim();
+    if (!code) return;
+
+    setValidatingDiscount(true);
+    setDiscountError(null);
+
+    try {
+      // Mock discount validation - in real app this would call API
+      const mockDiscount: Discount = {
+        id: 1,
+        name: 'Test Discount',
+        code: code,
+        description: '10% off your booking',
+        discount_type: 'PERCENTAGE',
+        application_type: 'CODE_REQUIRED',
+        value: '10',
+        currency: 'PHP',
+        is_active: true,
+        valid_from: new Date().toISOString(),
+        valid_until: null,
+        max_uses: null,
+        max_uses_per_client: null,
+        current_uses: 0,
+        minimum_order_amount: null,
+        minimum_hours: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Update step data with new discount
+      const newStepData: PricingSummaryStepData = {
+        ...stepData,
+        applied_discount: mockDiscount,
+      };
+      onDataChange(newStepData);
+      
+      setDiscountCodeInput(''); // Clear input on success
+    } catch (error) {
+      setDiscountError('Invalid discount code');
+    } finally {
+      setValidatingDiscount(false);
+    }
   };
 
-  const calculateTotal = (): number => {
-    const subtotal = calculateSubtotal();
-    const discountAmount = calculateDiscountAmount();
-    return Math.max(0, subtotal - discountAmount);
+  // Remove discount
+  const handleRemoveDiscount = () => {
+    const newStepData: PricingSummaryStepData = {
+      ...stepData,
+      applied_discount: null,
+    };
+    onDataChange(newStepData);
+    setDiscountCodeInput('');
+    setDiscountError(null);
   };
 
-  if (isLoadingPricing) {
+  // Check if there are any items selected
+  const hasItems = selectedPackages.length > 0 || selectedAddons.length > 0;
+  const totalItemCount = selectedPackages.reduce((total, pkg) => total + pkg.quantity, 0) +
+                        selectedAddons.reduce((total, addon) => total + addon.quantity, 0);
+
+  // Show loading state
+  if (isValidating && !hasItems) {
     return (
-      <Box sx={{ textAlign: 'center', py: 4 }}>
-        <CircularProgress size={40} />
-        <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
-          Loading pricing information...
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+        <Typography variant="body1" sx={{ ml: 2 }}>
+          Calculating pricing...
         </Typography>
       </Box>
     );
   }
 
-  if (!pricingData) {
+  // Show message if no items selected
+  if (!hasItems) {
     return (
-      <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Unable to load pricing information. Please try again.
+      <Box>
+        <Typography variant="h4" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
+          Pricing Summary
+        </Typography>
+
+        <Alert severity="info" sx={{ textAlign: 'center' }}>
+          No packages or add-ons have been selected yet. Please go back to the previous steps to make your selections.
         </Alert>
-        <Button variant="outlined" onClick={loadPricingData}>
-          Retry
-        </Button>
       </Box>
     );
   }
 
-  const subtotal = calculateSubtotal();
-  const discountAmount = calculateDiscountAmount();
-  const total = calculateTotal();
-  const hasItems = pricingData.breakdown.packages.length > 0 || pricingData.breakdown.addons.length > 0;
-
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-      <Typography 
-        variant="h4" 
-        sx={{ 
-          mb: 3, 
-          textAlign: 'center',
-          fontWeight: 600,
-          color: 'primary.main'
-        }}
-      >
+    <Box>
+      <Typography variant="h4" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
         Pricing Summary
       </Typography>
 
-      {!hasItems && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          No packages or add-ons have been selected yet. Please go back to make your selections.
+      <Typography variant="body1" sx={{ mb: 4, textAlign: 'center', color: 'text.secondary' }}>
+        Review your event pricing breakdown
+      </Typography>
+
+      {/* Show validation errors if any */}
+      {Object.keys(validationErrors).length > 0 && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {Object.values(validationErrors).flat().map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
         </Alert>
       )}
 
-      {hasItems && (
-        <>
-          {/* Main Pricing Card */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              {/* Summary Header */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Order Summary
-                </Typography>
-                <Button
-                  size="small"
-                  onClick={() => setShowBreakdown(!showBreakdown)}
-                  endIcon={showBreakdown ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                >
-                  {showBreakdown ? 'Hide' : 'Show'} Details
-                </Button>
-              </Box>
-
-              {/* Detailed Breakdown */}
-              <Collapse in={showBreakdown}>
-                <Box sx={{ mb: 2 }}>
-                  {/* Packages */}
-                  {pricingData.breakdown.packages.length > 0 && (
-                    <>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                        Packages
-                      </Typography>
-                      <Table size="small" sx={{ mb: 2 }}>
-                        <TableBody>
-                          {pricingData.breakdown.packages.map((pkg, index) => (
-                            <TableRow key={index}>
-                              <TableCell sx={{ border: 'none', pl: 0 }}>
-                                {pkg.name}
-                              </TableCell>
-                              <TableCell sx={{ border: 'none', textAlign: 'center' }}>
-                                ×{pkg.quantity}
-                              </TableCell>
-                              <TableCell sx={{ border: 'none', textAlign: 'right', pr: 0 }}>
-                                {formatCurrency(parseFloat(pkg.price) * pkg.quantity)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </>
-                  )}
-
-                  {/* Add-ons */}
-                  {pricingData.breakdown.addons.length > 0 && (
-                    <>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                        Add-ons
-                      </Typography>
-                      <Table size="small" sx={{ mb: 2 }}>
-                        <TableBody>
-                          {pricingData.breakdown.addons.map((addon, index) => (
-                            <TableRow key={index}>
-                              <TableCell sx={{ border: 'none', pl: 0 }}>
-                                {addon.name}
-                              </TableCell>
-                              <TableCell sx={{ border: 'none', textAlign: 'center' }}>
-                                ×{addon.quantity}
-                              </TableCell>
-                              <TableCell sx={{ border: 'none', textAlign: 'right', pr: 0 }}>
-                                {formatCurrency(parseFloat(addon.price) * addon.quantity)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </>
-                  )}
-                </Box>
-              </Collapse>
-
-              {/* Pricing Totals */}
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body1">Subtotal</Typography>
-                  <Typography variant="body1">{formatCurrency(subtotal)}</Typography>
-                </Box>
-
-                {appliedDiscount && (
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body1" sx={{ color: 'success.main' }}>
-                        Discount ({appliedDiscount.code})
-                      </Typography>
-                      <Chip
-                        label={appliedDiscount.type === 'PERCENTAGE' ? `${appliedDiscount.amount}%` : 'Fixed'}
-                        size="small"
-                        color="success"
-                        variant="outlined"
-                      />
-                    </Box>
-                    <Typography variant="body1" sx={{ color: 'success.main' }}>
-                      -{formatCurrency(discountAmount)}
-                    </Typography>
-                  </Box>
-                )}
-
-                <Divider sx={{ my: 2 }} />
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Total
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                    {formatCurrency(total)}
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Discount Code Section */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <DiscountIcon color="primary" />
-                Discount Code
-              </Typography>
-
-              {appliedDiscount ? (
-                <Box>
-                  <Alert 
-                    severity="success" 
-                    icon={<CheckCircleIcon />}
-                    action={
-                      <Button 
-                        color="inherit" 
-                        size="small" 
-                        onClick={handleRemoveDiscount}
-                      >
-                        Remove
-                      </Button>
-                    }
-                  >
-                    Discount code "{appliedDiscount.code}" applied successfully!
-                  </Alert>
-                </Box>
-              ) : (
-                <Box>
-                  <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                    <TextField
-                      fullWidth
-                      placeholder="Enter discount code"
-                      value={discountCode}
-                      onChange={(e) => {
-                        setDiscountCode(e.target.value.toUpperCase());
-                        setDiscountError(null);
-                      }}
-                      error={!!discountError}
-                      disabled={isApplyingDiscount}
-                      size="small"
-                    />
-                    <Button
-                      variant="outlined"
-                      onClick={handleApplyDiscount}
-                      disabled={isApplyingDiscount || !discountCode.trim()}
-                      sx={{ minWidth: 100 }}
-                    >
-                      {isApplyingDiscount ? (
-                        <CircularProgress size={20} />
-                      ) : (
-                        'Apply'
-                      )}
-                    </Button>
-                  </Stack>
-
-                  {discountError && (
-                    <Alert severity="error" icon={<ErrorIcon />}>
-                      {discountError}
-                    </Alert>
-                  )}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Navigation */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-            <Button
-              variant="outlined"
-              onClick={onPrevious}
-              disabled={isUpdating}
-            >
-              Previous
-            </Button>
-
-            <Button
-              variant="contained"
-              onClick={handleAcknowledge}
-              disabled={isUpdating}
-              sx={{ minWidth: 120 }}
-            >
-              {isUpdating ? (
-                <>
-                  <CircularProgress size={20} sx={{ mr: 1 }} />
-                  Saving...
-                </>
-              ) : (
-                'Continue'
-              )}
-            </Button>
-          </Box>
-        </>
-      )}
-
-      {!hasItems && (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-          <Button
-            variant="outlined"
-            onClick={onPrevious}
-          >
-            Go Back
-          </Button>
+      {/* Pricing Breakdown Table */}
+      <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          <Receipt color="primary" />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Price Breakdown
+          </Typography>
+          {isValidating && <CircularProgress size={16} />}
         </Box>
-      )}
+
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Item</TableCell>
+                <TableCell align="center">Quantity</TableCell>
+                <TableCell align="right">Unit Price</TableCell>
+                <TableCell align="right">Total</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {/* Packages */}
+              {breakdown.packages.length > 0 && (
+                <>
+                  <TableRow>
+                    <TableCell colSpan={4} sx={{ fontWeight: 600, backgroundColor: 'grey.50' }}>
+                      Packages
+                    </TableCell>
+                  </TableRow>
+                  {breakdown.packages.map((pkg) => (
+                    <React.Fragment key={pkg.id}>
+                      <TableRow>
+                        <TableCell>
+                          {pkg.name}
+                          {pkg.includedHours && (
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              Includes {pkg.includedHours} hours
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="center">{pkg.quantity}</TableCell>
+                        <TableCell align="right">{formatCurrency(pkg.unitPrice)}</TableCell>
+                        <TableCell align="right">{formatCurrency(pkg.total)}</TableCell>
+                      </TableRow>
+                      {/* Show excess hours if applicable */}
+                      {pkg.excessHours && pkg.excessCost && (
+                        <TableRow>
+                          <TableCell sx={{ pl: 4 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              + {pkg.excessHours} excess hours
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Typography variant="body2" color="text.secondary">
+                              {pkg.quantity}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2" color="text.secondary">
+                              {formatCurrency(pkg.excessCost / (pkg.excessHours * pkg.quantity))}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2" color="text.secondary">
+                              {formatCurrency(pkg.excessCost)}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </>
+              )}
+
+              {/* Add-ons */}
+              {breakdown.addons.length > 0 && (
+                <>
+                  <TableRow>
+                    <TableCell colSpan={4} sx={{ fontWeight: 600, backgroundColor: 'grey.50' }}>
+                      Add-ons
+                    </TableCell>
+                  </TableRow>
+                  {breakdown.addons.map((addon) => (
+                    <TableRow key={addon.id}>
+                      <TableCell>{addon.name}</TableCell>
+                      <TableCell align="center">{addon.quantity}</TableCell>
+                      <TableCell align="right">{formatCurrency(addon.unitPrice)}</TableCell>
+                      <TableCell align="right">{formatCurrency(addon.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                </>
+              )}
+
+              {/* Subtotal */}
+              <TableRow>
+                <TableCell colSpan={3} sx={{ fontWeight: 600, textAlign: 'right', pt: 2 }}>
+                  Subtotal
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600, pt: 2 }}>
+                  {formattedBreakdown.subtotal}
+                </TableCell>
+              </TableRow>
+
+              {/* Discount */}
+              {breakdown.discount > 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} sx={{ textAlign: 'right', color: 'success.main' }}>
+                    Discount
+                    {appliedDiscount && (
+                      <Typography variant="caption" display="block">
+                        ({appliedDiscount.name})
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: 'success.main' }}>
+                    -{formattedBreakdown.discount}
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {/* Tax */}
+              <TableRow>
+                <TableCell colSpan={3} sx={{ textAlign: 'right' }}>
+                  Tax (12%)
+                </TableCell>
+                <TableCell align="right">
+                  {formattedBreakdown.tax}
+                </TableCell>
+              </TableRow>
+
+              {/* Total */}
+              <TableRow>
+                <TableCell colSpan={3} sx={{ fontWeight: 700, fontSize: '1.1rem', textAlign: 'right', pt: 2 }}>
+                  Total
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '1.1rem', color: 'primary.main', pt: 2 }}>
+                  {formattedBreakdown.total}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      {/* Discount Code Section - Show by default since allow_discounts defaults to true in backend */}
+      <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <LocalOffer color="primary" />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Discount Code
+          </Typography>
+        </Box>
+
+        {appliedDiscount ? (
+          <Alert 
+            severity="success" 
+            action={
+              <IconButton
+                color="inherit"
+                size="small"
+                onClick={handleRemoveDiscount}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            }
+          >
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                Discount Applied: {appliedDiscount.name}
+              </Typography>
+              <Typography variant="body2">
+                {appliedDiscount.description}
+              </Typography>
+            </Box>
+          </Alert>
+        ) : (
+          <Box>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <TextField
+                label="Enter discount code"
+                value={discountCodeInput}
+                onChange={(e) => setDiscountCodeInput(e.target.value.toUpperCase())}
+                size="small"
+                disabled={validatingDiscount}
+                error={!!discountError}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleApplyDiscount();
+                  }
+                }}
+              />
+              <Button
+                variant="outlined"
+                onClick={handleApplyDiscount}
+                disabled={!discountCodeInput.trim() || validatingDiscount}
+                sx={{ minWidth: 100 }}
+              >
+                {validatingDiscount ? <CircularProgress size={20} /> : 'Apply'}
+              </Button>
+            </Box>
+            
+            {discountError && (
+              <Typography variant="caption" color="error">
+                {discountError}
+              </Typography>
+            )}
+          </Box>
+        )}
+      </Paper>
+
+      {/* Event Details Summary */}
+      <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          Event Summary
+        </Typography>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {state.stepData.date_time?.start_date && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">
+                Event Date:
+              </Typography>
+              <Typography variant="body2">
+                {new Date(state.stepData.date_time.start_date).toLocaleDateString()}
+              </Typography>
+            </Box>
+          )}
+
+          {state.stepData.date_time?.start_time && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">
+                Event Time:
+              </Typography>
+              <Typography variant="body2">
+                {state.stepData.date_time.start_time}
+              </Typography>
+            </Box>
+          )}
+
+          {state.stepData.date_time?.duration && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">
+                Duration:
+              </Typography>
+              <Typography variant="body2">
+                {state.stepData.date_time.duration} hours
+              </Typography>
+            </Box>
+          )}
+
+          <Divider sx={{ my: 1 }} />
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body2" color="text.secondary">
+              Total Items:
+            </Typography>
+            <Typography variant="body2">
+              {totalItemCount}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              Total Amount:
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main' }}>
+              {formattedBreakdown.total}
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+
+      {/* Important Notes - FIXED: Removed ul from Typography component */}
+      <Alert severity="info" sx={{ mt: 3 }}>
+        <Typography variant="body2" component="div">
+          <strong>Please Note:</strong>
+        </Typography>
+        <Box component="ul" sx={{ margin: '8px 0', paddingLeft: '20px' }}>
+          <li>All prices are inclusive of applicable taxes unless otherwise stated</li>
+          <li>Final pricing may be subject to additional fees based on specific requirements</li>
+          <li>Payment options will be available in the next step</li>
+          {eventDuration && breakdown.packages.some(p => p.excessHours) && (
+            <li>Additional hours beyond the included time will be charged separately</li>
+          )}
+        </Box>
+      </Alert>
     </Box>
   );
 };
-
-export default PricingSummaryStep;

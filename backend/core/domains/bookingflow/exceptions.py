@@ -177,3 +177,10 @@ class RelatedObjectNotFound(BookingFlowException):
     status_code = status.HTTP_404_NOT_FOUND
     default_detail = 'Required related object not found.'
     default_code = 'related_object_not_found'
+    
+
+class ValidationFailed(BookingFlowException):
+    """Raised when booking data validation fails"""
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    default_detail = 'Booking data validation failed.'
+    default_code = 'booking_data_validation_error'

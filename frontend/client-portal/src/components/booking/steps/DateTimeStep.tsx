@@ -1,430 +1,347 @@
 // frontend/client-portal/src/components/booking/steps/DateTimeStep.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
   TextField,
+  Paper,
   Alert,
-  CircularProgress,
   Chip,
-  Stack,
-  Card,
-  CardContent,
+  CircularProgress,
+  FormHelperText,
 } from '@mui/material';
-import {
-  DatePicker,
-  TimePicker,
-} from '@mui/x-date-pickers';
-import {
-  CalendarToday as CalendarIcon,
-  Schedule as TimeIcon,
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
-import { useBookingSessionContext } from '../../../contexts/BookingSessionContext';
-import { useAvailabilityCheck } from '../../../hooks/useAvailabilityCheck';
+import { DatePicker, TimePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { CheckCircle, Warning } from '@mui/icons-material';
+import { DateTimeApi } from '../../../apis/booking/datetime.api';
 import type { 
+  DateTimeStepData, 
   DateTimeStepConfiguration,
-  BookingFlowStep 
-} from '../../../types/booking.types';
-import type { 
-  BaseStepProps 
-} from '../../../types/booking-steps.types';
-import type { DateTimeStepData } from '../../../types/booking-session.types';
+  StepValidationResult
+} from '../../../types/booking';
 
-interface DateTimeStepProps extends BaseStepProps<DateTimeStepData> {
-  step: BookingFlowStep;
+interface DateTimeStepProps {
+  stepData?: DateTimeStepData;
+  config: DateTimeStepConfiguration | null;
+  onDataChange: (data: DateTimeStepData) => void;
+  validationErrors: Record<string, string[]>;
+  isValidating: boolean;
+  onValidate?: (data: any) => Promise<StepValidationResult>;
 }
 
-const DateTimeStep: React.FC<DateTimeStepProps> = ({
-  step,
-  data,
-  onUpdate,
-  validationErrors = {},
+export const DateTimeStep: React.FC<DateTimeStepProps> = ({
+  stepData,
+  config,
+  onDataChange,
+  validationErrors: externalValidationErrors,
+  isValidating: externalIsValidating,
+  onValidate,
 }) => {
-  const { sessionUUID, currentStep } = useBookingSessionContext();
-  
-  // Get step configuration
-  const config = step.configuration_data as DateTimeStepConfiguration;
-  
-  // Local form state
-  const [formData, setFormData] = useState<DateTimeStepData>({
-    start_date: data.start_date || '',
-    start_time: data.start_time || '',
-    end_date: data.end_date || '',
-    end_time: data.end_time || '',
-    resource_requirements: data.resource_requirements || [],
-    staff_requirements: data.staff_requirements || [],
-    special_requirements: data.special_requirements || '',
-  });
+  // Use props stepData as single source of truth with defaults
+  const data: DateTimeStepData = useMemo(() => ({
+    start_date: stepData?.start_date || '',
+    start_time: stepData?.start_time || '',
+    end_date: stepData?.end_date || '',
+    end_time: stepData?.end_time || '',
+    duration: stepData?.duration || config?.default_duration_hours || 4,
+    venue_preference: stepData?.venue_preference || '',
+    resource_requirements: stepData?.resource_requirements || [],
+    staff_requirements: stepData?.staff_requirements || [],
+  }), [stepData, config?.default_duration_hours]);
 
-  // Availability checking
-  const {
-    lastResult: availabilityResult,
-    isChecking: isCheckingAvailability,
-    hasChecked: hasCheckedAvailability,
-    checkAvailabilityDebounced,
-    clearResult: clearAvailabilityResult,
-    isAvailable,
-    availabilityMessage,
-  } = useAvailabilityCheck({
-    sessionUUID: sessionUUID || undefined,
-    stepId: currentStep?.id,
-    debounceMs: 1000,
-    autoCheck: config?.enable_real_time_availability || false,
-  });
-
-  // Update parent data when form changes
-  const handleFormChange = useCallback((updates: Partial<DateTimeStepData>) => {
-    const newData = { ...formData, ...updates };
-    setFormData(newData);
-    onUpdate(newData);
-
-    // Trigger availability check if enabled and we have required data
-    if (config?.enable_real_time_availability && config?.auto_check_conflicts) {
-      if (newData.start_date && (newData.start_time || !config.allow_time_selection)) {
-        checkAvailabilityDebounced({
-          start_date: newData.start_date,
-          start_time: newData.start_time,
-          end_date: newData.end_date,
-          end_time: newData.end_time,
-          resource_requirements: newData.resource_requirements,
-          staff_requirements: newData.staff_requirements,
-          special_requirements: newData.special_requirements,
-        });
-      }
+  // Update data helper that calls parent's onDataChange directly
+  const updateData = useCallback((updates: Partial<DateTimeStepData>) => {
+    const newData = { ...data, ...updates };
+    
+    // Auto-calculate end date/time if start date/time and duration change
+    if ((updates.start_date || updates.start_time || updates.duration) && 
+        newData.start_date && newData.duration) {
+      const endDateTime = DateTimeApi.calculateEndDateTime(
+        newData.start_date,
+        newData.start_time || '',
+        newData.duration
+      );
+      newData.end_date = endDateTime.end_date;
+      newData.end_time = endDateTime.end_time;
     }
-  }, [formData, onUpdate, config, checkAvailabilityDebounced]);
+    
+    onDataChange(newData);
 
-  // Initialize form data from props
-  useEffect(() => {
-    if (data && Object.keys(data).length > 0) {
-      setFormData(prev => ({ ...prev, ...data }));
+    // Auto-validate if onValidate is provided
+    if (onValidate && Object.keys(updates).length > 0) {
+      onValidate(newData).catch(error => {
+        console.warn('Validation failed:', error);
+      });
     }
-  }, [data]);
-
-  // Clear availability when date/time changes significantly
-  useEffect(() => {
-    clearAvailabilityResult();
-  }, [formData.start_date, formData.start_time, clearAvailabilityResult]);
+  }, [data, onDataChange, onValidate]);
 
   // Handle date change
-  const handleDateChange = (field: 'start_date' | 'end_date') => (date: Date | null) => {
-    if (date) {
-      const dateString = date.toISOString().split('T')[0];
-      handleFormChange({ [field]: dateString });
-    } else {
-      handleFormChange({ [field]: '' });
-    }
-  };
+  const handleDateChange = useCallback((date: Date | null) => {
+    const dateString = date ? date.toISOString().split('T')[0] : '';
+    updateData({ start_date: dateString });
+  }, [updateData]);
 
   // Handle time change
-  const handleTimeChange = (field: 'start_time' | 'end_time') => (time: Date | null) => {
-    if (time) {
-      const timeString = time.toTimeString().split(' ')[0]; // HH:MM:SS format
-      handleFormChange({ [field]: timeString });
-    } else {
-      handleFormChange({ [field]: '' });
-    }
-  };
+  const handleTimeChange = useCallback((time: Date | null) => {
+    const timeString = time ? time.toTimeString().split(' ')[0].slice(0, 5) : '';
+    updateData({ start_time: timeString });
+  }, [updateData]);
 
-  // Parse date/time for pickers
-  const parseDate = (dateString?: string): Date | null => {
-    if (!dateString) return null;
-    return new Date(dateString);
-  };
+  // Handle duration change
+  const handleDurationChange = useCallback((duration: number) => {
+    updateData({ duration });
+  }, [updateData]);
 
-  const parseTime = (timeString?: string): Date | null => {
-    if (!timeString) return null;
+  // Handle venue preference change
+  const handleVenuePreferenceChange = useCallback((venuePreference: string) => {
+    updateData({ venue_preference: venuePreference });
+  }, [updateData]);
+
+  // Handle resource requirements change
+  const handleResourceRequirementsChange = useCallback((requirements: string[]) => {
+    updateData({ resource_requirements: requirements });
+  }, [updateData]);
+
+  // Get minimum date based on configuration
+  const minDate = useMemo(() => {
     const today = new Date();
-    const [hours, minutes, seconds] = timeString.split(':').map(Number);
-    return new Date(today.setHours(hours, minutes, seconds || 0, 0));
-  };
+    const minDays = config?.min_duration_hours || 1;
+    today.setDate(today.getDate() + Math.floor(minDays / 24));
+    return today;
+  }, [config]);
 
-  // Check if date is blocked
-  const isDateBlocked = (date: Date): boolean => {
-    if (!config?.blocked_dates) return false;
-    const dateString = date.toISOString().split('T')[0];
-    return config.blocked_dates.includes(dateString);
-  };
+  // Format display values
+  const formattedValues = useMemo(() => ({
+    startDate: DateTimeApi.formatDate(data.start_date),
+    startTime: DateTimeApi.formatTime(data.start_time || ''),
+    endDate: DateTimeApi.formatDate(data.end_date || ''),
+    endTime: DateTimeApi.formatTime(data.end_time || ''),
+  }), [data]);
 
-  // Check if day of week is available
-  const isDayOfWeekAvailable = (date: Date): boolean => {
-    if (!config?.available_days_of_week || config.available_days_of_week.length === 0) {
-      return true;
-    }
-    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const mondayBasedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday=0 based
-    return config.available_days_of_week.includes(mondayBasedDay);
-  };
+  // Get field error helper
+  const getFieldError = useCallback((fieldName: string) => {
+    return externalValidationErrors[fieldName]?.[0];
+  }, [externalValidationErrors]);
 
-  // Should disable date in picker
-  const shouldDisableDate = (date: Date): boolean => {
-    // Check if date is in the past
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (date < today) return true;
+  // Check if field has error helper
+  const hasFieldError = useCallback((fieldName: string) => {
+    return !!(externalValidationErrors[fieldName]?.length > 0);
+  }, [externalValidationErrors]);
 
-    // Check if date is blocked
-    if (isDateBlocked(date)) return true;
+  // Convert data for date/time pickers
+  const selectedDate = data.start_date ? new Date(data.start_date) : null;
+  const selectedTime = data.start_time ? new Date(`2000-01-01T${data.start_time}`) : null;
 
-    // Check if day of week is available
-    if (!isDayOfWeekAvailable(date)) return true;
-
-    return false;
-  };
-
-  // Render availability status
-  const renderAvailabilityStatus = () => {
-    if (!config?.show_availability_status) return null;
-
-    if (isCheckingAvailability) {
-      return (
-        <Alert 
-          severity="info" 
-          icon={<CircularProgress size={20} />}
-          sx={{ mt: 2 }}
-        >
-          Checking availability...
-        </Alert>
-      );
-    }
-
-    if (hasCheckedAvailability && availabilityResult) {
-      const severity = isAvailable ? 'success' : 'warning';
-      const icon = isAvailable ? <CheckIcon /> : <WarningIcon />;
-      
-      return (
-        <Alert 
-          severity={severity}
-          icon={icon}
-          sx={{ mt: 2 }}
-        >
-          {availabilityMessage}
-        </Alert>
-      );
-    }
-
-    return null;
-  };
-
-  // Get minimum and maximum dates
-  const today = new Date();
-  const minDate = new Date(today);
-  minDate.setDate(today.getDate() + (step.booking_flow ? 0 : 1)); // Use flow's min_advance_booking_days
-
-  const maxDate = new Date(today);
-  maxDate.setDate(today.getDate() + (step.booking_flow ? 365 : 365)); // Use flow's max_advance_booking_days
+  const isProcessing = externalIsValidating;
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography 
-          variant="h5" 
-          sx={{ 
-            fontWeight: 600, 
-            mb: 2,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}
-        >
-          <CalendarIcon color="primary" />
-          {step.name}
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Box>
+        <Typography variant="h4" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
+          Select Your Event Date & Time
         </Typography>
-        
-        {step.description && (
-          <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
-            {step.description}
-          </Typography>
-        )}
-      </Box>
 
-      <Stack spacing={4}>
-        {/* Date Selection */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Select Date
-            </Typography>
-            
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-              <DatePicker
-                label="Start Date"
-                value={parseDate(formData.start_date)}
-                onChange={handleDateChange('start_date')}
-                shouldDisableDate={shouldDisableDate}
-                minDate={minDate}
-                maxDate={maxDate}
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                    error: !!validationErrors.start_date,
-                    helperText: validationErrors.start_date?.[0],
-                    required: step.is_required,
-                  }
-                }}
-              />
-              
-              {config?.allow_multi_day && (
+        <Typography variant="body1" sx={{ mb: 4, textAlign: 'center', color: 'text.secondary' }}>
+          Choose your preferred date and time for your event. We'll check availability and confirm with you.
+        </Typography>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Date and Time Selection Row */}
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+            {/* Date Selection */}
+            <Box sx={{ width: { xs: '100%', md: '50%' } }}>
+              <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Event Date
+                </Typography>
+                
                 <DatePicker
-                  label="End Date (Optional)"
-                  value={parseDate(formData.end_date)}
-                  onChange={handleDateChange('end_date')}
-                  shouldDisableDate={shouldDisableDate}
-                  minDate={parseDate(formData.start_date) || minDate}
-                  maxDate={maxDate}
+                  label="Select Date"
+                  value={selectedDate}
+                  onChange={handleDateChange}
+                  minDate={minDate}
+                  disabled={isProcessing}
                   slotProps={{
                     textField: {
                       fullWidth: true,
-                      error: !!validationErrors.end_date,
-                      helperText: validationErrors.end_date?.[0],
-                    }
+                      error: hasFieldError('start_date'),
+                      helperText: getFieldError('start_date'),
+                    },
                   }}
                 />
-              )}
-            </Box>
-          </CardContent>
-        </Card>
 
-        {/* Time Selection */}
-        {config?.allow_time_selection && (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                <TimeIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Select Time
+                {/* Display formatted date */}
+                {formattedValues.startDate && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    {formattedValues.startDate}
+                  </Typography>
+                )}
+
+                {config?.blocked_dates && config.blocked_dates.length > 0 && (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    Some dates may not be available due to existing bookings.
+                  </Alert>
+                )}
+              </Paper>
+            </Box>
+
+            {/* Time Selection */}
+            {config?.allow_time_selection && (
+              <Box sx={{ width: { xs: '100%', md: '50%' } }}>
+                <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                    Event Time
+                  </Typography>
+                  
+                  <TimePicker
+                    label="Select Time"
+                    value={selectedTime}
+                    onChange={handleTimeChange}
+                    disabled={isProcessing}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        error: hasFieldError('start_time'),
+                        helperText: getFieldError('start_time'),
+                      },
+                    }}
+                  />
+
+                  {/* Display formatted time */}
+                  {formattedValues.startTime && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      {formattedValues.startTime}
+                    </Typography>
+                  )}
+
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    Venue hours: 8:00 AM - 10:00 PM
+                  </Typography>
+                </Paper>
+              </Box>
+            )}
+          </Box>
+
+          {/* Duration Selection */}
+          <Box>
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Event Duration
               </Typography>
               
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-                <TimePicker
-                  label="Start Time"
-                  value={parseTime(formData.start_time)}
-                  onChange={handleTimeChange('start_time')}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!validationErrors.start_time,
-                      helperText: validationErrors.start_time?.[0],
-                    }
-                  }}
-                />
-                
-                <TimePicker
-                  label="End Time (Optional)"
-                  value={parseTime(formData.end_time)}
-                  onChange={handleTimeChange('end_time')}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!validationErrors.end_time,
-                      helperText: validationErrors.end_time?.[0],
-                    }
-                  }}
-                />
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                {[4, 6, 8, 12, 24].map((hours) => (
+                  <Chip
+                    key={hours}
+                    label={`${hours} hours`}
+                    onClick={() => handleDurationChange(hours)}
+                    color={data.duration === hours ? 'primary' : 'default'}
+                    variant={data.duration === hours ? 'filled' : 'outlined'}
+                    disabled={isProcessing}
+                    sx={{ cursor: 'pointer' }}
+                  />
+                ))}
               </Box>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Event Details */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Event Details
-            </Typography>
-            
-            <Stack spacing={3}>
+              <TextField
+                label="Custom Duration (hours)"
+                type="number"
+                value={data.duration || ''}
+                onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
+                disabled={isProcessing}
+                error={hasFieldError('duration')}
+                helperText={getFieldError('duration')}
+                inputProps={{
+                  min: config?.min_duration_hours || 1,
+                  max: config?.max_duration_hours || 24,
+                }}
+                sx={{ maxWidth: 200 }}
+              />
+
+              {/* Show calculated end time */}
+              {formattedValues.endDate && formattedValues.endTime && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                  Event ends: {formattedValues.endDate} at {formattedValues.endTime}
+                </Typography>
+              )}
+            </Paper>
+          </Box>
+
+          {/* Additional Requirements */}
+          <Box>
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Special Requirements
+              </Typography>
               
               <TextField
-                label="Special Requirements (Optional)"
-                value={formData.special_requirements}
-                onChange={(e) => handleFormChange({ special_requirements: e.target.value })}
-                error={!!validationErrors.special_requirements}
-                helperText={validationErrors.special_requirements?.[0]}
-                placeholder="Any special accommodations, dietary restrictions, accessibility needs, etc."
-                fullWidth
+                label="Venue Preferences"
                 multiline
-                rows={3}
+                rows={2}
+                fullWidth
+                value={data.venue_preference || ''}
+                onChange={(e) => handleVenuePreferenceChange(e.target.value)}
+                disabled={isProcessing}
+                error={hasFieldError('venue_preference')}
+                helperText={getFieldError('venue_preference')}
+                placeholder="Any specific venue requirements or preferences..."
+                sx={{ mb: 2 }}
               />
-            </Stack>
-          </CardContent>
-        </Card>
 
-        {/* Availability Status */}
-        {renderAvailabilityStatus()}
+              <TextField
+                label="Special Requests"
+                multiline
+                rows={2}
+                fullWidth
+                value={data.resource_requirements?.join(', ') || ''}
+                onChange={(e) =>
+                  handleResourceRequirementsChange(
+                    e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                  )
+                }
+                disabled={isProcessing}
+                error={hasFieldError('resource_requirements')}
+                helperText={getFieldError('resource_requirements')}
+                placeholder="Any special equipment, setup, or resource requirements..."
+              />
+            </Paper>
+          </Box>
+        </Box>
 
-        {/* Configuration Info */}
-        {config && (
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                Booking Information
-              </Typography>
-              
-              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                {config.enable_real_time_availability && (
-                  <Chip 
-                    label="Real-time Availability" 
-                    size="small" 
-                    color="info"
-                    variant="outlined"
-                  />
-                )}
-                
-                {config.buffer_before_hours > 0 && (
-                  <Chip 
-                    label={`${config.buffer_before_hours}h Buffer Before`}
-                    size="small"
-                    variant="outlined"
-                  />
-                )}
-                
-                {config.buffer_after_hours > 0 && (
-                  <Chip 
-                    label={`${config.buffer_after_hours}h Buffer After`}
-                    size="small"
-                    variant="outlined"
-                  />
-                )}
-                
-                {config.allow_multi_day && (
-                  <Chip 
-                    label="Multi-day Events Allowed"
-                    size="small"
-                    color="success"
-                    variant="outlined"
-                  />
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* General validation errors */}
-        {validationErrors.general && (
-          <Alert severity="error">
-            {Array.isArray(validationErrors.general) 
-              ? validationErrors.general.join(', ')
-              : validationErrors.general
-            }
+        {/* Default Availability Status */}
+        {config?.show_availability_status && selectedDate && (
+          <Alert severity="success" sx={{ mt: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircle />
+              Your selected date appears to be available! We'll confirm availability during the booking process.
+            </Box>
           </Alert>
         )}
 
-        {/* Availability validation errors */}
-        {validationErrors.availability && (
-          <Alert severity="error" icon={<ErrorIcon />}>
-            {Array.isArray(validationErrors.availability) 
-              ? validationErrors.availability.join(', ')
-              : validationErrors.availability
-            }
+        {/* Validation Summary */}
+        {Object.keys(externalValidationErrors).length > 0 && (
+          <Alert severity="error" sx={{ mt: 3 }}>
+            Please check your date and time selection:
+            <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+              {Object.entries(externalValidationErrors).map(([field, errors]) => (
+                <li key={field}>{errors[0]}</li>
+              ))}
+            </ul>
           </Alert>
         )}
-      </Stack>
-    </Box>
+
+        {/* Processing Indicator */}
+        {isProcessing && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, justifyContent: 'center' }}>
+            <CircularProgress size={20} />
+            <Typography variant="body2" color="text.secondary">
+              Processing...
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </LocalizationProvider>
   );
 };
-
-export default DateTimeStep;
