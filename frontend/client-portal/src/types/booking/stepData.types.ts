@@ -21,24 +21,32 @@ export interface QuestionnaireStepData {
   uploaded_files?: Record<string, File[]>; // field_id -> uploaded files
 }
 
+// Enhanced SelectedPackage type with tax information
 export interface SelectedPackage {
   id: number;
   name: string;
-  price: string;
+  price: string; // base price as string
   quantity: number;
   included_hours?: number;
   excess_hour_price?: string;
+  // Enhanced fields for proper tax calculation
+  tax_rate?: string; // individual tax rate as percentage string (e.g., "0.00", "12.00")
+  price_with_tax?: string; // pre-calculated price including tax
 }
 
 export interface PackageSelectionStepData {
   selected_packages?: SelectedPackage[];
 }
 
+// Enhanced SelectedAddon type with tax information
 export interface SelectedAddon {
   id: number;
   name: string;
-  price: string;
+  price: string; // base price as string
   quantity: number;
+  // Enhanced fields for proper tax calculation
+  tax_rate?: string; // individual tax rate as percentage string (e.g., "12.00")
+  price_with_tax?: string; // pre-calculated price including tax
 }
 
 export interface AddonSelectionStepData {
