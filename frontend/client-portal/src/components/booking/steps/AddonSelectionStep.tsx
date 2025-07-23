@@ -73,7 +73,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
     return selectedAddons.find(a => a.id === addonId);
   }, [selectedAddons]);
 
-  // Handle addon toggle
+  // Handle addon toggle - ENHANCED with tax information
   const handleAddonToggle = useCallback((addon: ProductOption) => {
     let newSelectedAddons: SelectedAddon[];
     
@@ -86,12 +86,15 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
         return; // Don't add if at max
       }
       
-      // Add addon
+      // Add addon with tax information
       const newAddon: SelectedAddon = {
         id: addon.id,
         name: addon.name,
         price: addon.base_price,
         quantity: 1,
+        // CRITICAL: Include tax information for proper pricing calculation
+        tax_rate: addon.tax_rate, // Individual tax rate from backend
+        price_with_tax: addon.price_with_tax, // Pre-calculated price including tax
       };
       
       newSelectedAddons = [...selectedAddons, newAddon];
@@ -206,85 +209,109 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
         <Box>
           {Object.entries(groupedAddons).map(([categoryName, addons]) => {
             const CategoryContent = (
-              <Box display="flex" flexWrap="wrap" gap={2}>
-                {addons.map((addon: ProductOption) => {
+              <Box display="flex" flexDirection="column" gap={2}>
+                {addons.map((addon) => {
                   const isSelected = isAddonSelected(addon.id);
                   const selectedAddon = getSelectedAddon(addon.id);
 
                   return (
-                    <Box key={addon.id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.333% - 11px)' }, minWidth: 0 }}>
+                    <Box key={addon.id}>
                       <Card 
+                        variant={isSelected ? "outlined" : "elevation"}
                         sx={{ 
-                          height: '100%',
                           border: isSelected ? 2 : 1,
                           borderColor: isSelected ? 'primary.main' : 'divider',
-                          position: 'relative',
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            boxShadow: 2,
+                            borderColor: isSelected ? 'primary.main' : 'primary.light'
+                          }
                         }}
+                        onClick={() => !isValidating && handleAddonToggle(addon)}
                       >
-                        {addon.is_featured && (
-                          <Chip
-                            icon={<Star />}
-                            label="Recommended"
-                            color="secondary"
-                            size="small"
-                            sx={{
-                              position: 'absolute',
-                              top: 8,
-                              right: 8,
-                              zIndex: 1,
-                            }}
-                          />
-                        )}
-
-                        <CardContent sx={{ pb: 1 }}>
-                          <Typography variant="subtitle1" component="h3" gutterBottom>
-                            {addon.name}
-                          </Typography>
-
-                          {addon.description && (
-                            <Typography variant="body2" color="text.secondary" paragraph>
-                              {addon.description}
-                            </Typography>
-                          )}
-
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="h6" color="primary">
-                              {formatPrice(addon.base_price)}
-                            </Typography>
-                          </Box>
-
-                          <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Button
-                              variant={isSelected ? "contained" : "outlined"}
-                              size="small"
-                              onClick={() => handleAddonToggle(addon)}
-                              disabled={isValidating || (!isSelected && maxSelection > 0 && selectedCount >= maxSelection)}
-                            >
-                              {isSelected ? "Added" : "Add"}
-                            </Button>
-
-                            {isSelected && addon.allow_multiple && selectedAddon && (
-                              <Box display="flex" alignItems="center" gap={0.5}>
-                                <IconButton 
-                                  size="small" 
-                                  onClick={() => handleQuantityChange(addon.id, -1)}
-                                  disabled={selectedAddon.quantity <= 1}
-                                >
-                                  <Remove fontSize="small" />
-                                </IconButton>
-                                
-                                <Typography variant="body2" sx={{ minWidth: 20, textAlign: 'center' }}>
-                                  {selectedAddon.quantity}
+                        <CardContent>
+                          <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                            <Box flex={1}>
+                              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                <Typography variant="h6" component="h3">
+                                  {addon.name}
                                 </Typography>
-                                
-                                <IconButton 
-                                  size="small" 
-                                  onClick={() => handleQuantityChange(addon.id, 1)}
-                                >
-                                  <Add fontSize="small" />
-                                </IconButton>
+                                {addon.is_featured && (
+                                  <Chip 
+                                    icon={<Star />}
+                                    label="Featured" 
+                                    size="small" 
+                                    color="primary" 
+                                  />
+                                )}
+                                {isSelected && (
+                                  <Chip 
+                                    label="Added" 
+                                    size="small" 
+                                    color="success" 
+                                    variant="outlined"
+                                  />
+                                )}
                               </Box>
-                            )}
+                              
+                              {addon.description && (
+                                <Typography variant="body2" color="text.secondary" paragraph>
+                                  {addon.description}
+                                </Typography>
+                              )}
+                              
+                              <Typography variant="h6" color="primary" gutterBottom>
+                                {formatPrice(addon.base_price)}
+                                {addon.pricing_model !== 'FIXED' && (
+                                  <Typography component="span" variant="body2" color="text.secondary">
+                                    {' '}({addon.pricing_model_display})
+                                  </Typography>
+                                )}
+                              </Typography>
+                            </Box>
+
+                            <Box display="flex" flexDirection="column" alignItems="flex-end" gap={1}>
+                              <Button
+                                variant={isSelected ? "contained" : "outlined"}
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddonToggle(addon);
+                                }}
+                                disabled={isValidating || (!isSelected && maxSelection > 0 && selectedCount >= maxSelection)}
+                              >
+                                {isSelected ? "Added" : "Add"}
+                              </Button>
+
+                              {isSelected && addon.allow_multiple && selectedAddon && (
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleQuantityChange(addon.id, -1);
+                                    }}
+                                    disabled={selectedAddon.quantity <= 1}
+                                  >
+                                    <Remove fontSize="small" />
+                                  </IconButton>
+                                  
+                                  <Typography variant="body2" sx={{ minWidth: 20, textAlign: 'center' }}>
+                                    {selectedAddon.quantity}
+                                  </Typography>
+                                  
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleQuantityChange(addon.id, 1);
+                                    }}
+                                  >
+                                    <Add fontSize="small" />
+                                  </IconButton>
+                                </Box>
+                              )}
+                            </Box>
                           </Box>
                         </CardContent>
                       </Card>

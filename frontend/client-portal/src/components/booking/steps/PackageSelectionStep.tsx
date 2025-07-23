@@ -71,7 +71,7 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
       // Remove package
       newSelectedPackages = selectedPackages.filter(p => p.id !== packageOption.id);
     } else {
-      // Create new package selection
+      // Create new package selection with tax information
       const newPackage: SelectedPackage = {
         id: packageOption.id,
         name: packageOption.name,
@@ -79,34 +79,36 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
         quantity: 1,
         included_hours: packageOption.included_hours ?? undefined,
         excess_hour_price: packageOption.excess_hour_price ?? undefined,
+        // CRITICAL: Include tax information for proper pricing calculation
+        tax_rate: packageOption.tax_rate, // This should be "0.00" based on your data
+        price_with_tax: packageOption.price_with_tax, // This should be "26400.00"
       };
-      
+
       if (selectionType === 'SINGLE') {
-        // Replace existing selection
+        // Single selection: replace all
         newSelectedPackages = [newPackage];
       } else {
-        // Check max selection limit
+        // Multiple selection: check limits
         if (maxSelection > 0 && selectedPackages.length >= maxSelection) {
-          return; // Don't add if at max
+          return; // Don't add if at limit
         }
-        // Add to multiple selection
         newSelectedPackages = [...selectedPackages, newPackage];
       }
     }
-    
+
     onDataChange({ selected_packages: newSelectedPackages });
-  }, [selectedPackages, selectionType, maxSelection, isPackageSelected, onDataChange]);
+  }, [selectedPackages, selectionType, maxSelection, onDataChange, isPackageSelected]);
 
   // Handle quantity change
-  const handleQuantityChange = useCallback((packageId: number, delta: number) => {
-    const newSelectedPackages = selectedPackages.map(pkg => {
-      if (pkg.id === packageId) {
-        const newQuantity = Math.max(1, pkg.quantity + delta);
-        return { ...pkg, quantity: newQuantity };
-      }
-      return pkg;
-    });
-    
+  const handleQuantityChange = useCallback((packageId: number, newQuantity: number) => {
+    if (newQuantity < 1) return;
+
+    const newSelectedPackages = selectedPackages.map(pkg => 
+      pkg.id === packageId 
+        ? { ...pkg, quantity: newQuantity }
+        : pkg
+    );
+
     onDataChange({ selected_packages: newSelectedPackages });
   }, [selectedPackages, onDataChange]);
 
