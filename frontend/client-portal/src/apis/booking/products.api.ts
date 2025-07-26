@@ -103,6 +103,46 @@ export class ProductsApi {
   }
 
   /**
+   * Get multiple products by IDs
+   * Returns a Map for efficient lookup
+   */
+  static async getProductsByIds(productIds: number[]): Promise<Map<number, ProductOption>> {
+    if (productIds.length === 0) {
+      return new Map();
+    }
+
+    try {
+      // Fetch all products in parallel
+      const promises = productIds.map(id => this.getProductOption(id));
+      const products = await Promise.all(promises);
+      
+      // Convert to Map for efficient lookup
+      const productMap = new Map<number, ProductOption>();
+      products.forEach(product => {
+        productMap.set(product.id, product);
+      });
+      
+      return productMap;
+    } catch (error) {
+      console.error('Failed to fetch products by IDs:', error);
+      // Return partial results if some succeed
+      const productMap = new Map<number, ProductOption>();
+      
+      // Try fetching individually and handle failures gracefully
+      for (const id of productIds) {
+        try {
+          const product = await this.getProductOption(id);
+          productMap.set(id, product);
+        } catch (err) {
+          console.warn(`Failed to fetch product ${id}:`, err);
+        }
+      }
+      
+      return productMap;
+    }
+  }
+
+  /**
    * Get active discounts
    */
   static async getDiscounts(): Promise<Discount[]> {

@@ -108,8 +108,18 @@ export interface ConfirmationStepConfiguration extends StepConfiguration {
   create_event_immediately: boolean;
 }
 
-// NOTE: PricingSummaryStepConfiguration is not yet implemented in the backend
-// The pricing summary step currently works without specific configuration
+export interface PricingSummaryStepConfiguration extends StepConfiguration {
+  show_package_breakdown: boolean;
+  show_addon_breakdown: boolean;
+  show_tax_breakdown: boolean;
+  show_discount_field: boolean;
+  show_subtotal: boolean;
+  allow_discount_codes: boolean;
+  calculate_tax: boolean;
+  header_text: string;
+  footer_text: string;
+  discount_help_text: string;
+}
 
 // Product types from products domain (needed for package/addon steps)
 export interface ProductCategory {

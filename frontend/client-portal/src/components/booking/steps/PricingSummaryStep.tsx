@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/PricingSummaryStep.tsx
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -30,11 +30,12 @@ import { useBooking } from '../../../contexts/BookingContext';
 import { usePricingSummaryStep } from '../../../hooks/booking/usePricingSummary';
 import type {
   PricingSummaryStepData,
+  PricingSummaryStepConfiguration,
 } from '../../../types/booking';
 
 interface PricingSummaryStepProps {
   stepData?: PricingSummaryStepData;
-  config: any;
+  config: PricingSummaryStepConfiguration | null; // Fixed: Proper type instead of any
   onDataChange: (data: PricingSummaryStepData) => void;
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
@@ -42,11 +43,7 @@ interface PricingSummaryStepProps {
 
 export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   stepData = {
-    subtotal: '0.00',
-    tax: '0.00',
-    discount: '0.00',
-    total: '0.00',
-    applied_discount: null,
+    applied_discount_code: undefined, // Fixed: Match backend expectation
   },
   config,
   onDataChange,
@@ -55,13 +52,17 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 }) => {
   const { state, actions } = useBooking();
   const [discountCodeInput, setDiscountCodeInput] = useState<string>('');
+  
+  // Use refs to track previous values and prevent unnecessary updates
+  const previousTotalRef = useRef<string>('0.00');
+  const isUpdatingRef = useRef(false);
 
   // Get selected packages and addons from step data
   const selectedPackages = state.stepData.package_selection?.selected_packages || [];
   const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
   const eventDuration = state.stepData.date_time?.duration;
 
-  // Use the corrected pricing hook
+  // Use the corrected pricing hook with discount code
   const {
     breakdown,
     formattedBreakdown,
@@ -81,39 +82,63 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     selectedPackages,
     selectedAddons,
     eventDuration,
-    stepData.applied_discount
+    stepData.applied_discount_code
   );
 
   // Update parent component with calculated pricing data
   const updatePricingData = useCallback(async () => {
+    // Prevent concurrent updates
+    if (isUpdatingRef.current) {
+      return;
+    }
+    
     const newStepData = getStepData();
     
-    // Update step data
-    onDataChange(newStepData);
+    // Only update if data has actually changed
+    if (JSON.stringify(newStepData) === JSON.stringify(stepData)) {
+      return;
+    }
     
-    // Update the global total price in the booking context
-    if (state.totalPrice !== newStepData.total) {
-      try {
-        // Update session with total price
-        await actions.updateStepData('pricing_summary', newStepData);
-      } catch (error) {
-        console.error('Failed to update total price:', error);
+    isUpdatingRef.current = true;
+    
+    try {
+      // Update step data locally first
+      onDataChange(newStepData);
+      
+      // Only update backend with the discount code
+      await actions.updateStepData('pricing_summary', newStepData);
+      
+      // Update global total price if different
+      const totalString = breakdown.total.toFixed(2);
+      if (state.totalPrice !== totalString) {
+        await actions.updateTotalPrice(totalString);
       }
+      
+      previousTotalRef.current = totalString;
+    } catch (error) {
+      console.error('Failed to update pricing data:', error);
+    } finally {
+      isUpdatingRef.current = false;
     }
-  }, [getStepData, onDataChange, state.totalPrice, actions]);
+  }, [getStepData, stepData, onDataChange, breakdown.total, state.totalPrice, actions]);
 
-  // Update pricing data when breakdown changes
+  // Update pricing data only when breakdown actually changes
   useEffect(() => {
-    if (hasItems) {
-      updatePricingData();
+    if (hasItems && !calculatingPricing && !isUpdatingRef.current) {
+      // Use a small delay to debounce rapid updates
+      const timeoutId = setTimeout(() => {
+        updatePricingData();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [updatePricingData, hasItems]);
+  }, [breakdown.total, hasItems, calculatingPricing, updatePricingData]);
 
   // Handle discount code application
   const handleApplyDiscount = async () => {
     if (discountCodeInput.trim()) {
       await applyDiscountCode(discountCodeInput.trim());
-      setDiscountCodeInput(''); // Clear input on successful application
+      setDiscountCodeInput('');
     }
   };
 
@@ -126,7 +151,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   // Handle discount code input changes
   const handleDiscountInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setDiscountCodeInput(event.target.value);
-    setDiscountCode(event.target.value); // Update the hook's internal state
+    setDiscountCode(event.target.value);
   };
 
   // Show loading state while calculating
@@ -170,196 +195,197 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     <Box>
       <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Receipt />
-        Pricing Summary
+        {config?.header_text || 'Pricing Summary'}
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Review your selected items and total cost. You can apply a discount code if you have one.
       </Typography>
 
-      {/* Items Summary */}
-      <Paper sx={{ mb: 3 }}>
-        <Box sx={{ p: 2, backgroundColor: 'grey.50' }}>
-          <Typography variant="h6">Selected Items ({totalItemCount} items)</Typography>
-        </Box>
-        
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Item</TableCell>
-                <TableCell align="center">Qty</TableCell>
-                <TableCell align="right">Unit Price</TableCell>
-                <TableCell align="right">Total</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {/* Package Items */}
-              {breakdown.packages.map((pkg) => (
-                <TableRow key={`package-${pkg.id}`}>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {pkg.name}
-                      </Typography>
-                      <Chip label="Package" size="small" color="primary" variant="outlined" />
-                      {pkg.includedHours && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                          <AccessTime fontSize="inherit" sx={{ mr: 0.5 }} />
-                          {pkg.includedHours}h included
-                          {pkg.excessHours && ` + ${pkg.excessHours}h excess`}
+      {/* Selected Packages */}
+      {config?.show_package_breakdown !== false && formattedBreakdown.packages.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Selected Packages
+          </Typography>
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Package</TableCell>
+                  <TableCell align="center">Quantity</TableCell>
+                  <TableCell align="right">Unit Price</TableCell>
+                  <TableCell align="right">Total</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {formattedBreakdown.packages.map((pkg) => (
+                  <TableRow key={pkg.id}>
+                    <TableCell>
+                      {pkg.name}
+                      {pkg.includedHours && eventDuration && (
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          <AccessTime sx={{ fontSize: 12, mr: 0.5 }} />
+                          {pkg.includedHours} hours included
+                          {pkg.excessHours ? ` (+${pkg.excessHours} excess hours)` : ''}
                         </Typography>
                       )}
-                    </Box>
-                  </TableCell>
-                  <TableCell align="center">{pkg.quantity}</TableCell>
-                  <TableCell align="right">
-                    {new Intl.NumberFormat('en-PH', {
-                      style: 'currency',
-                      currency: 'PHP',
-                    }).format(pkg.unitPrice)}
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                    {new Intl.NumberFormat('en-PH', {
-                      style: 'currency',
-                      currency: 'PHP',
-                    }).format(pkg.total)}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell align="center">{pkg.quantity}</TableCell>
+                    <TableCell align="right">₱{pkg.unitPrice.toFixed(2)}</TableCell>
+                    <TableCell align="right">
+                      ₱{pkg.total.toFixed(2)}
+                      {pkg.excessCost && pkg.excessCost > 0 && (
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          (includes ₱{pkg.excessCost.toFixed(2)} excess)
+                        </Typography>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
 
-              {/* Addon Items */}
-              {breakdown.addons.map((addon) => (
-                <TableRow key={`addon-${addon.id}`}>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {addon.name}
-                      </Typography>
-                      <Chip label="Add-on" size="small" color="secondary" variant="outlined" />
-                    </Box>
-                  </TableCell>
-                  <TableCell align="center">{addon.quantity}</TableCell>
-                  <TableCell align="right">
-                    {new Intl.NumberFormat('en-PH', {
-                      style: 'currency',
-                      currency: 'PHP',
-                    }).format(addon.unitPrice)}
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                    {new Intl.NumberFormat('en-PH', {
-                      style: 'currency',
-                      currency: 'PHP',
-                    }).format(addon.total)}
-                  </TableCell>
+      {/* Selected Add-ons */}
+      {config?.show_addon_breakdown !== false && formattedBreakdown.addons.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Selected Add-ons
+          </Typography>
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Add-on</TableCell>
+                  <TableCell align="center">Quantity</TableCell>
+                  <TableCell align="right">Unit Price</TableCell>
+                  <TableCell align="right">Total</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+              </TableHead>
+              <TableBody>
+                {formattedBreakdown.addons.map((addon) => (
+                  <TableRow key={addon.id}>
+                    <TableCell>{addon.name}</TableCell>
+                    <TableCell align="center">{addon.quantity}</TableCell>
+                    <TableCell align="right">₱{addon.unitPrice.toFixed(2)}</TableCell>
+                    <TableCell align="right">₱{addon.total.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
 
       {/* Discount Code Section */}
-      <Paper sx={{ mb: 3, p: 2 }}>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LocalOffer />
-          Discount Code
-        </Typography>
+      {config?.show_discount_field !== false && (
+        <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+          <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LocalOffer />
+            Discount Code
+          </Typography>
+          
+          {appliedDiscount ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip
+                label={`${appliedDiscount.code} - ${appliedDiscount.name}`}
+                icon={<CheckCircle />}
+                color="success"
+                onDelete={handleRemoveDiscount}
+                deleteIcon={<CloseIcon />}
+              />
+              <Typography variant="body2" color="success.main">
+                {appliedDiscount.discount_type === 'PERCENTAGE' 
+                  ? `${appliedDiscount.value}% off`
+                  : `₱${appliedDiscount.value} off`}
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+              <TextField
+                size="small"
+                placeholder={config?.discount_help_text || "Enter discount code"}
+                value={discountCodeInput}
+                onChange={handleDiscountInputChange}
+                error={!!discountError || !!validationErrors.applied_discount_code}
+                helperText={
+                  discountError || 
+                  validationErrors.applied_discount_code?.join(', ') ||
+                  ''
+                }
+                sx={{ flexGrow: 1 }}
+                disabled={validatingDiscount}
+              />
+              <Button
+                variant="outlined"
+                onClick={handleApplyDiscount}
+                disabled={!discountCodeInput.trim() || validatingDiscount}
+                startIcon={validatingDiscount ? <CircularProgress size={16} /> : null}
+              >
+                Apply
+              </Button>
+            </Box>
+          )}
+        </Paper>
+      )}
 
-        {appliedDiscount ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Chip
-              icon={<CheckCircle />}
-              label={`${discountCode} - ${appliedDiscount.name}`}
-              color="success"
-              variant="outlined"
-            />
-            <IconButton
-              size="small"
-              onClick={handleRemoveDiscount}
-              color="error"
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        ) : (
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-            <TextField
-              label="Enter discount code"
-              variant="outlined"
-              size="small"
-              value={discountCodeInput}
-              onChange={handleDiscountInputChange}
-              error={!!discountError}
-              helperText={discountError}
-              disabled={validatingDiscount}
-              sx={{ flex: 1 }}
-            />
-            <Button
-              variant="outlined"
-              onClick={handleApplyDiscount}
-              disabled={!discountCodeInput.trim() || validatingDiscount}
-              startIcon={validatingDiscount ? <CircularProgress size={16} /> : <LocalOffer />}
-            >
-              Apply
-            </Button>
-          </Box>
-        )}
-      </Paper>
-
-      {/* Pricing Totals */}
-      <Paper sx={{ p: 2 }}>
+      {/* Pricing Summary */}
+      <Paper variant="outlined" sx={{ p: 2 }}>
         <Typography variant="h6" gutterBottom>
-          Total Cost
+          Order Summary
         </Typography>
         
-        <Box sx={{ space: 1 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
-            <Typography variant="body1">Subtotal</Typography>
-            <Typography variant="body1">{formattedBreakdown.subtotal}</Typography>
-          </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {config?.show_subtotal !== false && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography>Subtotal ({totalItemCount} items)</Typography>
+              <Typography>{formattedBreakdown.subtotal}</Typography>
+            </Box>
+          )}
           
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
-            <Typography variant="body1">Tax</Typography>
-            <Typography variant="body1">{formattedBreakdown.tax}</Typography>
-          </Box>
+          {config?.show_tax_breakdown !== false && breakdown.tax > 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography>Tax</Typography>
+              <Typography>{formattedBreakdown.tax}</Typography>
+            </Box>
+          )}
           
           {breakdown.discount > 0 && (
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
-              <Typography variant="body1" color="success.main">Discount</Typography>
-              <Typography variant="body1" color="success.main">
-                -{formattedBreakdown.discount}
-              </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', color: 'success.main' }}>
+              <Typography>Discount</Typography>
+              <Typography>-{formattedBreakdown.discount}</Typography>
             </Box>
           )}
           
           <Divider sx={{ my: 1 }} />
           
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
-            <Typography variant="h6" fontWeight="bold">
-              Total
-            </Typography>
-            <Typography variant="h6" fontWeight="bold" color="primary.main">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Total</Typography>
+            <Typography variant="h6" color="primary">
               {formattedBreakdown.total}
             </Typography>
           </Box>
         </Box>
       </Paper>
 
-      {/* Validation Errors */}
-      {Object.keys(validationErrors).length > 0 && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          <Typography variant="body2">
-            Please fix the following errors:
+      {/* Footer text */}
+      {config?.footer_text && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          {config.footer_text}
+        </Typography>
+      )}
+
+      {/* Validation state indicator */}
+      {isValidating && (
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CircularProgress size={16} />
+          <Typography variant="body2" color="text.secondary">
+            Validating pricing...
           </Typography>
-          <ul>
-            {Object.entries(validationErrors).map(([field, errors]) => (
-              <li key={field}>
-                {field}: {errors.join(', ')}
-              </li>
-            ))}
-          </ul>
-        </Alert>
+        </Box>
       )}
     </Box>
   );

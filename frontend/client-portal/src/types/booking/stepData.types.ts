@@ -21,9 +21,9 @@ export interface QuestionnaireStepData {
   uploaded_files?: Record<string, File[]>; // field_id -> uploaded files
 }
 
-// Enhanced SelectedPackage type with tax information
+// Fixed: Changed 'id' to 'package_id' to match backend expectations
 export interface SelectedPackage {
-  id: number;
+  package_id: number; // Changed from 'id'
   name: string;
   price: string; // base price as string
   quantity: number;
@@ -38,9 +38,9 @@ export interface PackageSelectionStepData {
   selected_packages?: SelectedPackage[];
 }
 
-// Enhanced SelectedAddon type with tax information
+// Fixed: Changed 'id' to 'addon_id' to match backend expectations
 export interface SelectedAddon {
-  id: number;
+  addon_id: number; // Changed from 'id'
   name: string;
   price: string; // base price as string
   quantity: number;
@@ -53,12 +53,9 @@ export interface AddonSelectionStepData {
   selected_addons?: SelectedAddon[];
 }
 
+// Fixed: Changed to match backend expectations - only store discount code
 export interface PricingSummaryStepData {
-  subtotal: string;
-  tax: string;
-  discount: string;
-  total: string;
-  applied_discount: Discount | null;
+  applied_discount_code?: string; // Changed from applied_discount object to just the code
 }
 
 export interface ContactInfoStepData {
@@ -110,6 +107,20 @@ export interface EnhancedPaymentStepData {
   payment_intent_id?: string; // For tracking Stripe payment intents
   client_secret?: string; // For 3D Secure authentication
   payment_status?: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+}
+
+// Server response for pricing calculation
+export interface PricingCalculation {
+  subtotal: string;
+  tax: string;
+  discount: string;
+  total: string;
+  discount_details?: {
+    code: string;
+    type: string;
+    value: string;
+    amount: string;
+  };
 }
 
 export interface ReviewStepData {

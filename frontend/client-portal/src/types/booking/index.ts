@@ -38,6 +38,7 @@ export type {
   QuestionnaireStepConfiguration,
   PackageSelectionStepConfiguration,
   AddonSelectionStepConfiguration,
+  PricingSummaryStepConfiguration,
   ContactInfoStepConfiguration,
   PaymentInfoStepConfiguration,
   ConfirmationStepConfiguration,
@@ -69,6 +70,7 @@ export type {
   ConfirmationStepData,
   StepData,
   Discount,
+  PricingCalculation
 } from './stepData.types';
 
 // State management types

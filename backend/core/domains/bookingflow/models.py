@@ -145,23 +145,25 @@ class BookingFlow(BaseModel):
         """Get all enabled steps in order"""
         return self.steps.filter(is_enabled=True).order_by('order')
     
-    def get_next_step(self, current_step_id=None):
-        """Get the next step in the flow"""
-        enabled_steps = self.enabled_steps
-        
-        if not current_step_id:
-            return enabled_steps.first()
-        
-        current_index = None
-        for i, step in enumerate(enabled_steps):
-            if step.id == current_step_id:
-                current_index = i
-                break
-        
-        if current_index is not None and current_index + 1 < len(enabled_steps):
-            return enabled_steps[current_index + 1]
-        
-        return None
+    def get_next_step(self, current_step_id):
+        """Get the next enabled step after the given step ID"""
+        try:
+            current_step = self.steps.get(id=current_step_id)
+            next_steps = self.steps.filter(
+                order__gt=current_step.order,
+                is_enabled=True
+            ).order_by('order')
+            
+            if next_steps.exists():
+                return next_steps.first()
+            return None
+        except BookingFlowStep.DoesNotExist:
+            return None
+    
+    @property
+    def enabled_steps(self):
+        """Get all enabled steps in order"""
+        return self.steps.filter(is_enabled=True).order_by('order')
     
     def calculate_total_steps(self):
         """Calculate total number of enabled steps"""
@@ -501,6 +503,40 @@ class AddonSelectionStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Addon config for {self.step}"
+    
+class PricingSummaryStepConfiguration(BaseModel):
+    """Configuration for pricing summary step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='pricing_config'
+    )
+    
+    # Display options
+    show_package_breakdown = models.BooleanField(default=True)
+    show_addon_breakdown = models.BooleanField(default=True)
+    show_tax_breakdown = models.BooleanField(default=True)
+    show_discount_field = models.BooleanField(default=True)
+    show_subtotal = models.BooleanField(default=True)
+    
+    # Behavior options
+    allow_discount_codes = models.BooleanField(default=True)
+    calculate_tax = models.BooleanField(default=True)
+    
+    # Custom messaging
+    header_text = models.CharField(max_length=255, blank=True, default="Review your order")
+    footer_text = models.TextField(blank=True)
+    discount_help_text = models.CharField(
+        max_length=255, 
+        blank=True,
+        default="Enter discount code"
+    )
+
+    class Meta:
+        ordering = ['step']
+
+    def __str__(self):
+        return f"Pricing config for {self.step}"
 
 
 class ContactInfoStepConfiguration(BaseModel):

@@ -13,6 +13,7 @@ import type {
   StepValidationResult,
   PaymentGatewayResponse,
 } from '../../types/booking';
+import type { PricingCalculation } from '../../types/booking/stepData.types';
 
 /**
  * Core booking API functions for managing booking flows and sessions
@@ -287,6 +288,16 @@ export class BookingCoreApi {
             : [],
         };
 
+      case 'pricing_summary':
+        // ADD THIS CASE - Format pricing summary data
+        return {
+          subtotal: String(formatted.subtotal || '0.00'),
+          tax: String(formatted.tax || '0.00'),
+          discount: String(formatted.discount || '0.00'),
+          total: String(formatted.total || '0.00'),
+          applied_discount: formatted.applied_discount || null,
+        };
+
       case 'contact_info':
         return {
           full_name: formatted.full_name || '',
@@ -396,6 +407,24 @@ export class BookingCoreApi {
 
     return validationErrors;
   }
+
+  /**
+ * Calculate pricing for current session state
+ */
+static async calculatePricing(
+    sessionId: string,
+    discountCode?: string
+  ): Promise<PricingCalculation> {
+    const data = discountCode ? { discount_code: discountCode } : {};
+    
+    const response = await api.post<PricingCalculation>(
+      `/bookingflow/public/flows/session/${sessionId}/calculate-pricing/`,
+      data
+    );
+    
+    return response.data;
+  }
 }
+
 
 export default BookingCoreApi;
