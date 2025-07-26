@@ -585,6 +585,10 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
                     'required_fields': [],
                     'optional_fields': ['selected_addons']
                 },
+                'pricing_summary': {
+                    'required_fields': [],
+                    'optional_fields': ['subtotal', 'tax', 'discount', 'total', 'applied_discount']
+                },
                 'contact_info': {
                     'required_fields': ['full_name', 'email'],
                     'optional_fields': ['phone', 'address', 'company']

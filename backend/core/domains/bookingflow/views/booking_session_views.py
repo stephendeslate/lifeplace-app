@@ -5,6 +5,10 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from decimal import Decimal
+from core.domains.products.models import ProductOption
+from core.domains.products.services import DiscountService
+
 from ..models import BookingFlow, BookingSession
 from ..serializers import (
     BookingFlowStepSerializer,
@@ -412,3 +416,163 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+    @action(detail=False, methods=['post'], url_path='session/(?P<session_uuid>[^/.]+)/calculate-pricing')
+    def calculate_pricing(self, request, session_uuid=None):
+        """Calculate pricing for current session state"""
+        try:
+            session = BookingSessionService.get_session_by_id(session_uuid)
+            
+            # Get package and addon data from session
+            package_data = session.booking_data.get('package_selection', {}).get('selected_packages', [])
+            addon_data = session.booking_data.get('addon_selection', {}).get('selected_addons', [])
+            discount_code = request.data.get('discount_code', '')
+            
+            # Calculate totals
+            subtotal = Decimal('0.00')
+            tax_total = Decimal('0.00')
+            discount_amount = Decimal('0.00')
+            discount_details = None
+            
+            # Process packages
+            for package in package_data:
+                try:
+                    product = ProductOption.objects.get(id=package['package_id'])
+                    quantity = package.get('quantity', 1)
+                    price = Decimal(str(product.base_price)) * quantity
+                    subtotal += price
+                    
+                    # Calculate tax
+                    if product.tax_rate:
+                        tax_total += price * (product.tax_rate / 100)
+                except ProductOption.DoesNotExist:
+                    continue
+            
+            # Process addons
+            for addon in addon_data:
+                try:
+                    product = ProductOption.objects.get(id=addon['addon_id'])
+                    quantity = addon.get('quantity', 1)
+                    price = Decimal(str(product.base_price)) * quantity
+                    subtotal += price
+                    
+                    # Calculate tax
+                    if product.tax_rate:
+                        tax_total += price * (product.tax_rate / 100)
+                except ProductOption.DoesNotExist:
+                    continue
+            
+            # Apply discount if provided
+            if discount_code:
+                try:
+                    from core.domains.products.services import DiscountService
+                    discount = DiscountService.validate_discount_code(discount_code)
+                    if discount and discount.is_active:
+                        if discount.discount_type == 'PERCENTAGE':
+                            discount_amount = subtotal * (Decimal(str(discount.value)) / 100)
+                        elif discount.discount_type == 'FIXED':
+                            discount_amount = Decimal(str(discount.value))
+                        
+                        discount_details = {
+                            'code': discount.code,
+                            'type': discount.discount_type,
+                            'value': str(discount.value),
+                            'amount': str(discount_amount)
+                        }
+                except Exception:
+                    pass  # Invalid discount code - just ignore
+            
+            # Calculate total
+            total = subtotal + tax_total - discount_amount
+            
+            return Response({
+                'subtotal': str(subtotal),
+                'tax': str(tax_total),
+                'discount': str(discount_amount),
+                'total': str(total),
+                'discount_details': discount_details
+            })
+            
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )@staticmethod
+def _validate_step_data(step, step_data):
+    """Validate step data against step configuration"""
+    errors = {}
+    
+    # Block validation for removed step types
+    if step.step_type == 'availability_check':
+        errors['step_type'] = (
+            "Availability check step type is no longer supported. "
+            "Use date_time step with availability checking enabled instead."
+        )
+        return errors
+    
+    # Add validation for pricing summary step
+    if step.step_type == 'pricing_summary':
+        # Pricing summary only stores the discount code
+        # All calculations are done server-side
+        if 'applied_discount_code' in step_data and step_data['applied_discount_code']:
+            # Validate discount code if provided
+            try:
+                from core.domains.products.services import DiscountService
+                discount_code = step_data['applied_discount_code']
+                discount = DiscountService.validate_discount_code(discount_code)
+                if not discount or not discount.is_active:
+                    errors['applied_discount_code'] = ["Invalid or expired discount code"]
+            except Exception as e:
+                errors['applied_discount_code'] = ["Unable to validate discount code"]
+    
+    # Common validation for all step types
+    if hasattr(step, f"{step.step_type}_config"):
+        config = getattr(step, f"{step.step_type}_config")
+        
+        # Step-specific validation based on configuration
+        if step.step_type == 'introduction':
+            if step_data.get('acknowledged') is not True:
+                errors['acknowledged'] = ["Acknowledgment is required"]
+                
+        elif step.step_type == 'date_time':
+            if not step_data.get('date'):
+                errors['date'] = ["Date selection is required"]
+            if config.allow_time_selection and not step_data.get('time'):
+                errors['time'] = ["Time selection is required"]
+                
+        elif step.step_type == 'questionnaire':
+            # Validate questionnaire responses
+            questionnaire_items = config.questionnaire_items.all()
+            for item in questionnaire_items:
+                questionnaire = item.questionnaire
+                response_key = f'questionnaire_{questionnaire.id}'
+                if questionnaire.is_required and not step_data.get(response_key):
+                    errors[response_key] = [f"{questionnaire.name} is required"]
+                    
+        elif step.step_type == 'package_selection':
+            selected = step_data.get('selected_packages', [])
+            if config.min_selection and len(selected) < config.min_selection:
+                errors['selected_packages'] = [f"Select at least {config.min_selection} package(s)"]
+            if config.max_selection and len(selected) > config.max_selection:
+                errors['selected_packages'] = [f"Select at most {config.max_selection} package(s)"]
+                
+        elif step.step_type == 'addon_selection':
+            selected = step_data.get('selected_addons', [])
+            if config.min_selection and len(selected) < config.min_selection:
+                errors['selected_addons'] = [f"Select at least {config.min_selection} addon(s)"]
+            if config.max_selection and len(selected) > config.max_selection:
+                errors['selected_addons'] = [f"Select at most {config.max_selection} addon(s)"]
+                
+        elif step.step_type == 'contact_info':
+            if config.require_full_name and not step_data.get('full_name'):
+                errors['full_name'] = ["Full name is required"]
+            if config.require_email and not step_data.get('email'):
+                errors['email'] = ["Email is required"]
+            if config.require_phone and not step_data.get('phone'):
+                errors['phone'] = ["Phone number is required"]
+                
+        elif step.step_type == 'payment_info':
+            if not step_data.get('payment_method'):
+                errors['payment_method'] = ["Payment method is required"]
+    
+    return errors

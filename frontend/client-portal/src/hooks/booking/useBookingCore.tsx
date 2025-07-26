@@ -34,9 +34,10 @@ export const useEventTypes = () => {
     }
   }, []);
 
+  // Fetch event types only once on mount
   useEffect(() => {
     fetchEventTypes();
-  }, [fetchEventTypes]);
+  }, []);
 
   return {
     eventTypes,
@@ -67,9 +68,12 @@ export const useBookingFlows = (eventTypeId?: number) => {
     }
   }, [eventTypeId]);
 
+  // Only fetch when eventTypeId changes
   useEffect(() => {
-    fetchFlows();
-  }, [fetchFlows]);
+    if (eventTypeId !== undefined) {
+      fetchFlows();
+    }
+  }, [eventTypeId]);
 
   return {
     flows,
@@ -102,9 +106,12 @@ export const useBookingFlow = (flowId?: number) => {
     }
   }, [flowId]);
 
+  // Only fetch when flowId changes
   useEffect(() => {
-    fetchFlow();
-  }, [fetchFlow]);
+    if (flowId) {
+      fetchFlow();
+    }
+  }, [flowId]);
 
   return {
     flow,
@@ -308,9 +315,12 @@ export const useBookingSession = (sessionId?: string) => {
     }
   }, [sessionId, session]);
 
+  // Only fetch session when sessionId changes
   useEffect(() => {
-    fetchSession();
-  }, [fetchSession]);
+    if (sessionId) {
+      fetchSession();
+    }
+  }, [sessionId]);
 
   return {
     session,
@@ -353,9 +363,12 @@ export const useFlowPaymentGateways = (flowId?: number) => {
     }
   }, [flowId]);
 
+  // Only fetch when flowId changes
   useEffect(() => {
-    fetchPaymentGateways();
-  }, [fetchPaymentGateways]);
+    if (flowId) {
+      fetchPaymentGateways();
+    }
+  }, [flowId]);
 
   return {
     paymentGateways,

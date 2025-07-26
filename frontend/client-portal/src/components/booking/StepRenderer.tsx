@@ -25,7 +25,8 @@ import type {
   PackageSelectionStepConfiguration,
   AddonSelectionStepConfiguration,
   ConfirmationStepConfiguration,
-  StepValidationResult
+  StepValidationResult,
+  PricingSummaryStepConfiguration
 } from '../../types/booking';
 
 // Placeholder component for steps not yet implemented
@@ -47,29 +48,25 @@ export const StepRenderer: React.FC = () => {
   const { state, actions } = useBooking();
   
   // Use session hooks for enhanced functionality
-  const { updateSessionData, validateStep, validationErrors } = useBookingSession(
+  const { validateStep, validationErrors } = useBookingSession(
     state.currentSession?.session_id
   );
 
-  // Get current step info - but do NOT return early based on this!
+  // Get current step info
   const currentStep = state.currentSession?.current_step;
 
-  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS!
-  
-  // Memoized data change handler that uses the hook
+  // Simplified: Only use actions.updateStepData to avoid duplicate updates
   const handleDataChange = useCallback(async (stepType: string, data: any) => {
-    if (!currentStep) return; // Safe to have conditional logic inside callbacks
+    if (!currentStep) return;
     
     try {
-      // Use the hook's updateSessionData method
-      await updateSessionData(currentStep.id, data, false);
-      
-      // Also update the context for UI state
+      // Only use the context action to update data
+      // The context will handle both local state and backend updates
       await actions.updateStepData(stepType, data);
     } catch (error) {
       console.error('Failed to update step data:', error);
     }
-  }, [currentStep, updateSessionData, actions]);
+  }, [currentStep, actions]);
 
   // Memoized validation handler
   const handleValidation = useCallback(async (data: any): Promise<StepValidationResult> => {
@@ -79,7 +76,6 @@ export const StepRenderer: React.FC = () => {
     
     try {
       const result = await validateStep(currentStep.id, data);
-      // Ensure we always return a valid StepValidationResult, never null
       return result || { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
     } catch (error) {
       console.error('Failed to validate step:', error);
@@ -112,6 +108,10 @@ export const StepRenderer: React.FC = () => {
     handleDataChange('review_booking', data);
   }, [handleDataChange]);
 
+  const handleConfirmationChange = useCallback((data: any) => {
+    handleDataChange('confirmation', data);
+  }, [handleDataChange]);
+
   const handlePackageSelectionChange = useCallback((data: any) => {
     handleDataChange('package_selection', data);
   }, [handleDataChange]);
@@ -124,16 +124,12 @@ export const StepRenderer: React.FC = () => {
     handleDataChange('pricing_summary', data);
   }, [handleDataChange]);
 
-  const handleConfirmationChange = useCallback((data: any) => {
-    handleDataChange('confirmation', data);
-  }, [handleDataChange]);
-
-  // NOW we can do conditional returns after all hooks have been called
+  // Now we can have conditional returns after all hooks
   if (!currentStep) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography variant="h6" color="text.secondary">
-          Loading step...
+          Loading step information...
         </Typography>
       </Box>
     );
@@ -141,13 +137,13 @@ export const StepRenderer: React.FC = () => {
 
   const { step_type, name, configuration_data } = currentStep;
 
-  // Merge validation errors from both context and hook
+  // Merge validation errors from hook and context
   const mergedValidationErrors = {
     ...state.ui.validationErrors,
     ...validationErrors,
   };
 
-  // Render the appropriate step component based on step_type
+  // Render the appropriate step component based on step type
   switch (step_type) {
     case 'introduction':
       return (
@@ -210,7 +206,7 @@ export const StepRenderer: React.FC = () => {
       return (
         <PricingSummaryStep
           stepData={state.stepData.pricing_summary}
-          config={configuration_data}
+          config={configuration_data as PricingSummaryStepConfiguration | null}
           onDataChange={handlePricingSummaryChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
@@ -268,7 +264,7 @@ export const StepRenderer: React.FC = () => {
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
           session={state.currentSession}
-          completedBooking={null} // This will come from completion result
+          completedBooking={null}
           onValidate={handleValidation}
         />
       );

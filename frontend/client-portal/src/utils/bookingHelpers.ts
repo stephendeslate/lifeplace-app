@@ -98,56 +98,48 @@ export class BookingValidationHelpers {
           });
         }
         break;
+
+      case 'pricing_summary':
+        // Fixed: Pricing summary validation
+        // No required fields - only optional discount code
+        // The backend will validate the discount code if provided
+        if (data.applied_discount_code && typeof data.applied_discount_code !== 'string') {
+          errors.push({
+            field: 'applied_discount_code',
+            message: 'Invalid discount code format'
+          });
+        }
+        break;
         
       case 'contact_info':
-        const config = step.configuration_data as any;
-        
-        if (config?.require_full_name && !data.full_name) {
+        if (!data.full_name) {
           errors.push({
             field: 'full_name',
             message: 'Full name is required'
           });
         }
         
-        if (config?.require_email) {
-          if (!data.email) {
-            errors.push({
-              field: 'email',
-              message: 'Email address is required'
-            });
-          } else if (!this.validateEmail(data.email)) {
-            errors.push({
-              field: 'email',
-              message: 'Please enter a valid email address'
-            });
-          }
-        }
-        
-        if (config?.require_phone) {
-          if (!data.phone) {
-            errors.push({
-              field: 'phone',
-              message: 'Phone number is required'
-            });
-          } else if (!this.validatePhone(data.phone)) {
-            errors.push({
-              field: 'phone',
-              message: 'Please enter a valid phone number'
-            });
-          }
-        }
-        
-        if (data.create_account && !data.password) {
+        if (!data.email) {
           errors.push({
-            field: 'password',
-            message: 'Password is required for account creation'
+            field: 'email',
+            message: 'Email is required'
+          });
+        } else if (!this.validateEmail(data.email)) {
+          errors.push({
+            field: 'email',
+            message: 'Please enter a valid email address'
           });
         }
         
-        if (data.password && data.password.length < 8) {
+        if ((step.configuration_data as any)?.require_phone && !data.phone) {
           errors.push({
-            field: 'password',
-            message: 'Password must be at least 8 characters long'
+            field: 'phone',
+            message: 'Phone number is required'
+          });
+        } else if (data.phone && !this.validatePhone(data.phone)) {
+          errors.push({
+            field: 'phone',
+            message: 'Please enter a valid phone number'
           });
         }
         break;
@@ -156,7 +148,21 @@ export class BookingValidationHelpers {
         if (!data.payment_method) {
           errors.push({
             field: 'payment_method',
-            message: 'Please select a payment method'
+            message: 'Payment method is required'
+          });
+        }
+        
+        if (!data.payment_type) {
+          errors.push({
+            field: 'payment_type',
+            message: 'Payment type is required'
+          });
+        }
+        
+        if (data.payment_method === 'CREDIT_CARD' && !data.payment_method_id) {
+          errors.push({
+            field: 'payment_method_id',
+            message: 'Payment method selection is required'
           });
         }
         break;
@@ -165,7 +171,45 @@ export class BookingValidationHelpers {
         if (!data.terms_accepted) {
           errors.push({
             field: 'terms_accepted',
-            message: 'Please accept the terms and conditions to continue'
+            message: 'You must accept the terms and conditions'
+          });
+        }
+        break;
+        
+      case 'package_selection':
+        const packages = data.selected_packages || [];
+        const config = step.configuration_data as any;
+        
+        if (config?.min_selection && packages.length < config.min_selection) {
+          errors.push({
+            field: 'selected_packages',
+            message: `Please select at least ${config.min_selection} package(s)`
+          });
+        }
+        
+        if (config?.max_selection && packages.length > config.max_selection) {
+          errors.push({
+            field: 'selected_packages',
+            message: `You can select maximum ${config.max_selection} package(s)`
+          });
+        }
+        break;
+        
+      case 'addon_selection':
+        const addons = data.selected_addons || [];
+        const addonConfig = step.configuration_data as any;
+        
+        if (addonConfig?.min_selection && addons.length < addonConfig.min_selection) {
+          errors.push({
+            field: 'selected_addons',
+            message: `Please select at least ${addonConfig.min_selection} add-on(s)`
+          });
+        }
+        
+        if (addonConfig?.max_selection && addons.length > addonConfig.max_selection) {
+          errors.push({
+            field: 'selected_addons',
+            message: `You can select maximum ${addonConfig.max_selection} add-on(s)`
           });
         }
         break;
@@ -173,154 +217,132 @@ export class BookingValidationHelpers {
     
     return errors;
   }
-}
 
-/**
- * Step navigation helpers
- */
-export class BookingNavigationHelpers {
+  /**
+   * Format validation errors for display
+   */
+  static formatValidationErrors(errors: ValidationError[]): Record<string, string[]> {
+    const formatted: Record<string, string[]> = {};
+    
+    errors.forEach(error => {
+      if (!formatted[error.field]) {
+        formatted[error.field] = [];
+      }
+      formatted[error.field].push(error.message);
+    });
+    
+    return formatted;
+  }
+
   /**
    * Check if a step can be skipped
    */
-  static canSkipStep(step: BookingFlowStep): boolean {
-    return step.is_skippable && !step.is_required;
-  }
-
-  /**
-   * Check if user can go back to a step
-   */
-  static canGoBackToStep(
-    currentStepIndex: number, 
-    targetStepIndex: number,
-    completedSteps: number[]
-  ): boolean {
-    return targetStepIndex < currentStepIndex;
-  }
-
-  /**
-   * Check if step should be visible based on conditions
-   */
-  static isStepVisible(step: BookingFlowStep, allStepData: StepData): boolean {
-    if (!step.display_conditions || Object.keys(step.display_conditions).length === 0) {
-      return true;
+  static canSkipStep(step: BookingFlowStep, stepData: StepData): boolean {
+    // Can't skip required steps unless they have valid data
+    if (step.is_required && !step.is_skippable) {
+      const errors = this.validateStepData(step, stepData[step.step_type] || {});
+      return errors.length === 0;
     }
-
-    // Simple condition checking - can be expanded
-    for (const [key, expectedValue] of Object.entries(step.display_conditions)) {
-      const actualValue = this.getNestedValue(allStepData, key);
-      if (actualValue !== expectedValue) {
-        return false;
-      }
-    }
-
-    return true;
+    
+    return step.is_skippable;
   }
 
   /**
-   * Get nested value from object using dot notation
+   * Get completion percentage
    */
-  private static getNestedValue(obj: any, path: string): any {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+  static getCompletionPercentage(
+    completedSteps: number,
+    totalSteps: number
+  ): number {
+    if (totalSteps === 0) return 0;
+    return Math.round((completedSteps / totalSteps) * 100);
   }
 
   /**
-   * Get next available step
+   * Format currency for display
    */
-  static getNextStep(
-    steps: BookingFlowStep[], 
-    currentIndex: number, 
-    allStepData: StepData
-  ): BookingFlowStep | null {
-    for (let i = currentIndex + 1; i < steps.length; i++) {
-      const step = steps[i];
-      if (step.is_enabled && this.isStepVisible(step, allStepData)) {
-        return step;
-      }
-    }
-    return null;
-  }
-}
-
-/**
- * Price calculation helpers
- */
-export class BookingPriceHelpers {
-  /**
-   * Format price for display
-   */
-  static formatPrice(amount: string | number): string {
+  static formatCurrency(amount: string | number, currency: string = 'PHP'): string {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
-      currency: 'PHP',
+      currency: currency,
       minimumFractionDigits: 2,
     }).format(num);
   }
 
   /**
-   * Calculate deposit amount
+   * Parse duration string to hours
    */
-  static calculateDeposit(
-    totalAmount: string | number,
-    depositType: 'PERCENTAGE' | 'FIXED',
-    depositValue: string | number
-  ): number {
-    const total = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
-    const value = typeof depositValue === 'string' ? parseFloat(depositValue) : depositValue;
-
-    if (depositType === 'PERCENTAGE') {
-      return (total * value) / 100;
-    }
-    
-    return value;
+  static parseDuration(duration: string): number {
+    const match = duration.match(/(\d+)\s*hours?/i);
+    return match ? parseInt(match[1], 10) : 0;
   }
 
   /**
-   * Calculate remaining balance after deposit
+   * Format date for display
    */
-  static calculateRemainingBalance(
-    totalAmount: string | number,
-    depositAmount: string | number
-  ): number {
-    const total = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
-    const deposit = typeof depositAmount === 'string' ? parseFloat(depositAmount) : depositAmount;
+  static formatDate(date: string | Date): string {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
     
-    return Math.max(0, total - deposit);
-  }
-}
-
-/**
- * Session management helpers
- */
-export class BookingSessionHelpers {
-  /**
-   * Check if session is expiring soon
-   */
-  static isSessionExpiringSoon(session: BookingSession, warningMinutes: number = 15): boolean {
-    if (!session.expires_at) return false;
-    
-    const expiryTime = new Date(session.expires_at).getTime();
-    const currentTime = new Date().getTime();
-    const warningTime = warningMinutes * 60 * 1000; // Convert to milliseconds
-    
-    return (expiryTime - currentTime) <= warningTime;
+    return new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(dateObj);
   }
 
   /**
-   * Get session time remaining in readable format
+   * Format time for display
    */
-  static getTimeRemaining(session: BookingSession): string {
-    if (!session.expires_at) return '';
+  static formatTime(time: string): string {
+    const [hours, minutes] = time.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours, 10));
+    date.setMinutes(parseInt(minutes, 10));
     
-    const expiryTime = new Date(session.expires_at).getTime();
-    const currentTime = new Date().getTime();
-    const diffMs = expiryTime - currentTime;
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(date);
+  }
+
+  /**
+   * Calculate booking end time
+   */
+  static calculateEndTime(startTime: string, durationHours: number): string {
+    const [hours, minutes] = startTime.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours, 10));
+    date.setMinutes(parseInt(minutes, 10));
+    date.setHours(date.getHours() + durationHours);
+    
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Check if session is expired
+   */
+  static isSessionExpired(session: BookingSession): boolean {
+    const expiresAt = new Date(session.expires_at);
+    const now = new Date();
+    return now > expiresAt;
+  }
+
+  /**
+   * Get remaining time for session
+   */
+  static getSessionRemainingTime(session: BookingSession): string {
+    const expiresAt = new Date(session.expires_at);
+    const now = new Date();
+    const diffMs = expiresAt.getTime() - now.getTime();
     
     if (diffMs <= 0) return 'Expired';
     
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const hours = Math.floor(diffMins / 60);
-    const minutes = diffMins % 60;
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
@@ -328,164 +350,4 @@ export class BookingSessionHelpers {
     
     return `${minutes}m`;
   }
-
-  /**
-   * Generate session recovery data for local storage
-   */
-  static generateRecoveryData(session: BookingSession, stepData: StepData): any {
-    return {
-      sessionId: session.session_id,
-      flowId: session.booking_flow,
-      currentStep: session.current_step,
-      stepData: stepData,
-      progress: session.progress_percentage,
-      expiresAt: session.expires_at,
-      lastSaved: new Date().toISOString(),
-    };
-  }
-
-  /**
-   * Validate recovery data
-   */
-  static isValidRecoveryData(data: any): boolean {
-    return (
-      data &&
-      data.sessionId &&
-      data.flowId &&
-      data.expiresAt &&
-      new Date(data.expiresAt) > new Date()
-    );
-  }
 }
-
-/**
- * Form helpers
- */
-export class BookingFormHelpers {
-  /**
-   * Debounce function for form inputs
-   */
-  static debounce<T extends (...args: any[]) => any>(
-    func: T,
-    wait: number
-  ): (...args: Parameters<T>) => void {
-    let timeout: NodeJS.Timeout;
-    
-    return (...args: Parameters<T>) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  }
-
-  /**
-   * Sanitize text input
-   */
-  static sanitizeText(text: string): string {
-    return text.trim().replace(/\s+/g, ' ');
-  }
-
-  /**
-   * Format phone number for display
-   */
-  static formatPhoneNumber(phone: string): string {
-    const cleaned = phone.replace(/\D/g, '');
-    
-    if (cleaned.startsWith('63')) {
-      // +63 format
-      return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8)}`;
-    } else if (cleaned.startsWith('0')) {
-      // 0 format
-      return `${cleaned.slice(0, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
-    }
-    
-    return phone; // Return as-is if format is unclear
-  }
-
-  /**
-   * Extract validation errors by field
-   */
-  static getFieldError(
-    validationErrors: Record<string, string[]>,
-    fieldName: string
-  ): string | undefined {
-    return validationErrors[fieldName]?.[0];
-  }
-
-  /**
-   * Check if field has validation error
-   */
-  static hasFieldError(
-    validationErrors: Record<string, string[]>,
-    fieldName: string
-  ): boolean {
-    return !!(validationErrors[fieldName] && validationErrors[fieldName].length > 0);
-  }
-}
-
-/**
- * Date and time helpers
- */
-export class BookingDateHelpers {
-  /**
-   * Format date for display
-   */
-  static formatDate(dateString: string): string {
-    if (!dateString) return '';
-    
-    return new Date(dateString).toLocaleDateString('en-PH', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  }
-
-  /**
-   * Format time for display
-   */
-  static formatTime(timeString: string): string {
-    if (!timeString) return '';
-    
-    const [hours, minutes] = timeString.split(':');
-    const date = new Date();
-    date.setHours(parseInt(hours), parseInt(minutes));
-    
-    return date.toLocaleTimeString('en-PH', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  }
-
-  /**
-   * Check if date falls on blocked dates
-   */
-  static isDateBlocked(dateString: string, blockedDates: string[]): boolean {
-    return blockedDates.includes(dateString);
-  }
-
-  /**
-   * Check if day of week is available
-   */
-  static isDayOfWeekAvailable(dateString: string, availableDays: number[]): boolean {
-    if (!availableDays || availableDays.length === 0) return true;
-    
-    const dayOfWeek = new Date(dateString).getDay();
-    // Convert Sunday (0) to Monday-based (6)
-    const mondayBasedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    
-    return availableDays.includes(mondayBasedDay);
-  }
-}
-
-/**
- * Main booking helpers export
- */
-export const BookingHelpers = {
-  validation: BookingValidationHelpers,
-  navigation: BookingNavigationHelpers,
-  pricing: BookingPriceHelpers,
-  session: BookingSessionHelpers,
-  form: BookingFormHelpers,
-  date: BookingDateHelpers,
-};

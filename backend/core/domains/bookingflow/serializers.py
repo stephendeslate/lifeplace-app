@@ -22,6 +22,7 @@ from .models import (
     IntroductionStepConfiguration,
     PackageSelectionStepConfiguration,
     PaymentInfoStepConfiguration,
+    PricingSummaryStepConfiguration,
     QuestionnaireStepConfiguration,
     QuestionnaireStepItem,
 )
@@ -120,6 +121,17 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
+class PricingSummaryStepConfigurationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PricingSummaryStepConfiguration
+        fields = [
+            'id', 'step', 'show_package_breakdown', 'show_addon_breakdown',
+            'show_tax_breakdown', 'show_discount_field', 'show_subtotal',
+            'allow_discount_codes', 'calculate_tax', 'header_text',
+            'footer_text', 'discount_help_text', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
+
 
 class ContactInfoStepConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -174,7 +186,7 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
             'configuration_data', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-
+    
     def get_configuration_data(self, obj):
         """Get step-specific configuration data"""
         try:
@@ -188,6 +200,8 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
                 return PackageSelectionStepConfigurationSerializer(obj.package_config).data
             elif obj.step_type == 'addon_selection' and hasattr(obj, 'addon_config'):
                 return AddonSelectionStepConfigurationSerializer(obj.addon_config).data
+            elif obj.step_type == 'pricing_summary' and hasattr(obj, 'pricing_config'):
+                return PricingSummaryStepConfigurationSerializer(obj.pricing_config).data
             elif obj.step_type == 'contact_info' and hasattr(obj, 'contact_config'):
                 return ContactInfoStepConfigurationSerializer(obj.contact_config).data
             elif obj.step_type == 'payment_info' and hasattr(obj, 'payment_config'):

@@ -2,14 +2,18 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ProductsApi } from '../../apis/booking/products.api';
+import { BookingCoreApi } from '../../apis/booking/core.api';
+import { useBooking } from '../../contexts/BookingContext';
 import type {
   SelectedPackage,
   SelectedAddon,
   Discount,
   ProductOption,
+  PricingCalculation,
+  PricingSummaryStepData,
 } from '../../types/booking';
 
-// Pricing breakdown structure (keeping original structure for compatibility)
+// Pricing breakdown structure
 export interface PricingBreakdown {
   packages: Array<{
     id: number;
@@ -39,143 +43,153 @@ export const usePricingSummary = (
   selectedPackages: SelectedPackage[] = [],
   selectedAddons: SelectedAddon[] = [],
   eventDuration?: number,
-  appliedDiscount?: Discount | null,
-  // Remove taxRate parameter since we're using individual rates
+  appliedDiscount?: Discount | null
 ) => {
-  const [breakdown, setBreakdown] = useState<PricingBreakdown>({
-    packages: [],
-    addons: [],
-    subtotal: 0,
-    tax: 0,
-    discount: 0,
-    total: 0,
-  });
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [packageDetails, setPackageDetails] = useState<Map<number, ProductOption>>(new Map());
+  const [addonDetails, setAddonDetails] = useState<Map<number, ProductOption>>(new Map());
 
-  // Calculate discount amount based on type
-  const calculateDiscountAmount = useCallback((subtotal: number, discount: Discount): number => {
-    switch (discount.discount_type) {
-      case 'PERCENTAGE':
-        const percentage = parseFloat(discount.value.toString());
-        return subtotal * (percentage / 100);
-      
-      case 'FIXED':
-        const fixedAmount = parseFloat(discount.value.toString());
-        return Math.min(fixedAmount, subtotal); // Don't exceed subtotal
-      
-      case 'FREE_HOURS':
-        // For MVP, we'll just return 0 for free hours discounts
-        // This could be enhanced later to calculate based on hourly rates
-        return 0;
-      
-      default:
-        return 0;
-    }
-  }, []);
+  // Fetch product details when selections change
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      setLoading(true);
+      setError(null);
 
-  // Calculate pricing breakdown (keep async to match original signature)
-  const calculatePricing = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+      try {
+        // Fixed: Use package_id and addon_id directly without mapping
+        const packageIds = selectedPackages.map(p => p.package_id);
+        const addonIds = selectedAddons.map(a => a.addon_id);
+        
+        if (packageIds.length > 0 || addonIds.length > 0) {
+          const [packagesMap, addonsMap] = await Promise.all([
+            packageIds.length > 0 ? ProductsApi.getProductsByIds(packageIds) : new Map(),
+            addonIds.length > 0 ? ProductsApi.getProductsByIds(addonIds) : new Map(),
+          ]);
+          
+          setPackageDetails(packagesMap);
+          setAddonDetails(addonsMap);
+        }
+      } catch (err) {
+        setError('Failed to load product details');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    try {
-      let subtotal = 0;
-      let totalTax = 0;
-      const calculatedPackages = [];
-      const calculatedAddons = [];
+    fetchProductDetails();
+  }, [selectedPackages, selectedAddons]);
 
-      // Calculate packages with duration considerations
-      for (const pkg of selectedPackages) {
-        const unitPrice = parseFloat(pkg.price);
-        let packageTotal = unitPrice * pkg.quantity;
+  // Calculate breakdown
+  const breakdown = useMemo<PricingBreakdown>(() => {
+    let subtotal = 0;
+    let tax = 0;
+    const packageBreakdown: PricingBreakdown['packages'] = [];
+    const addonBreakdown: PricingBreakdown['addons'] = [];
+
+    // Process packages - Fixed: Use package_id
+    selectedPackages.forEach(pkg => {
+      const details = packageDetails.get(pkg.package_id);
+      if (details) {
+        const basePrice = parseFloat(details.base_price);
+        let total = basePrice * pkg.quantity;
         let excessHours = 0;
         let excessCost = 0;
 
-        // Handle excess hours if package has this feature and duration is provided
-        if (eventDuration && pkg.included_hours && pkg.excess_hour_price) {
-          if (eventDuration > pkg.included_hours) {
-            excessHours = eventDuration - pkg.included_hours;
-            excessCost = excessHours * parseFloat(pkg.excess_hour_price) * pkg.quantity;
-            packageTotal += excessCost;
+        // Calculate excess hours if applicable
+        if (details.has_excess_hours && details.included_hours && eventDuration) {
+          if (eventDuration > details.included_hours) {
+            excessHours = eventDuration - details.included_hours;
+            excessCost = excessHours * parseFloat(details.excess_hour_price || '0');
+            total = (basePrice + excessCost) * pkg.quantity;
           }
         }
 
-        // Calculate tax using individual product tax rate (default to 0 if not provided)
-        const taxRate = pkg.tax_rate ? parseFloat(pkg.tax_rate) / 100 : 0;
-        const itemTax = packageTotal * taxRate;
-        
-        const packageItem = {
-          id: pkg.id,
-          name: pkg.name,
+        packageBreakdown.push({
+          id: pkg.package_id,
+          name: pkg.name || details.name,
           quantity: pkg.quantity,
-          unitPrice: unitPrice,
-          total: packageTotal + itemTax, // Include tax in the item total for display
-          includedHours: pkg.included_hours,
-          excessHours: excessHours > 0 ? excessHours : undefined,
-          excessCost: excessCost > 0 ? excessCost : undefined,
-        };
+          unitPrice: basePrice,
+          total,
+          includedHours: details.included_hours ?? undefined,
+          excessHours,
+          excessCost,
+        });
 
-        calculatedPackages.push(packageItem);
-        subtotal += packageTotal; // Subtotal is before tax
-        totalTax += itemTax;
+        subtotal += total;
+
+        // Calculate tax
+        if (details.tax_rate) {
+          tax += total * (parseFloat(details.tax_rate) / 100);
+        }
       }
+    });
 
-      // Calculate addons
-      for (const addon of selectedAddons) {
-        const unitPrice = parseFloat(addon.price);
-        const addonSubtotal = unitPrice * addon.quantity;
+    // Process addons - Fixed: Use addon_id
+    selectedAddons.forEach(addon => {
+      const details = addonDetails.get(addon.addon_id);
+      if (details) {
+        const basePrice = parseFloat(details.base_price);
+        const total = basePrice * addon.quantity;
 
-        // Calculate tax using individual product tax rate (default to 0 if not provided)
-        const taxRate = addon.tax_rate ? parseFloat(addon.tax_rate) / 100 : 0;
-        const itemTax = addonSubtotal * taxRate;
-
-        const addonItem = {
-          id: addon.id,
-          name: addon.name,
+        addonBreakdown.push({
+          id: addon.addon_id,
+          name: addon.name || details.name,
           quantity: addon.quantity,
-          unitPrice: unitPrice,
-          total: addonSubtotal + itemTax, // Include tax in the item total for display
-        };
+          unitPrice: basePrice,
+          total,
+        });
 
-        calculatedAddons.push(addonItem);
-        subtotal += addonSubtotal; // Subtotal is before tax
-        totalTax += itemTax;
+        subtotal += total;
+
+        // Calculate tax
+        if (details.tax_rate) {
+          tax += total * (parseFloat(details.tax_rate) / 100);
+        }
       }
+    });
 
-      // Calculate discount
-      let discountAmount = 0;
-      if (appliedDiscount) {
-        discountAmount = calculateDiscountAmount(subtotal, appliedDiscount);
+    // Apply discount
+    let discountAmount = 0;
+    if (appliedDiscount) {
+      if (appliedDiscount.discount_type === 'PERCENTAGE') {
+        discountAmount = subtotal * (parseFloat(appliedDiscount.value) / 100);
+      } else if (appliedDiscount.discount_type === 'FIXED') {
+        discountAmount = parseFloat(appliedDiscount.value);
       }
-
-      // Calculate final total: subtotal + tax - discount
-      const total = subtotal + totalTax - discountAmount;
-
-      setBreakdown({
-        packages: calculatedPackages,
-        addons: calculatedAddons,
-        subtotal,
-        tax: totalTax,
-        discount: discountAmount,
-        total: Math.max(0, total), // Ensure total is not negative
-      });
-
-    } catch (err) {
-      const errorMessage = ProductsApi.handleProductsError(err);
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
+      // Ensure discount doesn't exceed subtotal
+      discountAmount = Math.min(discountAmount, subtotal);
     }
-  }, [selectedPackages, selectedAddons, eventDuration, appliedDiscount, calculateDiscountAmount]);
+
+    const total = subtotal + tax - discountAmount;
+
+    return {
+      packages: packageBreakdown,
+      addons: addonBreakdown,
+      subtotal,
+      tax,
+      discount: discountAmount,
+      total: Math.max(0, total),
+    };
+  }, [selectedPackages, selectedAddons, packageDetails, addonDetails, eventDuration, appliedDiscount]);
+
+  // Force recalculation
+  const recalculate = useCallback(() => {
+    const packageIds = selectedPackages.map(p => p.package_id);
+    const addonIds = selectedAddons.map(a => a.addon_id);
+    
+    if (packageIds.length > 0 || addonIds.length > 0) {
+      setPackageDetails(new Map());
+      setAddonDetails(new Map());
+    }
+  }, [selectedPackages, selectedAddons]);
 
   // Format currency for display
   const formatCurrency = useCallback((amount: number): string => {
     return ProductsApi.formatPrice(amount.toString());
   }, []);
 
-  // Get formatted breakdown for display (exact original structure)
+  // Get formatted breakdown for display
   const formattedBreakdown = useMemo(() => ({
     packages: breakdown.packages,
     addons: breakdown.addons,
@@ -189,7 +203,7 @@ export const usePricingSummary = (
   // Check if there are any items selected
   const hasItems = useMemo(() => {
     return selectedPackages.length > 0 || selectedAddons.length > 0;
-  }, [selectedPackages, selectedAddons]);
+  }, [selectedPackages.length, selectedAddons.length]);
 
   // Get total item count
   const totalItemCount = useMemo(() => {
@@ -197,11 +211,6 @@ export const usePricingSummary = (
     const addonCount = selectedAddons.reduce((total, addon) => total + addon.quantity, 0);
     return packageCount + addonCount;
   }, [selectedPackages, selectedAddons]);
-
-  // Recalculate when dependencies change
-  useEffect(() => {
-    calculatePricing();
-  }, [calculatePricing]);
 
   return {
     breakdown,
@@ -211,7 +220,7 @@ export const usePricingSummary = (
     hasItems,
     totalItemCount,
     formatCurrency,
-    recalculate: calculatePricing,
+    recalculate,
   };
 };
 
@@ -258,10 +267,14 @@ export const usePricingSummaryStep = (
   selectedPackages: SelectedPackage[] = [],
   selectedAddons: SelectedAddon[] = [],
   eventDuration?: number,
-  initialDiscount?: Discount | null
+  initialDiscountCode?: string
 ) => {
-  const [appliedDiscount, setAppliedDiscount] = useState<Discount | null>(initialDiscount || null);
-  const [discountCode, setDiscountCode] = useState<string>('');
+  const { state } = useBooking();
+  const [appliedDiscount, setAppliedDiscount] = useState<Discount | null>(null);
+  const [discountCode, setDiscountCode] = useState<string>(initialDiscountCode || '');
+  const [serverPricing, setServerPricing] = useState<PricingCalculation | null>(null);
+  const [calculatingServerPricing, setCalculatingServerPricing] = useState(false);
+  const [serverPricingError, setServerPricingError] = useState<string | null>(null);
 
   const {
     breakdown,
@@ -281,6 +294,33 @@ export const usePricingSummaryStep = (
     clearDiscountError,
   } = useDiscountValidation();
 
+  // Calculate server-side pricing when inputs change
+  useEffect(() => {
+    const calculateServerPricing = async () => {
+      if (!state.currentSession || !hasItems) return;
+
+      setCalculatingServerPricing(true);
+      setServerPricingError(null);
+
+      try {
+        const pricing = await BookingCoreApi.calculatePricing(
+          state.currentSession.session_id,
+          discountCode || undefined
+        );
+        setServerPricing(pricing);
+      } catch (err) {
+        setServerPricingError('Failed to calculate pricing');
+        console.error('Server pricing calculation failed:', err);
+      } finally {
+        setCalculatingServerPricing(false);
+      }
+    };
+
+    // Debounce the calculation
+    const timeoutId = setTimeout(calculateServerPricing, 500);
+    return () => clearTimeout(timeoutId);
+  }, [state.currentSession, hasItems, discountCode, selectedPackages, selectedAddons]);
+
   // Apply discount code
   const applyDiscountCode = useCallback(async (code: string) => {
     const discount = await validateDiscountCode(code);
@@ -297,19 +337,39 @@ export const usePricingSummaryStep = (
     clearDiscountError();
   }, [clearDiscountError]);
 
-  // Get step data for submission
-  const getStepData = useCallback(() => ({
-    subtotal: breakdown.subtotal.toFixed(2),
-    tax: breakdown.tax.toFixed(2),
-    discount: breakdown.discount.toFixed(2),
-    total: breakdown.total.toFixed(2),
-    applied_discount: appliedDiscount,
-  }), [breakdown, appliedDiscount]);
+  // Get step data for submission - Only return discount code
+  const getStepData = useCallback((): PricingSummaryStepData => ({
+    applied_discount_code: discountCode || undefined,
+  }), [discountCode]);
+
+  // Use server pricing if available, otherwise use client-calculated pricing
+  const finalBreakdown = useMemo(() => {
+    if (serverPricing) {
+      return {
+        ...breakdown,
+        subtotal: parseFloat(serverPricing.subtotal),
+        tax: parseFloat(serverPricing.tax),
+        discount: parseFloat(serverPricing.discount),
+        total: parseFloat(serverPricing.total),
+      };
+    }
+    return breakdown;
+  }, [serverPricing, breakdown]);
+
+  const finalFormattedBreakdown = useMemo(() => ({
+    packages: finalBreakdown.packages,
+    addons: finalBreakdown.addons,
+    subtotal: formatCurrency(finalBreakdown.subtotal),
+    tax: formatCurrency(finalBreakdown.tax),
+    discount: formatCurrency(finalBreakdown.discount),
+    total: formatCurrency(finalBreakdown.total),
+    rawTotal: finalBreakdown.total,
+  }), [finalBreakdown, formatCurrency]);
 
   return {
     // Pricing data
-    breakdown,
-    formattedBreakdown,
+    breakdown: finalBreakdown,
+    formattedBreakdown: finalFormattedBreakdown,
     hasItems,
     totalItemCount,
     
@@ -321,11 +381,11 @@ export const usePricingSummaryStep = (
     removeDiscount,
     
     // Loading states
-    calculatingPricing,
+    calculatingPricing: calculatingPricing || calculatingServerPricing,
     validatingDiscount,
     
     // Errors
-    pricingError,
+    pricingError: pricingError || serverPricingError,
     discountError,
     
     // Utilities
