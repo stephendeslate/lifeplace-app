@@ -618,6 +618,45 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+    @action(detail=False, methods=['patch'], url_path='session/(?P<session_uuid>[^/.]+)/go-to-step')
+    def go_to_step(self, request, session_uuid=None):
+        """Navigate to a specific step without updating data"""
+        try:
+            step_id = request.data.get('step_id')
+            if not step_id:
+                return Response(
+                    {"detail": "step_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            session = BookingSessionService.get_session_by_id(session_uuid)
+            
+            # Find the step
+            step = session.booking_flow.steps.filter(id=step_id, is_enabled=True).first()
+            if not step:
+                return Response(
+                    {"detail": "Step not found or not enabled"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Update current step
+            session.current_step = step
+            session.save()
+            
+            return Response({
+                "session_id": str(session.session_id),
+                "current_step": BookingFlowStepSerializer(
+                    session.current_step, context=self.get_serializer_context()
+                ).data,
+                "progress_percentage": session.progress_percentage,
+                "updated_at": session.updated_at,
+            })
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
     @staticmethod
     def _validate_step_data(step, step_data):
         """Validate step data against step configuration"""

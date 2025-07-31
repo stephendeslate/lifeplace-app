@@ -499,14 +499,42 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }, [state.currentFlow, state.currentSession, state.stepData, state.totalPrice]),
 
-    previousStep: useCallback(() => {
-      if (!state.currentFlow) return;
+    previousStep: useCallback(async () => {
+      if (!state.currentFlow || !state.currentSession) return;
       
       const currentIndex = state.progress.currentStepIndex;
       if (currentIndex > 0) {
-        actions.goToStep(currentIndex - 1);
+        const targetStep = state.currentFlow.enabled_steps[currentIndex - 1];
+        
+        if (targetStep) {
+          dispatch({ type: 'SET_SUBMITTING', payload: true });
+          
+          try {
+            // Use the new endpoint to explicitly set the step
+            const response = await BookingCoreApi.goToStep(
+              state.currentSession.session_id,
+              targetStep.id
+            );
+            
+            const updatedSession = {
+              ...state.currentSession,
+              current_step: response.current_step,
+              progress_percentage: response.progress_percentage,
+              updated_at: response.updated_at,
+            };
+            
+            dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
+            BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, updatedSession);
+            
+          } catch (error) {
+            const errorMessage = BookingCoreApi.handleApiError(error);
+            dispatch({ type: 'SET_ERROR', payload: errorMessage });
+          } finally {
+            dispatch({ type: 'SET_SUBMITTING', payload: false });
+          }
+        }
       }
-    }, [state.currentFlow, state.progress.currentStepIndex]),
+    }, [state.currentFlow, state.currentSession, state.progress.currentStepIndex]),
 
     skipStep: useCallback(async () => {
       if (!state.currentSession?.current_step?.is_skippable) return;
