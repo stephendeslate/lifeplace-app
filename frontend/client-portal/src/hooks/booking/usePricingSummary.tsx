@@ -67,8 +67,14 @@ export const usePricingSummary = (
             addonIds.length > 0 ? ProductsApi.getProductsByIds(addonIds) : new Map(),
           ]);
           
-          setPackageDetails(packagesMap);
-          setAddonDetails(addonsMap);
+          // CRITICAL FIX: Clear old details before setting new ones
+          // This ensures removed items don't persist in the maps
+          setPackageDetails(new Map(packagesMap));
+          setAddonDetails(new Map(addonsMap));
+        } else {
+          // Clear all details when nothing is selected
+          setPackageDetails(new Map());
+          setAddonDetails(new Map());
         }
       } catch (err) {
         setError('Failed to load product details');
@@ -125,7 +131,7 @@ export const usePricingSummary = (
       }
     });
 
-    // Process addons - Fixed: Use addon_id
+    // Process addons - CRITICAL FIX: Only process addons that are currently selected
     selectedAddons.forEach(addon => {
       const details = addonDetails.get(addon.product_id);
       if (details) {
@@ -173,16 +179,12 @@ export const usePricingSummary = (
     };
   }, [selectedPackages, selectedAddons, packageDetails, addonDetails, eventDuration, appliedDiscount]);
 
-  // Force recalculation
+  // Force recalculation - FIXED: Clear details maps to force refetch
   const recalculate = useCallback(() => {
-    const packageIds = selectedPackages.map(p => p.product_id);
-    const addonIds = selectedAddons.map(a => a.product_id);
-    
-    if (packageIds.length > 0 || addonIds.length > 0) {
-      setPackageDetails(new Map());
-      setAddonDetails(new Map());
-    }
-  }, [selectedPackages, selectedAddons]);
+    // Clear the detail maps to force a refetch
+    setPackageDetails(new Map());
+    setAddonDetails(new Map());
+  }, []);
 
   // Format currency for display
   const formatCurrency = useCallback((amount: number): string => {
@@ -297,7 +299,11 @@ export const usePricingSummaryStep = (
   // Calculate server-side pricing when inputs change
   useEffect(() => {
     const calculateServerPricing = async () => {
-      if (!state.currentSession || !hasItems) return;
+      if (!state.currentSession || !hasItems) {
+        // Clear server pricing when no items
+        setServerPricing(null);
+        return;
+      }
 
       setCalculatingServerPricing(true);
       setServerPricingError(null);
@@ -316,10 +322,10 @@ export const usePricingSummaryStep = (
       }
     };
 
-    // Debounce the calculation
-    const timeoutId = setTimeout(calculateServerPricing, 500);
+    // Debounce the calculation with a shorter delay for better UX
+    const timeoutId = setTimeout(calculateServerPricing, 300);
     return () => clearTimeout(timeoutId);
-  }, [state.currentSession, hasItems, discountCode, selectedPackages, selectedAddons]);
+  }, [state.currentSession, hasItems, discountCode, selectedPackages.length, selectedAddons.length]);
 
   // Apply discount code
   const applyDiscountCode = useCallback(async (code: string) => {
