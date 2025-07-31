@@ -166,7 +166,11 @@ class BookingSessionService:
             
             # Handle step progression
             if mark_completed and session.booking_flow:
-                next_step = session.booking_flow.get_next_step(session.current_step.id)
+                # Pass booking_data to check display conditions
+                next_step = session.booking_flow.get_next_step(
+                    session.current_step.id,
+                    session.booking_data  # ADD THIS
+                )
                 if next_step:
                     session.current_step = next_step
                 else:

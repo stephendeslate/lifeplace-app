@@ -356,7 +356,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           state.currentSession.session_id,
           currentStep.id,
           bookingDataUpdate,  // Pass booking data directly
-          false  // mark_completed
+          false  // IMPORTANT: mark_completed should be false for data updates
         );
 
         dispatch({ 

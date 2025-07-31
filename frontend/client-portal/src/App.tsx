@@ -12,9 +12,10 @@ import { Login, Register } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { Messages } from './pages/messages';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
+import { BookingComplete, BookingPage } from './pages/booking';
 
 // Import booking components
-import BookingPage, { BookingComplete } from './pages/booking';
+
 
 // Loading component
 const LoadingSpinner: React.FC = () => (
