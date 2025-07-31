@@ -148,8 +148,8 @@ class BookingFlow(BaseModel):
         """Get all enabled steps in order"""
         return self.steps.filter(is_enabled=True).order_by('order')
     
-    def get_next_step(self, current_step_id):
-        """Get the next enabled step after the given step ID"""
+    def get_next_step(self, current_step_id, booking_data=None):
+        """Get the next visible enabled step after the given step ID"""
         try:
             current_step = self.steps.get(id=current_step_id)
             next_steps = self.steps.filter(
@@ -157,8 +157,11 @@ class BookingFlow(BaseModel):
                 is_enabled=True
             ).order_by('order')
             
-            if next_steps.exists():
-                return next_steps.first()
+            # Check visibility conditions if booking_data provided
+            for step in next_steps:
+                if booking_data is None or step.is_visible_for_data(booking_data):
+                    return step
+                    
             return None
         except BookingFlowStep.DoesNotExist:
             return None

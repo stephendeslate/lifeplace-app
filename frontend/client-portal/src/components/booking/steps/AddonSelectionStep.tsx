@@ -113,6 +113,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
       return addon;
     });
     
+    // Only update data, don't trigger navigation
     onDataChange({ selected_addons: newSelectedAddons });
   }, [selectedAddons, onDataChange]);
 
