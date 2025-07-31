@@ -335,6 +335,13 @@ export class BookingCoreApi {
         return formatted;
     }
   }
+  
+  static async goToStep(sessionId: string, stepId: number): Promise<any> {
+    const response = await api.patch(`/bookingflow/public/flows/session/${sessionId}/go-to-step/`, {
+      step_id: stepId
+    });
+    return response.data;
+  }
 
   // Error handling helpers
 
