@@ -196,11 +196,13 @@ export const useBookingSession = (sessionId?: string) => {
     setValidationErrors({});
     
     try {
+      // The core API now handles the transformation internally
+      // We just pass the data and it will be wrapped properly
       const response = await BookingCoreApi.updateSessionData(
         sessionId,
         stepId,
         stepData,
-        markCompleted
+        markCompleted  // This is now properly named as mark_completed in the API
       );
       
       // Update local session state

@@ -9,6 +9,9 @@ from decimal import Decimal
 from core.domains.products.models import ProductOption
 from core.domains.products.services import DiscountService
 
+import logging
+logger = logging.getLogger(__name__)
+
 from ..models import BookingFlow, BookingSession
 from ..serializers import (
     BookingFlowStepSerializer,
@@ -169,14 +172,32 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
         event_type_id = self.request.query_params.get('event_type')
         queryset = BookingFlow.objects.filter(is_active=True).select_related(
             'event_type'
-        ).prefetch_related('steps')
+        ).prefetch_related(
+            'steps',
+            # Add comprehensive prefetch for all step configurations
+            'steps__package_config',
+            'steps__addon_config',
+            'steps__pricing_config',
+            'steps__contact_config',
+            'steps__payment_config',
+            'steps__confirmation_config',
+            'steps__introduction_config',
+            'steps__datetime_config',
+            'steps__questionnaire_config',
+            # Prefetch ManyToMany relationships
+            'steps__package_config__available_categories',
+            'steps__package_config__available_packages',
+            'steps__addon_config__available_categories',
+            'steps__addon_config__available_addons',
+            'steps__questionnaire_config__questionnaire_items__questionnaire',
+        )
         
         # Apply event type filter if provided
         if event_type_id:
             queryset = queryset.filter(event_type_id=event_type_id)
         
         return queryset
-    
+
     def list(self, request, *args, **kwargs):
         """Override list to ensure no pagination"""
         queryset = self.get_queryset()
@@ -423,43 +444,114 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
         try:
             session = BookingSessionService.get_session_by_id(session_uuid)
             
-            # Get package and addon data from session
-            package_data = session.booking_data.get('package_selection', {}).get('selected_packages', [])
-            addon_data = session.booking_data.get('addon_selection', {}).get('selected_addons', [])
+            # Get selected products from session with consistent structure
+            booking_data = session.booking_data or {}
+            
+            # FIXED: Look for packages in both places - direct and under step keys
+            selected_packages = booking_data.get('selected_packages', [])
+            selected_addons = booking_data.get('selected_addons', [])
+            
+            # If not found directly, check under step keys (but only take first occurrence)
+            if not selected_packages:
+                for step_key, step_data in booking_data.items():
+                    if isinstance(step_data, dict) and 'selected_packages' in step_data:
+                        selected_packages = step_data['selected_packages']
+                        break
+                        
+            if not selected_addons:
+                for step_key, step_data in booking_data.items():
+                    if isinstance(step_data, dict) and 'selected_addons' in step_data:
+                        selected_addons = step_data['selected_addons']
+                        break
+            
             discount_code = request.data.get('discount_code', '')
             
-            # Calculate totals
+            # Log for debugging
+            logger.info(f"Pricing calculation for session {session_uuid}: "
+                    f"packages={len(selected_packages)}, addons={len(selected_addons)}, "
+                    f"discount_code='{discount_code}'")
+            
+            # Initialize totals
             subtotal = Decimal('0.00')
             tax_total = Decimal('0.00')
             discount_amount = Decimal('0.00')
             discount_details = None
             
-            # Process packages
-            for package in package_data:
+            # Process packages (products with type='PACKAGE')
+            for package_item in selected_packages:
                 try:
-                    product = ProductOption.objects.get(id=package['package_id'])
-                    quantity = package.get('quantity', 1)
-                    price = Decimal(str(product.base_price)) * quantity
-                    subtotal += price
+                    product_id = package_item.get('product_id')
+                    quantity = int(package_item.get('quantity', 1))
                     
-                    # Calculate tax
+                    if not product_id:
+                        logger.warning(f"Package item missing product_id: {package_item}")
+                        continue
+                        
+                    product = ProductOption.objects.get(
+                        id=product_id,
+                        product_type='PACKAGE',
+                        is_active=True
+                    )
+                    
+                    # Calculate base price
+                    base_price = Decimal(str(product.base_price))
+                    item_total = base_price * quantity
+                    
+                    # Handle excess hours if applicable
+                    duration_hours = package_item.get('duration_hours', 0)
+                    if product.has_excess_hours and product.included_hours and duration_hours:
+                        if duration_hours > product.included_hours:
+                            excess_hours = duration_hours - product.included_hours
+                            excess_hour_price = Decimal(str(product.excess_hour_price or '0'))
+                            excess_cost = excess_hours * excess_hour_price
+                            item_total += excess_cost * quantity
+                    
+                    subtotal += item_total
+                    
+                    # Calculate tax for this item
                     if product.tax_rate:
-                        tax_total += price * (product.tax_rate / 100)
+                        item_tax = item_total * (Decimal(str(product.tax_rate)) / 100)
+                        tax_total += item_tax
+                        
                 except ProductOption.DoesNotExist:
+                    logger.warning(f"Package product {product_id} not found")
+                    continue
+                except Exception as e:
+                    logger.error(f"Error processing package {package_item}: {str(e)}")
                     continue
             
-            # Process addons
-            for addon in addon_data:
+            # Process addons (products with type='ADDON')
+            for addon_item in selected_addons:
                 try:
-                    product = ProductOption.objects.get(id=addon['addon_id'])
-                    quantity = addon.get('quantity', 1)
-                    price = Decimal(str(product.base_price)) * quantity
-                    subtotal += price
+                    product_id = addon_item.get('product_id')
+                    quantity = int(addon_item.get('quantity', 1))
                     
-                    # Calculate tax
+                    if not product_id:
+                        logger.warning(f"Addon item missing product_id: {addon_item}")
+                        continue
+                        
+                    product = ProductOption.objects.get(
+                        id=product_id,
+                        product_type='ADDON',
+                        is_active=True
+                    )
+                    
+                    # Calculate price
+                    base_price = Decimal(str(product.base_price))
+                    item_total = base_price * quantity
+                    
+                    subtotal += item_total
+                    
+                    # Calculate tax for this item
                     if product.tax_rate:
-                        tax_total += price * (product.tax_rate / 100)
+                        item_tax = item_total * (Decimal(str(product.tax_rate)) / 100)
+                        tax_total += item_tax
+                        
                 except ProductOption.DoesNotExist:
+                    logger.warning(f"Addon product {product_id} not found")
+                    continue
+                except Exception as e:
+                    logger.error(f"Error processing addon {addon_item}: {str(e)}")
                     continue
             
             # Apply discount if provided
@@ -467,112 +559,141 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 try:
                     from core.domains.products.services import DiscountService
                     discount = DiscountService.validate_discount_code(discount_code)
+                    
                     if discount and discount.is_active:
-                        if discount.discount_type == 'PERCENTAGE':
-                            discount_amount = subtotal * (Decimal(str(discount.value)) / 100)
-                        elif discount.discount_type == 'FIXED':
-                            discount_amount = Decimal(str(discount.value))
-                        
-                        discount_details = {
-                            'code': discount.code,
-                            'type': discount.discount_type,
-                            'value': str(discount.value),
-                            'amount': str(discount_amount)
-                        }
-                except Exception:
-                    pass  # Invalid discount code - just ignore
+                        # Check if discount is applicable to the total
+                        if discount.minimum_amount and subtotal < Decimal(str(discount.minimum_amount)):
+                            logger.info(f"Discount {discount_code} not applied: minimum amount not met")
+                        else:
+                            # Calculate discount amount
+                            if discount.discount_type == 'PERCENTAGE':
+                                discount_value = Decimal(str(discount.value))
+                                discount_amount = subtotal * (discount_value / 100)
+                                # Cap percentage discount at subtotal if needed
+                                discount_amount = min(discount_amount, subtotal)
+                            elif discount.discount_type == 'FIXED':
+                                discount_amount = Decimal(str(discount.value))
+                                # Ensure discount doesn't exceed subtotal
+                                discount_amount = min(discount_amount, subtotal)
+                            
+                            # Set discount details for response
+                            discount_details = {
+                                'code': discount.code,
+                                'type': discount.discount_type,
+                                'value': str(discount.value),
+                                'amount_applied': str(discount_amount)
+                            }
+                            
+                except Exception as e:
+                    logger.warning(f"Error applying discount code {discount_code}: {str(e)}")
             
-            # Calculate total
+            # Calculate final total
             total = subtotal + tax_total - discount_amount
             
+            # Ensure non-negative total
+            if total < 0:
+                total = Decimal('0.00')
+            
+            # Log calculation details for debugging
+            logger.info(f"Pricing calculation for session {session_uuid}: "
+                    f"subtotal={subtotal}, tax={tax_total}, discount={discount_amount}, total={total}")
+            
             return Response({
-                'subtotal': str(subtotal),
-                'tax': str(tax_total),
-                'discount': str(discount_amount),
-                'total': str(total),
+                'subtotal': str(subtotal.quantize(Decimal('0.01'))),
+                'tax': str(tax_total.quantize(Decimal('0.01'))),
+                'discount': str(discount_amount.quantize(Decimal('0.01'))),
+                'total': str(total.quantize(Decimal('0.01'))),
                 'discount_details': discount_details
             })
             
-        except Exception as e:
+        except BookingSession.DoesNotExist:
             return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )@staticmethod
-def _validate_step_data(step, step_data):
-    """Validate step data against step configuration"""
-    errors = {}
-    
-    # Block validation for removed step types
-    if step.step_type == 'availability_check':
-        errors['step_type'] = (
-            "Availability check step type is no longer supported. "
-            "Use date_time step with availability checking enabled instead."
-        )
-        return errors
-    
-    # Add validation for pricing summary step
-    if step.step_type == 'pricing_summary':
-        # Pricing summary only stores the discount code
-        # All calculations are done server-side
-        if 'applied_discount_code' in step_data and step_data['applied_discount_code']:
-            # Validate discount code if provided
-            try:
-                from core.domains.products.services import DiscountService
-                discount_code = step_data['applied_discount_code']
-                discount = DiscountService.validate_discount_code(discount_code)
-                if not discount or not discount.is_active:
-                    errors['applied_discount_code'] = ["Invalid or expired discount code"]
-            except Exception as e:
-                errors['applied_discount_code'] = ["Unable to validate discount code"]
-    
-    # Common validation for all step types
-    if hasattr(step, f"{step.step_type}_config"):
-        config = getattr(step, f"{step.step_type}_config")
+                {"detail": "Booking session not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error calculating pricing: {str(e)}", exc_info=True)
+            return Response(
+                {"detail": "Error calculating pricing"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
-        # Step-specific validation based on configuration
-        if step.step_type == 'introduction':
-            if step_data.get('acknowledged') is not True:
-                errors['acknowledged'] = ["Acknowledgment is required"]
-                
-        elif step.step_type == 'date_time':
-            if not step_data.get('date'):
-                errors['date'] = ["Date selection is required"]
-            if config.allow_time_selection and not step_data.get('time'):
-                errors['time'] = ["Time selection is required"]
-                
-        elif step.step_type == 'questionnaire':
-            # Validate questionnaire responses
-            questionnaire_items = config.questionnaire_items.all()
-            for item in questionnaire_items:
-                questionnaire = item.questionnaire
-                response_key = f'questionnaire_{questionnaire.id}'
-                if questionnaire.is_required and not step_data.get(response_key):
-                    errors[response_key] = [f"{questionnaire.name} is required"]
+    @staticmethod
+    def _validate_step_data(step, step_data):
+        """Validate step data against step configuration"""
+        errors = {}
+        
+        # Block validation for removed step types
+        if step.step_type == 'availability_check':
+            errors['step_type'] = (
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
+            return errors
+        
+        # Add validation for pricing summary step
+        if step.step_type == 'pricing_summary':
+            # Pricing summary only stores the discount code
+            # All calculations are done server-side
+            if 'applied_discount_code' in step_data and step_data['applied_discount_code']:
+                # Validate discount code if provided
+                try:
+                    from core.domains.products.services import DiscountService
+                    discount_code = step_data['applied_discount_code']
+                    discount = DiscountService.validate_discount_code(discount_code)
+                    if not discount or not discount.is_active:
+                        errors['applied_discount_code'] = ["Invalid or expired discount code"]
+                except Exception as e:
+                    errors['applied_discount_code'] = ["Unable to validate discount code"]
+        
+        # Common validation for all step types
+        if hasattr(step, f"{step.step_type}_config"):
+            config = getattr(step, f"{step.step_type}_config")
+            
+            # Step-specific validation based on configuration
+            if step.step_type == 'introduction':
+                if step_data.get('acknowledged') is not True:
+                    errors['acknowledged'] = ["Acknowledgment is required"]
                     
-        elif step.step_type == 'package_selection':
-            selected = step_data.get('selected_packages', [])
-            if config.min_selection and len(selected) < config.min_selection:
-                errors['selected_packages'] = [f"Select at least {config.min_selection} package(s)"]
-            if config.max_selection and len(selected) > config.max_selection:
-                errors['selected_packages'] = [f"Select at most {config.max_selection} package(s)"]
-                
-        elif step.step_type == 'addon_selection':
-            selected = step_data.get('selected_addons', [])
-            if config.min_selection and len(selected) < config.min_selection:
-                errors['selected_addons'] = [f"Select at least {config.min_selection} addon(s)"]
-            if config.max_selection and len(selected) > config.max_selection:
-                errors['selected_addons'] = [f"Select at most {config.max_selection} addon(s)"]
-                
-        elif step.step_type == 'contact_info':
-            if config.require_full_name and not step_data.get('full_name'):
-                errors['full_name'] = ["Full name is required"]
-            if config.require_email and not step_data.get('email'):
-                errors['email'] = ["Email is required"]
-            if config.require_phone and not step_data.get('phone'):
-                errors['phone'] = ["Phone number is required"]
-                
-        elif step.step_type == 'payment_info':
-            if not step_data.get('payment_method'):
-                errors['payment_method'] = ["Payment method is required"]
-    
-    return errors
+            elif step.step_type == 'date_time':
+                if not step_data.get('date'):
+                    errors['date'] = ["Date selection is required"]
+                if config.allow_time_selection and not step_data.get('time'):
+                    errors['time'] = ["Time selection is required"]
+                    
+            elif step.step_type == 'questionnaire':
+                # Validate questionnaire responses
+                questionnaire_items = config.questionnaire_items.all()
+                for item in questionnaire_items:
+                    questionnaire = item.questionnaire
+                    response_key = f'questionnaire_{questionnaire.id}'
+                    if questionnaire.is_required and not step_data.get(response_key):
+                        errors[response_key] = [f"{questionnaire.name} is required"]
+                        
+            elif step.step_type == 'package_selection':
+                selected = step_data.get('selected_packages', [])
+                if config.min_selection and len(selected) < config.min_selection:
+                    errors['selected_packages'] = [f"Select at least {config.min_selection} package(s)"]
+                if config.max_selection and len(selected) > config.max_selection:
+                    errors['selected_packages'] = [f"Select at most {config.max_selection} package(s)"]
+                    
+            elif step.step_type == 'addon_selection':
+                selected = step_data.get('selected_addons', [])
+                if config.min_selection and len(selected) < config.min_selection:
+                    errors['selected_addons'] = [f"Select at least {config.min_selection} addon(s)"]
+                if config.max_selection and len(selected) > config.max_selection:
+                    errors['selected_addons'] = [f"Select at most {config.max_selection} addon(s)"]
+                    
+            elif step.step_type == 'contact_info':
+                if config.require_full_name and not step_data.get('full_name'):
+                    errors['full_name'] = ["Full name is required"]
+                if config.require_email and not step_data.get('email'):
+                    errors['email'] = ["Email is required"]
+                if config.require_phone and not step_data.get('phone'):
+                    errors['phone'] = ["Phone number is required"]
+                    
+            elif step.step_type == 'payment_info':
+                if not step_data.get('payment_method'):
+                    errors['payment_method'] = ["Payment method is required"]
+        
+        return errors

@@ -34,7 +34,7 @@ export class ProductsApi {
    * Get all active product options (packages and products)
    */
   static async getProductOptions(): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/options/', {
+    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: removed ${id} and corrected endpoint
       params: { is_active: true }
     });
     return response.data;
@@ -44,7 +44,7 @@ export class ProductsApi {
    * Get packages only (type = 'PACKAGE')
    */
   static async getPackages(): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/options/', {
+    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: changed from /options/ to /products/
       params: { 
         is_active: true,
         type: 'PACKAGE'
@@ -57,7 +57,7 @@ export class ProductsApi {
    * Get products/addons only (type = 'PRODUCT')
    */
   static async getAddons(): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/options/', {
+    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: changed from /options/ to /products/
       params: { 
         is_active: true,
         type: 'PRODUCT'
@@ -70,11 +70,11 @@ export class ProductsApi {
    * Get packages by category
    */
   static async getPackagesByCategory(categoryId: number): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/options/', {
+    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: changed from /options/ to /products/
       params: { 
         is_active: true,
         type: 'PACKAGE',
-        category: categoryId
+        category_id: categoryId  // Fixed: changed from 'category' to 'category_id' to match backend
       }
     });
     return response.data;
@@ -84,11 +84,11 @@ export class ProductsApi {
    * Get addons by category
    */
   static async getAddonsByCategory(categoryId: number): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/options/', {
+    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: changed from /options/ to /products/
       params: { 
         is_active: true,
         type: 'PRODUCT',
-        category: categoryId
+        category_id: categoryId  // Fixed: changed from 'category' to 'category_id' to match backend
       }
     });
     return response.data;
@@ -98,7 +98,7 @@ export class ProductsApi {
    * Get product option by ID
    */
   static async getProductOption(productId: number): Promise<ProductOption> {
-    const response = await api.get<ProductOption>(`/products/options/${productId}/`);
+    const response = await api.get<ProductOption>(`/products/products/${productId}/`);  // Fixed: changed from /options/ to /products/
     return response.data;
   }
 

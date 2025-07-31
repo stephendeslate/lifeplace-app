@@ -84,6 +84,11 @@ class QuestionnaireStepConfigurationSerializer(serializers.ModelSerializer):
 
 
 class PackageSelectionStepConfigurationSerializer(serializers.ModelSerializer):
+    # Use SerializerMethodField for ID arrays to avoid ManyRelatedManager issues
+    available_categories = serializers.SerializerMethodField()
+    available_packages = serializers.SerializerMethodField()
+    
+    # Keep the detailed serializers
     available_categories_details = ProductCategorySerializer(
         source='available_categories', many=True, read_only=True
     )
@@ -94,16 +99,37 @@ class PackageSelectionStepConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = PackageSelectionStepConfiguration
         fields = [
-            'id', 'step', 'available_categories', 'available_categories_details',
-            'available_packages', 'available_packages_details', 'selection_type',
+            'id', 'step', 
+            'available_categories',  # ID array
+            'available_packages',    # ID array
+            'available_categories_details',
+            'available_packages_details', 
+            'selection_type',
             'min_selection', 'max_selection', 'show_pricing', 'show_descriptions',
             'show_images', 'enable_comparison', 'enable_dynamic_pricing',
             'pricing_factors', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
+    def get_available_categories(self, obj):
+        """Get list of category IDs - handles unevaluated ManyRelatedManager"""
+        if hasattr(obj, 'available_categories'):
+            return list(obj.available_categories.values_list('id', flat=True))
+        return []
+    
+    def get_available_packages(self, obj):
+        """Get list of package IDs - handles unevaluated ManyRelatedManager"""
+        if hasattr(obj, 'available_packages'):
+            return list(obj.available_packages.values_list('id', flat=True))
+        return []
+
 
 class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
+    # Use SerializerMethodField for ID arrays to avoid ManyRelatedManager issues
+    available_categories = serializers.SerializerMethodField()
+    available_addons = serializers.SerializerMethodField()
+    
+    # Keep the detailed serializers
     available_categories_details = ProductCategorySerializer(
         source='available_categories', many=True, read_only=True
     )
@@ -114,12 +140,28 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = AddonSelectionStepConfiguration
         fields = [
-            'id', 'step', 'available_categories', 'available_categories_details',
-            'available_addons', 'available_addons_details', 'min_selection',
+            'id', 'step',
+            'available_categories',  # ID array
+            'available_addons',      # ID array
+            'available_categories_details',
+            'available_addons_details', 
+            'min_selection',
             'max_selection', 'group_by_category', 'show_recommendations',
             'recommendation_logic', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
+
+    def get_available_categories(self, obj):
+        """Get list of category IDs - handles unevaluated ManyRelatedManager"""
+        if hasattr(obj, 'available_categories'):
+            return list(obj.available_categories.values_list('id', flat=True))
+        return []
+    
+    def get_available_addons(self, obj):
+        """Get list of addon IDs - handles unevaluated ManyRelatedManager"""
+        if hasattr(obj, 'available_addons'):
+            return list(obj.available_addons.values_list('id', flat=True))
+        return []
 
 class PricingSummaryStepConfigurationSerializer(serializers.ModelSerializer):
     class Meta:

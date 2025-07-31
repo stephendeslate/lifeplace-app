@@ -53,27 +53,27 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
   // Use props stepData as single source of truth
   const selectedPackages = stepData.selected_packages || [];
 
-  // Check if package is selected - Fixed to use package_id
+  // Check if package is selected - Fixed to use product_id
   const isPackageSelected = useCallback((packageId: number) => {
-    return selectedPackages.some(p => p.package_id === packageId);
+    return selectedPackages.some(p => p.product_id === packageId);
   }, [selectedPackages]);
 
-  // Get selected package details - Fixed to use package_id
+  // Get selected package details - Fixed to use product_id
   const getSelectedPackage = useCallback((packageId: number) => {
-    return selectedPackages.find(p => p.package_id === packageId);
+    return selectedPackages.find(p => p.product_id === packageId);
   }, [selectedPackages]);
 
-  // Handle package toggle - Fixed to use package_id
+  // Handle package toggle - Fixed to use product_id
   const handlePackageToggle = useCallback((packageOption: ProductOption) => {
     let newSelectedPackages: SelectedPackage[];
     
     if (isPackageSelected(packageOption.id)) {
       // Remove package
-      newSelectedPackages = selectedPackages.filter(p => p.package_id !== packageOption.id);
+      newSelectedPackages = selectedPackages.filter(p => p.product_id !== packageOption.id);
     } else {
       // Create new package selection with tax information - Fixed to use package_id
       const newPackage: SelectedPackage = {
-        package_id: packageOption.id, // Fixed: Changed from 'id' to 'package_id'
+        product_id: packageOption.id, // Fixed: Changed from 'id' to 'package_id'
         name: packageOption.name,
         price: packageOption.base_price,
         quantity: 1,
@@ -104,7 +104,7 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
     if (newQuantity < 1) return;
 
     const newSelectedPackages = selectedPackages.map(pkg => 
-      pkg.package_id === packageId 
+      pkg.product_id === packageId 
         ? { ...pkg, quantity: newQuantity }
         : pkg
     );
@@ -311,7 +311,7 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
           </Typography>
           <Divider sx={{ my: 1 }} />
           {selectedPackages.map((pkg) => (
-            <Box key={pkg.package_id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Box key={pkg.product_id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2">
                 {pkg.name} {pkg.quantity > 1 && `x${pkg.quantity}`}
               </Typography>

@@ -62,17 +62,59 @@ class BookingSessionService:
     
     @staticmethod
     def get_session_by_id(session_id):
-        """Get a booking session by session ID (UUID)"""
+        """Get a booking session by ID (UUID)"""
         try:
             # Support both UUID and string session IDs
             if isinstance(session_id, str):
                 session = BookingSession.objects.select_related(
-                    'booking_flow', 'client', 'current_step'
+                    'booking_flow', 
+                    'client', 
+                    'current_step',
+                    # Add related step configurations
+                    'current_step__package_config',
+                    'current_step__addon_config',
+                    'current_step__pricing_config',
+                    'current_step__contact_config',
+                    'current_step__payment_config',
+                    'current_step__confirmation_config',
+                    'current_step__introduction_config',
+                    'current_step__datetime_config',
+                    'current_step__questionnaire_config',
+                ).prefetch_related(
+                    # Prefetch ManyToMany relationships for package config
+                    'current_step__package_config__available_categories',
+                    'current_step__package_config__available_packages',
+                    # Prefetch ManyToMany relationships for addon config
+                    'current_step__addon_config__available_categories',
+                    'current_step__addon_config__available_addons',
+                    # Prefetch questionnaire items if needed
+                    'current_step__questionnaire_config__questionnaire_items__questionnaire',
                 ).get(session_id=session_id)
             else:
                 # Assume it's a numeric ID (for backward compatibility)
                 session = BookingSession.objects.select_related(
-                    'booking_flow', 'client', 'current_step'
+                    'booking_flow', 
+                    'client', 
+                    'current_step',
+                    # Add related step configurations
+                    'current_step__package_config',
+                    'current_step__addon_config',
+                    'current_step__pricing_config',
+                    'current_step__contact_config',
+                    'current_step__payment_config',
+                    'current_step__confirmation_config',
+                    'current_step__introduction_config',
+                    'current_step__datetime_config',
+                    'current_step__questionnaire_config',
+                ).prefetch_related(
+                    # Prefetch ManyToMany relationships for package config
+                    'current_step__package_config__available_categories',
+                    'current_step__package_config__available_packages',
+                    # Prefetch ManyToMany relationships for addon config
+                    'current_step__addon_config__available_categories',
+                    'current_step__addon_config__available_addons',
+                    # Prefetch questionnaire items if needed
+                    'current_step__questionnaire_config__questionnaire_items__questionnaire',
                 ).get(id=session_id)
             
             # Check if session is expired
@@ -110,19 +152,35 @@ class BookingSessionService:
             
             session.booking_data[current_step_key].update(step_data)
             
-            # ADDED: Recalculate total price after any data update
-            session.total_price = session.calculate_total_price()
+            # CRITICAL FIX: Handle packages and addons at root level to avoid duplication
+            # This ensures a single source of truth for pricing calculations
+            if 'selected_packages' in step_data:
+                # Store at root level
+                session.booking_data['selected_packages'] = step_data['selected_packages']
+            if 'selected_addons' in step_data:
+                # Store at root level
+                session.booking_data['selected_addons'] = step_data['selected_addons']
             
-            # Clear validation errors on successful update
+            # Clear any previous validation errors
             session.validation_errors = {}
+            
+            # Handle step progression
+            if mark_completed and session.booking_flow:
+                next_step = session.booking_flow.get_next_step(session.current_step.id)
+                if next_step:
+                    session.current_step = next_step
+                else:
+                    # No more steps - booking flow is complete
+                    session.is_completed = True
+                    session.completed_at = timezone.now()
+            
             session.save()
             
-            # Mark step as completed if requested
-            if mark_completed and session.current_step:
-                session.mark_step_completed(session.current_step)
+            # Log changes
+            logger.info(f"Session updated: step_data for {current_step_key}")
             
-            logger.info(f"Updated session data for session: {session.session_id} with new total: {session.total_price}")
-            return session
+        # CRITICAL: Re-fetch the session with proper prefetching to avoid ManyRelatedManager issues
+        return BookingSessionService.get_session_by_id(session_id)
     
     
     @staticmethod
@@ -322,7 +380,7 @@ class BookingSessionService:
                 if 'selected_packages' in step_data:
                     for package_data in step_data['selected_packages']:
                         try:
-                            product_option = ProductOption.objects.get(id=package_data['id'])
+                            product_option = ProductOption.objects.get(id=package_data['product_id'])
                             quantity = package_data.get('quantity', 1)
                             price = Decimal(str(package_data.get('price', product_option.base_price)))
                             
@@ -426,25 +484,49 @@ class BookingSessionService:
                     errors['selected_packages'] = [f"Select at least {config.min_selection} package(s)"]
                 if config.max_selection and len(selected) > config.max_selection:
                     errors['selected_packages'] = [f"Select at most {config.max_selection} package(s)"]
-                    
+                
+                # FIXED: Validate selected packages are in available packages (if configured)
+                if config.available_packages.exists():  # Check if any packages are configured
+                    available_package_ids = list(config.available_packages.all().values_list('id', flat=True))
+                    for package in selected:
+                        if 'product_id' in package and package['product_id'] not in available_package_ids:
+                            errors['selected_packages'] = errors.get('selected_packages', [])
+                            errors['selected_packages'].append(f"Package {package['product_id']} is not available for selection")
+                            
             elif step.step_type == 'addon_selection':
                 selected = step_data.get('selected_addons', [])
                 if config.min_selection and len(selected) < config.min_selection:
                     errors['selected_addons'] = [f"Select at least {config.min_selection} addon(s)"]
                 if config.max_selection and len(selected) > config.max_selection:
                     errors['selected_addons'] = [f"Select at most {config.max_selection} addon(s)"]
-                    
+                
+                # FIXED: Validate selected addons are in available addons (if configured)
+                if config.available_addons.exists():  # Check if any addons are configured
+                    available_addon_ids = list(config.available_addons.all().values_list('id', flat=True))
+                    for addon in selected:
+                        if 'product_id' in addon and addon['product_id'] not in available_addon_ids:
+                            errors['selected_addons'] = errors.get('selected_addons', [])
+                            errors['selected_addons'].append(f"Addon {addon['product_id']} is not available for selection")
+                            
             elif step.step_type == 'contact_info':
+                # Validate required fields
                 if config.require_full_name and not step_data.get('full_name'):
                     errors['full_name'] = ["Full name is required"]
                 if config.require_email and not step_data.get('email'):
                     errors['email'] = ["Email is required"]
                 if config.require_phone and not step_data.get('phone'):
                     errors['phone'] = ["Phone number is required"]
+                if config.require_address and not step_data.get('address'):
+                    errors['address'] = ["Address is required"]
+                if config.require_company and not step_data.get('company'):
+                    errors['company'] = ["Company name is required"]
                     
             elif step.step_type == 'payment_info':
-                if not step_data.get('payment_method'):
-                    errors['payment_method'] = ["Payment method is required"]
+                # Validate payment data
+                if not step_data.get('gateway_id'):
+                    errors['gateway_id'] = ["Payment gateway selection is required"]
+                if config.require_immediate_payment and not step_data.get('payment_method_id'):
+                    errors['payment_method_id'] = ["Payment method is required"]
         
         return errors
     
