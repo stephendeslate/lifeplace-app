@@ -58,8 +58,8 @@ export const usePricingSummary = (
 
       try {
         // Fixed: Use package_id and addon_id directly without mapping
-        const packageIds = selectedPackages.map(p => p.package_id);
-        const addonIds = selectedAddons.map(a => a.addon_id);
+        const packageIds = selectedPackages.map(p => p.product_id);
+        const addonIds = selectedAddons.map(a => a.product_id);
         
         if (packageIds.length > 0 || addonIds.length > 0) {
           const [packagesMap, addonsMap] = await Promise.all([
@@ -89,7 +89,7 @@ export const usePricingSummary = (
 
     // Process packages - Fixed: Use package_id
     selectedPackages.forEach(pkg => {
-      const details = packageDetails.get(pkg.package_id);
+      const details = packageDetails.get(pkg.product_id);
       if (details) {
         const basePrice = parseFloat(details.base_price);
         let total = basePrice * pkg.quantity;
@@ -106,7 +106,7 @@ export const usePricingSummary = (
         }
 
         packageBreakdown.push({
-          id: pkg.package_id,
+          id: pkg.product_id,
           name: pkg.name || details.name,
           quantity: pkg.quantity,
           unitPrice: basePrice,
@@ -127,13 +127,13 @@ export const usePricingSummary = (
 
     // Process addons - Fixed: Use addon_id
     selectedAddons.forEach(addon => {
-      const details = addonDetails.get(addon.addon_id);
+      const details = addonDetails.get(addon.product_id);
       if (details) {
         const basePrice = parseFloat(details.base_price);
         const total = basePrice * addon.quantity;
 
         addonBreakdown.push({
-          id: addon.addon_id,
+          id: addon.product_id,
           name: addon.name || details.name,
           quantity: addon.quantity,
           unitPrice: basePrice,
@@ -175,8 +175,8 @@ export const usePricingSummary = (
 
   // Force recalculation
   const recalculate = useCallback(() => {
-    const packageIds = selectedPackages.map(p => p.package_id);
-    const addonIds = selectedAddons.map(a => a.addon_id);
+    const packageIds = selectedPackages.map(p => p.product_id);
+    const addonIds = selectedAddons.map(a => a.product_id);
     
     if (packageIds.length > 0 || addonIds.length > 0) {
       setPackageDetails(new Map());
@@ -344,7 +344,7 @@ export const usePricingSummaryStep = (
 
   // Use server pricing if available, otherwise use client-calculated pricing
   const finalBreakdown = useMemo(() => {
-    if (serverPricing) {
+    if (serverPricing && serverPricing.total !== "0.00") {
       return {
         ...breakdown,
         subtotal: parseFloat(serverPricing.subtotal),
@@ -392,5 +392,7 @@ export const usePricingSummaryStep = (
     formatCurrency,
     recalculate,
     getStepData,
+
+    serverPricing
   };
 };

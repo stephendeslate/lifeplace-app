@@ -65,12 +65,12 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
 
   // Check if addon is selected - Fixed to use addon_id
   const isAddonSelected = useCallback((addonId: number) => {
-    return selectedAddons.some(a => a.addon_id === addonId);
+    return selectedAddons.some(a => a.product_id === addonId);
   }, [selectedAddons]);
 
   // Get selected addon details - Fixed to use addon_id
   const getSelectedAddon = useCallback((addonId: number) => {
-    return selectedAddons.find(a => a.addon_id === addonId);
+    return selectedAddons.find(a => a.product_id === addonId);
   }, [selectedAddons]);
 
   // Handle addon toggle - Fixed to use addon_id
@@ -79,7 +79,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
     
     if (isAddonSelected(addon.id)) {
       // Remove addon
-      newSelectedAddons = selectedAddons.filter(a => a.addon_id !== addon.id);
+      newSelectedAddons = selectedAddons.filter(a => a.product_id !== addon.id);
     } else {
       // Check max selection limit
       if (maxSelection > 0 && selectedAddons.length >= maxSelection) {
@@ -88,7 +88,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
       
       // Add addon with tax information - Fixed to use addon_id
       const newAddon: SelectedAddon = {
-        addon_id: addon.id, // Fixed: Changed from 'id' to 'addon_id'
+        product_id: addon.id, // Fixed: Changed from 'id' to 'addon_id'
         name: addon.name,
         price: addon.base_price,
         quantity: 1,
@@ -106,7 +106,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
   // Handle quantity change - Fixed to use addon_id
   const handleQuantityChange = useCallback((addonId: number, delta: number) => {
     const newSelectedAddons = selectedAddons.map(addon => {
-      if (addon.addon_id === addonId) {
+      if (addon.product_id === addonId) {
         const newQuantity = Math.max(1, addon.quantity + delta);
         return { ...addon, quantity: newQuantity };
       }
@@ -321,7 +321,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
           <Divider sx={{ mb: 2 }} />
           
           {selectedAddons.map((addon) => (
-            <Box key={addon.addon_id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Box key={addon.product_id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2">
                 {addon.name} {addon.quantity > 1 && `x${addon.quantity}`}
               </Typography>

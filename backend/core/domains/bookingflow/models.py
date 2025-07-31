@@ -9,6 +9,9 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class BookingFlow(BaseModel):
@@ -759,27 +762,49 @@ class BookingSession(BaseModel):
         """Calculate total price from booking data"""
         total = Decimal('0.00')
         
-        # Look through all step data for packages and addons
-        for step_key, step_data in self.booking_data.items():
-            if isinstance(step_data, dict):
-                # Add package prices
-                if 'selected_packages' in step_data:
-                    for package_data in step_data['selected_packages']:
-                        price = Decimal(str(package_data.get('price', 0)))
-                        quantity = package_data.get('quantity', 1)
-                        total += price * quantity
-                        
-                        # Handle excess hours for packages
-                        if 'excess_hours' in package_data and 'excess_hour_price' in package_data:
-                            excess_cost = Decimal(str(package_data['excess_hour_price'])) * package_data['excess_hours'] * quantity
-                            total += excess_cost
+        # FIXED: Get packages and addons from root level first (single source of truth)
+        selected_packages = self.booking_data.get('selected_packages', [])
+        selected_addons = self.booking_data.get('selected_addons', [])
+        
+        # If not found at root, look in step data (but only take the first occurrence)
+        if not selected_packages:
+            for step_key, step_data in self.booking_data.items():
+                if isinstance(step_data, dict) and 'selected_packages' in step_data:
+                    selected_packages = step_data['selected_packages']
+                    break  # CRITICAL: Only take the first occurrence to avoid duplication
+        
+        if not selected_addons:
+            for step_key, step_data in self.booking_data.items():
+                if isinstance(step_data, dict) and 'selected_addons' in step_data:
+                    selected_addons = step_data['selected_addons']
+                    break  # CRITICAL: Only take the first occurrence to avoid duplication
+        
+        # Calculate packages total
+        for package_data in selected_packages:
+            try:
+                price = Decimal(str(package_data.get('price', 0)))
+                quantity = int(package_data.get('quantity', 1))
+                total += price * quantity
                 
-                # Add addon prices
-                if 'selected_addons' in step_data:
-                    for addon_data in step_data['selected_addons']:
-                        price = Decimal(str(addon_data.get('price', 0)))
-                        quantity = addon_data.get('quantity', 1)
-                        total += price * quantity
+                # Handle excess hours for packages
+                if 'excess_hours' in package_data and 'excess_hour_price' in package_data:
+                    excess_hours = int(package_data['excess_hours'])
+                    excess_hour_price = Decimal(str(package_data['excess_hour_price']))
+                    excess_cost = excess_hour_price * excess_hours * quantity
+                    total += excess_cost
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error calculating package price: {e}")
+                continue
+        
+        # Calculate addons total
+        for addon_data in selected_addons:
+            try:
+                price = Decimal(str(addon_data.get('price', 0)))
+                quantity = int(addon_data.get('quantity', 1))
+                total += price * quantity
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error calculating addon price: {e}")
+                continue
         
         return total
 

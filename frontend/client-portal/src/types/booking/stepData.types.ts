@@ -21,14 +21,15 @@ export interface QuestionnaireStepData {
   uploaded_files?: Record<string, File[]>; // field_id -> uploaded files
 }
 
-// Fixed: Changed 'id' to 'package_id' to match backend expectations
+// Standardized to use product_id while keeping all display fields
 export interface SelectedPackage {
-  package_id: number; // Changed from 'id'
+  product_id: number; // Standardized from 'package_id'
   name: string;
   price: string; // base price as string
   quantity: number;
   included_hours?: number;
   excess_hour_price?: string;
+  duration_hours?: number; // Added for excess hour calculations
   // Enhanced fields for proper tax calculation
   tax_rate?: string; // individual tax rate as percentage string (e.g., "0.00", "12.00")
   price_with_tax?: string; // pre-calculated price including tax
@@ -38,9 +39,9 @@ export interface PackageSelectionStepData {
   selected_packages?: SelectedPackage[];
 }
 
-// Fixed: Changed 'id' to 'addon_id' to match backend expectations
+// Standardized to use product_id while keeping all display fields
 export interface SelectedAddon {
-  addon_id: number; // Changed from 'id'
+  product_id: number; // Standardized from 'addon_id'
   name: string;
   price: string; // base price as string
   quantity: number;
@@ -116,6 +117,7 @@ export interface PricingCalculation {
   discount: string;
   total: string;
   discount_details?: {
+    name: string;
     code: string;
     type: string;
     value: string;
@@ -151,6 +153,42 @@ export interface StepData {
   review_booking?: ReviewStepData;
   confirmation?: ConfirmationStepData;
   [key: string]: any;
+}
+
+// Product option from backend
+export interface ProductOption {
+  id: number;
+  name: string;
+  description: string;
+  product_type: 'PACKAGE' | 'PRODUCT';
+  base_price: string;
+  tax_rate: number | null;
+  category: number;
+  category_name?: string;
+  is_active: boolean;
+  is_featured: boolean;
+  
+  // Package-specific fields
+  has_excess_hours?: boolean;
+  included_hours?: number;
+  excess_hour_price?: string;
+  pricing_model?: 'FLAT' | 'HOURLY';
+  
+  // Booking constraints
+  advance_booking_days?: number;
+  maximum_booking_days?: number;
+  minimum_quantity?: number;
+  maximum_quantity?: number;
+  
+  // Display
+  image_url?: string;
+  sort_order: number;
+  
+  // Metadata
+  sku?: string;
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
 }
 
 // Discount type from products domain

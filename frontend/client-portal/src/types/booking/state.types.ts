@@ -1,9 +1,11 @@
 // frontend/client-portal/src/types/booking/state.types.ts
 
-import type { EventType, BookingFlow, BookingSession } from './core.types';
-import type { StepData } from './stepData.types';
+import type { EventType, BookingFlow } from './core.types';
+import type { BookingSession } from './bookingData.types';
+import type { SelectedAddon, SelectedPackage, StepData } from './stepData.types';
 import type { PaymentGateway } from './payment.types';
 import type { BookingCompletionResult, StepValidationResult } from './api.types';
+import type { BookingData } from './bookingData.types';
 
 // UI State types
 export interface BookingProgress {
@@ -51,6 +53,10 @@ export interface BookingState {
 
 // Action types
 export interface BookingActions {
+
+  getSelectedProducts: () => { packages: SelectedPackage[]; addons: SelectedAddon[] };
+  getBookingData: () => BookingData;
+
   // Flow management
   fetchAvailableFlows: () => Promise<void>;
   selectEventType: (eventType: EventType) => Promise<void>;

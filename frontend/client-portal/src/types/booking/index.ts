@@ -9,7 +9,6 @@ export type {
   BookingFlowStep,
   StepType,
   StepConfiguration,
-  BookingSession,
 } from './core.types';
 
 // API types
@@ -80,3 +79,10 @@ export type {
   BookingState,
   BookingActions,
 } from './state.types';
+
+// Booking data
+export type {
+  BookingData,
+  SessionUpdatePayload,
+  BookingSession,
+} from './bookingData.types';

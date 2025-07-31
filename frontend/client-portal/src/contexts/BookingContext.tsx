@@ -219,6 +219,23 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Actions implementation
   const actions: BookingActions = {
+    getSelectedProducts: useCallback(() => {
+      if (!state.currentSession?.booking_data) {
+        return { packages: [], addons: [] };
+      }
+
+      const bookingData = state.currentSession.booking_data;
+      
+      return {
+        packages: bookingData.selected_packages || [],
+        addons: bookingData.selected_addons || []
+      };
+    }, [state.currentSession]),
+
+    getBookingData: useCallback(() => {
+      return state.currentSession?.booking_data || {};
+    }, [state.currentSession]),
+    
     fetchAvailableFlows: useCallback(async () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERRORS' });
@@ -277,6 +294,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           is_abandoned: false,
           total_price: '0.00',
           updated_at: new Date().toISOString(),
+          booking_data: {},
+          created_at: new Date().toISOString(),
         };
         
         dispatch({ type: 'SET_CURRENT_SESSION', payload: sessionData });
@@ -307,13 +326,37 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           throw new Error('No current step found');
         }
 
-        const formattedData = BookingCoreApi.formatStepData(stepType, data);
+        // Format the data based on step type
+        let formattedData = data;
 
+        // Create the booking_data structure expected by backend
+        const bookingDataUpdate = {
+          ...state.currentSession.booking_data || {},
+          ...formattedData
+        };
+        
+        // Special handling for package and addon selection to ensure proper structure
+        if (stepType === 'package_selection' && data.selected_packages) {
+          formattedData = {
+            selected_packages: data.selected_packages
+          };
+          // Also store at root level
+          bookingDataUpdate.selected_packages = data.selected_packages;
+        } else if (stepType === 'addon_selection' && data.selected_addons) {
+          formattedData = {
+            selected_addons: data.selected_addons
+          };
+          // Also store at root level
+          bookingDataUpdate.selected_addons = data.selected_addons;
+        }
+
+        // The core API now handles the transformation to backend format internally
+        // We just pass the booking data and it will be wrapped in step_data
         const response = await BookingCoreApi.updateSessionData(
           state.currentSession.session_id,
           currentStep.id,
-          formattedData,
-          false
+          bookingDataUpdate,  // Pass booking data directly
+          false  // mark_completed
         );
 
         dispatch({ 
@@ -323,6 +366,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         const updatedSession = {
           ...state.currentSession,
+          booking_data: bookingDataUpdate,
           current_step: response.current_step,
           progress_percentage: response.progress_percentage,
           total_price: response.total_price,
@@ -341,10 +385,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           dispatch({ type: 'CLEAR_ERRORS' });
         }
 
-        BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, {
-          ...updatedSession,
-          stepData: { ...state.stepData, [stepType]: formattedData },
-        });
+        BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, updatedSession);
 
       } catch (error) {
         const errorMessage = BookingCoreApi.handleApiError(error);
@@ -412,18 +453,27 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const currentStep = state.currentSession.current_step;
         if (!currentStep) return;
 
-        const currentStepData = state.stepData[currentStep.step_type] || {};
-        const formattedData = BookingCoreApi.formatStepData(currentStep.step_type, currentStepData);
+        // Get current step data from the session's booking_data
+        const bookingData = state.currentSession.booking_data || {};
         
+        // Prepare the complete booking_data to send
+        const updatedBookingData = {
+          ...bookingData,
+          // Add any step-specific data that might be in state.stepData but not yet in booking_data
+          ...state.stepData[currentStep.step_type]
+        };
+        
+        // The core API now handles the transformation to backend format internally
         const response = await BookingCoreApi.updateSessionData(
           state.currentSession.session_id,
           currentStep.id,
-          formattedData,
-          true
+          updatedBookingData,  // Pass booking data directly
+          true // mark_completed = true to proceed to next step
         );
 
         const updatedSession: BookingSession = {
           ...state.currentSession,
+          booking_data: updatedBookingData,
           current_step: response.current_step,
           progress_percentage: response.progress_percentage,
           total_price: response.total_price,
@@ -436,26 +486,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           dispatch({ type: 'SET_TOTAL_PRICE', payload: response.total_price });
         }
 
-        if (!response.current_step) {
-          const isLastStep = currentStep.step_type === 'confirmation';
-          if (isLastStep) {
-            navigate('/booking/complete');
-          } else {
-            const nextStepIndex = state.currentFlow.enabled_steps.findIndex(
-              step => step.id === currentStep.id
-            ) + 1;
-            
-            if (nextStepIndex < state.currentFlow.enabled_steps.length) {
-              const nextStep = state.currentFlow.enabled_steps[nextStepIndex];
-              dispatch({
-                type: 'SET_CURRENT_SESSION',
-                payload: { ...updatedSession, current_step: nextStep }
-              });
-            } else {
-              navigate('/booking/complete');
-            }
-          }
-        }
+        BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, updatedSession);
 
       } catch (error) {
         const errorMessage = BookingCoreApi.handleApiError(error);
@@ -466,7 +497,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } finally {
         dispatch({ type: 'SET_SUBMITTING', payload: false });
       }
-    }, [state.currentFlow, state.currentSession, state.stepData, state.totalPrice, navigate]),
+    }, [state.currentFlow, state.currentSession, state.stepData, state.totalPrice]),
 
     previousStep: useCallback(() => {
       if (!state.currentFlow) return;

@@ -78,6 +78,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     pricingError,
     discountError,
     getStepData,
+    serverPricing
   } = usePricingSummaryStep(
     selectedPackages,
     selectedAddons,
@@ -121,6 +122,13 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       isUpdatingRef.current = false;
     }
   }, [getStepData, stepData, onDataChange, breakdown.total, state.totalPrice, actions]);
+
+  useEffect(() => {
+    console.log('Selected packages:', selectedPackages);
+    console.log('Breakdown total:', breakdown.total);
+    console.log('Formatted breakdown total:', formattedBreakdown.total);
+    console.log('Server pricing:', serverPricing);
+  }, [selectedPackages, breakdown, formattedBreakdown, serverPricing]);
 
   // Update pricing data only when breakdown actually changes
   useEffect(() => {

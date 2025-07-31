@@ -72,19 +72,24 @@ export class BookingCoreApi {
    * Update session data for a step
    */
   static async updateSessionData(
-    sessionId: string, 
-    stepId: number, 
-    stepData: Record<string, any>,
-    markCompleted: boolean = false
+    sessionId: string,
+    stepId: number,
+    data: any,
+    proceedToNext: boolean = false
   ): Promise<BookingSessionUpdateResponse> {
-    const data: BookingSessionUpdate & { session_id: string } = {
-      session_id: sessionId,
+    // Ensure we're sending the data in the correct format
+    const payload = {
       step_id: stepId,
-      step_data: stepData,
-      mark_completed: markCompleted,
+      step_data: data.booking_data || data, // Use booking_data if provided, otherwise use data directly
+      mark_completed: proceedToNext,
     };
 
-    const response = await api.patch<BookingSessionUpdateResponse>(`/bookingflow/public/flows/session/${sessionId}/update/`, data);
+    // FIXED: Changed from api.put to api.patch
+    const response = await api.patch<BookingSessionUpdateResponse>(
+      `/bookingflow/public/flows/session/${sessionId}/update/`,
+      payload
+    );
+    
     return response.data;
   }
 

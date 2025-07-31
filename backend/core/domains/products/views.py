@@ -6,6 +6,7 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny
 
 from .models import Discount, ProductOption, ProductCategory
 from .serializers import (
@@ -131,7 +132,7 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
     ViewSet for Product options (products and packages)
     """
     serializer_class = ProductOptionSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AllowAny]  # Allow any user to view product options
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description', 'sku']
     pagination_class = LargePagination  # Use larger pagination for products
