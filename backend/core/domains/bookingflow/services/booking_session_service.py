@@ -402,7 +402,7 @@ class BookingSessionService:
                 if 'selected_addons' in step_data:
                     for addon_data in step_data['selected_addons']:
                         try:
-                            product_option = ProductOption.objects.get(id=addon_data['id'])
+                            product_option = ProductOption.objects.get(id=addon_data['product_id'])
                             quantity = addon_data.get('quantity', 1)
                             price = Decimal(str(addon_data.get('price', product_option.base_price)))
                             

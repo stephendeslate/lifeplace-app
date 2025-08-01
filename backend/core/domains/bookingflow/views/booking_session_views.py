@@ -489,7 +489,7 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                         
                     product = ProductOption.objects.get(
                         id=product_id,
-                        product_type='PACKAGE',
+                        type='PACKAGE',
                         is_active=True
                     )
                     
@@ -532,7 +532,7 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                         
                     product = ProductOption.objects.get(
                         id=product_id,
-                        product_type='ADDON',
+                        type='PRODUCT',
                         is_active=True
                     )
                     
