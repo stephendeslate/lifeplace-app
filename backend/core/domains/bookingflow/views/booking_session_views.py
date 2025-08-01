@@ -665,6 +665,28 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+    @action(detail=False, methods=['get'], url_path='questionnaires/(?P<questionnaire_id>[^/.]+)')
+    def get_questionnaire_detail(self, request, questionnaire_id=None):
+        """Get questionnaire details for booking flow (Public endpoint)"""
+        from core.domains.questionnaires.models import Questionnaire
+        from core.domains.questionnaires.serializers import QuestionnaireDetailSerializer
+        
+        try:
+            questionnaire = Questionnaire.objects.prefetch_related(
+                'fields'
+            ).get(id=questionnaire_id, is_active=True)
+            
+            serializer = QuestionnaireDetailSerializer(
+                questionnaire, 
+                context=self.get_serializer_context()
+            )
+            return Response(serializer.data)
+        except Questionnaire.DoesNotExist:
+            return Response(
+                {"detail": "Questionnaire not found or not active"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
     @action(detail=False, methods=['patch'], url_path='session/(?P<session_uuid>[^/.]+)/go-to-step')
     def go_to_step(self, request, session_uuid=None):
         """Navigate to a specific step without updating data"""

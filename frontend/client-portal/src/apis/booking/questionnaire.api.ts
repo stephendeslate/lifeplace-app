@@ -39,8 +39,22 @@ export class QuestionnaireApi {
    * Get detailed questionnaire with fields
    */
   static async getQuestionnaireDetail(questionnaireId: number): Promise<QuestionnaireDetailResponse> {
-    const response = await api.get<QuestionnaireDetailResponse>(`/questionnaires/questionnaires/${questionnaireId}/`);
-    return response.data;
+    // Check if we're in a booking flow context
+    const isBookingContext = window.location.pathname.includes('/booking');
+    
+    if (isBookingContext) {
+      // Use public endpoint for booking flow
+      const response = await api.get<QuestionnaireDetailResponse>(
+        `/bookingflow/public/flows/questionnaires/${questionnaireId}/`
+      );
+      return response.data;
+    } else {
+      // Use authenticated endpoint for admin/other contexts
+      const response = await api.get<QuestionnaireDetailResponse>(
+        `/questionnaires/questionnaires/${questionnaireId}/`
+      );
+      return response.data;
+    }
   }
 
   /**

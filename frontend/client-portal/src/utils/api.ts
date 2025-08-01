@@ -41,6 +41,7 @@ const isPublicEndpoint = (url: string): boolean => {
     '/users/logout/',
     '/users/password-reset/',
     // Add other public paths as needed
+    '/bookingflow/public/flows/questionnaires/',
   ];
   
   return publicPaths.some(path => url.includes(path));

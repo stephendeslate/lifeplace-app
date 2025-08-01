@@ -503,28 +503,44 @@ class BookingSessionService:
                     errors['time'] = ["Time selection is required"]
                     
             elif step.step_type == 'questionnaire':
-                # Validate questionnaire responses
-                questionnaire_items = config.questionnaire_items.all()
-                for item in questionnaire_items:
-                    questionnaire = item.questionnaire
-                    response_key = f'questionnaire_{questionnaire.id}'
-                    if questionnaire.is_required and not step_data.get(response_key):
-                        errors[response_key] = [f"{questionnaire.name} is required"]
-                        
-            elif step.step_type == 'package_selection':
-                selected = step_data.get('selected_packages', [])
-                if config.min_selection and len(selected) < config.min_selection:
-                    errors['selected_packages'] = [f"Select at least {config.min_selection} package(s)"]
-                if config.max_selection and len(selected) > config.max_selection:
-                    errors['selected_packages'] = [f"Select at most {config.max_selection} package(s)"]
+                # Questionnaire validation is handled at the field level
+                # The frontend sends data as field_<id>: value
+                # We don't need to validate at the questionnaire level
                 
-                # FIXED: Validate selected packages are in available packages (if configured)
-                if config.available_packages.exists():  # Check if any packages are configured
-                    available_package_ids = list(config.available_packages.all().values_list('id', flat=True))
-                    for package in selected:
-                        if 'product_id' in package and package['product_id'] not in available_package_ids:
-                            errors['selected_packages'] = errors.get('selected_packages', [])
-                            errors['selected_packages'].append(f"Package {package['product_id']} is not available for selection")
+                # Optional: Add field-level validation if needed
+                config = step.questionnaire_config
+                if config and hasattr(config, 'questionnaire_items'):
+                    questionnaire_items = config.questionnaire_items.all()
+                    
+                    # Collect all fields from all questionnaires
+                    all_fields = []
+                    for item in questionnaire_items:
+                        questionnaire = item.questionnaire
+                        all_fields.extend(questionnaire.fields.all())
+                    
+                    # Validate individual fields
+                    for field in all_fields:
+                        field_key = f'field_{field.id}'
+                        field_value = step_data.get(field_key)
+                        
+                        # Only validate if field is required and empty
+                        if field.required and not field_value:
+                            errors[field_key] = [f"{field.name} is required"]
+                                    
+                        elif step.step_type == 'package_selection':
+                            selected = step_data.get('selected_packages', [])
+                            if config.min_selection and len(selected) < config.min_selection:
+                                errors['selected_packages'] = [f"Select at least {config.min_selection} package(s)"]
+                            if config.max_selection and len(selected) > config.max_selection:
+                                errors['selected_packages'] = [f"Select at most {config.max_selection} package(s)"]
+                            
+                            # FIXED: Validate selected packages are in available packages (if configured)
+                            if config.available_packages.exists():  # Check if any packages are configured
+                                available_package_ids = list(config.available_packages.all().values_list('id', flat=True))
+                                for package in selected:
+                                    if 'product_id' in package and package['product_id'] not in available_package_ids:
+                                        errors['selected_packages'] = errors.get('selected_packages', [])
+                                        errors['selected_packages'].append(f"Package {package['product_id']} is not available for selection")
                             
             elif step.step_type == 'addon_selection':
                 selected = step_data.get('selected_addons', [])
