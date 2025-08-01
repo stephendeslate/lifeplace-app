@@ -18,6 +18,8 @@ import {
   CircularProgress,
   IconButton,
   Chip,
+  Skeleton,
+  Fade,
 } from '@mui/material';
 import { 
   Receipt, 
@@ -52,6 +54,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 }) => {
   const { state, actions } = useBooking();
   const [discountCodeInput, setDiscountCodeInput] = useState<string>('');
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
   
   // Use refs to track previous values and prevent unnecessary updates
   const previousTotalRef = useRef<string>('0.00');
@@ -85,6 +88,13 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     eventDuration,
     stepData.applied_discount_code
   );
+
+  // Track when we've loaded initial data
+  useEffect(() => {
+    if (!calculatingPricing && hasItems && !hasInitiallyLoaded) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [calculatingPricing, hasItems, hasInitiallyLoaded]);
 
   // Update parent component with calculated pricing data
   const updatePricingData = useCallback(async () => {
@@ -162,8 +172,8 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     setDiscountCode(event.target.value);
   };
 
-  // Show loading state while calculating
-  if (calculatingPricing) {
+  // Show loading state only on initial load
+  if (calculatingPricing && !hasInitiallyLoaded && !hasItems) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
         <CircularProgress size={48} />
@@ -174,8 +184,8 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     );
   }
 
-  // Show error if pricing calculation failed
-  if (pricingError) {
+  // Show error if pricing calculation failed and no items
+  if (pricingError && !hasItems) {
     return (
       <Alert severity="error" sx={{ mb: 3 }}>
         <Typography variant="h6">Pricing Calculation Error</Typography>
@@ -188,7 +198,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   }
 
   // Show message if no items selected
-  if (!hasItems) {
+  if (!hasItems && !calculatingPricing) {
     return (
       <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="h6">No Items Selected</Typography>
@@ -199,16 +209,34 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     );
   }
 
+  // Determine if we're updating prices (after initial load)
+  const isUpdatingPrices = calculatingPricing && hasInitiallyLoaded;
+
   return (
     <Box>
       <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Receipt />
         {config?.header_text || 'Pricing Summary'}
+        <Fade in={isUpdatingPrices}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <CircularProgress size={16} />
+            <Typography variant="caption" color="text.secondary">
+              Updating prices...
+            </Typography>
+          </Box>
+        </Fade>
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Review your selected items and total cost. You can apply a discount code if you have one.
       </Typography>
+
+      {/* Show pricing error as warning if we have items */}
+      {pricingError && hasItems && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {pricingError}
+        </Alert>
+      )}
 
       {/* Selected Packages */}
       {config?.show_package_breakdown !== false && formattedBreakdown.packages.length > 0 && (
@@ -240,13 +268,25 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                       )}
                     </TableCell>
                     <TableCell align="center">{pkg.quantity}</TableCell>
-                    <TableCell align="right">₱{pkg.unitPrice.toFixed(2)}</TableCell>
                     <TableCell align="right">
-                      ₱{pkg.total.toFixed(2)}
-                      {pkg.excessCost && pkg.excessCost > 0 && (
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          (includes ₱{pkg.excessCost.toFixed(2)} excess)
-                        </Typography>
+                      {isUpdatingPrices ? (
+                        <Skeleton width={60} animation="wave" />
+                      ) : (
+                        `₱${pkg.unitPrice.toFixed(2)}`
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
+                      {isUpdatingPrices ? (
+                        <Skeleton width={80} animation="wave" />
+                      ) : (
+                        <>
+                          ₱{pkg.total.toFixed(2)}
+                          {pkg.excessCost && pkg.excessCost > 0 && (
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              (includes ₱{pkg.excessCost.toFixed(2)} excess)
+                            </Typography>
+                          )}
+                        </>
                       )}
                     </TableCell>
                   </TableRow>
@@ -278,8 +318,20 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                   <TableRow key={addon.id}>
                     <TableCell>{addon.name}</TableCell>
                     <TableCell align="center">{addon.quantity}</TableCell>
-                    <TableCell align="right">₱{addon.unitPrice.toFixed(2)}</TableCell>
-                    <TableCell align="right">₱{addon.total.toFixed(2)}</TableCell>
+                    <TableCell align="right">
+                      {isUpdatingPrices ? (
+                        <Skeleton width={60} animation="wave" />
+                      ) : (
+                        `₱${addon.unitPrice.toFixed(2)}`
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
+                      {isUpdatingPrices ? (
+                        <Skeleton width={80} animation="wave" />
+                      ) : (
+                        `₱${addon.total.toFixed(2)}`
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -350,21 +402,39 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           {config?.show_subtotal !== false && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography>Subtotal ({totalItemCount} items)</Typography>
-              <Typography>{formattedBreakdown.subtotal}</Typography>
+              <Typography>
+                {isUpdatingPrices ? (
+                  <Skeleton width={80} animation="wave" />
+                ) : (
+                  formattedBreakdown.subtotal
+                )}
+              </Typography>
             </Box>
           )}
           
           {config?.show_tax_breakdown !== false && breakdown.tax > 0 && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography>Tax</Typography>
-              <Typography>{formattedBreakdown.tax}</Typography>
+              <Typography>
+                {isUpdatingPrices ? (
+                  <Skeleton width={80} animation="wave" />
+                ) : (
+                  formattedBreakdown.tax
+                )}
+              </Typography>
             </Box>
           )}
           
           {breakdown.discount > 0 && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', color: 'success.main' }}>
               <Typography>Discount</Typography>
-              <Typography>-{formattedBreakdown.discount}</Typography>
+              <Typography>
+                {isUpdatingPrices ? (
+                  <Skeleton width={80} animation="wave" />
+                ) : (
+                  `-${formattedBreakdown.discount}`
+                )}
+              </Typography>
             </Box>
           )}
           
@@ -373,7 +443,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Typography variant="h6">Total</Typography>
             <Typography variant="h6" color="primary">
-              {formattedBreakdown.total}
+              {isUpdatingPrices ? (
+                <Skeleton width={100} animation="wave" />
+              ) : (
+                formattedBreakdown.total
+              )}
             </Typography>
           </Box>
         </Box>

@@ -127,15 +127,6 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
               </Typography>
             </Box>
           )}
-
-          {allStepData.date_time?.venue_preference && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">Venue Preferences</Typography>
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                {allStepData.date_time.venue_preference}
-              </Typography>
-            </Box>
-          )}
         </Paper>
       </Box>
 

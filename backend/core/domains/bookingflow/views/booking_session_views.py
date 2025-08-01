@@ -338,7 +338,7 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    @action(detail=False, methods=['post'], url_path='session/(?P<session_uuid>[^/.]+)/complete')
+    @action(detail=False, methods=['post'], url_path='session/(?P<session_uuid>[^/]+)/complete')
     def complete_booking_public(self, request, session_uuid=None):
         """Complete booking (Public endpoint - requires contact info)"""
         try:
@@ -357,26 +357,72 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Create user account if requested
+            # Always create a user for guest bookings if session doesn't have a client
             user = None
-            if contact_data.get('create_account') and not request.user.is_authenticated:
+            user_created = False
+            
+            if not request.user.is_authenticated and not session.client:
                 from core.domains.users.services import UserService
                 try:
-                    user_data = {
-                        'email': contact_data['email'],
-                        'first_name': contact_data.get('full_name', '').split(' ')[0] if contact_data.get('full_name') else '',
-                        'last_name': ' '.join(contact_data.get('full_name', '').split(' ')[1:]) if contact_data.get('full_name') else '',
-                        'password': contact_data.get('password'),
-                        'phone': contact_data.get('phone', ''),
-                    }
-                    user = UserService.create_user(user_data)
+                    # Check if user already exists with this email
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
                     
-                    # Update session with new user
-                    session.client = user
-                    session.save()
+                    existing_user = User.objects.filter(
+                        email=contact_data['email'], 
+                        role='CLIENT'
+                    ).first()
+                    
+                    if existing_user:
+                        # Use existing client user
+                        user = existing_user
+                        session.client = user
+                        session.save()
+                    else:
+                        # Create new user record
+                        user_data = {
+                            'email': contact_data['email'],
+                            'first_name': contact_data.get('full_name', '').split(' ')[0] if contact_data.get('full_name') else '',
+                            'last_name': ' '.join(contact_data.get('full_name', '').split(' ')[1:]) if contact_data.get('full_name') else '',
+                            'role': 'CLIENT',
+                            'profile': {
+                                'phone': contact_data.get('phone', ''),
+                                'company': contact_data.get('company', ''),
+                            }
+                        }
+                        
+                        # Determine if this should be an active account or guest account
+                        if contact_data.get('create_account'):
+                            # User wants an active account with password
+                            user_data['password'] = contact_data.get('password')
+                            user_data['is_active'] = True
+                            user_created = True
+                        else:
+                            # Guest booking - create inactive user without usable password
+                            user_data['is_active'] = False
+                            # Don't set password - UserService will set unusable password
+                        
+                        user = UserService.create_user(user_data)
+                        
+                        # Update session with new user
+                        session.client = user
+                        session.save()
+                        user_created = contact_data.get('create_account', False)
+                        
                 except Exception as e:
-                    # Log error but continue with guest booking
-                    print(f"Failed to create user account: {e}")
+                    # Log error and return specific error message
+                    logger.error(f"Failed to create user account for guest booking: {e}")
+                    return Response(
+                        {"detail": f"Failed to create user account: {str(e)}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Ensure session has a client before completing booking
+            if not session.client:
+                return Response(
+                    {"detail": "Unable to complete booking: no client associated with session"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             
             event = BookingSessionService.complete_booking(session_uuid)
             
@@ -386,11 +432,12 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                     "detail": "Booking completed successfully",
                     "event": EventSerializer(event, context=self.get_serializer_context()).data,
                     "session_id": session_uuid,
-                    "user_created": user is not None,
+                    "user_created": user_created,
                 },
                 status=status.HTTP_200_OK
             )
         except Exception as e:
+            logger.error(f"Error completing booking: {e}")
             return Response(
                 {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST

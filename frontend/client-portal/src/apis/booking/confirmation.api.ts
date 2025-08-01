@@ -60,7 +60,6 @@ export class ConfirmationApi {
       date?: string;
       time?: string;
       duration?: number;
-      venue?: string;
     };
     contactInfo: {
       name?: string;
@@ -100,10 +99,6 @@ export class ConfirmationApi {
         if (stepData.duration) {
           eventDetails.duration = stepData.duration;
         }
-        if (stepData.venue_preference) {
-          eventDetails.venue = stepData.venue_preference;
-        }
-
         // Extract contact info
         if (stepData.full_name) {
           contactInfo.name = stepData.full_name;

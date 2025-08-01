@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/ConfirmationStep.tsx
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -11,6 +11,12 @@ import {
   Card,
   CardContent,
   Chip,
+  Divider,
+  Stack,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import { 
   CheckCircle, 
@@ -22,6 +28,11 @@ import {
   Group,
   Receipt,
   AttachMoney,
+  ArrowForward,
+  Info,
+  NavigateNext,
+  Home,
+  Dashboard,
 } from '@mui/icons-material';
 import { useBooking } from '../../../contexts/BookingContext';
 import { useConfirmation } from '../../../hooks/booking/useConfirmation';
@@ -60,6 +71,10 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   const { state } = useBooking();
   const currentSession = session || state.currentSession;
 
+  // Use refs to track if operations have been done
+  const completionProcessedRef = useRef(false);
+  const emailSentRef = useRef(false);
+
   // Use stepData as single source of truth
   const confirmationData = useMemo(() => ({
     booking_reference: stepData.booking_reference || '',
@@ -83,8 +98,8 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     completing,
     sendingEmail,
     error,
-    completionResult, // Get the actual completion result
-    bookingReference, // Get the booking reference from hook
+    completionResult,
+    bookingReference,
   } = useConfirmation(
     currentSession?.session_id,
     config
@@ -106,7 +121,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   const showNextSteps = config?.show_next_steps !== false;
   const shouldSendConfirmationEmail = config?.send_confirmation_email !== false;
 
-  // Handle completion - use callback to avoid unnecessary re-renders
+  // Handle completion with user confirmation
   const handleCompleteBooking = useCallback(async () => {
     if (isCompleted || isProcessing) return;
 
@@ -120,8 +135,6 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       const success = await completeBooking();
       
       if (success) {
-        // The hook will set completionResult, so we wait for it to update
-        // and then update our step data in the useEffect below
         onDataChange({
           ...confirmationData,
           completion_status: 'completed',
@@ -162,310 +175,299 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     }
   }, [confirmationData, sendConfirmationEmail, onDataChange, shouldSendConfirmationEmail]);
 
-  // Auto-complete booking when component mounts/session changes
+  // Update step data when completion result is available (STABLE VERSION)
   React.useEffect(() => {
-    if (currentSession && !isCompleted && !isProcessing) {
-      handleCompleteBooking();
-    }
-  }, [currentSession?.session_id, isCompleted, isProcessing, handleCompleteBooking]);
-
-  // Auto-send email when booking is completed
-  React.useEffect(() => {
-    if (isCompleted && confirmationData.booking_reference && !confirmationData.confirmation_email_sent) {
-      handleSendEmail();
-    }
-  }, [isCompleted, confirmationData.booking_reference, confirmationData.confirmation_email_sent, handleSendEmail]);
-
-  // Update step data when completion result is available
-  React.useEffect(() => {
-    if (completionResult && confirmationData.completion_status === 'completed') {
+    if (completionResult && 
+        stepData.completion_status === 'completed' && 
+        !completionProcessedRef.current) {
+      
+      completionProcessedRef.current = true;
+      
       onDataChange({
-        ...confirmationData,
-        booking_reference: completionResult.session_id, // Use session_id as reference
+        ...stepData,
+        booking_reference: completionResult.session_id || bookingReference,
         booking_completion_result: completionResult,
       });
     }
-  }, [completionResult, confirmationData, onDataChange]);
+  }, [completionResult?.session_id, stepData.completion_status]); // Only depend on stable values
 
-  // Show loading state while processing
-  if (isProcessing) {
+  // Auto-send email when booking is completed (STABLE VERSION)
+  React.useEffect(() => {
+    if (isCompleted && 
+        stepData.booking_reference && 
+        !stepData.confirmation_email_sent && 
+        !emailSentRef.current) {
+      
+      emailSentRef.current = true;
+      handleSendEmail();
+    }
+  }, [isCompleted, stepData.booking_reference, stepData.confirmation_email_sent]); // Remove unstable handleSendEmail
+
+  // Reset refs when stepData changes significantly
+  React.useEffect(() => {
+    if (stepData.completion_status === 'pending') {
+      completionProcessedRef.current = false;
+      emailSentRef.current = false;
+    }
+  }, [stepData.completion_status]);
+
+  // Render booking summary card
+  const renderBookingSummary = () => {
+    if (!showBookingSummary || !sessionDetails) return null;
+
     return (
-      <Box sx={{ textAlign: 'center', py: 8 }}>
-        <CircularProgress size={60} sx={{ mb: 3 }} />
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          Completing Your Booking...
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Please wait while we finalize your event booking.
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Show error state
-  if (confirmationData.completion_status === 'failed' || error) {
-    return (
-      <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error || 'Failed to complete your booking. Please try again.'}
-        </Alert>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Booking Completion Failed
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-          <Button variant="outlined" onClick={handleCompleteBooking}>
-            Try Again
-          </Button>
-          <Button variant="text" onClick={navigateToHome}>
-            Return Home
-          </Button>
-        </Box>
-      </Box>
-    );
-  }
-
-  // Show success confirmation
-  return (
-    <Box sx={{ textAlign: 'center' }}>
-      {/* Success Icon */}
-      <CheckCircle sx={{ fontSize: 80, color: 'success.main', mb: 3 }} />
-
-      {/* Title - Use config title with fallback */}
-      <Typography variant="h3" sx={{ mb: 2, fontWeight: 700, color: 'success.main' }}>
-        {config?.title || 'Booking Confirmed!'}
-      </Typography>
-
-      {/* Main Message - Use config message with fallback */}
-      <Typography variant="h6" sx={{ mb: 4, color: 'text.secondary', maxWidth: 600, mx: 'auto' }}>
-        {config?.message || 'Thank you for your booking. We\'ll be in touch soon with more details!'}
-      </Typography>
-
-      {/* Booking Reference */}
-      <Paper elevation={0} sx={{ p: 4, mb: 4, border: 2, borderColor: 'success.main', backgroundColor: 'success.light' }}>
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-          Booking Reference
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main', mb: 2 }}>
-          {confirmationData.booking_reference || bookingReference || 'Generating...'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Please save this reference number for your records
-        </Typography>
-      </Paper>
-
-      {/* Booking Summary - Only show if config allows */}
-      {showBookingSummary && eventSummary && (
-        <Paper elevation={0} sx={{ p: 3, mb: 4, border: 1, borderColor: 'divider', textAlign: 'left' }}>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
             Booking Summary
           </Typography>
-
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-            {/* Event Details */}
-            <Box sx={{ flex: 1 }}>
-              <Card variant="outlined" sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CalendarToday color="primary" />
-                    Event Details
-                  </Typography>
-                  
-                  {eventSummary.date && (
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">Date:</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{eventSummary.date}</Typography>
-                    </Box>
-                  )}
-                  
-                  {eventSummary.time && (
-                    <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccessTime fontSize="small" color="action" />
-                      <Typography variant="body2">{eventSummary.time}</Typography>
-                    </Box>
-                  )}
-                  
-                  {eventSummary.duration && (
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">Duration:</Typography>
-                      <Typography variant="body2">{eventSummary.duration}</Typography>
-                    </Box>
-                  )}
-                  
-                  {eventSummary.venue && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LocationOn fontSize="small" color="action" />
-                      <Typography variant="body2">{eventSummary.venue}</Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Box>
-
-            {/* Contact Information */}
-            <Box sx={{ flex: 1 }}>
-              <Card variant="outlined" sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Group color="primary" />
-                    Contact Information
-                  </Typography>
-                  
-                  {eventSummary.contact.name && (
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">Name:</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{eventSummary.contact.name}</Typography>
-                    </Box>
-                  )}
-                  
-                  {eventSummary.contact.email && (
-                    <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Email fontSize="small" color="action" />
-                      <Typography variant="body2">{eventSummary.contact.email}</Typography>
-                    </Box>
-                  )}
-                  
-                  {eventSummary.contact.phone && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Phone fontSize="small" color="action" />
-                      <Typography variant="body2">{eventSummary.contact.phone}</Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Box>
-          </Box>
-
-          {/* Selected Items */}
-          {eventSummary.items?.length > 0 && (
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Receipt color="primary" />
-                Selected Items
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {eventSummary.items.map((item, index) => (
-                  <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {item.name}
-                      </Typography>
-                      <Chip label={item.type} size="small" variant="outlined" sx={{ mt: 0.5 }} />
-                    </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="body2">Qty: {item.quantity}</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.price}</Typography>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-              
-              {/* Total Price */}
-              <Box sx={{ mt: 2, p: 2, backgroundColor: 'primary.light', borderRadius: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AttachMoney color="primary" />
-                    Total Amount:
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                    {eventSummary.totalPrice}
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-          )}
-        </Paper>
-      )}
-
-      {/* Next Steps - Only show if config allows */}
-      {showNextSteps && (
-        <Paper elevation={0} sx={{ p: 3, mb: 4, border: 1, borderColor: 'divider', textAlign: 'left' }}>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
-            What Happens Next?
-          </Typography>
-
-          {/* Use config next_steps_content if available, otherwise use hook data */}
-          {config?.next_steps_content ? (
-            <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-              {config.next_steps_content}
-            </Typography>
-          ) : (
-            nextSteps.map((step, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 3 }}>
-                {step.icon === 'email' && <Email sx={{ color: 'primary.main', mt: 0.5 }} />}
-                {step.icon === 'phone' && <Phone sx={{ color: 'primary.main', mt: 0.5 }} />}
-                {step.icon === 'calendar' && <CalendarToday sx={{ color: 'primary.main', mt: 0.5 }} />}
+          <Divider sx={{ mb: 2 }} />
+          <Stack spacing={2}>
+            {eventSummary?.date && (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <CalendarToday sx={{ mr: 2, color: 'text.secondary' }} />
                 <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    {step.title}
-                  </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {step.description}
+                    Event Date
+                  </Typography>
+                  <Typography variant="body1">
+                    {eventSummary.date}
                   </Typography>
                 </Box>
               </Box>
-            ))
-          )}
-        </Paper>
-      )}
+            )}
+            {eventSummary?.time && (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <AccessTime sx={{ mr: 2, color: 'text.secondary' }} />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Event Time
+                  </Typography>
+                  <Typography variant="body1">
+                    {eventSummary.time}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+            {eventSummary?.contact?.name && (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Group sx={{ mr: 2, color: 'text.secondary' }} />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Contact
+                  </Typography>
+                  <Typography variant="body1">
+                    {eventSummary.contact.name}
+                  </Typography>
+                  {eventSummary.contact.email && (
+                    <Typography variant="body2" color="text.secondary">
+                      {eventSummary.contact.email}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            )}
+            {eventSummary?.totalPrice && (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <AttachMoney sx={{ mr: 2, color: 'text.secondary' }} />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Price
+                  </Typography>
+                  <Typography variant="h6" color="primary">
+                    ${eventSummary.totalPrice}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+    );
+  };
 
-      {/* Contact Information */}
-      <Alert severity="info" sx={{ mb: 4, textAlign: 'left' }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-          Need to contact us?
-        </Typography>
-        <Typography variant="body2">
-          <strong>Phone:</strong> {supportContact.phone}<br />
-          <strong>Email:</strong> {supportContact.email}<br />
-          {supportContact.message}
-        </Typography>
-      </Alert>
+  // Render next steps
+  const renderNextSteps = () => {
+    if (!showNextSteps || !nextSteps?.length) return null;
 
-      {/* Email Status */}
-      {shouldSendConfirmationEmail && sendingEmail && (
-        <Alert severity="info" sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CircularProgress size={16} />
-            Sending confirmation email...
-          </Box>
-        </Alert>
-      )}
+    return (
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            What's Next?
+          </Typography>
+          <List>
+            {nextSteps.map((step, index) => (
+              <ListItem key={index}>
+                <ListItemIcon>
+                  {step.icon ? (
+                    // If icon is a string, you may need to map it to an actual icon component
+                    // For now, fallback to NavigateNext if not provided
+                    typeof step.icon === 'string' ? <NavigateNext color="primary" /> : step.icon
+                  ) : (
+                    <NavigateNext color="primary" />
+                  )}
+                </ListItemIcon>
+                <ListItemText
+                  primary={step.title}
+                  secondary={step.description}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </CardContent>
+      </Card>
+    );
+  };
 
-      {shouldSendConfirmationEmail && confirmationData.confirmation_email_sent && (
-        <Alert severity="success" sx={{ mb: 4 }}>
-          Confirmation email sent successfully!
+  return (
+    <Box sx={{ maxWidth: 800, mx: 'auto', py: 4 }}>
+      {/* Main Status Display */}
+      <Paper sx={{ p: 4, textAlign: 'center', mb: 4 }}>
+        {isProcessing ? (
+          <>
+            <CircularProgress sx={{ mb: 2 }} />
+            <Typography variant="h4" gutterBottom>
+              Processing Your Booking...
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Please wait while we confirm your booking details.
+            </Typography>
+          </>
+        ) : isCompleted ? (
+          <>
+            <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
+            <Typography variant="h4" gutterBottom color="success.main">
+              {confirmationContent?.title || 'Booking Confirmed!'}
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              {confirmationContent?.message || 'Thank you for your booking. We\'ll be in touch soon!'}
+            </Typography>
+            
+            {/* Booking Reference */}
+            {bookingReference && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Your booking reference:
+                </Typography>
+                <Chip 
+                  label={bookingReference} 
+                  color="primary" 
+                  variant="outlined"
+                  sx={{ fontSize: '1.1rem', py: 1 }}
+                />
+              </Box>
+            )}
+
+            {/* Email Confirmation Status */}
+            {shouldSendConfirmationEmail && (
+              <Box sx={{ mb: 2 }}>
+                {confirmationData.confirmation_email_sent ? (
+                  <Alert severity="success" icon={<Email />}>
+                    <strong>Confirmation email sent!</strong> Check your inbox for booking details.
+                  </Alert>
+                ) : sendingEmail ? (
+                  <Alert severity="info" icon={<CircularProgress size={16} />}>
+                    Sending confirmation email...
+                  </Alert>
+                ) : (
+                  <Alert severity="warning">
+                    We're having trouble sending your confirmation email, but your booking is confirmed.
+                  </Alert>
+                )}
+              </Box>
+            )}
+          </>
+        ) : confirmationData.completion_status === 'failed' ? (
+          <>
+            <Alert severity="error" sx={{ mb: 3 }}>
+              There was an issue completing your booking. Please try again or contact support.
+            </Alert>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCompleteBooking}
+              disabled={isProcessing}
+              startIcon={isProcessing ? <CircularProgress size={16} /> : <CheckCircle />}
+            >
+              {isProcessing ? 'Processing...' : 'Try Again'}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Info sx={{ fontSize: 64, color: 'info.main', mb: 2 }} />
+            <Typography variant="h4" gutterBottom>
+              Ready to Complete Your Booking
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Please review your booking details below and click confirm to complete.
+            </Typography>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleCompleteBooking}
+              disabled={isProcessing}
+              startIcon={isProcessing ? <CircularProgress size={16} /> : <CheckCircle />}
+            >
+              {isProcessing ? 'Processing...' : 'Confirm Booking'}
+            </Button>
+          </>
+        )}
+      </Paper>
+
+      {/* Display any errors */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
         </Alert>
       )}
 
       {/* Validation Errors */}
       {Object.keys(validationErrors).length > 0 && (
-        <Alert severity="warning" sx={{ mb: 4, textAlign: 'left' }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-            Please note:
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <Typography variant="body2" sx={{ fontWeight: 'medium', mb: 1 }}>
+            Please fix the following errors:
           </Typography>
           {Object.entries(validationErrors).map(([field, errors]) => (
             <Typography key={field} variant="body2">
-              {errors.join(', ')}
+              • {errors.join(', ')}
             </Typography>
           ))}
         </Alert>
       )}
 
+      {/* Booking Summary */}
+      {renderBookingSummary()}
+
+      {/* Next Steps */}
+      {renderNextSteps()}
+
+      {/* Support Contact */}
+      {supportContact && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="body2" color="text.secondary">
+            Questions? Contact us at{' '}
+            <a href={`mailto:${supportContact.email}`}>{supportContact.email}</a>
+            {supportContact.phone && <> or {supportContact.phone}</>}
+          </Typography>
+        </Box>
+      )}
+
       {/* Action Buttons */}
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={navigateToDashboard}
-          sx={{ minWidth: 160 }}
-        >
-          View Dashboard
-        </Button>
-        <Button
-          variant="outlined"
-          size="large"
+      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+        {completionResult?.event?.id && (
+          <Button 
+            variant="contained" 
+            onClick={navigateToDashboard}
+            startIcon={<Dashboard />}
+          >
+            View in Dashboard
+          </Button>
+        )}
+        <Button 
+          variant="outlined" 
           onClick={navigateToHome}
-          sx={{ minWidth: 160 }}
+          startIcon={<Home />}
         >
           Return Home
         </Button>

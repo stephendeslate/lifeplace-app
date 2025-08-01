@@ -82,7 +82,6 @@ export class DateTimeApi {
       end_date: data.end_date || '',
       end_time: data.end_time || '',
       duration: Number(data.duration) || 0,
-      venue_preference: data.venue_preference || '',
       resource_requirements: Array.isArray(data.resource_requirements) 
         ? data.resource_requirements 
         : [],
@@ -150,7 +149,6 @@ export class DateTimeApi {
       end_date: '',
       end_time: '',
       duration: 4,
-      venue_preference: '',
       resource_requirements: [],
       staff_requirements: [],
     };

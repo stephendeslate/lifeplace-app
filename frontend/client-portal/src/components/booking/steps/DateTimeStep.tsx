@@ -46,7 +46,6 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
     end_date: stepData?.end_date || '',
     end_time: stepData?.end_time || '',
     duration: stepData?.duration || config?.default_duration_hours || 4,
-    venue_preference: stepData?.venue_preference || '',
     resource_requirements: stepData?.resource_requirements || [],
     staff_requirements: stepData?.staff_requirements || [],
   }), [stepData, config?.default_duration_hours]);
@@ -92,11 +91,6 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
   // Handle duration change
   const handleDurationChange = useCallback((duration: number) => {
     updateData({ duration });
-  }, [updateData]);
-
-  // Handle venue preference change
-  const handleVenuePreferenceChange = useCallback((venuePreference: string) => {
-    updateData({ venue_preference: venuePreference });
   }, [updateData]);
 
   // Handle resource requirements change
@@ -215,10 +209,6 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
                       {formattedValues.startTime}
                     </Typography>
                   )}
-
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    Venue hours: 8:00 AM - 10:00 PM
-                  </Typography>
                 </Paper>
               </Box>
             )}
@@ -275,21 +265,6 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                 Special Requirements
               </Typography>
-              
-              <TextField
-                label="Venue Preferences"
-                multiline
-                rows={2}
-                fullWidth
-                value={data.venue_preference || ''}
-                onChange={(e) => handleVenuePreferenceChange(e.target.value)}
-                disabled={isProcessing}
-                error={hasFieldError('venue_preference')}
-                helperText={getFieldError('venue_preference')}
-                placeholder="Any specific venue requirements or preferences..."
-                sx={{ mb: 2 }}
-              />
-
               <TextField
                 label="Special Requests"
                 multiline

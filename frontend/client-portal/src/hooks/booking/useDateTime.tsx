@@ -187,11 +187,6 @@ export const useDateTime = (
     updateData({ duration });
   }, [updateData]);
 
-  // Handle venue preference change
-  const handleVenuePreferenceChange = useCallback((venuePreference: string) => {
-    updateData({ venue_preference: venuePreference });
-  }, [updateData]);
-
   // Handle resource requirements change
   const handleResourceRequirementsChange = useCallback((requirements: string[]) => {
     updateData({ resource_requirements: requirements });
@@ -266,7 +261,6 @@ export const useDateTime = (
     handleDateChange,
     handleTimeChange,
     handleDurationChange,
-    handleVenuePreferenceChange,
     handleResourceRequirementsChange,
     saveData,
     validateClientSide,
