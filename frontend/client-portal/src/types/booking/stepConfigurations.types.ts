@@ -28,7 +28,6 @@ export interface DateTimeStepConfiguration extends StepConfiguration {
   available_time_slots: any[];
   buffer_before_hours: number;
   buffer_after_hours: number;
-  check_venue_availability: boolean;
   check_resource_availability: boolean;
   check_staff_availability: boolean;
   availability_display_mode: 'FULL' | 'LIMITED' | 'SIMPLE';
@@ -130,7 +129,6 @@ export interface ProductCategory {
   parent: number | null;
   is_active: boolean;
   sort_order: number;
-  requires_venue: boolean;
   typical_duration_hours: number | null;
   full_path: string;
   level: number;

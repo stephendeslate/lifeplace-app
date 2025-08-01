@@ -19,6 +19,7 @@ export const useConfirmation = (
   const [completionResult, setCompletionResult] = useState<BookingCompletionResult | null>(null);
   const [sessionDetails, setSessionDetails] = useState<any>(null);
   const [confirmationData, setConfirmationData] = useState<any>(null);
+  const [emailSent, setEmailSent] = useState(false);
 
   // Load session details for display
   const loadSessionDetails = useCallback(async () => {
@@ -71,12 +72,13 @@ export const useConfirmation = (
 
   // Send confirmation email
   const sendConfirmationEmail = useCallback(async (): Promise<boolean> => {
-    if (!sessionId) return false;
+    if (!sessionId || emailSent) return false;
 
     setSendingEmail(true);
 
     try {
       await ConfirmationApi.sendConfirmationEmail(sessionId);
+      setEmailSent(true); // Mark as sent
       return true;
     } catch (err) {
       // Email sending is optional, so we don't set error state
@@ -85,7 +87,7 @@ export const useConfirmation = (
     } finally {
       setSendingEmail(false);
     }
-  }, [sessionId]);
+  }, [sessionId, emailSent]);
 
   // Get booking reference number
   const bookingReference = useMemo(() => {
@@ -159,10 +161,11 @@ export const useConfirmation = (
   useEffect(() => {
     if (config?.send_confirmation_email && 
         isCompleted && 
-        sessionDetails?.client?.email) {
+        sessionDetails?.client?.email &&
+        !emailSent) {
       sendConfirmationEmail();
     }
-  }, [config?.send_confirmation_email, isCompleted, sessionDetails, sendConfirmationEmail]);
+  }, [config?.send_confirmation_email, isCompleted, sessionDetails, emailSent]);
 
   // Clear errors
   const clearError = useCallback(() => {

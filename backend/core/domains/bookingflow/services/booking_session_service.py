@@ -323,7 +323,7 @@ class BookingSessionService:
             'status': 'LEAD',
             'workflow_template': session.booking_flow.workflow_template,
             'name': 'Booking from Client Portal',  # Default name
-            'start_date': timezone.now(),  # FIX: Default start date - will be overridden if provided
+            'start_date': timezone.now(),  # Default start date - will be overridden if provided
         }
         
         # Extract basic event info from various steps
@@ -333,7 +333,7 @@ class BookingSessionService:
                 if 'event_name' in step_data:
                     event_data['name'] = step_data['event_name']
                 
-                # FIX: Handle date/time properly - combine date and time if both provided
+                # Handle date/time properly - combine date and time if both provided
                 if 'start_date' in step_data:
                     start_date = step_data['start_date']
                     start_time = step_data.get('start_time')
@@ -344,7 +344,7 @@ class BookingSessionService:
                         if isinstance(start_date, str):
                             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
                         if isinstance(start_time, str):
-                            start_time = datetime.strptime(start_time, '%H:%M:%S').time()
+                            start_time = datetime.strptime(start_time, '%H:%M').time()
                         
                         event_data['start_date'] = datetime.combine(start_date, start_time)
                     else:
@@ -360,7 +360,7 @@ class BookingSessionService:
                         if isinstance(end_date, str):
                             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
                         if isinstance(end_time, str):
-                            end_time = datetime.strptime(end_time, '%H:%M:%S').time()
+                            end_time = datetime.strptime(end_time, '%H:%M').time()
                         
                         event_data['end_date'] = datetime.combine(end_date, end_time)
                     else:
@@ -371,64 +371,93 @@ class BookingSessionService:
                     event_data['guest_count'] = step_data['guest_count']
                 if 'description' in step_data:
                     event_data['description'] = step_data['description']
-                if 'venue_preference' in step_data:
-                    event_data['venue'] = step_data['venue_preference']
         
-        # FIX: Prepare event products with correct structure
+        # Prepare event products with correct structure
         event_products = []
         total_price = Decimal('0.00')
-        
-        # Add selected packages
-        for step_key, step_data in booking_data.items():
-            if isinstance(step_data, dict):
-                if 'selected_packages' in step_data:
-                    for package_data in step_data['selected_packages']:
-                        try:
-                            product_option = ProductOption.objects.get(id=package_data['product_id'])
-                            quantity = package_data.get('quantity', 1)
-                            price = Decimal(str(package_data.get('price', product_option.base_price)))
-                            
-                            event_products.append({
-                                'product_option': product_option.id,  # Pass ID, not object
-                                'quantity': quantity,
-                                'final_price': price,
-                                'num_participants': event_data.get('guest_count'),
-                            })
-                            total_price += price * quantity
-                        except (ProductOption.DoesNotExist, KeyError, ValueError) as e:
-                            logger.warning(f"Error processing package {package_data}: {e}")
+
+        # FIX: Get packages and addons from root level first (single source of truth)
+        selected_packages = booking_data.get('selected_packages', [])
+        selected_addons = booking_data.get('selected_addons', [])
+
+        # If not found at root, look in step data (but only take first occurrence)
+        if not selected_packages:
+            for step_key, step_data in booking_data.items():
+                if isinstance(step_data, dict) and 'selected_packages' in step_data:
+                    selected_packages = step_data['selected_packages']
+                    break  # CRITICAL: Only take the first occurrence
+
+        if not selected_addons:
+            for step_key, step_data in booking_data.items():
+                if isinstance(step_data, dict) and 'selected_addons' in step_data:
+                    selected_addons = step_data['selected_addons']
+                    break  # CRITICAL: Only take the first occurrence
+
+        # Process packages
+        for package_data in selected_packages:
+            try:
+                product_option = ProductOption.objects.get(id=package_data['product_id'])
+                quantity = package_data.get('quantity', 1)
+                price = Decimal(str(package_data.get('price', product_option.base_price)))
                 
-                # Add selected addons
-                if 'selected_addons' in step_data:
-                    for addon_data in step_data['selected_addons']:
-                        try:
-                            product_option = ProductOption.objects.get(id=addon_data['product_id'])
-                            quantity = addon_data.get('quantity', 1)
-                            price = Decimal(str(addon_data.get('price', product_option.base_price)))
-                            
-                            event_products.append({
-                                'product_option': product_option.id,  # Pass ID, not object
-                                'quantity': quantity,
-                                'final_price': price,
-                            })
-                            total_price += price * quantity
-                        except (ProductOption.DoesNotExist, KeyError, ValueError) as e:
-                            logger.warning(f"Error processing addon {addon_data}: {e}")
+                event_products.append({
+                    'product_option': product_option.id,  # Pass ID, not object
+                    'quantity': quantity,
+                    'final_price': price,
+                    'num_participants': event_data.get('guest_count'),
+                })
+                total_price += price * quantity
+            except (ProductOption.DoesNotExist, KeyError, ValueError) as e:
+                logger.warning(f"Error processing package {package_data}: {e}")
+
+        # Process addons
+        for addon_data in selected_addons:  
+            try:
+                product_option = ProductOption.objects.get(id=addon_data['product_id'])
+                quantity = addon_data.get('quantity', 1)
+                price = Decimal(str(addon_data.get('price', product_option.base_price)))
+                
+                event_products.append({
+                    'product_option': product_option.id,  # Pass ID, not object
+                    'quantity': quantity,
+                    'final_price': price,
+                })
+                total_price += price * quantity
+            except (ProductOption.DoesNotExist, KeyError, ValueError) as e:
+                logger.warning(f"Error processing addon {addon_data}: {e}")
         
         event_data['total_price'] = total_price
         event_data['event_products'] = event_products
         
-        # Add session metadata
-        event_data['notes'] = f"Created from booking session {session.session_id}"
-        if session.booking_flow.is_test_mode:
-            event_data['notes'] += " (Test Mode)"
         
         # Create the event
-        return EventService.create_event(
+        event = EventService.create_event(
             event_data,
             user=session.client,
             booking_flow_id=session.booking_flow.id
         )
+        
+        # ADD: Create a note for the event after it's created
+        # This is the proper way to add notes to an event
+        try:
+            from django.contrib.contenttypes.models import ContentType
+            Note = ContentType.objects.get(app_label='notes', model='note').model_class()
+            
+            note_text = f"Created from booking session {session.session_id}"
+            if session.booking_flow.is_test_mode:
+                note_text += " (Test Mode)"
+                
+            Note.objects.create(
+                content_type=ContentType.objects.get_for_model(event),
+                object_id=event.id,
+                text=note_text,
+                created_by=session.client,
+                is_private=False
+            )
+        except Exception as e:
+            logger.warning(f"Could not create note for event: {e}")
+        
+        return event
     
     @staticmethod
     def _validate_step_data(step, step_data):
@@ -539,7 +568,6 @@ class BookingSessionService:
         """Check availability for date/time step with enhanced availability features"""
         # This is a placeholder for actual availability checking logic
         # In a real implementation, this would integrate with:
-        # - Venue availability systems
         # - Resource management systems
         # - Staff scheduling systems
         
@@ -571,12 +599,6 @@ class BookingSessionService:
         if start_time and config.available_time_slots:
             # This would check against configured time slots
             # For now, assume availability
-            pass
-        
-        # Check venue availability if enabled
-        if config.check_venue_availability:
-            # This would integrate with venue management system
-            # For now, assume available
             pass
         
         # Check resource availability if enabled

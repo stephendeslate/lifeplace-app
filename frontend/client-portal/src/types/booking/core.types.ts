@@ -62,15 +62,3 @@ export interface StepConfiguration {
   created_at: string;
   updated_at: string;
 }
-//
-//export interface BookingSession {
-//  session_id: string;
-//  booking_flow: number;
-//  current_step: BookingFlowStep | null;
-//  progress_percentage: number;
-//  expires_at: string;
-//  is_completed: boolean;
-//  is_abandoned: boolean;
-//  total_price: string;
-//  updated_at: string;
-//}
