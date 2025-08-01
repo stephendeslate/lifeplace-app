@@ -39,6 +39,7 @@ import type {
   QuestionnaireDetailResponse,
   StepValidationResult
 } from '../../../types/booking';
+import QuestionnaireApi from '../../../apis/booking/questionnaire.api';
 
 interface QuestionnaireStepProps {
   stepData?: Record<string, any>;
@@ -152,8 +153,8 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
     });
 
     try {
-      // Use the questionnaire detail hook
-      const { questionnaire } = useQuestionnaireDetail(questionnaireId);
+      // ✅ FIX: Use the API directly instead of the hook
+      const questionnaire = await QuestionnaireApi.getQuestionnaireDetail(questionnaireId);
       
       if (questionnaire) {
         setQuestionnairesWithFields(prev => new Map([...prev, [questionnaireId, questionnaire]]));
