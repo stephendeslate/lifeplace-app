@@ -1,58 +1,4 @@
-def validate(self, data):
-        """Validate booking flow update data"""
-        # Get current instance for validation
-        instance = getattr(self, 'instance', None)
-        
-        if instance:
-            # Merge current data with update data for validation
-            current_data = {
-                'min_advance_booking_days': instance.min_advance_booking_days,
-                'max_advance_booking_days': instance.max_advance_booking_days,
-                'event_type': instance.event_type_id,
-                'is_active': instance.is_active,
-            }
-            current_data.update(data)
-            
-            min_days = current_data.get('min_advance_booking_days', 1)
-            max_days = current_data.get('max_advance_booking_days', 365)
-            
-            if min_days >= max_days:
-                raise serializers.ValidationError({
-                    'max_advance_booking_days': 'Maximum days must be greater than minimum days'
-                })
-            
-            # Check for active booking flows with same event type
-            event_type = current_data.get('event_type')
-            is_active = current_data.get('is_active', True)
-            
-            if is_active:
-                # Check for existing active flows with same event type (excluding current instance)
-                existing_flows = BookingFlow.objects.filter(
-                    event_type=event_type,
-                    is_active=True
-                ).exclude(pk=instance.pk)
-                
-                if existing_flows.exists():
-                    if event_type:
-                        # Get event type name for better error message
-                        try:
-                            from core.domains.events.models import EventType
-                            event_type_obj = EventType.objects.get(id=event_type)
-                            event_type_name = event_type_obj.name
-                        except EventType.DoesNotExist:
-                            event_type_name = f"Event Type ID {event_type}"
-                        
-                        raise serializers.ValidationError({
-                            'event_type': f'An active booking flow already exists for {event_type_name}. '
-                                        'Only one active flow per event type is allowed.'
-                        })
-                    else:
-                        raise serializers.ValidationError({
-                            'event_type': 'An active booking flow already exists for "Any Event Type". '
-                                        'Only one active flow for "Any Event Type" is allowed.'
-                        })
-        
-        return data# backend/core/domains/bookingflow/serializers.py
+# backend/core/domains/bookingflow/serializers.py
 from core.domains.communications.serializers import CommunicationTemplateSerializer
 from core.domains.events.basic_serializers import EventTypeSerializer
 from core.domains.products.serializers import (
@@ -73,10 +19,10 @@ from .models import (
     ConfirmationStepConfiguration,
     ContactInfoStepConfiguration,
     DateTimeStepConfiguration,
-    EventDetailsStepConfiguration,
     IntroductionStepConfiguration,
     PackageSelectionStepConfiguration,
     PaymentInfoStepConfiguration,
+    PricingSummaryStepConfiguration,
     QuestionnaireStepConfiguration,
     QuestionnaireStepItem,
 )
@@ -94,17 +40,6 @@ class IntroductionStepConfigurationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
 
-class EventDetailsStepConfigurationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EventDetailsStepConfiguration
-        fields = [
-            'id', 'step', 'show_event_type_selection', 'require_event_name',
-            'require_description', 'require_guest_count', 'max_guest_count',
-            'require_venue_preference', 'venue_options', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
-
-
 class DateTimeStepConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = DateTimeStepConfiguration
@@ -112,8 +47,14 @@ class DateTimeStepConfigurationSerializer(serializers.ModelSerializer):
             'id', 'step', 'allow_time_selection', 'allow_multi_day',
             'show_calendar_view', 'min_duration_hours', 'max_duration_hours',
             'default_duration_hours', 'enable_real_time_availability',
+            'show_availability_status', 'auto_check_conflicts',
             'blocked_dates', 'available_days_of_week', 'available_time_slots',
-            'buffer_before_hours', 'buffer_after_hours', 'created_at', 'updated_at'
+            'buffer_before_hours', 'buffer_after_hours',
+            'check_venue_availability', 'check_resource_availability',
+            'check_staff_availability', 'availability_display_mode',
+            'allow_overbooking', 'overbooking_threshold',
+            'sync_with_calendar', 'calendar_source',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
@@ -143,6 +84,11 @@ class QuestionnaireStepConfigurationSerializer(serializers.ModelSerializer):
 
 
 class PackageSelectionStepConfigurationSerializer(serializers.ModelSerializer):
+    # Use SerializerMethodField for ID arrays to avoid ManyRelatedManager issues
+    available_categories = serializers.SerializerMethodField()
+    available_packages = serializers.SerializerMethodField()
+    
+    # Keep the detailed serializers
     available_categories_details = ProductCategorySerializer(
         source='available_categories', many=True, read_only=True
     )
@@ -153,16 +99,37 @@ class PackageSelectionStepConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = PackageSelectionStepConfiguration
         fields = [
-            'id', 'step', 'available_categories', 'available_categories_details',
-            'available_packages', 'available_packages_details', 'selection_type',
+            'id', 'step', 
+            'available_categories',  # ID array
+            'available_packages',    # ID array
+            'available_categories_details',
+            'available_packages_details', 
+            'selection_type',
             'min_selection', 'max_selection', 'show_pricing', 'show_descriptions',
             'show_images', 'enable_comparison', 'enable_dynamic_pricing',
             'pricing_factors', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
+    def get_available_categories(self, obj):
+        """Get list of category IDs - handles unevaluated ManyRelatedManager"""
+        if hasattr(obj, 'available_categories'):
+            return list(obj.available_categories.values_list('id', flat=True))
+        return []
+    
+    def get_available_packages(self, obj):
+        """Get list of package IDs - handles unevaluated ManyRelatedManager"""
+        if hasattr(obj, 'available_packages'):
+            return list(obj.available_packages.values_list('id', flat=True))
+        return []
+
 
 class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
+    # Use SerializerMethodField for ID arrays to avoid ManyRelatedManager issues
+    available_categories = serializers.SerializerMethodField()
+    available_addons = serializers.SerializerMethodField()
+    
+    # Keep the detailed serializers
     available_categories_details = ProductCategorySerializer(
         source='available_categories', many=True, read_only=True
     )
@@ -173,10 +140,37 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = AddonSelectionStepConfiguration
         fields = [
-            'id', 'step', 'available_categories', 'available_categories_details',
-            'available_addons', 'available_addons_details', 'min_selection',
+            'id', 'step',
+            'available_categories',  # ID array
+            'available_addons',      # ID array
+            'available_categories_details',
+            'available_addons_details', 
+            'min_selection',
             'max_selection', 'group_by_category', 'show_recommendations',
             'recommendation_logic', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
+
+    def get_available_categories(self, obj):
+        """Get list of category IDs - handles unevaluated ManyRelatedManager"""
+        if hasattr(obj, 'available_categories'):
+            return list(obj.available_categories.values_list('id', flat=True))
+        return []
+    
+    def get_available_addons(self, obj):
+        """Get list of addon IDs - handles unevaluated ManyRelatedManager"""
+        if hasattr(obj, 'available_addons'):
+            return list(obj.available_addons.values_list('id', flat=True))
+        return []
+
+class PricingSummaryStepConfigurationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PricingSummaryStepConfiguration
+        fields = [
+            'id', 'step', 'show_package_breakdown', 'show_addon_breakdown',
+            'show_tax_breakdown', 'show_discount_field', 'show_subtotal',
+            'allow_discount_codes', 'calculate_tax', 'header_text',
+            'footer_text', 'discount_help_text', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
@@ -200,7 +194,10 @@ class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
             'id', 'step', 'accept_full_payment', 'accept_deposit',
             'deposit_type', 'deposit_amount', 'available_payment_methods',
             'require_immediate_payment', 'allow_payment_plans',
-            'payment_terms', 'created_at', 'updated_at'
+            'payment_terms', 
+            'allowed_gateways',
+            'default_gateway',   
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
@@ -231,14 +228,12 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
             'configuration_data', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-
+    
     def get_configuration_data(self, obj):
         """Get step-specific configuration data"""
         try:
             if obj.step_type == 'introduction' and hasattr(obj, 'introduction_config'):
                 return IntroductionStepConfigurationSerializer(obj.introduction_config).data
-            elif obj.step_type == 'event_details' and hasattr(obj, 'event_details_config'):
-                return EventDetailsStepConfigurationSerializer(obj.event_details_config).data
             elif obj.step_type == 'date_time' and hasattr(obj, 'datetime_config'):
                 return DateTimeStepConfigurationSerializer(obj.datetime_config).data
             elif obj.step_type == 'questionnaire' and hasattr(obj, 'questionnaire_config'):
@@ -247,6 +242,8 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
                 return PackageSelectionStepConfigurationSerializer(obj.package_config).data
             elif obj.step_type == 'addon_selection' and hasattr(obj, 'addon_config'):
                 return AddonSelectionStepConfigurationSerializer(obj.addon_config).data
+            elif obj.step_type == 'pricing_summary' and hasattr(obj, 'pricing_config'):
+                return PricingSummaryStepConfigurationSerializer(obj.pricing_config).data
             elif obj.step_type == 'contact_info' and hasattr(obj, 'contact_config'):
                 return ContactInfoStepConfigurationSerializer(obj.contact_config).data
             elif obj.step_type == 'payment_info' and hasattr(obj, 'payment_config'):
@@ -560,6 +557,15 @@ class BookingFlowStepCreateSerializer(serializers.ModelSerializer):
                 'order': {'required': False, 'allow_null': True}
             }
 
+    def validate_step_type(self, value):
+        """Validate that availability_check step type is not being created"""
+        if value == 'availability_check':
+            raise serializers.ValidationError(
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
+        return value
+
     def validate(self, data):
         """Validate step data"""
         booking_flow = data.get('booking_flow')
@@ -590,6 +596,15 @@ class BookingFlowStepUpdateSerializer(serializers.ModelSerializer):
             'is_enabled', 'is_required', 'is_skippable', 'display_conditions',
             'configuration', 'validation_rules'
         ]
+
+    def validate_step_type(self, value):
+        """Validate that availability_check step type is not being set"""
+        if value == 'availability_check':
+            raise serializers.ValidationError(
+                "Availability check step type is no longer supported. "
+                "Use date_time step with availability checking enabled instead."
+            )
+        return value
 
     def validate(self, data):
         """Validate step update data"""

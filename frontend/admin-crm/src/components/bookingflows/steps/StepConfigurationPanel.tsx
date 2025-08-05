@@ -21,12 +21,10 @@ import {
   Refresh as RefreshIcon,
   ContentCopy as CopyIcon,
 } from '@mui/icons-material';
-import type { 
-  BookingFlowStep} from '../../../types/bookingflows.types';
+import type { BookingFlowStep } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import {
   IntroductionStepConfig,
-  EventDetailsStepConfig,
   DateTimeStepConfig,
   QuestionnaireStepConfig,
   PackageSelectionStepConfig,
@@ -67,63 +65,69 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
 
   const {
     useStepConfiguration,
-    useStepPreview,
     updateConfiguration,
     isUpdatingConfiguration,
+    updateConfigurationError,
   } = useBookingFlowStepConfiguration();
 
   const { 
     data: currentConfig, 
     isLoading: isLoadingConfig,
     refetch: refetchConfig,
+    error: configError,
   } = useStepConfiguration(step.id);
-
-  const { 
-    data: previewData, 
-    isLoading: isLoadingPreview,
-    refetch: refetchPreview,
-  } = useStepPreview(step.id);
 
   // @ts-ignore
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
-  const handleConfigurationUpdate = (data: Partial<any>) => {
-    updateConfiguration({
-      stepId: step.id,
-      data
-    }, {
-      onSuccess: () => {
-        refetchConfig();
-        refetchPreview();
-        if (onUpdate) {
-          onUpdate(step);
-        }
+  const handleConfigurationUpdate = async (data: Record<string, any>) => {
+    try {
+      await updateConfiguration({
+        stepId: step.id,
+        data
+      });
+      
+      // Refetch to get latest config
+      refetchConfig();
+      
+      // Call parent callback if provided
+      if (onUpdate) {
+        // Create updated step object for parent callback
+        const updatedStep: BookingFlowStep = {
+          ...step,
+          configuration_data: {
+            ...(currentConfig as import('../../../types/bookingflows.types').StepConfiguration),
+            ...data,
+          } as import('../../../types/bookingflows.types').StepConfiguration,
+        };
+        onUpdate(updatedStep);
       }
-    });
+    } catch (error) {
+      console.error('Failed to update step configuration:', error);
+    }
   };
 
   const renderStepSpecificConfiguration = () => {
+    // Block access to removed step types
+    if (step.step_type as string === 'availability_check') {
+      return (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Availability check step type is no longer supported. Please use the date_time step with availability checking enabled instead.
+        </Alert>
+      );
+    }
+
     switch (step.step_type) {
       case 'introduction':
         return (
           <IntroductionStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').IntroductionStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
-            isLoading={isUpdatingConfiguration}
+            onConfigurationChange={() => refetchConfig()}
           />
         );
-      case 'event_details':
-        return (
-          <EventDetailsStepConfig
-            step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').EventDetailsStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
-            isLoading={isUpdatingConfiguration}
-          />
-        );
+      
       case 'date_time':
         return (
           <DateTimeStepConfig
@@ -133,6 +137,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             isLoading={isUpdatingConfiguration}
           />
         );
+      
       case 'questionnaire':
         return (
           <QuestionnaireStepConfig
@@ -142,33 +147,35 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             isLoading={isUpdatingConfiguration}
           />
         );
+      
       case 'package_selection':
         return (
           <PackageSelectionStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').PackageSelectionStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={() => refetchConfig()}
             isLoading={isUpdatingConfiguration}
           />
         );
+      
       case 'addon_selection':
         return (
           <AddonSelectionStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').AddonSelectionStepConfiguration | null | undefined}
             onUpdate={handleConfigurationUpdate}
             isLoading={isUpdatingConfiguration}
           />
         );
+      
       case 'contact_info':
         return (
           <ContactInfoStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').ContactInfoStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={onUpdate || (() => {})}
             isLoading={isUpdatingConfiguration}
           />
         );
+      
       case 'payment_info':
         return (
           <PaymentInfoStepConfig
@@ -178,93 +185,58 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             isLoading={isUpdatingConfiguration}
           />
         );
+      
       case 'confirmation':
         return (
           <ConfirmationStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').ConfirmationStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={onUpdate || (() => {})}
             isLoading={isUpdatingConfiguration}
           />
         );
+      
+      // Remove event_details case since it doesn't exist in the evolved types
+      // Remove pricing_summary and review_booking cases since they have no specific configs
+      
       default:
         return <GenericConfigForm step={step} config={currentConfig} />;
     }
   };
 
   const renderPreview = () => {
-    if (isLoadingPreview) {
-      return (
-        <Box display="flex" justifyContent="center" py={4}>
-          <CircularProgress />
-        </Box>
-      );
-    }
-
-    if (!previewData) {
-      return (
-        <Alert severity="info">
-          No preview available for this step type.
-        </Alert>
-      );
-    }
-
+    // Preview functionality not implemented in the evolved backend
+    // Only show configuration tab for now
     return (
-      <Box>
-        {/* Validation Status */}
-        {previewData.validation && !previewData.validation.is_valid && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Configuration Issues
-            </Typography>
-            {previewData.validation.errors.map((error, index) => (
-              <Typography key={index} variant="body2">
-                • {error}
-              </Typography>
-            ))}
-          </Alert>
-        )}
-
-        {previewData.validation && previewData.validation.warnings.length > 0 && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Configuration Warnings
-            </Typography>
-            {previewData.validation.warnings.map((warning, index) => (
-              <Typography key={index} variant="body2">
-                • {warning}
-              </Typography>
-            ))}
-          </Alert>
-        )}
-
-        {/* Preview Elements */}
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Step Preview: {step.name}
-            </Typography>
-            
-            {previewData.preview_elements && previewData.preview_elements.length > 0 ? (
-              <Box>
-                {previewData.preview_elements.map((element, index) => (
-                  <Box key={index} sx={{ mb: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                    <pre style={{ margin: 0, fontSize: '0.875rem', overflow: 'auto' }}>
-                      {JSON.stringify(element, null, 2)}
-                    </pre>
-                  </Box>
-                ))}
-              </Box>
-            ) : (
-              <Typography color="text.secondary">
-                No preview elements configured for this step.
-              </Typography>
-            )}
-          </CardContent>
-        </Card>
-      </Box>
+      <Alert severity="info">
+        Step preview functionality will be available in a future update.
+      </Alert>
     );
   };
+
+  // Error handling
+  if (configError) {
+    return (
+      <Card>
+        <CardContent>
+          <Alert 
+            severity="error" 
+            action={
+              <IconButton 
+                color="inherit" 
+                size="small" 
+                onClick={() => refetchConfig()}
+              >
+                <RefreshIcon />
+              </IconButton>
+            }
+          >
+            Failed to load step configuration: {configError instanceof Error ? configError.message : 'Unknown error'}
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoadingConfig) {
     return (
@@ -298,18 +270,18 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           
           <Box display="flex" gap={1}>
             <Tooltip title="Copy configuration from another step">
-              <IconButton size="small">
-                <CopyIcon />
-              </IconButton>
+              <span>
+                <IconButton size="small" disabled>
+                  <CopyIcon />
+                </IconButton>
+              </span>
             </Tooltip>
             
-            <Tooltip title="Refresh preview">
+            <Tooltip title="Refresh configuration">
               <IconButton 
                 size="small"
-                onClick={() => {
-                  refetchConfig();
-                  refetchPreview();
-                }}
+                onClick={() => refetchConfig()}
+                disabled={isLoadingConfig}
               >
                 <RefreshIcon />
               </IconButton>
@@ -317,7 +289,14 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           </Box>
         </Box>
 
-        {/* Tabs */}
+        {/* Show update errors */}
+        {updateConfigurationError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
+          </Alert>
+        )}
+
+        {/* Tabs - Only show configuration tab for now since preview isn't implemented */}
         <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
           <Tab 
             icon={<ConfigIcon />} 
@@ -328,6 +307,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             icon={<PreviewIcon />} 
             label="Preview" 
             iconPosition="start"
+            disabled
           />
         </Tabs>
 

@@ -14,6 +14,8 @@ import {
   IconButton,
   Tooltip,
   Paper,
+  Avatar,
+  Divider,
 } from '@mui/material';
 import {
   Preview as PreviewIcon,
@@ -27,8 +29,30 @@ import {
   RadioButtonUnchecked as PendingIcon,
   Block as DisabledIcon,
   CheckCircle,
+  AccessTime as TimeIcon,
+  CalendarToday as CalendarIcon,
+  Payment as PaymentIcon,
+  Quiz as QuestionnaireIcon,
+  Inventory as PackageIcon,
+  Add as AddonIcon,
+  ContactMail as ContactIcon,
+  RateReview as ReviewIcon,
+  Celebration as ConfirmationIcon,
+  Info as IntroIcon,
+  Schedule as PricingIcon,
 } from '@mui/icons-material';
-import type { BookingFlowDetail, BookingFlowStep } from '../../../types/bookingflows.types';
+import type { 
+  BookingFlowDetail, 
+  BookingFlowStep,
+  IntroductionStepConfiguration,
+  DateTimeStepConfiguration,
+  QuestionnaireStepConfiguration,
+  PackageSelectionStepConfiguration,
+  AddonSelectionStepConfiguration,
+  ContactInfoStepConfiguration,
+  PaymentInfoStepConfiguration,
+  ConfirmationStepConfiguration,
+} from '../../../types/bookingflows.types';
 
 interface BookingFlowPreviewProps {
   flow: BookingFlowDetail;
@@ -52,77 +76,143 @@ const StepPreview: React.FC<StepPreviewProps> = ({
   const getStepIcon = () => {
     if (!step.is_enabled) return <DisabledIcon color="disabled" />;
     if (isCompleted) return <CompletedIcon color="success" />;
-    if (isActive) return <StartIcon color="primary" />;
-    return <PendingIcon color="action" />;
+    
+    const iconProps = { color: isActive ? 'primary' : 'action' } as const;
+    
+    switch (step.step_type) {
+      case 'introduction':
+        return <IntroIcon {...iconProps} />;
+      case 'date_time':
+        return <CalendarIcon {...iconProps} />;
+      case 'questionnaire':
+        return <QuestionnaireIcon {...iconProps} />;
+      case 'package_selection':
+        return <PackageIcon {...iconProps} />;
+      case 'addon_selection':
+        return <AddonIcon {...iconProps} />;
+      case 'pricing_summary':
+        return <PricingIcon {...iconProps} />;
+      case 'contact_info':
+        return <ContactIcon {...iconProps} />;
+      case 'payment_info':
+        return <PaymentIcon {...iconProps} />;
+      case 'review_booking':
+        return <ReviewIcon {...iconProps} />;
+      case 'confirmation':
+        return <ConfirmationIcon {...iconProps} />;
+      default:
+        return isActive ? <StartIcon color="primary" /> : <PendingIcon color="action" />;
+    }
   };
 
   const getStepContent = () => {
+    const config = step.configuration_data;
+
     switch (step.step_type) {
       case 'introduction':
+        const introConfig = config as IntroductionStepConfiguration;
         return (
           <Box>
             <Typography variant="h6" gutterBottom>
-              Welcome to Our Booking System
+              {introConfig?.title || 'Welcome to Our Booking System'}
             </Typography>
             <Typography color="text.secondary">
-              We're excited to help you plan your perfect event! This booking process will guide you through all the details we need.
+              {introConfig?.content || "We're excited to help you plan your perfect event! This booking process will guide you through all the details we need."}
             </Typography>
-          </Box>
-        );
-
-      case 'event_details':
-        return (
-          <Box>
-            <Typography variant="subtitle1" gutterBottom>
-              Tell us about your event
-            </Typography>
-            <Stack spacing={2}>
-              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
-                <Typography variant="body2" color="text.secondary">Event Name</Typography>
-                <Typography>My Special Event</Typography>
+            {introConfig?.show_event_details && (
+              <Box mt={2}>
+                <Chip label="Event Details Shown" size="small" color="info" variant="outlined" />
               </Box>
-              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
-                <Typography variant="body2" color="text.secondary">Guest Count</Typography>
-                <Typography>50 guests</Typography>
+            )}
+            {introConfig?.show_pricing_overview && (
+              <Box mt={1}>
+                <Chip label="Pricing Overview Shown" size="small" color="info" variant="outlined" />
               </Box>
-            </Stack>
+            )}
           </Box>
         );
 
       case 'date_time':
+        const dateTimeConfig = config as DateTimeStepConfiguration;
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
               Select your event date & time
             </Typography>
-            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
+            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2, mb: 2 }}>
               <Typography variant="body2" color="text.secondary">Selected Date & Time</Typography>
               <Typography>Saturday, March 15, 2024 at 2:00 PM</Typography>
             </Box>
+            
+            {/* Show availability features if enabled */}
+            {dateTimeConfig?.enable_real_time_availability && (
+              <Box mb={2}>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Chip 
+                    label="Real-time Availability" 
+                    size="small" 
+                    color="success" 
+                    variant="outlined"
+                    icon={<TimeIcon />}
+                  />
+                  {dateTimeConfig.show_availability_status && (
+                    <Chip label="Availability Status" size="small" color="info" variant="outlined" />
+                  )}
+                  {dateTimeConfig.auto_check_conflicts && (
+                    <Chip label="Auto Conflict Check" size="small" color="warning" variant="outlined" />
+                  )}
+                </Stack>
+              </Box>
+            )}
+            
+            {dateTimeConfig?.allow_multi_day && (
+              <Typography variant="caption" color="text.secondary">
+                Multi-day events supported
+              </Typography>
+            )}
           </Box>
         );
 
       case 'questionnaire':
+        const questionnaireConfig = config as QuestionnaireStepConfiguration;
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
               Additional Information
             </Typography>
-            <Typography color="text.secondary">
+            <Typography color="text.secondary" gutterBottom>
               Please answer a few questions to help us customize your experience.
             </Typography>
-            <Box mt={2}>
-              <Chip label="3 Questions" size="small" color="primary" variant="outlined" />
+            <Box display="flex" flexWrap="wrap" gap={1} mt={2}>
+              {questionnaireConfig?.questionnaire_items?.length ? (
+                <Chip 
+                  label={`${questionnaireConfig.questionnaire_items.length} Questionnaire${questionnaireConfig.questionnaire_items.length > 1 ? 's' : ''}`} 
+                  size="small" 
+                  color="primary" 
+                  variant="outlined" 
+                />
+              ) : (
+                <Chip label="Custom Questions" size="small" color="primary" variant="outlined" />
+              )}
+              {questionnaireConfig?.allow_file_uploads && (
+                <Chip label="File Uploads Allowed" size="small" color="info" variant="outlined" />
+              )}
             </Box>
           </Box>
         );
 
       case 'package_selection':
+        const packageConfig = config as PackageSelectionStepConfiguration;
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
               Choose your package
             </Typography>
+            {packageConfig?.selection_type === 'MULTIPLE' && (
+              <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                Multiple packages can be selected
+              </Typography>
+            )}
             <Stack spacing={2}>
               {['Basic Package', 'Premium Package', 'Deluxe Package'].map((pkg, index) => (
                 <Box 
@@ -139,13 +229,35 @@ const StepPreview: React.FC<StepPreviewProps> = ({
                   <Typography variant="body2" color="text.secondary">
                     Starting at ${(index + 1) * 500}
                   </Typography>
+                  {packageConfig?.show_descriptions && (
+                    <Typography variant="caption" color="text.secondary">
+                      Includes premium features and services
+                    </Typography>
+                  )}
                 </Box>
               ))}
             </Stack>
+            
+            {packageConfig && (
+              <Box mt={2}>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {packageConfig.show_pricing && (
+                    <Chip label="Pricing Shown" size="small" color="info" variant="outlined" />
+                  )}
+                  {packageConfig.enable_comparison && (
+                    <Chip label="Comparison Tool" size="small" color="info" variant="outlined" />
+                  )}
+                  {packageConfig.enable_dynamic_pricing && (
+                    <Chip label="Dynamic Pricing" size="small" color="warning" variant="outlined" />
+                  )}
+                </Stack>
+              </Box>
+            )}
           </Box>
         );
 
       case 'addon_selection':
+        const addonConfig = config as AddonSelectionStepConfiguration;
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
@@ -161,10 +273,68 @@ const StepPreview: React.FC<StepPreviewProps> = ({
                 </Box>
               ))}
             </Stack>
+            
+            {addonConfig && (
+              <Box mt={2}>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {addonConfig.group_by_category && (
+                    <Chip label="Grouped by Category" size="small" color="info" variant="outlined" />
+                  )}
+                  {addonConfig.show_recommendations && (
+                    <Chip label="Recommendations" size="small" color="success" variant="outlined" />
+                  )}
+                  {addonConfig.min_selection > 0 && (
+                    <Chip 
+                      label={`Min: ${addonConfig.min_selection}`} 
+                      size="small" 
+                      color="warning" 
+                      variant="outlined" 
+                    />
+                  )}
+                  {addonConfig.max_selection > 0 && (
+                    <Chip 
+                      label={`Max: ${addonConfig.max_selection}`} 
+                      size="small" 
+                      color="error" 
+                      variant="outlined" 
+                    />
+                  )}
+                </Stack>
+              </Box>
+            )}
+          </Box>
+        );
+
+      case 'pricing_summary':
+        return (
+          <Box>
+            <Typography variant="subtitle1" gutterBottom>
+              Pricing Summary
+            </Typography>
+            <Paper sx={{ p: 2, backgroundColor: 'grey.50' }}>
+              <Stack spacing={1}>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">Premium Package</Typography>
+                  <Typography variant="body2">$1,000.00</Typography>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2">Photography Add-on</Typography>
+                  <Typography variant="body2">$250.00</Typography>
+                </Box>
+                <Divider />
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="subtitle2" fontWeight="bold">Total</Typography>
+                  <Typography variant="subtitle2" fontWeight="bold" color="primary">
+                    $1,250.00
+                  </Typography>
+                </Box>
+              </Stack>
+            </Paper>
           </Box>
         );
 
       case 'contact_info':
+        const contactConfig = config as ContactInfoStepConfiguration;
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
@@ -179,11 +349,40 @@ const StepPreview: React.FC<StepPreviewProps> = ({
                 <Typography variant="body2" color="text.secondary">Email</Typography>
                 <Typography>john.doe@example.com</Typography>
               </Box>
+              {contactConfig?.require_phone && (
+                <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Phone</Typography>
+                  <Typography>+1 (555) 123-4567</Typography>
+                </Box>
+              )}
+              {contactConfig?.require_address && (
+                <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Address</Typography>
+                  <Typography>123 Main St, City, State 12345</Typography>
+                </Box>
+              )}
             </Stack>
+            
+            {contactConfig && (
+              <Box mt={2}>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {contactConfig.require_full_name && (
+                    <Chip label="Full Name Required" size="small" color="error" variant="outlined" />
+                  )}
+                  {contactConfig.require_email && (
+                    <Chip label="Email Required" size="small" color="error" variant="outlined" />
+                  )}
+                  {contactConfig.offer_account_creation && (
+                    <Chip label="Account Creation Offered" size="small" color="info" variant="outlined" />
+                  )}
+                </Stack>
+              </Box>
+            )}
           </Box>
         );
 
       case 'payment_info':
+        const paymentConfig = config as PaymentInfoStepConfiguration;
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
@@ -192,10 +391,34 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             <Typography color="text.secondary" gutterBottom>
               Secure payment processing
             </Typography>
-            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
+            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2, mb: 2 }}>
               <Typography variant="body2" color="text.secondary">Total Amount</Typography>
               <Typography variant="h6" color="primary">$1,250.00</Typography>
             </Box>
+            
+            {paymentConfig && (
+              <Box>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {paymentConfig.accept_full_payment && (
+                    <Chip label="Full Payment" size="small" color="success" variant="outlined" />
+                  )}
+                  {paymentConfig.accept_deposit && (
+                    <Chip 
+                      label={`${paymentConfig.deposit_type === 'PERCENTAGE' ? 'Percentage' : 'Fixed'} Deposit`} 
+                      size="small" 
+                      color="info" 
+                      variant="outlined" 
+                    />
+                  )}
+                  {paymentConfig.require_immediate_payment && (
+                    <Chip label="Immediate Payment Required" size="small" color="warning" variant="outlined" />
+                  )}
+                  {paymentConfig.allow_payment_plans && (
+                    <Chip label="Payment Plans Available" size="small" color="info" variant="outlined" />
+                  )}
+                </Stack>
+              </Box>
+            )}
           </Box>
         );
 
@@ -205,22 +428,64 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             <Typography variant="subtitle1" gutterBottom>
               Review Your Booking
             </Typography>
-            <Typography color="text.secondary">
+            <Typography color="text.secondary" gutterBottom>
               Please review all details before confirming your booking.
             </Typography>
+            
+            <Paper sx={{ p: 2, backgroundColor: 'grey.50' }}>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Event Date</Typography>
+                  <Typography>Saturday, March 15, 2024 at 2:00 PM</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Package</Typography>
+                  <Typography>Premium Package</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Contact</Typography>
+                  <Typography>John Doe (john.doe@example.com)</Typography>
+                </Box>
+                <Divider />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Total Amount</Typography>
+                  <Typography variant="h6" color="primary">$1,250.00</Typography>
+                </Box>
+              </Stack>
+            </Paper>
           </Box>
         );
 
       case 'confirmation':
+        const confirmationConfig = config as ConfirmationStepConfiguration;
         return (
           <Box textAlign="center">
             <CheckCircle color="success" sx={{ fontSize: 48, mb: 2 }} />
             <Typography variant="h6" gutterBottom>
-              Booking Confirmed!
+              {confirmationConfig?.title || 'Booking Confirmed!'}
             </Typography>
-            <Typography color="text.secondary">
-              Thank you for your booking. We'll be in touch soon with next steps.
+            <Typography color="text.secondary" gutterBottom>
+              {confirmationConfig?.message || 'Thank you for your booking. We\'ll be in touch soon with next steps.'}
             </Typography>
+            
+            {confirmationConfig && (
+              <Box mt={3}>
+                <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
+                  {confirmationConfig.send_confirmation_email && (
+                    <Chip label="Confirmation Email Sent" size="small" color="success" variant="outlined" />
+                  )}
+                  {confirmationConfig.send_calendar_invite && (
+                    <Chip label="Calendar Invite Sent" size="small" color="info" variant="outlined" />
+                  )}
+                  {confirmationConfig.create_event_immediately && (
+                    <Chip label="Event Created" size="small" color="primary" variant="outlined" />
+                  )}
+                  {confirmationConfig.show_next_steps && confirmationConfig.next_steps_content && (
+                    <Chip label="Next Steps Shown" size="small" color="info" variant="outlined" />
+                  )}
+                </Stack>
+              </Box>
+            )}
           </Box>
         );
 
@@ -233,6 +498,11 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             <Typography color="text.secondary">
               {step.description || `This is the ${step.step_type_display.toLowerCase()} step.`}
             </Typography>
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              <Typography variant="caption">
+                Preview not available for step type: {step.step_type}
+              </Typography>
+            </Alert>
           </Box>
         );
     }
@@ -247,19 +517,30 @@ const StepPreview: React.FC<StepPreviewProps> = ({
     >
       <Box display="flex" alignItems="center" gap={1} mb={2}>
         {getStepIcon()}
-        <Typography 
-          variant={compact ? "body2" : "subtitle1"} 
-          fontWeight={isActive ? "bold" : "medium"}
-          color={!step.is_enabled ? "text.disabled" : isActive ? "primary" : "text.primary"}
-        >
-          {step.name}
-        </Typography>
-        {!step.is_enabled && (
-          <Chip label="Disabled" size="small" color="default" variant="outlined" />
-        )}
-        {step.is_required && (
-          <Chip label="Required" size="small" color="error" variant="outlined" />
-        )}
+        <Box display="flex" alignItems="center" gap={1} flex={1}>
+          <Typography 
+            variant={compact ? "body2" : "subtitle1"} 
+            fontWeight={isActive ? "bold" : "medium"}
+            color={!step.is_enabled ? "text.disabled" : isActive ? "primary" : "text.primary"}
+          >
+            {step.name}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            ({step.step_type_display})
+          </Typography>
+        </Box>
+        
+        <Box display="flex" gap={0.5}>
+          {!step.is_enabled && (
+            <Chip label="Disabled" size="small" color="default" variant="outlined" />
+          )}
+          {step.is_required && (
+            <Chip label="Required" size="small" color="error" variant="outlined" />
+          )}
+          {step.is_skippable && (
+            <Chip label="Skippable" size="small" color="info" variant="outlined" />
+          )}
+        </Box>
       </Box>
       
       {isActive && !compact && (
@@ -278,10 +559,8 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isMobileView, setIsMobileView] = useState(showMobileView);
-  // @ts-ignore
-  const [isTestRunning, setIsTestRunning] = useState(false);
 
-  // Get enabled steps only
+  // Get enabled steps only, sorted by order
   const enabledSteps = flow.steps?.filter(step => step.is_enabled).sort((a, b) => a.order - b.order) || [];
   const currentStep = enabledSteps[currentStepIndex];
 
@@ -304,6 +583,11 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
   const progressPercentage = enabledSteps.length > 0 
     ? Math.round(((currentStepIndex + 1) / enabledSteps.length) * 100)
     : 0;
+
+  // Check for deprecated step types
+  const hasDeprecatedSteps = flow.steps?.some(step => 
+    String(step.step_type) === 'availability_check' || String(step.step_type) === 'event_details'
+  ) || false;
 
   if (!flow.steps || flow.steps.length === 0) {
     return (
@@ -328,6 +612,12 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
           <Alert severity="warning">
             All steps in this booking flow are disabled. Enable at least one step to preview the client experience.
           </Alert>
+          {hasDeprecatedSteps && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              This flow contains deprecated step types (availability_check, event_details). 
+              Please migrate or remove these steps for the flow to function properly.
+            </Alert>
+          )}
         </CardContent>
       </Card>
     );
@@ -346,10 +636,17 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
-            <PreviewIcon color="primary" />
-            <Typography variant="h6" fontWeight="bold">
-              {flow.name} Preview
-            </Typography>
+            <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+              <PreviewIcon />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" fontWeight="bold">
+                {flow.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Preview Mode
+              </Typography>
+            </Box>
           </Box>
           
           <Box display="flex" alignItems="center" gap={1}>
@@ -390,12 +687,20 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
 
         {/* Flow Info */}
         <Box display="flex" flexWrap="wrap" gap={1}>
-          {flow.event_type_name && (
+          {flow.event_type_name && flow.event_type_name !== 'Any Event Type' ? (
             <Chip
               label={flow.event_type_name}
               size="small"
               color="primary"
               variant="outlined"
+              icon={<CalendarIcon />}
+            />
+          ) : (
+            <Chip
+              label="Any Event Type"
+              size="small"
+              variant="outlined"
+              color="default"
             />
           )}
           {flow.allow_guest_booking && (
@@ -407,11 +712,29 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
             />
           )}
           <Chip
-            label={`${enabledSteps.length} Steps`}
+            label={`${enabledSteps.length} Active Steps`}
             size="small"
             variant="outlined"
           />
+          {flow.is_test_mode && (
+            <Chip
+              label="Test Mode"
+              size="small"
+              color="warning"
+              variant="filled"
+            />
+          )}
         </Box>
+
+        {/* Deprecated Steps Warning */}
+        {hasDeprecatedSteps && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            <Typography variant="caption">
+              This flow contains deprecated step types that may not function properly. 
+              Please review and update the flow configuration.
+            </Typography>
+          </Alert>
+        )}
       </Box>
 
       <CardContent>
@@ -451,7 +774,7 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
                 Previous
               </Button>
 
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" textAlign="center" flex={1}>
                 {currentStep?.name}
               </Typography>
 
@@ -469,7 +792,10 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
 
         {/* Preview Notice */}
         <Alert severity="info" sx={{ mt: 3 }}>
-          This is a preview of the client booking experience. Interactive elements are simulated and non-functional.
+          <Typography variant="body2">
+            This is a preview of the client booking experience. Interactive elements are simulated and non-functional.
+            {isMobileView && ' Viewing in mobile format.'}
+          </Typography>
         </Alert>
       </CardContent>
     </Card>

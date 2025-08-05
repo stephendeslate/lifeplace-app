@@ -12,6 +12,10 @@ import { Login, Register } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { Messages } from './pages/messages';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
+import { BookingComplete, BookingPage } from './pages/booking';
+
+// Import booking components
+
 
 // Loading component
 const LoadingSpinner: React.FC = () => (
@@ -110,13 +114,10 @@ const AppRouter: React.FC = () => {
   const handleNavigateToHome = () => navigate('/');
   const handleNavigateToLogin = () => navigate('/login');
   const handleNavigateToRegister = () => navigate('/register');
+  
+  // Updated booking handler - direct navigation to booking flow
   const handleNavigateToBooking = () => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    } else {
-      showInfo('Login Required', 'Please log in to access your dashboard.');
-      navigate('/login');
-    }
+    navigate('/booking');
   };
 
   if (isLoading) {
@@ -135,6 +136,25 @@ const AppRouter: React.FC = () => {
               onNavigateToRegister={handleNavigateToRegister}
               onNavigateToBooking={handleNavigateToBooking}
             />
+          </PublicLayout>
+        } 
+      />
+      
+      {/* Booking Routes - Public with consistent layout */}
+      <Route 
+        path="/booking" 
+        element={
+          <PublicLayout>
+            <BookingPage />
+          </PublicLayout>
+        } 
+      />
+      
+      <Route 
+        path="/booking/complete" 
+        element={
+          <PublicLayout>
+            <BookingComplete />
           </PublicLayout>
         } 
       />
@@ -299,7 +319,8 @@ const AppRouter: React.FC = () => {
                 My Bookings
               </Typography>
               <Typography color="text.secondary">
-                Booking management coming soon!
+                Booking management coming soon! In the meantime, you can{' '}
+                <a href="/booking" style={{ color: 'blue' }}>create a new booking</a>.
               </Typography>
             </Box>
           </ProtectedRoute>

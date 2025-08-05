@@ -22,12 +22,16 @@ import {
   Tabs,
   Tab,
   Divider,
+  Chip,
+  OutlinedInput,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import {
   EventNote as FlowIcon,
   Settings as ConfigIcon,
   Analytics as AnalyticsIcon,
   Email as EmailIcon,
+  Payment as PaymentIcon,
 } from '@mui/icons-material';
 import { 
   type BookingFlowFormDialogProps,
@@ -35,7 +39,11 @@ import {
   type CreateBookingFlowData,
   type UpdateBookingFlowData,
 } from '../../../types/bookingflows.types';
-import { useBookingFlowDependencies } from '../../../hooks/useBookingFlows';
+import { useEventTypes } from '../../../hooks/useEvents';
+import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
+import { useCommunications } from '../../../hooks/useCommunications';
+import { useDiscounts } from '../../../hooks/useProducts';
+import { usePaymentGateways } from '../../../hooks/usePayments';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -55,7 +63,15 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
   </div>
 );
 
-const defaultFormData: BookingFlowFormData = {
+// Enhanced form data interface to match evolved backend
+interface EnhancedBookingFlowFormData extends BookingFlowFormData {
+  // Payment gateway fields from evolved backend
+  allowed_payment_gateways: number[];
+  default_payment_gateway: string; // String for form handling
+  require_immediate_payment: boolean;
+}
+
+const defaultFormData: EnhancedBookingFlowFormData = {
   name: '',
   description: '',
   event_type: '', // Empty string for "Any Event Type"
@@ -71,6 +87,10 @@ const defaultFormData: BookingFlowFormData = {
   min_advance_booking_days: '1',
   allow_discounts: true,
   available_discounts: [],
+  // Payment gateway fields from evolved backend
+  allowed_payment_gateways: [],
+  default_payment_gateway: '',
+  require_immediate_payment: false,
   redirect_url: '',
   success_message: '',
   conversion_tracking_code: '',
@@ -83,7 +103,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
   onSubmit,
   isLoading,
 }) => {
-  const [formData, setFormData] = useState<BookingFlowFormData>(defaultFormData);
+  const [formData, setFormData] = useState<EnhancedBookingFlowFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState(0);
   
@@ -91,10 +111,47 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
   const firstInputRef = useRef<HTMLInputElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
-  const {
-    eventTypes,
-    isLoadingDependencies,
-  } = useBookingFlowDependencies();
+  // Load dependencies using existing hooks
+  const { 
+    eventTypes: eventTypesData = [], 
+    isLoadingEventTypes 
+  } = useEventTypes({ is_active: true });
+
+  const { 
+    templates: workflowTemplatesData = [], 
+    isLoadingTemplates: isLoadingWorkflows 
+  } = useWorkflowTemplates({ is_active: true });
+
+  // Get email templates - filtering communication templates by EMAIL channel
+  const { 
+    useTemplates 
+  } = useCommunications();
+  
+  const { 
+    data: emailTemplatesData = [], 
+    isLoading: isLoadingEmailTemplates 
+  } = useTemplates({ 
+    channel: 'EMAIL',
+    category: 'SYSTEM' // or 'MANUAL' depending on your needs
+  });
+
+  const { 
+    discounts: discountsData = [], 
+    isLoadingDiscounts 
+  } = useDiscounts({ is_active: true });
+
+  const { 
+    data: paymentGatewaysData = [], 
+    isLoading: isLoadingPaymentGateways 
+  } = usePaymentGateways();
+
+  // Check if any dependencies are still loading
+  const isLoadingDependencies = 
+    isLoadingEventTypes || 
+    isLoadingWorkflows || 
+    isLoadingEmailTemplates || 
+    isLoadingDiscounts || 
+    isLoadingPaymentGateways;
 
   useEffect(() => {
     if (open) {
@@ -102,7 +159,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
         setFormData({
           name: editingFlow.name || '',
           description: editingFlow.description || '',
-          // FIXED: Handle null event_type properly
+          // Handle null event_type properly
           event_type: editingFlow.event_type?.toString() || '',
           workflow_template: editingFlow.workflow_template?.toString() || '',
           confirmation_email_template: editingFlow.confirmation_email_template?.toString() || '',
@@ -116,6 +173,10 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
           min_advance_booking_days: editingFlow.min_advance_booking_days?.toString() || '1',
           allow_discounts: editingFlow.allow_discounts ?? true,
           available_discounts: editingFlow.available_discounts || [],
+          // Payment gateway fields from evolved backend
+          allowed_payment_gateways: editingFlow.allowed_payment_gateways || [],
+          default_payment_gateway: editingFlow.default_payment_gateway?.toString() || '',
+          require_immediate_payment: editingFlow.require_immediate_payment ?? false,
           redirect_url: editingFlow.redirect_url || '',
           success_message: editingFlow.success_message || '',
           conversion_tracking_code: editingFlow.conversion_tracking_code || '',
@@ -135,8 +196,9 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     }
   }, [editingFlow, open]);
 
-  const handleInputChange = (field: keyof BookingFlowFormData) => (
+  const handleInputChange = (field: keyof EnhancedBookingFlowFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
+           SelectChangeEvent<string | number[]> |
            { target: { value: unknown } }
   ) => {
     const value = event.target.value;
@@ -154,13 +216,32 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
     }
   };
 
-  const handleSwitchChange = (field: keyof BookingFlowFormData) => (
+  const handleSwitchChange = (field: keyof EnhancedBookingFlowFormData) => (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     setFormData(prev => ({
       ...prev,
       [field]: event.target.checked,
     }));
+  };
+
+  // Handler for multi-select fields like payment gateways and discounts
+  const handleMultiSelectChange = (field: keyof EnhancedBookingFlowFormData) => (
+    event: SelectChangeEvent<number[]>
+  ) => {
+    const value = event.target.value as number[];
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+    
+    // Clear error when user makes selection
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: '',
+      }));
+    }
   };
 
   // @ts-ignore
@@ -188,6 +269,16 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
 
     if (minDays >= maxDays) {
       newErrors.max_advance_booking_days = 'Maximum days must be greater than minimum days';
+    }
+
+    // Validate payment gateway configuration
+    if (formData.require_immediate_payment && formData.allowed_payment_gateways.length === 0) {
+      newErrors.allowed_payment_gateways = 'At least one payment gateway is required when immediate payment is enabled';
+    }
+
+    if (formData.default_payment_gateway && 
+        !formData.allowed_payment_gateways.includes(parseInt(formData.default_payment_gateway))) {
+      newErrors.default_payment_gateway = 'Default payment gateway must be in the allowed gateways list';
     }
 
     setErrors(newErrors);
@@ -218,14 +309,15 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       // Switch to the tab with errors
       if (errors.name) setActiveTab(0);
       else if (errors.min_advance_booking_days || errors.max_advance_booking_days) setActiveTab(1);
+      else if (errors.allowed_payment_gateways || errors.default_payment_gateway) setActiveTab(2);
       return;
     }
 
-    // FIXED: Properly convert form data to API data
+    // Convert form data to API data format matching evolved backend
     const submitData: CreateBookingFlowData | UpdateBookingFlowData = {
       name: formData.name.trim(),
       description: formData.description.trim() || undefined,
-      // FIXED: Convert empty string to null for "Any Event Type"
+      // Convert empty string to null for "Any Event Type"
       event_type: formData.event_type === '' || formData.event_type === 'null' 
         ? null 
         : parseInt(formData.event_type) || null,
@@ -241,6 +333,10 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       min_advance_booking_days: parseInt(formData.min_advance_booking_days) || 1,
       allow_discounts: formData.allow_discounts,
       available_discounts: formData.available_discounts,
+      // Payment gateway fields for evolved backend
+      allowed_payment_gateways: formData.allowed_payment_gateways,
+      default_payment_gateway: formData.default_payment_gateway ? parseInt(formData.default_payment_gateway) : null,
+      require_immediate_payment: formData.require_immediate_payment,
       redirect_url: formData.redirect_url.trim() || undefined,
       success_message: formData.success_message.trim() || undefined,
       conversion_tracking_code: formData.conversion_tracking_code.trim() || undefined,
@@ -308,6 +404,11 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                     iconPosition="start"
                   />
                   <Tab 
+                    icon={<PaymentIcon />} 
+                    label="Payment" 
+                    iconPosition="start"
+                  />
+                  <Tab 
                     icon={<EmailIcon />} 
                     label="Templates" 
                     iconPosition="start"
@@ -355,17 +456,11 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>Any Event Type</em>
                         </MenuItem>
-                        {eventTypes && eventTypes.length > 0 ? (
-                          eventTypes.map((eventType: { id: number; name: string }) => (
-                            <MenuItem key={eventType.id} value={eventType.id.toString()}>
-                              {eventType.name}
-                            </MenuItem>
-                          ))
-                        ) : (
-                          <MenuItem disabled>
-                            <em>No event types available</em>
+                        {eventTypesData.map((eventType) => (
+                          <MenuItem key={eventType.id} value={eventType.id.toString()}>
+                            {eventType.name}
                           </MenuItem>
-                        )}
+                        ))}
                       </Select>
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
                         Only one active booking flow is allowed per event type. 
@@ -501,11 +596,166 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         Enable discount codes and promotional offers
                       </Typography>
                     </Box>
+
+                    {/* Discounts multi-select */}
+                    {formData.allow_discounts && (
+                      <FormControl fullWidth>
+                        <InputLabel>Available Discounts</InputLabel>
+                        <Select
+                          multiple
+                          value={formData.available_discounts}
+                          onChange={handleMultiSelectChange('available_discounts')}
+                          input={<OutlinedInput label="Available Discounts" />}
+                          renderValue={(selected) => (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                              {(selected as number[]).map((value) => {
+                                const discount = discountsData.find(d => d.id === value);
+                                return (
+                                  <Chip 
+                                    key={value} 
+                                    label={discount?.name || `Discount ${value}`} 
+                                    size="small" 
+                                  />
+                                );
+                              })}
+                            </Box>
+                          )}
+                        >
+                          {discountsData.map((discount) => (
+                            <MenuItem key={discount.id} value={discount.id}>
+                              <Box>
+                                <Typography variant="body2">{discount.name}</Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Code: {discount.code || 'No code required'}
+                                </Typography>
+                              </Box>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
+                  </Stack>
+                </TabPanel>
+
+                {/* Payment Configuration Tab */}
+                <TabPanel value={activeTab} index={2}>
+                  <Stack spacing={3}>
+                    <Typography variant="h6" gutterBottom>
+                      Payment Gateway Configuration
+                    </Typography>
+                    
+                    <Alert severity="info">
+                      Configure payment processing for this booking flow. These settings control which payment methods are available to clients.
+                    </Alert>
+
+                    <FormControl fullWidth error={!!errors.allowed_payment_gateways}>
+                      <InputLabel>Allowed Payment Gateways</InputLabel>
+                      <Select
+                        multiple
+                        value={formData.allowed_payment_gateways}
+                        onChange={handleMultiSelectChange('allowed_payment_gateways')}
+                        input={<OutlinedInput label="Allowed Payment Gateways" />}
+                        renderValue={(selected) => (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {(selected as number[]).map((value) => {
+                              const gateway = paymentGatewaysData.find(g => g.id === value);
+                              return (
+                                <Chip 
+                                  key={value} 
+                                  label={gateway?.name || `Gateway ${value}`} 
+                                  size="small" 
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                              );
+                            })}
+                          </Box>
+                        )}
+                      >
+                        {paymentGatewaysData.filter(g => g.is_active).map((gateway) => (
+                          <MenuItem key={gateway.id} value={gateway.id}>
+                            <Box>
+                              <Typography variant="body2">{gateway.name}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {gateway.code}
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors.allowed_payment_gateways && (
+                        <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                          {errors.allowed_payment_gateways}
+                        </Typography>
+                      )}
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                        Leave empty to use all active payment gateways
+                      </Typography>
+                    </FormControl>
+
+                    <FormControl 
+                      fullWidth 
+                      error={!!errors.default_payment_gateway}
+                      disabled={formData.allowed_payment_gateways.length === 0}
+                    >
+                      <InputLabel>Default Payment Gateway</InputLabel>
+                      <Select
+                        value={formData.default_payment_gateway}
+                        onChange={handleInputChange('default_payment_gateway')}
+                        label="Default Payment Gateway"
+                      >
+                        <MenuItem value="">
+                          <em>No Default</em>
+                        </MenuItem>
+                        {paymentGatewaysData
+                          .filter(g => 
+                            g.is_active && 
+                            (formData.allowed_payment_gateways.length === 0 || 
+                             formData.allowed_payment_gateways.includes(g.id))
+                          )
+                          .map((gateway) => (
+                            <MenuItem key={gateway.id} value={gateway.id.toString()}>
+                              {gateway.name}
+                            </MenuItem>
+                          ))
+                        }
+                      </Select>
+                      {errors.default_payment_gateway && (
+                        <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                          {errors.default_payment_gateway}
+                        </Typography>
+                      )}
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                        Preferred payment gateway that will be pre-selected for clients
+                      </Typography>
+                    </FormControl>
+
+                    <Box display="flex" flexDirection="column" gap={2}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={formData.require_immediate_payment}
+                            onChange={handleSwitchChange('require_immediate_payment')}
+                          />
+                        }
+                        label="Require Immediate Payment"
+                      />
+                      <Typography variant="caption" color="text.secondary">
+                        Process payment during booking completion instead of generating invoices
+                      </Typography>
+                    </Box>
+
+                    {formData.require_immediate_payment && (
+                      <Alert severity="warning">
+                        When immediate payment is required, clients must complete payment to finish the booking process. 
+                        Ensure you have at least one payment gateway configured and tested.
+                      </Alert>
+                    )}
                   </Stack>
                 </TabPanel>
 
                 {/* Templates Tab */}
-                <TabPanel value={activeTab} index={2}>
+                <TabPanel value={activeTab} index={3}>
                   <Stack spacing={3}>
                     <Alert severity="info">
                       Configure email templates and workflow automation for this booking flow.
@@ -521,8 +771,15 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>No Workflow</em>
                         </MenuItem>
-                        {/* TODO: Add workflow templates */}
+                        {workflowTemplatesData.map((template) => (
+                          <MenuItem key={template.id} value={template.id.toString()}>
+                            {template.name}
+                          </MenuItem>
+                        ))}
                       </Select>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                        Automatic workflow to assign when booking is completed
+                      </Typography>
                     </FormControl>
 
                     <FormControl fullWidth>
@@ -535,8 +792,15 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>No Email</em>
                         </MenuItem>
-                        {/* TODO: Add email templates */}
+                        {emailTemplatesData.map((template) => (
+                          <MenuItem key={template.id} value={template.id.toString()}>
+                            {template.name}
+                          </MenuItem>
+                        ))}
                       </Select>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                        Email sent immediately after booking confirmation
+                      </Typography>
                     </FormControl>
 
                     <FormControl fullWidth>
@@ -549,14 +813,21 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         <MenuItem value="">
                           <em>No Reminders</em>
                         </MenuItem>
-                        {/* TODO: Add email templates */}
+                        {emailTemplatesData.map((template) => (
+                          <MenuItem key={template.id} value={template.id.toString()}>
+                            {template.name}
+                          </MenuItem>
+                        ))}
                       </Select>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                        Automated reminder emails before the event
+                      </Typography>
                     </FormControl>
                   </Stack>
                 </TabPanel>
 
                 {/* Advanced Tab */}
-                <TabPanel value={activeTab} index={3}>
+                <TabPanel value={activeTab} index={4}>
                   <Stack spacing={3}>
                     <Typography variant="h6" gutterBottom>
                       Completion Settings

@@ -9,6 +9,9 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class BookingFlow(BaseModel):
@@ -69,6 +72,26 @@ class BookingFlow(BaseModel):
         related_name='booking_flows'
     )
     
+    # Payment configuration - NEW
+    allowed_payment_gateways = models.ManyToManyField(
+        'payments.PaymentGateway',
+        blank=True,
+        related_name='booking_flows',
+        help_text="Payment gateways available for this booking flow"
+    )
+    default_payment_gateway = models.ForeignKey(
+        'payments.PaymentGateway',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='default_booking_flows',
+        help_text="Default payment gateway for this booking flow"
+    )
+    require_immediate_payment = models.BooleanField(
+        default=False,
+        help_text="Require payment during booking completion"
+    )
+    
     # Completion actions
     redirect_url = models.URLField(blank=True, help_text="URL to redirect after successful booking")
     success_message = models.TextField(blank=True)
@@ -82,8 +105,6 @@ class BookingFlow(BaseModel):
 
     class Meta:
         ordering = ['name']
-        # REMOVED: unique_together constraint since we want to allow multiple flows per event type
-        # but we'll add custom validation instead
         indexes = [
             models.Index(fields=['event_type', 'is_active']),
             models.Index(fields=['is_active']),
@@ -127,23 +148,28 @@ class BookingFlow(BaseModel):
         """Get all enabled steps in order"""
         return self.steps.filter(is_enabled=True).order_by('order')
     
-    def get_next_step(self, current_step_id=None):
-        """Get the next step in the flow"""
-        enabled_steps = self.enabled_steps
-        
-        if not current_step_id:
-            return enabled_steps.first()
-        
-        current_index = None
-        for i, step in enumerate(enabled_steps):
-            if step.id == current_step_id:
-                current_index = i
-                break
-        
-        if current_index is not None and current_index + 1 < len(enabled_steps):
-            return enabled_steps[current_index + 1]
-        
-        return None
+    def get_next_step(self, current_step_id, booking_data=None):
+        """Get the next visible enabled step after the given step ID"""
+        try:
+            current_step = self.steps.get(id=current_step_id)
+            next_steps = self.steps.filter(
+                order__gt=current_step.order,
+                is_enabled=True
+            ).order_by('order')
+            
+            # Check visibility conditions if booking_data provided
+            for step in next_steps:
+                if booking_data is None or step.is_visible_for_data(booking_data):
+                    return step
+                    
+            return None
+        except BookingFlowStep.DoesNotExist:
+            return None
+    
+    @property
+    def enabled_steps(self):
+        """Get all enabled steps in order"""
+        return self.steps.filter(is_enabled=True).order_by('order')
     
     def calculate_total_steps(self):
         """Calculate total number of enabled steps"""
@@ -153,6 +179,19 @@ class BookingFlow(BaseModel):
     def event_type_name(self):
         """Get event type name or 'Any Event Type'"""
         return self.event_type.name if self.event_type else 'Any Event Type'
+    
+    def get_available_payment_gateways(self):
+        """Get available payment gateways for this flow"""
+        if self.allowed_payment_gateways.exists():
+            return self.allowed_payment_gateways.filter(is_active=True)
+        else:
+            # FIX: Import here to avoid circular imports
+            try:
+                from core.domains.payments.models import PaymentGateway
+                return PaymentGateway.objects.filter(is_active=True)
+            except ImportError:
+                # Return empty queryset if payments domain not available
+                return self.allowed_payment_gateways.none()
 
 
 class BookingFlowStep(BaseModel):
@@ -161,12 +200,10 @@ class BookingFlowStep(BaseModel):
     """
     STEP_TYPES = [
         ('introduction', 'Introduction'),
-        ('event_details', 'Event Details'),
         ('date_time', 'Date & Time Selection'),
         ('questionnaire', 'Questionnaire'),
         ('package_selection', 'Package Selection'),
         ('addon_selection', 'Add-on Selection'),
-        ('availability_check', 'Availability Check'),
         ('pricing_summary', 'Pricing Summary'),
         ('contact_info', 'Contact Information'),
         ('payment_info', 'Payment Information'),
@@ -249,32 +286,8 @@ class IntroductionStepConfiguration(BaseModel):
         return f"Intro config for {self.step}"
 
 
-class EventDetailsStepConfiguration(BaseModel):
-    """Configuration for event details step"""
-    step = models.OneToOneField(
-        BookingFlowStep,
-        on_delete=models.CASCADE,
-        related_name='event_details_config'
-    )
-    show_event_type_selection = models.BooleanField(default=False)
-    require_event_name = models.BooleanField(default=True)
-    require_description = models.BooleanField(default=False)
-    require_guest_count = models.BooleanField(default=True)
-    max_guest_count = models.PositiveIntegerField(null=True, blank=True)
-    require_venue_preference = models.BooleanField(default=False)
-    venue_options = ArrayField(
-        models.CharField(max_length=255),
-        blank=True,
-        default=list,
-        help_text="Predefined venue options"
-    )
-
-    def __str__(self):
-        return f"Event details config for {self.step}"
-
-
 class DateTimeStepConfiguration(BaseModel):
-    """Configuration for date and time selection step"""
+    """Enhanced configuration for date and time selection step with availability checking"""
     step = models.OneToOneField(
         BookingFlowStep,
         on_delete=models.CASCADE,
@@ -287,8 +300,11 @@ class DateTimeStepConfiguration(BaseModel):
     max_duration_hours = models.PositiveIntegerField(default=24)
     default_duration_hours = models.PositiveIntegerField(default=4)
     
-    # Availability settings
+    # Availability settings - Enhanced from availability_check step
     enable_real_time_availability = models.BooleanField(default=True)
+    show_availability_status = models.BooleanField(default=True)
+    auto_check_conflicts = models.BooleanField(default=True)
+    
     blocked_dates = ArrayField(
         models.DateField(),
         blank=True,
@@ -310,6 +326,42 @@ class DateTimeStepConfiguration(BaseModel):
     # Buffer settings
     buffer_before_hours = models.PositiveIntegerField(default=0)
     buffer_after_hours = models.PositiveIntegerField(default=0)
+    
+    # Availability checking configuration
+    check_venue_availability = models.BooleanField(default=True)
+    check_resource_availability = models.BooleanField(default=True)
+    check_staff_availability = models.BooleanField(default=True)
+    
+    # Availability display settings
+    availability_display_mode = models.CharField(
+        max_length=20,
+        choices=[
+            ('FULL', 'Show Full Availability'),
+            ('LIMITED', 'Show Limited Availability'),
+            ('SIMPLE', 'Show Simple Yes/No'),
+        ],
+        default='FULL'
+    )
+    
+    # Conflict resolution
+    allow_overbooking = models.BooleanField(default=False)
+    overbooking_threshold = models.PositiveIntegerField(
+        default=0,
+        help_text="Maximum allowed conflicts before blocking"
+    )
+    
+    # Integration settings
+    sync_with_calendar = models.BooleanField(default=False)
+    calendar_source = models.CharField(
+        max_length=50,
+        choices=[
+            ('GOOGLE', 'Google Calendar'),
+            ('OUTLOOK', 'Outlook Calendar'),
+            ('EXTERNAL', 'External System'),
+        ],
+        blank=True,
+        help_text="Calendar system to sync availability with"
+    )
 
     def __str__(self):
         return f"DateTime config for {self.step}"
@@ -457,6 +509,40 @@ class AddonSelectionStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Addon config for {self.step}"
+    
+class PricingSummaryStepConfiguration(BaseModel):
+    """Configuration for pricing summary step"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='pricing_config'
+    )
+    
+    # Display options
+    show_package_breakdown = models.BooleanField(default=True)
+    show_addon_breakdown = models.BooleanField(default=True)
+    show_tax_breakdown = models.BooleanField(default=True)
+    show_discount_field = models.BooleanField(default=True)
+    show_subtotal = models.BooleanField(default=True)
+    
+    # Behavior options
+    allow_discount_codes = models.BooleanField(default=True)
+    calculate_tax = models.BooleanField(default=True)
+    
+    # Custom messaging
+    header_text = models.CharField(max_length=255, blank=True, default="Review your order")
+    footer_text = models.TextField(blank=True)
+    discount_help_text = models.CharField(
+        max_length=255, 
+        blank=True,
+        default="Enter discount code"
+    )
+
+    class Meta:
+        ordering = ['step']
+
+    def __str__(self):
+        return f"Pricing config for {self.step}"
 
 
 class ContactInfoStepConfiguration(BaseModel):
@@ -488,7 +574,7 @@ class ContactInfoStepConfiguration(BaseModel):
 
 
 class PaymentInfoStepConfiguration(BaseModel):
-    """Configuration for payment information step"""
+    """Configuration for payment information step - UPDATED"""
     step = models.OneToOneField(
         BookingFlowStep,
         on_delete=models.CASCADE,
@@ -516,13 +602,51 @@ class PaymentInfoStepConfiguration(BaseModel):
         help_text="Available payment methods"
     )
     
-    # Payment processing
-    require_immediate_payment = models.BooleanField(default=False)
+    # Payment processing - FIXED
+    require_immediate_payment = models.BooleanField(
+        default=False,
+        help_text="Process payment immediately during booking"
+    )
+    
+    # FIX: Use string references to avoid import issues
+    allowed_gateways = models.ManyToManyField(
+        'payments.PaymentGateway',
+        blank=True,
+        related_name='payment_step_configs',
+        help_text="Payment gateways available for this step"
+    )
+    default_gateway = models.ForeignKey(
+        'payments.PaymentGateway',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='default_payment_steps',
+        help_text="Default payment gateway for this step"
+    )
+    
     allow_payment_plans = models.BooleanField(default=False)
     payment_terms = models.TextField(blank=True)
 
     def __str__(self):
         return f"Payment config for {self.step}"
+    
+    def get_available_gateways(self):
+        """Get available payment gateways for this step"""
+        if self.allowed_gateways.exists():
+            return self.allowed_gateways.filter(is_active=True)
+        elif self.default_gateway and self.default_gateway.is_active:
+            return [self.default_gateway]
+        elif self.step.booking_flow.allowed_payment_gateways.exists():
+            return self.step.booking_flow.allowed_payment_gateways.filter(is_active=True)
+        elif self.step.booking_flow.default_payment_gateway and self.step.booking_flow.default_payment_gateway.is_active:
+            return [self.step.booking_flow.default_payment_gateway]
+        else:
+            # Fallback to all active gateways
+            try:
+                from core.domains.payments.models import PaymentGateway
+                return PaymentGateway.objects.filter(is_active=True)
+            except ImportError:
+                return []
 
 
 class ConfirmationStepConfiguration(BaseModel):
@@ -641,23 +765,51 @@ class BookingSession(BaseModel):
         """Calculate total price from booking data"""
         total = Decimal('0.00')
         
-        # Add package prices
-        if 'selected_packages' in self.booking_data:
-            for package_data in self.booking_data['selected_packages']:
-                total += Decimal(str(package_data.get('price', 0)))
+        # FIXED: Get packages and addons from root level first (single source of truth)
+        selected_packages = self.booking_data.get('selected_packages', [])
+        selected_addons = self.booking_data.get('selected_addons', [])
         
-        # Add addon prices
-        if 'selected_addons' in self.booking_data:
-            for addon_data in self.booking_data['selected_addons']:
-                total += Decimal(str(addon_data.get('price', 0)))
+        # If not found at root, look in step data (but only take the first occurrence)
+        if not selected_packages:
+            for step_key, step_data in self.booking_data.items():
+                if isinstance(step_data, dict) and 'selected_packages' in step_data:
+                    selected_packages = step_data['selected_packages']
+                    break  # CRITICAL: Only take the first occurrence to avoid duplication
         
-        # Apply discounts
-        if 'applied_discount' in self.booking_data:
-            discount_data = self.booking_data['applied_discount']
-            discount_amount = Decimal(str(discount_data.get('amount', 0)))
-            total -= discount_amount
+        if not selected_addons:
+            for step_key, step_data in self.booking_data.items():
+                if isinstance(step_data, dict) and 'selected_addons' in step_data:
+                    selected_addons = step_data['selected_addons']
+                    break  # CRITICAL: Only take the first occurrence to avoid duplication
         
-        return max(total, Decimal('0.00'))
+        # Calculate packages total
+        for package_data in selected_packages:
+            try:
+                price = Decimal(str(package_data.get('price', 0)))
+                quantity = int(package_data.get('quantity', 1))
+                total += price * quantity
+                
+                # Handle excess hours for packages
+                if 'excess_hours' in package_data and 'excess_hour_price' in package_data:
+                    excess_hours = int(package_data['excess_hours'])
+                    excess_hour_price = Decimal(str(package_data['excess_hour_price']))
+                    excess_cost = excess_hour_price * excess_hours * quantity
+                    total += excess_cost
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error calculating package price: {e}")
+                continue
+        
+        # Calculate addons total
+        for addon_data in selected_addons:
+            try:
+                price = Decimal(str(addon_data.get('price', 0)))
+                quantity = int(addon_data.get('quantity', 1))
+                total += price * quantity
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error calculating addon price: {e}")
+                continue
+        
+        return total
 
 
 class BookingFlowAnalytics(BaseModel):

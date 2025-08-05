@@ -35,6 +35,7 @@ import {
   type UpdateQuestionnaireData,
   QUESTIONNAIRE_FIELD_TYPES,
 } from '../../types/questionnaires.types';
+import { useEventTypes } from '../../hooks/useEvents';
 
 const defaultFormData: QuestionnaireFormData = {
   name: '',
@@ -62,6 +63,14 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
   const [formData, setFormData] = useState<QuestionnaireFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'basic' | 'fields'>('basic');
+
+  // Fetch event types for the dropdown
+  const { useActiveEventTypes } = useEventTypes();
+  const { 
+    data: eventTypes = [], 
+    isLoading: isLoadingEventTypes,
+    error: eventTypesError 
+  } = useActiveEventTypes();
 
   useEffect(() => {
     if (open) {
@@ -297,18 +306,43 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
                     required
                   />
                   
-                  <FormControl fullWidth>
+                  <FormControl fullWidth error={!!eventTypesError}>
                     <InputLabel>Event Type (Optional)</InputLabel>
                     <Select
                       value={formData.event_type}
                       onChange={handleInputChange('event_type')}
                       label="Event Type (Optional)"
+                      disabled={isLoadingEventTypes}
                     >
                       <MenuItem value="">
                         <em>Any Event Type</em>
                       </MenuItem>
-                      {/* TODO: Add event types from API */}
+                      {eventTypes.map((eventType) => (
+                        <MenuItem key={eventType.id} value={eventType.id.toString()}>
+                          <Box>
+                            <Typography variant="body2">{eventType.name}</Typography>
+                            {eventType.description && (
+                              <Typography variant="caption" color="text.secondary">
+                                {eventType.description}
+                              </Typography>
+                            )}
+                          </Box>
+                        </MenuItem>
+                      ))}
                     </Select>
+                    {isLoadingEventTypes && (
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <CircularProgress size={16} />
+                        <Typography variant="caption" color="text.secondary">
+                          Loading event types...
+                        </Typography>
+                      </Box>
+                    )}
+                    {eventTypesError && (
+                      <Alert severity="warning" sx={{ mt: 1 }}>
+                        Failed to load event types. You can still create the questionnaire without specifying an event type.
+                      </Alert>
+                    )}
                   </FormControl>
                   
                   <Box display="flex" gap={2}>

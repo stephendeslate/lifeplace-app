@@ -12,11 +12,16 @@ import {
   Button,
   Card,
   CardContent,
+  Skeleton,
+  Divider,
 } from '@mui/material';
 import {
   Upload as UploadIcon,
   Preview as PreviewIcon,
+  Save as SaveIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
+import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import type { 
   BookingFlowStep, 
   IntroductionStepConfiguration 
@@ -24,9 +29,7 @@ import type {
 
 interface IntroductionStepConfigProps {
   step: BookingFlowStep;
-  config?: IntroductionStepConfiguration | null;
-  onUpdate: (data: Partial<IntroductionStepConfiguration>) => void;
-  isLoading?: boolean;
+  onConfigurationChange?: () => void;
 }
 
 interface IntroductionConfigFormData {
@@ -49,31 +52,69 @@ const defaultFormData: IntroductionConfigFormData = {
 
 export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
   step,
-  config,
-  onUpdate,
-  isLoading = false,
+  onConfigurationChange,
 }) => {
   const [formData, setFormData] = useState<IntroductionConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hasChanges, setHasChanges] = useState(false);
 
+  // Use the evolved hooks from useBookingFlows
+  const {
+    useStepConfiguration,
+    updateConfiguration,
+    isUpdatingConfiguration,
+    updateConfigurationError,
+  } = useBookingFlowStepConfiguration();
+
+  // Get current configuration
+  const {
+    data: config,
+    isLoading: isLoadingConfig,
+    error: configError,
+    refetch: refetchConfig,
+  } = useStepConfiguration(step.id);
+
+  // Initialize form data when config loads
   useEffect(() => {
-    if (config) {
+    if (config && config.id) {
+      // Type guard to ensure we have IntroductionStepConfiguration
+      const introConfig = config as IntroductionStepConfiguration;
+      
       setFormData({
-        title: config.title || `Welcome to ${step.name}`,
-        content: config.content || '',
-        show_event_details: config.show_event_details ?? true,
-        show_pricing_overview: config.show_pricing_overview ?? false,
-        custom_css: config.custom_css || '',
-        background_image: config.background_image || '',
+        title: introConfig.title || `Welcome to ${step.name}`,
+        content: introConfig.content || '',
+        show_event_details: introConfig.show_event_details ?? true,
+        show_pricing_overview: introConfig.show_pricing_overview ?? false,
+        custom_css: introConfig.custom_css || '',
+        background_image: introConfig.background_image || '',
       });
-    } else {
+      setHasChanges(false);
+    } else if (!isLoadingConfig && !config) {
+      // No config exists, set defaults
       setFormData({
         ...defaultFormData,
         title: `Welcome to ${step.name}`,
         content: 'We\'re excited to help you plan your perfect event! This booking process will guide you through all the details we need.',
       });
+      setHasChanges(false);
     }
-  }, [config, step.name]);
+  }, [config, step.name, isLoadingConfig]);
+
+  // Track changes to enable/disable save button
+  useEffect(() => {
+    if (config) {
+      const introConfig = config as IntroductionStepConfiguration;
+      const hasFormChanges = 
+        formData.title !== (introConfig.title || '') ||
+        formData.content !== (introConfig.content || '') ||
+        formData.show_event_details !== (introConfig.show_event_details ?? true) ||
+        formData.show_pricing_overview !== (introConfig.show_pricing_overview ?? false) ||
+        formData.custom_css !== (introConfig.custom_css || '') ||
+        formData.background_image !== (introConfig.background_image || '');
+      
+      setHasChanges(hasFormChanges);
+    }
+  }, [formData, config]);
 
   const handleInputChange = (field: keyof IntroductionConfigFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -120,14 +161,47 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
   const handleSave = () => {
     if (!validateForm()) return;
 
-    onUpdate({
+    // Prepare data for backend - matches IntroductionStepConfiguration fields
+    const updateData = {
       title: formData.title.trim(),
       content: formData.content.trim(),
       show_event_details: formData.show_event_details,
       show_pricing_overview: formData.show_pricing_overview,
       custom_css: formData.custom_css.trim(),
-      background_image: formData.background_image?.trim() || undefined,
-    });
+      background_image: formData.background_image?.trim() || '',
+    };
+
+    updateConfiguration(
+      { stepId: step.id, data: updateData },
+      {
+        onSuccess: () => {
+          setHasChanges(false);
+          onConfigurationChange?.();
+        },
+      }
+    );
+  };
+
+  const handleReset = () => {
+    if (config) {
+      const introConfig = config as IntroductionStepConfiguration;
+      setFormData({
+        title: introConfig.title || `Welcome to ${step.name}`,
+        content: introConfig.content || '',
+        show_event_details: introConfig.show_event_details ?? true,
+        show_pricing_overview: introConfig.show_pricing_overview ?? false,
+        custom_css: introConfig.custom_css || '',
+        background_image: introConfig.background_image || '',
+      });
+    } else {
+      setFormData({
+        ...defaultFormData,
+        title: `Welcome to ${step.name}`,
+        content: 'We\'re excited to help you plan your perfect event! This booking process will guide you through all the details we need.',
+      });
+    }
+    setErrors({});
+    setHasChanges(false);
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,15 +216,73 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
     }
   };
 
+  const handleRefresh = () => {
+    refetchConfig();
+  };
+
+  // Loading state
+  if (isLoadingConfig) {
+    return (
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          Introduction Step Configuration
+        </Typography>
+        <Stack spacing={3}>
+          <Skeleton variant="rectangular" height={200} />
+          <Skeleton variant="rectangular" height={150} />
+          <Skeleton variant="rectangular" height={100} />
+        </Stack>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (configError) {
+    return (
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          Introduction Step Configuration
+        </Typography>
+        <Alert 
+          severity="error" 
+          action={
+            <Button color="inherit" size="small" onClick={handleRefresh}>
+              Retry
+            </Button>
+          }
+        >
+          Failed to load step configuration: {configError instanceof Error ? configError.message : 'Unknown error'}
+        </Alert>
+      </Box>
+    );
+  }
+
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Introduction Step Configuration
-      </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Typography variant="h6">
+          Introduction Step Configuration
+        </Typography>
+        <Button
+          size="small"
+          startIcon={<RefreshIcon />}
+          onClick={handleRefresh}
+          disabled={isLoadingConfig}
+        >
+          Refresh
+        </Button>
+      </Box>
       
       <Alert severity="info" sx={{ mb: 3 }}>
         The introduction step welcomes clients and sets expectations for the booking process.
       </Alert>
+
+      {/* Show update errors */}
+      {updateConfigurationError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
+        </Alert>
+      )}
 
       <Stack spacing={3}>
         {/* Basic Content */}
@@ -169,6 +301,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                 error={!!errors.title}
                 helperText={errors.title || 'Main welcome heading'}
                 required
+                disabled={isUpdatingConfiguration}
               />
               
               <TextField
@@ -181,6 +314,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                 multiline
                 rows={4}
                 required
+                disabled={isUpdatingConfiguration}
               />
             </Stack>
           </CardContent>
@@ -194,31 +328,37 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
             </Typography>
             
             <Stack spacing={2}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.show_event_details}
-                    onChange={handleSwitchChange('show_event_details')}
-                  />
-                }
-                label="Show Event Details"
-              />
-              <Typography variant="caption" color="text.secondary">
-                Display basic event information on the introduction step
-              </Typography>
+              <Box>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.show_event_details}
+                      onChange={handleSwitchChange('show_event_details')}
+                      disabled={isUpdatingConfiguration}
+                    />
+                  }
+                  label="Show Event Details"
+                />
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Display basic event information on the introduction step
+                </Typography>
+              </Box>
 
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.show_pricing_overview}
-                    onChange={handleSwitchChange('show_pricing_overview')}
-                  />
-                }
-                label="Show Pricing Overview"
-              />
-              <Typography variant="caption" color="text.secondary">
-                Display estimated pricing information upfront
-              </Typography>
+              <Box>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.show_pricing_overview}
+                      onChange={handleSwitchChange('show_pricing_overview')}
+                      disabled={isUpdatingConfiguration}
+                    />
+                  }
+                  label="Show Pricing Overview"
+                />
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Display estimated pricing information upfront
+                </Typography>
+              </Box>
             </Stack>
           </CardContent>
         </Card>
@@ -230,7 +370,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
               Customization
             </Typography>
             
-            <Stack spacing={2}>
+            <Stack spacing={3}>
               {/* Background Image */}
               <Box>
                 <Typography variant="body2" gutterBottom>
@@ -243,6 +383,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                     component="label"
                     startIcon={<UploadIcon />}
                     size="small"
+                    disabled={isUpdatingConfiguration}
                   >
                     Upload Image
                     <input
@@ -275,6 +416,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                 rows={4}
                 helperText="Additional CSS styling for this step"
                 placeholder=".introduction-step { /* Your custom styles */ }"
+                disabled={isUpdatingConfiguration}
               />
             </Stack>
           </CardContent>
@@ -290,13 +432,21 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
               </Typography>
             </Box>
             
+            <Divider sx={{ mb: 2 }} />
+            
             <Box 
               sx={{ 
                 p: 3, 
                 border: 1, 
                 borderColor: 'divider', 
                 borderRadius: 1,
-                backgroundColor: 'grey.50'
+                backgroundColor: 'grey.50',
+                position: 'relative',
+                ...(formData.background_image && {
+                  backgroundImage: `url(${formData.background_image})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                })
               }}
             >
               <Typography variant="h5" gutterBottom>
@@ -329,26 +479,65 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                 </Box>
               )}
             </Box>
+
+            {/* Custom CSS Preview */}
+            {formData.custom_css && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Custom CSS:
+                </Typography>
+                <Box 
+                  sx={{ 
+                    p: 1, 
+                    backgroundColor: 'grey.100', 
+                    borderRadius: 1,
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem',
+                    whiteSpace: 'pre-wrap',
+                    overflow: 'auto',
+                    maxHeight: 150,
+                  }}
+                >
+                  {formData.custom_css}
+                </Box>
+              </Box>
+            )}
           </CardContent>
         </Card>
 
         {/* Actions */}
-        <Box display="flex" gap={2}>
+        <Box display="flex" gap={2} justifyContent="flex-end">
           <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={isLoading}
+            variant="outlined"
+            onClick={handleReset}
+            disabled={isUpdatingConfiguration || !hasChanges}
           >
-            {isLoading ? 'Saving...' : 'Save Configuration'}
+            Reset Changes
           </Button>
           
           <Button
-            variant="outlined"
-            onClick={() => setFormData(defaultFormData)}
+            variant="contained"
+            startIcon={<SaveIcon />}
+            onClick={handleSave}
+            disabled={isUpdatingConfiguration || !hasChanges}
           >
-            Reset to Defaults
+            {isUpdatingConfiguration ? 'Saving...' : 'Save Configuration'}
           </Button>
         </Box>
+
+        {/* Configuration Debug Info (Development only) */}
+        {process.env.NODE_ENV === 'development' && config && (
+          <Card variant="outlined" sx={{ backgroundColor: 'grey.50' }}>
+            <CardContent>
+              <Typography variant="caption" gutterBottom>
+                Debug: Current Configuration
+              </Typography>
+              <pre style={{ fontSize: '0.75rem', overflow: 'auto' }}>
+                {JSON.stringify(config, null, 2)}
+              </pre>
+            </CardContent>
+          </Card>
+        )}
       </Stack>
     </Box>
   );

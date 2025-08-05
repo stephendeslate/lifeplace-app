@@ -59,11 +59,6 @@ export const eventsApi = {
     }
   },
 
-  getActiveEventTypes: async (): Promise<EventType[]> => {
-    const response = await api.get('/events/event-types/active/');
-    return Array.isArray(response.data) ? response.data : [];
-  },
-
   // Events
   getEvents: async (filters?: EventFilters): Promise<Event[]> => {
     const params = new URLSearchParams();

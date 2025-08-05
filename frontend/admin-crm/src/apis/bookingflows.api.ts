@@ -20,10 +20,8 @@ import type {
   ReorderStepsData,
   DuplicateFlowData,
   AssignQuestionnairesData,
-  ConfigurePackagesData,
-  ConfigureAddonsData,
-  StepPreviewData,
   StepConfiguration,
+  PaginatedResponse,
 } from '../types/bookingflows.types';
 
 export const bookingFlowsApi = {
@@ -33,16 +31,15 @@ export const bookingFlowsApi = {
     if (filters?.search) params.append('search', filters.search);
     if (filters?.event_type) params.append('event_type', filters.event_type.toString());
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.has_active_sessions !== undefined) params.append('has_active_sessions', filters.has_active_sessions.toString());
     
-    const response = await api.get(`/bookingflow/flows/?${params.toString()}`);
+    const response = await api.get<PaginatedResponse<BookingFlow>>(`/bookingflow/flows/?${params.toString()}`);
     
-    // Handle paginated response - extract results array
+    // Handle paginated response
     if (response.data && typeof response.data === 'object' && 'results' in response.data) {
-      return response.data.results as BookingFlow[];
+      return response.data.results;
     }
     
-    // Fallback for direct array response
+    // Fallback for direct array response (shouldn't happen with backend)
     return Array.isArray(response.data) ? response.data : [];
   },
 
@@ -71,8 +68,42 @@ export const bookingFlowsApi = {
   },
 
   getActiveBookingFlows: async (): Promise<BookingFlow[]> => {
-    const response = await api.get('/bookingflow/flows/active/');
+    const response = await api.get<PaginatedResponse<BookingFlow>>('/bookingflow/flows/active/');
+    
+    // Handle paginated response
+    if (response.data && typeof response.data === 'object' && 'results' in response.data) {
+      return response.data.results;
+    }
+    
     return Array.isArray(response.data) ? response.data : [];
+  },
+
+  // FIXED: Payment gateways endpoint based on backend views
+  getFlowPaymentGateways: async (flowId: number): Promise<{
+    available_gateways: Array<{
+      id: number;
+      name: string;
+      code: string;
+      description: string;
+      is_active: boolean;
+      public_config: Record<string, any>;
+    }>;
+    default_gateway: number | null;
+    require_immediate_payment: boolean;
+  }> => {
+    const response = await api.get<{
+      available_gateways: Array<{
+        id: number;
+        name: string;
+        code: string;
+        description: string;
+        is_active: boolean;
+        public_config: Record<string, any>;
+      }>;
+      default_gateway: number | null;
+      require_immediate_payment: boolean;
+    }>(`/bookingflow/flows/${flowId}/payment_gateways/`);
+    return response.data;
   },
 
   // Flow Steps Management
@@ -86,11 +117,11 @@ export const bookingFlowsApi = {
     if (filters?.flow_id) params.append('flow_id', filters.flow_id.toString());
     if (filters?.step_type) params.append('step_type', filters.step_type);
     
-    const response = await api.get(`/bookingflow/steps/?${params.toString()}`);
+    const response = await api.get<PaginatedResponse<BookingFlowStep>>(`/bookingflow/steps/?${params.toString()}`);
     
     // Handle paginated response
     if (response.data && typeof response.data === 'object' && 'results' in response.data) {
-      return response.data.results as BookingFlowStep[];
+      return response.data.results;
     }
     
     return Array.isArray(response.data) ? response.data : [];
@@ -120,10 +151,41 @@ export const bookingFlowsApi = {
     return response.data;
   },
 
+  // FIXED: Available step types endpoint based on backend
+  getAvailableStepTypes: async (): Promise<{
+    step_types: Array<{ value: string; label: string }>;
+    total_count: number;
+    removed_types: Array<{
+      value: string;
+      label: string;
+      reason: string;
+      migration_available: boolean;
+    }>;
+  }> => {
+    const response = await api.get<{
+      step_types: Array<{ value: string; label: string }>;
+      total_count: number;
+      removed_types: Array<{
+        value: string;
+        label: string;
+        reason: string;
+        migration_available: boolean;
+      }>;
+    }>('/bookingflow/steps/available_step_types/');
+    return response.data;
+  },
+
   // Step Configuration Management
   getStepConfiguration: async (stepId: number): Promise<StepConfiguration | null> => {
-    const response = await api.get<StepConfiguration | null>(`/bookingflow/steps/${stepId}/configuration/`);
-    return response.data;
+    try {
+      const response = await api.get<StepConfiguration>(`/bookingflow/steps/${stepId}/configuration/`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   updateStepConfiguration: async (stepId: number, data: Record<string, any>): Promise<StepConfiguration> => {
@@ -131,21 +193,123 @@ export const bookingFlowsApi = {
     return response.data;
   },
 
-  previewStepConfiguration: async (stepId: number): Promise<StepPreviewData> => {
-    const response = await api.get<StepPreviewData>(`/bookingflow/steps/${stepId}/preview_configuration/`);
+  // FIXED: Availability step migration endpoint
+  migrateAvailabilityToDateTime: async (stepId: number): Promise<BookingFlowStep> => {
+    const response = await api.post<BookingFlowStep>(`/bookingflow/steps/${stepId}/migrate_availability_to_datetime/`);
     return response.data;
   },
 
-  duplicateStepConfiguration: async (stepId: number, sourceStepId: number): Promise<StepConfiguration> => {
-    const response = await api.post<StepConfiguration>(`/bookingflow/steps/${stepId}/duplicate_configuration/`, {
-      source_step_id: sourceStepId
-    });
+  // FIXED: Step validation rules endpoint
+  getStepValidationRules: async (stepId: number): Promise<{
+    step_type: string;
+    validation_rules: Record<string, any>;
+    custom_rules: Record<string, any>;
+  }> => {
+    const response = await api.get<{
+      step_type: string;
+      validation_rules: Record<string, any>;
+      custom_rules: Record<string, any>;
+    }>(`/bookingflow/steps/${stepId}/step_validation_rules/`);
+    return response.data;
+  },
+
+  // FIXED: Availability settings endpoint for date_time steps
+  getAvailabilitySettings: async (stepId: number): Promise<{
+    enable_real_time_availability: boolean;
+    show_availability_status: boolean;
+    auto_check_conflicts: boolean;
+    check_venue_availability: boolean;
+    check_resource_availability: boolean;
+    check_staff_availability: boolean;
+    availability_display_mode: string;
+    allow_overbooking: boolean;
+    overbooking_threshold: number;
+    sync_with_calendar: boolean;
+    calendar_source: string;
+    blocked_dates: string[];
+    available_days_of_week: number[];
+    available_time_slots: any[];
+    buffer_before_hours: number;
+    buffer_after_hours: number;
+  }> => {
+    const response = await api.get<{
+      enable_real_time_availability: boolean;
+      show_availability_status: boolean;
+      auto_check_conflicts: boolean;
+      check_venue_availability: boolean;
+      check_resource_availability: boolean;
+      check_staff_availability: boolean;
+      availability_display_mode: string;
+      allow_overbooking: boolean;
+      overbooking_threshold: number;
+      sync_with_calendar: boolean;
+      calendar_source: string;
+      blocked_dates: string[];
+      available_days_of_week: number[];
+      available_time_slots: any[];
+      buffer_before_hours: number;
+      buffer_after_hours: number;
+    }>(`/bookingflow/steps/${stepId}/availability_settings/`);
+    return response.data;
+  },
+
+  // FIXED: Payment options endpoint for payment_info steps
+  getPaymentOptions: async (stepId: number): Promise<{
+    available_gateways: Array<{
+      id: number;
+      name: string;
+      code: string;
+      description: string;
+      supported_methods: string[];
+      public_config: Record<string, any>;
+    }>;
+    saved_payment_methods: any[];
+    require_immediate_payment: boolean;
+    accept_deposit: boolean;
+    deposit_amount: string | null;
+    deposit_type: string | null;
+    allow_payment_plans: boolean;
+    payment_terms: string;
+  }> => {
+    const response = await api.get<{
+      available_gateways: Array<{
+        id: number;
+        name: string;
+        code: string;
+        description: string;
+        supported_methods: string[];
+        public_config: Record<string, any>;
+      }>;
+      saved_payment_methods: any[];
+      require_immediate_payment: boolean;
+      accept_deposit: boolean;
+      deposit_amount: string | null;
+      deposit_type: string | null;
+      allow_payment_plans: boolean;
+      payment_terms: string;
+    }>(`/bookingflow/steps/${stepId}/payment_options/`);
     return response.data;
   },
 
   // Questionnaire Step Configuration
-  getAvailableQuestionnaires: async (stepId: number): Promise<any[]> => {
-    const response = await api.get<any[]>(`/bookingflow/steps/${stepId}/available_questionnaires/`);
+  getAvailableQuestionnaires: async (stepId: number): Promise<Array<{
+    id: number;
+    name: string;
+    event_type: number | null;
+    is_active: boolean;
+    order: number;
+    created_at: string;
+    updated_at: string;
+  }>> => {
+    const response = await api.get<Array<{
+      id: number;
+      name: string;
+      event_type: number | null;
+      is_active: boolean;
+      order: number;
+      created_at: string;
+      updated_at: string;
+    }>>(`/bookingflow/steps/${stepId}/available_questionnaires/`);
     return response.data;
   },
 
@@ -155,30 +319,80 @@ export const bookingFlowsApi = {
   },
 
   // Package Selection Step Configuration
-  getAvailablePackages: async (stepId: number): Promise<any[]> => {
-    const response = await api.get<any[]>(`/bookingflow/steps/${stepId}/available_packages/`);
-    return response.data;
-  },
-
-  configurePackages: async (stepId: number, data: ConfigurePackagesData): Promise<StepConfiguration> => {
-    const response = await api.post<StepConfiguration>(`/bookingflow/steps/${stepId}/configure_packages/`, data);
+  getAvailablePackages: async (stepId: number): Promise<Array<{
+    id: number;
+    name: string;
+    description: string;
+    category: number;
+    pricing_model: string;
+    base_price: string;
+    currency: string;
+    type: string;
+    is_active: boolean;
+  }>> => {
+    const response = await api.get<Array<{
+      id: number;
+      name: string;
+      description: string;
+      category: number;
+      pricing_model: string;
+      base_price: string;
+      currency: string;
+      type: string;
+      is_active: boolean;
+    }>>(`/bookingflow/steps/${stepId}/available_packages/`);
     return response.data;
   },
 
   // Addon Selection Step Configuration
-  getAvailableAddons: async (stepId: number): Promise<any[]> => {
-    const response = await api.get<any[]>(`/bookingflow/steps/${stepId}/available_addons/`);
-    return response.data;
-  },
-
-  configureAddons: async (stepId: number, data: ConfigureAddonsData): Promise<StepConfiguration> => {
-    const response = await api.post<StepConfiguration>(`/bookingflow/steps/${stepId}/configure_addons/`, data);
+  getAvailableAddons: async (stepId: number): Promise<Array<{
+    id: number;
+    name: string;
+    description: string;
+    category: number;
+    pricing_model: string;
+    base_price: string;
+    currency: string;
+    type: string;
+    is_active: boolean;
+  }>> => {
+    const response = await api.get<Array<{
+      id: number;
+      name: string;
+      description: string;
+      category: number;
+      pricing_model: string;
+      base_price: string;
+      currency: string;
+      type: string;
+      is_active: boolean;
+    }>>(`/bookingflow/steps/${stepId}/available_addons/`);
     return response.data;
   },
 
   // Product Categories (for step configuration)
-  getAvailableCategories: async (stepId: number): Promise<any[]> => {
-    const response = await api.get<any[]>(`/bookingflow/steps/${stepId}/available_categories/`);
+  getAvailableCategories: async (stepId: number): Promise<Array<{
+    id: number;
+    name: string;
+    description: string;
+    slug: string;
+    parent: number | null;
+    is_active: boolean;
+    sort_order: number;
+    requires_venue: boolean;
+    typical_duration_hours: number | null;
+  }>> => {
+    const response = await api.get<Array<{
+      id: number;
+      name: string;
+      description: string;
+      slug: string;
+      parent: number | null;
+      is_active: boolean;
+      sort_order: number;
+      requires_venue: boolean;
+      typical_duration_hours: number | null;
+    }>>(`/bookingflow/steps/${stepId}/available_categories/`);
     return response.data;
   },
 
@@ -189,11 +403,11 @@ export const bookingFlowsApi = {
     if (filters?.is_completed !== undefined) params.append('is_completed', filters.is_completed.toString());
     if (filters?.is_abandoned !== undefined) params.append('is_abandoned', filters.is_abandoned.toString());
     
-    const response = await api.get(`/bookingflow/sessions/?${params.toString()}`);
+    const response = await api.get<PaginatedResponse<BookingSession>>(`/bookingflow/sessions/?${params.toString()}`);
     
     // Handle paginated response
     if (response.data && typeof response.data === 'object' && 'results' in response.data) {
-      return response.data.results as BookingSession[];
+      return response.data.results;
     }
     
     return Array.isArray(response.data) ? response.data : [];
@@ -214,8 +428,16 @@ export const bookingFlowsApi = {
     return response.data;
   },
 
-  completeBooking: async (id: number): Promise<{ event: any; session: BookingSession }> => {
-    const response = await api.post<{ event: any; session: BookingSession }>(`/bookingflow/sessions/${id}/complete_booking/`);
+  completeBooking: async (id: number): Promise<{ 
+    detail: string;
+    event: any; 
+    session: BookingSession;
+  }> => {
+    const response = await api.post<{ 
+      detail: string;
+      event: any; 
+      session: BookingSession;
+    }>(`/bookingflow/sessions/${id}/complete_booking/`);
     return response.data;
   },
 
@@ -226,7 +448,7 @@ export const bookingFlowsApi = {
 
   // Public Booking Flow Endpoints (for client portal)
   getPublicBookingFlows: async (): Promise<BookingFlow[]> => {
-    const response = await api.get('/bookingflow/public/flows/');
+    const response = await api.get<BookingFlow[]>('/bookingflow/public/flows/');
     return Array.isArray(response.data) ? response.data : [];
   },
 
@@ -237,11 +459,37 @@ export const bookingFlowsApi = {
     progress_percentage: number;
   }> => {
     const response = await api.post<{
-    session_id: string;
-    current_step: BookingFlowStep | null;
-    expires_at: string;
-    progress_percentage: number;
-  }>(`/bookingflow/public/flows/${flowId}/start_session/`);
+      session_id: string;
+      current_step: BookingFlowStep | null;
+      expires_at: string;
+      progress_percentage: number;
+    }>(`/bookingflow/public/flows/${flowId}/start_session/`);
+    return response.data;
+  },
+
+  // FIXED: Public payment gateways endpoint
+  getPublicPaymentGateways: async (flowId: number): Promise<{
+    available_gateways: Array<{
+      id: number;
+      name: string;
+      code: string;
+      description: string;
+      public_config: Record<string, any>;
+    }>;
+    default_gateway: number | null;
+    require_immediate_payment: boolean;
+  }> => {
+    const response = await api.get<{
+      available_gateways: Array<{
+        id: number;
+        name: string;
+        code: string;
+        description: string;
+        public_config: Record<string, any>;
+      }>;
+      default_gateway: number | null;
+      require_immediate_payment: boolean;
+    }>(`/bookingflow/public/flows/${flowId}/payment_gateways/`);
     return response.data;
   },
 
@@ -251,7 +499,7 @@ export const bookingFlowsApi = {
     if (filters?.start_date) params.append('start_date', filters.start_date);
     if (filters?.end_date) params.append('end_date', filters.end_date);
     
-    const response = await api.get(`/bookingflow/flows/${flowId}/analytics/?${params.toString()}`);
+    const response = await api.get<BookingFlowAnalytics[]>(`/bookingflow/flows/${flowId}/analytics/?${params.toString()}`);
     return Array.isArray(response.data) ? response.data : [];
   },
 
@@ -261,11 +509,11 @@ export const bookingFlowsApi = {
     if (filters?.start_date) params.append('start_date', filters.start_date);
     if (filters?.end_date) params.append('end_date', filters.end_date);
     
-    const response = await api.get(`/bookingflow/analytics/?${params.toString()}`);
+    const response = await api.get<PaginatedResponse<BookingFlowAnalytics>>(`/bookingflow/analytics/?${params.toString()}`);
     
     // Handle paginated response
     if (response.data && typeof response.data === 'object' && 'results' in response.data) {
-      return response.data.results as BookingFlowAnalytics[];
+      return response.data.results;
     }
     
     return Array.isArray(response.data) ? response.data : [];

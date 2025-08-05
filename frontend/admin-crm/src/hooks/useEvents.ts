@@ -38,8 +38,8 @@ export const useEventTypes = (filters?: EventTypeFilters) => {
 
   const useActiveEventTypes = () => {
     return useQuery({
-      queryKey: ['event-types', 'active'],
-      queryFn: () => eventsApi.getActiveEventTypes(),
+      queryKey: ['event-types', { is_active: true }],
+      queryFn: () => eventsApi.getEventTypes({ is_active: true }),
       staleTime: 5 * 60 * 1000,
     });
   };
@@ -48,6 +48,7 @@ export const useEventTypes = (filters?: EventTypeFilters) => {
   const createEventTypeMutation = useMutation({
     mutationFn: (data: CreateEventTypeData) => eventsApi.createEventType(data),
     onSuccess: (newEventType) => {
+      // Invalidate all event-types queries to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
       showSuccess('Event Type Created', `${newEventType.name} has been created successfully.`);
     },
@@ -61,6 +62,7 @@ export const useEventTypes = (filters?: EventTypeFilters) => {
     mutationFn: ({ id, data }: { id: number; data: UpdateEventTypeData }) =>
       eventsApi.updateEventType(id, data),
     onSuccess: (updatedEventType) => {
+      // Invalidate all event-types queries to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
       queryClient.invalidateQueries({ queryKey: ['event-type', updatedEventType.id] });
       showSuccess('Event Type Updated', `${updatedEventType.name} has been updated successfully.`);
@@ -74,6 +76,7 @@ export const useEventTypes = (filters?: EventTypeFilters) => {
   const deleteEventTypeMutation = useMutation({
     mutationFn: (id: number) => eventsApi.deleteEventType(id),
     onSuccess: (result) => {
+      // Invalidate all event-types queries to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
       if (result.success) {
         showSuccess('Event Type Deleted', 'Event type has been deleted successfully.');

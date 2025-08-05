@@ -27,6 +27,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  ListItemText as MuiListItemText,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -82,14 +83,23 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
   const [questionnaireItems, setQuestionnaireItems] = useState<QuestionnaireStepItem[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedQuestionnaires, setSelectedQuestionnaires] = useState<number[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const {
     useAvailableQuestionnaires,
     assignQuestionnaires,
     isAssigningQuestionnaires,
+    updateConfiguration,
+    isUpdatingConfiguration,
+    assignQuestionnairesError,
+    updateConfigurationError,
   } = useBookingFlowStepConfiguration();
 
-  const { data: availableQuestionnaires = [] } = useAvailableQuestionnaires(step.id);
+  const { 
+    data: availableQuestionnaires = [], 
+    isLoading: isLoadingQuestionnaires,
+    error: questionnairesError 
+  } = useAvailableQuestionnaires(step.id);
 
   useEffect(() => {
     if (config) {
@@ -102,6 +112,18 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
     }
   }, [config]);
 
+  // Clear errors when data changes
+  useEffect(() => {
+    if (assignQuestionnairesError || updateConfigurationError) {
+      const errorMessage = assignQuestionnairesError?.message || 
+                          updateConfigurationError?.message || 
+                          'An error occurred';
+      setErrors({ general: errorMessage });
+    } else {
+      setErrors({});
+    }
+  }, [assignQuestionnairesError, updateConfigurationError]);
+
   const handleInputChange = (field: keyof QuestionnaireConfigFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
            { target: { value: unknown } }
@@ -111,6 +133,14 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
       ...prev,
       [field]: value,
     }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: '',
+      }));
+    }
   };
 
   const handleSwitchChange = (field: keyof QuestionnaireConfigFormData) => (
@@ -129,35 +159,91 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
     }));
   };
 
-  const handleAddQuestionnaires = () => {
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (formData.allow_file_uploads) {
+      if (formData.max_file_size_mb <= 0 || formData.max_file_size_mb > 100) {
+        newErrors.max_file_size_mb = 'File size must be between 1 and 100 MB';
+      }
+      
+      if (formData.allowed_file_types.length === 0) {
+        newErrors.allowed_file_types = 'At least one file type must be allowed';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAddQuestionnaires = async () => {
     if (selectedQuestionnaires.length > 0) {
-      assignQuestionnaires({
-        stepId: step.id,
-        data: { questionnaire_ids: selectedQuestionnaires }
-      });
-      setSelectedQuestionnaires([]);
-      setAddDialogOpen(false);
+      try {
+        await assignQuestionnaires({
+          stepId: step.id,
+          data: { questionnaire_ids: selectedQuestionnaires }
+        });
+        setSelectedQuestionnaires([]);
+        setAddDialogOpen(false);
+        // The questionnaire items will be updated via the config prop when parent refreshes
+      } catch (error) {
+        // Error is handled by the hook and displayed via errors state
+        console.error('Failed to assign questionnaires:', error);
+      }
     }
   };
 
-  const handleRemoveQuestionnaire = (itemId: number) => {
-    const updatedItems = questionnaireItems.filter(item => item.id !== itemId);
-    setQuestionnaireItems(updatedItems);
+  const handleRemoveQuestionnaire = async (itemId: number) => {
+    // Get the questionnaire ID from the item to remove
+    const itemToRemove = questionnaireItems.find(item => item.id === itemId);
+    if (!itemToRemove) return;
+
+    // Create new list excluding the removed questionnaire
+    const remainingItems = questionnaireItems.filter(item => item.id !== itemId);
+    const remainingQuestionnaireIds = remainingItems.map(item => item.questionnaire);
+
+    try {
+      await assignQuestionnaires({
+        stepId: step.id,
+        data: { questionnaire_ids: remainingQuestionnaireIds }
+      });
+      // Update local state immediately for better UX
+      setQuestionnaireItems(remainingItems);
+    } catch (error) {
+      console.error('Failed to remove questionnaire:', error);
+    }
   };
 
+  const handleSave = async () => {
+    if (!validateForm()) return;
 
-  const handleSave = () => {
-    onUpdate({
-      allow_file_uploads: formData.allow_file_uploads,
-      max_file_size_mb: formData.max_file_size_mb,
-      allowed_file_types: formData.allowed_file_types,
-    });
+    try {
+      await updateConfiguration({
+        stepId: step.id,
+        data: {
+          allow_file_uploads: formData.allow_file_uploads,
+          max_file_size_mb: formData.max_file_size_mb,
+          allowed_file_types: formData.allowed_file_types,
+        }
+      });
+      
+      // Also call the parent onUpdate for any additional handling
+      onUpdate({
+        allow_file_uploads: formData.allow_file_uploads,
+        max_file_size_mb: formData.max_file_size_mb,
+        allowed_file_types: formData.allowed_file_types,
+      });
+    } catch (error) {
+      console.error('Failed to save configuration:', error);
+    }
   };
 
   const getQuestionnaireNotAssigned = () => {
     const assignedIds = questionnaireItems.map(item => item.questionnaire);
     return availableQuestionnaires.filter(q => !assignedIds.includes(q.id));
   };
+
+  const isOperationLoading = isLoading || isUpdatingConfiguration || isAssigningQuestionnaires;
 
   return (
     <Box>
@@ -168,6 +254,19 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
       <Alert severity="info" sx={{ mb: 3 }}>
         Configure which questionnaires to show and file upload settings for this step.
       </Alert>
+
+      {/* General Errors */}
+      {errors.general && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {errors.general}
+        </Alert>
+      )}
+
+      {questionnairesError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Failed to load available questionnaires. Please try refreshing the page.
+        </Alert>
+      )}
 
       <Stack spacing={3}>
         {/* Assigned Questionnaires */}
@@ -183,12 +282,15 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                 startIcon={<AddIcon />}
                 onClick={() => setAddDialogOpen(true)}
                 size="small"
+                disabled={isLoadingQuestionnaires || getQuestionnaireNotAssigned().length === 0}
               >
                 Add Questionnaire
               </Button>
             </Box>
 
-            {questionnaireItems.length === 0 ? (
+            {isLoadingQuestionnaires ? (
+              <Alert severity="info">Loading available questionnaires...</Alert>
+            ) : questionnaireItems.length === 0 ? (
               <Alert severity="warning">
                 No questionnaires assigned. Clients will skip this step if no questionnaires are configured.
               </Alert>
@@ -248,6 +350,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                         onClick={() => handleRemoveQuestionnaire(item.id)}
                         size="small"
                         color="error"
+                        disabled={isAssigningQuestionnaires}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -272,6 +375,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                   <Switch
                     checked={formData.allow_file_uploads}
                     onChange={handleSwitchChange('allow_file_uploads')}
+                    disabled={isOperationLoading}
                   />
                 }
                 label="Allow File Uploads"
@@ -287,11 +391,18 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                     type="number"
                     value={formData.max_file_size_mb}
                     onChange={handleInputChange('max_file_size_mb')}
-                    helperText="Maximum file size allowed per upload"
+                    error={!!errors.max_file_size_mb}
+                    helperText={errors.max_file_size_mb || "Maximum file size allowed per upload"}
                     inputProps={{ min: 1, max: 100 }}
+                    disabled={isOperationLoading}
+                    sx={{ maxWidth: 300 }}
                   />
 
-                  <FormControl fullWidth>
+                  <FormControl 
+                    fullWidth 
+                    error={!!errors.allowed_file_types}
+                    disabled={isOperationLoading}
+                  >
                     <InputLabel>Allowed File Types</InputLabel>
                     <Select
                       multiple
@@ -309,10 +420,15 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                       {FILE_TYPE_OPTIONS.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
                           <Checkbox checked={formData.allowed_file_types.includes(option.value)} />
-                          <ListItemText primary={option.label} />
+                          <MuiListItemText primary={option.label} />
                         </MenuItem>
                       ))}
                     </Select>
+                    {errors.allowed_file_types && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                        {errors.allowed_file_types}
+                      </Typography>
+                    )}
                   </FormControl>
                 </>
               )}
@@ -343,7 +459,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                   </Typography>
                   
                   <Typography variant="body2">
-                    <strong>Allowed Types:</strong> {formData.allowed_file_types.join(', ').toUpperCase()}
+                    <strong>Allowed Types:</strong> {formData.allowed_file_types.length > 0 ? formData.allowed_file_types.join(', ').toUpperCase() : 'None'}
                   </Typography>
                 </>
               )}
@@ -356,14 +472,18 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={isLoading}
+            disabled={isOperationLoading}
           >
-            {isLoading ? 'Saving...' : 'Save Configuration'}
+            {isUpdatingConfiguration ? 'Saving...' : 'Save Configuration'}
           </Button>
           
           <Button
             variant="outlined"
-            onClick={() => setFormData(defaultFormData)}
+            onClick={() => {
+              setFormData(defaultFormData);
+              setErrors({});
+            }}
+            disabled={isOperationLoading}
           >
             Reset to Defaults
           </Button>
@@ -389,7 +509,11 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
             Select questionnaires to add to this step. They will be shown in the order selected.
           </Typography>
           
-          {getQuestionnaireNotAssigned().length === 0 ? (
+          {isLoadingQuestionnaires ? (
+            <Alert severity="info">
+              Loading available questionnaires...
+            </Alert>
+          ) : getQuestionnaireNotAssigned().length === 0 ? (
             <Alert severity="info">
               All available questionnaires are already assigned to this step.
             </Alert>
@@ -407,16 +531,52 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                       setSelectedQuestionnaires(prev => [...prev, questionnaire.id]);
                     }
                   }}
-                  sx={{ width: '100%', textAlign: 'left' }}
+                  sx={{ 
+                    width: '100%', 
+                    textAlign: 'left',
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    }
+                  }}
+                  disabled={isAssigningQuestionnaires}
                 >
                   <Checkbox
                     checked={selectedQuestionnaires.includes(questionnaire.id)}
                     tabIndex={-1}
                     disableRipple
+                    disabled={isAssigningQuestionnaires}
                   />
                   <ListItemText
                     primary={questionnaire.name}
-                    secondary={`${questionnaire.fields_count || 0} fields`}
+                    secondary={
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Typography variant="caption">
+                          {questionnaire.name}
+                        </Typography>
+                        {questionnaire.event_type && (
+                          <Chip
+                            label={`Event Type: ${questionnaire.event_type}`}
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                        {questionnaire.is_active ? (
+                          <Chip
+                            label="Active"
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                          />
+                        ) : (
+                          <Chip
+                            label="Inactive"
+                            size="small"
+                            color="error"
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                    }
                   />
                 </ListItem>
               ))}
@@ -425,7 +585,13 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
         </DialogContent>
         
         <DialogActions>
-          <Button onClick={() => setAddDialogOpen(false)}>
+          <Button 
+            onClick={() => {
+              setAddDialogOpen(false);
+              setSelectedQuestionnaires([]);
+            }}
+            disabled={isAssigningQuestionnaires}
+          >
             Cancel
           </Button>
           <Button

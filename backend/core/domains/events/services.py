@@ -189,15 +189,37 @@ class EventService:
                 task_data['event'] = event
                 EventTask.objects.create(**task_data)
             
+            # FIX: Handle event products creation properly
             for product_data in event_products_data:
                 print("EventService creating EventProductOption with data:", product_data)  # Debug
-                product_data['event'] = event
-                EventProductOption.objects.create(**product_data)
+                
+                # FIX: Get product option by ID if it's an ID
+                product_option = product_data.get('product_option')
+                if isinstance(product_option, int):
+                    try:
+                        from core.domains.products.models import ProductOption
+                        product_option = ProductOption.objects.get(id=product_option)
+                    except ProductOption.DoesNotExist:
+                        logger.warning(f"ProductOption with ID {product_option} not found")
+                        continue
+                
+                # Create EventProductOption with proper data
+                EventProductOption.objects.create(
+                    event=event,
+                    product_option=product_option,
+                    quantity=product_data.get('quantity', 1),
+                    final_price=product_data.get('final_price', product_option.base_price),
+                    num_participants=product_data.get('num_participants'),
+                    num_nights=product_data.get('num_nights'),
+                    excess_hours=product_data.get('excess_hours')
+                )
             
             # Create timeline entry
             timeline_description = 'Event created'
             if workflow_template:
                 timeline_description += f' with workflow: {workflow_template.name}'
+            if booking_flow_id:
+                timeline_description += f' from booking flow'
             
             EventTimeline.objects.create(
                 event=event,

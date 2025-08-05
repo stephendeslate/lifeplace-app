@@ -1,4 +1,5 @@
-# backend/core/domains/communications/signals.py (Updated)
+# backend/core/domains/communications/signals.py
+# Complete file with all existing functionality + Booking Confirmation template
 
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
@@ -279,5 +280,191 @@ def create_system_templates(sender, **kwargs):
         }
     )
     
+    # NEW: Booking Confirmation email template
+    booking_confirmation_template, created = CommunicationTemplate.objects.get_or_create(
+        name='Booking Confirmation',
+        defaults={
+            'channel': 'EMAIL',
+            'category': 'SYSTEM',
+            'is_system': True,
+            'subject_template': 'Booking Confirmed - {{ event_type }}',
+            'body_template': '''
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #1976d2; color: white; padding: 24px; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px;">Booking Confirmed!</h1>
+    </div>
+    
+    <div style="padding: 32px; background-color: #f5f5f5;">
+        <div style="background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; margin-top: 0;">Thank you for your booking, {{ client_name }}!</h2>
+            
+            <p style="color: #666; line-height: 1.5;">
+                Your booking has been confirmed. Here are your booking details:
+            </p>
+            
+            <div style="background-color: #f8f9fa; padding: 16px; border-radius: 4px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Booking Reference:</strong> {{ booking_reference }}</p>
+                <p style="margin: 5px 0;"><strong>Event Type:</strong> {{ event_type }}</p>
+                <p style="margin: 5px 0;"><strong>Date:</strong> {{ event_date }}</p>
+                <p style="margin: 5px 0;"><strong>Time:</strong> {{ event_time }}</p>
+                {% if duration %}<p style="margin: 5px 0;"><strong>Duration:</strong> {{ duration }} hours</p>{% endif %}
+                {% if total_price %}<p style="margin: 5px 0;"><strong>Total Price:</strong> ${{ total_price }}</p>{% endif %}
+            </div>
+            
+            {% if selected_packages %}
+            <h3 style="color: #333;">Selected Packages:</h3>
+            <ul style="color: #666;">
+                {% for package in selected_packages %}
+                <li>{{ package.name }} - ${{ package.price }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            
+            {% if selected_addons %}
+            <h3 style="color: #333;">Selected Add-ons:</h3>
+            <ul style="color: #666;">
+                {% for addon in selected_addons %}
+                <li>{{ addon.name }} - ${{ addon.price }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="{{ dashboard_url }}" 
+                   style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+                    View Your Booking
+                </a>
+            </div>
+            
+            <p style="color: #666; line-height: 1.5;">
+                If you have any questions about your booking, please don't hesitate to contact us.
+            </p>
+        </div>
+    </div>
+    
+    <div style="padding: 16px; text-align: center; color: #999; font-size: 12px;">
+        <p style="margin: 0;">© 2024 LifePlace. All rights reserved.</p>
+    </div>
+</div>
+            ''',
+            'variables_schema': {
+                'required': ['client_name', 'booking_reference', 'event_type', 'event_date', 'event_time'],
+                'optional': ['duration', 'total_price', 'selected_packages', 'selected_addons', 'dashboard_url', 'phone', 'email', 'questionnaire_responses']
+            }
+        }
+    )
+    
+    # NEW: Booking Reminder email template
+    booking_reminder_template, created = CommunicationTemplate.objects.get_or_create(
+        name='Booking Reminder',
+        defaults={
+            'channel': 'EMAIL',
+            'category': 'SYSTEM',
+            'is_system': True,
+            'subject_template': 'Reminder: Your {{ event_type }} is Tomorrow',
+            'body_template': '''
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #1976d2; color: white; padding: 24px; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px;">Event Reminder</h1>
+    </div>
+    
+    <div style="padding: 32px; background-color: #f5f5f5;">
+        <div style="background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; margin-top: 0;">Hi {{ client_name }}!</h2>
+            
+            <p style="color: #666; line-height: 1.5;">
+                This is a friendly reminder about your upcoming event tomorrow:
+            </p>
+            
+            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Event:</strong> {{ event_type }}</p>
+                <p style="margin: 5px 0;"><strong>Date:</strong> {{ event_date }}</p>
+                <p style="margin: 5px 0;"><strong>Time:</strong> {{ event_time }}</p>
+                {% if venue %}<p style="margin: 5px 0;"><strong>Location:</strong> {{ venue }}</p>{% endif %}
+                <p style="margin: 5px 0;"><strong>Reference:</strong> {{ booking_reference }}</p>
+            </div>
+            
+            <p style="color: #666; line-height: 1.5;">
+                We look forward to seeing you! If you need to make any changes or have questions, please contact us as soon as possible.
+            </p>
+            
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="{{ dashboard_url }}" 
+                   style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+                    View Booking Details
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div style="padding: 16px; text-align: center; color: #999; font-size: 12px;">
+        <p style="margin: 0;">© 2024 LifePlace. All rights reserved.</p>
+    </div>
+</div>
+            ''',
+            'variables_schema': {
+                'required': ['client_name', 'event_type', 'event_date', 'event_time', 'booking_reference'],
+                'optional': ['venue', 'dashboard_url']
+            }
+        }
+    )
+    
+    # Password Reset email template
+    password_reset_template, created = CommunicationTemplate.objects.get_or_create(
+        name='Password Reset',
+        defaults={
+            'channel': 'EMAIL',
+            'category': 'SYSTEM',
+            'is_system': True,
+            'subject_template': 'Reset Your LifePlace Password',
+            'body_template': '''
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #1976d2; color: white; padding: 24px; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px;">Password Reset Request</h1>
+    </div>
+    
+    <div style="padding: 32px; background-color: #f5f5f5;">
+        <div style="background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; margin-top: 0;">Hello {{ first_name }}!</h2>
+            
+            <p style="color: #666; line-height: 1.5;">
+                We received a request to reset your password. If you didn't make this request, you can safely ignore this email.
+            </p>
+            
+            <p style="color: #666; line-height: 1.5;">
+                To reset your password, click the button below:
+            </p>
+            
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="{{ reset_link }}" 
+                   style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+                    Reset Password
+                </a>
+            </div>
+            
+            <p style="color: #999; font-size: 14px; line-height: 1.5;">
+                This link will expire in 24 hours. If you need a new link, please request another password reset.
+            </p>
+            
+            <div style="background-color: #f8f9fa; padding: 12px; border-radius: 4px; margin-top: 20px;">
+                <p style="color: #666; font-size: 13px; margin: 0;">
+                    <strong>Security tip:</strong> Never share your password with anyone, and make sure to use a strong, unique password for your account.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div style="padding: 16px; text-align: center; color: #999; font-size: 12px;">
+        <p style="margin: 0;">© 2024 LifePlace. All rights reserved.</p>
+    </div>
+</div>
+            ''',
+            'variables_schema': {
+                'required': ['first_name', 'reset_link'],
+                'optional': ['last_name']
+            }
+        }
+    )
+    
     if created:
-        print(f"Created system communication templates")
+        print(f"Created system communication templates including booking confirmation")

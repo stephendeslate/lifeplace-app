@@ -21,6 +21,7 @@ import {
   TableSortLabel,
   Skeleton,
   Tooltip,
+  LinearProgress,
 } from '@mui/material';
 import {
   MoreVert as MoreVertIcon,
@@ -33,8 +34,13 @@ import {
   List as StepsIcon,
   Analytics as AnalyticsIcon,
   Science as TestIcon,
+  People as GuestsIcon,
+  Payment as PaymentIcon,
+  Schedule as TimeIcon,
+  CheckCircle as ActiveIcon,
+  RadioButtonUnchecked as InactiveIcon,
 } from '@mui/icons-material';
-import type { BookingFlowTableProps } from '../../../types/bookingflows.types';
+import type { BookingFlowTableProps, BookingFlow } from '../../../types/bookingflows.types';
 
 export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
   bookingFlows,
@@ -46,9 +52,9 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
   isDeleting,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedFlow, setSelectedFlow] = useState<any>(null);
+  const [selectedFlow, setSelectedFlow] = useState<BookingFlow | null>(null);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, flow: any) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, flow: BookingFlow) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
     setSelectedFlow(flow);
@@ -87,8 +93,8 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
     handleMenuClose();
   };
 
-  const getStatusChip = (isActive: boolean, isTestMode: boolean) => {
-    if (isTestMode) {
+  const getStatusChip = (flow: BookingFlow) => {
+    if (flow.is_test_mode) {
       return (
         <Chip
           label="Test Mode"
@@ -102,16 +108,18 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
     
     return (
       <Chip
-        label={isActive ? 'Active' : 'Inactive'}
+        label={flow.is_active ? 'Active' : 'Inactive'}
         size="small"
-        color={isActive ? 'success' : 'default'}
-        variant={isActive ? 'filled' : 'outlined'}
+        color={flow.is_active ? 'success' : 'default'}
+        variant={flow.is_active ? 'filled' : 'outlined'}
+        icon={flow.is_active ? <ActiveIcon /> : <InactiveIcon />}
       />
     );
   };
 
-  const getEventTypeChip = (eventTypeName?: string) => {
-    if (!eventTypeName) {
+  const getEventTypeChip = (flow: BookingFlow) => {
+    // Use event_type_name from the evolved backend serializer
+    if (!flow.event_type_name || flow.event_type_name === 'Any Event Type') {
       return (
         <Chip
           label="Any Event Type"
@@ -125,7 +133,7 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
     return (
       <Chip
         icon={<EventIcon />}
-        label={eventTypeName}
+        label={flow.event_type_name}
         size="small"
         color="primary"
         variant="outlined"
@@ -133,15 +141,15 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
     );
   };
 
-  const getStepsChip = (totalSteps: number, enabledStepsCount: number) => {
-    const isAllEnabled = totalSteps === enabledStepsCount;
+  const getStepsInfo = (flow: BookingFlow) => {
+    const isAllEnabled = flow.total_steps === flow.enabled_steps_count;
+    const completionPercentage = flow.total_steps > 0 
+      ? Math.round((flow.enabled_steps_count / flow.total_steps) * 100)
+      : 0;
     
     return (
-      <Tooltip 
-        title={`${enabledStepsCount} of ${totalSteps} steps enabled`}
-        arrow
-      >
-        <Box display="flex" alignItems="center" gap={0.5}>
+      <Box>
+        <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
           <StepsIcon 
             fontSize="small" 
             color={isAllEnabled ? 'primary' : 'action'} 
@@ -151,10 +159,83 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
             fontWeight="medium"
             color={isAllEnabled ? 'primary' : 'text.secondary'}
           >
-            {enabledStepsCount}/{totalSteps}
+            {flow.enabled_steps_count}/{flow.total_steps}
           </Typography>
         </Box>
-      </Tooltip>
+        <Box sx={{ width: 60 }}>
+          <LinearProgress
+            variant="determinate"
+            value={completionPercentage}
+            sx={{
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: 'grey.200',
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 2,
+                backgroundColor: isAllEnabled ? 'success.main' : 'primary.main'
+              }
+            }}
+          />
+        </Box>
+        <Typography variant="caption" color="text.secondary">
+          {completionPercentage}% configured
+        </Typography>
+      </Box>
+    );
+  };
+
+  const getFeatureChips = (flow: BookingFlow) => {
+    const chips = [];
+
+    if (flow.allow_guest_booking) {
+      chips.push(
+        <Chip
+          key="guest"
+          icon={<GuestsIcon />}
+          label="Guest Booking"
+          size="small"
+          variant="outlined"
+          color="info"
+        />
+      );
+    }
+
+    if (flow.require_immediate_payment) {
+      chips.push(
+        <Chip
+          key="payment"
+          icon={<PaymentIcon />}
+          label="Immediate Payment"
+          size="small"
+          variant="outlined"
+          color="secondary"
+        />
+      );
+    }
+
+    if (flow.auto_approve_bookings) {
+      chips.push(
+        <Chip
+          key="auto-approve"
+          label="Auto-approve"
+          size="small"
+          variant="outlined"
+          color="success"
+        />
+      );
+    }
+
+    return chips;
+  };
+
+  const getBookingWindow = (flow: BookingFlow) => {
+    return (
+      <Box display="flex" alignItems="center" gap={0.5}>
+        <TimeIcon fontSize="small" color="action" />
+        <Typography variant="body2" color="text.secondary">
+          {flow.min_advance_booking_days}-{flow.max_advance_booking_days} days
+        </Typography>
+      </Box>
     );
   };
 
@@ -204,12 +285,13 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
             <TableRow>
               <TableCell>
                 <TableSortLabel>
-                  Name
+                  Name & Details
                 </TableSortLabel>
               </TableCell>
               <TableCell>Event Type</TableCell>
-              <TableCell align="center">Steps</TableCell>
-              <TableCell>Status</TableCell>
+              <TableCell align="center">Steps Configuration</TableCell>
+              <TableCell>Status & Features</TableCell>
+              <TableCell>Booking Window</TableCell>
               <TableCell>Last Updated</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
@@ -238,7 +320,7 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
                           color="text.secondary"
                           display="block"
                           sx={{ 
-                            maxWidth: 200,
+                            maxWidth: 250,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap'
@@ -250,25 +332,43 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
                     </Box>
                   </Box>
                 </TableCell>
+
                 <TableCell>
-                  {getEventTypeChip(flow.event_type_name)}
+                  {getEventTypeChip(flow)}
                 </TableCell>
+
                 <TableCell align="center">
-                  {getStepsChip(flow.total_steps, flow.enabled_steps_count)}
+                  <Tooltip 
+                    title={`${flow.enabled_steps_count} of ${flow.total_steps} steps enabled`}
+                    arrow
+                  >
+                    <Box>
+                      {getStepsInfo(flow)}
+                    </Box>
+                  </Tooltip>
                 </TableCell>
+
                 <TableCell>
                   <Box display="flex" flexDirection="column" gap={0.5}>
-                    {getStatusChip(flow.is_active, flow.is_test_mode)}
-                    {flow.allow_guest_booking && (
-                      <Chip
-                        label="Guest Booking"
-                        size="small"
-                        variant="outlined"
-                        color="info"
-                      />
-                    )}
+                    {getStatusChip(flow)}
+                    <Box display="flex" flexWrap="wrap" gap={0.5}>
+                      {getFeatureChips(flow).slice(0, 2)}
+                      {getFeatureChips(flow).length > 2 && (
+                        <Chip
+                          label={`+${getFeatureChips(flow).length - 2}`}
+                          size="small"
+                          variant="outlined"
+                          color="default"
+                        />
+                      )}
+                    </Box>
                   </Box>
                 </TableCell>
+
+                <TableCell>
+                  {getBookingWindow(flow)}
+                </TableCell>
+
                 <TableCell>
                   <Typography variant="body2" color="text.secondary">
                     {new Date(flow.updated_at).toLocaleDateString()}
@@ -277,6 +377,7 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
                     {new Date(flow.updated_at).toLocaleTimeString()}
                   </Typography>
                 </TableCell>
+
                 <TableCell align="right">
                   <Box display="flex" alignItems="center" gap={0.5}>
                     {/* Quick Preview Button */}
@@ -287,6 +388,7 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
                           e.stopPropagation();
                           onPreview(flow);
                         }}
+                        aria-label={`Preview ${flow.name}`}
                       >
                         <PreviewIcon fontSize="small" />
                       </IconButton>
@@ -297,6 +399,7 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
                       size="small"
                       onClick={(e) => handleMenuOpen(e, flow)}
                       disabled={isDeleting}
+                      aria-label={`More actions for ${flow.name}`}
                     >
                       {isDeleting && selectedFlow?.id === flow.id ? (
                         <CircularProgress size={20} />
@@ -317,22 +420,27 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
+        onClick={(e) => e.stopPropagation()}
+        MenuListProps={{
+          'aria-labelledby': 'booking-flow-actions-menu',
+          role: 'menu',
+        }}
       >
-        <MenuItem onClick={handleEdit}>
+        <MenuItem onClick={handleEdit} role="menuitem">
           <ListItemIcon>
             <EditIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Edit Flow</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handlePreview}>
+        <MenuItem onClick={handlePreview} role="menuitem">
           <ListItemIcon>
             <PreviewIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Preview Flow</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handleDuplicate}>
+        <MenuItem onClick={handleDuplicate} role="menuitem">
           <ListItemIcon>
             <DuplicateIcon fontSize="small" />
           </ListItemIcon>
@@ -342,8 +450,14 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
         <MenuItem 
           onClick={() => {
             // Navigate to analytics - this would be handled by parent component
+            // Using the evolved analytics route structure
+            if (selectedFlow) {
+              // Would navigate to `/analytics/funnels/${selectedFlow.id}/analytics`
+              console.log(`Navigate to analytics for flow ${selectedFlow.id}`);
+            }
             handleMenuClose();
           }}
+          role="menuitem"
         >
           <ListItemIcon>
             <AnalyticsIcon fontSize="small" />
@@ -351,7 +465,7 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
           <ListItemText>View Analytics</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }} role="menuitem">
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />
           </ListItemIcon>

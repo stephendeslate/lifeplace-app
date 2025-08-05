@@ -45,6 +45,7 @@ export const PublicHeader: React.FC = () => {
   const location = useLocation();
   
   const { isAuthenticated } = useAuth();
+  // @ts-ignore
   const { showInfo } = useToastActions();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -66,13 +67,10 @@ export const PublicHeader: React.FC = () => {
     setMobileMenuOpen(false);
   };
 
+  // FIXED: Book Now should always lead to booking, regardless of auth status
   const handleBookNow = () => {
-    if (!isAuthenticated) {
-      showInfo('Login Required', 'Please log in to access your client dashboard and manage bookings.');
-      navigate('/login');
-    } else {
-      navigate('/dashboard');
-    }
+    navigate('/booking');
+    setMobileMenuOpen(false);
   };
 
   const isActivePath = (path: string) => {
@@ -82,13 +80,15 @@ export const PublicHeader: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  const headerBackground = isScrolled 
-    ? 'rgba(255, 255, 255, 0.95)' 
-    : location.pathname === '/' 
-      ? 'rgba(255, 255, 255, 0.1)' 
-      : 'rgba(255, 255, 255, 0.95)';
+  // FIXED: Consider booking pages as non-home for header styling
+  const isHomePage = location.pathname === '/';
+  const isBookingPage = location.pathname.startsWith('/booking');
 
-  const textColor = isScrolled || location.pathname !== '/' 
+  const headerBackground = isScrolled || !isHomePage
+    ? 'rgba(255, 255, 255, 0.95)' 
+    : 'rgba(255, 255, 255, 0.1)';
+
+  const textColor = isScrolled || !isHomePage
     ? 'text.primary' 
     : 'white';
 
@@ -102,7 +102,7 @@ export const PublicHeader: React.FC = () => {
           backdropFilter: 'blur(20px)',
           color: textColor,
           transition: 'all 0.3s ease',
-          borderBottom: isScrolled ? `1px solid ${alpha(theme.palette.primary.main, 0.1)}` : 'none',
+          borderBottom: (isScrolled || !isHomePage) ? `1px solid ${alpha(theme.palette.primary.main, 0.1)}` : 'none',
         }}
       >
         <Toolbar sx={{ py: 1, px: { xs: 2, sm: 3, md: 4 } }}>
@@ -201,14 +201,16 @@ export const PublicHeader: React.FC = () => {
             )}
 
             {/* User Actions */}
-            {isAuthenticated ? (
-              <Box display="flex" alignItems="center" gap={1}>
+            <Box display="flex" alignItems="center" gap={1}>
+              {/* Show dashboard link for authenticated users */}
+              {isAuthenticated && (
                 <Button
                   variant="outlined"
                   onClick={() => navigate('/dashboard')}
                   sx={{
                     borderColor: 'currentColor',
                     color: 'inherit',
+                    display: { xs: 'none', md: 'flex' },
                     '&:hover': {
                       borderColor: 'currentColor',
                       backgroundColor: alpha(theme.palette.primary.main, 0.1),
@@ -217,40 +219,45 @@ export const PublicHeader: React.FC = () => {
                 >
                   My Dashboard
                 </Button>
-              </Box>
-            ) : (
-              <Box display="flex" alignItems="center" gap={1}>
-                {!isMobile && (
-                  <Button
-                    variant="text"
-                    onClick={() => navigate('/login')}
-                    sx={{
-                      color: 'inherit',
-                      '&:hover': {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                      },
-                    }}
-                  >
-                    Sign In
-                  </Button>
-                )}
+              )}
+              
+              {/* Show login link for unauthenticated users on desktop */}
+              {!isAuthenticated && !isMobile && (
                 <Button
-                  variant="contained"
-                  onClick={handleBookNow}
+                  variant="text"
+                  onClick={() => navigate('/login')}
                   sx={{
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    px: 3,
+                    color: 'inherit',
                     '&:hover': {
-                      backgroundColor: 'primary.dark',
-                      transform: 'translateY(-1px)',
+                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
                     },
                   }}
                 >
-                  Book Now
+                  Sign In
                 </Button>
-              </Box>
-            )}
+              )}
+              
+              {/* Book Now button - always visible and leads to booking */}
+              <Button
+                variant="contained"
+                onClick={handleBookNow}
+                sx={{
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  px: 3,
+                  '&:hover': {
+                    backgroundColor: 'primary.dark',
+                    transform: 'translateY(-1px)',
+                  },
+                  // Highlight if on booking page
+                  ...(isBookingPage && {
+                    backgroundColor: 'primary.dark',
+                  }),
+                }}
+              >
+                {isBookingPage ? 'Booking...' : 'Book Now'}
+              </Button>
+            </Box>
 
             {/* Mobile Menu Toggle */}
             {isMobile && (
@@ -335,6 +342,37 @@ export const PublicHeader: React.FC = () => {
                 </ListItemButton>
               </ListItem>
             ))}
+            
+            {/* Add Book Now to mobile menu for easy access */}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={handleBookNow}
+                selected={isBookingPage}
+                sx={{
+                  borderRadius: 2,
+                  mx: 1,
+                  mb: 0.5,
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                  },
+                  '&.Mui-selected': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                <ListItemText
+                  primary={isBookingPage ? 'Booking...' : 'Book Event'}
+                  sx={{
+                    '& .MuiListItemText-primary': {
+                      fontWeight: 600,
+                      color: 'primary.main',
+                    },
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
           </List>
 
           {/* Actions */}
@@ -349,9 +387,10 @@ export const PublicHeader: React.FC = () => {
                   Sign In
                 </Button>
                 <Button
-                  variant="contained"
+                  variant="text"
                   fullWidth
                   onClick={() => handleNavigation('/register')}
+                  sx={{ color: 'text.secondary' }}
                 >
                   Create Account
                 </Button>

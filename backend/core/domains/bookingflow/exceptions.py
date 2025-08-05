@@ -148,3 +148,39 @@ class EventCreationFailed(BookingFlowException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     default_detail = 'Failed to create event from booking.'
     default_code = 'event_creation_failed'
+
+
+# NEW: Payment-related exceptions
+class PaymentGatewayNotFound(BookingFlowException):
+    """Raised when a payment gateway is not found or inactive"""
+    status_code = status.HTTP_404_NOT_FOUND
+    default_detail = 'Payment gateway not found or inactive.'
+    default_code = 'payment_gateway_not_found'
+
+
+class PaymentConfigurationError(BookingFlowException):
+    """Raised when payment configuration is invalid"""
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = 'Payment configuration is invalid.'
+    default_code = 'payment_configuration_error'
+
+
+class StepConfigurationSaveError(BookingFlowException):
+    """Raised when step configuration cannot be saved"""
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_detail = 'Failed to save step configuration.'
+    default_code = 'step_configuration_save_error'
+
+
+class RelatedObjectNotFound(BookingFlowException):
+    """Raised when a related object (like payment gateway) is not found"""
+    status_code = status.HTTP_404_NOT_FOUND
+    default_detail = 'Required related object not found.'
+    default_code = 'related_object_not_found'
+    
+
+class ValidationFailed(BookingFlowException):
+    """Raised when booking data validation fails"""
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    default_detail = 'Booking data validation failed.'
+    default_code = 'booking_data_validation_error'
