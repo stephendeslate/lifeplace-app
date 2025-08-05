@@ -16,7 +16,6 @@ export { StepReorderList } from './steps/StepReorderList';
 // Configuration components
 export {
   IntroductionStepConfig,
-  EventDetailsStepConfig,
   DateTimeStepConfig,
   QuestionnaireStepConfig,
   PackageSelectionStepConfig,
