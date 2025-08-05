@@ -1,4 +1,7 @@
 # backend/core/domains/bookingflow/views/booking_session_views.py
+
+from django.utils import timezone
+from .... import settings
 from core.utils.permissions import IsAdminOrClient
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -726,6 +729,188 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+    @action(detail=False, methods=['post'], url_path='session/(?P<session_uuid>[^/]+)/send-confirmation')
+    def send_confirmation(self, request, session_uuid=None):
+        """Send confirmation email for completed booking"""
+        try:
+            session = BookingSessionService.get_session_by_id(session_uuid)
+            
+            # Validations
+            if not session.is_completed:
+                return Response(
+                    {"detail": "Booking must be completed first"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if not session.client or not session.client.email:
+                return Response(
+                    {"detail": "No email address available"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if already sent (optional - prevent duplicates)
+            if session.booking_data.get('confirmation_email_sent'):
+                return Response(
+                    {"detail": "Confirmation already sent"},
+                    status=status.HTTP_200_OK
+                )
+            
+            # Import the communication service
+            from core.domains.communications.services import CommunicationService
+            
+            comm_service = CommunicationService()
+            
+            # Build comprehensive context from booking data
+            booking_data = session.booking_data
+            
+            # FIXED: Extract date/time info from correct location
+            # Look for date/time data at root level first
+            event_date = booking_data.get('start_date')
+            event_time = booking_data.get('start_time')
+            end_date = booking_data.get('end_date')
+            end_time = booking_data.get('end_time')
+            duration = booking_data.get('duration')
+            
+            # If not found at root, check under step keys
+            if not event_date:
+                for step_key, step_data in booking_data.items():
+                    if isinstance(step_data, dict):
+                        if 'start_date' in step_data:
+                            event_date = step_data.get('start_date')
+                            event_time = step_data.get('start_time', '')
+                            end_date = step_data.get('end_date', '')
+                            end_time = step_data.get('end_time', '')
+                            duration = step_data.get('duration')
+                            break
+            
+            # Format the date and time for display
+            if event_date:
+                try:
+                    from datetime import datetime
+                    # Parse the date
+                    date_obj = datetime.fromisoformat(event_date.replace('Z', '+00:00'))
+                    event_date_formatted = date_obj.strftime('%B %d, %Y')  # e.g., "September 11, 2025"
+                    
+                    # Format time if available
+                    if event_time:
+                        # If time is in HH:MM format
+                        if ':' in event_time:
+                            time_parts = event_time.split(':')
+                            hour = int(time_parts[0])
+                            minute = time_parts[1]
+                            am_pm = 'AM' if hour < 12 else 'PM'
+                            if hour > 12:
+                                hour -= 12
+                            elif hour == 0:
+                                hour = 12
+                            event_time_formatted = f"{hour}:{minute} {am_pm}"
+                        else:
+                            event_time_formatted = event_time
+                    else:
+                        event_time_formatted = 'TBD'
+                except:
+                    # Fallback to raw values if parsing fails
+                    event_date_formatted = event_date
+                    event_time_formatted = event_time or 'TBD'
+            else:
+                event_date_formatted = 'TBD'
+                event_time_formatted = 'TBD'
+            
+            # Extract contact info - look at root level first, then in step data
+            contact_phone = booking_data.get('phone')
+            if not contact_phone:
+                contact_info = booking_data.get('contact_info', {})
+                if isinstance(contact_info, dict):
+                    contact_phone = contact_info.get('phone')
+                
+                # Also check under step keys
+                if not contact_phone:
+                    for step_key, step_data in booking_data.items():
+                        if isinstance(step_data, dict) and 'phone' in step_data:
+                            contact_phone = step_data.get('phone')
+                            break
+            
+            # Extract packages and addons from root level (consistent with pricing calculation)
+            selected_packages = booking_data.get('selected_packages', [])
+            selected_addons = booking_data.get('selected_addons', [])
+            
+            # If not found at root, check under step keys
+            if not selected_packages:
+                for step_key, step_data in booking_data.items():
+                    if isinstance(step_data, dict) and 'selected_packages' in step_data:
+                        selected_packages = step_data['selected_packages']
+                        break
+                        
+            if not selected_addons:
+                for step_key, step_data in booking_data.items():
+                    if isinstance(step_data, dict) and 'selected_addons' in step_data:
+                        selected_addons = step_data['selected_addons']
+                        break
+            
+            # Build the context for the email template
+            context = {
+                'client_name': f"{session.client.first_name} {session.client.last_name}",
+                'booking_reference': str(session.session_id)[-8:].upper(),
+                'event_type': session.booking_flow.event_type.name if session.booking_flow.event_type else 'Event',
+                
+                # Use formatted date/time values
+                'event_date': event_date_formatted,
+                'event_time': event_time_formatted,
+                'duration': duration,
+                
+                # Contact info
+                'email': session.client.email,
+                'phone': contact_phone,
+                
+                # Packages and pricing
+                'selected_packages': selected_packages,
+                'selected_addons': selected_addons,
+                'total_price': str(session.calculate_total_price()),
+                
+                # Add any questionnaire responses
+                'questionnaire_responses': booking_data.get('questionnaire', {}),
+                
+                # Links
+                'dashboard_url': settings.CLIENT_FRONTEND_URL,
+            }
+            
+            # Log for debugging
+            logger.info(f"Sending confirmation email for session {session.session_id}")
+            logger.debug(f"Email context - Date: {event_date_formatted}, Time: {event_time_formatted}")
+            
+            # Send the email
+            if session.booking_flow.confirmation_email_template:
+                result = comm_service.send_communication(
+                    template_name=session.booking_flow.confirmation_email_template.name,
+                    recipient=session.client.email,
+                    context_data=context,
+                    client=session.client
+                )
+                
+                # Mark as sent in session data
+                session.booking_data['confirmation_email_sent'] = True
+                session.booking_data['confirmation_email_sent_at'] = timezone.now().isoformat()
+                session.save()
+                
+                logger.info(f"Confirmation email sent for session: {session.session_id}")
+                
+                return Response(
+                    {"detail": "Confirmation email sent successfully"},
+                    status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"detail": "No confirmation template configured"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except Exception as e:
+            logger.error(f"Failed to send confirmation: {e}")
+            return Response(
+                {"detail": f"Failed to send email: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     @staticmethod
     def _validate_step_data(step, step_data):
         """Validate step data against step configuration"""
