@@ -1,43 +1,38 @@
 // frontend/client-portal/src/contexts/BookingContext.tsx
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { debounce } from 'lodash';
 import { BookingCoreApi } from '../apis/booking/core.api';
-import { PaymentApi } from '../apis/booking/payment.api';
 import type {
   BookingState,
   BookingActions,
   EventType,
   BookingFlow,
-  StepData,
+  BookingSession,
+  BookingCompletionResult,
   PaymentGateway,
   StepValidationResult,
-  BookingCompletionResult,
-  BookingSession,
+  BookingData,
+  SelectedPackage,
+  SelectedAddon,
 } from '../types/booking';
 
 // Initial state
 const initialState: BookingState = {
-  // Flow data
   availableFlows: [],
   selectedEventType: null,
   currentFlow: null,
-  
-  // Session data
   currentSession: null,
   stepData: {},
-  
-  // Progress tracking
   progress: {
     currentStepIndex: 0,
     totalSteps: 0,
     completedSteps: [],
     canGoBack: false,
-    canGoNext: false,
+    canGoNext: true,
     canSkip: false,
   },
-  
-  // UI state
   ui: {
     isLoading: false,
     isValidating: false,
@@ -45,12 +40,8 @@ const initialState: BookingState = {
     error: null,
     validationErrors: {},
   },
-  
-  // Payment data
   paymentGateways: [],
   selectedPaymentGateway: null,
-  
-  // Pricing
   totalPrice: '0.00',
   breakdown: [],
 };
@@ -66,9 +57,9 @@ type BookingAction =
   | { type: 'SET_AVAILABLE_FLOWS'; payload: BookingFlow[] }
   | { type: 'SELECT_EVENT_TYPE'; payload: EventType }
   | { type: 'SET_CURRENT_FLOW'; payload: BookingFlow }
-  | { type: 'SET_CURRENT_SESSION'; payload: any }
+  | { type: 'SET_CURRENT_SESSION'; payload: BookingSession | null }
   | { type: 'UPDATE_STEP_DATA'; payload: { stepType: string; data: any } }
-  | { type: 'SET_PROGRESS'; payload: Partial<typeof initialState.progress> }
+  | { type: 'SET_PROGRESS'; payload: Partial<BookingState['progress']> }
   | { type: 'SET_PAYMENT_GATEWAYS'; payload: PaymentGateway[] }
   | { type: 'SELECT_PAYMENT_GATEWAY'; payload: PaymentGateway }
   | { type: 'SET_TOTAL_PRICE'; payload: string }
@@ -164,6 +155,62 @@ const BookingContext = createContext<{
 export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(bookingReducer, initialState);
   const navigate = useNavigate();
+  
+  // Create a ref to store the debounced update function
+  const debouncedUpdateRef = useRef<any>(null);
+  
+  // Create the debounced backend update function
+  const createDebouncedBackendUpdate = useCallback(() => {
+    return debounce(async (
+      sessionId: string,
+      stepId: number,
+      bookingDataUpdate: any,
+      totalPrice: string
+    ) => {
+      try {
+        // Only update backend, don't update local state here
+        const response = await BookingCoreApi.updateSessionData(
+          sessionId,
+          stepId,
+          bookingDataUpdate,
+          false  // mark_completed = false for incremental updates
+        );
+        
+        // Only update total price if it changed
+        if (response.total_price && response.total_price !== totalPrice) {
+          dispatch({ type: 'SET_TOTAL_PRICE', payload: response.total_price });
+        }
+        
+        // Handle validation errors from backend
+        if (response.validation_errors && Object.keys(response.validation_errors).length > 0) {
+          dispatch({ type: 'SET_VALIDATION_ERRORS', payload: response.validation_errors });
+        }
+        
+        // Save to local storage
+        BookingCoreApi.saveSessionToLocal(sessionId, {
+          booking_data: bookingDataUpdate,
+          total_price: response.total_price,
+          updated_at: response.updated_at,
+        } as any);
+        
+      } catch (error) {
+        console.warn('Background update failed:', error);
+        // Don't show errors for background updates - they'll retry
+      }
+    }, 1000); // Debounce for 1 second
+  }, []);
+  
+  // Initialize the debounced function
+  useEffect(() => {
+    debouncedUpdateRef.current = createDebouncedBackendUpdate();
+    
+    // Cleanup on unmount
+    return () => {
+      if (debouncedUpdateRef.current?.cancel) {
+        debouncedUpdateRef.current.cancel();
+      }
+    };
+  }, [createDebouncedBackendUpdate]);
 
   // Helper function to update progress
   const updateProgress = useCallback(() => {
@@ -189,7 +236,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (state.currentFlow && state.currentSession) {
       updateProgress();
     }
-  }, [state.currentFlow?.id, state.currentSession?.current_step?.id]);
+  }, [state.currentFlow?.id, state.currentSession?.current_step?.id, updateProgress]);
 
   // Session recovery on mount
   useEffect(() => {
@@ -202,7 +249,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       BookingCoreApi.getSession(sessionId)
         .then(sessionData => {
           if (!BookingCoreApi.isSessionExpired(sessionData.expires_at)) {
-            dispatch({ type: 'SET_CURRENT_SESSION', payload: sessionData });
+            dispatch({ type: 'SET_CURRENT_SESSION', payload: sessionData as BookingSession });
             return BookingCoreApi.getFlowById(sessionData.booking_flow);
           }
         })
@@ -317,90 +364,65 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         throw new Error('No active session');
       }
 
-      dispatch({ type: 'SET_VALIDATING', payload: true });
+      // Clear any errors immediately for better UX
       dispatch({ type: 'CLEAR_ERRORS' });
       
-      try {
-        const currentStep = state.currentSession.current_step;
-        if (!currentStep) {
-          throw new Error('No current step found');
-        }
+      const currentStep = state.currentSession.current_step;
+      if (!currentStep) {
+        throw new Error('No current step found');
+      }
 
-        // Format the data based on step type
-        let formattedData = data;
+      // Format the data based on step type
+      let formattedData = data;
+      
+      // Create the booking_data structure
+      const bookingDataUpdate = {
+        ...state.currentSession.booking_data || {},
+        ...formattedData
+      };
+      
+      // Special handling for package and addon selection
+      if (stepType === 'package_selection' && data.selected_packages) {
+        formattedData = { selected_packages: data.selected_packages };
+        bookingDataUpdate.selected_packages = data.selected_packages;
+      } else if (stepType === 'addon_selection' && data.selected_addons) {
+        formattedData = { selected_addons: data.selected_addons };
+        bookingDataUpdate.selected_addons = data.selected_addons;
+      }
 
-        // Create the booking_data structure expected by backend
-        const bookingDataUpdate = {
-          ...state.currentSession.booking_data || {},
-          ...formattedData
-        };
-        
-        // Special handling for package and addon selection to ensure proper structure
-        if (stepType === 'package_selection' && data.selected_packages) {
-          formattedData = {
-            selected_packages: data.selected_packages
-          };
-          // Also store at root level
-          bookingDataUpdate.selected_packages = data.selected_packages;
-        } else if (stepType === 'addon_selection' && data.selected_addons) {
-          formattedData = {
-            selected_addons: data.selected_addons
-          };
-          // Also store at root level
-          bookingDataUpdate.selected_addons = data.selected_addons;
-        }
+      // IMMEDIATELY update local state for responsive UI
+      dispatch({ 
+        type: 'UPDATE_STEP_DATA', 
+        payload: { stepType, data: formattedData } 
+      });
+      
+      // Update session in local state immediately
+      const updatedSession = {
+        ...state.currentSession,
+        booking_data: bookingDataUpdate,
+      };
+      dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
 
-        // The core API now handles the transformation to backend format internally
-        // We just pass the booking data and it will be wrapped in step_data
-        const response = await BookingCoreApi.updateSessionData(
+      // DEBOUNCED backend update - won't block UI
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(
           state.currentSession.session_id,
           currentStep.id,
-          bookingDataUpdate,  // Pass booking data directly
-          false  // IMPORTANT: mark_completed should be false for data updates
+          bookingDataUpdate,
+          state.totalPrice
         );
-
-        dispatch({ 
-          type: 'UPDATE_STEP_DATA', 
-          payload: { stepType, data: formattedData } 
-        });
-
-        const updatedSession = {
-          ...state.currentSession,
-          booking_data: bookingDataUpdate,
-          current_step: response.current_step,
-          progress_percentage: response.progress_percentage,
-          total_price: response.total_price,
-          updated_at: response.updated_at,
-        };
-
-        dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
-
-        if (response.total_price && response.total_price !== state.totalPrice) {
-          dispatch({ type: 'SET_TOTAL_PRICE', payload: response.total_price });
-        }
-
-        if (response.validation_errors && Object.keys(response.validation_errors).length > 0) {
-          dispatch({ type: 'SET_VALIDATION_ERRORS', payload: response.validation_errors });
-        } else {
-          dispatch({ type: 'CLEAR_ERRORS' });
-        }
-
-        BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, updatedSession);
-
-      } catch (error) {
-        const errorMessage = BookingCoreApi.handleApiError(error);
-        const validationErrors = BookingCoreApi.extractValidationErrors(error);
-        
-        dispatch({ type: 'SET_ERROR', payload: errorMessage });
-        dispatch({ type: 'SET_VALIDATION_ERRORS', payload: validationErrors });
-      } finally {
-        dispatch({ type: 'SET_VALIDATING', payload: false });
       }
-    }, [state.currentSession, state.stepData, state.totalPrice]),
+      
+    }, [state.currentSession, state.totalPrice]),
 
     validateStep: useCallback(async (stepId: number, data: any): Promise<StepValidationResult> => {
       if (!state.currentSession) {
         throw new Error('No active session');
+      }
+
+      // Cancel any pending debounced updates before validation
+      if (debouncedUpdateRef.current?.cancel) {
+        debouncedUpdateRef.current.cancel();
       }
 
       try {
@@ -432,7 +454,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (!state.currentFlow) return;
       
       const targetStep = state.currentFlow.enabled_steps[stepIndex];
-      if (targetStep) {
+      if (targetStep && state.currentSession) {
         dispatch({
           type: 'SET_CURRENT_SESSION',
           payload: {
@@ -446,6 +468,11 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     nextStep: useCallback(async () => {
       if (!state.currentFlow || !state.currentSession) return;
 
+      // Cancel any pending debounced updates
+      if (debouncedUpdateRef.current?.cancel) {
+        debouncedUpdateRef.current.cancel();
+      }
+
       dispatch({ type: 'SET_SUBMITTING', payload: true });
       dispatch({ type: 'CLEAR_ERRORS' });
       
@@ -453,21 +480,18 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const currentStep = state.currentSession.current_step;
         if (!currentStep) return;
 
-        // Get current step data from the session's booking_data
+        // Get complete booking data
         const bookingData = state.currentSession.booking_data || {};
-        
-        // Prepare the complete booking_data to send
         const updatedBookingData = {
           ...bookingData,
-          // Add any step-specific data that might be in state.stepData but not yet in booking_data
           ...state.stepData[currentStep.step_type]
         };
         
-        // The core API now handles the transformation to backend format internally
+        // Now do a FULL update with mark_completed = true
         const response = await BookingCoreApi.updateSessionData(
           state.currentSession.session_id,
           currentStep.id,
-          updatedBookingData,  // Pass booking data directly
+          updatedBookingData,
           true // mark_completed = true to proceed to next step
         );
 
@@ -546,6 +570,11 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         throw new Error('No active session');
       }
 
+      // Cancel any pending debounced updates
+      if (debouncedUpdateRef.current?.cancel) {
+        debouncedUpdateRef.current.cancel();
+      }
+
       dispatch({ type: 'SET_SUBMITTING', payload: true });
       dispatch({ type: 'CLEAR_ERRORS' });
       
@@ -622,6 +651,11 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         BookingCoreApi.clearSessionFromLocal(state.currentSession.session_id);
       }
       
+      // Cancel any pending debounced updates
+      if (debouncedUpdateRef.current?.cancel) {
+        debouncedUpdateRef.current.cancel();
+      }
+      
       dispatch({ type: 'RESET_BOOKING' });
       navigate('/');
     }, [state.currentSession, navigate]),
@@ -630,6 +664,17 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       dispatch({ type: 'CLEAR_ERRORS' });
     }, []),
   };
+
+  // Fix the circular dependency by creating a stable reference
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
+
+  // Update references where needed
+  useEffect(() => {
+    actions.startSession = actionsRef.current.startSession;
+    actions.nextStep = actionsRef.current.nextStep;
+    actions.fetchPaymentGateways = actionsRef.current.fetchPaymentGateways;
+  }, [actions]);
 
   const value = { state, actions };
 
