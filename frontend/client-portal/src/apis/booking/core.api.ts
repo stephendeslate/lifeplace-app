@@ -7,7 +7,6 @@ import type {
   BookingSessionCreate,
   BookingSessionStartResponse,
   BookingSessionGetResponse,
-  BookingSessionUpdate,
   BookingSessionUpdateResponse,
   BookingCompletionResult,
   StepValidationResult,

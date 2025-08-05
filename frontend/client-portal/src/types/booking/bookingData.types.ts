@@ -6,7 +6,6 @@ import type {
   SelectedAddon,
   ContactInfoStepData,
   PaymentStepData,
-  QuestionnaireStepData,
   PricingCalculation,
 } from './stepData.types';
 

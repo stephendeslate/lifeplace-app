@@ -45,6 +45,7 @@ export const PublicHeader: React.FC = () => {
   const location = useLocation();
   
   const { isAuthenticated } = useAuth();
+  // @ts-ignore
   const { showInfo } = useToastActions();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
