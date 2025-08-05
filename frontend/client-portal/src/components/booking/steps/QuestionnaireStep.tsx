@@ -27,14 +27,12 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { CheckCircle, Warning } from '@mui/icons-material';
 import {
-  useQuestionnaireDetail,
   useQuestionnaireFileUpload,
   useDynamicQuestionnaire,
   useQuestionnaireSummary
 } from '../../../hooks/booking/useQuestionnaire';
 import type { 
   QuestionnaireStepConfiguration,
-  QuestionnaireStepItem,
   QuestionnaireField,
   QuestionnaireDetailResponse,
   StepValidationResult
@@ -55,7 +53,6 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
   config,
   onDataChange,
   validationErrors,
-  isValidating,
   onValidate,
 }) => {
   const [questionnairesWithFields, setQuestionnairesWithFields] = useState<Map<number, QuestionnaireDetailResponse>>(new Map());
@@ -68,7 +65,6 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
   // File upload hook
   const {
     uploadFiles,
-    removeFile,
     getUploadedFiles,
     isUploading,
     getUploadError,
@@ -190,7 +186,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
   } = useDynamicQuestionnaire(allQuestionnaires, responses);
 
   // Summary for validation
-  const { summary, hasAnyResponses, responseCount } = useQuestionnaireSummary(
+  const { hasAnyResponses, responseCount } = useQuestionnaireSummary(
     visibleQuestionnaires,
     responses
   );

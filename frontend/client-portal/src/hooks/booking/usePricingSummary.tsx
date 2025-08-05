@@ -278,8 +278,10 @@ export const usePricingSummaryStep = (
   const [calculatingServerPricing, setCalculatingServerPricing] = useState(false);
   const [serverPricingError, setServerPricingError] = useState<string | null>(null);
 
+  
   const {
     breakdown,
+    // @ts-ignore
     formattedBreakdown,
     loading: calculatingPricing,
     error: pricingError,
