@@ -79,24 +79,45 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
     };
   }, [stepData, isAuthenticated, user, getInitialData]);
 
-  // Handle field change - directly update parent
-  const handleFieldChange = useCallback(async (field: keyof ContactInfoStepData, value: any) => {
+  // Handle field change - ONLY update data, NO immediate validation
+  // Validation will happen via debounced backend update (1 second after typing stops)
+  const handleFieldChange = useCallback((field: keyof ContactInfoStepData, value: any) => {
     const updatedData = {
       ...formData,
       [field]: value === undefined || value === null ? '' : value,
     };
 
+    // Just update the data - no validation here
+    // The BookingContext will handle debounced backend updates
     onDataChange(updatedData);
+    
+    // Removed the automatic validation that was happening on every keystroke
+    // Validation will now happen:
+    // 1. When user clicks "Next" (full validation)
+    // 2. After debounced backend update (1 second after typing stops)
+    // 3. On blur for critical fields (optional - see handleFieldBlur)
+    
+  }, [formData, onDataChange]);
 
-    // Auto-validate if onValidate is provided
-    if (onValidate) {
-      try {
-        await onValidate(updatedData);
-      } catch (error) {
-        console.warn('Validation failed:', error);
+  // Validate on blur (optional - only for critical fields)
+  const handleFieldBlur = useCallback(async (field: keyof ContactInfoStepData) => {
+    // Only validate critical fields on blur (email format, phone format)
+    // This provides immediate feedback for obviously invalid inputs
+    // while avoiding constant validation during typing
+    if (onValidate && (field === 'email' || field === 'phone')) {
+      // Validate only if the field has a value
+      const fieldValue = formData[field];
+      if (fieldValue && fieldValue.toString().length > 0) {
+        try {
+          // Silent validation - errors will appear via the validation system
+          await onValidate(formData);
+        } catch (error) {
+          // Silently handle validation errors on blur
+          console.debug('Blur validation for field:', field, error);
+        }
       }
     }
-  }, [formData, onDataChange, onValidate]);
+  }, [formData, onValidate]);
 
   // Helper to get field error (prioritize external validation errors)
   const getFieldErrorMessage = useCallback((fieldName: string): string | undefined => {
@@ -152,6 +173,7 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
                     required
                     value={formData.full_name}
                     onChange={(e) => handleFieldChange('full_name', e.target.value)}
+                    onBlur={() => {}} // No validation on blur for name
                     error={hasFieldErrorMessage('full_name')}
                     helperText={getFieldErrorMessage('full_name')}
                   />
@@ -168,6 +190,7 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
                     required
                     value={formData.email}
                     onChange={(e) => handleFieldChange('email', e.target.value)}
+                    onBlur={() => handleFieldBlur('email')} // Validate email format on blur
                     error={hasFieldErrorMessage('email')}
                     helperText={getFieldErrorMessage('email')}
                     disabled={isAuthenticated} // Disable if logged in
@@ -184,6 +207,7 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
                     required
                     value={formData.phone}
                     onChange={(e) => handleFieldChange('phone', e.target.value)}
+                    onBlur={() => handleFieldBlur('phone')} // Validate phone format on blur
                     error={hasFieldErrorMessage('phone')}
                     helperText={getFieldErrorMessage('phone')}
                     placeholder="+63 9XX XXX XXXX"
@@ -287,6 +311,15 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
             <Alert severity="success">
               You are logged in with your existing account. Your booking will be associated with this account automatically.
             </Alert>
+          </Box>
+        )}
+
+        {/* Loading state indicator (optional) */}
+        {isValidating && (
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Typography variant="caption" color="text.secondary">
+              Validating information...
+            </Typography>
           </Box>
         )}
       </Box>
