@@ -2,7 +2,7 @@
 import logging
 from datetime import timedelta
 
-from backend.core.domains.communications.models import CommunicationTemplate
+from core.domains.communications.models import CommunicationTemplate
 from core.domains.events.models import Event
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
