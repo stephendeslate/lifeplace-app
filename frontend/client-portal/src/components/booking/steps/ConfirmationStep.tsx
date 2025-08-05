@@ -22,13 +22,9 @@ import {
   CheckCircle, 
   CalendarToday, 
   Email, 
-  Phone, 
-  LocationOn,
   AccessTime,
   Group,
-  Receipt,
   AttachMoney,
-  ArrowForward,
   Info,
   NavigateNext,
   Home,
@@ -63,10 +59,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   config,
   onDataChange,
   validationErrors,
-  isValidating,
   session,
-  completedBooking,
-  onValidate,
 }) => {
   const { state } = useBooking();
   const currentSession = session || state.currentSession;

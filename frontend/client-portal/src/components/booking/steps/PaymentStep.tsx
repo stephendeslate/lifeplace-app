@@ -10,11 +10,9 @@ import {
   RadioGroup,
   Alert,
   Divider,
-  Button,
   CircularProgress,
-  Chip,
 } from '@mui/material';
-import { CreditCard, AccountBalance, Wallet, CheckCircle } from '@mui/icons-material';
+import { CreditCard } from '@mui/icons-material';
 import { 
   useFlowPaymentGateways,
   usePaymentCalculations,
@@ -51,8 +49,6 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   // Payment hooks
   const { 
     gateways: flowGateways, 
-    defaultGateway, 
-    requireImmediatePayment,
     loading: gatewaysLoading, 
     error: gatewaysError 
   } = useFlowPaymentGateways(flowId);
@@ -64,7 +60,6 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     selectedGateway,
     setSelectedGateway,
     filteredGateways,
-    availableCount
   } = useGatewaySelection(flowGateways || []);
 
   // Use props stepData as single source of truth

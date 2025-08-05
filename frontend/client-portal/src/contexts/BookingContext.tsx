@@ -13,9 +13,6 @@ import type {
   BookingCompletionResult,
   PaymentGateway,
   StepValidationResult,
-  BookingData,
-  SelectedPackage,
-  SelectedAddon,
 } from '../types/booking';
 
 // Initial state

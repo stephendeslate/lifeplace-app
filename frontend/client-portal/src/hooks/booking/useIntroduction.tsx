@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import { IntroductionApi } from '../../apis/booking/introduction.api';
 import type {
   IntroductionStepData,
-  StepValidationResult,
 } from '../../types/booking';
 
 // Hook for managing introduction step data and interactions
@@ -16,6 +15,7 @@ export const useIntroduction = (
   const [data, setData] = useState<IntroductionStepData>(
     initialData || IntroductionApi.getDefaultData()
   );
+  // @ts-ignore
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);

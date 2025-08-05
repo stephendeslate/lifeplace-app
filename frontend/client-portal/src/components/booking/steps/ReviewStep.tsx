@@ -5,7 +5,6 @@ import {
   Box,
   Typography,
   Paper,
-  Divider,
   FormControlLabel,
   Checkbox,
   Alert,
@@ -37,12 +36,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
     special_requests: '',
   },
   allStepData,
-  config,
   onDataChange,
   validationErrors,
-  isValidating,
   flow,
-  session,
   totalPrice,
 }) => {
   const handleTermsChange = (accepted: boolean) => {

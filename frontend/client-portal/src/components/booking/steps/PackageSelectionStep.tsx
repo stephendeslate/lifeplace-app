@@ -19,7 +19,6 @@ import {
   Add, 
   Remove, 
   Check, 
-  LocalOffer,
   AccessTime,
 } from '@mui/icons-material';
 import { ProductsApi } from '../../../apis/booking/products.api';

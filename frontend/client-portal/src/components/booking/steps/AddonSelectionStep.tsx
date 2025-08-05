@@ -12,15 +12,11 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   IconButton,
 } from '@mui/material';
 import { 
   Add, 
   Remove, 
-  ExpandMore,
   Star,
   ShoppingCart,
 } from '@mui/icons-material';

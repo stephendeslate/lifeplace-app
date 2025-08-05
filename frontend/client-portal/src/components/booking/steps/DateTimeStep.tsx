@@ -9,12 +9,11 @@ import {
   Alert,
   Chip,
   CircularProgress,
-  FormHelperText,
 } from '@mui/material';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { CheckCircle, Warning } from '@mui/icons-material';
+import { CheckCircle } from '@mui/icons-material';
 import { DateTimeApi } from '../../../apis/booking/datetime.api';
 import type { 
   DateTimeStepData, 

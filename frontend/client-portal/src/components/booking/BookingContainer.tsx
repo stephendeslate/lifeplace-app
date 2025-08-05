@@ -38,12 +38,12 @@ interface BookingContainerProps {
 export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  // @ts-ignore
   const navigate = useNavigate();
   const { state, actions } = useBooking();
 
   // Use session timer hook for expiry tracking
   const { 
-    timeRemaining, 
     isExpiringSoon, 
     expired, 
     formatTimeRemaining 
