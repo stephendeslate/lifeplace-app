@@ -2,8 +2,7 @@
 
 import api from '../../utils/api';
 import type {
-  BookingCompletionResult,
-  BookingSession,
+  BookingCompletionResult
 } from '../../types/booking';
 
 /**
