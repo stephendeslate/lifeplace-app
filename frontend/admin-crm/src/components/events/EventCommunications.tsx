@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   CircularProgress,
   Dialog,
@@ -53,7 +51,6 @@ interface EventCommunicationsProps {
 }
 
 export const EventCommunications: React.FC<EventCommunicationsProps> = ({
-  event,
   clientId,
   clientEmail,
   clientName

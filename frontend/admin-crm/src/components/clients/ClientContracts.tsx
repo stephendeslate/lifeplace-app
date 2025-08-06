@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Paper,
   Table,
   TableBody,
@@ -21,7 +19,6 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Stack,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,7 +31,6 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useContractsForClient } from '../../hooks/useContracts';
-import { CONTRACT_STATUSES } from '../../types/contracts.types';
 import type { EventContract } from '../../types/contracts.types';
 import type { Client } from '../../types/clients.types';
 

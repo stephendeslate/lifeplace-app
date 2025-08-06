@@ -18,7 +18,6 @@ import {
   Alert,
   CircularProgress,
   Stack,
-  Tooltip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -44,7 +43,6 @@ import {
   Assignment as ContractIcon,
   AttachMoney as QuoteIcon,
   Payment as InvoiceIcon,
-  Person as PersonIcon,
   Message as MessageIcon
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';

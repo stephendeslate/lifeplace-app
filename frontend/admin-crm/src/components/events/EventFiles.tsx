@@ -35,7 +35,6 @@ import {
   ListItemText,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   MoreVert as MoreVertIcon,
   CloudUpload as UploadIcon,
   Download as DownloadIcon,
