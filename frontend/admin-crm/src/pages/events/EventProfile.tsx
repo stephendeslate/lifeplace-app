@@ -23,7 +23,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Paper,
   Tab,
   Tabs
 } from '@mui/material';
@@ -51,8 +50,16 @@ import {
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
 import { useClients } from '../../hooks/useClients';
+import { useCommunications } from '../../hooks/useCommunications';
+import { useQuestionnaireResponses } from '../../hooks/useQuestionnaires';
 import { EventForm } from '../../components/events/EventForm';
 import { WorkflowProgress } from '../../components/events/WorkflowProgress';
+import { EventCommunications } from '../../components/events/EventCommunications';
+import { EventQuestionnaires } from '../../components/events/EventQuestionnaires';
+import { EventQuotes } from '../../components/events/EventQuotes';
+import { EventContracts } from '../../components/events/EventContracts';
+import { EventInvoices } from '../../components/events/EventInvoices';
+import { EventFiles } from '../../components/events/EventFiles';
 import { NotesList } from '../../components/notes';
 import { EVENT_STATUSES } from '../../types/events.types';
 
@@ -91,6 +98,8 @@ export const EventProfile: React.FC = () => {
   } = useEvents();
   
   const { useClient } = useClients();
+  const { useRecords } = useCommunications();
+  const { responses: questionnaireResponses } = useQuestionnaireResponses({ event_id: parseInt(id || '0') });
   
   const eventId = parseInt(id || '0');
   const { data: event, isLoading, error, refetch } = useEvent(eventId);
@@ -108,6 +117,11 @@ export const EventProfile: React.FC = () => {
   }, [event?.client]);
   
   const { data: client } = useClient(clientId);
+  
+  // Get counts for tabs
+  const { data: communications = [] } = useRecords({ client_id: clientId });
+  const communicationsCount = communications.length;
+  const questionnairesCount = questionnaireResponses?.length || 0;
 
   useEffect(() => {
     if (event) {
@@ -157,7 +171,7 @@ export const EventProfile: React.FC = () => {
     });
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
     switch (status) {
       case 'LEAD':
         return 'info';
@@ -482,40 +496,34 @@ export const EventProfile: React.FC = () => {
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
             <Tab 
-              label="Communications (0)" 
+              label={`Communications (${communicationsCount})`} 
               icon={<MessageIcon />} 
               iconPosition="start"
-              disabled
             />
             <Tab 
-              label="Quotes (0)" 
+              label="Quotes" 
               icon={<QuoteIcon />} 
               iconPosition="start"
-              disabled
             />
             <Tab 
-              label="Contracts (0)" 
+              label="Contracts" 
               icon={<ContractIcon />} 
               iconPosition="start"
-              disabled
             />
             <Tab 
-              label="Invoices (0)" 
+              label="Invoices" 
               icon={<InvoiceIcon />} 
               iconPosition="start"
-              disabled
             />
             <Tab 
-              label="Questionnaires (0)" 
+              label={`Questionnaires (${questionnairesCount})`} 
               icon={<QuestionnaireIcon />} 
               iconPosition="start"
-              disabled
             />
             <Tab 
-              label="Files (0)" 
+              label="Files" 
               icon={<FilesIcon />} 
               iconPosition="start"
-              disabled
             />
             <Tab 
               label="Notes" 
@@ -526,33 +534,42 @@ export const EventProfile: React.FC = () => {
         </Box>
 
         <CardContent>
-          {/* Placeholder tabs for coming soon features */}
-          {[0, 1, 2, 3, 4, 5].map((index) => (
-            <TabPanel key={index} value={tabValue} index={index}>
-              <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-                {index === 0 && <MessageIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
-                {index === 1 && <QuoteIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
-                {index === 2 && <ContractIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
-                {index === 3 && <InvoiceIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
-                {index === 4 && <QuestionnaireIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
-                {index === 5 && <FilesIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />}
-                
-                <Typography variant="h6" gutterBottom>
-                  {index === 0 && 'Communications Coming Soon'}
-                  {index === 1 && 'Quotes Coming Soon'}
-                  {index === 2 && 'Contracts Coming Soon'}
-                  {index === 3 && 'Invoices Coming Soon'}
-                  {index === 4 && 'Questionnaires Coming Soon'}
-                  {index === 5 && 'Files Coming Soon'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  This functionality will be available in a future update.
-                </Typography>
-              </Paper>
-            </TabPanel>
-          ))}
+          {/* Communications Tab */}
+          <TabPanel value={tabValue} index={0}>
+            <EventCommunications
+              event={event}
+              clientId={clientId}
+              clientEmail={client?.email || ''}
+              clientName={event.client_name || 'Unknown Client'}
+            />
+          </TabPanel>
 
-          {/* Notes Tab - Now functional */}
+          {/* Quotes Tab */}
+          <TabPanel value={tabValue} index={1}>
+            <EventQuotes event={event} />
+          </TabPanel>
+
+          {/* Contracts Tab */}
+          <TabPanel value={tabValue} index={2}>
+            <EventContracts event={event} />
+          </TabPanel>
+
+          {/* Invoices Tab */}
+          <TabPanel value={tabValue} index={3}>
+            <EventInvoices event={event} />
+          </TabPanel>
+
+          {/* Questionnaires Tab */}
+          <TabPanel value={tabValue} index={4}>
+            <EventQuestionnaires event={event} />
+          </TabPanel>
+
+          {/* Files Tab */}
+          <TabPanel value={tabValue} index={5}>
+            <EventFiles event={event} />
+          </TabPanel>
+
+          {/* Notes Tab */}
           <TabPanel value={tabValue} index={6}>
             <NotesList
               contentType="event"

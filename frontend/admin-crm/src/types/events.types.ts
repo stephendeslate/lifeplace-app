@@ -157,3 +157,51 @@ export interface EventFormDialogProps {
   onSubmit: (data: CreateEventData | UpdateEventData) => void;
   isLoading: boolean;
 }
+
+// File Categories
+export const FILE_CATEGORIES = [
+  { value: 'CONTRACT', label: 'Contract Document' },
+  { value: 'QUOTE', label: 'Quote/Proposal' },
+  { value: 'PAYMENT', label: 'Payment Document' },
+  { value: 'REQUIREMENTS', label: 'Requirements Doc' },
+  { value: 'PHOTO', label: 'Photo' },
+  { value: 'OTHER', label: 'Other' },
+] as const;
+
+// File category type
+export type FileCategory = 'CONTRACT' | 'QUOTE' | 'PAYMENT' | 'REQUIREMENTS' | 'PHOTO' | 'OTHER';
+
+// Event File interface
+export interface EventFile {
+  id: number;
+  event: number;
+  category: FileCategory;
+  file: string;
+  file_url?: string;
+  name: string;
+  description: string;
+  mime_type: string;
+  size: number;
+  uploaded_by: number | null;
+  uploaded_by_name?: string | null;
+  version: number;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Create/Update types for Event Files
+export interface CreateEventFileData {
+  event: number;
+  category: FileCategory;
+  name: string;
+  description?: string;
+  is_public?: boolean;
+}
+
+export interface UpdateEventFileData {
+  name?: string;
+  description?: string;
+  category?: FileCategory;
+  is_public?: boolean;
+}
