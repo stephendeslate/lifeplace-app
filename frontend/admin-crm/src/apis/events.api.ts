@@ -12,6 +12,8 @@ import type {
   EventTypeFilters,
 } from '../types/events.types';
 
+import type { EventFile, CreateEventFileData, UpdateEventFileData } from '../types/events.types';
+
 export const eventsApi = {
   // Event Types
   getEventTypes: async (filters?: EventTypeFilters): Promise<EventType[]> => {
@@ -110,6 +112,72 @@ export const eventsApi = {
     if (filters?.start_date_to) params.append('start_date_to', filters.start_date_to);
     
     const response = await api.get<Blob>(`/events/events/export/?${params.toString()}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Event Files
+  getEventFiles: async (eventId: number, category?: string): Promise<EventFile[]> => {
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    params.append('event', eventId.toString());
+    
+    const response = await api.get(`/events/files/?${params.toString()}`);
+    
+    // Handle paginated response - extract results array
+    if (response.data && typeof response.data === 'object' && 'results' in response.data) {
+      return response.data.results as EventFile[];
+    }
+    
+    // Fallback for direct array response
+    return Array.isArray(response.data) ? response.data : [];
+  },
+
+  getEventFile: async (id: number): Promise<EventFile> => {
+    const response = await api.get<EventFile>(`/events/files/${id}/`);
+    return response.data;
+  },
+
+  createEventFile: async (data: CreateEventFileData, file: File): Promise<EventFile> => {
+    const formData = new FormData();
+    formData.append('event', data.event.toString());
+    formData.append('category', data.category);
+    formData.append('name', data.name);
+    formData.append('file', file);
+    if (data.description) formData.append('description', data.description);
+    if (data.is_public !== undefined) formData.append('is_public', data.is_public.toString());
+
+    const response = await api.post<EventFile>('/events/files/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  updateEventFile: async (id: number, data: UpdateEventFileData, file?: File): Promise<EventFile> => {
+    const formData = new FormData();
+    if (data.name) formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    if (data.category) formData.append('category', data.category);
+    if (data.is_public !== undefined) formData.append('is_public', data.is_public.toString());
+    if (file) formData.append('file', file);
+
+    const response = await api.patch<EventFile>(`/events/files/${id}/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  deleteEventFile: async (id: number): Promise<void> => {
+    await api.delete(`/events/files/${id}/`);
+  },
+
+  downloadEventFile: async (id: number): Promise<Blob> => {
+    const response = await api.get<Blob>(`/events/files/${id}/download/`, {
       responseType: 'blob',
     });
     return response.data;

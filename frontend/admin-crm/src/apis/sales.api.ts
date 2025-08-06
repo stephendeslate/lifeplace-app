@@ -238,4 +238,9 @@ export const salesApi = {
     const response = await api.post<EventQuote>(`/sales/quotes/${id}/sign/`, data);
     return response.data;
   },
+
+  getQuotesForClient: async (clientId: number) : Promise<EventQuote[]> =>  {
+    const response = await api.get<EventQuote[]>(`/sales/quotes/?client_id=${clientId}`);
+    return response.data;
+  },
 };

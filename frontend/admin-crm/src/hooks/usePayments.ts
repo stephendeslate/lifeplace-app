@@ -87,6 +87,15 @@ export const useCreatePaymentGateway = () => {
   });
 };
 
+export const useInvoicesForClient = (clientId: number) => {
+  return useQuery({
+    queryKey: ['invoices', 'forClient', clientId],
+    queryFn: () => paymentsApi.getInvoicesForClient(clientId),
+    enabled: !!clientId,
+    select: (data) => Array.isArray(data) ? data : [],
+  });
+};
+
 export const useUpdatePaymentGateway = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
