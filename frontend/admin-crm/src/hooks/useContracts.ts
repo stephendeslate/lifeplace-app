@@ -188,6 +188,15 @@ export const useUpdateEventContract = () => {
   });
 };
 
+export const useContractsForClient = (clientId: number) => {
+  return useQuery({
+    queryKey: ['eventContracts', 'forClient', clientId],
+    queryFn: () => contractsApi.getContractsForClient(clientId),
+    enabled: !!clientId,
+    select: (data) => Array.isArray(data) ? data : [],
+  });
+};
+
 export const useDeleteEventContract = () => {
   const queryClient = useQueryClient();
   const { showToast } = useToast();

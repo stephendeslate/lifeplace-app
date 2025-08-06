@@ -43,14 +43,23 @@ import {
   Note as NoteIcon,
   Assignment as ContractIcon,
   AttachMoney as QuoteIcon,
-  Person as PersonIcon
+  Payment as InvoiceIcon,
+  Person as PersonIcon,
+  Message as MessageIcon
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useClients } from '../../hooks/useClients';
+import { useCommunications } from '../../hooks/useCommunications';
+import { useQuotesForClient } from '../../hooks/useSales';
+import { useContractsForClient } from '../../hooks/useContracts';
+import { useInvoicesForClient } from '../../hooks/usePayments';
 import { getClientStatusSummary } from '../../utils/clientStatus';
 import { SendMessageDialog } from '../../components/communications/SendMessageDialog';
 import { ClientForm } from '../../components/clients/ClientForm';
 import { CommunicationRecords } from '../../components/clients/CommunicationRecords';
+import { ClientQuotes } from '../../components/clients/ClientQuotes';
+import { ClientContracts } from '../../components/clients/ClientContracts';
+import { ClientInvoices } from '../../components/clients/ClientInvoices';
 import { NotesList } from '../../components/notes';
 
 interface TabPanelProps {
@@ -91,9 +100,15 @@ export const ClientProfile: React.FC = () => {
     isDeletingClient
   } = useClients();
   
+  const { useRecords } = useCommunications();
+  
   const clientId = parseInt(id || '0');
   const { data: client, isLoading, error } = useClient(clientId);
   const { data: events = [], isLoading: isLoadingEvents } = useClientEvents(clientId);
+  const { data: communications = [] } = useRecords({ client_id: clientId });
+  const { data: quotes = [] } = useQuotesForClient(clientId);
+  const { data: contracts = [] } = useContractsForClient(clientId);
+  const { data: invoices = [] } = useInvoicesForClient(clientId);
 
   useEffect(() => {
     if (client) {
@@ -169,7 +184,7 @@ export const ClientProfile: React.FC = () => {
           Back to Clients
         </Button>
         <Alert severity="error">
-          {error ? 'Failed to load client information' : 'Client not found'}
+          {error ? 'Failed to load client details' : 'Client not found'}
         </Alert>
       </Box>
     );
@@ -182,234 +197,136 @@ export const ClientProfile: React.FC = () => {
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box display="flex" alignItems="center" gap={2}>
-          <IconButton onClick={() => navigate('/clients')}>
+          <IconButton onClick={() => navigate('/clients')} size="small">
             <ArrowBackIcon />
           </IconButton>
-          <Box>
-            <Typography variant="h4" fontWeight="bold">
-              {client.first_name} {client.last_name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {client.email}
-            </Typography>
-          </Box>
+          <Typography variant="h5">
+            {client.first_name} {client.last_name}
+          </Typography>
+          <Chip
+            label={statusSummary.registration.label}
+            color={statusSummary.registration.color}
+            size="small"
+          />
         </Box>
-
-        <Box display="flex" alignItems="center" gap={1}>
-          {/* Quick Actions */}
-          <Tooltip title="Send Message">
-            <IconButton 
-              onClick={handleSendMessage}
-              color="primary"
-              sx={{ 
-                bgcolor: 'primary.50',
-                '&:hover': { bgcolor: 'primary.100' }
-              }}
-            >
-              <SendIcon />
-            </IconButton>
-          </Tooltip>
-
-          {statusSummary.needsInvitation && (
-            <Tooltip title="Send Account Invitation">
-              <span>
-                <IconButton
-                  onClick={handleSendInvitation}
-                  disabled={isSendingInvitation}
-                  color="secondary"
-                  sx={{ 
-                    bgcolor: 'secondary.50',
-                    '&:hover': { bgcolor: 'secondary.100' }
-                  }}
-                >
-                  {isSendingInvitation ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    <PersonAddIcon />
-                  )}
-                </IconButton>
-              </span>
-            </Tooltip>
-          )}
-
-          {/* More Actions Menu */}
+        
+        <Box display="flex" gap={1}>
+          <Button
+            variant="outlined"
+            startIcon={<SendIcon />}
+            onClick={handleSendMessage}
+          >
+            Send Message
+          </Button>
           <IconButton onClick={handleMenuClick}>
             <MoreVertIcon />
           </IconButton>
-          
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
-            <MenuItem onClick={handleEditClient}>
-              <ListItemIcon>
-                <EditIcon />
-              </ListItemIcon>
-              <ListItemText>Edit Client</ListItemText>
-            </MenuItem>
-            
-            <MenuItem onClick={handleSendMessage}>
-              <ListItemIcon>
-                <SendIcon />
-              </ListItemIcon>
-              <ListItemText>Send Message</ListItemText>
-            </MenuItem>
-            
-            {statusSummary.needsInvitation && (
-              <MenuItem onClick={handleSendInvitation} disabled={isSendingInvitation}>
-                <ListItemIcon>
-                  <PersonAddIcon />
-                </ListItemIcon>
-                <ListItemText>
-                  {isSendingInvitation ? 'Sending Invitation...' : 'Send Invitation'}
-                </ListItemText>
-              </MenuItem>
-            )}
-            
-            <Divider />
-            
-            <MenuItem onClick={handleDeactivateClient} sx={{ color: 'error.main' }}>
-              <ListItemIcon>
-                <BlockIcon color="error" />
-              </ListItemIcon>
-              <ListItemText>Deactivate Client</ListItemText>
-            </MenuItem>
-          </Menu>
         </Box>
       </Box>
 
-      {/* Status Alerts */}
-      {statusSummary.needsInvitation && (
-        <Alert 
-          severity="info" 
-          sx={{ mb: 3 }}
-          action={
-            <Button 
-              color="inherit" 
-              size="small" 
-              onClick={handleSendInvitation}
-              disabled={isSendingInvitation}
-            >
-              {isSendingInvitation ? <CircularProgress size={16} /> : 'Send Invitation'}
-            </Button>
-          }
-        >
-          This client hasn't created an account yet. Send them an invitation to get started.
-        </Alert>
-      )}
-
-      {/* Client Overview Cards */}
-      <Box 
-        sx={{ 
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          gap: 3,
-          mb: 3
-        }}
+      {/* Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
       >
-        {/* Basic Info */}
-        <Box sx={{ flex: 1 }}>
+        <MenuItem onClick={handleEditClient}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Edit Client</ListItemText>
+        </MenuItem>
+        {!client.has_account && (
+          <MenuItem onClick={handleSendInvitation} disabled={isSendingInvitation}>
+            <ListItemIcon>
+              <PersonAddIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Send Portal Invitation</ListItemText>
+          </MenuItem>
+        )}
+        <Divider />
+        <MenuItem onClick={handleDeactivateClient}>
+          <ListItemIcon>
+            <BlockIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Deactivate Client</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Info Cards */}
+      <Box sx={{ display: 'flex', gap: 3, mb: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+        {/* Contact Info */}
+        <Box sx={{ flex: 2 }}>
           <Card>
             <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Contact Information
+              </Typography>
               <Stack spacing={2}>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <PersonIcon color="primary" />
-                  <Typography variant="h6">Contact Information</Typography>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <EmailIcon color="action" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Email
+                    </Typography>
+                    <Typography variant="body1">{client.email}</Typography>
+                  </Box>
                 </Box>
                 
-                <Stack spacing={1}>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <EmailIcon color="action" fontSize="small" />
-                    <Typography variant="body2">{client.email}</Typography>
-                  </Box>
-                  
-                  {client.profile?.phone && (
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <PhoneIcon color="action" fontSize="small" />
-                      <Typography variant="body2">{client.profile.phone}</Typography>
-                    </Box>
-                  )}
-                  
-                  {client.profile?.company && (
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <BusinessIcon color="action" fontSize="small" />
-                      <Typography variant="body2">{client.profile.company}</Typography>
-                    </Box>
-                  )}
-                  
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <CalendarIcon color="action" fontSize="small" />
-                    <Typography variant="body2">
-                      Joined {new Date(client.date_joined).toLocaleDateString()}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <PhoneIcon color="action" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Phone
+                    </Typography>
+                    <Typography variant="body1">
+                      {client.profile?.phone || 'Not provided'}
                     </Typography>
                   </Box>
-                </Stack>
+                </Box>
+                
+                <Box display="flex" alignItems="center" gap={1}>
+                  <BusinessIcon color="action" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Company
+                    </Typography>
+                    <Typography variant="body1">
+                      {client.profile?.company || 'Not provided'}
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CalendarIcon color="action" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Member Since
+                    </Typography>
+                    <Typography variant="body1">
+                      {new Date(client.date_joined).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                </Box>
               </Stack>
             </CardContent>
           </Card>
         </Box>
 
-        {/* Status Info */}
+        {/* Summary Stats */}
         <Box sx={{ flex: 1 }}>
           <Card>
             <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Overview
+              </Typography>
               <Stack spacing={2}>
-                <Typography variant="h6">Account Status</Typography>
-                
-                <Stack spacing={2}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" color="text.secondary">
-                      Status
-                    </Typography>
-                    <Chip
-                      icon={statusSummary.active.icon}
-                      label={statusSummary.active.label}
-                      color={statusSummary.active.color as any}
-                      size="small"
-                    />
-                  </Box>
-                  
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" color="text.secondary">
-                      Registration
-                    </Typography>
-                    <Tooltip title={statusSummary.registration.tooltip}>
-                      <Chip
-                        icon={statusSummary.registration.icon}
-                        label={statusSummary.registration.label}
-                        color={statusSummary.registration.color as any}
-                        size="small"
-                      />
-                    </Tooltip>
-                  </Box>
-                </Stack>
-
-                {!client.has_account && (
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                      This client hasn't created an account yet. Send them an invitation to access the client portal.
-                    </Typography>
-                  </Alert>
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Quick Stats */}
-        <Box sx={{ flex: 1 }}>
-          <Card>
-            <CardContent>
-              <Stack spacing={2}>
-                <Typography variant="h6">Quick Stats</Typography>
-                
-                <Stack spacing={1}>
+                <Stack spacing={1.5}>
                   <Box display="flex" justifyContent="space-between" alignItems="center">
                     <Box display="flex" alignItems="center" gap={1}>
                       <EventIcon color="action" fontSize="small" />
                       <Typography variant="body2" color="text.secondary">
-                        Events
+                        Total Events
                       </Typography>
                     </Box>
                     <Typography variant="h6" color="primary">
@@ -419,13 +336,13 @@ export const ClientProfile: React.FC = () => {
                   
                   <Box display="flex" justifyContent="space-between" alignItems="center">
                     <Box display="flex" alignItems="center" gap={1}>
-                      <ContractIcon color="action" fontSize="small" />
+                      <MessageIcon color="action" fontSize="small" />
                       <Typography variant="body2" color="text.secondary">
-                        Contracts
+                        Communications
                       </Typography>
                     </Box>
                     <Typography variant="h6" color="primary">
-                      0
+                      {communications.length}
                     </Typography>
                   </Box>
                   
@@ -437,7 +354,31 @@ export const ClientProfile: React.FC = () => {
                       </Typography>
                     </Box>
                     <Typography variant="h6" color="primary">
-                      0
+                      {quotes.length}
+                    </Typography>
+                  </Box>
+                  
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <ContractIcon color="action" fontSize="small" />
+                      <Typography variant="body2" color="text.secondary">
+                        Contracts
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6" color="primary">
+                      {contracts.length}
+                    </Typography>
+                  </Box>
+                  
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <InvoiceIcon color="action" fontSize="small" />
+                      <Typography variant="body2" color="text.secondary">
+                        Invoices
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6" color="primary">
+                      {invoices.length}
                     </Typography>
                   </Box>
                 </Stack>
@@ -457,21 +398,24 @@ export const ClientProfile: React.FC = () => {
               iconPosition="start"
             />
             <Tab 
-              label="Communications" 
-              icon={<EmailIcon />} 
+              label={`Communications (${communications.length})`} 
+              icon={<MessageIcon />} 
               iconPosition="start"
             />
             <Tab 
-              label="Contracts (0)" 
-              icon={<ContractIcon />} 
-              iconPosition="start"
-              disabled
-            />
-            <Tab 
-              label="Quotes (0)" 
+              label={`Quotes (${quotes.length})`} 
               icon={<QuoteIcon />} 
               iconPosition="start"
-              disabled
+            />
+            <Tab 
+              label={`Contracts (${contracts.length})`} 
+              icon={<ContractIcon />} 
+              iconPosition="start"
+            />
+            <Tab 
+              label={`Invoices (${invoices.length})`} 
+              icon={<InvoiceIcon />} 
+              iconPosition="start"
             />
             <Tab 
               label="Notes" 
@@ -535,34 +479,23 @@ export const ClientProfile: React.FC = () => {
             <CommunicationRecords clientId={clientId} />
           </TabPanel>
 
-          {/* Contracts Tab - placeholder */}
+          {/* Quotes Tab */}
           <TabPanel value={tabValue} index={2}>
-            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-              <ContractIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-              <Typography variant="h6" gutterBottom>
-                Contracts Coming Soon
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Contract management functionality will be available in a future update.
-              </Typography>
-            </Paper>
+            <ClientQuotes client={client} />
           </TabPanel>
-          
-          {/* Quotes Tab - placeholder */}
+
+          {/* Contracts Tab */}
           <TabPanel value={tabValue} index={3}>
-            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-              <QuoteIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-              <Typography variant="h6" gutterBottom>
-                Quotes Coming Soon
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Quote management functionality will be available in a future update.
-              </Typography>
-            </Paper>
+            <ClientContracts client={client} />
           </TabPanel>
-          
-          {/* Notes Tab - Now functional */}
+
+          {/* Invoices Tab */}
           <TabPanel value={tabValue} index={4}>
+            <ClientInvoices client={client} />
+          </TabPanel>
+
+          {/* Notes Tab */}
+          <TabPanel value={tabValue} index={5}>
             <NotesList
               contentType="client"
               objectId={clientId}

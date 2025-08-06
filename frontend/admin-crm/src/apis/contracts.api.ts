@@ -272,4 +272,9 @@ export const contractsApi = {
     const response = await api.post<ContractNote>('/contracts/notes/', data);
     return response.data;
   },
+
+  getContractsForClient: async (clientId: number) : Promise<EventContract[]> =>  {
+    const response = await api.get<EventContract[]>(`/contracts/contracts/?client_id=${clientId}`);
+    return response.data;
+  },
 };

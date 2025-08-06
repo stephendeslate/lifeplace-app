@@ -205,6 +205,15 @@ export const useDeleteQuoteTemplateProduct = () => {
     },
   });
 };
+// Client Quotes
+export const useQuotesForClient = (clientId: number) => {
+  return useQuery({
+    queryKey: ['eventQuotes', 'forClient', clientId],
+    queryFn: () => salesApi.getQuotesForClient(clientId),
+    enabled: !!clientId,
+    select: (data) => Array.isArray(data) ? data : [],
+  });
+};
 
 // Event Quotes
 export const useEventQuotes = (filters?: EventQuoteFilters) => {

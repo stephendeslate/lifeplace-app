@@ -207,3 +207,101 @@ export const useEvents = (filters?: EventFilters) => {
     useEvent,
   };
 };
+
+import type { EventFile, CreateEventFileData, UpdateEventFileData } from '../types/events.types';
+
+export const useEventFiles = (eventId: number, category?: string) => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToastActions();
+
+  // Query to fetch files for an event
+  const {
+    data: files = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['event', eventId, 'files', category],
+    queryFn: () => eventsApi.getEventFiles(eventId, category),
+    enabled: !!eventId,
+  });
+
+  // Mutation to create file
+  const createFileMutation = useMutation({
+    mutationFn: ({ data, file }: { data: CreateEventFileData; file: File }) =>
+      eventsApi.createEventFile(data, file),
+    onSuccess: () => {
+      showSuccess('File Uploaded', 'File has been uploaded successfully.');
+      queryClient.invalidateQueries({ queryKey: ['event', eventId, 'files'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to upload file';
+      showError('Upload Failed', message);
+    },
+  });
+
+  // Mutation to update file
+  const updateFileMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+      file,
+    }: {
+      id: number;
+      data: UpdateEventFileData;
+      file?: File;
+    }) => eventsApi.updateEventFile(id, data, file),
+    onSuccess: () => {
+      showSuccess('File Updated', 'File has been updated successfully.');
+      queryClient.invalidateQueries({ queryKey: ['event', eventId, 'files'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to update file';
+      showError('Update Failed', message);
+    },
+  });
+
+  // Mutation to delete file
+  const deleteFileMutation = useMutation({
+    mutationFn: (id: number) => eventsApi.deleteEventFile(id),
+    onSuccess: () => {
+      showSuccess('File Deleted', 'File has been deleted successfully.');
+      queryClient.invalidateQueries({ queryKey: ['event', eventId, 'files'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to delete file';
+      showError('Delete Failed', message);
+    },
+  });
+
+  // Function to download file
+  const downloadFile = async (file: EventFile) => {
+    try {
+      const blob = await eventsApi.downloadEventFile(file.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      showError('Download Failed', 'Failed to download file');
+    }
+  };
+
+  return {
+    files,
+    isLoading,
+    error,
+    refetch,
+    createFile: createFileMutation.mutate,
+    isCreating: createFileMutation.isPending,
+    updateFile: updateFileMutation.mutate,
+    isUpdating: updateFileMutation.isPending,
+    deleteFile: deleteFileMutation.mutate,
+    isDeleting: deleteFileMutation.isPending,
+    downloadFile,
+  };
+};

@@ -302,4 +302,9 @@ export const paymentsApi = {
     const response = await api.post<Refund>('/payments/refunds/', data);
     return response.data;
   },
+
+  getInvoicesForClient: async (clientId: number) : Promise<Invoice[]> =>  {
+    const response = await api.get<Invoice[]>(`/payments/invoices/?client_id=${clientId}`);
+    return response.data;
+  },
 };
