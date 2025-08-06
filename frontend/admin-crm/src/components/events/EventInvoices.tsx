@@ -51,6 +51,7 @@ interface EventInvoicesProps {
   event: Event;
 }
 
+// @ts-ignore
 const getStatusIcon = (status: InvoiceStatus, dueDate?: string) => {
   // Check if overdue
   if (status === 'ISSUED' && dueDate && isPast(new Date(dueDate))) {

@@ -37,7 +37,6 @@ import {
   MoreVert as MoreVertIcon,
   Send as SendIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon,
   Visibility as ViewIcon,
   Description as ContractIcon,
   Draw as SignIcon,
@@ -54,12 +53,13 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useContractsForEvent, useContractTemplates, useCreateEventContract } from '../../hooks/useContracts';
 import type { Event } from '../../types/events.types';
-import type { EventContract, ContractTemplate } from '../../types/contracts.types';
+import type { EventContract } from '../../types/contracts.types';
 
 interface EventContractsProps {
   event: Event;
 }
 
+// @ts-ignore
 const getStatusIcon = (status: string) => {
   switch (status) {
     case 'DRAFT':

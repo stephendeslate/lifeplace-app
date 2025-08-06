@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Paper,
   Table,
   TableBody,
@@ -21,7 +19,6 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Stack,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,7 +32,6 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useInvoicesForClient } from '../../hooks/usePayments';
-import { INVOICE_STATUSES } from '../../types/payments.types';
 import type { Invoice } from '../../types/payments.types';
 import type { Client } from '../../types/clients.types';
 

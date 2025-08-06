@@ -7,16 +7,10 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   FormControl,
   FormControlLabel,
   FormGroup,
-  IconButton,
-  InputLabel,
   MenuItem,
   Paper,
   Select,
@@ -40,7 +34,6 @@ import {
   ExpandMore,
   CheckCircle as CompleteIcon,
   RadioButtonUnchecked as IncompleteIcon,
-  Add as AddIcon,
   Cancel as CancelIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
@@ -48,7 +41,6 @@ import { useQuestionnaires, useQuestionnaireResponses } from '../../hooks/useQue
 import type { 
   Questionnaire, 
   QuestionnaireField, 
-  QuestionnaireResponse,
   SaveEventResponsesData 
 } from '../../types/questionnaires.types';
 import type { Event } from '../../types/events.types';
