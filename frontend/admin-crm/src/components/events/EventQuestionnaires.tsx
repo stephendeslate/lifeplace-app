@@ -260,14 +260,15 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
   };
 
   const getCompletionStatus = (questionnaire: Questionnaire) => {
-    if (!questionnaire.fields) return { completed: 0, total: 0 };
-    
-    const requiredFields = questionnaire.fields.filter(f => f.required);
-    const completedRequired = requiredFields.filter(f => formData[f.id] && formData[f.id] !== '');
+    const allFields = questionnaire.fields || [];
+    const completedFields = allFields.filter(field => 
+      responses?.some(r => r.field === field.id && r.value)
+    );
     
     return {
-      completed: completedRequired.length,
-      total: requiredFields.length
+      completed: completedFields.length,
+      total: allFields.length,
+      isComplete: completedFields.length === allFields.length
     };
   };
 

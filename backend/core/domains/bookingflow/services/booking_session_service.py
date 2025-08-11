@@ -456,6 +456,58 @@ class BookingSessionService:
             )
         except Exception as e:
             logger.warning(f"Could not create note for event: {e}")
+
+        try:
+            from core.domains.questionnaires.services import QuestionnaireResponseService
+            
+            # Extract questionnaire responses from booking data
+            questionnaire_responses = []
+            
+            # Check for questionnaire data in various possible locations
+            # 1. Direct questionnaire key
+            if 'questionnaire' in session.booking_data:
+                questionnaire_responses = session.booking_data['questionnaire']
+            
+            # 2. Step-specific questionnaire data
+            for step_key, step_data in session.booking_data.items():
+                if isinstance(step_data, dict) and step_key.startswith('step_'):
+                    # Check if this step contains questionnaire responses
+                    if 'responses' in step_data:
+                        questionnaire_responses.extend(step_data['responses'])
+                    
+                    # FIXED: Check for individual field responses at the correct level
+                    # Look through all keys in step_data for field_ prefix
+                    for field_key, value in step_data.items():
+                        if field_key.startswith('field_'):
+                            field_id = field_key.replace('field_', '')
+                            try:
+                                questionnaire_responses.append({
+                                    'field': int(field_id),
+                                    'value': value
+                                })
+                            except (ValueError, TypeError):
+                                logger.warning(f"Invalid field ID in key: {field_key}")
+                                continue
+            
+            # Save the questionnaire responses if any were found
+            if questionnaire_responses:
+                responses_data = []
+                for response in questionnaire_responses:
+                    if isinstance(response, dict) and 'field' in response and 'value' in response:
+                        responses_data.append({
+                            'field': response['field'],
+                            'value': str(response['value'])
+                        })
+                
+                if responses_data:
+                    QuestionnaireResponseService.save_event_responses(
+                        event.id,
+                        responses_data
+                    )
+                    logger.info(f"Created {len(responses_data)} questionnaire responses for event {event.id}")
+            
+        except Exception as e:
+            logger.warning(f"Could not create questionnaire responses for event: {e}")
         
         return event
     

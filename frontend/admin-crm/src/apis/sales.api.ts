@@ -109,7 +109,7 @@ export const salesApi = {
   },
 
   getEventQuote: async (id: number): Promise<EventQuote> => {
-    const response = await api.get<EventQuote>(`/sales/quotes/${id}/`);
+    const response = await api.get<EventQuote>(`/sales/quotes/?event=${id}/`);
     return response.data;
   },
 

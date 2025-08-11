@@ -354,7 +354,8 @@ class QuestionnaireResponseService:
     def create_response(response_data):
         """Create a new questionnaire response"""
         # Validate response value against field type
-        field = QuestionnaireFieldService.get_field_by_id(response_data['field'])
+        field_id = response_data.get('field_id') or response_data.get('field')
+        field = QuestionnaireFieldService.get_field_by_id(field_id)
         value = response_data['value']
         
         # Basic validation - could be expanded for specific field types
@@ -377,8 +378,12 @@ class QuestionnaireResponseService:
                 )
         
         with transaction.atomic():
-            response = QuestionnaireResponse.objects.create(**response_data)
-            logger.info(f"Created new questionnaire response for field: {field.name}")
+            response = QuestionnaireResponse.objects.create(
+                event_id=response_data.get('event_id') or response_data.get('event'),
+                field_id=field_id,
+                value=str(value)
+            )
+            logger.info(f"Created questionnaire response for field: {field.name}")
             return response
     
     @staticmethod

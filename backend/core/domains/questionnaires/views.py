@@ -119,13 +119,19 @@ class QuestionnaireViewSet(viewsets.ModelViewSet):
     def active(self, request):
         """Get only active questionnaires"""
         active_questionnaires = QuestionnaireService.get_all_questionnaires(is_active=True)
+        
+        # Add prefetch_related for better performance
+        active_questionnaires = active_questionnaires.prefetch_related('fields')
+        
         page = self.paginate_queryset(active_questionnaires)
         
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            # Use QuestionnaireDetailSerializer instead of self.get_serializer
+            serializer = QuestionnaireDetailSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
         
-        serializer = self.get_serializer(active_questionnaires, many=True)
+        # Use QuestionnaireDetailSerializer instead of self.get_serializer  
+        serializer = QuestionnaireDetailSerializer(active_questionnaires, many=True)
         return Response(serializer.data)
 
 
