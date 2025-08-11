@@ -51,7 +51,7 @@ import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
-import { useQuestionnaireResponses } from '../../hooks/useQuestionnaires';
+import { useQuestionnaireResponses, useQuestionnaires } from '../../hooks/useQuestionnaires';
 import { EventForm } from '../../components/events/EventForm';
 import { WorkflowProgress } from '../../components/events/WorkflowProgress';
 import { EventCommunications } from '../../components/events/EventCommunications';
@@ -121,7 +121,16 @@ export const EventProfile: React.FC = () => {
   // Get counts for tabs
   const { data: communications = [] } = useRecords({ client_id: clientId });
   const communicationsCount = communications.length;
-  const questionnairesCount = questionnaireResponses?.length || 0;
+  // Get available questionnaires for this event type
+  const { useActiveQuestionnaires } = useQuestionnaires();
+  const { data: allQuestionnaires = [] } = useActiveQuestionnaires();
+
+  // Count questionnaires for this event type
+  const questionnairesCount = useMemo(() => {
+    return allQuestionnaires.filter(q => 
+      q.event_type === event?.event_type || q.event_type === null
+    ).length;
+  }, [allQuestionnaires, event?.event_type]);
 
   useEffect(() => {
     if (event) {
