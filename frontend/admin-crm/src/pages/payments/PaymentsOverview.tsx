@@ -66,7 +66,6 @@ export const PaymentsOverview: React.FC = () => {
   const {
     payments = [],
     totalPayments,
-    pageCount,
     isLoadingPayments,
     createPayment,
     isCreatingPayment,
