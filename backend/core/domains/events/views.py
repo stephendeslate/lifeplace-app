@@ -1,4 +1,5 @@
 # backend/core/domains/events/views.py
+from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin, IsAdminOrClient, IsClient, IsOwnerOrAdmin
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -134,6 +135,7 @@ class EventViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrClient]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'client__first_name', 'client__last_name', 'client__email']
+    pagination_class = StandardResultsSetPagination
     
     def get_serializer_class(self):
         if self.action == 'retrieve':

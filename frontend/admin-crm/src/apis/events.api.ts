@@ -13,6 +13,7 @@ import type {
 } from '../types/events.types';
 
 import type { EventFile, CreateEventFileData, UpdateEventFileData } from '../types/events.types';
+import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export const eventsApi = {
   // Event Types
@@ -61,8 +62,8 @@ export const eventsApi = {
     }
   },
 
-  // Events
-  getEvents: async (filters?: EventFilters): Promise<Event[]> => {
+  // Events with pagination
+  getEvents: async (filters?: EventFilters & PaginationParams): Promise<PaginatedResponse<Event>> => {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
     if (filters?.event_type) params.append('event_type', filters.event_type.toString());
@@ -70,16 +71,11 @@ export const eventsApi = {
     if (filters?.client) params.append('client', filters.client.toString());
     if (filters?.start_date_from) params.append('start_date_from', filters.start_date_from);
     if (filters?.start_date_to) params.append('start_date_to', filters.start_date_to);
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.page_size) params.append('page_size', filters.page_size.toString());
     
-    const response = await api.get(`/events/events/?${params.toString()}`);
-    
-    // Handle paginated response - extract results array
-    if (response.data && typeof response.data === 'object' && 'results' in response.data) {
-      return response.data.results as Event[];
-    }
-    
-    // Fallback for direct array response
-    return Array.isArray(response.data) ? response.data : [];
+    const response = await api.get<PaginatedResponse<Event>>(`/events/events/?${params.toString()}`);
+    return response.data;
   },
 
   getEvent: async (id: number): Promise<Event> => {

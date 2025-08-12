@@ -11,25 +11,21 @@ import type {
   AcceptInvitationResponse,
   Event
 } from '../types/clients.types';
+import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export const clientsApi = {
-  // Client CRUD operations
-  getClients: async (filters?: ClientFilters): Promise<Client[]> => {
+  // Client CRUD operations with pagination
+  getClients: async (filters?: ClientFilters & PaginationParams): Promise<PaginatedResponse<Client>> => {
     const params = new URLSearchParams();
     
     if (filters?.search) params.append('search', filters.search);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
     if (filters?.has_account !== undefined) params.append('has_account', filters.has_account.toString());
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.page_size) params.append('page_size', filters.page_size.toString());
     
-    const response = await api.get(`/clients/?${params.toString()}`);
-    
-    // Handle paginated response - extract results array
-    if (response.data && typeof response.data === 'object' && 'results' in response.data) {
-      return response.data.results as Client[];
-    }
-    
-    // Fallback for direct array response
-    return Array.isArray(response.data) ? response.data : [];
+    const response = await api.get<PaginatedResponse<Client>>(`/clients/?${params.toString()}`);
+    return response.data;
   },
 
   getClient: async (id: number): Promise<Client> => {

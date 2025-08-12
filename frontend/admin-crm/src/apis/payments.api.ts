@@ -32,8 +32,8 @@ import type {
   PaymentNotificationFilters,
   RefundFilters,
   ProcessPaymentData,
-  PaginatedResponse,
 } from '../types/payments.types';
+import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export const paymentsApi = {
   /**
@@ -104,9 +104,9 @@ export const paymentsApi = {
   },
 
   /**
-   * Payments
+   * Payments with pagination
    */
-  getPayments: async (filters?: PaymentFilters): Promise<Payment[]> => {
+  getPayments: async (filters?: PaymentFilters & PaginationParams): Promise<PaginatedResponse<Payment>> => {
     const params = new URLSearchParams();
     if (filters?.event) params.append('event', filters.event.toString());
     if (filters?.status) params.append('status', filters.status);
@@ -117,10 +117,11 @@ export const paymentsApi = {
     if (filters?.is_manual !== undefined) params.append('is_manual', filters.is_manual.toString());
     if (filters?.amount_min) params.append('amount_min', filters.amount_min);
     if (filters?.amount_max) params.append('amount_max', filters.amount_max);
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.page_size) params.append('page_size', filters.page_size.toString());
 
-    const response = await api.get(`/payments/payments/?${params.toString()}`);
-    const data = response.data as PaginatedResponse<Payment> | Payment[];
-    return Array.isArray(data) ? data : data.results || [];
+    const response = await api.get<PaginatedResponse<Payment>>(`/payments/payments/?${params.toString()}`);
+    return response.data;
   },
 
   getPayment: async (id: number): Promise<Payment> => {

@@ -27,6 +27,7 @@ import type {
   RefundFilters,
   ProcessPaymentData,
 } from '../types/payments.types';
+import type { PaginationParams } from '../types/common.types';
 
 // Query Keys
 const QUERY_KEYS = {
@@ -224,25 +225,25 @@ export const usePaymentMethodsForUser = (userId: number) => {
 /**
  * Payments Hooks
  */
-export const usePayments = (filters?: PaymentFilters) => {
+export const usePayments = (filters?: PaymentFilters & PaginationParams) => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
 
-  // Queries
+  // Queries with pagination
   const {
-    data: payments = [],
+    data: paymentsData,
     isLoading: isLoadingPayments,
     error: paymentsError,
     refetch: refetchPayments
   } = useQuery({
-    queryKey: QUERY_KEYS.payments(filters),
+    queryKey: ['payments', filters],
     queryFn: () => paymentsApi.getPayments(filters),
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   const usePayment = (id: number) => {
     return useQuery({
-      queryKey: QUERY_KEYS.payment(id),
+      queryKey: ['payment', id],
       queryFn: () => paymentsApi.getPayment(id),
       enabled: !!id,
       staleTime: 1 * 60 * 1000, // 1 minute
@@ -268,7 +269,7 @@ export const usePayments = (filters?: PaymentFilters) => {
       paymentsApi.updatePayment(id, data),
     onSuccess: (updatedPayment) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.payment(updatedPayment.id) });
+      queryClient.invalidateQueries({ queryKey: ['payment', updatedPayment.id] });
       showSuccess('Payment Updated', `Payment ${updatedPayment.payment_number} has been updated successfully.`);
     },
     onError: (error: any) => {
@@ -321,8 +322,14 @@ export const usePayments = (filters?: PaymentFilters) => {
   });
 
   return {
-    // Data
-    payments,
+    // Paginated data
+    payments: paymentsData?.results || [],
+    totalPayments: paymentsData?.count || 0,
+    currentPage: paymentsData?.current_page || 1,
+    pageCount: paymentsData?.page_count || 1,
+    pageSize: paymentsData?.page_size || 25,
+    hasNext: !!paymentsData?.next,
+    hasPrevious: !!paymentsData?.previous,
     
     // Loading states
     isLoadingPayments,

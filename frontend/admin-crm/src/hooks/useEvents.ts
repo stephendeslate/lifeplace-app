@@ -118,13 +118,13 @@ export const useEventTypes = (filters?: EventTypeFilters) => {
   };
 };
 
-export const useEvents = (filters?: EventFilters) => {
+export const useEvents = (filters?: EventFilters & PaginationParams) => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
 
-  // Queries
+  // Queries with pagination
   const {
-    data: events = [],
+    data: eventsData,
     isLoading: isLoadingEvents,
     error: eventsError,
     refetch: refetchEvents
@@ -147,7 +147,7 @@ export const useEvents = (filters?: EventFilters) => {
     mutationFn: (data: CreateEventData) => eventsApi.createEvent(data),
     onSuccess: (newEvent) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      showSuccess('Event Created', `${newEvent.name || 'Event'} has been created successfully.`);
+      showSuccess('Event Created', `${newEvent.name} has been created successfully.`);
     },
     onError: (error: any) => {
       const message = error.response?.data?.detail || 'Failed to create event';
@@ -161,7 +161,7 @@ export const useEvents = (filters?: EventFilters) => {
     onSuccess: (updatedEvent) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['event', updatedEvent.id] });
-      showSuccess('Event Updated', `${updatedEvent.name || 'Event'} has been updated successfully.`);
+      showSuccess('Event Updated', `${updatedEvent.name} has been updated successfully.`);
     },
     onError: (error: any) => {
       const message = error.response?.data?.detail || 'Failed to update event';
@@ -182,8 +182,14 @@ export const useEvents = (filters?: EventFilters) => {
   });
 
   return {
-    // Data
-    events,
+    // Paginated data
+    events: eventsData?.results || [],
+    totalEvents: eventsData?.count || 0,
+    currentPage: eventsData?.current_page || 1,
+    pageCount: eventsData?.page_count || 1,
+    pageSize: eventsData?.page_size || 25,
+    hasNext: !!eventsData?.next,
+    hasPrevious: !!eventsData?.previous,
     
     // Loading states
     isLoadingEvents,
@@ -209,6 +215,7 @@ export const useEvents = (filters?: EventFilters) => {
 };
 
 import type { EventFile, CreateEventFileData, UpdateEventFileData } from '../types/events.types';
+import type { PaginationParams } from '../types/common.types';
 
 export const useEventFiles = (eventId: number, category?: string) => {
   const queryClient = useQueryClient();

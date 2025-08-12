@@ -24,6 +24,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   TextField,
   Typography,
   CircularProgress,
@@ -51,6 +52,8 @@ export const EventsOverview: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
   
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [filters, setFilters] = useState<EventFilters>({});
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -62,10 +65,15 @@ export const EventsOverview: React.FC = () => {
 
   const {
     events = [],
+    totalEvents,
     isLoadingEvents,
     createEvent,
     isCreatingEvent,
-  } = useEvents(filters);
+  } = useEvents({
+    ...filters,
+    page: page + 1,
+    page_size: rowsPerPage,
+  });
 
   useEffect(() => {
     setBreadcrumbs([
@@ -80,10 +88,21 @@ export const EventsOverview: React.FC = () => {
         ...prev,
         search: searchValue || undefined
       }));
+      setPage(0);
     }, 300);
 
     return () => clearTimeout(timer);
   }, [searchValue]);
+
+  // @ts-ignore
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleRowClick = (event: Event) => {
     navigate(`/events/${event.id}`);
@@ -121,6 +140,7 @@ export const EventsOverview: React.FC = () => {
       ...prev,
       [key]: value === 'all' ? undefined : value === 'true' ? true : value === 'false' ? false : parseInt(value) || value
     }));
+    setPage(0);
   };
 
   const getStatusColor = (status: EventStatus) => {
@@ -195,7 +215,7 @@ export const EventsOverview: React.FC = () => {
   );
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
-  const filteredCount = Array.isArray(events) ? events.length : 0;
+  const filteredCount = totalEvents || 0;
 
   if (isLoadingEvents) {
     return (
@@ -448,6 +468,15 @@ export const EventsOverview: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50, 100]}
+              component="div"
+              count={totalEvents || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
           </Card>
         </>
       )}

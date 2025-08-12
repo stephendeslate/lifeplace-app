@@ -238,17 +238,9 @@ workflows_domain = [
 
 
 backend_files = [
-    *workflows_domain,
-    *contracts_domain,
-    *communications_domain,
-    *notes_domain,
-    *sales_domain,
     *payments_domain,
     *events_domain,
     *clients_domain,
-    *products_domain,
-    *questionnaires_domain,
-    *bookingflow_domain
 ]
     
 
@@ -258,6 +250,11 @@ admin_crm_files = [
     "frontend/admin-crm/src/components/events/",
     "frontend/admin-crm/src/types/",
     "frontend/admin-crm/src/pages/events/EventProfile.tsx",
+    "frontend/admin-crm/src/pages/events/EventsOverview.tsx",
+    "frontend/admin-crm/src/pages/clients/ClientProfile.tsx",
+    "frontend/admin-crm/src/pages/clients/ClientsOverview.tsx",
+    "frontend/admin-crm/src/pages/payments/PaymentsOverview.tsx",
+    "frontend/admin-crm/src/pages/payments/PaymentProfile.tsx",
 ]
 
 client_portal_files = [
@@ -271,7 +268,7 @@ client_portal_files = [
 ]
 
 url_paths = [
-    *backend_files, *admin_crm_files, *client_portal_files
+    *backend_files, *admin_crm_files
 ]
 
 export_files(url_paths)

@@ -1,4 +1,5 @@
 # backend/core/domains/payments/views.py
+from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin
 from django.db import models
 from rest_framework import status, viewsets
@@ -49,6 +50,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         queryset = super().get_queryset().order_by('-created_at')
