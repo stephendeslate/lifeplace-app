@@ -238,13 +238,26 @@ workflows_domain = [
 
 
 backend_files = [
+    "backend/core/settings.py",
+    "backend/core/urls.py",
+    *workflows_domain,
+    *users_domain,
+    *sales_domain,
+    *questionnaires_domain,
+    *products_domain,
+    *bookingflow_domain,
     *payments_domain,
     *events_domain,
     *clients_domain,
+    *communications_domain,
+    *notifications_domain,
+    *notes_domain,
+    *contracts_domain,
 ]
     
 
 admin_crm_files = [
+    "frontend/admin-crm/src/App.tsx",
     "frontend/admin-crm/src/apis/",
     "frontend/admin-crm/src/hooks/",
     "frontend/admin-crm/src/components/events/",
@@ -264,6 +277,7 @@ client_portal_files = [
     "frontend/client-portal/src/components/booking/steps/",
     "frontend/client-portal/src/utils/",
     "frontend/client-portal/src/types/",
+    "frontend/client-portal/src/App.tsx",
 
 ]
 
