@@ -51,7 +51,7 @@ import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
-import { useQuestionnaireResponses, useQuestionnaires } from '../../hooks/useQuestionnaires';
+import { useQuestionnaires } from '../../hooks/useQuestionnaires';
 import { EventForm } from '../../components/events/EventForm';
 import { WorkflowProgress } from '../../components/events/WorkflowProgress';
 import { EventCommunications } from '../../components/events/EventCommunications';
@@ -99,7 +99,6 @@ export const EventProfile: React.FC = () => {
   
   const { useClient } = useClients();
   const { useRecords } = useCommunications();
-  const { responses: questionnaireResponses } = useQuestionnaireResponses({ event_id: parseInt(id || '0') });
   
   const eventId = parseInt(id || '0');
   const { data: event, isLoading, error, refetch } = useEvent(eventId);

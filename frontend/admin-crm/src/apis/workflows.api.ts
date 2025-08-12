@@ -11,8 +11,8 @@ import type {
   WorkflowTemplateFilters,
   WorkflowStageFilters,
   ReorderStagesData,
-  PaginatedResponse,
 } from '../types/workflows.types';
+import type { PaginatedResponse } from '../types/common.types';
 
 export const workflowsApi = {
   // Workflow Templates

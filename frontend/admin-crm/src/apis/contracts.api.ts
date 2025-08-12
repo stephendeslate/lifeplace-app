@@ -21,8 +21,8 @@ import type {
   ContractSignatureFilters,
   ContractAmendmentFilters,
   ContractSigningData,
-  PaginatedResponse,
 } from '../types/contracts.types';
+import type { PaginatedResponse } from '../types/common.types';
 
 export const contractsApi = {
   // Contract Templates
