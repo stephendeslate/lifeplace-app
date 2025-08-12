@@ -15,8 +15,8 @@ import type {
   ReorderQuestionnairesData,
   ReorderFieldsData,
   SaveEventResponsesData,
-  PaginatedResponse,
 } from '../types/questionnaires.types';
+import type { PaginatedResponse } from '../types/common.types';
 
 export const questionnairesApi = {
   // Questionnaires

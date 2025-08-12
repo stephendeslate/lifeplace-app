@@ -17,8 +17,8 @@ import type {
   DiscountFilters,
   DiscountValidation,
   ValidateDiscountData,
-  PaginatedResponse,
 } from '../types/products.types';
+import type { PaginatedResponse } from '../types/common.types';
 
 export const productsApi = {
   // Categories

@@ -6,8 +6,8 @@ import type {
   CreateNoteData,
   UpdateNoteData,
   NoteFilters,
-  PaginatedResponse,
 } from '../types/notes.types';
+import type { PaginatedResponse } from '../types/common.types';
 
 export const notesApi = {
   // Get notes for a specific object
