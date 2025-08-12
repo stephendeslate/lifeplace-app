@@ -348,14 +348,6 @@ export interface ContractSignatureFormData {
   verification_method: string;
 }
 
-// Paginated response interface
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 // Component prop types
 export interface ContractTemplateTableProps {
   templates: ContractTemplate[];

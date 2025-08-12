@@ -22,8 +22,8 @@ import type {
   EventQuoteFilters,
   QuoteLineItemFilters,
   QuoteSigningData,
-  PaginatedResponse,
 } from '../types/sales.types';
+import type { PaginatedResponse } from '../types/common.types';
 
 export const salesApi = {
   // Quote Templates

@@ -6,23 +6,25 @@ import { useToastActions } from '../contexts/ToastContext';
 import type {
   UpdateClientData,
   ClientFilters,
-  AcceptInvitationData
+  AcceptInvitationData,
+  CreateClientData
 } from '../types/clients.types';
+import type { PaginationParams } from '../types/common.types';
 
-export const useClients = (filters?: ClientFilters) => {
+export const useClients = (filters?: ClientFilters & PaginationParams) => {
   const { showSuccess, showError } = useToastActions();
   const queryClient = useQueryClient();
 
-  // Queries
+  // Queries with pagination
   const {
-    data: clients = [], // Ensure default empty array
+    data: clientsData,
     isLoading: isLoadingClients,
     error: clientsError,
     refetch: refetchClients
   } = useQuery({
     queryKey: ['clients', filters],
     queryFn: () => clientsApi.getClients(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   const useClient = (id: number) => {
@@ -43,7 +45,7 @@ export const useClients = (filters?: ClientFilters) => {
 
   // Mutations
   const createClientMutation = useMutation({
-    mutationFn: clientsApi.createClient,
+    mutationFn: (data: CreateClientData) => clientsApi.createClient(data),
     onSuccess: (newClient) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       showSuccess('Client Created', `${newClient.first_name} ${newClient.last_name} has been added successfully.`);
@@ -55,7 +57,7 @@ export const useClients = (filters?: ClientFilters) => {
   });
 
   const updateClientMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateClientData }) => 
+    mutationFn: ({ id, data }: { id: number; data: UpdateClientData }) =>
       clientsApi.updateClient(id, data),
     onSuccess: (updatedClient) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -69,36 +71,36 @@ export const useClients = (filters?: ClientFilters) => {
   });
 
   const deleteClientMutation = useMutation({
-    mutationFn: clientsApi.deleteClient,
+    mutationFn: (id: number) => clientsApi.deleteClient(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      showSuccess('Client Deactivated', 'Client has been deactivated successfully.');
+      showSuccess('Client Deleted', 'Client has been deleted successfully.');
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to deactivate client';
-      showError('Deactivation Failed', message);
+      const message = error.response?.data?.detail || 'Failed to delete client';
+      showError('Delete Failed', message);
     },
   });
 
   const sendInvitationMutation = useMutation({
-    mutationFn: clientsApi.sendInvitation,
-    onSuccess: (invitation) => {
+    mutationFn: (clientId: number) => clientsApi.sendInvitation(clientId),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      showSuccess('Invitation Sent', `Invitation has been sent to ${invitation.client_name}.`);
+      showSuccess('Invitation Sent', 'Invitation has been sent to the client.');
     },
     onError: (error: any) => {
       const message = error.response?.data?.detail || 'Failed to send invitation';
-      showError('Invitation Failed', message);
+      showError('Send Failed', message);
     },
   });
 
   const importClientsMutation = useMutation({
-    mutationFn: clientsApi.importClients,
+    mutationFn: (file: File) => clientsApi.importClients(file),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       showSuccess('Import Complete', `Successfully imported ${result.success} clients.`);
       if (result.errors.length > 0) {
-        showError('Import Errors', `${result.errors.length} clients failed to import.`);
+        showError('Import Errors', result.errors.join(', '));
       }
     },
     onError: (error: any) => {
@@ -108,8 +110,14 @@ export const useClients = (filters?: ClientFilters) => {
   });
 
   return {
-    // Data
-    clients,
+    // Paginated data
+    clients: clientsData?.results || [],
+    totalClients: clientsData?.count || 0,
+    currentPage: clientsData?.current_page || 1,
+    pageCount: clientsData?.page_count || 1,
+    pageSize: clientsData?.page_size || 25,
+    hasNext: !!clientsData?.next,
+    hasPrevious: !!clientsData?.previous,
     
     // Loading states
     isLoadingClients,

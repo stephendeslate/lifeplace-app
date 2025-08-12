@@ -1,4 +1,5 @@
 # backend/core/domains/analytics/views.py
+from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin, IsAdminOrClient
 from django.utils import timezone
 from rest_framework import filters, status, viewsets
@@ -56,14 +57,6 @@ from .services import (
     MetricDefinitionService,
     ReportService,
 )
-
-
-class StandardResultsSetPagination(PageNumberPagination):
-    """Standard pagination for analytics endpoints"""
-    page_size = 25
-    page_size_query_param = 'page_size'
-    max_page_size = 100
-
 
 class MetricDefinitionViewSet(viewsets.ModelViewSet):
     """
