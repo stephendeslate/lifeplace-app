@@ -21,8 +21,8 @@ import type {
   DuplicateFlowData,
   AssignQuestionnairesData,
   StepConfiguration,
-  PaginatedResponse,
 } from '../types/bookingflows.types';
+import type { PaginatedResponse } from '../types/common.types';
 
 export const bookingFlowsApi = {
   // Booking Flows CRUD
