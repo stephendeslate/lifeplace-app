@@ -25,6 +25,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   TextField,
   Typography,
   CircularProgress,
@@ -56,6 +57,8 @@ export const ClientsOverview: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
   
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [filters, setFilters] = useState<ClientFilters>({});
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -65,13 +68,18 @@ export const ClientsOverview: React.FC = () => {
 
   const {
     clients = [], // Add default empty array
+    totalClients,
     isLoadingClients,
     createClient,
     isCreatingClient,
     sendInvitation,
     isSendingInvitation,
     importClients,
-  } = useClients(filters);
+  } = useClients({
+    ...filters,
+    page: page + 1,
+    page_size: rowsPerPage,
+  });
 
   useEffect(() => {
     setBreadcrumbs([
@@ -86,6 +94,7 @@ export const ClientsOverview: React.FC = () => {
         ...prev,
         search: searchValue || undefined
       }));
+      setPage(0);
     }, 300);
 
     return () => clearTimeout(timer);
@@ -139,6 +148,7 @@ export const ClientsOverview: React.FC = () => {
       ...prev,
       [key]: value === 'all' ? undefined : value === 'true'
     }));
+    setPage(0);
   };
 
   // Empty state when no clients exist
@@ -189,7 +199,7 @@ export const ClientsOverview: React.FC = () => {
   );
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
-  const filteredCount = Array.isArray(clients) ? clients.length : 0;
+  const filteredCount = totalClients ?? 0;
 
   if (isLoadingClients) {
     return (
@@ -198,6 +208,16 @@ export const ClientsOverview: React.FC = () => {
       </Box>
     );
   }
+
+  // @ts-ignore
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
@@ -237,7 +257,7 @@ export const ClientsOverview: React.FC = () => {
         </Stack>
       </Box>
 
-                {clients.length === 0 && !hasActiveFilters ? (
+      {totalClients === 0 && !hasActiveFilters ? (
         renderNoClientsState()
       ) : (
         <>
@@ -399,6 +419,15 @@ export const ClientsOverview: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50, 100]}
+              component="div"
+              count={totalClients || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
           </Card>
         </>
       )}

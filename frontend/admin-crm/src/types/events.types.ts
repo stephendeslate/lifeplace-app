@@ -117,14 +117,6 @@ export interface EventFormData {
   total_price: string;
 }
 
-// Paginated response interface
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 // Component prop types
 export interface EventTypeTableProps {
   eventTypes: EventType[];

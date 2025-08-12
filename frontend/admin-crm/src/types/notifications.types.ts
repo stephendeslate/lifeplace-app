@@ -322,11 +322,3 @@ export interface NotificationStatsDisplayProps {
   stats: NotificationStats;
   isLoading: boolean;
 }
-
-// Paginated response interface
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}

@@ -560,14 +560,6 @@ export interface RefundFormData {
   reason: string;
 }
 
-// Paginated Response
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 // Component Props Types
 export interface PaymentTableProps {
   payments: Payment[];

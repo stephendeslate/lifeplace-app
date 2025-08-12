@@ -24,6 +24,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   TextField,
   Typography,
   CircularProgress,
@@ -54,6 +55,8 @@ export const PaymentsOverview: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
   
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [filters, setFilters] = useState<PaymentFilters>({});
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -62,10 +65,15 @@ export const PaymentsOverview: React.FC = () => {
 
   const {
     payments = [],
+    totalPayments,
     isLoadingPayments,
     createPayment,
     isCreatingPayment,
-  } = usePayments(filters);
+  } = usePayments({
+    ...filters,
+    page: page + 1, // API uses 1-based pagination
+    page_size: rowsPerPage,
+  });
 
   useEffect(() => {
     setBreadcrumbs([
@@ -80,10 +88,21 @@ export const PaymentsOverview: React.FC = () => {
         ...prev,
         search: searchValue || undefined
       }));
+      setPage(0); // Reset to first page when searching
     }, 300);
 
     return () => clearTimeout(timer);
   }, [searchValue]);
+
+  // @ts-ignore
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleRowClick = (payment: Payment) => {
     navigate(`/payments/${payment.id}`);
@@ -114,6 +133,7 @@ export const PaymentsOverview: React.FC = () => {
       ...prev,
       [key]: value === 'all' ? undefined : value
     }));
+    setPage(0); // Reset to first page when filtering
   };
 
   const getStatusColor = (status: PaymentStatus) => {
@@ -221,7 +241,7 @@ export const PaymentsOverview: React.FC = () => {
   );
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
-  const filteredCount = Array.isArray(payments) ? payments.length : 0;
+  const filteredCount = totalPayments ?? (Array.isArray(payments) ? payments.length : 0);
 
   if (isLoadingPayments) {
     return (
@@ -417,6 +437,15 @@ export const PaymentsOverview: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50, 100]}
+              component="div"
+              count={totalPayments || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
           </Card>
         </>
       )}

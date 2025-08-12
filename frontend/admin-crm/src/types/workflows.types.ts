@@ -143,14 +143,6 @@ export interface ReorderStagesData {
   order_mapping: Record<string, number>;
 }
 
-// Paginated response interface
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 // Component prop types
 export interface WorkflowTemplateTableProps {
   templates: WorkflowTemplate[];

@@ -22,8 +22,8 @@ import type {
   EventQuoteFilters,
   QuoteLineItemFilters,
   QuoteSigningData,
-  PaginatedResponse,
 } from '../types/sales.types';
+import type { PaginatedResponse } from '../types/common.types';
 
 export const salesApi = {
   // Quote Templates
@@ -109,7 +109,7 @@ export const salesApi = {
   },
 
   getEventQuote: async (id: number): Promise<EventQuote> => {
-    const response = await api.get<EventQuote>(`/sales/quotes/${id}/`);
+    const response = await api.get<EventQuote>(`/sales/quotes/?event=${id}/`);
     return response.data;
   },
 

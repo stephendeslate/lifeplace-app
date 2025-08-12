@@ -40,14 +40,6 @@ export interface NoteFormData {
   content: string;
 }
 
-// Paginated response interface
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 // Component prop types
 export interface NotesListProps {
   contentType: string;

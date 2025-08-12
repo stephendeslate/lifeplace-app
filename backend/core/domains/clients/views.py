@@ -1,4 +1,5 @@
 # backend/core/domains/clients/views.py
+from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin
 from django.db import models, transaction
 from rest_framework import filters, status, viewsets
@@ -23,6 +24,7 @@ class ClientViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['first_name', 'last_name', 'email', 'profile__company', 'profile__phone']
+    pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
         is_active = self.request.query_params.get('is_active')

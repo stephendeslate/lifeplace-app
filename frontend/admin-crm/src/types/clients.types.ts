@@ -79,14 +79,6 @@ export interface Event {
   venue?: string;
 }
 
-// Paginated response interface
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 // Communication Records interfaces
 export interface CommunicationRecord {
   id: string;

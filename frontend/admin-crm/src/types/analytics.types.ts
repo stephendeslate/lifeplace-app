@@ -674,14 +674,6 @@ export interface AlertRuleFormData {
   is_active: boolean;
 }
 
-// Paginated Response
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 // Component Props Types
 export interface MetricDefinitionTableProps {
   metrics: MetricDefinition[];

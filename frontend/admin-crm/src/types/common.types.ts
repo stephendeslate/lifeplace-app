@@ -1,0 +1,16 @@
+// frontend/admin-crm/src/types/common.types.ts
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  page_count: number;
+  current_page: number;
+  page_size: number;
+  results: T[];
+}
+
+export interface PaginationParams {
+  page?: number;
+  page_size?: number;
+}
