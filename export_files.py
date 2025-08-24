@@ -278,11 +278,18 @@ client_portal_files = [
     "frontend/client-portal/src/utils/",
     "frontend/client-portal/src/types/",
     "frontend/client-portal/src/App.tsx",
-
+    "frontend/client-portal/src/components/auth/",
+    "frontend/client-portal/src/components/clients/",
+    "frontend/client-portal/src/components/communications/",
+    "frontend/client-portal/src/components/layout/",
+    "frontend/client-portal/src/pages/auth/",
+    "frontend/client-portal/src/pages/booking/",
+    "frontend/client-portal/src/pages/home/",
+    "frontend/client-portal/src/pages/messages/",
 ]
 
 url_paths = [
-    *backend_files, *admin_crm_files
+    *backend_files, *admin_crm_files, *client_portal_files
 ]
 
 export_files(url_paths)

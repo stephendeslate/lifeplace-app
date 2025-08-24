@@ -1,19 +1,29 @@
 # backend/core/domains/events/urls.py
-from django.urls import include, path
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-
-from . import views
-
-app_name = 'events'
+from .views import (
+    EventViewSet,
+    EventTypeViewSet,
+    EventTaskViewSet,
+    EventFileViewSet,
+    EventFeedbackViewSet,
+    EventTimelineViewSet,
+    EventProductOptionViewSet,
+    ClientEventViewSet,
+)
 
 router = DefaultRouter()
-router.register(r'event-types', views.EventTypeViewSet, basename='event-type')
-router.register(r'events', views.EventViewSet, basename='event')
-router.register(r'event-products', views.EventProductOptionViewSet, basename='event-product')
-router.register(r'tasks', views.EventTaskViewSet, basename='task')
-router.register(r'files', views.EventFileViewSet, basename='file')
-router.register(r'feedback', views.EventFeedbackViewSet, basename='feedback')
-router.register(r'timeline', views.EventTimelineViewSet, basename='timeline')
+# Admin endpoints
+router.register(r'events', EventViewSet, basename='event')
+router.register(r'event-types', EventTypeViewSet, basename='event-type')
+router.register(r'event-tasks', EventTaskViewSet, basename='event-task')
+router.register(r'event-files', EventFileViewSet, basename='event-file')
+router.register(r'event-feedback', EventFeedbackViewSet, basename='event-feedback')
+router.register(r'event-timeline', EventTimelineViewSet, basename='event-timeline')
+router.register(r'event-products', EventProductOptionViewSet, basename='event-product')
+
+# Client endpoints
+router.register(r'client/events', ClientEventViewSet, basename='client-event')
 
 urlpatterns = [
     path('', include(router.urls)),

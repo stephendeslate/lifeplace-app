@@ -53,6 +53,8 @@ class Event(BaseModel):
     total_amount_due = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
+    preferences = models.JSONField(default=dict, blank=True, help_text="Client preferences")
+
     def update_payment_status(self):
         """Update payment status based on completed payments"""
         payments = self.payments.filter(status='COMPLETED')
@@ -312,10 +314,8 @@ class EventFile(BaseModel):
             
         # Set mime type if available
         if not self.mime_type and self.file:
-            try:
-                import magic
-                self.mime_type = magic.from_buffer(self.file.read(1024), mime=True)
-            except (ImportError, AttributeError):
-                self.mime_type = self.file.content_type
-            
+            import mimetypes
+            mime_type, _ = mimetypes.guess_type(self.file.name)
+            self.mime_type = mime_type or getattr(self.file, 'content_type', '')
+
         super().save(*args, **kwargs)
