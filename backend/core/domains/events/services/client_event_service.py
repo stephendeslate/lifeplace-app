@@ -41,7 +41,7 @@ class ClientEventService:
             ),
             Prefetch(
                 'files',
-                queryset=EventFile.objects.filter(is_client_visible=True),
+                queryset=EventFile.objects.filter(is_public=True),  # Using existing is_public field
                 to_attr='client_files'
             )
         )
@@ -68,7 +68,7 @@ class ClientEventService:
                 ),
                 Prefetch(
                     'files',
-                    queryset=EventFile.objects.filter(is_client_visible=True),
+                    queryset=EventFile.objects.filter(is_public=True),  # Using existing is_public field
                     to_attr='client_files'
                 )
             ).get(id=event_id, client_id=client_id)
@@ -104,7 +104,7 @@ class ClientEventService:
         
         return EventFile.objects.filter(
             event=event,
-            is_client_visible=True
+            is_public=True  # Using existing is_public field
         ).order_by('-created_at')
     
     @staticmethod

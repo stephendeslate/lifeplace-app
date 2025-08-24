@@ -91,7 +91,7 @@ class ClientEventDetailSerializer(ClientEventSerializer):
         """Count of documents accessible to the client"""
         if hasattr(obj, 'client_files'):
             return len(obj.client_files)
-        return obj.files.filter(is_client_visible=True).count()
+        return obj.files.filter(is_public=True).count()
     
     def get_has_notes(self, obj):
         """Check if there are any notes for this event"""

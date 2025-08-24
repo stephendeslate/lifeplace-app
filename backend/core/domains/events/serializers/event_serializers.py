@@ -99,7 +99,7 @@ class EventFileSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'event', 'category', 'file', 'file_url', 'name', 'description',
             'mime_type', 'size', 'uploaded_by', 'uploaded_by_name', 'version',
-            'is_public', 'is_client_visible', 'created_at', 'updated_at'
+            'is_public', 'created_at', 'updated_at'
         ]
         read_only_fields = [
             'id', 'mime_type', 'size', 'created_at', 'updated_at', 'file_url'
