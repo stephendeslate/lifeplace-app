@@ -5,7 +5,7 @@ from core.domains.events.models import EventType
 from core.domains.products.models import ProductCategory, ProductOption
 from core.domains.questionnaires.models import Questionnaire
 from core.utils.models import BaseModel
-from django.contrib.postgres.fields import ArrayField
+# from django.contrib.postgres.fields import ArrayField  # Removed for SQLite compatibility
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -305,14 +305,12 @@ class DateTimeStepConfiguration(BaseModel):
     show_availability_status = models.BooleanField(default=True)
     auto_check_conflicts = models.BooleanField(default=True)
     
-    blocked_dates = ArrayField(
-        models.DateField(),
+    blocked_dates = models.JSONField(
         blank=True,
         default=list,
-        help_text="Dates that are completely blocked"
+        help_text="Dates that are completely blocked (ISO date strings)"
     )
-    available_days_of_week = ArrayField(
-        models.IntegerField(),
+    available_days_of_week = models.JSONField(
         default=list,
         blank=True,
         help_text="Days of week available (0=Monday, 6=Sunday)"
@@ -381,8 +379,7 @@ class QuestionnaireStepConfiguration(BaseModel):
     )
     allow_file_uploads = models.BooleanField(default=False)
     max_file_size_mb = models.PositiveIntegerField(default=10)
-    allowed_file_types = ArrayField(
-        models.CharField(max_length=10),
+    allowed_file_types = models.JSONField(
         default=list,
         blank=True,
         help_text="Allowed file extensions (e.g., ['pdf', 'jpg', 'png'])"
@@ -595,8 +592,7 @@ class PaymentInfoStepConfiguration(BaseModel):
     deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('50.00'))
     
     # Payment methods
-    available_payment_methods = ArrayField(
-        models.CharField(max_length=50),
+    available_payment_methods = models.JSONField(
         default=list,
         blank=True,
         help_text="Available payment methods"
