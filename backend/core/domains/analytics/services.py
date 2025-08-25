@@ -162,18 +162,38 @@ class MetricDefinitionService:
             return cached_result
         
         try:
-            # Get the source model
+            # Get the source model with enhanced error handling
             model = MetricDefinitionService._get_source_model(metric.source_domain, metric.source_model)
             
-            # Build the queryset
-            queryset = model.objects.all()
+            # Verify the model exists and is accessible
+            if not model:
+                raise DataSourceNotAvailable(f"Model is None for {metric.source_domain}.{metric.source_model}")
             
-            # Apply time filters
-            if hasattr(model, 'created_at'):
-                queryset = queryset.filter(
-                    created_at__gte=start_date,
-                    created_at__lte=end_date
-                )
+            # Build the queryset with error checking
+            try:
+                queryset = model.objects.all()
+            except Exception as e:
+                logger.error(f"Failed to create queryset for {model}: {str(e)}")
+                raise MetricCalculationError(f"Database access failed for {metric.source_domain}.{metric.source_model}: {str(e)}")
+            
+            # Apply time filters with fallback field names
+            time_field = None
+            for field_name in ['created_at', 'timestamp', 'date_created', 'created']:
+                if hasattr(model, field_name):
+                    time_field = field_name
+                    break
+            
+            if time_field:
+                try:
+                    queryset = queryset.filter(**{
+                        f'{time_field}__gte': start_date,
+                        f'{time_field}__lte': end_date
+                    })
+                except Exception as e:
+                    logger.warning(f"Time filtering failed on {time_field}: {str(e)}")
+                    # Continue without time filtering rather than fail
+            else:
+                logger.warning(f"No time field found for model {model}. Metric calculation may be inaccurate.")
             
             # Apply metric-specific filters
             if metric.filters:
@@ -207,11 +227,27 @@ class MetricDefinitionService:
     
     @staticmethod
     def _get_source_model(source_domain, source_model):
-        """Get the Django model for the data source"""
+        """Get the Django model for the data source with enhanced error handling"""
         try:
+            # First try the standard app label format
             return apps.get_model(f'core.domains.{source_domain}', source_model)
         except LookupError:
-            raise DataSourceNotAvailable(f"Data source not available: {source_domain}.{source_model}")
+            try:
+                # Try alternative app label format (without 'core.domains' prefix)
+                return apps.get_model(source_domain, source_model)
+            except LookupError:
+                try:
+                    # Try with just the domain name as app label
+                    return apps.get_model(f'{source_domain}', source_model)
+                except LookupError:
+                    # Log available apps and models for debugging
+                    available_apps = [app.label for app in apps.get_app_configs()]
+                    logger.error(f"Failed to find model {source_model} in domain {source_domain}")
+                    logger.error(f"Available apps: {available_apps}")
+                    raise DataSourceNotAvailable(
+                        f"Data source not available: {source_domain}.{source_model}. "
+                        f"Available apps: {available_apps}"
+                    )
     
     @staticmethod
     def _apply_filters(queryset, filters):
@@ -328,30 +364,32 @@ class DashboardService:
         return queryset.order_by('name')
     
     @staticmethod
-    def get_dashboard_by_id(dashboard_id, user):
-        """Get a dashboard by ID with access control"""
+    def get_dashboard_by_id(dashboard_id, user=None):
+        """Get a dashboard by ID with optional access control"""
         try:
             dashboard = Dashboard.objects.prefetch_related('widgets__metric_definition').get(id=dashboard_id)
         except Dashboard.DoesNotExist:
             raise DashboardNotFound()
         
-        # Check access
-        user_role = getattr(user, 'role', 'CLIENT')
-        if not (dashboard.is_public or 
-                dashboard.created_by == user or 
-                user_role in dashboard.allowed_roles):
-            raise UnauthorizedDashboardAccess()
+        # Check access only if user is provided
+        if user:
+            user_role = getattr(user, 'role', 'CLIENT')
+            if not (dashboard.is_public or 
+                    dashboard.created_by == user or 
+                    user_role in dashboard.allowed_roles):
+                raise UnauthorizedDashboardAccess()
         
         return dashboard
     
     @staticmethod
-    def create_dashboard(dashboard_data, user):
+    def create_dashboard(dashboard_data, user=None):
         """Create a new dashboard"""
         # Check for duplicate name
         if Dashboard.objects.filter(name=dashboard_data['name']).exists():
             raise DuplicateDashboardName()
         
-        dashboard_data['created_by'] = user
+        if user:
+            dashboard_data['created_by'] = user
         
         with transaction.atomic():
             dashboard = Dashboard.objects.create(**dashboard_data)
@@ -440,6 +478,8 @@ class DashboardService:
     @staticmethod
     def get_dashboard_data(dashboard_id, user, time_range='last_30_days'):
         """Get all data for a dashboard"""
+        from .serializers import WidgetSerializer
+        
         dashboard = DashboardService.get_dashboard_by_id(dashboard_id, user)
         
         # Parse time range
@@ -456,15 +496,22 @@ class DashboardService:
                     filters=widget.data_filters
                 )
                 
+                # Serialize the widget to avoid JSON serialization issues
+                widget_data = WidgetSerializer(widget).data
+                
                 widgets_data.append({
-                    'widget': widget,
-                    'value': metric_value,
+                    'widget': widget_data,
+                    'value': str(metric_value) if metric_value is not None else None,
                     'error': None
                 })
             except Exception as e:
                 logger.error(f"Error calculating widget {widget.title}: {str(e)}")
+                
+                # Serialize the widget to avoid JSON serialization issues
+                widget_data = WidgetSerializer(widget).data
+                
                 widgets_data.append({
-                    'widget': widget,
+                    'widget': widget_data,
                     'value': None,
                     'error': str(e)
                 })
@@ -528,15 +575,15 @@ class ReportService:
         return queryset.order_by('name')
     
     @staticmethod
-    def get_report_by_id(report_id, user):
-        """Get a report by ID with access control"""
+    def get_report_by_id(report_id, user=None):
+        """Get a report by ID with optional access control"""
         try:
             report = AnalyticsReport.objects.prefetch_related('metrics').get(id=report_id)
         except AnalyticsReport.DoesNotExist:
             raise ReportNotFound()
         
-        # Check access
-        if not (report.created_by == user or user.email in report.recipients):
+        # Check access only if user is provided
+        if user and not (report.created_by == user or user.email in report.recipients):
             raise ReportNotFound()  # Don't reveal existence
         
         return report
@@ -559,6 +606,14 @@ class ReportService:
             
             logger.info(f"Created new report: {report.name}")
             return report
+    
+    @staticmethod
+    def get_execution_by_id(execution_id):
+        """Get a report execution by ID"""
+        try:
+            return ReportExecution.objects.get(execution_id=execution_id)
+        except ReportExecution.DoesNotExist:
+            raise ReportExecutionNotFound()
     
     @staticmethod
     def update_report(report_id, report_data, user):
@@ -763,10 +818,13 @@ class AlertService:
         return queryset.order_by('name')
     
     @staticmethod
-    def get_alert_rule_by_id(rule_id, user):
+    def get_alert_rule_by_id(rule_id, user=None):
         """Get an alert rule by ID"""
         try:
-            return AlertRule.objects.get(id=rule_id, created_by=user)
+            if user:
+                return AlertRule.objects.get(id=rule_id, created_by=user)
+            else:
+                return AlertRule.objects.get(id=rule_id)
         except AlertRule.DoesNotExist:
             raise AlertRuleNotFound()
     

@@ -1,5 +1,25 @@
 // frontend/admin-crm/src/types/analytics.types.ts
 
+// Export-related types
+export interface ExportData {
+  export_type: string;
+  exported_at: string;
+  exported_by: string;
+  [key: string]: any;
+}
+
+export interface ExportOptions {
+  format: 'json' | 'csv';
+}
+
+export interface BackupData extends ExportData {
+  backup_type: string;
+  version: string;
+  metrics: MetricDefinition[];
+  dashboards: Dashboard[];
+  alert_rules: AlertRule[];
+}
+
 export interface MetricDefinition {
   id: number;
   name: string;

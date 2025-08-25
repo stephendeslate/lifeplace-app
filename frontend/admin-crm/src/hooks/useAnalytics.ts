@@ -30,6 +30,7 @@ import type {
   EventTrackingRequest,
   FunnelTrackingRequest,
   AlertRuleTestRequest,
+  ExportOptions,
 } from '../types/analytics.types';
 
 export const useMetricDefinitions = (filters?: MetricDefinitionFilters) => {
@@ -1086,4 +1087,72 @@ export const useSourceFields = (domain?: string, model?: string) => {
     enabled: !!domain && !!model,
     staleTime: 60 * 60 * 1000, // 1 hour
   });
+};
+
+// Export hooks
+export const useAnalyticsExport = () => {
+  const { showSuccess, showError } = useToastActions();
+
+  const exportMetricsConfiguration = useMutation({
+    mutationFn: (options?: ExportOptions) => analyticsApi.exportMetricsConfiguration(options),
+    onSuccess: (data, variables) => {
+      if (variables?.format === 'json') {
+        showSuccess('Metrics configuration exported successfully');
+      } else {
+        showSuccess('Metrics configuration downloaded successfully');
+      }
+    },
+    onError: (error: any) => {
+      showError(error?.response?.data?.detail || 'Failed to export metrics configuration');
+    },
+  });
+
+  const exportDashboardSettings = useMutation({
+    mutationFn: (options?: ExportOptions) => analyticsApi.exportDashboardSettings(options),
+    onSuccess: (data, variables) => {
+      if (variables?.format === 'json') {
+        showSuccess('Dashboard settings exported successfully');
+      } else {
+        showSuccess('Dashboard settings downloaded successfully');
+      }
+    },
+    onError: (error: any) => {
+      showError(error?.response?.data?.detail || 'Failed to export dashboard settings');
+    },
+  });
+
+  const exportAlertRules = useMutation({
+    mutationFn: (options?: ExportOptions) => analyticsApi.exportAlertRules(options),
+    onSuccess: (data, variables) => {
+      if (variables?.format === 'json') {
+        showSuccess('Alert rules exported successfully');
+      } else {
+        showSuccess('Alert rules downloaded successfully');
+      }
+    },
+    onError: (error: any) => {
+      showError(error?.response?.data?.detail || 'Failed to export alert rules');
+    },
+  });
+
+  const createFullBackup = useMutation({
+    mutationFn: () => analyticsApi.createFullBackup(),
+    onSuccess: () => {
+      showSuccess('Full analytics backup created and downloaded successfully');
+    },
+    onError: (error: any) => {
+      showError(error?.response?.data?.detail || 'Failed to create full backup');
+    },
+  });
+
+  return {
+    exportMetricsConfiguration,
+    exportDashboardSettings,
+    exportAlertRules,
+    createFullBackup,
+    isExportingMetrics: exportMetricsConfiguration.isPending,
+    isExportingDashboards: exportDashboardSettings.isPending,
+    isExportingAlerts: exportAlertRules.isPending,
+    isCreatingBackup: createFullBackup.isPending,
+  };
 };
