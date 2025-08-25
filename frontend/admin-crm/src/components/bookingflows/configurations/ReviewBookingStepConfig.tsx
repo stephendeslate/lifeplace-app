@@ -66,7 +66,6 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
 
   const {
     updateConfiguration,
-    isUpdatingConfiguration,
   } = useBookingFlowStepConfiguration();
 
   // Initialize form data from config
