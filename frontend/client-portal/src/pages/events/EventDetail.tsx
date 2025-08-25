@@ -23,7 +23,6 @@ import {
   Chip,
   useTheme,
   alpha,
-  Grid,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -232,9 +231,12 @@ const EventDetail: React.FC = () => {
               )}
             </Stack>
 
-            <Grid container spacing={2}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
               {eventDate && (
-                <Grid item xs={12} sm={6}>
+                <Box sx={(theme) => ({
+                  flexGrow: 0,
+                  flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
+                })}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CalendarIcon fontSize="small" color="action" />
                     <Typography variant="body1">
@@ -244,25 +246,31 @@ const EventDetail: React.FC = () => {
                       }
                     </Typography>
                   </Stack>
-                </Grid>
+                </Box>
               )}
               
               {event.current_stage && (
-                <Grid item xs={12} sm={6}>
+                <Box sx={(theme) => ({
+                  flexGrow: 0,
+                  flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
+                })}>
                   <Typography variant="body1">
                     <strong>Current Stage:</strong> {event.current_stage.name}
                   </Typography>
-                </Grid>
+                </Box>
               )}
               
               {event.total_price && (
-                <Grid item xs={12} sm={6}>
+                <Box sx={(theme) => ({
+                  flexGrow: 0,
+                  flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
+                })}>
                   <Typography variant="body1">
                     <strong>Total Price:</strong> ${event.total_price.toLocaleString()}
                   </Typography>
-                </Grid>
+                </Box>
               )}
-            </Grid>
+            </Box>
           </Box>
 
           <Stack spacing={2} alignItems="center">
@@ -292,9 +300,12 @@ const EventDetail: React.FC = () => {
 
       {/* Quick Stats */}
       {(event.upcoming_tasks.length > 0 || event.accessible_documents_count > 0 || event.has_notes) && (
-        <Grid container spacing={2} mb={3}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
           {event.upcoming_tasks.length > 0 && (
-            <Grid item xs={12} sm={4}>
+            <Box sx={(theme) => ({
+              flexGrow: 0,
+              flexBasis: { xs: '100%', sm: `calc(33.333% - ${theme.spacing(4/3)})` },
+            })}>
               <Paper sx={{ p: 2, textAlign: 'center' }}>
                 <Typography variant="h4" color="warning.main">
                   {event.upcoming_tasks.length}
@@ -303,11 +314,14 @@ const EventDetail: React.FC = () => {
                   Upcoming Tasks
                 </Typography>
               </Paper>
-            </Grid>
+            </Box>
           )}
           
           {event.accessible_documents_count > 0 && (
-            <Grid item xs={12} sm={4}>
+            <Box sx={(theme) => ({
+              flexGrow: 0,
+              flexBasis: { xs: '100%', sm: `calc(33.333% - ${theme.spacing(4/3)})` },
+            })}>
               <Paper sx={{ p: 2, textAlign: 'center' }}>
                 <Typography variant="h4" color="info.main">
                   {event.accessible_documents_count}
@@ -316,11 +330,14 @@ const EventDetail: React.FC = () => {
                   Documents
                 </Typography>
               </Paper>
-            </Grid>
+            </Box>
           )}
           
           {event.has_notes && (
-            <Grid item xs={12} sm={4}>
+            <Box sx={(theme) => ({
+              flexGrow: 0,
+              flexBasis: { xs: '100%', sm: `calc(33.333% - ${theme.spacing(4/3)})` },
+            })}>
               <Paper sx={{ p: 2, textAlign: 'center' }}>
                 <Typography variant="h4" color="primary.main">
                   {notes.length}
@@ -329,9 +346,9 @@ const EventDetail: React.FC = () => {
                   Notes
                 </Typography>
               </Paper>
-            </Grid>
+            </Box>
           )}
-        </Grid>
+        </Box>
       )}
 
       {/* Tabs */}

@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Grid,
   Stack,
   Button,
   ButtonGroup,
@@ -92,13 +91,20 @@ const EventsList: React.FC = () => {
 
   // Loading skeleton
   const renderSkeleton = () => (
-    <Grid container spacing={3}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
       {Array.from({ length: 6 }).map((_, index) => (
-        <Grid item xs={12} sm={6} md={4} key={index}>
+        <Box 
+          key={index}
+          sx={{ 
+            flex: viewMode === 'grid' 
+              ? { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' } 
+              : '100%'
+          }}
+        >
           <EventCard event={{} as Event} loading />
-        </Grid>
+        </Box>
       ))}
-    </Grid>
+    </Box>
   );
 
   // Empty state
@@ -295,22 +301,23 @@ const EventsList: React.FC = () => {
         renderEmptyState()
       ) : (
         <Fade in>
-          <Grid container spacing={3}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
             {filteredEvents.map((event) => (
-              <Grid 
-                item 
-                xs={12} 
-                sm={viewMode === 'grid' ? 6 : 12} 
-                md={viewMode === 'grid' ? 4 : 12}
+              <Box 
                 key={event.id}
+                sx={{ 
+                  flex: viewMode === 'grid' 
+                    ? { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' } 
+                    : '100%'
+                }}
               >
                 <EventCard
                   event={event}
                   onClick={() => handleEventClick(event.id)}
                 />
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Fade>
       )}
 
