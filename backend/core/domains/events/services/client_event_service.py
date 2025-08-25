@@ -59,7 +59,7 @@ class ClientEventService:
                 'workflow_template',
                 'current_stage'
             ).prefetch_related(
-                'product_options__product_option',
+                'event_products__product_option',
                 'tasks',
                 Prefetch(
                     'timeline',
