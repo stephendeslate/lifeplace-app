@@ -128,7 +128,7 @@ export const useReportOperations = (options: ReportOperationsOptions = {}) => {
 
     const now = new Date();
     const [hours, minutes] = report.schedule_time.split(':').map(Number);
-    let nextExecution = new Date();
+    const nextExecution = new Date();
     nextExecution.setHours(hours, minutes, 0, 0);
 
     switch (report.schedule_frequency) {
