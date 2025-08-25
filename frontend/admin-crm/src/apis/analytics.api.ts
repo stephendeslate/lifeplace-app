@@ -42,7 +42,6 @@ import type {
   EventAggregationFilters,
   ExportData,
   ExportOptions,
-  BackupData,
 } from '../types/analytics.types';
 
 export const analyticsApi = {
@@ -360,7 +359,7 @@ export const analyticsApi = {
       });
       
       // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
       const link = document.createElement('a');
       link.href = url;
       link.download = `metrics_configuration_${new Date().toISOString().split('T')[0]}.csv`;
@@ -384,7 +383,7 @@ export const analyticsApi = {
         responseType: 'blob',
       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
       const link = document.createElement('a');
       link.href = url;
       link.download = `dashboard_settings_${new Date().toISOString().split('T')[0]}.csv`;
@@ -408,7 +407,7 @@ export const analyticsApi = {
         responseType: 'blob',
       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
       const link = document.createElement('a');
       link.href = url;
       link.download = `alert_rules_${new Date().toISOString().split('T')[0]}.csv`;
@@ -424,7 +423,8 @@ export const analyticsApi = {
       responseType: 'blob',
     });
     
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const blob = response.data as Blob;
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `analytics_backup_${new Date().toISOString().split('T')[0]}.json`;
