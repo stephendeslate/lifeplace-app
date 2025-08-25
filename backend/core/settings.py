@@ -218,6 +218,14 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # This enables the browsable API
     ],
+    # Throttling rates
+    'DEFAULT_THROTTLE_RATES': {
+        'analytics': '1000/hour',
+        'public_tracking': '100/hour', 
+        'admin_analytics': '2000/hour',
+        'anon': '100/hour',
+        'user': '1000/hour',
+    },
 }
 
 # JWT settings
