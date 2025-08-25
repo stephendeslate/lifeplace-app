@@ -8,6 +8,11 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 
+# Security imports
+from .throttling import PublicTrackingThrottle, AdminAnalyticsThrottle, AnalyticsThrottle
+from .security import SecurityValidator, DataSanitizer, AuditLogger
+from .export_service import DataExportService, BackupService
+
 from .models import (
     AlertRule,
     AnalyticsEvent,
@@ -63,6 +68,7 @@ class MetricDefinitionViewSet(viewsets.ModelViewSet):
     ViewSet for managing metric definitions
     """
     permission_classes = [IsAdmin]
+    throttle_classes = [AdminAnalyticsThrottle]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
     pagination_class = StandardResultsSetPagination
@@ -192,6 +198,7 @@ class DashboardViewSet(viewsets.ModelViewSet):
     ViewSet for managing dashboards
     """
     permission_classes = [IsAdminOrClient]
+    throttle_classes = [AnalyticsThrottle]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
     pagination_class = StandardResultsSetPagination
@@ -866,6 +873,7 @@ class AnalyticsAPIViewSet(viewsets.ViewSet):
     ViewSet for general analytics API endpoints
     """
     permission_classes = [IsAdminOrClient]
+    throttle_classes = [AnalyticsThrottle]
     
     @action(detail=False, methods=['get'])
     def business_metrics(self, request):
@@ -880,6 +888,9 @@ class AnalyticsAPIViewSet(viewsets.ViewSet):
             end_date = timezone.datetime.fromisoformat(end_date.replace('Z', '+00:00'))
         
         try:
+            # Log data access for compliance
+            AuditLogger.log_data_access(request, 'business_metrics', 'all', 'read')
+            
             metrics = DataAggregationService.aggregate_business_metrics(
                 start_date=start_date,
                 end_date=end_date
@@ -1002,26 +1013,128 @@ class AnalyticsAPIViewSet(viewsets.ViewSet):
                 {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def export_metrics_configuration(self, request):
+        """Export metrics configuration"""
+        format = request.query_params.get('format', 'json').lower()
+        
+        if format not in ['json', 'csv']:
+            return Response(
+                {"detail": "Format must be 'json' or 'csv'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            data = DataExportService.export_metrics_configuration(request.user, format)
+            filename = f"metrics_configuration_{timezone.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            if format == 'json':
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                return DataExportService.create_export_response(data, format, filename)
+                
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def export_dashboard_settings(self, request):
+        """Export dashboard settings and widgets"""
+        format = request.query_params.get('format', 'json').lower()
+        
+        if format not in ['json', 'csv']:
+            return Response(
+                {"detail": "Format must be 'json' or 'csv'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            data = DataExportService.export_dashboard_settings(request.user, format)
+            filename = f"dashboard_settings_{timezone.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            if format == 'json':
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                return DataExportService.create_export_response(data, format, filename)
+                
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def export_alert_rules(self, request):
+        """Export alert rules configuration"""
+        format = request.query_params.get('format', 'json').lower()
+        
+        if format not in ['json', 'csv']:
+            return Response(
+                {"detail": "Format must be 'json' or 'csv'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            data = DataExportService.export_alert_rules(request.user, format)
+            filename = f"alert_rules_{timezone.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            if format == 'json':
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                return DataExportService.create_export_response(data, format, filename)
+                
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def create_full_backup(self, request):
+        """Create a complete backup of analytics system"""
+        try:
+            backup_data = BackupService.create_full_backup(request.user)
+            filename = f"analytics_backup_{timezone.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            return DataExportService.create_export_response(backup_data, 'json', filename)
+                
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 # Public tracking endpoint for client-side analytics
 class PublicAnalyticsViewSet(viewsets.ViewSet):
     """
-    Public ViewSet for client-side analytics tracking
+    Public ViewSet for client-side analytics tracking with enhanced security
     """
     permission_classes = [AllowAny]
+    throttle_classes = [PublicTrackingThrottle]
     
     @action(detail=False, methods=['post'])
     def track(self, request):
-        """Public endpoint for tracking analytics events"""
-        # Basic validation to prevent abuse
+        """Public endpoint for tracking analytics events with security validation"""
+        ip_address = request.META.get('REMOTE_ADDR')
+        
+        # Enhanced security validation
         if not request.data.get('event_name'):
+            AuditLogger.log_suspicious_activity(
+                request, 
+                'public_track', 
+                'Missing event_name',
+                {'request_data': request.data}
+            )
             return Response(
                 {"detail": "event_name is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Limit event names to prevent spam
+        # Validate event name
         allowed_events = [
             'page_view', 'button_click', 'form_submit', 'booking_step_completed',
             'booking_abandoned', 'contact_form_submitted', 'quote_requested'
@@ -1029,10 +1142,48 @@ class PublicAnalyticsViewSet(viewsets.ViewSet):
         
         event_name = request.data.get('event_name')
         if event_name not in allowed_events:
+            AuditLogger.log_suspicious_activity(
+                request, 
+                'public_track', 
+                'Invalid event name',
+                {'event_name': event_name}
+            )
             return Response(
                 {"detail": "Invalid event name"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # Validate session ID format
+        session_id = request.data.get('session_id')
+        if not SecurityValidator.validate_session_id(session_id):
+            AuditLogger.log_suspicious_activity(
+                request, 
+                'public_track', 
+                'Invalid session ID format',
+                {'session_id': session_id}
+            )
+            return Response(
+                {"detail": "Invalid session format"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate and sanitize event data
+        event_data = request.data.get('event_data', {})
+        if not SecurityValidator.validate_event_data(event_data):
+            AuditLogger.log_suspicious_activity(
+                request, 
+                'public_track', 
+                'Suspicious event data detected',
+                {'event_data': event_data}
+            )
+            return Response(
+                {"detail": "Invalid event data"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Sanitize data before processing
+        sanitized_event_data = DataSanitizer.sanitize_event_data(event_data)
+        sanitized_ip = DataSanitizer.sanitize_ip_address(ip_address)
         
         try:
             event = EventTrackingService.track_event(
@@ -1040,10 +1191,10 @@ class PublicAnalyticsViewSet(viewsets.ViewSet):
                 event_category='USER_ACTION',
                 source_domain='public',
                 user=request.user if request.user.is_authenticated else None,
-                session_id=request.data.get('session_id'),
-                event_data=request.data.get('event_data', {}),
-                ip_address=request.META.get('REMOTE_ADDR'),
-                user_agent=request.META.get('HTTP_USER_AGENT', '')
+                session_id=session_id,
+                event_data=sanitized_event_data,
+                ip_address=sanitized_ip,
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]  # Limit user agent length
             )
             
             return Response(
@@ -1052,7 +1203,13 @@ class PublicAnalyticsViewSet(viewsets.ViewSet):
             )
             
         except Exception as e:
-            # Don't expose internal errors to public endpoint
+            # Log error for internal monitoring but don't expose details
+            AuditLogger.log_suspicious_activity(
+                request, 
+                'public_track', 
+                'Event tracking failed',
+                {'error': str(e), 'event_name': event_name}
+            )
             return Response(
                 {"success": False},
                 status=status.HTTP_400_BAD_REQUEST
