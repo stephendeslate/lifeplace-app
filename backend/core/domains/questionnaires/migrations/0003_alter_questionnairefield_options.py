@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('questionnaires', '0001_initial'),
+        ('questionnaires', '0002_fix_options_array_to_jsonb'),
     ]
 
     operations = [
