@@ -17,6 +17,7 @@ from ..serializers import (
     QuestionnaireStepConfigurationSerializer,
     PackageSelectionStepConfigurationSerializer,
     AddonSelectionStepConfigurationSerializer,
+    PricingSummaryStepConfigurationSerializer,
     ContactInfoStepConfigurationSerializer,
     PaymentInfoStepConfigurationSerializer,
     ConfirmationStepConfigurationSerializer,
@@ -196,23 +197,34 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
             
             config = BookingFlowStepConfigurationService.get_step_configuration(pk)
             
+            # Updated serializer mapping with pricing_summary added
+            serializer_map = {
+                'introduction': IntroductionStepConfigurationSerializer,
+                'date_time': DateTimeStepConfigurationSerializer,
+                'questionnaire': QuestionnaireStepConfigurationSerializer,
+                'package_selection': PackageSelectionStepConfigurationSerializer,
+                'addon_selection': AddonSelectionStepConfigurationSerializer,
+                'pricing_summary': PricingSummaryStepConfigurationSerializer,
+                'contact_info': ContactInfoStepConfigurationSerializer,
+                'payment_info': PaymentInfoStepConfigurationSerializer,
+                'confirmation': ConfirmationStepConfigurationSerializer,
+            }
+            
             if config:
-                # Updated serializer mapping without availability_check
-                serializer_map = {
-                    'introduction': IntroductionStepConfigurationSerializer,
-                    'date_time': DateTimeStepConfigurationSerializer,
-                    'questionnaire': QuestionnaireStepConfigurationSerializer,
-                    'package_selection': PackageSelectionStepConfigurationSerializer,
-                    'addon_selection': AddonSelectionStepConfigurationSerializer,
-                    'contact_info': ContactInfoStepConfigurationSerializer,
-                    'payment_info': PaymentInfoStepConfigurationSerializer,
-                    'confirmation': ConfirmationStepConfigurationSerializer,
-                }
-                
+                # Step has a specific configuration model
                 serializer_class = serializer_map.get(step.step_type)
                 if serializer_class:
                     serializer = serializer_class(config, context=self.get_serializer_context())
                     return Response(serializer.data)
+            else:
+                # Handle steps that use generic configuration (like review_booking)
+                if step.step_type in ['review_booking']:
+                    # Return the generic configuration from the step's configuration field
+                    return Response(step.configuration)
+                else:
+                    # Step type should have a specific configuration but doesn't exist yet
+                    # This will trigger creation on first update
+                    return Response({})
             
             return Response({"detail": "Configuration not found"}, status=status.HTTP_404_NOT_FOUND)
         except BookingFlowStepNotFound:

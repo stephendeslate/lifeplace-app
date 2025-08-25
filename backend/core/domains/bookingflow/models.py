@@ -468,6 +468,32 @@ class PackageSelectionStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Package config for {self.step}"
+    
+    def clean(self):
+        """Validate the package configuration"""
+        super().clean()
+        
+        # Ensure max_selection is greater than min_selection
+        if self.min_selection > self.max_selection:
+            raise ValidationError({
+                'max_selection': 'Maximum selection must be greater than or equal to minimum selection'
+            })
+    
+    def get_safe_available_categories(self):
+        """Safely get available categories list for serialization"""
+        try:
+            return list(self.available_categories.values_list('id', flat=True))
+        except Exception as e:
+            logger.warning(f"Error getting available_categories for {self}: {e}")
+            return []
+    
+    def get_safe_available_packages(self):
+        """Safely get available packages list for serialization"""
+        try:
+            return list(self.available_packages.values_list('id', flat=True))
+        except Exception as e:
+            logger.warning(f"Error getting available_packages for {self}: {e}")
+            return []
 
 
 class AddonSelectionStepConfiguration(BaseModel):
@@ -506,6 +532,32 @@ class AddonSelectionStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Addon config for {self.step}"
+    
+    def clean(self):
+        """Validate the addon configuration"""
+        super().clean()
+        
+        # Ensure max_selection is greater than min_selection when both are set
+        if self.max_selection > 0 and self.min_selection > self.max_selection:
+            raise ValidationError({
+                'max_selection': 'Maximum selection must be greater than or equal to minimum selection'
+            })
+    
+    def get_safe_available_categories(self):
+        """Safely get available categories list for serialization"""
+        try:
+            return list(self.available_categories.values_list('id', flat=True))
+        except Exception as e:
+            logger.warning(f"Error getting available_categories for {self}: {e}")
+            return []
+    
+    def get_safe_available_addons(self):
+        """Safely get available addons list for serialization"""
+        try:
+            return list(self.available_addons.values_list('id', flat=True))
+        except Exception as e:
+            logger.warning(f"Error getting available_addons for {self}: {e}")
+            return []
     
 class PricingSummaryStepConfiguration(BaseModel):
     """Configuration for pricing summary step"""

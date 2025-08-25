@@ -1,9 +1,12 @@
 # backend/core/domains/bookingflow/views/booking_flow_views.py
+import logging
 from core.utils.permissions import IsAdmin
 from django.db import transaction
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+logger = logging.getLogger(__name__)
 
 from ..models import BookingFlow
 from ..serializers import (
@@ -32,19 +35,23 @@ class BookingFlowViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description']
     
     def get_queryset(self):
-        event_type_id = self.request.query_params.get('event_type')
-        is_active = self.request.query_params.get('is_active')
-        search = self.request.query_params.get('search')
-        
-        # Convert string to boolean if provided
-        if is_active is not None:
-            is_active = is_active.lower() == 'true'
-        
-        return BookingFlowService.get_all_flows(
-            search_query=search,
-            event_type_id=event_type_id,
-            is_active=is_active
-        )
+        try:
+            event_type_id = self.request.query_params.get('event_type')
+            is_active = self.request.query_params.get('is_active')
+            search = self.request.query_params.get('search')
+            
+            # Convert string to boolean if provided
+            if is_active is not None:
+                is_active = is_active.lower() == 'true'
+            
+            return BookingFlowService.get_all_flows(
+                search_query=search,
+                event_type_id=event_type_id,
+                is_active=is_active
+            )
+        except Exception as e:
+            logger.error(f"Error in BookingFlowViewSet.get_queryset: {e}")
+            return BookingFlow.objects.none()
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -144,9 +151,19 @@ class BookingFlowViewSet(viewsets.ModelViewSet):
             serializer = BookingFlowStepSerializer(steps, many=True, context=self.get_serializer_context())
             return Response(serializer.data)
         except BookingFlowNotFound:
+            logger.warning(f"Booking flow {pk} not found when retrieving steps")
             return Response(
                 {"detail": "Booking flow not found"},
                 status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error retrieving steps for booking flow {pk}: {e}")
+            return Response(
+                {
+                    "detail": "An error occurred while retrieving booking flow steps",
+                    "error": str(e) if hasattr(e, '__str__') else "Unknown error"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
     @action(detail=True, methods=['get'])

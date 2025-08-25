@@ -15,6 +15,7 @@ from ..models import (
     QuestionnaireStepItem,
     PackageSelectionStepConfiguration,
     AddonSelectionStepConfiguration,
+    PricingSummaryStepConfiguration,
     ContactInfoStepConfiguration,
     PaymentInfoStepConfiguration,
     IntroductionStepConfiguration,
@@ -49,6 +50,7 @@ class BookingFlowStepConfigurationService:
             'questionnaire': lambda s: getattr(s, 'questionnaire_config', None),
             'package_selection': lambda s: getattr(s, 'package_config', None),
             'addon_selection': lambda s: getattr(s, 'addon_config', None),
+            'pricing_summary': lambda s: getattr(s, 'pricing_config', None),
             'contact_info': lambda s: getattr(s, 'contact_config', None),
             'payment_info': lambda s: getattr(s, 'payment_config', None),
             'confirmation': lambda s: getattr(s, 'confirmation_config', None),
@@ -90,8 +92,10 @@ class BookingFlowStepConfigurationService:
                 'questionnaire': BookingFlowStepConfigurationService._update_questionnaire_config,
                 'package_selection': BookingFlowStepConfigurationService._update_package_config,
                 'addon_selection': BookingFlowStepConfigurationService._update_addon_config,
+                'pricing_summary': BookingFlowStepConfigurationService._update_pricing_summary_config,
                 'contact_info': BookingFlowStepConfigurationService._update_contact_config,
                 'payment_info': BookingFlowStepConfigurationService._update_payment_config,
+                'review_booking': BookingFlowStepConfigurationService._update_review_booking_config,
                 'confirmation': BookingFlowStepConfigurationService._update_confirmation_config,
             }
             
@@ -244,6 +248,7 @@ class BookingFlowStepConfigurationService:
             'questionnaire': lambda s: QuestionnaireStepConfiguration.objects.create(step=s),
             'package_selection': lambda s: PackageSelectionStepConfiguration.objects.create(step=s),
             'addon_selection': lambda s: AddonSelectionStepConfiguration.objects.create(step=s),
+            'pricing_summary': lambda s: PricingSummaryStepConfiguration.objects.create(step=s),
             'contact_info': lambda s: ContactInfoStepConfiguration.objects.create(step=s),
             'payment_info': lambda s: PaymentInfoStepConfiguration.objects.create(step=s),
             'confirmation': lambda s: ConfirmationStepConfiguration.objects.create(
@@ -447,3 +452,22 @@ class BookingFlowStepConfigurationService:
                 setattr(config, key, value)
         config.save()
         return config
+    
+    @staticmethod
+    def _update_pricing_summary_config(step, config_data):
+        """Update pricing summary step configuration"""
+        config, created = PricingSummaryStepConfiguration.objects.get_or_create(step=step)
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+        config.save()
+        return config
+    
+    @staticmethod
+    def _update_review_booking_config(step, config_data):
+        """Update review booking step configuration using generic configuration field"""
+        # Since review_booking doesn't have a specific configuration model,
+        # we store the configuration in the step's generic configuration JSONField
+        step.configuration.update(config_data)
+        step.save()
+        return step.configuration

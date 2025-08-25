@@ -9,6 +9,9 @@ from core.domains.products.serializers import (
 from core.domains.questionnaires.basic_serializers import QuestionnaireBasicSerializer
 from core.domains.workflows.basic_serializers import WorkflowTemplateSerializer
 from rest_framework import serializers
+import logging
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     AddonSelectionStepConfiguration,
@@ -112,16 +115,24 @@ class PackageSelectionStepConfigurationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
     def get_available_categories(self, obj):
-        """Get list of category IDs - handles unevaluated ManyRelatedManager"""
-        if hasattr(obj, 'available_categories'):
-            return list(obj.available_categories.values_list('id', flat=True))
-        return []
+        """Get list of category IDs - uses model's safe method"""
+        try:
+            if obj and hasattr(obj, 'get_safe_available_categories'):
+                return obj.get_safe_available_categories()
+            return []
+        except Exception as e:
+            logger.warning(f"Error serializing available_categories for step {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return []
     
     def get_available_packages(self, obj):
-        """Get list of package IDs - handles unevaluated ManyRelatedManager"""
-        if hasattr(obj, 'available_packages'):
-            return list(obj.available_packages.values_list('id', flat=True))
-        return []
+        """Get list of package IDs - uses model's safe method"""
+        try:
+            if obj and hasattr(obj, 'get_safe_available_packages'):
+                return obj.get_safe_available_packages()
+            return []
+        except Exception as e:
+            logger.warning(f"Error serializing available_packages for step {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return []
 
 
 class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
@@ -152,16 +163,24 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 
     def get_available_categories(self, obj):
-        """Get list of category IDs - handles unevaluated ManyRelatedManager"""
-        if hasattr(obj, 'available_categories'):
-            return list(obj.available_categories.values_list('id', flat=True))
-        return []
+        """Get list of category IDs - uses model's safe method"""
+        try:
+            if obj and hasattr(obj, 'get_safe_available_categories'):
+                return obj.get_safe_available_categories()
+            return []
+        except Exception as e:
+            logger.warning(f"Error serializing available_categories for addon step {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return []
     
     def get_available_addons(self, obj):
-        """Get list of addon IDs - handles unevaluated ManyRelatedManager"""
-        if hasattr(obj, 'available_addons'):
-            return list(obj.available_addons.values_list('id', flat=True))
-        return []
+        """Get list of addon IDs - uses model's safe method"""
+        try:
+            if obj and hasattr(obj, 'get_safe_available_addons'):
+                return obj.get_safe_available_addons()
+            return []
+        except Exception as e:
+            logger.warning(f"Error serializing available_addons for addon step {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return []
 
 class PricingSummaryStepConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -232,26 +251,44 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
     def get_configuration_data(self, obj):
         """Get step-specific configuration data"""
         try:
-            if obj.step_type == 'introduction' and hasattr(obj, 'introduction_config'):
-                return IntroductionStepConfigurationSerializer(obj.introduction_config).data
-            elif obj.step_type == 'date_time' and hasattr(obj, 'datetime_config'):
-                return DateTimeStepConfigurationSerializer(obj.datetime_config).data
-            elif obj.step_type == 'questionnaire' and hasattr(obj, 'questionnaire_config'):
-                return QuestionnaireStepConfigurationSerializer(obj.questionnaire_config).data
-            elif obj.step_type == 'package_selection' and hasattr(obj, 'package_config'):
-                return PackageSelectionStepConfigurationSerializer(obj.package_config).data
-            elif obj.step_type == 'addon_selection' and hasattr(obj, 'addon_config'):
-                return AddonSelectionStepConfigurationSerializer(obj.addon_config).data
-            elif obj.step_type == 'pricing_summary' and hasattr(obj, 'pricing_config'):
-                return PricingSummaryStepConfigurationSerializer(obj.pricing_config).data
-            elif obj.step_type == 'contact_info' and hasattr(obj, 'contact_config'):
-                return ContactInfoStepConfigurationSerializer(obj.contact_config).data
-            elif obj.step_type == 'payment_info' and hasattr(obj, 'payment_config'):
-                return PaymentInfoStepConfigurationSerializer(obj.payment_config).data
-            elif obj.step_type == 'confirmation' and hasattr(obj, 'confirmation_config'):
-                return ConfirmationStepConfigurationSerializer(obj.confirmation_config).data
-        except AttributeError:
-            pass
+            if not obj or not obj.step_type:
+                return None
+                
+            config_attr_map = {
+                'introduction': 'introduction_config',
+                'date_time': 'datetime_config', 
+                'questionnaire': 'questionnaire_config',
+                'package_selection': 'package_config',
+                'addon_selection': 'addon_config',
+                'pricing_summary': 'pricing_config',
+                'contact_info': 'contact_config',
+                'payment_info': 'payment_config',
+                'confirmation': 'confirmation_config'
+            }
+            
+            serializer_map = {
+                'introduction': IntroductionStepConfigurationSerializer,
+                'date_time': DateTimeStepConfigurationSerializer,
+                'questionnaire': QuestionnaireStepConfigurationSerializer,
+                'package_selection': PackageSelectionStepConfigurationSerializer,
+                'addon_selection': AddonSelectionStepConfigurationSerializer,
+                'pricing_summary': PricingSummaryStepConfigurationSerializer,
+                'contact_info': ContactInfoStepConfigurationSerializer,
+                'payment_info': PaymentInfoStepConfigurationSerializer,
+                'confirmation': ConfirmationStepConfigurationSerializer
+            }
+            
+            config_attr = config_attr_map.get(obj.step_type)
+            serializer_class = serializer_map.get(obj.step_type)
+            
+            if config_attr and serializer_class and hasattr(obj, config_attr):
+                config = getattr(obj, config_attr, None)
+                if config is not None:
+                    return serializer_class(config, context=self.context).data
+                    
+        except Exception as e:
+            logger.warning(f"Error serializing configuration data for step {obj.id if hasattr(obj, 'id') else 'unknown'} of type {getattr(obj, 'step_type', 'unknown')}: {e}")
+            
         return None
 
 
@@ -286,10 +323,18 @@ class BookingFlowSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def get_total_steps(self, obj):
-        return obj.steps.count()
+        try:
+            return obj.steps.count() if obj and hasattr(obj, 'steps') else 0
+        except Exception as e:
+            logger.warning(f"Error getting total_steps for flow {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return 0
 
     def get_enabled_steps_count(self, obj):
-        return obj.enabled_steps.count()
+        try:
+            return obj.enabled_steps.count() if obj and hasattr(obj, 'enabled_steps') else 0
+        except Exception as e:
+            logger.warning(f"Error getting enabled_steps_count for flow {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return 0
 
 
 class BookingFlowDetailSerializer(BookingFlowSerializer):
@@ -321,15 +366,29 @@ class BookingSessionSerializer(serializers.ModelSerializer):
         ]
 
     def get_booking_flow_details(self, obj):
-        return {
-            'id': obj.booking_flow.id,
-            'name': obj.booking_flow.name,
-            'event_type_name': obj.booking_flow.event_type.name if obj.booking_flow.event_type else None,
-            'total_steps': obj.booking_flow.calculate_total_steps()
-        }
+        try:
+            if not obj or not hasattr(obj, 'booking_flow') or not obj.booking_flow:
+                return None
+            
+            booking_flow = obj.booking_flow
+            return {
+                'id': booking_flow.id,
+                'name': booking_flow.name,
+                'event_type_name': booking_flow.event_type.name if booking_flow.event_type else None,
+                'total_steps': booking_flow.calculate_total_steps() if hasattr(booking_flow, 'calculate_total_steps') else 0
+            }
+        except Exception as e:
+            logger.warning(f"Error getting booking_flow_details for session {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return None
 
     def get_total_price(self, obj):
-        return str(obj.calculate_total_price())
+        try:
+            if not obj or not hasattr(obj, 'calculate_total_price'):
+                return "0.00"
+            return str(obj.calculate_total_price())
+        except Exception as e:
+            logger.warning(f"Error getting total_price for session {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return "0.00"
 
 
 class BookingFlowAnalyticsSerializer(serializers.ModelSerializer):
