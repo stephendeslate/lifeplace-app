@@ -1095,7 +1095,7 @@ export const useAnalyticsExport = () => {
 
   const exportMetricsConfiguration = useMutation({
     mutationFn: (options?: ExportOptions) => analyticsApi.exportMetricsConfiguration(options),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       if (variables?.format === 'json') {
         showSuccess('Metrics configuration exported successfully');
       } else {
@@ -1109,7 +1109,7 @@ export const useAnalyticsExport = () => {
 
   const exportDashboardSettings = useMutation({
     mutationFn: (options?: ExportOptions) => analyticsApi.exportDashboardSettings(options),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       if (variables?.format === 'json') {
         showSuccess('Dashboard settings exported successfully');
       } else {
@@ -1123,7 +1123,7 @@ export const useAnalyticsExport = () => {
 
   const exportAlertRules = useMutation({
     mutationFn: (options?: ExportOptions) => analyticsApi.exportAlertRules(options),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       if (variables?.format === 'json') {
         showSuccess('Alert rules exported successfully');
       } else {
