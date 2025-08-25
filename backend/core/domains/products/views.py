@@ -237,6 +237,62 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
+    def batch(self, request):
+        """
+        Get multiple products by IDs in a single request
+        Usage: /products/products/batch/?ids=1,2,3,4
+        
+        This endpoint is specifically designed to solve infinite loop issues
+        in the pricing summary step where individual API calls were being made.
+        """
+        ids_param = request.query_params.get('ids', '')
+        
+        if not ids_param:
+            return Response(
+                {'error': 'ids parameter is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Parse comma-separated IDs
+            product_ids = [int(id.strip()) for id in ids_param.split(',') if id.strip()]
+            
+            if not product_ids:
+                return Response(
+                    {'error': 'No valid product IDs provided'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Limit to reasonable number of products per request
+            if len(product_ids) > 50:
+                return Response(
+                    {'error': 'Maximum 50 products per batch request'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get products by IDs
+            products = ProductOption.objects.filter(id__in=product_ids, is_active=True)
+            
+            # Serialize and return as array (not paginated for batch requests)
+            serializer = self.get_serializer(products, many=True)
+            
+            return Response({
+                'count': len(serializer.data),
+                'products': serializer.data
+            })
+            
+        except ValueError:
+            return Response(
+                {'error': 'Invalid product IDs format. Use comma-separated integers.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to fetch products: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
     def featured(self, request):
         """Get only featured products/packages"""
         featured = ProductService.get_all_products(is_featured=True, is_active=True)
