@@ -118,6 +118,7 @@ Both frontend apps use:
    - Domain-specific components in `components/[domain]/`
    - Shared components in `components/common/`
    - Page components in `pages/`
+6. **No Grid Components** Do not use Grid component
 
 ### Booking Flow System
 
