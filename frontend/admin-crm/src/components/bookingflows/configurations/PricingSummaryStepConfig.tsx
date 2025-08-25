@@ -12,8 +12,6 @@ import {
   Button,
   Card,
   CardContent,
-  Divider,
-  Grid,
   Skeleton,
 } from '@mui/material';
 import {
@@ -76,7 +74,6 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
 
   const {
     updateConfiguration,
-    isUpdatingConfiguration,
   } = useBookingFlowStepConfiguration();
 
   // Initialize form data from config
@@ -197,8 +194,8 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
               Display Options
             </Typography>
             
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -209,9 +206,9 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                   }
                   label="Show Package Breakdown"
                 />
-              </Grid>
+              </Box>
               
-              <Grid item xs={12} sm={6}>
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -222,9 +219,9 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                   }
                   label="Show Add-on Breakdown"
                 />
-              </Grid>
+              </Box>
               
-              <Grid item xs={12} sm={6}>
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -235,9 +232,9 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                   }
                   label="Show Tax Breakdown"
                 />
-              </Grid>
+              </Box>
               
-              <Grid item xs={12} sm={6}>
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -248,9 +245,9 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                   }
                   label="Show Subtotal"
                 />
-              </Grid>
+              </Box>
               
-              <Grid item xs={12} sm={6}>
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -261,8 +258,8 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                   }
                   label="Show Discount Field"
                 />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </CardContent>
         </Card>
 
@@ -274,8 +271,8 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
               Behavior Options
             </Typography>
             
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -286,9 +283,9 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                   }
                   label="Allow Discount Codes"
                 />
-              </Grid>
+              </Box>
               
-              <Grid item xs={12} sm={6}>
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -299,8 +296,8 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                   }
                   label="Calculate Tax"
                 />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </CardContent>
         </Card>
 
