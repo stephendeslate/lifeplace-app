@@ -478,6 +478,8 @@ class DashboardService:
     @staticmethod
     def get_dashboard_data(dashboard_id, user, time_range='last_30_days'):
         """Get all data for a dashboard"""
+        from .serializers import WidgetSerializer
+        
         dashboard = DashboardService.get_dashboard_by_id(dashboard_id, user)
         
         # Parse time range
@@ -494,15 +496,22 @@ class DashboardService:
                     filters=widget.data_filters
                 )
                 
+                # Serialize the widget to avoid JSON serialization issues
+                widget_data = WidgetSerializer(widget).data
+                
                 widgets_data.append({
-                    'widget': widget,
-                    'value': metric_value,
+                    'widget': widget_data,
+                    'value': str(metric_value) if metric_value is not None else None,
                     'error': None
                 })
             except Exception as e:
                 logger.error(f"Error calculating widget {widget.title}: {str(e)}")
+                
+                # Serialize the widget to avoid JSON serialization issues
+                widget_data = WidgetSerializer(widget).data
+                
                 widgets_data.append({
-                    'widget': widget,
+                    'widget': widget_data,
                     'value': None,
                     'error': str(e)
                 })
