@@ -448,16 +448,11 @@ export const ClientProfile: React.FC = () => {
                       <Box display="flex" justifyContent="space-between" alignItems="start">
                         <Box>
                           <Typography variant="h6" gutterBottom>
-                            {event.title}
+                            {event.name}
                           </Typography>
                           <Typography variant="body2" color="text.secondary" gutterBottom>
-                            {new Date(event.start_date).toLocaleDateString()} - {new Date(event.end_date).toLocaleDateString()}
+                            {new Date(event.start_date).toLocaleDateString()} - {event.end_date ? new Date(event.end_date).toLocaleDateString() : 'Ongoing'}
                           </Typography>
-                          {event.venue && (
-                            <Typography variant="body2" color="text.secondary">
-                              📍 {event.venue}
-                            </Typography>
-                          )}
                         </Box>
                         <Chip 
                           label={event.status} 

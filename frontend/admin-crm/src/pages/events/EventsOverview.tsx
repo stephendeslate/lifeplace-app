@@ -398,19 +398,16 @@ export const EventsOverview: React.FC = () => {
                       </TableCell>
                       
                       <TableCell>
-                        {event.workflow_progress ? (
+                        {typeof event.workflow_progress === 'number' && event.workflow_progress > 0 ? (
                           <Box sx={{ minWidth: 140 }}>
                             <Box display="flex" alignItems="center" gap={1} mb={1}>
                               <Typography variant="caption" color="text.secondary">
-                                {event.workflow_progress.current_stage}/{event.workflow_progress.total_stages}
-                              </Typography>
-                              <Typography variant="caption" fontWeight="medium">
-                                {event.workflow_progress.current_stage_name}
+                                {event.current_stage_name || 'In Progress'}
                               </Typography>
                             </Box>
                             <LinearProgress
                               variant="determinate"
-                              value={event.workflow_progress.percentage}
+                              value={event.workflow_progress}
                               sx={{
                                 height: 4,
                                 borderRadius: 2,
@@ -421,7 +418,7 @@ export const EventsOverview: React.FC = () => {
                               }}
                             />
                             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                              {Math.round(event.workflow_progress.percentage)}% complete
+                              {Math.round(event.workflow_progress)}% complete
                             </Typography>
                           </Box>
                         ) : event.workflow_template_name ? (
@@ -442,7 +439,7 @@ export const EventsOverview: React.FC = () => {
                       
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
-                          {event.workflow_progress?.current_task_name || '-'}
+                          -
                         </Typography>
                       </TableCell>
                       

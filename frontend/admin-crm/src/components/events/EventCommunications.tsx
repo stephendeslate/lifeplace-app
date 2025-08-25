@@ -55,6 +55,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
   clientEmail,
   clientName
 }) => {
+  // event prop is available but not used in current implementation
   const [searchTerm, setSearchTerm] = useState('');
   const [channelFilter, setChannelFilter] = useState<'ALL' | 'EMAIL' | 'SMS'>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');

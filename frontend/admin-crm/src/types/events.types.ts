@@ -1,5 +1,7 @@
 // frontend/admin-crm/src/types/events.types.ts
 
+import type { Client } from './clients.types';
+
 export interface EventType {
   id: number;
   name: string;
@@ -20,7 +22,7 @@ export interface WorkflowProgress {
 
 export interface Event {
   id: number;
-  client: number;
+  client: number | Client;
   client_name?: string;
   event_type: number | null;
   event_type_name?: string;
@@ -38,7 +40,7 @@ export interface Event {
   payment_status: PaymentStatus;
   total_amount_due: string | null;
   total_amount_paid: string;
-  workflow_progress?: WorkflowProgress;
+  workflow_progress?: number;
   created_at: string;
   updated_at: string;
 }

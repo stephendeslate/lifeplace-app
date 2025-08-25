@@ -1,5 +1,11 @@
 // frontend/admin-crm/src/types/clients.types.ts
 
+// Import Event interface from events domain to avoid duplication
+import type { Event } from './events.types';
+
+// Re-export Event for backward compatibility
+export type { Event };
+
 export interface ClientProfile {
   phone?: string;
   company?: string;
@@ -69,15 +75,6 @@ export interface AcceptInvitationResponse {
   user: Client;
 }
 
-// Event interface (basic, will be expanded in events domain)
-export interface Event {
-  id: number;
-  title: string;
-  start_date: string;
-  end_date: string;
-  status: 'DRAFT' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  venue?: string;
-}
 
 // Communication Records interfaces
 export interface CommunicationRecord {
