@@ -1,6 +1,6 @@
 # core/domains/questionnaires/models.py
 from core.utils.models import BaseModel
-from django.contrib.postgres.fields import ArrayField
+# from django.contrib.postgres.fields import ArrayField  # Removed for SQLite compatibility
 from django.db import models
 
 
@@ -38,7 +38,7 @@ class QuestionnaireField(BaseModel):
     type = models.CharField(max_length=20, choices=FIELD_TYPES)
     required = models.BooleanField(default=False)
     order = models.IntegerField(default=1)
-    options = ArrayField(models.CharField(max_length=200), blank=True, null=True)
+    options = models.JSONField(blank=True, default=list, help_text="List of option strings")
 
     def __str__(self):
         return f"{self.questionnaire.name} - {self.name}"

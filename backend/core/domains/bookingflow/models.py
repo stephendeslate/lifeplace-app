@@ -5,7 +5,7 @@ from core.domains.events.models import EventType
 from core.domains.products.models import ProductCategory, ProductOption
 from core.domains.questionnaires.models import Questionnaire
 from core.utils.models import BaseModel
-from django.contrib.postgres.fields import ArrayField
+# from django.contrib.postgres.fields import ArrayField  # Removed for SQLite compatibility
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -305,14 +305,12 @@ class DateTimeStepConfiguration(BaseModel):
     show_availability_status = models.BooleanField(default=True)
     auto_check_conflicts = models.BooleanField(default=True)
     
-    blocked_dates = ArrayField(
-        models.DateField(),
+    blocked_dates = models.JSONField(
         blank=True,
         default=list,
-        help_text="Dates that are completely blocked"
+        help_text="Dates that are completely blocked (ISO date strings)"
     )
-    available_days_of_week = ArrayField(
-        models.IntegerField(),
+    available_days_of_week = models.JSONField(
         default=list,
         blank=True,
         help_text="Days of week available (0=Monday, 6=Sunday)"
@@ -381,8 +379,7 @@ class QuestionnaireStepConfiguration(BaseModel):
     )
     allow_file_uploads = models.BooleanField(default=False)
     max_file_size_mb = models.PositiveIntegerField(default=10)
-    allowed_file_types = ArrayField(
-        models.CharField(max_length=10),
+    allowed_file_types = models.JSONField(
         default=list,
         blank=True,
         help_text="Allowed file extensions (e.g., ['pdf', 'jpg', 'png'])"
@@ -471,6 +468,32 @@ class PackageSelectionStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Package config for {self.step}"
+    
+    def clean(self):
+        """Validate the package configuration"""
+        super().clean()
+        
+        # Ensure max_selection is greater than min_selection
+        if self.min_selection > self.max_selection:
+            raise ValidationError({
+                'max_selection': 'Maximum selection must be greater than or equal to minimum selection'
+            })
+    
+    def get_safe_available_categories(self):
+        """Safely get available categories list for serialization"""
+        try:
+            return list(self.available_categories.values_list('id', flat=True))
+        except Exception as e:
+            logger.warning(f"Error getting available_categories for {self}: {e}")
+            return []
+    
+    def get_safe_available_packages(self):
+        """Safely get available packages list for serialization"""
+        try:
+            return list(self.available_packages.values_list('id', flat=True))
+        except Exception as e:
+            logger.warning(f"Error getting available_packages for {self}: {e}")
+            return []
 
 
 class AddonSelectionStepConfiguration(BaseModel):
@@ -509,6 +532,32 @@ class AddonSelectionStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Addon config for {self.step}"
+    
+    def clean(self):
+        """Validate the addon configuration"""
+        super().clean()
+        
+        # Ensure max_selection is greater than min_selection when both are set
+        if self.max_selection > 0 and self.min_selection > self.max_selection:
+            raise ValidationError({
+                'max_selection': 'Maximum selection must be greater than or equal to minimum selection'
+            })
+    
+    def get_safe_available_categories(self):
+        """Safely get available categories list for serialization"""
+        try:
+            return list(self.available_categories.values_list('id', flat=True))
+        except Exception as e:
+            logger.warning(f"Error getting available_categories for {self}: {e}")
+            return []
+    
+    def get_safe_available_addons(self):
+        """Safely get available addons list for serialization"""
+        try:
+            return list(self.available_addons.values_list('id', flat=True))
+        except Exception as e:
+            logger.warning(f"Error getting available_addons for {self}: {e}")
+            return []
     
 class PricingSummaryStepConfiguration(BaseModel):
     """Configuration for pricing summary step"""
@@ -595,8 +644,7 @@ class PaymentInfoStepConfiguration(BaseModel):
     deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('50.00'))
     
     # Payment methods
-    available_payment_methods = ArrayField(
-        models.CharField(max_length=50),
+    available_payment_methods = models.JSONField(
         default=list,
         blank=True,
         help_text="Available payment methods"

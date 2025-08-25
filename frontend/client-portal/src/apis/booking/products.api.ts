@@ -103,8 +103,11 @@ export class ProductsApi {
   }
 
   /**
-   * Get multiple products by IDs
+   * Get multiple products by IDs using batch API endpoint
    * Returns a Map for efficient lookup
+   * 
+   * CRITICAL FIX: This method was causing infinite loops in pricing summary
+   * by making individual API calls. Now uses single batch request.
    */
   static async getProductsByIds(productIds: number[]): Promise<Map<number, ProductOption>> {
     if (productIds.length === 0) {
@@ -112,20 +115,24 @@ export class ProductsApi {
     }
 
     try {
-      // Fetch all products in parallel
-      const promises = productIds.map(id => this.getProductOption(id));
-      const products = await Promise.all(promises);
+      // Use batch endpoint for single API call instead of multiple individual calls
+      const idsString = productIds.join(',');
+      const response = await api.get<{count: number, products: ProductOption[]}>(`/products/products/batch/`, {
+        params: { ids: idsString }
+      });
       
       // Convert to Map for efficient lookup
       const productMap = new Map<number, ProductOption>();
-      products.forEach(product => {
+      response.data.products.forEach(product => {
         productMap.set(product.id, product);
       });
       
       return productMap;
     } catch (error) {
-      console.error('Failed to fetch products by IDs:', error);
-      // Return partial results if some succeed
+      console.error('Failed to fetch products by IDs via batch API:', error);
+      
+      // Fallback to individual requests only if batch API fails
+      console.warn('Falling back to individual product requests');
       const productMap = new Map<number, ProductOption>();
       
       // Try fetching individually and handle failures gracefully

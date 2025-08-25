@@ -24,7 +24,8 @@ import {
   DialogContentText,
   DialogTitle,
   Tab,
-  Tabs
+  Tabs,
+  LinearProgress
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -53,7 +54,6 @@ import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuestionnaires } from '../../hooks/useQuestionnaires';
 import { EventForm } from '../../components/events/EventForm';
-import { WorkflowProgress } from '../../components/events/WorkflowProgress';
 import { EventCommunications } from '../../components/events/EventCommunications';
 import { EventQuestionnaires } from '../../components/events/EventQuestionnaires';
 import { EventQuotes } from '../../components/events/EventQuotes';
@@ -450,11 +450,35 @@ export const EventProfile: React.FC = () => {
         <Box sx={{ flex: 1 }}>
           <Card>
             <CardContent>
-              {event.workflow_progress ? (
-                <WorkflowProgress 
-                  progress={event.workflow_progress} 
-                  showStageNames={false}
-                />
+              {typeof event.workflow_progress === 'number' && event.workflow_progress > 0 ? (
+                <Stack spacing={2}>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <WorkflowIcon color="primary" />
+                    <Typography variant="h6">Workflow Progress</Typography>
+                  </Box>
+                  <Box>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                      <Typography variant="body2" color="text.secondary">
+                        Current Stage: {event.current_stage_name || 'Unknown'}
+                      </Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {Math.round(event.workflow_progress)}%
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={event.workflow_progress}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: 'grey.200',
+                        '& .MuiLinearProgress-bar': {
+                          borderRadius: 4,
+                        },
+                      }}
+                    />
+                  </Box>
+                </Stack>
               ) : event.workflow_template_name ? (
                 <Stack spacing={2}>
                   <Box display="flex" alignItems="center" gap={2}>

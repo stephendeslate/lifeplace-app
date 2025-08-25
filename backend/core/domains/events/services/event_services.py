@@ -1,4 +1,4 @@
-# backend/core/domains/events/services.py
+# backend/core/domains/events/services/event_services.py
 import logging
 from datetime import datetime
 
@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from .exceptions import (
+from ..exceptions import (
     DuplicateEventFeedback,
     EventFileNotFound,
     EventNotFound,
@@ -18,7 +18,7 @@ from .exceptions import (
     InvalidFileUpload,
     InvalidWorkflowStageTransition,
 )
-from .models import (
+from ..models import (
     Event,
     EventFeedback,
     EventFile,

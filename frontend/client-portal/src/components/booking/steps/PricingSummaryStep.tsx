@@ -141,10 +141,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   // Update pricing data only when breakdown actually changes
   useEffect(() => {
     if (hasItems && !calculatingPricing && !isUpdatingRef.current) {
-      // Use a small delay to debounce rapid updates
+      // CRITICAL FIX: Increased debounce timeout to prevent rapid-fire updates
+      // This helps prevent the infinite loop by giving time for state to settle
       const timeoutId = setTimeout(() => {
         updatePricingData();
-      }, 100);
+      }, 500); // Increased from 100ms to 500ms
       
       return () => clearTimeout(timeoutId);
     }

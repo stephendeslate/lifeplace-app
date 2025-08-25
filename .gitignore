@@ -1,5 +1,7 @@
 # Ignore files and directories that should not be tracked by Git
 .env
 .env.production
+export_files.py
+export_concatenated_files.py
 export/
 export-concatenated/

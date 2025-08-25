@@ -29,8 +29,10 @@ import {
   QuestionnaireStepConfig,
   PackageSelectionStepConfig,
   AddonSelectionStepConfig,
+  PricingSummaryStepConfig,
   ContactInfoStepConfig,
   PaymentInfoStepConfig,
+  ReviewBookingStepConfig,
   ConfirmationStepConfig,
 } from '../configurations';
 
@@ -166,6 +168,16 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           />
         );
       
+      case 'pricing_summary':
+        return (
+          <PricingSummaryStepConfig
+            step={step}
+            config={currentConfig as import('../../../types/bookingflows.types').PricingSummaryStepConfiguration | null | undefined}
+            onUpdate={handleConfigurationUpdate}
+            isLoading={isUpdatingConfiguration}
+          />
+        );
+      
       case 'contact_info':
         return (
           <ContactInfoStepConfig
@@ -186,6 +198,16 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           />
         );
       
+      case 'review_booking':
+        return (
+          <ReviewBookingStepConfig
+            step={step}
+            config={currentConfig}
+            onUpdate={handleConfigurationUpdate}
+            isLoading={isUpdatingConfiguration}
+          />
+        );
+      
       case 'confirmation':
         return (
           <ConfirmationStepConfig
@@ -197,7 +219,6 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         );
       
       // Remove event_details case since it doesn't exist in the evolved types
-      // Remove pricing_summary and review_booking cases since they have no specific configs
       
       default:
         return <GenericConfigForm step={step} config={currentConfig} />;

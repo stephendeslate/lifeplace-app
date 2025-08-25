@@ -1,4 +1,5 @@
-# backend/core/domains/events/serializers.py
+# backend/core/domains/events/serializers/event_serializers.py
+# This is your existing serializers.py content, unchanged
 from core.domains.products.serializers import ProductOptionSerializer
 from core.domains.users.serializers import UserSerializer
 from core.domains.workflows.basic_serializers import (
@@ -8,8 +9,8 @@ from core.domains.workflows.basic_serializers import (
 from django.db import transaction
 from rest_framework import serializers
 
-from .basic_serializers import EventTypeSerializer
-from .models import (
+from ..basic_serializers import EventTypeSerializer
+from ..models import (
     Event,
     EventFeedback,
     EventFile,
@@ -158,7 +159,7 @@ class EventSerializer(serializers.ModelSerializer):
             'status', 'start_date', 'end_date', 'workflow_template', 'workflow_template_name',
             'current_stage', 'current_stage_name', 'lead_source', 'last_contacted', 
             'total_price', 'payment_status', 'total_amount_due', 'total_amount_paid', 
-            'workflow_progress', 'next_task', 'created_at', 'updated_at'
+            'workflow_progress', 'next_task', 'preferences', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task']
     

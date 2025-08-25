@@ -273,6 +273,30 @@ export interface AddonSelectionStepConfiguration {
   updated_at: string;
 }
 
+export interface PricingSummaryStepConfiguration {
+  id: number;
+  step: number;
+  
+  // Display options
+  show_package_breakdown: boolean;
+  show_addon_breakdown: boolean;
+  show_tax_breakdown: boolean;
+  show_discount_field: boolean;
+  show_subtotal: boolean;
+  
+  // Behavior options
+  allow_discount_codes: boolean;
+  calculate_tax: boolean;
+  
+  // Custom messaging
+  header_text: string;
+  footer_text: string;
+  discount_help_text: string;
+  
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ContactInfoStepConfiguration {
   id: number;
   step: number;
@@ -347,6 +371,7 @@ export type StepConfiguration =
   | QuestionnaireStepConfiguration
   | PackageSelectionStepConfiguration
   | AddonSelectionStepConfiguration
+  | PricingSummaryStepConfiguration
   | ContactInfoStepConfiguration
   | PaymentInfoStepConfiguration
   | ConfirmationStepConfiguration;

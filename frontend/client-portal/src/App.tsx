@@ -11,6 +11,7 @@ import { Home } from './pages/home';
 import { Login, Register } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { Messages } from './pages/messages';
+import { EventsList, EventDetail } from './pages/events';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
 
@@ -331,14 +332,16 @@ const AppRouter: React.FC = () => {
         path="/events" 
         element={
           <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                My Events
-              </Typography>
-              <Typography color="text.secondary">
-                Event management coming soon!
-              </Typography>
-            </Box>
+            <EventsList />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/events/:id" 
+        element={
+          <ProtectedRoute>
+            <EventDetail />
           </ProtectedRoute>
         } 
       />
