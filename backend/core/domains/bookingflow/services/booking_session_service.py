@@ -133,7 +133,7 @@ class BookingSessionService:
         # Validate step data against current step
         if session.current_step:
             validation_errors = BookingSessionService._validate_step_data(
-                session.current_step, step_data
+                session.current_step, step_data, session
             )
             if validation_errors:
                 # Store validation errors but don't raise exception
@@ -146,20 +146,29 @@ class BookingSessionService:
             # Update booking data
             current_step_key = f"step_{session.current_step.id}" if session.current_step else "general"
             
-            # Merge with existing data for this step
+            # CRITICAL FIX: Handle packages and addons at root level ONLY to avoid duplication
+            # This ensures a single source of truth for pricing calculations
+            if 'selected_packages' in step_data:
+                # Store at root level only
+                session.booking_data['selected_packages'] = step_data['selected_packages']
+                # Remove from step_data to prevent duplication
+                step_data_copy = step_data.copy()
+                step_data_copy.pop('selected_packages', None)
+                step_data = step_data_copy
+            
+            if 'selected_addons' in step_data:
+                # Store at root level only
+                session.booking_data['selected_addons'] = step_data['selected_addons']
+                # Remove from step_data to prevent duplication
+                step_data_copy = step_data.copy()
+                step_data_copy.pop('selected_addons', None)
+                step_data = step_data_copy
+            
+            # Merge remaining step data (excluding packages/addons which are now at root level)
             if current_step_key not in session.booking_data:
                 session.booking_data[current_step_key] = {}
             
             session.booking_data[current_step_key].update(step_data)
-            
-            # CRITICAL FIX: Handle packages and addons at root level to avoid duplication
-            # This ensures a single source of truth for pricing calculations
-            if 'selected_packages' in step_data:
-                # Store at root level
-                session.booking_data['selected_packages'] = step_data['selected_packages']
-            if 'selected_addons' in step_data:
-                # Store at root level
-                session.booking_data['selected_addons'] = step_data['selected_addons']
             
             # Clear any previous validation errors
             session.validation_errors = {}
@@ -512,8 +521,14 @@ class BookingSessionService:
         return event
     
     @staticmethod
-    def _validate_step_data(step, step_data):
-        """Validate step data against step configuration"""
+    def _validate_step_data(step, step_data, session=None):
+        """Validate step data against step configuration
+        
+        Args:
+            step: BookingFlowStep instance
+            step_data: Data to validate
+            session: BookingSession instance (optional, used for authenticated user validation)
+        """
         errors = {}
         
         # Block validation for removed step types
@@ -610,17 +625,51 @@ class BookingSessionService:
                             errors['selected_addons'].append(f"Addon {addon['product_id']} is not available for selection")
                             
             elif step.step_type == 'contact_info':
-                # Validate required fields
+                # Enhanced validation for contact_info that considers authenticated users
+                
+                # Check if user is authenticated and has required data
+                user = session.client if session else None
+                is_authenticated = user is not None
+                
+                # Full name validation
                 if config.require_full_name and not step_data.get('full_name'):
-                    errors['full_name'] = ["Full name is required"]
+                    # For authenticated users, check if we can use their profile data
+                    if is_authenticated and user.first_name and user.last_name:
+                        # Authenticated user has name in profile - validation passes
+                        pass
+                    else:
+                        errors['full_name'] = ["Full name is required"]
+                
+                # Email validation - CRITICAL FIX for authenticated users
                 if config.require_email and not step_data.get('email'):
-                    errors['email'] = ["Email is required"]
+                    # For authenticated users, check if we can use their email
+                    if is_authenticated and user.email:
+                        # Authenticated user email available - validation passes
+                        pass
+                    else:
+                        errors['email'] = ["Email is required"]
+                
+                # Phone validation
                 if config.require_phone and not step_data.get('phone'):
-                    errors['phone'] = ["Phone number is required"]
+                    # For authenticated users, check profile phone
+                    if is_authenticated and hasattr(user, 'profile') and user.profile and getattr(user.profile, 'phone', ''):
+                        # Authenticated user has phone in profile - validation passes
+                        pass
+                    else:
+                        errors['phone'] = ["Phone number is required"]
+                
+                # Address validation (typically not in user profile, so still required)
                 if config.require_address and not step_data.get('address'):
                     errors['address'] = ["Address is required"]
+                
+                # Company validation
                 if config.require_company and not step_data.get('company'):
-                    errors['company'] = ["Company name is required"]
+                    # For authenticated users, check profile company
+                    if is_authenticated and hasattr(user, 'profile') and user.profile and getattr(user.profile, 'company', ''):
+                        # Authenticated user has company in profile - validation passes
+                        pass
+                    else:
+                        errors['company'] = ["Company name is required"]
                     
             elif step.step_type == 'payment_info':
                 # Validate payment data

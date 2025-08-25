@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/ContactInfoStep.tsx
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -87,17 +87,45 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
       [field]: value === undefined || value === null ? '' : value,
     };
 
-    // Just update the data - no validation here
-    // The BookingContext will handle debounced backend updates
+    // For authenticated users, ensure we always include their profile data
+    // This provides defense-in-depth against validation errors
+    if (isAuthenticated && user) {
+      // Always include user email for validation even if field is disabled
+      if (!updatedData.email && user.email) {
+        updatedData.email = user.email;
+      }
+      // Include full name if not provided
+      if (!updatedData.full_name && user.first_name && user.last_name) {
+        updatedData.full_name = `${user.first_name} ${user.last_name}`;
+      }
+      // Include phone if available in profile
+      if (!updatedData.phone && user.profile?.phone) {
+        updatedData.phone = user.profile.phone;
+      }
+      // Include company if available in profile
+      if (!updatedData.company && user.profile?.company) {
+        updatedData.company = user.profile.company;
+      }
+    }
+
+    // Update the data - BookingContext will handle debounced backend updates
     onDataChange(updatedData);
     
-    // Removed the automatic validation that was happening on every keystroke
-    // Validation will now happen:
+    // Validation will happen:
     // 1. When user clicks "Next" (full validation)
     // 2. After debounced backend update (1 second after typing stops)
     // 3. On blur for critical fields (optional - see handleFieldBlur)
     
-  }, [formData, onDataChange]);
+  }, [formData, onDataChange, isAuthenticated, user]);
+
+  // Effect to ensure authenticated user data is included from the start
+  useEffect(() => {
+    if (isAuthenticated && user && formData) {
+      // Trigger handleFieldChange with current data to ensure user profile data is included
+      // This ensures backend validation will have all necessary data
+      handleFieldChange('full_name', formData.full_name);
+    }
+  }, [isAuthenticated, user?.email, user?.first_name, user?.last_name]); // Only trigger when user auth state changes
 
   // Validate on blur (optional - only for critical fields)
   const handleFieldBlur = useCallback(async (field: keyof ContactInfoStepData) => {

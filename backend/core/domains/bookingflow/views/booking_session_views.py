@@ -328,8 +328,8 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Validate step data (you'll need to implement this in the service)
-            validation_errors = BookingSessionService._validate_step_data(step, step_data)
+            # Validate step data with session context for authenticated users
+            validation_errors = BookingSessionService._validate_step_data(step, step_data, session)
             
             return Response({
                 "isValid": len(validation_errors) == 0,
@@ -911,82 +911,5 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
-    @staticmethod
-    def _validate_step_data(step, step_data):
-        """Validate step data against step configuration"""
-        errors = {}
-        
-        # Block validation for removed step types
-        if step.step_type == 'availability_check':
-            errors['step_type'] = (
-                "Availability check step type is no longer supported. "
-                "Use date_time step with availability checking enabled instead."
-            )
-            return errors
-        
-        # Add validation for pricing summary step
-        if step.step_type == 'pricing_summary':
-            # Pricing summary only stores the discount code
-            # All calculations are done server-side
-            if 'applied_discount_code' in step_data and step_data['applied_discount_code']:
-                # Validate discount code if provided
-                try:
-                    from core.domains.products.services import DiscountService
-                    discount_code = step_data['applied_discount_code']
-                    discount = DiscountService.validate_discount_code(discount_code)
-                    if not discount or not discount.is_active:
-                        errors['applied_discount_code'] = ["Invalid or expired discount code"]
-                except Exception as e:
-                    errors['applied_discount_code'] = ["Unable to validate discount code"]
-        
-        # Common validation for all step types
-        if hasattr(step, f"{step.step_type}_config"):
-            config = getattr(step, f"{step.step_type}_config")
-            
-            # Step-specific validation based on configuration
-            if step.step_type == 'introduction':
-                if step_data.get('acknowledged') is not True:
-                    errors['acknowledged'] = ["Acknowledgment is required"]
-                    
-            elif step.step_type == 'date_time':
-                if not step_data.get('date'):
-                    errors['date'] = ["Date selection is required"]
-                if config.allow_time_selection and not step_data.get('time'):
-                    errors['time'] = ["Time selection is required"]
-                    
-            elif step.step_type == 'questionnaire':
-                # Validate questionnaire responses
-                questionnaire_items = config.questionnaire_items.all()
-                for item in questionnaire_items:
-                    questionnaire = item.questionnaire
-                    response_key = f'questionnaire_{questionnaire.id}'
-                    if questionnaire.is_required and not step_data.get(response_key):
-                        errors[response_key] = [f"{questionnaire.name} is required"]
-                        
-            elif step.step_type == 'package_selection':
-                selected = step_data.get('selected_packages', [])
-                if config.min_selection and len(selected) < config.min_selection:
-                    errors['selected_packages'] = [f"Select at least {config.min_selection} package(s)"]
-                if config.max_selection and len(selected) > config.max_selection:
-                    errors['selected_packages'] = [f"Select at most {config.max_selection} package(s)"]
-                    
-            elif step.step_type == 'addon_selection':
-                selected = step_data.get('selected_addons', [])
-                if config.min_selection and len(selected) < config.min_selection:
-                    errors['selected_addons'] = [f"Select at least {config.min_selection} addon(s)"]
-                if config.max_selection and len(selected) > config.max_selection:
-                    errors['selected_addons'] = [f"Select at most {config.max_selection} addon(s)"]
-                    
-            elif step.step_type == 'contact_info':
-                if config.require_full_name and not step_data.get('full_name'):
-                    errors['full_name'] = ["Full name is required"]
-                if config.require_email and not step_data.get('email'):
-                    errors['email'] = ["Email is required"]
-                if config.require_phone and not step_data.get('phone'):
-                    errors['phone'] = ["Phone number is required"]
-                    
-            elif step.step_type == 'payment_info':
-                if not step_data.get('payment_method'):
-                    errors['payment_method'] = ["Payment method is required"]
-        
-        return errors
+    # NOTE: Step validation is now handled by BookingSessionService._validate_step_data()
+    # This provides enhanced validation including authenticated user context
