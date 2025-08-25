@@ -357,7 +357,35 @@ class BookingSessionService:
                         
                         event_data['start_date'] = datetime.combine(start_date, start_time)
                     else:
-                        event_data['start_date'] = start_date
+                        # CRITICAL FIX: Ensure start_date is datetime even without time
+                        from datetime import datetime
+                        if isinstance(start_date, str) and start_date.strip():
+                            try:
+                                # Try multiple date formats
+                                for date_format in ['%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%dT%H:%M:%S.%f']:
+                                    try:
+                                        if 'T' in date_format:
+                                            # Full datetime string
+                                            event_data['start_date'] = datetime.strptime(start_date, date_format)
+                                        else:
+                                            # Date only string
+                                            parsed_date = datetime.strptime(start_date, date_format).date()
+                                            event_data['start_date'] = datetime.combine(parsed_date, datetime.min.time())
+                                        break
+                                    except ValueError:
+                                        continue
+                                else:
+                                    # No format matched, fallback to current time
+                                    event_data['start_date'] = timezone.now()
+                            except Exception:
+                                # Any other parsing error, use current time
+                                event_data['start_date'] = timezone.now()
+                        elif hasattr(start_date, 'isoformat'):
+                            # Already a datetime or date object
+                            event_data['start_date'] = start_date
+                        else:
+                            # Fallback to current time if invalid format or empty string
+                            event_data['start_date'] = timezone.now()
                 
                 if 'end_date' in step_data:
                     end_date = step_data['end_date']
@@ -373,7 +401,31 @@ class BookingSessionService:
                         
                         event_data['end_date'] = datetime.combine(end_date, end_time)
                     else:
-                        event_data['end_date'] = end_date
+                        # CRITICAL FIX: Ensure end_date is datetime even without time
+                        from datetime import datetime
+                        if isinstance(end_date, str) and end_date.strip():
+                            try:
+                                # Try multiple date formats
+                                for date_format in ['%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%dT%H:%M:%S.%f']:
+                                    try:
+                                        if 'T' in date_format:
+                                            # Full datetime string
+                                            event_data['end_date'] = datetime.strptime(end_date, date_format)
+                                        else:
+                                            # Date only string - use end of day
+                                            parsed_date = datetime.strptime(end_date, date_format).date()
+                                            event_data['end_date'] = datetime.combine(parsed_date, datetime.max.time().replace(microsecond=0))
+                                        break
+                                    except ValueError:
+                                        continue
+                                # If no format matched, don't set end_date (let it be optional)
+                            except Exception:
+                                # Any other parsing error, don't set end_date
+                                pass
+                        elif hasattr(end_date, 'isoformat'):
+                            # Already a datetime or date object
+                            event_data['end_date'] = end_date
+                        # If invalid format or empty string, don't set end_date (optional field)
                 
                 # Extract other event info that might be in various steps
                 if 'guest_count' in step_data:

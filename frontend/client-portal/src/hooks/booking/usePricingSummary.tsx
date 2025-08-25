@@ -50,27 +50,48 @@ export const usePricingSummary = (
   const [packageDetails, setPackageDetails] = useState<Map<number, ProductOption>>(new Map());
   const [addonDetails, setAddonDetails] = useState<Map<number, ProductOption>>(new Map());
 
-  // Fetch product details when selections change
+  // Memoize product IDs to prevent unnecessary re-fetches
+  const packageIds = useMemo(() => 
+    selectedPackages.map(p => p.product_id).sort((a, b) => a - b),
+    [selectedPackages]
+  );
+  
+  const addonIds = useMemo(() => 
+    selectedAddons.map(a => a.product_id).sort((a, b) => a - b),
+    [selectedAddons]
+  );
+
+  // Fetch product details when product IDs actually change (not array references)
   useEffect(() => {
     const fetchProductDetails = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        // Fixed: Use package_id and addon_id directly without mapping
-        const packageIds = selectedPackages.map(p => p.product_id);
-        const addonIds = selectedAddons.map(a => a.product_id);
-        
         if (packageIds.length > 0 || addonIds.length > 0) {
-          const [packagesMap, addonsMap] = await Promise.all([
-            packageIds.length > 0 ? ProductsApi.getProductsByIds(packageIds) : new Map(),
-            addonIds.length > 0 ? ProductsApi.getProductsByIds(addonIds) : new Map(),
-          ]);
+          // CRITICAL FIX: Use batch API call instead of separate calls
+          // This prevents the infinite loop caused by individual API requests
+          const allIds = [...packageIds, ...addonIds];
+          const allProductsMap = await ProductsApi.getProductsByIds(allIds);
           
-          // CRITICAL FIX: Clear old details before setting new ones
-          // This ensures removed items don't persist in the maps
-          setPackageDetails(new Map(packagesMap));
-          setAddonDetails(new Map(addonsMap));
+          // Separate into packages and addons maps
+          const packagesMap = new Map();
+          const addonsMap = new Map();
+          
+          packageIds.forEach(id => {
+            if (allProductsMap.has(id)) {
+              packagesMap.set(id, allProductsMap.get(id));
+            }
+          });
+          
+          addonIds.forEach(id => {
+            if (allProductsMap.has(id)) {
+              addonsMap.set(id, allProductsMap.get(id));
+            }
+          });
+          
+          setPackageDetails(packagesMap);
+          setAddonDetails(addonsMap);
         } else {
           // Clear all details when nothing is selected
           setPackageDetails(new Map());
@@ -78,13 +99,14 @@ export const usePricingSummary = (
         }
       } catch (err) {
         setError('Failed to load product details');
+        console.error('Failed to fetch product details:', err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProductDetails();
-  }, [selectedPackages, selectedAddons]);
+  }, [packageIds.join(','), addonIds.join(',')]); // Use string dependency to prevent array reference issues
 
   // Calculate breakdown
   const breakdown = useMemo<PricingBreakdown>(() => {
@@ -278,6 +300,15 @@ export const usePricingSummaryStep = (
   const [calculatingServerPricing, setCalculatingServerPricing] = useState(false);
   const [serverPricingError, setServerPricingError] = useState<string | null>(null);
 
+  // Define packageIds and addonIds for use in dependencies
+  const packageIds = useMemo(() => 
+    selectedPackages.map(p => p.product_id).sort((a, b) => a - b),
+    [selectedPackages]
+  );
+  const addonIds = useMemo(() => 
+    selectedAddons.map(a => a.product_id).sort((a, b) => a - b),
+    [selectedAddons]
+  );
   
   const {
     breakdown,
@@ -324,10 +355,11 @@ export const usePricingSummaryStep = (
       }
     };
 
-    // Debounce the calculation with a shorter delay for better UX
-    const timeoutId = setTimeout(calculateServerPricing, 300);
+    // CRITICAL FIX: Increased debounce timeout to prevent infinite loops
+    // This was contributing to rapid-fire server requests that caused the loop
+    const timeoutId = setTimeout(calculateServerPricing, 800);
     return () => clearTimeout(timeoutId);
-  }, [state.currentSession, hasItems, discountCode, selectedPackages.length, selectedAddons.length]);
+  }, [state.currentSession?.session_id, hasItems, discountCode, packageIds.join(','), addonIds.join(',')]);
 
   // Apply discount code
   const applyDiscountCode = useCallback(async (code: string) => {
