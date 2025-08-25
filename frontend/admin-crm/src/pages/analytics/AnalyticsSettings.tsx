@@ -32,7 +32,7 @@ import {
   CheckCircle as SuccessIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
-import { useAnalyticsAdmin } from '../../hooks/useAnalytics';
+import { useAnalyticsAdmin, useAnalyticsExport } from '../../hooks/useAnalytics';
 
 interface SettingsCardProps {
   title: string;
@@ -147,6 +147,17 @@ export const AnalyticsSettings: React.FC = () => {
     isCleaningUpEvents,
     isEvaluatingAlerts,
   } = useAnalyticsAdmin();
+
+  const {
+    exportMetricsConfiguration,
+    exportDashboardSettings,
+    exportAlertRules,
+    createFullBackup,
+    isExportingMetrics,
+    isExportingDashboards,
+    isExportingAlerts,
+    isCreatingBackup,
+  } = useAnalyticsExport();
 
   useEffect(() => {
     setBreadcrumbs([
@@ -437,19 +448,49 @@ export const AnalyticsSettings: React.FC = () => {
             </Typography>
             
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Button variant="outlined" disabled>
+              <Button 
+                variant="outlined"
+                onClick={() => exportMetricsConfiguration.mutate({ format: 'json' })}
+                disabled={isExportingMetrics}
+              >
                 Export Metrics Configuration
               </Button>
-              <Button variant="outlined" disabled>
+              <Button 
+                variant="outlined"
+                onClick={() => exportDashboardSettings.mutate({ format: 'json' })}
+                disabled={isExportingDashboards}
+              >
                 Export Dashboard Settings
               </Button>
-              <Button variant="outlined" disabled>
+              <Button 
+                variant="outlined"
+                onClick={() => exportAlertRules.mutate({ format: 'json' })}
+                disabled={isExportingAlerts}
+              >
                 Export Alert Rules
               </Button>
             </Stack>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+              <Button 
+                variant="outlined"
+                color="primary"
+                onClick={() => createFullBackup.mutate()}
+                disabled={isCreatingBackup}
+              >
+                Create Full Backup
+              </Button>
+              <Button 
+                variant="outlined"
+                onClick={() => exportMetricsConfiguration.mutate({ format: 'csv' })}
+                disabled={isExportingMetrics}
+              >
+                Export as CSV
+              </Button>
+            </Stack>
             
-            <Alert severity="warning">
-              Data export functionality is coming soon.
+            <Alert severity="success">
+              Export your analytics data for backup, migration, or analysis purposes. Files will be downloaded automatically.
             </Alert>
           </Stack>
         </SettingsCard>

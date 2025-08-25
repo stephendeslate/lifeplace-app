@@ -40,6 +40,9 @@ import type {
   FunnelFilters,
   AlertRuleFilters,
   EventAggregationFilters,
+  ExportData,
+  ExportOptions,
+  BackupData,
 } from '../types/analytics.types';
 
 export const analyticsApi = {
@@ -340,5 +343,94 @@ export const analyticsApi = {
   trackPublicAnalytics: async (request: EventTrackingRequest): Promise<{ success: boolean }> => {
     const response = await api.post<{ success: boolean }>('/analytics/public/track/', request);
     return response.data;
+  },
+
+  // Export functions
+  exportMetricsConfiguration: async (options: ExportOptions = { format: 'json' }): Promise<ExportData | void> => {
+    const params = new URLSearchParams();
+    params.append('format', options.format);
+    
+    if (options.format === 'json') {
+      const response = await api.get<ExportData>(`/analytics/api/export_metrics_configuration/?${params.toString()}`);
+      return response.data;
+    } else {
+      // For CSV downloads, trigger file download
+      const response = await api.get(`/analytics/api/export_metrics_configuration/?${params.toString()}`, {
+        responseType: 'blob',
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `metrics_configuration_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }
+  },
+
+  exportDashboardSettings: async (options: ExportOptions = { format: 'json' }): Promise<ExportData | void> => {
+    const params = new URLSearchParams();
+    params.append('format', options.format);
+    
+    if (options.format === 'json') {
+      const response = await api.get<ExportData>(`/analytics/api/export_dashboard_settings/?${params.toString()}`);
+      return response.data;
+    } else {
+      // For CSV downloads, trigger file download
+      const response = await api.get(`/analytics/api/export_dashboard_settings/?${params.toString()}`, {
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `dashboard_settings_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }
+  },
+
+  exportAlertRules: async (options: ExportOptions = { format: 'json' }): Promise<ExportData | void> => {
+    const params = new URLSearchParams();
+    params.append('format', options.format);
+    
+    if (options.format === 'json') {
+      const response = await api.get<ExportData>(`/analytics/api/export_alert_rules/?${params.toString()}`);
+      return response.data;
+    } else {
+      // For CSV downloads, trigger file download
+      const response = await api.get(`/analytics/api/export_alert_rules/?${params.toString()}`, {
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `alert_rules_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }
+  },
+
+  createFullBackup: async (): Promise<void> => {
+    const response = await api.get('/analytics/api/create_full_backup/', {
+      responseType: 'blob',
+    });
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `analytics_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   },
 };
