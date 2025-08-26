@@ -51,7 +51,23 @@ logger = logging.getLogger(__name__)
 
 class PaymentViewSet(viewsets.ModelViewSet):
     """ViewSet for managing payments"""
-    queryset = Payment.objects.all()
+    queryset = Payment.objects.select_related(
+        'event', 
+        'event__client',
+        'event__event_type',
+        'payment_method',
+        'payment_method__gateway',
+        'payment_method__user',
+        'processed_by',
+        'quote',
+        'invoice',
+        'installment',
+        'installment__payment_plan'
+    ).prefetch_related(
+        'transactions',
+        'notifications',
+        'refunds'
+    )
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     pagination_class = StandardResultsSetPagination
@@ -506,7 +522,22 @@ class PaymentInstallmentViewSet(viewsets.ModelViewSet):
 
 class InvoiceViewSet(viewsets.ModelViewSet):
     """ViewSet for managing invoices"""
-    queryset = Invoice.objects.all()
+    queryset = Invoice.objects.select_related(
+        'event',
+        'event__client',
+        'event__event_type',
+        'client',
+        'quote',
+        'quote__event',
+        'quote__template'
+    ).prefetch_related(
+        'line_items',
+        'line_items__product',
+        'taxes',
+        'taxes__tax_rate',
+        'related_payments',
+        'related_payments__payment_method'
+    )
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     

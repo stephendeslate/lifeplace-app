@@ -172,7 +172,10 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
 
 class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for communication records"""
-    queryset = CommunicationRecord.objects.all().order_by('-created_at')
+    queryset = CommunicationRecord.objects.select_related(
+        'client',
+        'sent_by'
+    ).order_by('-created_at')
     serializer_class = CommunicationRecordSerializer
     permission_classes = [IsAdminOrClient]  # Both admins and clients can view records
     

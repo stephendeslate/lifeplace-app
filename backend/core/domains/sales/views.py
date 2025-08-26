@@ -26,7 +26,13 @@ from .services import QuoteService, QuoteTemplateService
 
 class QuoteTemplateViewSet(viewsets.ModelViewSet):
     """ViewSet for managing quote templates"""
-    queryset = QuoteTemplate.objects.all()
+    queryset = QuoteTemplate.objects.select_related(
+        'event_type'
+    ).prefetch_related(
+        'products',
+        'contract_templates',
+        'questionnaires'
+    )
     serializer_class = QuoteTemplateSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     
@@ -117,7 +123,10 @@ class QuoteTemplateViewSet(viewsets.ModelViewSet):
 
 class QuoteTemplateProductViewSet(viewsets.ModelViewSet):
     """ViewSet for managing products in quote templates"""
-    queryset = QuoteTemplateProduct.objects.all()
+    queryset = QuoteTemplateProduct.objects.select_related(
+        'template',
+        'product'
+    )
     serializer_class = QuoteTemplateProductSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     
@@ -154,7 +163,22 @@ class QuoteTemplateProductViewSet(viewsets.ModelViewSet):
 
 class EventQuoteViewSet(viewsets.ModelViewSet):
     """ViewSet for managing event quotes"""
-    queryset = EventQuote.objects.all()
+    queryset = EventQuote.objects.select_related(
+        'event',
+        'event__client',
+        'event__event_type',
+        'template',
+        'template__event_type',
+        'created_by',
+        'discount'
+    ).prefetch_related(
+        'line_items',
+        'line_items__product',
+        'options',
+        'options__items',
+        'activities',
+        'activities__action_by'
+    )
     serializer_class = EventQuoteSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     
@@ -269,7 +293,10 @@ class EventQuoteViewSet(viewsets.ModelViewSet):
 
 class QuoteLineItemViewSet(viewsets.ModelViewSet):
     """ViewSet for managing quote line items"""
-    queryset = QuoteLineItem.objects.all()
+    queryset = QuoteLineItem.objects.select_related(
+        'quote',
+        'product'
+    )
     serializer_class = QuoteLineItemSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     
