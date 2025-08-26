@@ -205,18 +205,26 @@ class EncryptionService:
             return False
 
 
-# Global encryption service instance
-encryption_service = EncryptionService()
+# Global encryption service instance (lazy initialization)
+_encryption_service = None
+
+
+def get_encryption_service():
+    """Get or create the encryption service instance (lazy initialization)"""
+    global _encryption_service
+    if _encryption_service is None:
+        _encryption_service = EncryptionService()
+    return _encryption_service
 
 
 def encrypt_data(data: Any) -> str:
     """Convenience function to encrypt data"""
-    return encryption_service.encrypt(data)
+    return get_encryption_service().encrypt(data)
 
 
 def decrypt_data(encrypted_data: str, return_json: bool = True) -> Any:
     """Convenience function to decrypt data"""
-    return encryption_service.decrypt(encrypted_data, return_json)
+    return get_encryption_service().decrypt(encrypted_data, return_json)
 
 
 class EncryptedJSONField:
@@ -277,7 +285,7 @@ class EncryptedJSONField(models.TextField):
         
         # If it's a string, it might be encrypted or JSON
         if isinstance(value, str):
-            if encryption_service.is_encrypted(value):
+            if get_encryption_service().is_encrypted(value):
                 return decrypt_data(value)
             else:
                 # Try to parse as JSON (for migration compatibility)
