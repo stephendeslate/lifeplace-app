@@ -33,13 +33,8 @@ import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   Receipt as InvoiceIcon,
-  CheckCircle as PaidIcon,
-  Schedule as DraftIcon,
-  Warning as OverdueIcon,
-  Cancel as VoidIcon,
   Payment as PaymentIcon,
   Download as DownloadIcon,
-  Email as IssuedIcon,
 } from '@mui/icons-material';
 import { format, isPast, differenceInDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -51,28 +46,6 @@ interface EventInvoicesProps {
   event: Event;
 }
 
-// @ts-ignore
-const getStatusIcon = (status: InvoiceStatus, dueDate?: string) => {
-  // Check if overdue
-  if (status === 'ISSUED' && dueDate && isPast(new Date(dueDate))) {
-    return <OverdueIcon fontSize="small" />;
-  }
-  
-  switch (status) {
-    case 'DRAFT':
-      return <DraftIcon fontSize="small" />;
-    case 'ISSUED':
-      return <IssuedIcon fontSize="small" />;
-    case 'PAID':
-      return <PaidIcon fontSize="small" />;
-    case 'VOID':
-      return <VoidIcon fontSize="small" />;
-    case 'CANCELLED':
-      return <VoidIcon fontSize="small" />;
-    default:
-      return <DraftIcon fontSize="small" />;
-  }
-};
 
 const getStatusColor = (status: InvoiceStatus, dueDate?: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
   if (status === 'PAID') return 'success';

@@ -140,7 +140,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // Token is invalid
               storage.clearAuth();
             }
-          } catch (error) {
+          } catch {
             // Token might be expired, try to refresh
             try {
               await refreshToken();

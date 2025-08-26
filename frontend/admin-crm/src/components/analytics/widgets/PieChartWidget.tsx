@@ -10,8 +10,7 @@ interface PieChartWidgetProps {
   compact?: boolean;
 }
 
-// @ts-ignore
-export const PieChartWidget: React.FC<PieChartWidgetProps> = ({ widget, data, compact }) => {
+export const PieChartWidget: React.FC<PieChartWidgetProps> = ({ widget: _, data, compact }) => {
   const COLORS = ['#2563eb', '#16a34a', '#ea580c', '#9333ea', '#dc2626'];
   
   return (

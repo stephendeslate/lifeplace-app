@@ -27,6 +27,7 @@ import {
   Edit as EditIcon
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
+import { sanitizeHTML } from '../../utils/security';
 import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../types/communications.types';
 import RichTextEditor, { type RichTextEditorHandle } from '../shared/RichTextEditor';
 import VariableInserter from './VariableInserter';
@@ -450,7 +451,7 @@ The {{ site_name }} Team</p>`
                 <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
                   {formData.channel === 'EMAIL' ? (
                     <Box 
-                      dangerouslySetInnerHTML={{ __html: previewData.body }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewData.body, 'template') }}
                       sx={{ 
                         '& *': { maxWidth: '100%' },
                         wordBreak: 'break-word',

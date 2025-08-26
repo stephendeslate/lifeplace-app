@@ -34,7 +34,6 @@ import {
 import type {
   ContractTemplate,
   CreateContractTemplateData,
-  UpdateContractTemplateData,
   ContractTemplateFilters,
 } from '../../../types/contracts.types';
 
@@ -44,8 +43,7 @@ export const ContractTemplates: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [searchQuery, setSearchQuery] = useState('');
-  // @ts-ignore
-  const [filters, setFilters] = useState<ContractTemplateFilters>({});
+  const [filters] = useState<ContractTemplateFilters>({});
   const [editingTemplate, setEditingTemplate] = useState<ContractTemplate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<ContractTemplate | null>(null);
@@ -127,25 +125,6 @@ export const ContractTemplates: React.FC = () => {
     handleBackToList();
   };
 
-  // @ts-ignore
-  const handleFormSubmit = (data: CreateContractTemplateData | UpdateContractTemplateData) => {
-    if (editingTemplate) {
-      updateTemplateMutation.mutate(
-        { id: editingTemplate.id, data },
-        {
-          onSuccess: () => {
-            handleBackToList();
-          }
-        }
-      );
-    } else {
-      createTemplateMutation.mutate(data as CreateContractTemplateData, {
-        onSuccess: () => {
-          handleBackToList();
-        }
-      });
-    }
-  };
 
   const handleDuplicate = (template: ContractTemplate) => {
     const duplicateData: CreateContractTemplateData = {

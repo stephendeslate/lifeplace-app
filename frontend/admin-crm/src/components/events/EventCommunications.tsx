@@ -39,6 +39,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useCommunications } from '../../hooks/useCommunications';
+import { sanitizeHTML } from '../../utils/security';
 import { SendMessageDialog } from '../communications/SendMessageDialog';
 import type { CommunicationRecord } from '../../types/communications.types';
 import type { Event } from '../../types/events.types';
@@ -368,7 +369,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
                     <Typography 
                       variant="body2" 
                       sx={{ whiteSpace: 'pre-wrap' }}
-                      dangerouslySetInnerHTML={{ __html: selectedRecord.body }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHTML(selectedRecord.body, 'email') }}
                     />
                   </Paper>
                 </Box>

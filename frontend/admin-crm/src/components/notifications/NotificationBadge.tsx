@@ -16,7 +16,6 @@ import {
   Avatar,
   Chip,
   Tooltip,
-  useTheme,
 } from '@mui/material';
 import {
   Notifications,
@@ -33,12 +32,8 @@ interface NotificationBadgeProps {
 }
 
 export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
-  // @ts-ignore
-  showLabel = false,
   size = 'medium',
 }) => {
-  // @ts-ignore
-  const theme = useTheme();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 

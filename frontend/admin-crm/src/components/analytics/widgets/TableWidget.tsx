@@ -9,8 +9,7 @@ interface TableWidgetProps {
   compact?: boolean;
 }
 
-// @ts-ignore
-export const TableWidget: React.FC<TableWidgetProps> = ({ widget, data, compact }) => {
+export const TableWidget: React.FC<TableWidgetProps> = ({ widget: _, data, compact }) => {
   const tableData = data.categories || [];
   
   return (

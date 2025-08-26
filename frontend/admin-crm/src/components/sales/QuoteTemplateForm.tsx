@@ -29,6 +29,7 @@ import {
 import { useEventTypes } from '../../hooks/useEvents';
 import { useProducts } from '../../hooks/useProducts';
 import { useCreateQuoteTemplate, useUpdateQuoteTemplate } from '../../hooks/useSales';
+import { sanitizeHTML } from '../../utils/security';
 import type { 
   QuoteTemplate, 
   CreateQuoteTemplateData, 
@@ -603,7 +604,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
                     </Typography>
                     <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
                       <Box 
-                        dangerouslySetInnerHTML={{ __html: previewData.introduction }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewData.introduction, 'preview') }}
                         sx={{ 
                           '& *': { maxWidth: '100%' },
                           wordBreak: 'break-word',
@@ -628,7 +629,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
                     </Typography>
                     <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
                       <Box 
-                        dangerouslySetInnerHTML={{ __html: previewData.terms }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewData.terms, 'preview') }}
                         sx={{ 
                           '& *': { maxWidth: '100%' },
                           wordBreak: 'break-word',

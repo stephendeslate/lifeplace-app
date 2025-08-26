@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useEventTypes } from '../../hooks/useEvents';
 import { useCreateContractTemplate, useUpdateContractTemplate } from '../../hooks/useContracts';
+import { sanitizeHTML } from '../../utils/security';
 import type { 
   ContractTemplate, 
   CreateContractTemplateData, 
@@ -322,9 +323,6 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
   };
 
   const handleVariableInsert = (variable: string) => {
-    // @ts-ignore
-    const variableText = `{{ ${variable} }}`;
-    
     // For rich text editor, we'll use the global function if available
     if ((window as any)._richTextEditorInsertVariable) {
       (window as any)._richTextEditorInsertVariable(variable);
@@ -617,7 +615,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                 
                 <Paper variant="outlined" sx={{ p: 3, bgcolor: 'grey.50' }}>
                   <Box 
-                    dangerouslySetInnerHTML={{ __html: previewData }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewData, 'preview') }}
                     sx={{ 
                       '& *': { maxWidth: '100%' },
                       wordBreak: 'break-word',

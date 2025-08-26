@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/analytics/reports/ExecutionHistory.tsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Chip,
@@ -204,8 +204,6 @@ export const ExecutionHistory: React.FC<ExecutionHistoryProps> = ({
   onRefresh,
   showRefresh = true,
 }) => {
-    // @ts-ignore
-  const [expandedExecution, setExpandedExecution] = useState<string | null>(null);
 
   const getExecutionSummary = () => {
     const total = executions.length;

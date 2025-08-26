@@ -128,7 +128,6 @@ export const BookingFlowDetails: React.FC = () => {
     useFlowSteps,
     createStep,
     updateStep,
-    reorderSteps,
     isCreatingStep,
     isUpdatingStep,
     isReorderingSteps,
@@ -350,18 +349,6 @@ export const BookingFlowDetails: React.FC = () => {
     setReorderDialogOpen(true);
   };
 
-  // @ts-ignore
-  const handleStepReorderComplete = (orderMapping: Record<string, number>) => {
-    reorderSteps({
-      flow_id: flowId,
-      order_mapping: orderMapping
-    }, {
-      onSuccess: () => {
-        refetchSteps();
-        setReorderDialogOpen(false);
-      }
-    });
-  };
 
   // FIXED: Add step configuration update handler
   const handleStepConfigurationUpdate = (updatedStep: BookingFlowStep) => {

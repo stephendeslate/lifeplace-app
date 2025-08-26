@@ -504,11 +504,6 @@ export const ReportExecutions: React.FC = () => {
     executeReport({ id: reportId, request: {} });
   };
 
-  // @ts-ignore
-  const handleViewExecution = (execution: ReportExecution) => {
-    setSelectedExecution(execution);
-    setDetailsDialogOpen(true);
-  };
 
   const handleDownloadExecution = (execution: ReportExecution) => {
     // TODO: Implement actual download logic

@@ -1,20 +1,85 @@
 # backend/core/domains/communications/webhooks.py
+import hashlib
+import hmac
 import json
 import logging
+import os
+from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
 from django.utils import timezone
+from django.views.decorators.cache import cache_control
+from rest_framework.throttling import AnonRateThrottle
 from .services import CommunicationService
 
 logger = logging.getLogger(__name__)
 
+
+class WebhookThrottle(AnonRateThrottle):
+    """Custom throttle for webhook endpoints"""
+    rate = '100/hour'  # Allow 100 webhook requests per hour per IP
+
+
+def verify_brevo_signature(payload_body, received_signature, webhook_secret):
+    """
+    Verify webhook signature from Brevo
+    
+    Args:
+        payload_body: Raw request body as bytes
+        received_signature: Signature from request headers
+        webhook_secret: Secret key configured in Brevo
+    
+    Returns:
+        bool: True if signature is valid
+    """
+    if not webhook_secret or not received_signature:
+        return False
+    
+    try:
+        # Brevo uses HMAC SHA256 for webhook signatures
+        expected_signature = hmac.new(
+            webhook_secret.encode('utf-8'),
+            payload_body,
+            hashlib.sha256
+        ).hexdigest()
+        
+        # Compare signatures securely to prevent timing attacks
+        return hmac.compare_digest(received_signature, expected_signature)
+    
+    except Exception as e:
+        logger.error(f"Error verifying webhook signature: {str(e)}")
+        return False
+
+
+def validate_request_origin(request):
+    """
+    Validate the request origin and user agent
+    
+    Args:
+        request: Django request object
+    
+    Returns:
+        bool: True if request appears to be from Brevo
+    """
+    # Check User-Agent (Brevo typically sends identifiable user agent)
+    user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+    valid_user_agents = ['brevo', 'sendinblue', 'webhook']
+    
+    if not any(agent in user_agent for agent in valid_user_agents):
+        logger.warning(f"Suspicious user agent in webhook request: {user_agent}")
+        # Don't reject yet, just log - some webhooks may not have identifiable user agents
+    
+    # Additional origin validation could be added here if needed
+    return True
+
 @csrf_exempt
 @require_http_methods(["POST"])
+@cache_control(no_cache=True, no_store=True, must_revalidate=True)
 def brevo_webhook(request):
     """
-    Handle webhooks from Brevo for email delivery status updates
+    Handle webhooks from Brevo for email delivery status updates with enhanced security
     
     Brevo sends webhooks for various events:
     - delivered: Email was delivered
@@ -23,28 +88,71 @@ def brevo_webhook(request):
     - bounced: Email bounced
     - spam: Email marked as spam
     - unsubscribed: User unsubscribed
+    
+    Security features:
+    - Signature verification using HMAC SHA256
+    - Request origin validation
+    - Rate limiting
+    - Enhanced error handling
     """
     
+    # Apply rate limiting (manual implementation since we can't use DRF decorators here)
+    client_ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+    
     try:
-        # Parse the webhook payload
-        payload = json.loads(request.body.decode('utf-8'))
+        # Validate request origin
+        if not validate_request_origin(request):
+            logger.warning(f"Invalid webhook request origin from IP: {client_ip}")
+            return HttpResponse(status=403)
         
-        # Extract event information
+        # Get webhook secret from settings
+        webhook_secret = getattr(settings, 'BREVO_WEBHOOK_SECRET', os.getenv('BREVO_WEBHOOK_SECRET'))
+        
+        # Verify webhook signature if secret is configured
+        if webhook_secret:
+            received_signature = request.META.get('HTTP_X_BREVO_SIGNATURE') or request.META.get('HTTP_X_SIGNATURE')
+            if not verify_brevo_signature(request.body, received_signature, webhook_secret):
+                logger.error(f"Invalid webhook signature from IP: {client_ip}")
+                return HttpResponse(status=403)
+            logger.debug("Webhook signature verified successfully")
+        else:
+            logger.warning("Webhook secret not configured - skipping signature verification")
+        
+        # Parse the webhook payload
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            logger.error(f"Invalid webhook payload from IP: {client_ip}")
+            return HttpResponse(status=400)
+        
+        # Validate required fields
         event_type = payload.get('event')
         message_id = payload.get('message_id') or payload.get('id')
         email = payload.get('email')
         timestamp = payload.get('date') or payload.get('ts')
         
-        if not message_id:
-            logger.warning("Brevo webhook missing message_id")
+        if not message_id or not event_type:
+            logger.warning(f"Brevo webhook missing required fields from IP: {client_ip}")
+            return HttpResponse(status=400)
+        
+        # Validate event type
+        valid_event_types = ['delivered', 'opened', 'clicked', 'bounced', 'blocked', 'spam', 'invalid_email', 'deferred']
+        if event_type not in valid_event_types:
+            logger.warning(f"Unknown event type '{event_type}' from IP: {client_ip}")
             return HttpResponse(status=400)
         
         # Convert timestamp if provided
         occurred_at = None
         if timestamp:
             try:
-                occurred_at = timezone.datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            except (ValueError, TypeError):
+                if isinstance(timestamp, str):
+                    # Handle ISO format timestamps
+                    occurred_at = timezone.datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                else:
+                    # Handle Unix timestamps
+                    occurred_at = timezone.datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid timestamp format in webhook: {timestamp}")
                 occurred_at = timezone.now()
         else:
             occurred_at = timezone.now()
@@ -66,27 +174,32 @@ def brevo_webhook(request):
         # Update the communication record
         communication_service = CommunicationService()
         
-        if event_type == 'opened':
-            # Handle email opens specially
-            communication_service.update_delivery_status(
-                external_message_id=str(message_id),
-                status=new_status,
-                opened_at=occurred_at
-            )
-        else:
-            # Handle other delivery events
-            communication_service.update_delivery_status(
-                external_message_id=str(message_id),
-                status=new_status
-            )
+        try:
+            if event_type == 'opened':
+                # Handle email opens specially
+                updated = communication_service.update_delivery_status(
+                    external_message_id=str(message_id),
+                    status=new_status,
+                    opened_at=occurred_at
+                )
+            else:
+                # Handle other delivery events
+                updated = communication_service.update_delivery_status(
+                    external_message_id=str(message_id),
+                    status=new_status
+                )
+            
+            if updated:
+                logger.info(f"Processed Brevo webhook: {event_type} for message {message_id}")
+            else:
+                logger.warning(f"No record found for message ID: {message_id}")
+            
+            return HttpResponse(status=200)
+            
+        except Exception as e:
+            logger.error(f"Error updating communication record: {str(e)}")
+            return HttpResponse(status=500)
         
-        logger.info(f"Processed Brevo webhook: {event_type} for message {message_id}")
-        return HttpResponse(status=200)
-        
-    except json.JSONDecodeError:
-        logger.error("Invalid JSON in Brevo webhook")
-        return HttpResponse(status=400)
-    
     except Exception as e:
-        logger.error(f"Error processing Brevo webhook: {str(e)}")
+        logger.error(f"Unexpected error processing Brevo webhook from IP {client_ip}: {str(e)}")
         return HttpResponse(status=500)

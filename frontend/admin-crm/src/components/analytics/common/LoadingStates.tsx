@@ -351,10 +351,7 @@ export const InlineLoading: React.FC<{
 // Data refresh indicator
 export const RefreshIndicator: React.FC<{
   isRefreshing: boolean;
-  lastUpdated?: string;
-  onRefresh?: () => void;
-  // @ts-ignore
-}> = ({ isRefreshing, lastUpdated, onRefresh }) => (
+}> = ({ isRefreshing }) => (
   <Box 
     sx={{ 
       position: 'fixed', 

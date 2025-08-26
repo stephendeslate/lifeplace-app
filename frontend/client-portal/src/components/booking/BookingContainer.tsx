@@ -27,7 +27,7 @@ import {
   Schedule,
   Warning,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom'; // Available for future use
 import { useBooking } from '../../contexts/BookingContext';
 import { useSessionTimer } from '../../hooks/booking/useBookingCore';
 
@@ -38,8 +38,8 @@ interface BookingContainerProps {
 export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  // @ts-ignore
-  const navigate = useNavigate();
+  // Navigation available for future use if needed
+  // const navigate = useNavigate();
   const { state, actions } = useBooking();
 
   // Use session timer hook for expiry tracking

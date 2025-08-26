@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/pages/payments/PaymentProfile.tsx
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -54,7 +54,6 @@ import {
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { usePaymentManagement } from '../../hooks/usePayments';
-import { useClients } from '../../hooks/useClients';
 import { PaymentForm } from '../../components/payments/PaymentForm';
 import { NotesList } from '../../components/notes';
 import { PAYMENT_STATUSES } from '../../types/payments.types';
@@ -103,17 +102,6 @@ export const PaymentProfile: React.FC = () => {
     refetchPayment,
   } = usePaymentManagement(paymentId);
   
-  const { useClient } = useClients();
-  
-  // Extract client ID from event details
-  const clientId = useMemo(() => {
-    if (!payment?.event_details) return 0;
-    // This would need to be extracted from the event details or fetched separately
-    return 0; // Placeholder - would need proper client ID from payment/event relationship
-  }, [payment?.event_details]);
-  
-  // @ts-ignore
-  const { data: client } = useClient(clientId);
 
   useEffect(() => {
     if (payment) {

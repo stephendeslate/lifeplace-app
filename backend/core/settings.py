@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
@@ -57,11 +58,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # SECURITY: JWT token blacklisting
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'core.utils.security.SecurityMiddleware',  # Custom security middleware
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -228,21 +232,83 @@ REST_FRAMEWORK = {
     },
 }
 
-# JWT settings
+# Cache configuration with Redis
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
+
+# Parse Redis URL for django-redis
+import urllib.parse
+redis_parsed = urllib.parse.urlparse(REDIS_URL)
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL + '/1',  # Use Redis database 1 for cache
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            },
+            # 'PARSER_CLASS': 'redis.connection.HiredisParser',  # Faster parser - disabled until hiredis is properly configured
+            'PICKLE_VERSION': -1,  # Use latest pickle protocol
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # Compress cached data
+            'IGNORE_EXCEPTIONS': True,  # Fallback gracefully if Redis is down
+        },
+        'KEY_PREFIX': 'lifeplace',  # Prefix all cache keys
+        'TIMEOUT': 300,  # Default timeout 5 minutes
+    },
+    'sessions': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 for sessions
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'session',
+        'TIMEOUT': 86400,  # Sessions last 24 hours
+    },
+    'analytics': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL + '/2',  # Use Redis database 2 for analytics
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'analytics',
+        'TIMEOUT': 3600,  # Analytics cache for 1 hour
+    },
+}
+
+# Use Redis for session storage (much faster than database)
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'sessions'
+
+# JWT settings - SECURITY ENHANCED
+# SECURITY FIX: Use dedicated JWT signing key
+JWT_SIGNING_KEY = os.getenv('JWT_SIGNING_KEY')
+if not JWT_SIGNING_KEY:
+    if IS_PRODUCTION:
+        raise ValueError("JWT_SIGNING_KEY environment variable is required in production")
+    else:
+        JWT_SIGNING_KEY = SECRET_KEY  # Fallback for development
+        print("WARNING: Using SECRET_KEY for JWT signing in development. Set JWT_SIGNING_KEY for production.")
+
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ('Bearer',),
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    # SECURITY FIX: Reasonable token lifetimes for better UX
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),  # Increased from 30 minutes
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),   # Increased from 1 day for better UX
 
-    'ROTATE_REFRESH_TOKENS': False,
+    # SECURITY ENHANCEMENT: Enable token rotation for better security
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'UPDATE_LAST_LOGIN': False,
+    'UPDATE_LAST_LOGIN': True,  # Track login activity
 
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
+    'SIGNING_KEY': JWT_SIGNING_KEY,  # Use dedicated key
     'VERIFYING_KEY': None,
-    'AUDIENCE': None,
-    'ISSUER': None,
+    'AUDIENCE': 'lifeplace-api',      # Set audience for token validation
+    'ISSUER': 'lifeplace-backend',    # Set issuer for token validation
 
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
@@ -253,9 +319,13 @@ SIMPLE_JWT = {
 
     'JTI_CLAIM': 'jti',
 
+    # Sliding token settings (not used but configured properly)
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+    
+    # SECURITY ENHANCEMENT: Additional claims for better security
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
 }
 
 # Frontend URLs for email templates
@@ -264,7 +334,11 @@ CLIENT_FRONTEND_URL = os.getenv('CLIENT_FRONTEND_URL', 'http://localhost:5174') 
 
 # Brevo Configuration
 BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+BREVO_WEBHOOK_SECRET = os.getenv('BREVO_WEBHOOK_SECRET')  # Secret for webhook signature verification
 DEFAULT_FROM_NAME = os.getenv('DEFAULT_FROM_NAME', 'LifePlace')
+
+# Encryption Configuration
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY')  # Dedicated encryption key for sensitive fields
 
 # Email configuration
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stephendeslate@gmail.com')
@@ -305,6 +379,10 @@ LOGGING = {
             'format': '🛍️ {asctime} - {message}',
             'style': '{',
         },
+        'security': {
+            'format': '🔒 SECURITY {asctime} {levelname} {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'console': {
@@ -323,6 +401,17 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
             'formatter': 'verbose',
+        },
+        'security_console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'security',
+            'level': 'WARNING',
+        },
+        'security_file': {
+            'class': 'logging.FileHandler',
+            'filename': 'security.log',
+            'formatter': 'security',
+            'level': 'INFO',
         },
     },
     'loggers': {
@@ -345,6 +434,16 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
+        },
+        'security': {
+            'handlers': ['security_console', 'security_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'core.utils.security_logging': {
+            'handlers': ['security_console', 'security_file'],
+            'level': 'INFO',
+            'propagate': False,
         },
         '': {  # Root logger
             'handlers': ['console'],

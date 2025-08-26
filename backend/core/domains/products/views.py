@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
+import logging
 
 from .models import Discount, ProductOption, ProductCategory
 from .serializers import (
@@ -17,6 +18,9 @@ from .serializers import (
     ProductCategoryTreeSerializer,
 )
 from .services import DiscountService, ProductService, ProductCategoryService
+from .cache_service import product_cache_service
+
+logger = logging.getLogger(__name__)
 
 
 class LargePagination(PageNumberPagination):
@@ -98,9 +102,23 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def tree(self, request):
         """Get categories organized as a tree structure"""
+        # Try to get from cache first
+        cached_data = product_cache_service.get_cached_categories_tree()
+        
+        if cached_data is not None:
+            logger.debug("Categories tree served from cache")
+            return Response(cached_data)
+        
+        # Cache miss - get from database
         categories = ProductCategoryService.get_categories_tree()
         serializer = ProductCategoryTreeSerializer(categories, many=True)
-        return Response(serializer.data)
+        serialized_data = serializer.data
+        
+        # Cache the result
+        product_cache_service.cache_categories_tree(serialized_data)
+        logger.info("Categories tree cached after database query")
+        
+        return Response(serialized_data)
     
     @action(detail=False, methods=['get'])
     def root(self, request):
@@ -270,15 +288,33 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Get products by IDs
-            products = ProductOption.objects.filter(id__in=product_ids, is_active=True)
+            # Try to get from cache first
+            cached_data = product_cache_service.get_cached_product_batch(product_ids)
             
-            # Serialize and return as array (not paginated for batch requests)
+            if cached_data is not None:
+                logger.debug(f"Product batch for {len(product_ids)} IDs served from cache")
+                return Response({
+                    'count': len(cached_data),
+                    'products': cached_data
+                })
+            
+            # Cache miss - get from database with optimization
+            products = ProductOption.objects.filter(
+                id__in=product_ids, 
+                is_active=True
+            ).select_related('category', 'event_type')
+            
+            # Serialize and cache the result
             serializer = self.get_serializer(products, many=True)
+            serialized_data = serializer.data
+            
+            # Cache the batch result
+            product_cache_service.cache_product_batch(product_ids, serialized_data)
+            logger.info(f"Product batch for {len(product_ids)} IDs cached after database query")
             
             return Response({
-                'count': len(serializer.data),
-                'products': serializer.data
+                'count': len(serialized_data),
+                'products': serialized_data
             })
             
         except ValueError:
@@ -295,6 +331,17 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def featured(self, request):
         """Get only featured products/packages"""
+        # Try to get from cache first (only for non-paginated requests)
+        page_param = request.query_params.get('page')
+        
+        if not page_param:  # Only cache non-paginated requests
+            cached_data = product_cache_service.get_cached_featured_products()
+            
+            if cached_data is not None:
+                logger.debug("Featured products served from cache")
+                return Response(cached_data)
+        
+        # Cache miss or paginated request - get from database
         featured = ProductService.get_all_products(is_featured=True, is_active=True)
         page = self.paginate_queryset(featured)
         
@@ -302,8 +349,15 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
         
+        # Non-paginated response - cache it
         serializer = self.get_serializer(featured, many=True)
-        return Response(serializer.data)
+        serialized_data = serializer.data
+        
+        # Cache the result
+        product_cache_service.cache_featured_products(serialized_data)
+        logger.info("Featured products cached after database query")
+        
+        return Response(serialized_data)
     
     @action(detail=False, methods=['get'])
     def by_category(self, request):

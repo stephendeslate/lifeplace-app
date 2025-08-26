@@ -270,15 +270,12 @@ export const ReportsManagement: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [editingReport, setEditingReport] = useState<AnalyticsReport | null>(null);
   const [filters, setFilters] = useState<AnalyticsReportFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
 
   const {
     reports,
     isLoadingReports,
-    createReport,
-    updateReport,
     deleteReport,
     executeReport,
     refetchReports,
@@ -315,7 +312,8 @@ export const ReportsManagement: React.FC = () => {
   };
 
   const handleEdit = (report: AnalyticsReport) => {
-    setEditingReport(report);
+    // TODO: Implement edit functionality
+    console.log('Edit report:', report);
     setShowCreateDialog(true);
   };
 
@@ -329,20 +327,7 @@ export const ReportsManagement: React.FC = () => {
     }
   };
 
-  const handleCloseDialog = () => {
-    setShowCreateDialog(false);
-    setEditingReport(null);
-  };
 
-  // @ts-ignore
-  const handleSubmit = (data: any) => {
-    if (editingReport) {
-      updateReport({ id: editingReport.id, data });
-    } else {
-      createReport(data);
-    }
-    handleCloseDialog();
-  };
 
   // Get unique report types for filter
   const reportTypes = ['BUSINESS_SUMMARY', 'FINANCIAL', 'BOOKING_PERFORMANCE', 'CLIENT_ANALYSIS', 'WORKFLOW_EFFICIENCY', 'PAYMENT_ANALYSIS', 'CUSTOM'];

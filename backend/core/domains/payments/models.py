@@ -3,6 +3,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from core.utils.models import BaseModel
+from core.utils.encryption import EncryptedJSONField
 from django.db import models
 from django.utils import timezone
 
@@ -155,16 +156,43 @@ class Payment(BaseModel):
 
 
 class PaymentGateway(BaseModel):
-    """Payment gateway configurations"""
+    """Payment gateway configurations with encrypted sensitive data"""
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=50, unique=True)
     is_active = models.BooleanField(default=True)
-    # Store configuration securely - consider encryption for production
-    config = models.JSONField(default=dict)
+    # Store configuration securely with encryption
+    config = EncryptedJSONField(default=dict)
     description = models.TextField(blank=True)
     
     def __str__(self):
         return f"{self.name} Gateway"
+    
+    def get_decrypted_config(self):
+        """Get the decrypted configuration (for API usage)"""
+        return self.config
+    
+    def set_config_safely(self, config_data):
+        """Set configuration data with validation"""
+        if not isinstance(config_data, dict):
+            raise ValueError("Configuration must be a dictionary")
+        
+        # Validate required fields based on gateway type
+        required_fields = {
+            'stripe': ['secret_key', 'publishable_key'],
+            'paypal': ['client_id', 'client_secret'],
+            'square': ['access_token', 'application_id']
+        }
+        
+        if self.code in required_fields:
+            missing_fields = []
+            for field in required_fields[self.code]:
+                if field not in config_data:
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                raise ValueError(f"Missing required fields for {self.code}: {missing_fields}")
+        
+        self.config = config_data
     
     class Meta:
         ordering = ['name']

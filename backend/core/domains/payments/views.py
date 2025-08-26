@@ -6,6 +6,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+import logging
 
 from .models import (
     Invoice,
@@ -43,6 +44,9 @@ from .services import (
     PaymentService,
     TaxRateService,
 )
+from .cache_service import payments_cache_service
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentViewSet(viewsets.ModelViewSet):
@@ -57,7 +61,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         
         # Apply filters
         event_id = self.request.query_params.get('event', None)
-        status = self.request.query_params.get('status', None)
+        status_filter = self.request.query_params.get('status', None)
         start_date = self.request.query_params.get('start_date', None)
         end_date = self.request.query_params.get('end_date', None)
         search = self.request.query_params.get('search', None)
@@ -66,11 +70,25 @@ class PaymentViewSet(viewsets.ModelViewSet):
         amount_min = self.request.query_params.get('amount_min', None)
         amount_max = self.request.query_params.get('amount_max', None)
         
+        # Try cache for event-specific payments
+        if event_id and not any([status_filter, start_date, end_date, search, payment_method, is_manual, amount_min, amount_max]):
+            cached_payments = payments_cache_service.get_cached_payments_by_event(int(event_id))
+            if cached_payments is not None:
+                logger.debug(f"Payments for event {event_id} served from cache")
+                return queryset.filter(event_id=event_id)
+        
+        # Try cache for status-specific payments
+        if status_filter and not any([event_id, start_date, end_date, search, payment_method, is_manual, amount_min, amount_max]):
+            cached_payments = payments_cache_service.get_cached_payments_by_status(status_filter)
+            if cached_payments is not None:
+                logger.debug(f"Payments with status {status_filter} served from cache")
+                return queryset.filter(status=status_filter)
+        
         if event_id:
             queryset = queryset.filter(event_id=event_id)
         
-        if status:
-            queryset = queryset.filter(status=status)
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
         
         if start_date:
             queryset = queryset.filter(due_date__gte=start_date)
@@ -97,6 +115,27 @@ class PaymentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(amount__lte=amount_max)
         
         return queryset
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve payment with caching"""
+        payment_id = kwargs.get('pk')
+        
+        # Try to get from cache first
+        cached_payment = payments_cache_service.get_cached_payment_detail(int(payment_id))
+        
+        if cached_payment is not None:
+            logger.debug(f"Payment detail for {payment_id} served from cache")
+            return Response(cached_payment)
+        
+        # Cache miss - get from database
+        payment = self.get_object()
+        serializer = self.get_serializer(payment)
+        
+        # Cache the payment detail
+        payments_cache_service.cache_payment_detail(payment.id, serializer.data)
+        logger.info(f"Payment detail for {payment_id} cached after database query")
+        
+        return Response(serializer.data)
     
     def create(self, request, *args, **kwargs):
         """Create a new payment"""
@@ -339,8 +378,21 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Try to get from cache first
+        cached_methods = payments_cache_service.get_cached_payment_methods_by_user(int(user_id))
+        
+        if cached_methods is not None:
+            logger.debug(f"Payment methods for user {user_id} served from cache")
+            return Response(cached_methods)
+        
+        # Cache miss - get from database
         queryset = self.get_queryset().filter(user_id=user_id)
         serializer = self.get_serializer(queryset, many=True)
+        
+        # Cache the payment methods
+        payments_cache_service.cache_payment_methods_by_user(int(user_id), serializer.data)
+        logger.info(f"Payment methods for user {user_id} cached after database query")
+        
         return Response(serializer.data)
 
 
@@ -356,10 +408,38 @@ class PaymentPlanViewSet(viewsets.ModelViewSet):
         # Apply filters
         event_id = self.request.query_params.get('event', None)
         
+        # Try cache for event-specific payment plans
+        if event_id:
+            cached_plans = payments_cache_service.get_cached_payment_plans_by_event(int(event_id))
+            if cached_plans is not None:
+                logger.debug(f"Payment plans for event {event_id} served from cache")
+                return queryset.filter(event_id=event_id)
+        
         if event_id:
             queryset = queryset.filter(event_id=event_id)
         
         return queryset
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve payment plan with caching"""
+        plan_id = kwargs.get('pk')
+        
+        # Try to get from cache first
+        cached_plan = payments_cache_service.get_cached_payment_plan_detail(int(plan_id))
+        
+        if cached_plan is not None:
+            logger.debug(f"Payment plan detail for {plan_id} served from cache")
+            return Response(cached_plan)
+        
+        # Cache miss - get from database
+        plan = self.get_object()
+        serializer = self.get_serializer(plan)
+        
+        # Cache the payment plan detail
+        payments_cache_service.cache_payment_plan_detail(plan.id, serializer.data)
+        logger.info(f"Payment plan detail for {plan_id} cached after database query")
+        
+        return Response(serializer.data)
     
     def create(self, request, *args, **kwargs):
         """Create a new payment plan"""
@@ -436,8 +516,22 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         # Apply filters
         event_id = self.request.query_params.get('event', None)
         client_id = self.request.query_params.get('client', None)
-        status = self.request.query_params.get('status', None)
+        status_filter = self.request.query_params.get('status', None)
         search = self.request.query_params.get('search', None)
+        
+        # Try cache for event-specific invoices
+        if event_id and not any([client_id, status_filter, search]):
+            cached_invoices = payments_cache_service.get_cached_invoices_by_event(int(event_id))
+            if cached_invoices is not None:
+                logger.debug(f"Invoices for event {event_id} served from cache")
+                return queryset.filter(event_id=event_id)
+        
+        # Try cache for client-specific invoices
+        if client_id and not any([event_id, status_filter, search]):
+            cached_invoices = payments_cache_service.get_cached_invoices_by_client(int(client_id))
+            if cached_invoices is not None:
+                logger.debug(f"Invoices for client {client_id} served from cache")
+                return queryset.filter(client_id=client_id)
         
         if event_id:
             queryset = queryset.filter(event_id=event_id)
@@ -445,13 +539,34 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         if client_id:
             queryset = queryset.filter(client_id=client_id)
         
-        if status:
-            queryset = queryset.filter(status=status)
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
         
         if search:
             queryset = queryset.filter(invoice_id__icontains=search)
         
         return queryset
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve invoice with caching"""
+        invoice_id = kwargs.get('pk')
+        
+        # Try to get from cache first
+        cached_invoice = payments_cache_service.get_cached_invoice_detail(int(invoice_id))
+        
+        if cached_invoice is not None:
+            logger.debug(f"Invoice detail for {invoice_id} served from cache")
+            return Response(cached_invoice)
+        
+        # Cache miss - get from database
+        invoice = self.get_object()
+        serializer = self.get_serializer(invoice)
+        
+        # Cache the invoice detail
+        payments_cache_service.cache_invoice_detail(invoice.id, serializer.data)
+        logger.info(f"Invoice detail for {invoice_id} cached after database query")
+        
+        return Response(serializer.data)
 
 
 class PaymentTransactionViewSet(viewsets.ModelViewSet):

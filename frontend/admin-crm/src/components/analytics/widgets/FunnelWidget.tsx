@@ -9,8 +9,7 @@ interface FunnelWidgetProps {
   compact?: boolean;
 }
 
-// @ts-ignore
-export const FunnelWidget: React.FC<FunnelWidgetProps> = ({ widget, data, compact }) => {
+export const FunnelWidget: React.FC<FunnelWidgetProps> = ({ widget: _, data, compact }) => {
   const funnelData = data.categories || [];
   const maxValue = Math.max(...funnelData.map((d: any) => d.value));
   

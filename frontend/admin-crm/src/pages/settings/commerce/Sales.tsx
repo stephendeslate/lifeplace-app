@@ -34,7 +34,6 @@ import {
 import type {
   QuoteTemplate,
   CreateQuoteTemplateData,
-  UpdateQuoteTemplateData,
   QuoteTemplateFilters,
 } from '../../../types/sales.types';
 
@@ -44,8 +43,7 @@ export const Sales: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [searchQuery, setSearchQuery] = useState('');
-  // @ts-ignore
-  const [filters, setFilters] = useState<QuoteTemplateFilters>({});
+  const [filters] = useState<QuoteTemplateFilters>({});
   const [editingTemplate, setEditingTemplate] = useState<QuoteTemplate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<QuoteTemplate | null>(null);
@@ -127,25 +125,6 @@ export const Sales: React.FC = () => {
     handleBackToList();
   };
 
-  // @ts-ignore
-  const handleFormSubmit = (data: CreateQuoteTemplateData | UpdateQuoteTemplateData) => {
-    if (editingTemplate) {
-      updateTemplateMutation.mutate(
-        { id: editingTemplate.id, data },
-        {
-          onSuccess: () => {
-            handleBackToList();
-          }
-        }
-      );
-    } else {
-      createTemplateMutation.mutate(data as CreateQuoteTemplateData, {
-        onSuccess: () => {
-          handleBackToList();
-        }
-      });
-    }
-  };
 
   const handleDuplicate = (template: QuoteTemplate) => {
     const duplicateData: CreateQuoteTemplateData = {

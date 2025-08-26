@@ -35,6 +35,7 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
+import { sanitizeHTML } from '../../utils/security';
 import { VariableInserter } from './VariableInserter';
 import type { Client } from '../../types/clients.types';
 
@@ -466,7 +467,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
                   >
                     {formData.channel === 'EMAIL' ? (
                       <Box 
-                        dangerouslySetInnerHTML={{ __html: previewData.body }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewData.body, 'template') }}
                         sx={{ 
                           '& *': { maxWidth: '100%' },
                           wordBreak: 'break-word'
