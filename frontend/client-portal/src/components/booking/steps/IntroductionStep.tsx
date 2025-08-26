@@ -10,6 +10,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
+import { sanitizeCSS } from '../../../utils/security';
 import type { 
   IntroductionStepData, 
   IntroductionStepConfiguration 
@@ -136,7 +137,7 @@ export const IntroductionStep: React.FC<IntroductionStepProps> = ({
 
       {/* Custom CSS */}
       {config?.custom_css && (
-        <style dangerouslySetInnerHTML={{ __html: config.custom_css }} />
+        <style dangerouslySetInnerHTML={{ __html: sanitizeCSS(config.custom_css) }} />
       )}
     </Box>
   );
