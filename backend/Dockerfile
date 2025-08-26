@@ -25,7 +25,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
-# Collect static files
+# Collect static files with dummy environment variables for build time
+# These are only used during build - real values come from Railway at runtime
+ENV SECRET_KEY=dummy-build-key-replaced-at-runtime
+ENV DATABASE_URL=postgres://dummy:dummy@dummy:5432/dummy
 RUN python manage.py collectstatic --noinput
 
 # Run migrations and start server
