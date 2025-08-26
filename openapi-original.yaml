@@ -1,0 +1,4535 @@
+openapi: 3.0.3
+info:
+  title: LifePlace API
+  version: 1.0.0
+  description: >
+    Comprehensive API documentation for LifePlace Event Management Platform.
+    Built with Django REST Framework following Domain-Driven Design principles.
+    This CRM system manages the complete event lifecycle from booking flows 
+    to payment processing, contracts, and client communications.
+  contact:
+    name: LifePlace API Support
+    url: https://api.crm.example.com/support
+  license:
+    name: Proprietary
+    url: https://api.crm.example.com/license
+
+servers:
+  - url: https://api.crm.example.com/v1
+    description: Production server
+  - url: https://staging-api.crm.example.com/v1
+    description: Staging server
+  - url: http://localhost:8000
+    description: Development server
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Users
+    description: User account management and administration
+  - name: Clients
+    description: Client management and invitations
+  - name: Events
+    description: Event lifecycle management and client portal
+  - name: BookingFlow
+    description: Multi-step booking flow engine with dynamic forms
+  - name: Communications
+    description: Email/SMS templates and messaging system
+  - name: Products
+    description: Product catalog, categories, and pricing management
+  - name: Payments
+    description: Payment processing, invoicing, and gateway management
+  - name: Sales
+    description: Quote generation and management system
+  - name: Questionnaires
+    description: Dynamic form builder and response management
+  - name: Workflows
+    description: Workflow automation and stage management
+  - name: Contracts
+    description: Contract generation, signatures, and amendments
+  - name: Notes
+    description: Universal notes system with cross-domain support
+  - name: Notifications
+    description: Multi-channel notification and preference management
+  - name: Analytics
+    description: Event tracking, reporting, and business intelligence
+
+paths:
+  # Authentication Endpoints
+  /api/users/token/:
+    post:
+      tags: [Authentication]
+      summary: Obtain JWT token pair
+      description: Get access and refresh tokens for authentication
+      operationId: token_obtain_pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Tokens generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/token/refresh/:
+    post:
+      tags: [Authentication]
+      summary: Refresh JWT access token
+      description: Generate new access token using refresh token
+      operationId: token_refresh
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh]
+              properties:
+                refresh:
+                  type: string
+      responses:
+        '200':
+          description: Access token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/login/:
+    post:
+      tags: [Authentication]
+      summary: Enhanced user login
+      description: Login with enhanced security and JWT token generation
+      operationId: user_login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/users/logout/:
+    post:
+      tags: [Authentication]
+      summary: Secure logout
+      description: Logout with JWT token blacklisting
+      operationId: secure_logout
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/logout-all/:
+    post:
+      tags: [Authentication]
+      summary: Logout from all devices
+      description: Logout from all devices by blacklisting all tokens
+      operationId: logout_all_devices
+      responses:
+        '200':
+          description: Logged out from all devices
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/sessions/:
+    get:
+      tags: [Authentication]
+      summary: Get active sessions
+      description: Get list of active JWT sessions
+      operationId: active_sessions
+      responses:
+        '200':
+          description: Active sessions retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    token_id:
+                      type: string
+                    issued_at:
+                      type: string
+                      format: date-time
+                    expires_at:
+                      type: string
+                      format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/register/:
+    post:
+      tags: [Authentication]
+      summary: Client registration
+      description: Public client registration endpoint
+      operationId: client_register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Client registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  # User Management
+  /api/users/:
+    get:
+      tags: [Users]
+      summary: List users
+      description: Get paginated list of users with search functionality
+      operationId: list_users
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Users]
+      summary: Create user
+      description: Create a new user account
+      operationId: create_user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/users/{id}/:
+    get:
+      tags: [Users]
+      summary: Get user details
+      description: Get detailed information about a specific user
+      operationId: get_user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Users]
+      summary: Update user
+      description: Update user account information
+      operationId: update_user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Users]
+      summary: Partially update user
+      description: Partially update user account information
+      operationId: partial_update_user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Users]
+      summary: Delete user
+      description: Delete user account
+      operationId: delete_user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: User deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/users/me/:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      description: Get current authenticated user's profile
+      operationId: current_user_profile
+      responses:
+        '200':
+          description: Current user profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Users]
+      summary: Update current user profile
+      description: Update current authenticated user's profile
+      operationId: update_current_user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/me/change-password/:
+    post:
+      tags: [Users]
+      summary: Change password
+      description: Change current user's password
+      operationId: change_password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+      responses:
+        '200':
+          description: Password changed successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/invitations/:
+    get:
+      tags: [Users]
+      summary: List admin invitations
+      description: Get list of admin invitations
+      operationId: list_admin_invitations
+      responses:
+        '200':
+          description: Admin invitations retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminInvitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Users]
+      summary: Create admin invitation
+      description: Send invitation to create admin account
+      operationId: create_admin_invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminInvitation'
+      responses:
+        '201':
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminInvitation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/users/invitations/{id}/:
+    get:
+      tags: [Users]
+      summary: Get invitation details
+      description: Get details of admin invitation
+      operationId: get_admin_invitation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security: []
+      responses:
+        '200':
+          description: Invitation details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminInvitation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Users]
+      summary: Delete invitation
+      description: Delete admin invitation
+      operationId: delete_admin_invitation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Invitation deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/users/invitations/{invitation_id}/accept/:
+    post:
+      tags: [Users]
+      summary: Accept admin invitation
+      description: Accept invitation and create admin account
+      operationId: accept_admin_invitation
+      parameters:
+        - name: invitation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password, confirm_password]
+              properties:
+                password:
+                  type: string
+                  format: password
+                confirm_password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Invitation accepted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Client Management
+  /api/clients/:
+    get:
+      tags: [Clients]
+      summary: List clients
+      description: Get paginated list of clients with search functionality
+      operationId: list_clients
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Clients retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedClientList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Clients]
+      summary: Create client
+      description: Create a new client account
+      operationId: create_client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateUpdate'
+      responses:
+        '201':
+          description: Client created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/clients/{id}/:
+    get:
+      tags: [Clients]
+      summary: Get client details
+      description: Get detailed information about a specific client
+      operationId: get_client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Client details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Clients]
+      summary: Update client
+      description: Update client information
+      operationId: update_client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateUpdate'
+      responses:
+        '200':
+          description: Client updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Clients]
+      summary: Partially update client
+      description: Partially update client information
+      operationId: partial_update_client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateUpdate'
+      responses:
+        '200':
+          description: Client updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Clients]
+      summary: Delete client
+      description: Delete client account
+      operationId: delete_client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Client deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/clients/{id}/events/:
+    get:
+      tags: [Clients]
+      summary: Get client events
+      description: Get all events associated with a specific client
+      operationId: get_client_events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Client events retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/clients/{id}/active/:
+    get:
+      tags: [Clients]
+      summary: Get active clients
+      description: Get only active clients
+      operationId: get_active_clients
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Active clients retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/clients/{id}/send_invitation/:
+    post:
+      tags: [Clients]
+      summary: Send client invitation
+      description: Send invitation to client for account setup
+      operationId: send_client_invitation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Invitation sent successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/clients/invitations/:
+    get:
+      tags: [Clients]
+      summary: List client invitations
+      description: Get list of client invitations
+      operationId: list_client_invitations
+      responses:
+        '200':
+          description: Client invitations retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientInvitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Clients]
+      summary: Create client invitation
+      description: Create a new client invitation
+      operationId: create_client_invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientInvitation'
+      responses:
+        '201':
+          description: Client invitation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientInvitation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/clients/invitations/{id}/:
+    get:
+      tags: [Clients]
+      summary: Get client invitation details
+      description: Get details of client invitation
+      operationId: get_client_invitation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security: []
+      responses:
+        '200':
+          description: Invitation details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientInvitation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/clients/invitations/{id}/accept/:
+    post:
+      tags: [Clients]
+      summary: Accept client invitation
+      description: Accept client invitation and set up account
+      operationId: accept_client_invitation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptClientInvitation'
+      responses:
+        '200':
+          description: Invitation accepted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Events Management
+  /api/events/event-types/:
+    get:
+      tags: [Events]
+      summary: List event types
+      description: Get list of available event types
+      operationId: list_event_types
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Event types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventType'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [Events]
+      summary: Create event type
+      description: Create a new event type
+      operationId: create_event_type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventType'
+      responses:
+        '201':
+          description: Event type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/events/event-types/{id}/:
+    get:
+      tags: [Events]
+      summary: Get event type details
+      description: Get detailed information about an event type
+      operationId: get_event_type
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event type details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Events]
+      summary: Update event type
+      description: Update event type information
+      operationId: update_event_type
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventType'
+      responses:
+        '200':
+          description: Event type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Events]
+      summary: Partially update event type
+      description: Partially update event type information
+      operationId: partial_update_event_type
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventType'
+      responses:
+        '200':
+          description: Event type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Events]
+      summary: Delete event type
+      description: Delete an event type
+      operationId: delete_event_type
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Event type deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/events/event-types/active/:
+    get:
+      tags: [Events]
+      summary: Get active event types
+      description: Get only active event types (cached)
+      operationId: get_active_event_types
+      security: []
+      responses:
+        '200':
+          description: Active event types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventType'
+
+  /api/events/events/:
+    get:
+      tags: [Events]
+      summary: List events
+      description: Get paginated list of events with search functionality
+      operationId: list_events
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEventList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Events]
+      summary: Create event
+      description: Create a new event
+      operationId: create_event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventCreateUpdate'
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/events/events/{id}/:
+    get:
+      tags: [Events]
+      summary: Get event details
+      description: Get detailed information about a specific event
+      operationId: get_event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Events]
+      summary: Update event
+      description: Update event information
+      operationId: update_event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventCreateUpdate'
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Events]
+      summary: Partially update event
+      description: Partially update event information
+      operationId: partial_update_event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventCreateUpdate'
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Events]
+      summary: Delete event
+      description: Delete an event
+      operationId: delete_event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Event deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/events/events/{id}/update_status/:
+    post:
+      tags: [Events]
+      summary: Update event status
+      description: Update the status of an event
+      operationId: update_event_status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [INQUIRY, CONSULTATION, PROPOSAL_SENT, CONTRACTED, PLANNING, EXECUTION, COMPLETED, CANCELLED]
+      responses:
+        '200':
+          description: Event status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/events/events/{id}/update_stage/:
+    post:
+      tags: [Events]
+      summary: Update event workflow stage
+      description: Update the workflow stage of an event
+      operationId: update_event_stage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stage_id]
+              properties:
+                stage_id:
+                  type: integer
+      responses:
+        '200':
+          description: Event stage updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/events/events/{id}/tasks/:
+    get:
+      tags: [Events]
+      summary: Get event tasks
+      description: Get all tasks associated with an event
+      operationId: get_event_tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventTask'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/events/events/{id}/timeline/:
+    get:
+      tags: [Events]
+      summary: Get event timeline
+      description: Get timeline entries for an event
+      operationId: get_event_timeline
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event timeline retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventTimeline'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/events/events/{id}/files/:
+    get:
+      tags: [Events]
+      summary: Get event files
+      description: Get all files associated with an event
+      operationId: get_event_files
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event files retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventFile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/events/events/{id}/feedback/:
+    get:
+      tags: [Events]
+      summary: Get event feedback
+      description: Get feedback for an event
+      operationId: get_event_feedback
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event feedback retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventFeedback'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/events/events/{id}/next_task/:
+    get:
+      tags: [Events]
+      summary: Get next event task
+      description: Get the next pending task for an event
+      operationId: get_next_event_task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Next task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTask'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Client Portal Events
+  /api/client/events/:
+    get:
+      tags: [Events]
+      summary: List client events
+      description: Get events for the authenticated client
+      operationId: list_client_events
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+      responses:
+        '200':
+          description: Client events retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedClientEventList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/client/events/{id}/:
+    get:
+      tags: [Events]
+      summary: Get client event details
+      description: Get detailed information about a client's event
+      operationId: get_client_event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Client event details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientEventDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/client/events/{id}/timeline/:
+    get:
+      tags: [Events]
+      summary: Get client event timeline
+      description: Get public timeline entries for client event
+      operationId: get_client_event_timeline
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Client event timeline retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventTimeline'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/client/events/{id}/documents/:
+    get:
+      tags: [Events]
+      summary: Get client event documents
+      description: Get client-accessible documents for an event
+      operationId: get_client_event_documents
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Client event documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventFile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/client/events/{id}/update_preferences/:
+    patch:
+      tags: [Events]
+      summary: Update client event preferences
+      description: Update client preferences for an event
+      operationId: update_client_event_preferences
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                preferences:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Client preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientEventDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/client/events/{id}/notes/:
+    get:
+      tags: [Events]
+      summary: Get client event notes
+      description: Get notes for a client event
+      operationId: get_client_event_notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Client event notes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # BookingFlow Management
+  /api/bookingflow/flows/:
+    get:
+      tags: [BookingFlow]
+      summary: List booking flows
+      description: Get list of booking flows with search functionality
+      operationId: list_booking_flows
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: Booking flows retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookingFlow'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [BookingFlow]
+      summary: Create booking flow
+      description: Create a new booking flow
+      operationId: create_booking_flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingFlowCreate'
+      responses:
+        '201':
+          description: Booking flow created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingFlowDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/bookingflow/flows/{id}/:
+    get:
+      tags: [BookingFlow]
+      summary: Get booking flow details
+      description: Get detailed information about a booking flow
+      operationId: get_booking_flow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Booking flow details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingFlowDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [BookingFlow]
+      summary: Update booking flow
+      description: Update booking flow information
+      operationId: update_booking_flow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingFlowUpdate'
+      responses:
+        '200':
+          description: Booking flow updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingFlowDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [BookingFlow]
+      summary: Partially update booking flow
+      description: Partially update booking flow information
+      operationId: partial_update_booking_flow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingFlowUpdate'
+      responses:
+        '200':
+          description: Booking flow updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingFlowDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [BookingFlow]
+      summary: Delete booking flow
+      description: Delete a booking flow
+      operationId: delete_booking_flow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Booking flow deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/flows/{id}/duplicate/:
+    post:
+      tags: [BookingFlow]
+      summary: Duplicate booking flow
+      description: Create a copy of an existing booking flow
+      operationId: duplicate_booking_flow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name for the duplicated flow
+      responses:
+        '201':
+          description: Booking flow duplicated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingFlowDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/flows/{id}/steps/:
+    get:
+      tags: [BookingFlow]
+      summary: Get booking flow steps
+      description: Get all steps for a booking flow
+      operationId: get_booking_flow_steps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Booking flow steps retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookingFlowStep'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/flows/{id}/analytics/:
+    get:
+      tags: [BookingFlow]
+      summary: Get booking flow analytics
+      description: Get analytics data for a booking flow
+      operationId: get_booking_flow_analytics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Booking flow analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingFlowAnalytics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/flows/active/:
+    get:
+      tags: [BookingFlow]
+      summary: Get active booking flows
+      description: Get only active booking flows
+      operationId: get_active_booking_flows
+      responses:
+        '200':
+          description: Active booking flows retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookingFlow'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/bookingflow/flows/{id}/payment_gateways/:
+    get:
+      tags: [BookingFlow]
+      summary: Get available payment gateways
+      description: Get available payment gateways for a booking flow
+      operationId: get_booking_flow_payment_gateways
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Payment gateways retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentGateway'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Public BookingFlow Endpoints
+  /api/bookingflow/public/flows/:
+    get:
+      tags: [BookingFlow]
+      summary: List public booking flows
+      description: Get list of public booking flows (no authentication required)
+      operationId: list_public_booking_flows
+      security: []
+      responses:
+        '200':
+          description: Public booking flows retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookingFlow'
+
+  /api/bookingflow/public/flows/{id}/:
+    get:
+      tags: [BookingFlow]
+      summary: Get public booking flow details
+      description: Get detailed information about a public booking flow
+      operationId: get_public_booking_flow
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Public booking flow details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingFlowDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/{id}/start_session/:
+    post:
+      tags: [BookingFlow]
+      summary: Start booking session
+      description: Start a new booking session for a flow
+      operationId: start_booking_session
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                initial_data:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Booking session started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/sessions/{session_uuid}/:
+    get:
+      tags: [BookingFlow]
+      summary: Get booking session
+      description: Get booking session by UUID
+      operationId: get_booking_session
+      security: []
+      parameters:
+        - name: session_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking session retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingSession'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/sessions/{session_uuid}/update_data/:
+    patch:
+      tags: [BookingFlow]
+      summary: Update booking session data
+      description: Update data for a booking session
+      operationId: update_booking_session_data
+      security: []
+      parameters:
+        - name: session_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                step_data:
+                  type: object
+                  additionalProperties: true
+                current_step:
+                  type: integer
+      responses:
+        '200':
+          description: Session data updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/{id}/validate_step_data/:
+    post:
+      tags: [BookingFlow]
+      summary: Validate step data
+      description: Validate data for a specific booking flow step
+      operationId: validate_booking_step_data
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [step_type, data]
+              properties:
+                step_type:
+                  type: string
+                data:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Step data validation successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  errors:
+                    type: object
+                    additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/{id}/complete_booking/:
+    post:
+      tags: [BookingFlow]
+      summary: Complete booking
+      description: Complete the booking process for public users
+      operationId: complete_public_booking
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_uuid]
+              properties:
+                session_uuid:
+                  type: string
+                  format: uuid
+                payment_data:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Booking completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: '#/components/schemas/Event'
+                  payment:
+                    $ref: '#/components/schemas/Payment'
+                  confirmation_code:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/{id}/payment_gateways/:
+    get:
+      tags: [BookingFlow]
+      summary: Get public payment gateways
+      description: Get available payment gateways for public booking flow
+      operationId: get_public_payment_gateways
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Public payment gateways retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentGateway'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/{id}/calculate_pricing/:
+    post:
+      tags: [BookingFlow]
+      summary: Calculate booking pricing
+      description: Calculate pricing for a booking session
+      operationId: calculate_booking_pricing
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_data]
+              properties:
+                session_data:
+                  type: object
+                  additionalProperties: true
+                discount_code:
+                  type: string
+      responses:
+        '200':
+          description: Pricing calculated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subtotal:
+                    type: number
+                    format: decimal
+                  discount_amount:
+                    type: number
+                    format: decimal
+                  tax_amount:
+                    type: number
+                    format: decimal
+                  total:
+                    type: number
+                    format: decimal
+                  line_items:
+                    type: array
+                    items:
+                      type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/questionnaires/{id}/:
+    get:
+      tags: [BookingFlow]
+      summary: Get questionnaire details
+      description: Get details of a questionnaire for booking flow
+      operationId: get_booking_questionnaire_detail
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Questionnaire details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionnaireDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/sessions/{session_uuid}/go_to_step/:
+    patch:
+      tags: [BookingFlow]
+      summary: Navigate to booking step
+      description: Navigate to a specific step in the booking flow
+      operationId: navigate_to_booking_step
+      security: []
+      parameters:
+        - name: session_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [step_number]
+              properties:
+                step_number:
+                  type: integer
+      responses:
+        '200':
+          description: Navigation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookingflow/public/flows/{id}/send_confirmation/:
+    post:
+      tags: [BookingFlow]
+      summary: Send confirmation email
+      description: Send confirmation email for completed booking
+      operationId: send_booking_confirmation
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_id]
+              properties:
+                event_id:
+                  type: integer
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Confirmation email sent successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for service-to-service communication
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number for pagination
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    SearchParam:
+      name: search
+      in: query
+      description: Search query string
+      required: false
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Bad request - validation errors or invalid data
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+              errors:
+                type: object
+                additionalProperties: true
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Authentication credentials were not provided."
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "You do not have permission to perform this action."
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Not found."
+    TooManyRequests:
+      description: Too many requests - rate limit exceeded
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Request was throttled. Expected available in X seconds."
+
+  schemas:
+    # Core User Schemas
+    UserProfile:
+      type: object
+      properties:
+        phone:
+          type: string
+          nullable: true
+        company:
+          type: string
+          nullable: true
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, CLIENT]
+          default: CLIENT
+        is_active:
+          type: boolean
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+        profile:
+          $ref: '#/components/schemas/UserProfile'
+      required:
+        - email
+        - first_name
+        - last_name
+
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        password:
+          type: string
+          format: password
+          writeOnly: true
+        confirm_password:
+          type: string
+          format: password
+          writeOnly: true
+        profile:
+          $ref: '#/components/schemas/UserProfile'
+      required:
+        - email
+        - first_name
+        - last_name
+        - password
+        - confirm_password
+
+    UserLogin:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          writeOnly: true
+        remember_me:
+          type: boolean
+          default: false
+      required:
+        - email
+        - password
+
+    ChangePassword:
+      type: object
+      properties:
+        old_password:
+          type: string
+          format: password
+          writeOnly: true
+        new_password:
+          type: string
+          format: password
+          writeOnly: true
+        confirm_password:
+          type: string
+          format: password
+          writeOnly: true
+      required:
+        - old_password
+        - new_password
+        - confirm_password
+
+    AdminInvitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+        invited_by:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        accepted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+      required:
+        - email
+
+    # Client Management Schemas
+    ClientProfile:
+      type: object
+      properties:
+        phone:
+          type: string
+          nullable: true
+        company:
+          type: string
+          nullable: true
+
+    ClientList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        is_active:
+          type: boolean
+          readOnly: true
+        profile:
+          $ref: '#/components/schemas/ClientProfile'
+        has_account:
+          type: boolean
+          readOnly: true
+
+    ClientDetail:
+      allOf:
+        - $ref: '#/components/schemas/ClientList'
+        - type: object
+          properties:
+            events:
+              type: array
+              items:
+                $ref: '#/components/schemas/Event'
+              readOnly: true
+
+    ClientCreateUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        password:
+          type: string
+          format: password
+          writeOnly: true
+        profile:
+          $ref: '#/components/schemas/ClientProfile'
+      required:
+        - email
+        - first_name
+        - last_name
+
+    ClientInvitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        client:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        accepted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+      required:
+        - client
+
+    AcceptClientInvitation:
+      type: object
+      properties:
+        password:
+          type: string
+          format: password
+          writeOnly: true
+        confirm_password:
+          type: string
+          format: password
+          writeOnly: true
+      required:
+        - password
+        - confirm_password
+
+    # Event Management Schemas
+    EventType:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        client:
+          type: integer
+        event_type:
+          type: integer
+        status:
+          type: string
+          enum: [INQUIRY, CONSULTATION, PROPOSAL_SENT, CONTRACTED, PLANNING, EXECUTION, COMPLETED, CANCELLED]
+          default: INQUIRY
+        event_date:
+          type: string
+          format: date-time
+          nullable: true
+        venue:
+          type: string
+          nullable: true
+        budget:
+          type: number
+          format: decimal
+          nullable: true
+        guest_count:
+          type: integer
+          nullable: true
+        current_stage:
+          type: integer
+          nullable: true
+        last_contacted:
+          type: string
+          format: date-time
+          nullable: true
+        next_follow_up:
+          type: string
+          format: date-time
+          nullable: true
+        preferences:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - client
+        - event_type
+
+    EventDetail:
+      allOf:
+        - $ref: '#/components/schemas/Event'
+        - type: object
+          properties:
+            client_details:
+              $ref: '#/components/schemas/ClientList'
+            event_type_details:
+              $ref: '#/components/schemas/EventType'
+            tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/EventTask'
+            product_options:
+              type: array
+              items:
+                $ref: '#/components/schemas/EventProductOption'
+            workflow_progress:
+              type: number
+              format: float
+              readOnly: true
+            next_task:
+              $ref: '#/components/schemas/EventTask'
+              nullable: true
+              readOnly: true
+
+    EventCreateUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        client:
+          type: integer
+        event_type:
+          type: integer
+        status:
+          type: string
+          enum: [INQUIRY, CONSULTATION, PROPOSAL_SENT, CONTRACTED, PLANNING, EXECUTION, COMPLETED, CANCELLED]
+        event_date:
+          type: string
+          format: date-time
+          nullable: true
+        venue:
+          type: string
+          nullable: true
+        budget:
+          type: number
+          format: decimal
+          nullable: true
+        guest_count:
+          type: integer
+          nullable: true
+        preferences:
+          type: object
+          additionalProperties: true
+          nullable: true
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+              assigned_to:
+                type: integer
+                nullable: true
+              due_date:
+                type: string
+                format: date-time
+                nullable: true
+              priority:
+                type: string
+                enum: [LOW, MEDIUM, HIGH, URGENT]
+        product_options:
+          type: array
+          items:
+            type: object
+            properties:
+              product_option:
+                type: integer
+              quantity:
+                type: integer
+              custom_price:
+                type: number
+                format: decimal
+                nullable: true
+      required:
+        - name
+        - client
+        - event_type
+
+    EventTask:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        event:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        assigned_to:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED, CANCELLED]
+          default: PENDING
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, URGENT]
+          default: MEDIUM
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        assigned_user:
+          $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+        - event
+        - title
+
+    EventProductOption:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        event:
+          type: integer
+        product_option:
+          type: integer
+        quantity:
+          type: integer
+          default: 1
+        custom_price:
+          type: number
+          format: decimal
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        product_details:
+          $ref: '#/components/schemas/ProductOption'
+          readOnly: true
+      required:
+        - event
+        - product_option
+
+    EventTimeline:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        event:
+          type: integer
+        entry_type:
+          type: string
+          enum: [STATUS_CHANGE, NOTE, FILE_UPLOAD, TASK_UPDATE, COMMUNICATION, PAYMENT, CONTRACT]
+        title:
+          type: string
+        description:
+          type: string
+        actor:
+          type: integer
+          nullable: true
+        is_public:
+          type: boolean
+          default: false
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        actor_details:
+          $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+        - event
+        - entry_type
+        - title
+
+    EventFile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        event:
+          type: integer
+        name:
+          type: string
+        file:
+          type: string
+          format: uri
+        file_type:
+          type: string
+          enum: [DOCUMENT, IMAGE, CONTRACT, INVOICE, OTHER]
+          default: OTHER
+        is_public:
+          type: boolean
+          default: false
+        uploaded_by:
+          type: integer
+          nullable: true
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        file_size:
+          type: integer
+          readOnly: true
+        file_url:
+          type: string
+          format: uri
+          readOnly: true
+      required:
+        - event
+        - name
+        - file
+
+    EventFeedback:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        event:
+          type: integer
+        client:
+          type: integer
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        feedback_text:
+          type: string
+        feedback_type:
+          type: string
+          enum: [GENERAL, SERVICE, VENUE, FOOD, PLANNING, OTHER]
+          default: GENERAL
+        is_testimonial:
+          type: boolean
+          default: false
+        admin_response:
+          type: string
+          nullable: true
+        responded_by:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - event
+        - client
+        - rating
+
+    # Client Event Schemas
+    ClientEventDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        event_type:
+          $ref: '#/components/schemas/EventType'
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        event_date:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        venue:
+          type: string
+          nullable: true
+          readOnly: true
+        preferences:
+          type: object
+          additionalProperties: true
+
+    # BookingFlow Schemas
+    BookingFlow:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        event_type:
+          type: integer
+        is_active:
+          type: boolean
+          default: true
+        allowed_payment_gateways:
+          type: array
+          items:
+            type: integer
+        redirect_url_success:
+          type: string
+          format: uri
+          nullable: true
+        redirect_url_cancel:
+          type: string
+          format: uri
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - event_type
+
+    BookingFlowDetail:
+      allOf:
+        - $ref: '#/components/schemas/BookingFlow'
+        - type: object
+          properties:
+            steps:
+              type: array
+              items:
+                $ref: '#/components/schemas/BookingFlowStep'
+            event_type_details:
+              $ref: '#/components/schemas/EventType'
+              readOnly: true
+
+    BookingFlowCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        event_type:
+          type: integer
+        is_active:
+          type: boolean
+          default: true
+        allowed_payment_gateways:
+          type: array
+          items:
+            type: integer
+        redirect_url_success:
+          type: string
+          format: uri
+          nullable: true
+        redirect_url_cancel:
+          type: string
+          format: uri
+          nullable: true
+      required:
+        - name
+        - event_type
+
+    BookingFlowUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        allowed_payment_gateways:
+          type: array
+          items:
+            type: integer
+        redirect_url_success:
+          type: string
+          format: uri
+          nullable: true
+        redirect_url_cancel:
+          type: string
+          format: uri
+          nullable: true
+
+    BookingFlowStep:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        booking_flow:
+          type: integer
+        step_type:
+          type: string
+          enum: [INTRODUCTION, CONTACT_INFO, DATETIME, PACKAGE_SELECTION, ADDON_SELECTION, QUESTIONNAIRE, PAYMENT_INFO, PRICING_SUMMARY, CONFIRMATION]
+        name:
+          type: string
+        order:
+          type: integer
+        is_required:
+          type: boolean
+          default: true
+        is_active:
+          type: boolean
+          default: true
+        configuration:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - booking_flow
+        - step_type
+        - name
+
+    BookingSession:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        booking_flow:
+          type: integer
+        current_step:
+          type: integer
+          default: 1
+        status:
+          type: string
+          enum: [ACTIVE, COMPLETED, ABANDONED]
+          default: ACTIVE
+        step_data:
+          type: object
+          additionalProperties: true
+          default: {}
+        created_by:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - booking_flow
+
+    BookingFlowAnalytics:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        booking_flow:
+          type: integer
+        date:
+          type: string
+          format: date
+        sessions_started:
+          type: integer
+          default: 0
+        sessions_completed:
+          type: integer
+          default: 0
+        sessions_abandoned:
+          type: integer
+          default: 0
+        conversion_rate:
+          type: number
+          format: float
+          readOnly: true
+        step_analytics:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - booking_flow
+        - date
+
+    # Product Management Schemas
+    ProductCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        slug:
+          type: string
+          readOnly: true
+        parent:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+
+    ProductCategoryTree:
+      allOf:
+        - $ref: '#/components/schemas/ProductCategory'
+        - type: object
+          properties:
+            children:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProductCategoryTree'
+
+    ProductOption:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+          nullable: true
+        category:
+          type: integer
+          nullable: true
+        product_type:
+          type: string
+          enum: [PACKAGE, PRODUCT]
+          default: PRODUCT
+        pricing_model:
+          type: string
+          enum: [FLAT, HOURLY, PER_PERSON, PERCENTAGE]
+          default: FLAT
+        base_price:
+          type: number
+          format: decimal
+        is_active:
+          type: boolean
+          default: true
+        is_featured:
+          type: boolean
+          default: false
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        category_details:
+          $ref: '#/components/schemas/ProductCategory'
+          readOnly: true
+      required:
+        - name
+        - base_price
+
+    Discount:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        discount_type:
+          type: string
+          enum: [PERCENTAGE, FIXED, FREE_HOURS]
+          default: PERCENTAGE
+        discount_value:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          enum: [USD, EUR, GBP]
+          default: USD
+        valid_from:
+          type: string
+          format: date-time
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        usage_limit:
+          type: integer
+          nullable: true
+        used_count:
+          type: integer
+          default: 0
+          readOnly: true
+        is_active:
+          type: boolean
+          default: true
+        applicable_products:
+          type: array
+          items:
+            type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - code
+        - discount_type
+        - discount_value
+        - valid_from
+
+    # Payment Management Schemas
+    PaymentGateway:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        gateway_type:
+          type: string
+          enum: [STRIPE, PAYPAL, SQUARE, OTHER]
+        is_active:
+          type: boolean
+          default: true
+        configuration:
+          type: object
+          additionalProperties: true
+          writeOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - gateway_type
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          enum: [USD, EUR, GBP]
+          default: USD
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED, REFUNDED]
+          default: PENDING
+        payment_method:
+          type: integer
+          nullable: true
+        gateway:
+          type: integer
+          nullable: true
+        gateway_transaction_id:
+          type: string
+          nullable: true
+        event:
+          type: integer
+          nullable: true
+        client:
+          type: integer
+          nullable: true
+        invoice:
+          type: integer
+          nullable: true
+        payment_plan:
+          type: integer
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        processed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - amount
+
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+        method_type:
+          type: string
+          enum: [CREDIT_CARD, DEBIT_CARD, BANK_ACCOUNT, DIGITAL_WALLET]
+        gateway:
+          type: integer
+        gateway_method_id:
+          type: string
+          writeOnly: true
+        last_four:
+          type: string
+          readOnly: true
+        brand:
+          type: string
+          readOnly: true
+        expires_month:
+          type: integer
+          nullable: true
+          readOnly: true
+        expires_year:
+          type: integer
+          nullable: true
+          readOnly: true
+        is_default:
+          type: boolean
+          default: false
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - user
+        - method_type
+        - gateway
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice_number:
+          type: string
+          readOnly: true
+        event:
+          type: integer
+        client:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, SENT, PAID, OVERDUE, CANCELLED]
+          default: DRAFT
+        subtotal:
+          type: number
+          format: decimal
+          readOnly: true
+        tax_amount:
+          type: number
+          format: decimal
+          readOnly: true
+        total_amount:
+          type: number
+          format: decimal
+          readOnly: true
+        currency:
+          type: string
+          enum: [USD, EUR, GBP]
+          default: USD
+        due_date:
+          type: string
+          format: date
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        line_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLineItem'
+          readOnly: true
+        taxes:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceTax'
+          readOnly: true
+      required:
+        - event
+        - client
+
+    InvoiceLineItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice:
+          type: integer
+        description:
+          type: string
+        quantity:
+          type: number
+          format: decimal
+          default: 1
+        unit_price:
+          type: number
+          format: decimal
+        total_price:
+          type: number
+          format: decimal
+          readOnly: true
+        product_option:
+          type: integer
+          nullable: true
+      required:
+        - invoice
+        - description
+        - unit_price
+
+    InvoiceTax:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice:
+          type: integer
+        tax_rate:
+          type: integer
+        tax_amount:
+          type: number
+          format: decimal
+          readOnly: true
+      required:
+        - invoice
+        - tax_rate
+
+    TaxRate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        rate:
+          type: number
+          format: decimal
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - rate
+
+    PaymentPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        total_amount:
+          type: number
+          format: decimal
+        number_of_installments:
+          type: integer
+        installment_amount:
+          type: number
+          format: decimal
+          readOnly: true
+        currency:
+          type: string
+          enum: [USD, EUR, GBP]
+          default: USD
+        event:
+          type: integer
+          nullable: true
+        client:
+          type: integer
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - total_amount
+        - number_of_installments
+        - client
+
+    # Questionnaire Schemas
+    Questionnaire:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+
+    QuestionnaireDetail:
+      allOf:
+        - $ref: '#/components/schemas/Questionnaire'
+        - type: object
+          properties:
+            fields:
+              type: array
+              items:
+                $ref: '#/components/schemas/QuestionnaireField'
+
+    QuestionnaireField:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        questionnaire:
+          type: integer
+        field_type:
+          type: string
+          enum: [TEXT, EMAIL, PHONE, NUMBER, TEXTAREA, SELECT, MULTISELECT, RADIO, CHECKBOX, DATE, DATETIME, FILE]
+        label:
+          type: string
+        help_text:
+          type: string
+        placeholder:
+          type: string
+        is_required:
+          type: boolean
+          default: false
+        order:
+          type: integer
+        options:
+          type: array
+          items:
+            type: string
+          nullable: true
+        validation_rules:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - questionnaire
+        - field_type
+        - label
+
+    QuestionnaireResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        questionnaire:
+          type: integer
+        event:
+          type: integer
+        client:
+          type: integer
+        responses:
+          type: object
+          additionalProperties: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - questionnaire
+        - event
+        - client
+        - responses
+
+    # Communication Schemas
+    CommunicationTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        subject:
+          type: string
+          nullable: true
+        content:
+          type: string
+        channel:
+          type: string
+          enum: [EMAIL, SMS, IN_APP]
+          default: EMAIL
+        template_type:
+          type: string
+          enum: [BOOKING_CONFIRMATION, EVENT_REMINDER, PAYMENT_RECEIPT, CUSTOM]
+          default: CUSTOM
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - content
+
+    CommunicationRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        template:
+          type: integer
+          nullable: true
+        recipient:
+          type: integer
+        sender:
+          type: integer
+        channel:
+          type: string
+          enum: [EMAIL, SMS, IN_APP]
+        subject:
+          type: string
+          nullable: true
+        content:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, SENT, DELIVERED, FAILED, READ]
+          default: PENDING
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - recipient
+        - sender
+        - channel
+        - content
+
+    # Contract Management Schemas
+    ContractTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        content:
+          type: string
+        event_types:
+          type: array
+          items:
+            type: integer
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - content
+
+    EventContract:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        contract_number:
+          type: string
+          readOnly: true
+        event:
+          type: integer
+        template:
+          type: integer
+        content:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, SENT, SIGNED, EXECUTED, CANCELLED, VOID]
+          default: DRAFT
+        signature_required_roles:
+          type: array
+          items:
+            type: string
+            enum: [CLIENT, ADMIN, VENDOR]
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        signatures:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractSignature'
+          readOnly: true
+      required:
+        - event
+        - template
+
+    ContractSignature:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        contract:
+          type: integer
+        signer:
+          type: integer
+        signer_role:
+          type: string
+          enum: [CLIENT, ADMIN, VENDOR]
+        signature_data:
+          type: string
+          writeOnly: true
+        signed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ip_address:
+          type: string
+          readOnly: true
+      required:
+        - contract
+        - signer
+        - signer_role
+
+    # Notes Schema
+    Note:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        content:
+          type: string
+        created_by:
+          type: integer
+        content_type:
+          type: integer
+        object_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by_details:
+          $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+        - content
+        - created_by
+        - content_type
+        - object_id
+
+    # Notification Schemas
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        recipient:
+          type: integer
+        notification_type:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        is_read:
+          type: boolean
+          default: false
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        type_details:
+          $ref: '#/components/schemas/NotificationType'
+          readOnly: true
+      required:
+        - recipient
+        - notification_type
+        - title
+        - message
+
+    NotificationType:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        category:
+          type: string
+          enum: [SYSTEM, EVENT, PAYMENT, COMMUNICATION, TASK]
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, URGENT]
+          default: MEDIUM
+        default_channels:
+          type: array
+          items:
+            type: string
+            enum: [EMAIL, SMS, IN_APP]
+        is_active:
+          type: boolean
+          default: true
+      required:
+        - name
+        - category
+
+    NotificationPreference:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+        notification_type:
+          type: integer
+        enabled:
+          type: boolean
+          default: true
+        channels:
+          type: array
+          items:
+            type: string
+            enum: [EMAIL, SMS, IN_APP]
+        digest_frequency:
+          type: string
+          enum: [INSTANT, HOURLY, DAILY, WEEKLY]
+          default: INSTANT
+      required:
+        - user
+        - notification_type
+
+    # Sales Schemas
+    EventQuote:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        quote_number:
+          type: string
+          readOnly: true
+        event:
+          type: integer
+        template:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED]
+          default: DRAFT
+        subtotal:
+          type: number
+          format: decimal
+          readOnly: true
+        tax_amount:
+          type: number
+          format: decimal
+          readOnly: true
+        total_amount:
+          type: number
+          format: decimal
+          readOnly: true
+        currency:
+          type: string
+          enum: [USD, EUR, GBP]
+          default: USD
+        valid_until:
+          type: string
+          format: date
+          nullable: true
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        accepted_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        line_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteLineItem'
+          readOnly: true
+      required:
+        - event
+
+    QuoteLineItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        quote:
+          type: integer
+        description:
+          type: string
+        quantity:
+          type: number
+          format: decimal
+          default: 1
+        unit_price:
+          type: number
+          format: decimal
+        total_price:
+          type: number
+          format: decimal
+          readOnly: true
+        product_option:
+          type: integer
+          nullable: true
+      required:
+        - quote
+        - description
+        - unit_price
+
+    QuoteTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        event_types:
+          type: array
+          items:
+            type: integer
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteTemplateProduct'
+          readOnly: true
+      required:
+        - name
+
+    QuoteTemplateProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        template:
+          type: integer
+        product_option:
+          type: integer
+        default_quantity:
+          type: number
+          format: decimal
+          default: 1
+        custom_price:
+          type: number
+          format: decimal
+          nullable: true
+        order:
+          type: integer
+          default: 0
+      required:
+        - template
+        - product_option
+
+    # Workflow Schemas
+    WorkflowTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        event_types:
+          type: array
+          items:
+            type: integer
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowStage'
+          readOnly: true
+      required:
+        - name
+
+    WorkflowStage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        template:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        order:
+          type: integer
+        is_required:
+          type: boolean
+          default: true
+        auto_advance:
+          type: boolean
+          default: false
+        email_template:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - template
+        - name
+        - order
+
+    # Analytics Schemas
+    MetricDefinition:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        metric_type:
+          type: string
+          enum: [COUNT, SUM, AVERAGE, PERCENTAGE, RATIO]
+        calculation_rules:
+          type: object
+          additionalProperties: true
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - metric_type
+        - calculation_rules
+
+    Dashboard:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        layout_config:
+          type: object
+          additionalProperties: true
+        is_public:
+          type: boolean
+          default: false
+        created_by:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        widgets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Widget'
+          readOnly: true
+      required:
+        - name
+        - created_by
+
+    Widget:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        dashboard:
+          type: integer
+        name:
+          type: string
+        widget_type:
+          type: string
+          enum: [LINE_CHART, BAR_CHART, PIE_CHART, TABLE, METRIC_CARD]
+        position:
+          type: object
+          additionalProperties: true
+        configuration:
+          type: object
+          additionalProperties: true
+        metrics:
+          type: array
+          items:
+            type: integer
+      required:
+        - dashboard
+        - name
+        - widget_type
+
+    AnalyticsReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        report_type:
+          type: string
+          enum: [SCHEDULED, ON_DEMAND]
+        configuration:
+          type: object
+          additionalProperties: true
+        schedule:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+        created_by:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - name
+        - report_type
+        - created_by
+
+    # Pagination Schemas
+    PaginatedUserList:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+
+    PaginatedClientList:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientList'
+
+    PaginatedEventList:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+
+    PaginatedClientEventList:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientEventDetail'
