@@ -115,7 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // User is not admin or token is invalid
               storage.clearAuth();
             }
-          } catch (error) {
+          } catch {
             // Token might be expired, try to refresh
             try {
               await refreshToken();

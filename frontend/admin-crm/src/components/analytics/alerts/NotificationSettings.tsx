@@ -32,12 +32,6 @@ import {
   Notifications as InAppIcon,
 } from '@mui/icons-material';
 
-// @ts-ignore
-interface NotificationMethod {
-  type: 'EMAIL' | 'SMS' | 'WEBHOOK' | 'IN_APP';
-  enabled: boolean;
-  config: Record<string, any>;
-}
 
 interface NotificationSettingsData {
   email: {
@@ -243,16 +237,6 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     onSave(settings);
   };
 
-  // @ts-ignore
-  const getMethodIcon = (type: string) => {
-    switch (type) {
-      case 'EMAIL': return <EmailIcon />;
-      case 'SMS': return <SmsIcon />;
-      case 'WEBHOOK': return <WebhookIcon />;
-      case 'IN_APP': return <InAppIcon />;
-      default: return <SettingsIcon />;
-    }
-  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>

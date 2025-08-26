@@ -84,7 +84,7 @@ export const MetricCalculationModal: React.FC<MetricCalculationModalProps> = ({
       if (customFilters.trim() && customFilters !== '{}') {
         filters = JSON.parse(customFilters);
       }
-    } catch (error) {
+    } catch {
       setFiltersError('Invalid JSON format in custom filters');
       return;
     }

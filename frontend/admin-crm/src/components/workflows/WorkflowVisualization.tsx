@@ -31,8 +31,6 @@ import type { WorkflowVisualizationProps } from '../../types/workflows.types';
 
 export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
   template,
-  // @ts-ignore
-  compact = false,
 }) => {
   const getAutomationIcon = (automationType: string) => {
     const icons = {

@@ -9,8 +9,7 @@ interface GaugeWidgetProps {
   compact?: boolean;
 }
 
-// @ts-ignore
-export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ widget, data, compact }) => {
+export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ widget: _, data, compact }) => {
   const percentage = Math.min(100, Math.max(0, (data.value / 1000) * 100));
   
   return (

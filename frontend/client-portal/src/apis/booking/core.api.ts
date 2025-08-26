@@ -234,7 +234,7 @@ export class BookingCoreApi {
           if (data.expires_at && this.isSessionExpired(data.expires_at)) {
             localStorage.removeItem(key);
           }
-        } catch (error) {
+        } catch {
           // Remove invalid data
           localStorage.removeItem(key);
         }

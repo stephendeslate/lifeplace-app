@@ -286,8 +286,7 @@ export const FunnelForm: React.FC<FunnelFormProps> = ({
     }
 
     // Validate each step
-    // @ts-ignore
-    const stepErrors = formData.steps.some((step, index) => {
+    formData.steps.some((step, index) => {
       if (!step.name.trim()) {
         newErrors[`step_${index}_name`] = `Step ${index + 1} name is required`;
         return true;

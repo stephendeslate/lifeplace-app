@@ -12,7 +12,7 @@ import type { EventType } from '../../types/booking';
 // Event Type Selection Component using the proper hook
 const EventTypeSelection: React.FC = () => {
   // @ts-ignore
-  const { actions, state } = useBooking();
+  const { actions } = useBooking();
   const { eventTypes, loading, error } = useEventTypes();
 
   const handleSelectEventType = async (eventType: EventType) => {
@@ -160,10 +160,6 @@ const BookingFlowContent: React.FC = () => {
 
 // Main booking page designed to work within PublicLayout
 export const BookingPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  // @ts-ignore
-  const sessionId = searchParams.get('session_id');
-
   return (
     <BookingProvider>
       {/* No background styling here - handled by PublicLayout */}
@@ -176,8 +172,6 @@ export const BookingPage: React.FC = () => {
 export const BookingComplete: React.FC = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
-  // @ts-ignore
-  const eventId = searchParams.get('event_id');
 
   return (
     // No Box wrapper with minHeight - handled by PublicLayout

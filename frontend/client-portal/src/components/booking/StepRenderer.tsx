@@ -29,21 +29,6 @@ import type {
   PricingSummaryStepConfiguration
 } from '../../types/booking';
 
-// Placeholder component for steps not yet implemented
-// @ts-ignore
-const PlaceholderStep: React.FC<{ stepName: string; stepType: string }> = ({ stepName, stepType }) => (
-  <Box sx={{ textAlign: 'center', py: 4 }}>
-    <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-      {stepName}
-    </Typography>
-    <Alert severity="info" sx={{ mb: 3 }}>
-      This step ({stepType}) is coming soon! For now, you can skip to the next step.
-    </Alert>
-    <Typography variant="body1" color="text.secondary">
-      This step will be implemented in the next phase of development.
-    </Typography>
-  </Box>
-);
 
 export const StepRenderer: React.FC = () => {
   const { state, actions } = useBooking();
@@ -136,8 +121,7 @@ export const StepRenderer: React.FC = () => {
     );
   }
 
-  // @ts-ignore
-  const { step_type, name, configuration_data } = currentStep;
+  const { step_type, configuration_data } = currentStep;
 
   // Merge validation errors from hook and context
   const mergedValidationErrors = {

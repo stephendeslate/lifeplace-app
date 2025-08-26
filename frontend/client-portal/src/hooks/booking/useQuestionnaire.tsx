@@ -357,8 +357,7 @@ export const useDynamicQuestionnaire = (
 ) => {
   // Get visible questionnaires based on conditions
   const visibleQuestionnaires = useMemo(() => {
-    // @ts-ignore
-    return questionnaires.filter(questionnaire => {
+    return questionnaires.filter(() => {
       // Add logic here for conditional questionnaire display
       // For now, show all questionnaires
       return true;
@@ -367,8 +366,7 @@ export const useDynamicQuestionnaire = (
 
   // Get visible fields for a questionnaire
   const getVisibleFields = useCallback((questionnaire: QuestionnaireDetailResponse) => {
-    // @ts-ignore
-    return questionnaire.fields.filter(field => {
+    return questionnaire.fields.filter(() => {
       // Add logic here for conditional field display
       // For now, show all fields
       return true;

@@ -23,9 +23,8 @@ import {
   Phone,
   Email,
 } from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useToastActions } from '../../contexts/ToastContext';
 import type { NavigationItem } from '../../types/layout.types';
 
 const navigationItems: NavigationItem[] = [
@@ -41,12 +40,11 @@ const navigationItems: NavigationItem[] = [
 export const PublicHeader: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const navigate = useNavigate();
   const location = useLocation();
   
   const { isAuthenticated } = useAuth();
-  // @ts-ignore
-  const { showInfo } = useToastActions();
+  // Toast actions available but not used in this component
+  // const { showInfo } = useToastActions();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);

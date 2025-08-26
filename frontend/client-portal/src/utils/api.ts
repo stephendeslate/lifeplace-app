@@ -132,7 +132,7 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${data.access}`;
           return api(originalRequest);
         }
-      } catch (refreshError) {
+      } catch {
         // If refresh fails, clear tokens but don't redirect if on booking page
         storage.clearAuth();
         if (!isBookingPage()) {

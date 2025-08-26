@@ -110,8 +110,6 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
   const [formData, setFormData] = useState<PaymentInfoConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [paymentOptions, setPaymentOptions] = useState<PaymentOptions | null>(null);
-  // @ts-ignore
-  const [loadingPaymentOptions, setLoadingPaymentOptions] = useState(false);
 
   const { usePaymentOptions } = useBookingFlowStepConfiguration();
   

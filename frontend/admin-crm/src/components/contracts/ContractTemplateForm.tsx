@@ -323,9 +323,6 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
   };
 
   const handleVariableInsert = (variable: string) => {
-    // @ts-ignore
-    const variableText = `{{ ${variable} }}`;
-    
     // For rich text editor, we'll use the global function if available
     if ((window as any)._richTextEditorInsertVariable) {
       (window as any)._richTextEditorInsertVariable(variable);
