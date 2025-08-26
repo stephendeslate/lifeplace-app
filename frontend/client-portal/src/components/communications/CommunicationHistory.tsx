@@ -46,6 +46,7 @@ import {
   MarkEmailUnread as UnreadIcon,
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
+import { sanitizeHTML } from '../../utils/security';
 import type { CommunicationRecord, CommunicationFilters } from '../../types/communications.types';
 
 export const CommunicationHistory: React.FC = () => {
@@ -495,7 +496,7 @@ export const CommunicationHistory: React.FC = () => {
                 <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50', maxHeight: 400, overflow: 'auto' }}>
                   {selectedRecord.channel === 'EMAIL' ? (
                     <Box 
-                      dangerouslySetInnerHTML={{ __html: selectedRecord.body }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHTML(selectedRecord.body, 'email') }}
                       sx={{ '& *': { maxWidth: '100%' }, wordBreak: 'break-word' }}
                     />
                   ) : (

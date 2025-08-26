@@ -43,6 +43,7 @@ import {
   MarkEmailRead as OpenedIcon,
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
+import { sanitizeHTML } from '../../utils/security';
 import type { CommunicationRecord, CommunicationFilters } from '../../types/clients.types';
 
 interface CommunicationRecordsProps {
@@ -435,7 +436,7 @@ export const CommunicationRecords: React.FC<CommunicationRecordsProps> = ({ clie
                 <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50', maxHeight: 300, overflow: 'auto' }}>
                   {selectedRecord.channel === 'EMAIL' ? (
                     <Box 
-                      dangerouslySetInnerHTML={{ __html: selectedRecord.body }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHTML(selectedRecord.body, 'email') }}
                       sx={{ '& *': { maxWidth: '100%' }, wordBreak: 'break-word' }}
                     />
                   ) : (

@@ -28,6 +28,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 requests==2.32.3
 rest-framework-simplejwt==0.0.2
+djangorestframework-simplejwt[crypto]==5.5.0
 six==1.17.0
 sqlparse==0.5.3
 stripe==12.2.0

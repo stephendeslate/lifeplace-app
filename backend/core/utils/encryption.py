@@ -14,10 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class EncryptionService:
-    """Service for encrypting and decrypting sensitive data"""
+    """Service for encrypting and decrypting sensitive data with key rotation support"""
     
     _instance = None
     _fernet = None
+    _old_fernet = None  # Support for key rotation
     
     def __new__(cls):
         if cls._instance is None:
@@ -32,24 +33,73 @@ class EncryptionService:
         """Initialize the encryption service with a key derived from settings"""
         encryption_key = getattr(settings, 'FIELD_ENCRYPTION_KEY', None)
         
+        # SECURITY FIX: Require dedicated encryption key in production
+        if getattr(settings, 'IS_PRODUCTION', False) and not encryption_key:
+            raise ImproperlyConfigured(
+                "FIELD_ENCRYPTION_KEY environment variable is required in production. "
+                "Generate with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
+        
         if not encryption_key:
-            # For development, we'll generate a key based on SECRET_KEY
-            # In production, this should be a dedicated environment variable
+            # For development only - use SECRET_KEY as fallback
             if hasattr(settings, 'SECRET_KEY') and settings.SECRET_KEY:
                 encryption_key = settings.SECRET_KEY
-                logger.warning("Using SECRET_KEY for field encryption. Set FIELD_ENCRYPTION_KEY in production.")
+                logger.warning(
+                    "SECURITY WARNING: Using SECRET_KEY for field encryption in development. "
+                    "Set FIELD_ENCRYPTION_KEY environment variable for production."
+                )
             else:
                 raise ImproperlyConfigured("No encryption key available. Set FIELD_ENCRYPTION_KEY or SECRET_KEY.")
         
-        # Derive a proper encryption key
+        # SECURITY FIX: Generate unique salt per environment
+        encryption_salt = getattr(settings, 'ENCRYPTION_SALT', None)
+        if not encryption_salt:
+            if getattr(settings, 'IS_PRODUCTION', False):
+                raise ImproperlyConfigured(
+                    "ENCRYPTION_SALT environment variable is required in production. "
+                    "Generate with: python -c 'import secrets; print(secrets.token_hex(32))'"
+                )
+            # For development, use a deterministic salt (NOT for production)
+            encryption_salt = 'lifeplace_dev_encryption_salt'
+            logger.warning("Using development encryption salt. Set ENCRYPTION_SALT for production.")
+        
+        # Convert salt to bytes if it's a hex string (from environment)
+        if isinstance(encryption_salt, str):
+            try:
+                salt_bytes = bytes.fromhex(encryption_salt)
+            except ValueError:
+                # If not hex, use as UTF-8 encoded bytes (development mode)
+                salt_bytes = encryption_salt.encode('utf-8')
+        else:
+            salt_bytes = encryption_salt
+        
+        # Derive a proper encryption key using secure parameters
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
-            salt=b'lifeplace_encryption_salt',  # In production, use a random salt stored securely
-            iterations=100000,
+            salt=salt_bytes,
+            iterations=100000,  # OWASP recommended minimum
         )
         key = base64.urlsafe_b64encode(kdf.derive(encryption_key.encode()))
+        
+        # SECURITY ENHANCEMENT: Support for key rotation
+        old_encryption_key = getattr(settings, 'OLD_FIELD_ENCRYPTION_KEY', None)
+        if old_encryption_key:
+            # Create old Fernet instance for decrypting data encrypted with previous key
+            old_kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt_bytes,
+                iterations=100000,
+            )
+            old_key = base64.urlsafe_b64encode(old_kdf.derive(old_encryption_key.encode()))
+            self._old_fernet = Fernet(old_key)
+            logger.info("Old encryption key loaded for key rotation support")
+        
         self._fernet = Fernet(key)
+        
+        # Log encryption initialization (without sensitive details)
+        logger.info("Field encryption service initialized successfully")
     
     def encrypt(self, data: Any) -> str:
         """
@@ -83,7 +133,7 @@ class EncryptionService:
     
     def decrypt(self, encrypted_data: str, return_json: bool = True) -> Any:
         """
-        Decrypt data
+        Decrypt data with key rotation support
         
         Args:
             encrypted_data: Base64 encoded encrypted data
@@ -99,14 +149,38 @@ class EncryptionService:
             # Decode from base64
             encrypted_bytes = base64.urlsafe_b64decode(encrypted_data.encode())
             
-            # Decrypt the data
-            decrypted_data = self._fernet.decrypt(encrypted_bytes)
-            json_data = decrypted_data.decode()
-            
-            if return_json:
-                return json.loads(json_data)
-            else:
-                return json_data
+            # Try to decrypt with current key first
+            try:
+                decrypted_data = self._fernet.decrypt(encrypted_bytes)
+                json_data = decrypted_data.decode()
+                
+                if return_json:
+                    return json.loads(json_data)
+                else:
+                    return json_data
+                    
+            except Exception as decrypt_error:
+                # If current key fails and we have an old key, try that
+                if self._old_fernet:
+                    try:
+                        decrypted_data = self._old_fernet.decrypt(encrypted_bytes)
+                        json_data = decrypted_data.decode()
+                        
+                        # Successfully decrypted with old key - log for monitoring
+                        logger.info("Successfully decrypted data using old encryption key (key rotation)")
+                        
+                        if return_json:
+                            return json.loads(json_data)
+                        else:
+                            return json_data
+                            
+                    except Exception:
+                        # Both keys failed
+                        logger.error(f"Decryption failed with both current and old keys: {str(decrypt_error)}")
+                        raise decrypt_error
+                else:
+                    # No old key available, re-raise original error
+                    raise decrypt_error
                 
         except Exception as e:
             logger.error(f"Decryption failed: {str(e)}")

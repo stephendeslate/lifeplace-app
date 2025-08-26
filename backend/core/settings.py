@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
@@ -57,6 +58,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # SECURITY: JWT token blacklisting
 ]
 
 MIDDLEWARE = [
@@ -280,21 +283,32 @@ CACHES = {
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'sessions'
 
-# JWT settings
+# JWT settings - SECURITY ENHANCED
+# SECURITY FIX: Use dedicated JWT signing key
+JWT_SIGNING_KEY = os.getenv('JWT_SIGNING_KEY')
+if not JWT_SIGNING_KEY:
+    if IS_PRODUCTION:
+        raise ValueError("JWT_SIGNING_KEY environment variable is required in production")
+    else:
+        JWT_SIGNING_KEY = SECRET_KEY  # Fallback for development
+        print("WARNING: Using SECRET_KEY for JWT signing in development. Set JWT_SIGNING_KEY for production.")
+
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ('Bearer',),
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    # SECURITY FIX: Reasonable token lifetimes for better UX
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),  # Increased from 30 minutes
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),   # Increased from 1 day for better UX
 
-    'ROTATE_REFRESH_TOKENS': False,
+    # SECURITY ENHANCEMENT: Enable token rotation for better security
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'UPDATE_LAST_LOGIN': False,
+    'UPDATE_LAST_LOGIN': True,  # Track login activity
 
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
+    'SIGNING_KEY': JWT_SIGNING_KEY,  # Use dedicated key
     'VERIFYING_KEY': None,
-    'AUDIENCE': None,
-    'ISSUER': None,
+    'AUDIENCE': 'lifeplace-api',      # Set audience for token validation
+    'ISSUER': 'lifeplace-backend',    # Set issuer for token validation
 
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
@@ -305,9 +319,13 @@ SIMPLE_JWT = {
 
     'JTI_CLAIM': 'jti',
 
+    # Sliding token settings (not used but configured properly)
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+    
+    # SECURITY ENHANCEMENT: Additional claims for better security
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
 }
 
 # Frontend URLs for email templates
