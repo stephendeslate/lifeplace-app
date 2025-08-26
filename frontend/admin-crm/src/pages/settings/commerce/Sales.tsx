@@ -34,7 +34,6 @@ import {
 import type {
   QuoteTemplate,
   CreateQuoteTemplateData,
-  UpdateQuoteTemplateData,
   QuoteTemplateFilters,
 } from '../../../types/sales.types';
 

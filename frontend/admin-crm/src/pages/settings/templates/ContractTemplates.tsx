@@ -34,7 +34,6 @@ import {
 import type {
   ContractTemplate,
   CreateContractTemplateData,
-  UpdateContractTemplateData,
   ContractTemplateFilters,
 } from '../../../types/contracts.types';
 
