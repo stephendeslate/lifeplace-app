@@ -197,7 +197,7 @@ export const MetricDefinitionForm: React.FC<MetricDefinitionFormProps> = ({
     if (formData.calculation_rules.trim() !== '{}') {
       try {
         JSON.parse(formData.calculation_rules);
-      } catch (error) {
+      } catch {
         newErrors.calculation_rules = 'Invalid JSON format';
       }
     }
@@ -206,7 +206,7 @@ export const MetricDefinitionForm: React.FC<MetricDefinitionFormProps> = ({
     if (formData.filters.trim() !== '{}') {
       try {
         JSON.parse(formData.filters);
-      } catch (error) {
+      } catch {
         newErrors.filters = 'Invalid JSON format';
       }
     }
@@ -251,7 +251,7 @@ export const MetricDefinitionForm: React.FC<MetricDefinitionFormProps> = ({
       if (formData.calculation_rules.trim() && formData.calculation_rules !== '{}') {
         calculationRules = JSON.parse(formData.calculation_rules);
       }
-    } catch (error) {
+    } catch {
       setErrors(prev => ({ ...prev, calculation_rules: 'Invalid JSON format' }));
       return;
     }
@@ -260,7 +260,7 @@ export const MetricDefinitionForm: React.FC<MetricDefinitionFormProps> = ({
       if (formData.filters.trim() && formData.filters !== '{}') {
         filters = JSON.parse(formData.filters);
       }
-    } catch (error) {
+    } catch {
       setErrors(prev => ({ ...prev, filters: 'Invalid JSON format' }));
       return;
     }

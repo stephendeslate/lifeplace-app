@@ -201,7 +201,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
           recommendation_logic: '',
         }));
       }
-    } catch (e) {
+    } catch {
       setErrors(prev => ({
         ...prev,
         recommendation_logic: 'Invalid JSON format',
@@ -230,7 +230,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
     if (formData.show_recommendations) {
       try {
         JSON.stringify(formData.recommendation_logic);
-      } catch (e) {
+      } catch {
         newErrors.recommendation_logic = 'Invalid recommendation logic format';
       }
     }

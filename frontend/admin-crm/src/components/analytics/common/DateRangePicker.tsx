@@ -158,8 +158,6 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [customStart, setCustomStart] = useState<Date | null>(null);
   const [customEnd, setCustomEnd] = useState<Date | null>(null);
-  // @ts-ignore
-  const [isCustomMode, setIsCustomMode] = useState(false);
   const [error, setError] = useState<string>('');
 
   const open = Boolean(anchorEl);
@@ -176,10 +174,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
       if (matchingPreset) {
         setSelectedPreset(matchingPreset.value);
-        setIsCustomMode(false);
       } else {
         setSelectedPreset('custom');
-        setIsCustomMode(true);
         setCustomStart(new Date(value.start_date));
         setCustomEnd(new Date(value.end_date));
       }
@@ -189,7 +185,6 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const handlePresetSelect = (preset: DateRangePreset) => {
     const range = preset.getRange();
     setSelectedPreset(preset.value);
-    setIsCustomMode(false);
     setError('');
     
     onChange({

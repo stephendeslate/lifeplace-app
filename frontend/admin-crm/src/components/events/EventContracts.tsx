@@ -41,13 +41,6 @@ import {
   Description as ContractIcon,
   Draw as SignIcon,
   Cancel as VoidIcon,
-  CheckCircle as SignedIcon,
-  Schedule as DraftIcon,
-  Email as SentIcon,
-  HourglassEmpty as PartiallySignedIcon,
-  Block as VoidedIcon,
-  Update as AmendedIcon,
-  AccessTime as ExpiredIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -59,27 +52,6 @@ interface EventContractsProps {
   event: Event;
 }
 
-// @ts-ignore
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'DRAFT':
-      return <DraftIcon fontSize="small" />;
-    case 'SENT':
-      return <SentIcon fontSize="small" />;
-    case 'PARTIALLY_SIGNED':
-      return <PartiallySignedIcon fontSize="small" />;
-    case 'SIGNED':
-      return <SignedIcon fontSize="small" />;
-    case 'EXPIRED':
-      return <ExpiredIcon fontSize="small" />;
-    case 'VOID':
-      return <VoidedIcon fontSize="small" />;
-    case 'AMENDED':
-      return <AmendedIcon fontSize="small" />;
-    default:
-      return null;
-  }
-};
 
 const getStatusColor = (status: string) => {
   switch (status) {

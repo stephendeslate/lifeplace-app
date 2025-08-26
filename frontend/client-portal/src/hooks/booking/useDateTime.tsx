@@ -17,8 +17,7 @@ export const useDateTime = (
   const [data, setData] = useState<DateTimeStepData>(
     initialData || DateTimeApi.getDefaultData()
   );
-  // @ts-ignore
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
@@ -295,9 +294,7 @@ export const useDateTime = (
 
 // Hook for managing date/time step in isolation (without session)
 export const useDateTimeData = (
-  initialData?: DateTimeStepData,
-  // @ts-ignore
-  config?: DateTimeStepConfiguration | null
+  initialData?: DateTimeStepData
 ) => {
   const [data, setData] = useState<DateTimeStepData>(
     initialData || DateTimeApi.getDefaultData()

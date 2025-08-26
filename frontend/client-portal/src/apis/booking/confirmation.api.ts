@@ -80,8 +80,8 @@ export class ConfirmationApi {
     const bookingData = session.booking_data || {};
     
     // Extract event details from various steps
-    let eventDetails: any = {};
-    let contactInfo: any = {};
+    const eventDetails: any = {};
+    const contactInfo: any = {};
     let packages: any[] = [];
     let addons: any[] = [];
 

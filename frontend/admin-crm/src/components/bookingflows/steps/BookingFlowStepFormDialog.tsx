@@ -172,7 +172,7 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
         ...prev,
         display_conditions: parsed,
       }));
-    } catch (error) {
+    } catch {
       setJsonErrors(prev => ({ 
         ...prev, 
         conditions: 'Invalid JSON format' 
@@ -190,7 +190,7 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
         ...prev,
         validation_rules: parsed,
       }));
-    } catch (error) {
+    } catch {
       setJsonErrors(prev => ({ 
         ...prev, 
         validation: 'Invalid JSON format' 

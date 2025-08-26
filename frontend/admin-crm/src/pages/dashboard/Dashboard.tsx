@@ -49,8 +49,6 @@ export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { setBreadcrumbs } = useLayout();
   const { showSuccess } = useToastActions();
-  // @ts-ignore
-  const [refreshKey, setRefreshKey] = useState(0);
 
   // Date range for metrics (last 30 days by default)
   const { dateRange } = useDateRange();

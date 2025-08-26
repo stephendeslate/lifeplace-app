@@ -64,7 +64,7 @@ export class DateTimeApi {
         available: validation.isValid,
         message: validation.isValid ? 'Available' : 'Please check your date selection'
       };
-    } catch (error) {
+    } catch {
       return {
         available: false,
         message: 'Unable to check availability at this time'
@@ -179,7 +179,7 @@ export class DateTimeApi {
         end_date: end.toISOString().split('T')[0],
         end_time: end.toTimeString().split(' ')[0].slice(0, 5),
       };
-    } catch (error) {
+    } catch {
       return { end_date: '', end_time: '' };
     }
   }

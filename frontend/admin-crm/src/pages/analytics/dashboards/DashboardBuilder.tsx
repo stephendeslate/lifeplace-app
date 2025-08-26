@@ -191,11 +191,6 @@ export const DashboardBuilder: React.FC = () => {
     }
   };
 
-  // @ts-ignore
-  const handleEditWidget = (widget: Widget) => {
-    setEditingWidget(widget);
-    setShowWidgetForm(true);
-  };
 
   const handleDeleteWidget = (widgetId: number) => {
     deleteWidget(widgetId);

@@ -35,21 +35,17 @@ interface EventsTableProps {
   onViewDetails?: (event: AnalyticsEvent) => void;
   pageSize?: number;
   showPagination?: boolean;
-  compact?: boolean;
   maxHeight?: number | string;
 }
 
 interface EventTableRowProps {
   event: AnalyticsEvent;
   onViewDetails?: (event: AnalyticsEvent) => void;
-  compact?: boolean;
 }
 
 const EventTableRow: React.FC<EventTableRowProps> = ({ 
   event, 
   onViewDetails,
-  // @ts-ignore
-  compact = false 
 }) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -280,7 +276,6 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   onViewDetails,
   pageSize = 25,
   showPagination = true,
-  compact = false,
   maxHeight = 600,
 }) => {
   const [page, setPage] = useState(0);
@@ -313,7 +308,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   return (
     <Box>
       <TableContainer sx={{ maxHeight }}>
-        <Table stickyHeader size={compact ? 'small' : 'medium'}>
+        <Table stickyHeader size="medium">
           <TableHead>
             <TableRow>
               {tableHeaders.map((header) => (
@@ -358,7 +353,6 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                   key={event.id}
                   event={event}
                   onViewDetails={onViewDetails}
-                  compact={compact}
                 />
               ))
             )}

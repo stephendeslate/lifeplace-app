@@ -334,15 +334,6 @@ export const ReportsManagement: React.FC = () => {
     setEditingReport(null);
   };
 
-  // @ts-ignore
-  const handleSubmit = (data: any) => {
-    if (editingReport) {
-      updateReport({ id: editingReport.id, data });
-    } else {
-      createReport(data);
-    }
-    handleCloseDialog();
-  };
 
   // Get unique report types for filter
   const reportTypes = ['BUSINESS_SUMMARY', 'FINANCIAL', 'BOOKING_PERFORMANCE', 'CLIENT_ANALYSIS', 'WORKFLOW_EFFICIENCY', 'PAYMENT_ANALYSIS', 'CUSTOM'];

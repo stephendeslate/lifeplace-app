@@ -15,8 +15,7 @@ export const useIntroduction = (
   const [data, setData] = useState<IntroductionStepData>(
     initialData || IntroductionApi.getDefaultData()
   );
-  // @ts-ignore
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

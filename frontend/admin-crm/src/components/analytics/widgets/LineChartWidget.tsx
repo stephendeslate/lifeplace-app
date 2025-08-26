@@ -63,8 +63,6 @@ export const LineChartWidget: React.FC<LineChartWidgetProps> = ({
 
   const colors = getColorScheme();
   const showGrid = widget.chart_config?.show_grid ?? true;
-  // @ts-ignore
-  const showLegend = widget.chart_config?.show_legend ?? true;
   const animationEnabled = widget.chart_config?.animation_enabled ?? true;
 
   const formatTooltipValue = (value: number) => {
@@ -140,8 +138,6 @@ export const LineChartWidget: React.FC<LineChartWidgetProps> = ({
   };
 
   const ChartComponent = areaChart ? AreaChart : LineChart;
-  // @ts-ignore
-  const DataComponent = areaChart ? Area : Line;
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

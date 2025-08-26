@@ -312,8 +312,6 @@ export const usePricingSummaryStep = (
   
   const {
     breakdown,
-    // @ts-ignore
-    formattedBreakdown,
     loading: calculatingPricing,
     error: pricingError,
     hasItems,

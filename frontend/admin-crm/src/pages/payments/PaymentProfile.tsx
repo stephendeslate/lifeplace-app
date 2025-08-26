@@ -112,8 +112,6 @@ export const PaymentProfile: React.FC = () => {
     return 0; // Placeholder - would need proper client ID from payment/event relationship
   }, [payment?.event_details]);
   
-  // @ts-ignore
-  const { data: client } = useClient(clientId);
 
   useEffect(() => {
     if (payment) {

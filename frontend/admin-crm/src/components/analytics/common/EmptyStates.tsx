@@ -353,9 +353,7 @@ export const NoChartDataState: React.FC<{
 // Status-Specific States
 export const ProcessingDataState: React.FC<{
   message?: string;
-  progress?: number;
-  // @ts-ignore
-}> = ({ message = 'Processing analytics data...', progress }) => (
+}> = ({ message = 'Processing analytics data...' }) => (
   <EmptyState
     icon={DataIcon}
     title="Processing Data"

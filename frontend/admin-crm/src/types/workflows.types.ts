@@ -182,5 +182,4 @@ export interface WorkflowStageFormDialogProps {
 
 export interface WorkflowVisualizationProps {
   template: WorkflowTemplate;
-  compact?: boolean;
 }

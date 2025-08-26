@@ -93,7 +93,7 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${data.access}`;
           return api(originalRequest);
         }
-      } catch (refreshError) {
+      } catch {
         // If refresh fails, clear tokens and redirect to login
         storage.clearAuth();
         window.location.href = "/login";
