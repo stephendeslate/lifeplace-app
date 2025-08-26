@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from ..models import Event, EventProductOption, EventTask, EventType
+from ..cache_service import EventCacheService
 from ..serializers import (
     EventCreateUpdateSerializer,
     EventDetailSerializer,
@@ -57,6 +58,14 @@ class EventTypeViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve', 'active']:
             if is_active is None:
                 is_active = True  # Default to active only for public access
+        
+        # Try Redis cache first for simple active event types
+        if not search_query and is_active and self.action in ['list', 'active']:
+            cached_types = EventCacheService.get_cached_event_types(active_only=True)
+            if cached_types:
+                # Return a queryset-like object from cached data
+                from django.http import QueryDict
+                return EventType.objects.filter(id__in=[t['id'] for t in cached_types])
         
         return EventTypeService.get_all_event_types(
             search_query=search_query,
@@ -136,7 +145,7 @@ class EventViewSet(viewsets.ModelViewSet):
         payment_status = self.request.query_params.get('payment_status')
         search_query = self.request.query_params.get('search')
         
-        return EventService.get_all_events(
+        queryset = EventService.get_all_events(
             search_query=search_query,
             event_type_id=event_type_id,
             status=status,
@@ -145,6 +154,95 @@ class EventViewSet(viewsets.ModelViewSet):
             start_date_to=start_date_to,
             payment_status=payment_status
         )
+        
+        # CRITICAL OPTIMIZATION: Fetch all related data in one query
+        # This prevents N+1 queries in serializers
+        queryset = queryset.select_related(
+            'client',  # Join client table
+            'event_type',  # Join event type table
+            'workflow_template',  # Join workflow template
+            'current_stage',  # Join current workflow stage
+        )
+        
+        # For detail view, prefetch all related objects
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related(
+                'tasks__assigned_to',  # Prefetch tasks with assigned users
+                'tasks__workflow_stage',  # Prefetch task workflow stages
+                'event_products__product_option',  # Prefetch product options
+                'timeline__actor',  # Prefetch timeline actors
+                'files__uploaded_by',  # Prefetch file uploaders
+                'feedback__submitted_by',  # Prefetch feedback submitters
+                'feedback__response_by',  # Prefetch feedback responders
+            )
+        
+        return queryset
+    
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve single event with Redis caching
+        """
+        instance = self.get_object()
+        
+        # Try to get from Redis cache first
+        cached_data = EventCacheService.get_event_detail(instance.id)
+        if cached_data:
+            return Response(cached_data)
+        
+        # If not in cache, serialize and cache
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        
+        # Cache the serialized data
+        EventCacheService.set_event_detail(instance.id, data)
+        
+        return Response(data)
+    
+    def list(self, request, *args, **kwargs):
+        """
+        List events with intelligent caching
+        """
+        # Build filter dictionary from query params
+        filters = {
+            'event_type': request.query_params.get('event_type'),
+            'status': request.query_params.get('status'),
+            'client': request.query_params.get('client'),
+            'start_date_from': request.query_params.get('start_date_from'),
+            'start_date_to': request.query_params.get('start_date_to'),
+            'payment_status': request.query_params.get('payment_status'),
+            'search': request.query_params.get('search'),
+        }
+        # Remove None values
+        filters = {k: v for k, v in filters.items() if v is not None}
+        
+        # Try cache for simple, common queries
+        if len(filters) <= 2 and 'search' not in filters:
+            cached_event_ids = EventCacheService.get_cached_event_list(filters)
+            if cached_event_ids:
+                # Get events from optimized queryset
+                queryset = self.get_queryset().filter(id__in=cached_event_ids)
+                page = self.paginate_queryset(queryset)
+                if page is not None:
+                    serializer = self.get_serializer(page, many=True)
+                    return self.get_paginated_response(serializer.data)
+                
+                serializer = self.get_serializer(queryset, many=True)
+                return Response(serializer.data)
+        
+        # Fall back to normal list processing
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # Cache the result for future use
+        if len(filters) <= 2 and 'search' not in filters:
+            EventCacheService.cache_event_list(queryset, filters)
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

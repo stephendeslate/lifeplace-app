@@ -7,3 +7,11 @@ class PaymentsConfig(AppConfig):
     name = 'core.domains.payments'
     label = 'payments'
     verbose_name = 'Payments'
+    
+    def ready(self):
+        """Connect cache invalidation signals when app is ready"""
+        try:
+            from . import signals
+            signals.connect_payments_signals()
+        except ImportError:
+            pass

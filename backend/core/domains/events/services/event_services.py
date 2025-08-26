@@ -109,8 +109,14 @@ class EventService:
         start_date_to=None,
         payment_status=None
     ):
-        """Get all events with optional filtering"""
-        queryset = Event.objects.all()
+        """Get all events with optional filtering - OPTIMIZED"""
+        # Start with optimized base queryset
+        queryset = Event.objects.select_related(
+            'client',
+            'event_type',
+            'workflow_template',
+            'current_stage'
+        )
         
         if search_query:
             queryset = queryset.filter(

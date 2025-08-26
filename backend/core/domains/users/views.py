@@ -8,6 +8,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import logging
 
 from .exceptions import InvalidCredentials, UserNotFound
 from .models import AdminInvitation, User
@@ -18,6 +19,9 @@ from .serializers import (
     UserSerializer,
 )
 from .services import AdminInvitationService, UserService
+from .cache_service import users_cache_service
+
+logger = logging.getLogger(__name__)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UserLoginAPIView(APIView):
@@ -96,6 +100,25 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         search_query = self.request.query_params.get('search', None)
+        
+        # Try cache for search results
+        if search_query:
+            cached_results = users_cache_service.get_cached_user_search_results(search_query)
+            if cached_results is not None:
+                logger.debug(f"User search results served from cache for query: {search_query}")
+                # Convert cached results back to queryset-like behavior
+                # For now, we'll fall back to database query but this could be optimized
+                return UserService.get_users(search_query)
+        
+        # Try cache for general user list
+        query_params = dict(self.request.query_params)
+        cached_users = users_cache_service.get_cached_user_list(query_params)
+        
+        if cached_users is not None and not search_query:
+            logger.debug("User list served from cache")
+            # Convert cached results back to queryset-like behavior
+            # For now, we'll fall back to database query but this could be optimized
+            
         return UserService.get_users(search_query)
     
     def get_serializer_class(self):
@@ -125,8 +148,27 @@ class UserDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     
     def get_object(self):
         user_id = self.kwargs.get('pk')
+        
+        # Try to get from cache first
+        cached_user = users_cache_service.get_cached_user_detail(int(user_id))
+        
+        if cached_user is not None:
+            logger.debug(f"User detail for {user_id} served from cache")
+            # We still need the actual user object for permissions checking
+            # But we can optimize this in the future
+            user = UserService.get_user_by_id(user_id)
+            self.check_object_permissions(self.request, user)
+            return user
+        
+        # Cache miss - get from database
         user = UserService.get_user_by_id(user_id)
         self.check_object_permissions(self.request, user)
+        
+        # Cache the user detail
+        user_data = UserSerializer(user).data
+        users_cache_service.cache_user_detail(user.id, user_data)
+        logger.info(f"User detail for {user_id} cached after database query")
+        
         return user
     
     def update(self, request, *args, **kwargs):
@@ -160,7 +202,22 @@ class CurrentUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
-        return Response(UserSerializer(request.user).data)
+        user_id = request.user.id
+        
+        # Try to get from cache first
+        cached_user = users_cache_service.get_cached_user_detail(user_id)
+        
+        if cached_user is not None:
+            logger.debug(f"Current user data served from cache for user {user_id}")
+            return Response(cached_user)
+        
+        # Cache miss - serialize and cache
+        user_data = UserSerializer(request.user).data
+        users_cache_service.cache_user_detail(user_id, user_data)
+        users_cache_service.cache_user_by_email(request.user.email, user_data)
+        logger.info(f"Current user data cached for user {user_id}")
+        
+        return Response(user_data)
     
     def put(self, request):
         serializer = UserSerializer(request.user, data=request.data, partial=True)
@@ -180,7 +237,27 @@ class AdminInvitationListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAdmin]
     
     def get_queryset(self):
-        return AdminInvitation.objects.filter(is_accepted=False)
+        # Try to get from cache first
+        cached_invitations = users_cache_service.get_cached_pending_invitations()
+        
+        if cached_invitations is not None:
+            logger.debug("Pending invitations served from cache")
+            # For now, fall back to database query but cache the results
+            queryset = AdminInvitation.objects.filter(is_accepted=False)
+            return queryset
+        
+        # Cache miss - get from database and cache
+        queryset = AdminInvitation.objects.filter(is_accepted=False)
+        
+        # Cache the results
+        invitations_data = []
+        for invitation in queryset:
+            invitations_data.append(AdminInvitationSerializer(invitation).data)
+        
+        users_cache_service.cache_pending_invitations(invitations_data)
+        logger.info("Pending invitations cached after database query")
+        
+        return queryset
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

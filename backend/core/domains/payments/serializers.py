@@ -248,8 +248,8 @@ class PaymentSerializer(serializers.ModelSerializer):
     quote_details = EventQuoteSerializer(source='quote', read_only=True)
     invoice_details = InvoiceSerializer(source='invoice', read_only=True)
     installment_details = PaymentInstallmentSerializer(source='installment', read_only=True)
-    transactions = PaymentTransactionSerializer(source='transactions', many=True, read_only=True)
-    refunds = RefundSerializer(source='refunds', many=True, read_only=True)
+    transactions = PaymentTransactionSerializer(many=True, read_only=True)
+    refunds = RefundSerializer(many=True, read_only=True)
     processed_by_details = UserSerializer(source='processed_by', read_only=True)
     
     class Meta:

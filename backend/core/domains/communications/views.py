@@ -5,6 +5,7 @@ from django.db import transaction, models
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+import logging
 
 from .models import CommunicationTemplate, CommunicationRecord
 from .serializers import (
@@ -15,7 +16,10 @@ from .serializers import (
     BulkSendSerializer
 )
 from .services import CommunicationTemplateService, CommunicationService, AnalyticsService
+from .cache_service import communications_cache_service
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -107,12 +111,37 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
         
         context_data = serializer.validated_data.get('context_data', {})
         
+        # Try to get from cache first
+        cached_preview = communications_cache_service.get_cached_template_preview(
+            int(pk), context_data
+        )
+        
+        if cached_preview is not None:
+            logger.debug(f"Template preview for {pk} served from cache")
+            return Response(cached_preview)
+        
+        # Cache miss - generate preview
         preview_data = CommunicationTemplateService.preview_template(pk, context_data)
+        
+        # Cache the preview result
+        communications_cache_service.cache_template_preview(
+            int(pk), context_data, preview_data
+        )
+        logger.info(f"Template preview for {pk} cached after generation")
+        
         return Response(preview_data)
     
     @action(detail=False, methods=['get'])
     def variable_schemas(self, request):
         """Get available variable schemas for templates - available to both admins and clients"""
+        # Try to get from cache first
+        cached_schemas = communications_cache_service.get_cached_variable_schemas()
+        
+        if cached_schemas is not None:
+            logger.debug("Variable schemas served from cache")
+            return Response(cached_schemas)
+        
+        # Cache miss - build schemas
         schemas = {
             'client_variables': {
                 'first_name': 'Client first name',
@@ -133,6 +162,11 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
                 'expiry_date': 'Invitation expiry date'
             }
         }
+        
+        # Cache the schemas
+        communications_cache_service.cache_variable_schemas(schemas)
+        logger.info("Variable schemas cached after generation")
+        
         return Response(schemas)
 
 
@@ -290,8 +324,20 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
         
         # If user is a client, filter analytics to their own communications
         if request.user.role == 'CLIENT':
-            # You might want to implement client-specific analytics
-            # For now, we'll return basic stats for the client's communications
+            client_id = request.user.id
+            
+            # Try to get from cache first
+            cached_analytics = communications_cache_service.get_cached_client_analytics(
+                client_id, days
+            )
+            
+            if cached_analytics is not None:
+                logger.debug(f"Client analytics for {client_id} served from cache")
+                # If template_name filter is applied, we might need fresh data
+                if not template_name:
+                    return Response(cached_analytics)
+            
+            # Cache miss or filtered request - compute analytics
             from django.db.models import Count, Q
             from datetime import timedelta
             from django.utils import timezone
@@ -318,10 +364,35 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
             stats['open_rate'] = round((stats['opened'] / total) * 100, 2)
             stats['failure_rate'] = round((stats['failed'] / total) * 100, 2)
             
+            # Cache client analytics (only if not template-filtered)
+            if not template_name:
+                communications_cache_service.cache_client_analytics(client_id, days, stats)
+                logger.info(f"Client analytics for {client_id} cached after computation")
+            
             return Response(stats)
         else:
             # Admins get full analytics
+            if template_name:
+                # Try to get template-specific analytics from cache
+                cached_analytics = communications_cache_service.get_cached_template_analytics(
+                    template_name, days
+                )
+                
+                if cached_analytics is not None:
+                    logger.debug(f"Template analytics for {template_name} served from cache")
+                    return Response(cached_analytics)
+            
+            # Cache miss or global analytics - compute stats
             stats = AnalyticsService.get_template_stats(template_name, days)
+            
+            # Cache the analytics
+            if template_name:
+                communications_cache_service.cache_template_analytics(template_name, days, stats)
+                logger.info(f"Template analytics for {template_name} cached after computation")
+            else:
+                communications_cache_service.cache_global_analytics(days, stats)
+                logger.info(f"Global analytics cached after computation")
+            
             return Response(stats)
         
     @action(detail=True, methods=['post'])
