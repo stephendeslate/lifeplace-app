@@ -128,7 +128,6 @@ export const BookingFlowDetails: React.FC = () => {
     useFlowSteps,
     createStep,
     updateStep,
-    reorderSteps,
     isCreatingStep,
     isUpdatingStep,
     isReorderingSteps,

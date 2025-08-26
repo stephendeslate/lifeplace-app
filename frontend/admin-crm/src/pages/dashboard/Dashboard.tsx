@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/pages/dashboard/Dashboard.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -49,7 +49,6 @@ export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { setBreadcrumbs } = useLayout();
   const { showSuccess } = useToastActions();
-
   // Date range for metrics (last 30 days by default)
   const { dateRange } = useDateRange();
 
@@ -81,7 +80,6 @@ export const Dashboard: React.FC = () => {
   }, [setBreadcrumbs]);
 
   const handleRefreshAll = () => {
-    setRefreshKey(prev => prev + 1);
     refetchBusinessMetrics();
     showSuccess('Dashboard Refreshed', 'All data has been refreshed successfully.');
   };
