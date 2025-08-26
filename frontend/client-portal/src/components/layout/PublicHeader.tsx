@@ -23,7 +23,7 @@ import {
   Phone,
   Email,
 } from '@mui/icons-material';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import type { NavigationItem } from '../../types/layout.types';
 
@@ -41,6 +41,7 @@ export const PublicHeader: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
+  const navigate = useNavigate();
   
   const { isAuthenticated } = useAuth();
   // Toast actions available but not used in this component
