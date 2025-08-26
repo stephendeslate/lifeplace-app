@@ -388,11 +388,17 @@ class ContractSignatureViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # Admin gets all signatures, clients get only their own
+        queryset = ContractSignature.objects.select_related(
+            'contract',
+            'contract__event',
+            'contract__template',
+            'signer'
+        )
         if self.request.user.role == 'ADMIN':
-            return ContractSignature.objects.all().order_by('-signed_at')
+            return queryset.order_by('-signed_at')
         else:
             # Client users only see signatures from their contracts
-            return ContractSignature.objects.filter(
+            return queryset.filter(
                 contract__event__client=self.request.user
             ).order_by('-signed_at')
     
@@ -450,11 +456,18 @@ class ContractAmendmentViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # Admin gets all amendments, clients get only their own
+        queryset = ContractAmendment.objects.select_related(
+            'original_contract',
+            'original_contract__event',
+            'amendment_contract',
+            'requested_by',
+            'reviewed_by'
+        )
         if self.request.user.role == 'ADMIN':
-            return ContractAmendment.objects.all().order_by('-requested_at')
+            return queryset.order_by('-requested_at')
         else:
             # Client users only see amendments from their contracts
-            return ContractAmendment.objects.filter(
+            return queryset.filter(
                 original_contract__event__client=self.request.user
             ).order_by('-requested_at')
     
@@ -534,11 +547,16 @@ class ContractDocumentViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # Admin gets all documents, clients get only their own
+        queryset = ContractDocument.objects.select_related(
+            'contract',
+            'contract__event',
+            'uploaded_by'
+        )
         if self.request.user.role == 'ADMIN':
-            return ContractDocument.objects.filter(is_active=True).order_by('-created_at')
+            return queryset.filter(is_active=True).order_by('-created_at')
         else:
             # Client users only see documents from their contracts
-            return ContractDocument.objects.filter(
+            return queryset.filter(
                 contract__event__client=self.request.user,
                 is_active=True
             ).order_by('-created_at')
@@ -569,11 +587,16 @@ class ContractNoteViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # Admin gets all notes, clients get only non-internal notes from their contracts
+        queryset = ContractNote.objects.select_related(
+            'contract',
+            'contract__event',
+            'created_by'
+        )
         if self.request.user.role == 'ADMIN':
-            return ContractNote.objects.all().order_by('-created_at')
+            return queryset.order_by('-created_at')
         else:
             # Client users only see non-internal notes from their contracts
-            return ContractNote.objects.filter(
+            return queryset.filter(
                 contract__event__client=self.request.user,
                 is_internal=False
             ).order_by('-created_at')
