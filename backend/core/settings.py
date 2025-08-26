@@ -17,11 +17,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ENV = os.getenv('ENV', 'development')
 IS_PRODUCTION = ENV == 'production'
 
+# Check if we're running collectstatic during Docker build
+import sys
+IS_COLLECTING_STATIC = len(sys.argv) > 1 and 'collectstatic' in sys.argv
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    if IS_PRODUCTION and not IS_COLLECTING_STATIC:
+        raise ValueError("SECRET_KEY environment variable is required in production")
+    else:
+        # Generate a temporary key for development if not set
+        SECRET_KEY = 'django-insecure-development-only-key-replace-in-production'
+        if not IS_COLLECTING_STATIC:
+            print("WARNING: Using temporary SECRET_KEY for development. Set SECRET_KEY environment variable.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
@@ -100,7 +112,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL:
-    if IS_PRODUCTION:
+    if IS_PRODUCTION and not IS_COLLECTING_STATIC:
         raise ValueError("DATABASE_URL environment variable is required in production")
     else:
         DATABASE_URL = 'postgres://localhost:5432/lifeplace-app'
@@ -287,11 +299,12 @@ SESSION_CACHE_ALIAS = 'sessions'
 # SECURITY FIX: Use dedicated JWT signing key
 JWT_SIGNING_KEY = os.getenv('JWT_SIGNING_KEY')
 if not JWT_SIGNING_KEY:
-    if IS_PRODUCTION:
+    if IS_PRODUCTION and not IS_COLLECTING_STATIC:
         raise ValueError("JWT_SIGNING_KEY environment variable is required in production")
     else:
         JWT_SIGNING_KEY = SECRET_KEY  # Fallback for development
-        print("WARNING: Using SECRET_KEY for JWT signing in development. Set JWT_SIGNING_KEY for production.")
+        if not IS_COLLECTING_STATIC:
+            print("WARNING: Using SECRET_KEY for JWT signing in development. Set JWT_SIGNING_KEY for production.")
 
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ('Bearer',),
