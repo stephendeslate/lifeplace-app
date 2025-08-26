@@ -228,6 +228,57 @@ REST_FRAMEWORK = {
     },
 }
 
+# Cache configuration with Redis
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
+
+# Parse Redis URL for django-redis
+import urllib.parse
+redis_parsed = urllib.parse.urlparse(REDIS_URL)
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL + '/1',  # Use Redis database 1 for cache
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            },
+            # 'PARSER_CLASS': 'redis.connection.HiredisParser',  # Faster parser - disabled until hiredis is properly configured
+            'PICKLE_VERSION': -1,  # Use latest pickle protocol
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # Compress cached data
+            'IGNORE_EXCEPTIONS': True,  # Fallback gracefully if Redis is down
+        },
+        'KEY_PREFIX': 'lifeplace',  # Prefix all cache keys
+        'TIMEOUT': 300,  # Default timeout 5 minutes
+    },
+    'sessions': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 for sessions
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'session',
+        'TIMEOUT': 86400,  # Sessions last 24 hours
+    },
+    'analytics': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL + '/2',  # Use Redis database 2 for analytics
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'analytics',
+        'TIMEOUT': 3600,  # Analytics cache for 1 hour
+    },
+}
+
+# Use Redis for session storage (much faster than database)
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'sessions'
+
 # JWT settings
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ('Bearer',),

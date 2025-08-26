@@ -1,14 +1,54 @@
 # backend/core/domains/events/models.py
 from core.utils.models import BaseModel
 from django.contrib.contenttypes.models import ContentType
+from django.core.cache import cache
 from django.core.validators import (
     FileExtensionValidator,
     MaxValueValidator,
     MinValueValidator,
 )
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Count, F, Sum
 from django.utils import timezone
+
+
+class OptimizedEventManager(models.Manager):
+    """Optimized manager with common query patterns pre-configured"""
+    
+    def get_queryset(self):
+        """Always include basic related data"""
+        return super().get_queryset().select_related(
+            'client',
+            'event_type',
+            'workflow_template',
+            'current_stage'
+        )
+    
+    def with_details(self):
+        """Include all details for detail views"""
+        return self.get_queryset().prefetch_related(
+            'tasks__assigned_to',
+            'tasks__workflow_stage',
+            'event_products__product_option',
+            'timeline__actor',
+            'files__uploaded_by',
+            'feedback__submitted_by',
+            'feedback__response_by',
+        )
+    
+    def active(self):
+        """Get only active (non-cancelled) events"""
+        return self.get_queryset().exclude(status='CANCELLED')
+    
+    def for_client(self, client_id):
+        """Get events for a specific client"""
+        return self.get_queryset().filter(client_id=client_id)
+    
+    def upcoming(self):
+        """Get upcoming events"""
+        return self.get_queryset().filter(
+            start_date__gte=timezone.now()
+        ).order_by('start_date')
 
 
 class EventType(BaseModel):
@@ -54,13 +94,28 @@ class Event(BaseModel):
     total_amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     preferences = models.JSONField(default=dict, blank=True, help_text="Client preferences")
+    
+    # Use optimized manager by default
+    objects = OptimizedEventManager()
+    all_objects = models.Manager()  # Fallback to unoptimized if needed
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['client', 'status', '-start_date']),
+            models.Index(fields=['event_type', 'status']),
+            models.Index(fields=['payment_status', '-start_date']),
+            models.Index(fields=['status', '-created_at']),
+        ]
 
     def update_payment_status(self):
         """Update payment status based on completed payments"""
         payments = self.payments.filter(status='COMPLETED')
         self.total_amount_paid = payments.aggregate(Sum('amount'))['amount__sum'] or 0
         
-        if self.total_amount_paid >= self.total_amount_due:
+        # Handle case where total_amount_due is None
+        total_due = self.total_amount_due or 0
+        
+        if self.total_amount_paid >= total_due and total_due > 0:
             self.payment_status = 'PAID'
         elif self.total_amount_paid > 0:
             self.payment_status = 'PARTIALLY_PAID'
@@ -80,42 +135,58 @@ class Event(BaseModel):
     @property
     def workflow_progress(self):
         """
-        Calculate workflow progress percentage based on current stage position
+        Calculate workflow progress percentage - REDIS CACHED for performance
         """
-        if not self.workflow_template or not self.current_stage:
+        if not self.workflow_template_id or not self.current_stage_id:
             return 0
-            
+        
+        # Use Redis cache service
+        from .cache_service import EventCacheService
+        
+        cached_progress = EventCacheService.get_workflow_progress(self.id)
+        if cached_progress is not None:
+            return cached_progress
+        
         try:
-            # Get all stages for this template
-            stages = self.workflow_template.stages.all().order_by('stage', 'order')
-            total_stages = stages.count()
+            # More efficient query using values_list
+            stage_ids = list(self.workflow_template.stages.values_list('id', flat=True).order_by('stage', 'order'))
             
-            if total_stages == 0:
+            if not stage_ids:
                 return 0
-                
-            # Find the position of the current stage
-            all_stages = list(stages)
-            current_position = 0
             
-            for i, stage in enumerate(all_stages):
-                if stage.id == self.current_stage.id:
-                    current_position = i + 1
-                    break
-                    
+            # Find position without loading all objects
+            try:
+                current_position = stage_ids.index(self.current_stage_id) + 1
+            except ValueError:
+                current_position = 0
+            
             # Calculate progress percentage
-            return (current_position / total_stages) * 100
+            progress = (current_position / len(stage_ids)) * 100 if stage_ids else 0
+            
+            # Cache in Redis
+            EventCacheService.set_workflow_progress(self.id, progress)
+            return progress
         except Exception:
             return 0
         
+    def get_next_task(self):
+        """Get the next pending task - Use prefetched data when available"""
+        # If tasks are prefetched, use them to avoid a query
+        if hasattr(self, '_prefetched_objects_cache') and 'tasks' in self._prefetched_objects_cache:
+            pending_tasks = [t for t in self.tasks.all() if t.status in ['PENDING', 'IN_PROGRESS']]
+            if pending_tasks:
+                return min(pending_tasks, key=lambda t: (t.due_date, t.priority))
+            return None
+        
+        # Otherwise do a database query
+        return self.tasks.filter(
+            status__in=['PENDING', 'IN_PROGRESS']
+        ).order_by('due_date', 'priority').first()
+    
     @property
     def next_task(self):
-        """Get the next pending task for this event"""
-        try:
-            return self.tasks.filter(
-                status__in=['PENDING', 'IN_PROGRESS']
-            ).order_by('due_date', 'priority').first()
-        except Exception:
-            return None
+        """Backward compatibility property"""
+        return self.get_next_task()
 
     def __str__(self):
         event_name = self.name or f"{self.event_type} for {self.client}"
