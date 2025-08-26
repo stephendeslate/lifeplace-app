@@ -62,6 +62,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'core.utils.security.SecurityMiddleware',  # Custom security middleware
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -315,7 +316,11 @@ CLIENT_FRONTEND_URL = os.getenv('CLIENT_FRONTEND_URL', 'http://localhost:5174') 
 
 # Brevo Configuration
 BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+BREVO_WEBHOOK_SECRET = os.getenv('BREVO_WEBHOOK_SECRET')  # Secret for webhook signature verification
 DEFAULT_FROM_NAME = os.getenv('DEFAULT_FROM_NAME', 'LifePlace')
+
+# Encryption Configuration
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY')  # Dedicated encryption key for sensitive fields
 
 # Email configuration
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stephendeslate@gmail.com')
@@ -356,6 +361,10 @@ LOGGING = {
             'format': '🛍️ {asctime} - {message}',
             'style': '{',
         },
+        'security': {
+            'format': '🔒 SECURITY {asctime} {levelname} {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'console': {
@@ -374,6 +383,17 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
             'formatter': 'verbose',
+        },
+        'security_console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'security',
+            'level': 'WARNING',
+        },
+        'security_file': {
+            'class': 'logging.FileHandler',
+            'filename': 'security.log',
+            'formatter': 'security',
+            'level': 'INFO',
         },
     },
     'loggers': {
@@ -396,6 +416,16 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
+        },
+        'security': {
+            'handlers': ['security_console', 'security_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'core.utils.security_logging': {
+            'handlers': ['security_console', 'security_file'],
+            'level': 'INFO',
+            'propagate': False,
         },
         '': {  # Root logger
             'handlers': ['console'],
