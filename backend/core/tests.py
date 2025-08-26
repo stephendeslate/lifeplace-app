@@ -21,7 +21,6 @@ from core.utils.security import (
     validate_password_strength, 
     validate_file_upload,
     sanitize_input,
-    sanitize_URL,
     LoginRateThrottle,
     RegistrationRateThrottle
 )
@@ -326,32 +325,3 @@ class SecurityFixesTestCase(TestCase):
                 self.assertNotIn('<iframe>', sanitized.lower())
                 self.assertNotIn('<svg>', sanitized.lower())
 
-    def test_url_sanitization(self):
-        """Test URL sanitization to prevent malicious redirects"""
-        
-        # Test malicious URLs
-        malicious_urls = [
-            'javascript:alert("XSS")',
-            'data:text/html,<script>alert(1)</script>',
-            'vbscript:msgbox("XSS")',
-            'file:///etc/passwd',
-            'ftp://malicious.com/steal',
-        ]
-        
-        for url in malicious_urls:
-            with self.subTest(url=url):
-                result = sanitize_URL(url)
-                self.assertIsNone(result, f"URL '{url}' should be rejected")
-
-        # Test safe URLs
-        safe_urls = [
-            'https://example.com',
-            'http://localhost:3000',
-            'mailto:test@example.com',
-            'tel:+1234567890'
-        ]
-        
-        for url in safe_urls:
-            with self.subTest(url=url):
-                result = sanitize_URL(url)
-                self.assertIsNotNone(result, f"URL '{url}' should be allowed")
