@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import views
 from .views_password import ChangePasswordView
-from .views.secure_auth_views import secure_logout, logout_all_devices, active_sessions
+# Import secure auth views from main views module (moved to resolve import conflict)
 
 app_name = 'users'
 
@@ -13,9 +13,9 @@ urlpatterns = [
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('login/', views.UserLoginAPIView.as_view(), name='login'),
-    path('logout/', secure_logout, name='secure_logout'),
-    path('logout-all/', logout_all_devices, name='logout_all_devices'),
-    path('sessions/', active_sessions, name='active_sessions'),
+    path('logout/', views.secure_logout, name='secure_logout'),
+    path('logout-all/', views.logout_all_devices, name='logout_all_devices'),
+    path('sessions/', views.active_sessions, name='active_sessions'),
     path('me/', views.CurrentUserView.as_view(), name='current_user'),
     
     # Client registration endpoint

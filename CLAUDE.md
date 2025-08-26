@@ -12,6 +12,8 @@ This is a full-stack event management platform (LifePlace) with:
 
 ## Development Commands
 
+Before running any python commands, run the virtual environment found in the root directory /lifeplace-app.
+
 ### Backend (Django)
 ```bash
 cd backend
