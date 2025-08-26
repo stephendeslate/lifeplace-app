@@ -2,6 +2,7 @@
 import logging
 from datetime import datetime
 
+from core.utils.security import validate_file_upload, sanitize_input
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.models import Q
@@ -567,40 +568,94 @@ class EventFileService:
     
     @staticmethod
     def create_file(file_data, file_obj, user):
-        """Create a new file"""
+        """Create a new file with comprehensive security validation"""
         if not file_obj:
             raise InvalidFileUpload(detail="No file provided")
+        
+        # Define allowed file types based on category
+        allowed_types_by_category = {
+            'CONTRACT': ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+            'QUOTE': ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+            'PAYMENT': ['application/pdf', 'image/jpeg', 'image/png'],
+            'REQUIREMENTS': ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+            'PHOTO': ['image/jpeg', 'image/png', 'image/gif'],
+            'OTHER': ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png']
+        }
+        
+        category = file_data.get('category', 'OTHER')
+        allowed_types = allowed_types_by_category.get(category, allowed_types_by_category['OTHER'])
+        
+        # Validate file upload
+        validation_result = validate_file_upload(
+            file_obj,
+            allowed_types=allowed_types,
+            max_size_mb=50  # 50MB limit
+        )
+        
+        if not validation_result['is_valid']:
+            logger.warning(f"File upload validation failed for user {user.email}: {validation_result['messages']}")
+            raise InvalidFileUpload(detail='; '.join(validation_result['messages']))
+        
+        # Additional security checks
+        filename = getattr(file_obj, 'name', '')
+        if len(filename) > 255:
+            raise InvalidFileUpload(detail="Filename is too long")
+        
+        # Sanitize input data
+        sanitized_name = sanitize_input(file_data.get('name', filename), max_length=255)
+        sanitized_description = sanitize_input(file_data.get('description', ''), max_length=1000)
+        
+        # Check file size (additional check)
+        max_size = 50 * 1024 * 1024  # 50MB in bytes
+        if file_obj.size > max_size:
+            raise InvalidFileUpload(detail="File size exceeds 50MB limit")
+        
+        # Validate event exists and user has access
+        try:
+            event = Event.objects.get(id=file_data['event_id'])
+        except Event.DoesNotExist:
+            raise EventNotFound()
+        
+        # Check if user has permission to upload files for this event
+        if not user.is_staff and user.role != 'ADMIN' and event.client != user:
+            raise InvalidFileUpload(detail="You don't have permission to upload files for this event")
         
         with transaction.atomic():
             try:
                 # Create the file
                 file = EventFile.objects.create(
-                    event_id=file_data['event_id'],
-                    category=file_data['category'],
+                    event=event,
+                    category=category,
                     file=file_obj,
-                    name=file_data.get('name', file_obj.name),
-                    description=file_data.get('description', ''),
+                    name=sanitized_name,
+                    description=sanitized_description,
                     uploaded_by=user,
                     is_public=file_data.get('is_public', False),
                     mime_type=getattr(file_obj, 'content_type', ''),
                     size=file_obj.size
                 )
                 
-                # Log file upload
+                # Log file upload with security context
                 EventTimeline.objects.create(
-                    event_id=file_data['event_id'],
+                    event=event,
                     action_type='FILE_UPLOADED',
-                    description=f"File uploaded: {file.name}",
+                    description=f"File uploaded: {sanitized_name} ({category})",
                     actor=user,
-                    is_public=file.is_public
+                    is_public=file.is_public,
+                    action_data={
+                        'file_id': file.id,
+                        'file_size': file_obj.size,
+                        'mime_type': file.mime_type,
+                        'category': category
+                    }
                 )
                 
-                logger.info(f"Created new file: {file}")
+                logger.info(f"Secure file upload completed: {file.name} by {user.email}")
                 return file
                 
             except Exception as e:
-                logger.error(f"Error creating file: {str(e)}")
-                raise InvalidFileUpload(detail=str(e))
+                logger.error(f"Error creating file for user {user.email}: {str(e)}")
+                raise InvalidFileUpload(detail="File upload failed")
     
     @staticmethod
     def update_file(file_id, file_data, file_obj, user):
