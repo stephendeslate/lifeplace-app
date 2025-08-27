@@ -1,11 +1,12 @@
 // frontend/admin-crm/src/App.tsx
-// UPDATED: Added comprehensive analytics routes
+// UPDATED: Added comprehensive analytics routes and error boundary
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProviders } from './providers/AppProviders';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Login } from './pages/auth';
 import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
@@ -507,6 +508,7 @@ const AppRouter: React.FC = () => {
         }
       />
 
+
       {/* Default Route */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
@@ -519,9 +521,11 @@ const AppRouter: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AppProviders>
-      <Router>
-        <AppRouter />
-      </Router>
+      <ErrorBoundary>
+        <Router>
+          <AppRouter />
+        </Router>
+      </ErrorBoundary>
     </AppProviders>
   );
 };
