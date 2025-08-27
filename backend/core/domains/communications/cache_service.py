@@ -23,10 +23,6 @@ class CommunicationsCacheService:
     Handles templates, records, analytics, and rendered content
     """
     
-    def __init__(self):
-        self.cache = redis_cache
-        self.analytics = analytics_cache
-    
     # Cache key patterns
     TEMPLATE_LIST_KEY = "communications:templates:list:{query_hash}"
     TEMPLATE_DETAIL_KEY = "communications:template:detail:{template_id}"
@@ -48,11 +44,30 @@ class CommunicationsCacheService:
     
     RENDERED_CONTENT_KEY = "communications:rendered:{template_id}:{context_hash}"
     
-    # Cache timeout configurations (in seconds)
-    TIMEOUT_SHORT = 300      # 5 minutes - frequently changing data (records, analytics)
-    TIMEOUT_MEDIUM = 1800    # 30 minutes - moderate changes (templates)
-    TIMEOUT_LONG = 3600      # 1 hour - stable data (schemas, rendered content)
-    TIMEOUT_VERY_LONG = 14400  # 4 hours - very stable data (variable schemas)
+    def __init__(self):
+        self.cache = redis_cache
+        self.analytics = analytics_cache
+        
+        # Import config for dynamic timeouts
+        from .config import communication_config
+        self.config = communication_config
+    
+    # Cache timeout configurations (in seconds) - now dynamic
+    @property
+    def TIMEOUT_SHORT(self):
+        return self.config.get_cache_timeout('ANALYTICS')
+    
+    @property 
+    def TIMEOUT_MEDIUM(self):
+        return self.config.get_cache_timeout('TEMPLATE_LIST')
+    
+    @property
+    def TIMEOUT_LONG(self):
+        return self.config.get_cache_timeout('TEMPLATE_PREVIEW')
+    
+    @property
+    def TIMEOUT_VERY_LONG(self):
+        return self.config.get_cache_timeout('VARIABLE_SCHEMAS')
     
     # === TEMPLATE CACHING ===
     

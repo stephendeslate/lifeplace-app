@@ -1,0 +1,91 @@
+# backend/core/celery.py
+
+import os
+import logging
+from celery import Celery
+from django.conf import settings
+
+# Set the default Django settings module for the 'celery' program.
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+
+app = Celery('lifeplace')
+
+# Using a string here means the worker doesn't have to serialize
+# the configuration object to child processes.
+app.config_from_object('django.conf:settings', namespace='CELERY')
+
+# Load task modules from all registered Django apps.
+app.autodiscover_tasks()
+
+# Configure Redis as the message broker for Celery
+redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379')
+app.conf.update(
+    # Broker configuration
+    broker_url=redis_url + '/3',  # Use Redis database 3 for Celery broker
+    result_backend=redis_url + '/4',  # Use Redis database 4 for results
+    
+    # Task execution settings
+    task_serializer='json',
+    accept_content=['json'],
+    result_serializer='json',
+    timezone='UTC',
+    enable_utc=True,
+    
+    # Task routing
+    task_routes={
+        'core.domains.notifications.tasks.*': {'queue': 'notifications'},
+        'core.domains.communications.tasks.*': {'queue': 'communications'},
+        'core.domains.analytics.tasks.*': {'queue': 'analytics'},
+    },
+    
+    # Worker configuration
+    worker_prefetch_multiplier=1,
+    task_acks_late=True,
+    worker_max_tasks_per_child=1000,
+    
+    # Task retry configuration
+    task_default_retry_delay=60,  # 1 minute
+    task_max_retries=3,
+    
+    # Result backend settings
+    result_expires=3600,  # Results expire after 1 hour
+    
+    # Monitoring
+    worker_send_task_events=True,
+    task_send_sent_event=True,
+    
+    # Security
+    task_reject_on_worker_lost=True,
+    task_ignore_result=False,
+    
+    # Beat schedule for periodic tasks
+    beat_schedule={
+        'cleanup-old-notifications': {
+            'task': 'core.domains.notifications.tasks.cleanup_old_notifications',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'notifications'}
+        },
+        'auto-expire-notifications': {
+            'task': 'core.domains.notifications.tasks.auto_expire_notifications',
+            'schedule': 60 * 60,  # Hourly
+            'options': {'queue': 'notifications'}
+        },
+        'notification-delivery-stats': {
+            'task': 'core.domains.notifications.tasks.collect_delivery_metrics',
+            'schedule': 5 * 60,  # Every 5 minutes
+            'options': {'queue': 'analytics'}
+        }
+    },
+)
+
+# Set up logging for Celery
+@app.task(bind=True)
+def debug_task(self):
+    logger = logging.getLogger(__name__)
+    logger.info(f'Request: {self.request!r}')
+
+# Configure logging for Celery tasks
+logger = logging.getLogger(__name__)
+
+if __name__ == '__main__':
+    app.start()

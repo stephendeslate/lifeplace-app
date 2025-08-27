@@ -23,7 +23,9 @@ export const useNotifications = (filters?: NotificationFilters) => {
   } = useQuery({
     queryKey: ['notifications', filters],
     queryFn: () => notificationsApi.getNotifications(filters),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 15 * 1000, // 15 seconds
+    refetchInterval: 15 * 1000, // Refetch every 15 seconds
+    refetchIntervalInBackground: true,
   });
 
   const useNotification = (id: number) => {
@@ -38,7 +40,9 @@ export const useNotifications = (filters?: NotificationFilters) => {
     return useQuery({
       queryKey: ['notifications', 'unread', limit],
       queryFn: () => notificationsApi.getUnread(limit),
-      staleTime: 30 * 1000, // 30 seconds
+      staleTime: 15 * 1000, // 15 seconds
+      refetchInterval: 15 * 1000, // Refetch every 15 seconds
+      refetchIntervalInBackground: true,
     });
   };
 
@@ -54,8 +58,9 @@ export const useNotifications = (filters?: NotificationFilters) => {
     return useQuery({
       queryKey: ['notification-counts'],
       queryFn: notificationsApi.getCounts,
-      staleTime: 30 * 1000, // 30 seconds
-      refetchInterval: 60 * 1000, // Refetch every minute
+      staleTime: 15 * 1000, // 15 seconds
+      refetchInterval: 15 * 1000, // Refetch every 15 seconds
+      refetchIntervalInBackground: true,
     });
   };
 
