@@ -241,6 +241,8 @@ REST_FRAMEWORK = {
         'admin_analytics': '2000/hour',
         'anon': '100/hour',
         'user': '1000/hour',
+        'notifications': '200/hour',
+        'notifications_admin': '500/hour',
     },
 }
 
@@ -396,6 +398,10 @@ LOGGING = {
             'format': '🔒 SECURITY {asctime} {levelname} {message}',
             'style': '{',
         },
+        'notifications': {
+            'format': '🔔 {asctime} - {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'console': {
@@ -426,6 +432,10 @@ LOGGING = {
             'formatter': 'security',
             'level': 'INFO',
         },
+        'notifications_console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'notifications',
+        },
     },
     'loggers': {
         'core.domains.communications': {
@@ -453,6 +463,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'core.domains.notifications': {
+            'handlers': ['notifications_console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'core.utils.security_logging': {
             'handlers': ['security_console', 'security_file'],
             'level': 'INFO',
@@ -470,4 +485,26 @@ if DEBUG:
     # In development, make logging more verbose
     LOGGING['loggers']['core.domains.communications']['level'] = 'DEBUG'
     LOGGING['loggers']['core.domains.products']['level'] = 'DEBUG'
+    LOGGING['loggers']['core.domains.notifications']['level'] = 'DEBUG'
     LOGGING['loggers']['']['level'] = 'INFO'
+
+# Celery Configuration
+CELERY_BROKER_URL = REDIS_URL + '/3'  # Use Redis database 3 for Celery broker
+CELERY_RESULT_BACKEND = REDIS_URL + '/4'  # Use Redis database 4 for results
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_ALWAYS_EAGER = False  # Set to True for synchronous testing
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_WORKER_SEND_TASK_EVENTS = True
+CELERY_TASK_SEND_SENT_EVENT = True
+
+# Notification-specific settings
+NOTIFICATION_RATE_LIMIT = os.getenv('NOTIFICATION_RATE_LIMIT', '100/hour')
+NOTIFICATION_MAX_CONTENT_LENGTH = int(os.getenv('NOTIFICATION_MAX_CONTENT_LENGTH', '1000'))
+NOTIFICATION_CLEANUP_DAYS = int(os.getenv('NOTIFICATION_CLEANUP_DAYS', '90'))
+NOTIFICATION_AUTO_READ_DAYS = int(os.getenv('NOTIFICATION_AUTO_READ_DAYS', '30'))
+
+# Site configuration
+SITE_NAME = os.getenv('SITE_NAME', 'LifePlace')

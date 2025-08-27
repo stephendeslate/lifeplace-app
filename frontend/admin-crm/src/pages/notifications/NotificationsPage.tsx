@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useNotifications, useNotificationPreferences } from '../../hooks/useNotifications';
+import { useNotificationRealtime } from '../../hooks/useNotificationRealtime';
 import { NotificationList } from '../../components/notifications/NotificationList';
 import { NotificationPreferencesForm } from '../../components/notifications/NotificationPreferencesForm';
 import { NotificationCountsDisplay } from '../../components/notifications/NotificationCountsDisplay';
@@ -86,6 +87,9 @@ export const NotificationsPage: React.FC = () => {
 
   const { preferences, isLoadingPreferences } = useNotificationPreferences();
   const { data: counts, isLoading: isLoadingCounts } = useNotificationCounts();
+  
+  // Enable real-time notifications
+  useNotificationRealtime({ enabled: true });
 
   // @ts-ignore
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {

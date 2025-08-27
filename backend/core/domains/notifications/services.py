@@ -16,6 +16,11 @@ from .exceptions import (
     NotificationPreferenceNotFoundException,
     NotificationTypeNotFoundException,
 )
+from .security import (
+    NotificationSecurityService,
+    NotificationRateLimiter,
+    NotificationContentValidator,
+)
 from .models import (
     Notification,
     NotificationDigest,
@@ -121,7 +126,8 @@ class NotificationService:
         context: Optional[Dict[str, Any]] = None,
         delivery_methods: Optional[List[str]] = None,
         event=None,
-        client=None
+        client=None,
+        use_async: bool = True
     ):
         """
         Create and deliver a new notification
@@ -133,12 +139,47 @@ class NotificationService:
             delivery_methods: List of delivery methods to force (overrides preferences)
             event: Related event object
             client: Related client object
+            use_async: Whether to process asynchronously (default True)
         
         Returns:
-            Created notification object or None if user has disabled this type
+            Created notification object or async task result if use_async=True
         """
         if not context:
             context = {}
+        
+        # Security: Rate limiting check
+        can_create, limit_message = NotificationRateLimiter.check_creation_limit(
+            user_id=recipient.id,
+            notification_type_code=notification_type_code
+        )
+        
+        if not can_create:
+            logger.warning(f"Rate limit exceeded for user {recipient.id}: {limit_message}")
+            raise InvalidNotificationDataException(f"Rate limit exceeded: {limit_message}")
+        
+        # If async processing is enabled and we're not in testing mode
+        if use_async and not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+            try:
+                # Import tasks here to avoid circular imports
+                from .tasks import create_notification_async
+                
+                # Queue async task
+                task_result = create_notification_async.delay(
+                    recipient_id=recipient.id,
+                    notification_type_code=notification_type_code,
+                    context=context,
+                    delivery_methods=delivery_methods,
+                    event_id=event.id if event else None,
+                    client_id=client.id if client else None
+                )
+                
+                logger.info(f"Queued async notification creation: task_id={task_result.id}")
+                return task_result
+                
+            except ImportError:
+                logger.warning("Celery not available, falling back to synchronous processing")
+            except Exception as e:
+                logger.warning(f"Async task failed, falling back to sync: {str(e)}")
             
         # Get notification type
         try:
@@ -176,9 +217,12 @@ class NotificationService:
             logger.info(f"Skipping notification {notification_type_code} for {recipient.email} - no enabled delivery methods")
             return None
         
+        # Security: Sanitize context data
+        sanitized_context = NotificationSecurityService.validate_context_data(context)
+        
         # Prepare context with additional data
         enhanced_context = {
-            **context,
+            **sanitized_context,
             'recipient_name': recipient.get_display_name(),
             'recipient_first_name': recipient.first_name,
             'recipient_last_name': recipient.last_name,
@@ -205,8 +249,26 @@ class NotificationService:
         template_context = Context(enhanced_context)
         
         try:
-            title = Template(notification_type.default_title_template).render(template_context)
-            content = Template(notification_type.default_content_template).render(template_context)
+            raw_title = Template(notification_type.default_title_template).render(template_context)
+            raw_content = Template(notification_type.default_content_template).render(template_context)
+            
+            # Security: Sanitize rendered content
+            title = NotificationSecurityService.sanitize_title(raw_title)
+            content = NotificationSecurityService.sanitize_content(raw_content)
+            action_url = NotificationSecurityService.validate_action_url(context.get('action_url', ''))
+            
+            # Security: Validate final notification data
+            notification_data = {
+                'title': title,
+                'content': content,
+                'action_url': action_url or ''
+            }
+            
+            is_valid, validation_errors = NotificationContentValidator.validate_notification_data(notification_data)
+            if not is_valid:
+                logger.warning(f"Notification validation failed: {validation_errors}")
+                raise InvalidNotificationDataException(f"Content validation failed: {'; '.join(validation_errors)}")
+            
         except Exception as e:
             logger.error(f"Error rendering notification template: {str(e)}")
             raise InvalidNotificationDataException(f"Template rendering error: {str(e)}")
@@ -218,7 +280,7 @@ class NotificationService:
                 notification_type=notification_type,
                 title=title,
                 content=content,
-                action_url=context.get('action_url', ''),
+                action_url=action_url or '',
                 context_data=enhanced_context,
                 event=event,
                 client=client,
@@ -246,6 +308,13 @@ class NotificationService:
                     logger.error(f"Failed to deliver notification via {method}: {str(e)}")
                     notification.add_delivery_method(method, success=False, error=str(e))
             
+            # Security: Record creation for rate limiting
+            NotificationRateLimiter.record_creation(
+                user_id=recipient.id,
+                notification_type_code=notification_type_code,
+                title=title
+            )
+            
             logger.info(f"Created notification {notification_type_code} for {recipient.email}")
             return notification
     
@@ -272,9 +341,17 @@ class NotificationService:
                 </div>
                 """
             
-            # Send via communication service
+            # Send via communication service using config
+            from core.domains.communications.config import communication_config
+            
+            try:
+                email_template_name = communication_config.get_template_name('EMAIL_LAYOUT')
+            except ValueError:
+                # Fallback to notification-specific template
+                email_template_name = communication_config.get_template_name('NOTIFICATION_EMAIL')
+            
             record = communication_service.send_communication_by_template(
-                template_name='Manual Email Layout',  # Use existing manual template
+                template_name=email_template_name,
                 recipient=notification.recipient.email,
                 context_data={
                     **context,
@@ -319,9 +396,17 @@ class NotificationService:
             if not phone_number:
                 raise Exception("Recipient has no phone number configured")
             
-            # Send via communication service using SMS template
+            # Send via communication service using config
+            from core.domains.communications.config import communication_config
+            
+            try:
+                sms_template_name = communication_config.get_template_name('SMS_LAYOUT')
+            except ValueError:
+                # Fallback to notification-specific template
+                sms_template_name = communication_config.get_template_name('NOTIFICATION_SMS')
+            
             record = communication_service.send_communication_by_template(
-                template_name='Manual SMS Layout',  # Use existing SMS template
+                template_name=sms_template_name,
                 recipient=phone_number,
                 context_data={
                     **context,
@@ -724,9 +809,17 @@ class NotificationDigestService:
             if digest.notification_count > 10:
                 email_content += f"<p>And {digest.notification_count - 10} more notifications...</p>"
             
-            # Send via communication service
+            # Send via communication service using config
+            from core.domains.communications.config import communication_config
+            
+            try:
+                digest_template_name = communication_config.get_template_name('DIGEST_EMAIL')
+            except ValueError:
+                # Fallback to manual layout
+                digest_template_name = communication_config.get_template_name('EMAIL_LAYOUT')
+            
             record = communication_service.send_communication_by_template(
-                template_name='Manual Email Layout',
+                template_name=digest_template_name,
                 recipient=digest.user.email,
                 context_data={
                     'custom_subject': f'Your {digest.get_frequency_display()} Notification Digest',
@@ -762,9 +855,15 @@ class NotificationDigestService:
             # Create SMS content (limited)
             sms_content = f"You have {digest.notification_count} unread notifications. Check your portal for details. - LifePlace"
             
-            # Send via communication service
+            # Send via communication service using config
+            try:
+                sms_template_name = communication_config.get_template_name('SMS_LAYOUT')
+            except ValueError:
+                # Fallback to notification SMS template
+                sms_template_name = communication_config.get_template_name('NOTIFICATION_SMS')
+            
             record = communication_service.send_communication_by_template(
-                template_name='Manual SMS Layout',
+                template_name=sms_template_name,
                 recipient=phone_number,
                 context_data={
                     'custom_body': sms_content,

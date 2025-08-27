@@ -6,6 +6,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 
 from .models import (
     Notification,
@@ -27,6 +28,11 @@ from .services import (
     NotificationStatsService,
     NotificationTypeService,
 )
+from .security import (
+    NotificationThrottle,
+    NotificationAdminThrottle,
+    NotificationRateLimiter,
+)
 
 User = get_user_model()
 
@@ -35,6 +41,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
     """ViewSet for managing user notifications"""
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
+    throttle_classes = [NotificationThrottle]
     
     def get_queryset(self):
         """Get notifications for the current user with filtering"""
@@ -248,7 +255,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], throttle_classes=[NotificationAdminThrottle])
     def create_notification(self, request):
         """Create notifications for multiple recipients - admin only"""
         if request.user.role != 'ADMIN':
@@ -266,6 +273,18 @@ class NotificationViewSet(viewsets.ModelViewSet):
             context_data = serializer.validated_data.get('context_data', {})
             force_delivery = serializer.validated_data.get('force_delivery_methods', [])
             
+            # Security: Check bulk creation limits
+            can_bulk, bulk_message = NotificationRateLimiter.check_bulk_limit(
+                user_id=request.user.id,
+                recipient_count=len(recipient_ids)
+            )
+            
+            if not can_bulk:
+                return Response(
+                    {"detail": f"Bulk creation limit exceeded: {bulk_message}"},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+            
             recipients = User.objects.filter(id__in=recipient_ids)
             created_notifications = []
             
@@ -282,6 +301,12 @@ class NotificationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     # Continue with other recipients if one fails
                     pass
+            
+            # Security: Record bulk creation
+            NotificationRateLimiter.record_bulk_creation(
+                user_id=request.user.id,
+                recipient_count=len(recipients)
+            )
             
             return Response({
                 'created_count': len(created_notifications),
@@ -303,6 +328,80 @@ class NotificationViewSet(viewsets.ModelViewSet):
             stats = NotificationStatsService.get_user_stats(request.user.id, days)
             serializer = NotificationStatsSerializer(stats)
             return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated, IsAdmin])
+    def system_metrics(self, request):
+        """Get system-wide notification metrics - admin only"""
+        try:
+            from .monitoring import NotificationMetrics
+            
+            hours = int(request.query_params.get('hours', 24))
+            metric_type = request.query_params.get('type', 'all')
+            
+            response_data = {}
+            
+            if metric_type in ['all', 'delivery']:
+                response_data['delivery_stats'] = NotificationMetrics.get_delivery_stats(hours)
+            
+            if metric_type in ['all', 'categories']:
+                response_data['category_breakdown'] = NotificationMetrics.get_category_breakdown(hours)
+            
+            if metric_type in ['all', 'engagement']:
+                response_data['user_engagement'] = NotificationMetrics.get_user_engagement_stats(hours)
+            
+            if metric_type in ['all', 'health']:
+                response_data['system_health'] = NotificationMetrics.get_system_health()
+            
+            if metric_type in ['all', 'performance']:
+                response_data['performance'] = NotificationMetrics.get_performance_metrics(hours)
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated, IsAdmin])
+    def system_alerts(self, request):
+        """Get system alerts - admin only"""
+        try:
+            from .monitoring import NotificationAlerts
+            
+            alerts = NotificationAlerts.get_all_alerts()
+            
+            return Response({
+                'alerts': alerts,
+                'alert_count': len(alerts),
+                'has_critical': any(alert.get('severity') == 'critical' for alert in alerts),
+                'checked_at': timezone.now().isoformat()
+            })
+            
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsAdmin])
+    def clear_metrics_cache(self, request):
+        """Clear metrics cache - admin only"""
+        try:
+            from .monitoring import NotificationMetrics
+            
+            NotificationMetrics.clear_cache()
+            
+            return Response({
+                'message': 'Metrics cache cleared successfully',
+                'cleared_at': timezone.now().isoformat()
+            })
+            
         except Exception as e:
             return Response(
                 {"detail": str(e)},
