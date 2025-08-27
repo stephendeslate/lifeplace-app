@@ -12,6 +12,7 @@ import theme from '../utils/theme';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { LayoutProvider } from '../contexts/LayoutContext';
+import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -48,9 +49,11 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
           <AuthProvider>
             <LayoutProvider>
               <ToastProvider>
-                {children}
-                {/* Only show React Query devtools in development */}
-                {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+                <ConfirmDialogProvider>
+                  {children}
+                  {/* Only show React Query devtools in development */}
+                  {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+                </ConfirmDialogProvider>
               </ToastProvider>
             </LayoutProvider>
           </AuthProvider>

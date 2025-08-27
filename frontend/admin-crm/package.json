@@ -17,6 +17,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@hello-pangea/dnd": "^18.0.1",
+    "@hookform/resolvers": "^5.2.1",
     "@mui/icons-material": "^7.1.1",
     "@mui/material": "^7.1.1",
     "@mui/styles": "^6.4.12",
@@ -37,9 +38,11 @@
     "mui-tiptap": "^1.18.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-hook-form": "^7.62.0",
     "react-hot-toast": "^2.5.2",
     "react-router-dom": "^7.6.2",
-    "recharts": "^3.0.0"
+    "recharts": "^3.0.0",
+    "zod": "^4.1.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
