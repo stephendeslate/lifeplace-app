@@ -177,6 +177,7 @@ export interface ConversionFunnel {
 }
 
 export interface FunnelStep {
+  id: string;
   event_name: string;
   name: string;
   description?: string;

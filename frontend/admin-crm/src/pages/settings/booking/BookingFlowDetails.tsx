@@ -56,7 +56,8 @@ import {
 import { 
   BookingFlowStepFormDialog,
   BookingFlowStepsTable,
-  StepConfigurationPanel 
+  StepConfigurationPanel,
+  ImprovedStepReorderList 
 } from '../../../components/bookingflows/steps';
 import type { 
   BookingFlowStep,
@@ -974,12 +975,15 @@ export const BookingFlowDetails: React.FC = () => {
             Drag and drop steps to change their order in the booking flow.
           </Typography>
           
-          {/* REMOVED: StepReorderList component since it's not in evolved codebase */}
           <Box mt={2}>
-            <Alert severity="info">
-              Step reordering interface will be implemented when the StepReorderList component is available.
-              For now, you can edit individual step order values in the step edit dialog.
-            </Alert>
+            <ImprovedStepReorderList 
+              flowId={Number(id)}
+              steps={steps}
+              onReorderComplete={() => {
+                refetchSteps();
+                setReorderDialogOpen(false);
+              }}
+            />
           </Box>
         </DialogContent>
         <DialogActions>

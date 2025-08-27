@@ -40,6 +40,7 @@ interface StepEditorProps {
 const StepEditor: React.FC<StepEditorProps> = ({ steps, onChange }) => {
   const addStep = () => {
     const newStep: FunnelStep = {
+      id: `step-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       event_name: '',
       name: '',
       description: '',
