@@ -69,9 +69,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       storage.setTokens(data.tokens);
       storage.setUser(data.user);
       setUser(data.user);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      throw error;
+      
+      // Extract meaningful error message from API response
+      const errorMessage = error.response?.data?.detail || 
+                          error.message || 
+                          'Login failed. Please try again.';
+      
+      // Create a new error with the extracted message
+      const enhancedError = new Error(errorMessage);
+      
+      // Preserve original error properties for debugging
+      if (error.response?.status) {
+        (enhancedError as any).status = error.response.status;
+      }
+      
+      throw enhancedError;
     }
   };
 
