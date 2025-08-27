@@ -4,4 +4,5 @@ export { WorkflowTemplatesTable } from './WorkflowTemplatesTable';
 export { WorkflowTemplateForm } from './WorkflowTemplateForm';
 export { WorkflowStagesTable } from './WorkflowStagesTable';
 export { WorkflowStageFormDialog } from './WorkflowStageFormDialog';
+export { WorkflowStageReorderDialog } from './WorkflowStageReorderDialog';
 export { WorkflowVisualization } from './WorkflowVisualization';

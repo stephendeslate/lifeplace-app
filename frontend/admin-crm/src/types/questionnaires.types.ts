@@ -109,10 +109,11 @@ export interface QuestionnaireFormData {
 }
 
 export interface QuestionnaireFieldFormData {
+  id: string;
   name: string;
   type: QuestionnaireFieldType;
   required: boolean;
-  order: string;
+  order: number;
   options: string[];
 }
 

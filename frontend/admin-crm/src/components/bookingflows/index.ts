@@ -11,7 +11,7 @@ export { BookingFlowPreviewWrapper } from './flows/BookingFlowPreviewWrapper';
 export { BookingFlowStepsTable } from './steps/BookingFlowStepsTable';
 export { BookingFlowStepFormDialog } from './steps/BookingFlowStepFormDialog';
 export { StepConfigurationPanel } from './steps/StepConfigurationPanel';
-export { StepReorderList } from './steps/StepReorderList';
+export { ImprovedStepReorderList } from './steps/ImprovedStepReorderList';
 
 // Configuration components
 export {

@@ -25,7 +25,6 @@ import {
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  DragIndicator as DragIcon,
   Schedule as ScheduleIcon,
   Email as EmailIcon,
   Task as TaskIcon,
@@ -233,7 +232,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
                     onClick={() => onEdit(stage)}
                   >
                     <TableCell>
-                      <DragIcon color="action" fontSize="small" />
+                      {stage.order}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight="medium">

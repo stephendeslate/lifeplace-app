@@ -34,10 +34,11 @@ import {
 } from '../../types/questionnaires.types';
 
 const defaultFormData: QuestionnaireFieldFormData = {
+  id: '',
   name: '',
   type: 'text',
   required: false,
-  order: '1',
+  order: 1,
   options: [],
 };
 
@@ -56,10 +57,11 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
     if (open) {
       if (editingField) {
         setFormData({
+          id: editingField.id?.toString() || '',
           name: editingField.name || '',
           type: editingField.type || 'text',
           required: editingField.required ?? false,
-          order: editingField.order?.toString() || '1',
+          order: editingField.order || 1,
           options: editingField.options || [],
         });
       } else {
@@ -125,7 +127,7 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
       newErrors.name = 'Field name is required';
     }
 
-    if (!formData.order || parseInt(formData.order) < 1) {
+    if (!formData.order || formData.order < 1) {
       newErrors.order = 'Order must be a positive number';
     }
 
@@ -144,7 +146,7 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
       name: formData.name.trim(),
       type: formData.type,
       required: formData.required,
-      order: parseInt(formData.order) || 1,
+      order: formData.order || 1,
       options: (formData.type === 'select' || formData.type === 'multi-select') 
         ? formData.options.filter(opt => opt.trim()) 
         : null,

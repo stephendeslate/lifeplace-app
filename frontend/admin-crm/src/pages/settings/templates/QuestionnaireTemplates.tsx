@@ -27,12 +27,14 @@ import {
   FilterList as FilterIcon,
   Refresh as RefreshIcon,
   Close as CloseIcon,
+  SwapVert as ReorderIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useQuestionnaires } from '../../../hooks/useQuestionnaires';
 import { QuestionnairesTable } from '../../../components/questionnaires/QuestionnairesTable';
 import { QuestionnaireFormDialog } from '../../../components/questionnaires/QuestionnaireFormDialog';
 import { QuestionnairePreview } from '../../../components/questionnaires/QuestionnairePreview';
+import { QuestionnaireReorderDialog } from '../../../components/questionnaires/QuestionnaireReorderDialog';
 import type { 
   Questionnaire, 
   QuestionnaireFilters,
@@ -46,6 +48,7 @@ export const QuestionnaireTemplates: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reorderDialogOpen, setReorderDialogOpen] = useState(false);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState<Questionnaire | null>(null);
   const [previewingQuestionnaire, setPreviewingQuestionnaire] = useState<Questionnaire | null>(null);
   const [questionnaireToDelete, setQuestionnaireToDelete] = useState<Questionnaire | null>(null);
@@ -163,14 +166,24 @@ export const QuestionnaireTemplates: React.FC = () => {
             Create and manage questionnaire templates for gathering client information
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateNew}
-          sx={{ minWidth: 160 }}
-        >
-          New Questionnaire
-        </Button>
+        <Box display="flex" gap={2}>
+          <Button
+            variant="outlined"
+            startIcon={<ReorderIcon />}
+            onClick={() => setReorderDialogOpen(true)}
+            disabled={questionnaires.length === 0}
+          >
+            Reorder
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateNew}
+            sx={{ minWidth: 160 }}
+          >
+            New Questionnaire
+          </Button>
+        </Box>
       </Box>
 
       {/* Info Alert */}
@@ -307,6 +320,17 @@ export const QuestionnaireTemplates: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Reorder Dialog */}
+      <QuestionnaireReorderDialog
+        open={reorderDialogOpen}
+        onClose={() => setReorderDialogOpen(false)}
+        questionnaires={questionnaires}
+        onReorderComplete={() => {
+          refetchQuestionnaires();
+          setReorderDialogOpen(false);
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog
