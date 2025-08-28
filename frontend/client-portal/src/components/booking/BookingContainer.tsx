@@ -27,6 +27,7 @@ import {
   Schedule,
   Warning,
 } from '@mui/icons-material';
+import { TimezoneNoticeBanner } from '../common/TimezoneDisplay';
 // import { useNavigate } from 'react-router-dom'; // Available for future use
 import { useBooking } from '../../contexts/BookingContext';
 import { useSessionTimer } from '../../hooks/booking/useBookingCore';
@@ -101,6 +102,8 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
 
   return (
     <Box sx={{ backgroundColor: 'grey.50', minHeight: 'calc(100vh - 160px)' }}>
+      {/* Timezone Notice Banner */}
+      <TimezoneNoticeBanner context="booking" />
       {/* Loading Backdrop */}
       <Backdrop
         sx={{ color: '#fff', zIndex: theme.zIndex.drawer + 1 }}

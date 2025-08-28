@@ -365,7 +365,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Schedule sx={{ fontSize: 12 }} />
-                      Created: {new Date(notification.created_at).toLocaleString()}
+                      Created: {new Date(notification.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })} PHT
                     </Typography>
                     
                     {notification.delivered_via && notification.delivered_via.length > 0 && (

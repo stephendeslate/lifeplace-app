@@ -146,7 +146,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Manila'  # All events happen in the Philippines
 
 USE_I18N = True
 
@@ -508,3 +508,8 @@ NOTIFICATION_AUTO_READ_DAYS = int(os.getenv('NOTIFICATION_AUTO_READ_DAYS', '30')
 
 # Site configuration
 SITE_NAME = os.getenv('SITE_NAME', 'LifePlace')
+
+# Business timezone configuration
+BUSINESS_TIMEZONE = 'Asia/Manila'  # Primary business location (Philippines)
+BUSINESS_TIMEZONE_DISPLAY = 'PHT'  # Display abbreviation
+BUSINESS_TIMEZONE_OFFSET = '+08:00'  # UTC offset

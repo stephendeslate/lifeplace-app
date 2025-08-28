@@ -76,9 +76,28 @@ class User(AbstractUser):
 
 class UserProfile(BaseModel):
     """Profile for User with role-specific fields"""
+    TIMEZONE_DISPLAY_CHOICES = [
+        ('business_only', 'Philippines Time Only'),
+        ('business_with_local', 'Philippines + Local Time'),
+        ('dual_display', 'Both Timezones Side by Side'),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     phone = models.CharField(max_length=20, blank=True, null=True)
     company = models.CharField(max_length=200, blank=True, null=True)
+    
+    # Timezone preferences
+    display_timezone = models.CharField(
+        max_length=50,
+        default='Asia/Manila',
+        help_text="User's display timezone preference (for admin users)"
+    )
+    timezone_display_mode = models.CharField(
+        max_length=20,
+        choices=TIMEZONE_DISPLAY_CHOICES,
+        default='business_only',
+        help_text="How to display event times to this user"
+    )
     
     class Meta:
         verbose_name = 'User Profile'

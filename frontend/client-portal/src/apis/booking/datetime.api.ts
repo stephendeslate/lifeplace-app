@@ -185,17 +185,19 @@ export class DateTimeApi {
   }
 
   /**
-   * Format date for display
+   * Format date for display - always Philippines timezone
    */
   static formatDate(dateString: string): string {
     if (!dateString) return '';
     
     try {
-      return new Date(dateString).toLocaleDateString('en-PH', {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-PH', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
+        timeZone: 'Asia/Manila'
       });
     } catch {
       return dateString;
@@ -203,7 +205,7 @@ export class DateTimeApi {
   }
 
   /**
-   * Format time for display
+   * Format time for display - always Philippines timezone with PHT indicator
    */
   static formatTime(timeString: string): string {
     if (!timeString) return '';
@@ -213,11 +215,13 @@ export class DateTimeApi {
       const date = new Date();
       date.setHours(parseInt(hours), parseInt(minutes));
       
-      return date.toLocaleTimeString('en-PH', {
+      const formatted = date.toLocaleTimeString('en-PH', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
+        timeZone: 'Asia/Manila'
       });
+      return `${formatted} PHT`;
     } catch {
       return timeString;
     }

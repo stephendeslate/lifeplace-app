@@ -7,7 +7,8 @@ import { useBookingSession } from '../../hooks/booking/useBookingCore';
 
 // Import step components
 import { IntroductionStep } from './steps/IntroductionStep';
-import { DateTimeStep } from './steps/DateTimeStep';
+// import { DateTimeStep } from './steps/DateTimeStep'; // Replaced with NewDateTimeStep
+import { NewDateTimeStep } from './steps/NewDateTimeStep';
 import { ContactInfoStep } from './steps/ContactInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
 import { QuestionnaireStep } from './steps/QuestionnaireStep';
@@ -144,7 +145,7 @@ export const StepRenderer: React.FC = () => {
 
     case 'date_time':
       return (
-        <DateTimeStep
+        <NewDateTimeStep
           stepData={state.stepData.date_time}
           config={configuration_data as DateTimeStepConfiguration | null}
           onDataChange={handleDateTimeChange}
