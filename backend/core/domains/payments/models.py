@@ -20,6 +20,7 @@ class Payment(BaseModel):
     payment_number = models.CharField(max_length=50, unique=True)
     event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Payment currency (ISO 4217 code)")
     status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
     due_date = models.DateField()
     paid_on = models.DateField(null=True, blank=True)
@@ -239,6 +240,7 @@ class PaymentTransaction(BaseModel):
     gateway = models.ForeignKey(PaymentGateway, on_delete=models.PROTECT)
     transaction_id = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Transaction currency (ISO 4217 code)")
     status = models.CharField(max_length=50, choices=[
         ('PENDING', 'Pending'),
         ('PROCESSING', 'Processing'),
@@ -272,6 +274,7 @@ class PaymentPlan(BaseModel):
     event = models.OneToOneField('events.Event', on_delete=models.CASCADE, related_name='payment_plan')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     down_payment_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Payment plan currency (ISO 4217 code)")
     down_payment_due_date = models.DateField()
     number_of_installments = models.PositiveIntegerField()
     frequency = models.CharField(max_length=20, choices=[
@@ -412,6 +415,7 @@ class Refund(BaseModel):
     """Refund records for payments"""
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='refunds')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Refund currency (ISO 4217 code)")
     reason = models.TextField()
     status = models.CharField(max_length=20, choices=[
         ('PENDING', 'Pending'),
@@ -459,6 +463,7 @@ class Invoice(BaseModel):
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Invoice currency (ISO 4217 code)")
     issue_date = models.DateField()
     due_date = models.DateField()
     status = models.CharField(max_length=20, choices=[
