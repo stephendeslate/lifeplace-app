@@ -24,8 +24,7 @@ import {
   DialogContentText,
   DialogTitle,
   Tab,
-  Tabs,
-  LinearProgress
+  Tabs
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -46,7 +45,7 @@ import {
   Assignment as QuestionnaireIcon,
   Folder as FilesIcon,
   Note as NoteIcon,
-  AccountTree as WorkflowIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
@@ -61,6 +60,18 @@ import { EventContracts } from '../../components/events/EventContracts';
 import { EventInvoices } from '../../components/events/EventInvoices';
 import { EventFiles } from '../../components/events/EventFiles';
 import { NotesList } from '../../components/notes';
+import { 
+  ActivityTimeline,
+  QuickActions,
+  FinancialSummary,
+  EntityNavigation,
+  WorkflowVisualization,
+  createEventActions,
+  createClientReference,
+  calculateEventFinancials,
+  type ActivityItem,
+  type QuickAction,
+} from '../../components/common';
 import { EVENT_STATUSES } from '../../types/events.types';
 
 interface TabPanelProps {
@@ -130,6 +141,94 @@ export const EventProfile: React.FC = () => {
       q.event_type === event?.event_type || q.event_type === null
     ).length;
   }, [allQuestionnaires, event?.event_type]);
+
+  // Enhanced components data
+  const financialMetrics = useMemo(() => {
+    return event ? calculateEventFinancials(event) : [];
+  }, [event]);
+
+  const quickActions: QuickAction[] = useMemo(() => {
+    if (!event) return [];
+    return createEventActions(event.id, (actionType: string, eventId: number) => {
+      // Handle quick actions
+      console.log('Quick action:', actionType, 'for event:', eventId);
+      // In a real implementation, these would trigger actual actions
+      switch (actionType) {
+        case 'send-contract':
+          // Open contract sending dialog
+          break;
+        case 'generate-invoice':
+          // Open invoice generation dialog
+          break;
+        case 'send-message':
+          // Open message dialog
+          break;
+        case 'create-quote':
+          // Navigate to quote creation
+          break;
+        case 'add-note':
+          setTabValue(7); // Switch to notes tab
+          break;
+      }
+    });
+  }, [event]);
+
+  const relatedEntities = useMemo(() => {
+    const entities = [];
+    if (client) {
+      entities.push(createClientReference(client));
+    }
+    return entities;
+  }, [client]);
+
+  const activityItems: ActivityItem[] = useMemo(() => {
+    const items: ActivityItem[] = [];
+    
+    // Add communications as activities
+    communications.forEach(comm => {
+      items.push({
+        id: `comm-${comm.id}`,
+        type: 'communication',
+        title: comm.subject || comm.template_name,
+        description: comm.body?.substring(0, 100) + '...',
+        timestamp: comm.sent_at || comm.created_at,
+        status: 'completed',
+        relatedEntity: client ? {
+          type: 'client',
+          id: clientId,
+          name: client.first_name + ' ' + client.last_name
+        } : undefined,
+        user: { name: 'System' }, // This would come from the API
+      });
+    });
+
+    // Add event status changes as activities
+    if (event) {
+      items.push({
+        id: `event-created-${event.id}`,
+        type: 'event',
+        title: 'Event Created',
+        description: `Event "${event.name}" was created`,
+        timestamp: event.created_at,
+        status: 'completed',
+        user: { name: 'System' },
+      });
+
+      if (event.updated_at !== event.created_at) {
+        items.push({
+          id: `event-updated-${event.id}`,
+          type: 'status_change',
+          title: 'Event Updated',
+          description: `Event status changed to ${event.status}`,
+          timestamp: event.updated_at,
+          status: 'completed',
+          user: { name: 'System' },
+        });
+      }
+    }
+
+    return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [communications, event, client, clientId]);
 
   useEffect(() => {
     if (event) {
@@ -446,87 +545,83 @@ export const EventProfile: React.FC = () => {
           </Card>
         </Box>
 
-        {/* Workflow Progress */}
+        {/* Quick Actions */}
         <Box sx={{ flex: 1 }}>
-          <Card>
-            <CardContent>
-              {typeof event.workflow_progress === 'number' && event.workflow_progress > 0 ? (
-                <Stack spacing={2}>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <WorkflowIcon color="primary" />
-                    <Typography variant="h6">Workflow Progress</Typography>
-                  </Box>
-                  <Box>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                      <Typography variant="body2" color="text.secondary">
-                        Current Stage: {event.current_stage_name || 'Unknown'}
-                      </Typography>
-                      <Typography variant="body2" fontWeight="medium">
-                        {Math.round(event.workflow_progress)}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={event.workflow_progress}
-                      sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: 'grey.200',
-                        '& .MuiLinearProgress-bar': {
-                          borderRadius: 4,
-                        },
-                      }}
-                    />
-                  </Box>
-                </Stack>
-              ) : event.workflow_template_name ? (
-                <Stack spacing={2}>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <WorkflowIcon color="primary" />
-                    <Typography variant="h6">Workflow Template</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight="medium">
-                      {event.workflow_template_name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Workflow assigned but not yet started
-                    </Typography>
-                  </Box>
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                      This event has a workflow template assigned but the workflow hasn't been initiated yet.
-                    </Typography>
-                  </Alert>
-                </Stack>
-              ) : (
-                <Stack spacing={2} alignItems="center" justifyContent="center" sx={{ py: 4 }}>
-                  <WorkflowIcon sx={{ fontSize: 48, color: 'grey.400' }} />
-                  <Typography variant="h6" color="text.secondary">
-                    No Workflow Assigned
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" textAlign="center">
-                    This event doesn't have a workflow template assigned yet.
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<EditIcon />}
-                    onClick={handleEditEvent}
-                    size="small"
-                  >
-                    Assign Workflow
-                  </Button>
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
+          <QuickActions 
+            actions={quickActions}
+            compactMode={true}
+          />
         </Box>
       </Box>
+
+      {/* Enhanced Sections */}
+      <Stack spacing={3} mb={3}>
+        {/* Financial Summary */}
+        <FinancialSummary
+          title="Event Financials"
+          metrics={financialMetrics}
+          compactMode={false}
+        />
+
+        {/* Related Entities & Workflow in a row */}
+        <Box 
+          sx={{ 
+            display: 'flex',
+            flexDirection: { xs: 'column', lg: 'row' },
+            gap: 3,
+          }}
+        >
+          {/* Related Entities */}
+          <Box sx={{ flex: 1 }}>
+            <EntityNavigation
+              title="Related"
+              entities={relatedEntities}
+              layout="compact"
+              maxVisible={5}
+            />
+          </Box>
+
+          {/* Enhanced Workflow Visualization */}
+          <Box sx={{ flex: 2 }}>
+            <WorkflowVisualization
+              workflowName={event.workflow_template_name}
+              stages={[]} // This would come from actual workflow data
+              currentStage={event.current_stage || undefined}
+              overallProgress={event.workflow_progress}
+              layout="horizontal"
+              showTasks={false}
+              showProgress={true}
+            />
+          </Box>
+        </Box>
+
+        {/* Activity Timeline */}
+        <ActivityTimeline
+          activities={activityItems}
+          maxHeight="400px"
+          showFilters={true}
+          onRefresh={() => {
+            // Refresh all data
+            refetch();
+          }}
+        />
+      </Stack>
 
       {/* Tabs */}
       <Card>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
+          <Tabs 
+            value={tabValue} 
+            onChange={(_, newValue) => setTabValue(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+          >
+            <Tab 
+              label={`Activity (${activityItems.length})`}
+              icon={<ScheduleIcon />} 
+              iconPosition="start"
+            />
             <Tab 
               label={`Communications (${communicationsCount})`} 
               icon={<MessageIcon />} 
@@ -566,8 +661,20 @@ export const EventProfile: React.FC = () => {
         </Box>
 
         <CardContent>
-          {/* Communications Tab */}
+          {/* Activity Tab */}
           <TabPanel value={tabValue} index={0}>
+            <ActivityTimeline
+              activities={activityItems}
+              maxHeight="600px"
+              showFilters={true}
+              onRefresh={() => {
+                refetch();
+              }}
+            />
+          </TabPanel>
+
+          {/* Communications Tab */}
+          <TabPanel value={tabValue} index={1}>
             <EventCommunications
               event={event}
               clientId={clientId}
@@ -577,32 +684,32 @@ export const EventProfile: React.FC = () => {
           </TabPanel>
 
           {/* Quotes Tab */}
-          <TabPanel value={tabValue} index={1}>
+          <TabPanel value={tabValue} index={2}>
             <EventQuotes event={event} />
           </TabPanel>
 
           {/* Contracts Tab */}
-          <TabPanel value={tabValue} index={2}>
+          <TabPanel value={tabValue} index={3}>
             <EventContracts event={event} />
           </TabPanel>
 
           {/* Invoices Tab */}
-          <TabPanel value={tabValue} index={3}>
+          <TabPanel value={tabValue} index={4}>
             <EventInvoices event={event} />
           </TabPanel>
 
           {/* Questionnaires Tab */}
-          <TabPanel value={tabValue} index={4}>
+          <TabPanel value={tabValue} index={5}>
             <EventQuestionnaires event={event} />
           </TabPanel>
 
           {/* Files Tab */}
-          <TabPanel value={tabValue} index={5}>
+          <TabPanel value={tabValue} index={6}>
             <EventFiles event={event} />
           </TabPanel>
 
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={6}>
+          <TabPanel value={tabValue} index={7}>
             <NotesList
               contentType="event"
               objectId={eventId}

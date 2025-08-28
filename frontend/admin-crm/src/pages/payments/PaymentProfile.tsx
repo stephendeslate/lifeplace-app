@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/pages/payments/PaymentProfile.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -56,6 +56,15 @@ import { useLayout } from '../../contexts/LayoutContext';
 import { usePaymentManagement } from '../../hooks/usePayments';
 import { PaymentForm } from '../../components/payments/PaymentForm';
 import { NotesList } from '../../components/notes';
+import { 
+  ActivityTimeline,
+  QuickActions,
+  EntityNavigation,
+  createPaymentActions,
+  createEventReference,
+  type ActivityItem,
+  type QuickAction,
+} from '../../components/common';
 import { PAYMENT_STATUSES } from '../../types/payments.types';
 import type { PaymentStatus } from '../../types/payments.types';
 
@@ -71,6 +80,17 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
       {value === index && <Box>{children}</Box>}
     </div>
   );
+};
+
+// Utility function moved to top to avoid initialization error
+const formatCurrency = (amount: string | number) => {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
 };
 
 export const PaymentProfile: React.FC = () => {
@@ -101,6 +121,92 @@ export const PaymentProfile: React.FC = () => {
     isSendingReceipt,
     refetchPayment,
   } = usePaymentManagement(paymentId);
+
+  // Enhanced components data
+  const quickActions: QuickAction[] = useMemo(() => {
+    if (!payment) return [];
+    return createPaymentActions(payment.id, payment.status, (actionType: string, paymentId: number) => {
+      console.log('Quick action:', actionType, 'for payment:', paymentId);
+      switch (actionType) {
+        case 'process-payment':
+          handleProcessPayment();
+          break;
+        case 'send-receipt':
+          handleSendReceipt();
+          break;
+        case 'send-reminder':
+          // Send payment reminder functionality
+          break;
+        case 'create-refund':
+          // Open refund creation dialog
+          break;
+        case 'add-note':
+          setTabValue(5); // Switch to notes tab
+          break;
+      }
+    });
+  }, [payment]);
+
+  const relatedEntities = useMemo(() => {
+    const entities = [];
+    if (payment?.event_details) {
+      entities.push(createEventReference({
+        id: payment.event_details.id,
+        name: payment.event_details.name,
+        start_date: payment.event_details.start_date,
+        status: 'CONFIRMED', // Default status since it's not in payment details
+        client_name: payment.event_details.client_name,
+      }));
+    }
+    return entities;
+  }, [payment]);
+
+  const activityItems: ActivityItem[] = useMemo(() => {
+    const items: ActivityItem[] = [];
+    
+    if (payment) {
+      // Payment creation activity
+      items.push({
+        id: `payment-created-${payment.id}`,
+        type: 'payment',
+        title: 'Payment Created',
+        description: `Payment ${payment.payment_number} was created for ${formatCurrency(payment.amount)}`,
+        timestamp: payment.created_at,
+        status: 'completed',
+        user: { name: 'System' },
+      });
+
+      // Payment status changes
+      if (payment.status === 'COMPLETED' && payment.paid_on) {
+        items.push({
+          id: `payment-completed-${payment.id}`,
+          type: 'payment',
+          title: 'Payment Completed',
+          description: `Payment was successfully processed`,
+          timestamp: payment.paid_on,
+          status: 'completed',
+          user: { name: 'System' },
+        });
+      }
+
+      // Due date reminders
+      const today = new Date();
+      const dueDate = new Date(payment.due_date);
+      if (payment.status === 'PENDING' && dueDate < today) {
+        items.push({
+          id: `payment-overdue-${payment.id}`,
+          type: 'payment',
+          title: 'Payment Overdue',
+          description: `Payment is ${Math.ceil((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))} days overdue`,
+          timestamp: payment.due_date,
+          status: 'failed',
+          user: { name: 'System' },
+        });
+      }
+    }
+
+    return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [payment]);
   
 
   useEffect(() => {
@@ -216,13 +322,6 @@ export const PaymentProfile: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: string) => {
-    const num = parseFloat(amount);
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(num);
-  };
 
   if (isLoadingPayment) {
     return (
@@ -543,10 +642,62 @@ export const PaymentProfile: React.FC = () => {
         </Box>
       </Box>
 
+      {/* Enhanced Sections */}
+      <Stack spacing={3} mb={3}>
+        {/* Quick Actions & Related Entities */}
+        <Box 
+          sx={{ 
+            display: 'flex',
+            flexDirection: { xs: 'column', lg: 'row' },
+            gap: 3,
+          }}
+        >
+          {/* Quick Actions */}
+          <Box sx={{ flex: 1 }}>
+            <QuickActions 
+              actions={quickActions}
+              title="Payment Actions"
+              compactMode={false}
+            />
+          </Box>
+
+          {/* Related Entities */}
+          <Box sx={{ flex: 1 }}>
+            <EntityNavigation
+              title="Related"
+              entities={relatedEntities}
+              layout="compact"
+              maxVisible={3}
+            />
+          </Box>
+        </Box>
+
+        {/* Activity Timeline */}
+        <ActivityTimeline
+          activities={activityItems}
+          maxHeight="300px"
+          showFilters={false}
+          onRefresh={() => {
+            refetchPayment();
+          }}
+        />
+      </Stack>
+
       {/* Tabs */}
       <Card>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
+          <Tabs 
+            value={tabValue} 
+            onChange={(_, newValue) => setTabValue(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+          >
+            <Tab 
+              label={`Activity (${activityItems.length})`}
+              icon={<EventIcon />} 
+              iconPosition="start"
+            />
             <Tab 
               label="Payment Schedule" 
               icon={<ScheduleIcon />} 
@@ -578,8 +729,20 @@ export const PaymentProfile: React.FC = () => {
         </Box>
 
         <CardContent>
-          {/* Payment Schedule Tab */}
+          {/* Activity Tab */}
           <TabPanel value={tabValue} index={0}>
+            <ActivityTimeline
+              activities={activityItems}
+              maxHeight="600px"
+              showFilters={true}
+              onRefresh={() => {
+                refetchPayment();
+              }}
+            />
+          </TabPanel>
+
+          {/* Payment Schedule Tab */}
+          <TabPanel value={tabValue} index={1}>
             {isLoadingPaymentPlan ? (
               <Box display="flex" justifyContent="center" p={4}>
                 <CircularProgress />
@@ -668,7 +831,7 @@ export const PaymentProfile: React.FC = () => {
           </TabPanel>
 
           {/* Invoice Details Tab */}
-          <TabPanel value={tabValue} index={1}>
+          <TabPanel value={tabValue} index={2}>
             {isLoadingInvoice ? (
               <Box display="flex" justifyContent="center" p={4}>
                 <CircularProgress />
@@ -765,7 +928,7 @@ export const PaymentProfile: React.FC = () => {
           </TabPanel>
 
           {/* Contracts Tab - placeholder */}
-          <TabPanel value={tabValue} index={2}>
+          <TabPanel value={tabValue} index={3}>
             <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
               <ContractIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
               <Typography variant="h6" gutterBottom>
@@ -778,7 +941,7 @@ export const PaymentProfile: React.FC = () => {
           </TabPanel>
           
           {/* Questionnaires Tab - placeholder */}
-          <TabPanel value={tabValue} index={3}>
+          <TabPanel value={tabValue} index={4}>
             <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
               <QuestionnaireIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
               <Typography variant="h6" gutterBottom>
@@ -791,7 +954,7 @@ export const PaymentProfile: React.FC = () => {
           </TabPanel>
           
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={4}>
+          <TabPanel value={tabValue} index={5}>
             <NotesList
               contentType="payment"
               objectId={paymentId}
