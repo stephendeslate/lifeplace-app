@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/pages/clients/ClientProfile.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -43,7 +43,8 @@ import {
   Assignment as ContractIcon,
   AttachMoney as QuoteIcon,
   Payment as InvoiceIcon,
-  Message as MessageIcon
+  Message as MessageIcon,
+  Schedule as ScheduleIcon
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useClients } from '../../hooks/useClients';
@@ -59,6 +60,17 @@ import { ClientQuotes } from '../../components/clients/ClientQuotes';
 import { ClientContracts } from '../../components/clients/ClientContracts';
 import { ClientInvoices } from '../../components/clients/ClientInvoices';
 import { NotesList } from '../../components/notes';
+import { 
+  ActivityTimeline,
+  QuickActions,
+  FinancialSummary,
+  EntityNavigation,
+  createClientActions,
+  createEventReference,
+  calculateClientFinancials,
+  type ActivityItem,
+  type QuickAction,
+} from '../../components/common';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -107,6 +119,92 @@ export const ClientProfile: React.FC = () => {
   const { data: quotes = [] } = useQuotesForClient(clientId);
   const { data: contracts = [] } = useContractsForClient(clientId);
   const { data: invoices = [] } = useInvoicesForClient(clientId);
+
+  // Enhanced components data
+  const financialMetrics = useMemo(() => {
+    return calculateClientFinancials(events);
+  }, [events]);
+
+  const quickActions: QuickAction[] = useMemo(() => {
+    if (!client) return [];
+    return createClientActions(client.id, (actionType: string, clientId: number) => {
+      console.log('Quick action:', actionType, 'for client:', clientId);
+      switch (actionType) {
+        case 'create-event':
+          // Navigate to event creation with client pre-selected
+          break;
+        case 'send-message':
+          setSendMessageOpen(true);
+          break;
+        case 'call-client':
+          // Initiate call functionality
+          break;
+        case 'video-meeting':
+          // Start video meeting
+          break;
+        case 'send-invoice':
+          // Open invoice creation
+          break;
+        case 'add-note':
+          setTabValue(6); // Switch to notes tab
+          break;
+      }
+    });
+  }, [client]);
+
+  const relatedEvents = useMemo(() => {
+    return events.map(event => createEventReference(event));
+  }, [events]);
+
+  const activityItems: ActivityItem[] = useMemo(() => {
+    const items: ActivityItem[] = [];
+    
+    // Add communications as activities
+    communications.forEach(comm => {
+      items.push({
+        id: `comm-${comm.id}`,
+        type: 'communication',
+        title: comm.subject || comm.template_name,
+        description: comm.body?.substring(0, 100) + '...',
+        timestamp: comm.sent_at || comm.created_at,
+        status: 'completed',
+        user: { name: 'System' },
+      });
+    });
+
+    // Add event activities
+    events.forEach(event => {
+      items.push({
+        id: `event-${event.id}`,
+        type: 'event',
+        title: `Event: ${event.name}`,
+        description: `Event status: ${event.status}`,
+        timestamp: event.created_at,
+        status: 'completed',
+        relatedEntity: {
+          type: 'event',
+          id: event.id,
+          name: event.name
+        },
+        user: { name: 'System' },
+      });
+    });
+
+    // Add client registration activity
+    if (client) {
+      items.push({
+        id: `client-registered-${client.id}`,
+        type: 'status_change',
+        title: 'Client Registered',
+        description: `${client.first_name} ${client.last_name} joined the system`,
+        timestamp: client.date_joined,
+        status: 'completed',
+        user: { name: 'System' },
+      });
+    }
+
+    return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [communications, events, client]);
 
   useEffect(() => {
     if (client) {
@@ -311,85 +409,73 @@ export const ClientProfile: React.FC = () => {
           </Card>
         </Box>
 
-        {/* Summary Stats */}
+        {/* Quick Actions */}
         <Box sx={{ flex: 1 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Overview
-              </Typography>
-              <Stack spacing={2}>
-                <Stack spacing={1.5}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <EventIcon color="action" fontSize="small" />
-                      <Typography variant="body2" color="text.secondary">
-                        Total Events
-                      </Typography>
-                    </Box>
-                    <Typography variant="h6" color="primary">
-                      {events.length}
-                    </Typography>
-                  </Box>
-                  
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <MessageIcon color="action" fontSize="small" />
-                      <Typography variant="body2" color="text.secondary">
-                        Communications
-                      </Typography>
-                    </Box>
-                    <Typography variant="h6" color="primary">
-                      {communications.length}
-                    </Typography>
-                  </Box>
-                  
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <QuoteIcon color="action" fontSize="small" />
-                      <Typography variant="body2" color="text.secondary">
-                        Quotes
-                      </Typography>
-                    </Box>
-                    <Typography variant="h6" color="primary">
-                      {quotes.length}
-                    </Typography>
-                  </Box>
-                  
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <ContractIcon color="action" fontSize="small" />
-                      <Typography variant="body2" color="text.secondary">
-                        Contracts
-                      </Typography>
-                    </Box>
-                    <Typography variant="h6" color="primary">
-                      {contracts.length}
-                    </Typography>
-                  </Box>
-                  
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <InvoiceIcon color="action" fontSize="small" />
-                      <Typography variant="body2" color="text.secondary">
-                        Invoices
-                      </Typography>
-                    </Box>
-                    <Typography variant="h6" color="primary">
-                      {invoices.length}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Stack>
-            </CardContent>
-          </Card>
+          <QuickActions 
+            actions={quickActions}
+            compactMode={true}
+          />
         </Box>
       </Box>
+
+      {/* Enhanced Sections */}
+      <Stack spacing={3} mb={3}>
+        {/* Financial Summary */}
+        <FinancialSummary
+          title="Client Financials"
+          metrics={financialMetrics}
+          compactMode={false}
+        />
+
+        {/* Related Events & Activity Timeline */}
+        <Box 
+          sx={{ 
+            display: 'flex',
+            flexDirection: { xs: 'column', lg: 'row' },
+            gap: 3,
+          }}
+        >
+          {/* Related Events */}
+          <Box sx={{ flex: 1 }}>
+            <EntityNavigation
+              title="Recent Events"
+              entities={relatedEvents}
+              layout="list"
+              maxVisible={3}
+              showViewAll={true}
+              onViewAll={() => {
+                // Navigate to events filtered by client
+                console.log('Navigate to client events');
+              }}
+            />
+          </Box>
+
+          {/* Activity Timeline */}
+          <Box sx={{ flex: 2 }}>
+            <ActivityTimeline
+              activities={activityItems}
+              maxHeight="400px"
+              showFilters={false}
+            />
+          </Box>
+        </Box>
+      </Stack>
 
       {/* Tabs */}
       <Card>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
+          <Tabs 
+            value={tabValue} 
+            onChange={(_, newValue) => setTabValue(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+          >
+            <Tab 
+              label={`Activity (${activityItems.length})`}
+              icon={<ScheduleIcon />} 
+              iconPosition="start"
+            />
             <Tab 
               label={`Events (${events.length})`} 
               icon={<EventIcon />} 
@@ -424,8 +510,17 @@ export const ClientProfile: React.FC = () => {
         </Box>
 
         <CardContent>
-          {/* Events Tab */}
+          {/* Activity Tab */}
           <TabPanel value={tabValue} index={0}>
+            <ActivityTimeline
+              activities={activityItems}
+              maxHeight="600px"
+              showFilters={true}
+            />
+          </TabPanel>
+
+          {/* Events Tab */}
+          <TabPanel value={tabValue} index={1}>
             {isLoadingEvents ? (
               <Box display="flex" justifyContent="center" p={4}>
                 <CircularProgress />
@@ -468,27 +563,27 @@ export const ClientProfile: React.FC = () => {
           </TabPanel>
 
           {/* Communications Tab */}
-          <TabPanel value={tabValue} index={1}>
+          <TabPanel value={tabValue} index={2}>
             <CommunicationRecords clientId={clientId} />
           </TabPanel>
 
           {/* Quotes Tab */}
-          <TabPanel value={tabValue} index={2}>
+          <TabPanel value={tabValue} index={3}>
             <ClientQuotes client={client} />
           </TabPanel>
 
           {/* Contracts Tab */}
-          <TabPanel value={tabValue} index={3}>
+          <TabPanel value={tabValue} index={4}>
             <ClientContracts client={client} />
           </TabPanel>
 
           {/* Invoices Tab */}
-          <TabPanel value={tabValue} index={4}>
+          <TabPanel value={tabValue} index={5}>
             <ClientInvoices client={client} />
           </TabPanel>
 
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={5}>
+          <TabPanel value={tabValue} index={6}>
             <NotesList
               contentType="client"
               objectId={clientId}

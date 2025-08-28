@@ -39,7 +39,7 @@ import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } 
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
-import { PaymentsOverview } from './pages/payments';
+import { PaymentsOverview, PaymentProfile } from './pages/payments';
 import { FunnelAnalytics } from './pages/analytics/funnels/FunnelAnalytics';
 
 // Protected Route Component
@@ -275,12 +275,20 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Payments Route */}
+      {/* Payments Routes */}
       <Route
         path="/payments"
         element={
           <ProtectedRoute>
             <PaymentsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments/:id"
+        element={
+          <ProtectedRoute>
+            <PaymentProfile />
           </ProtectedRoute>
         }
       />

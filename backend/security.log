@@ -31,3 +31,15 @@ DETAIL:  Failing row contains (8, 2025-08-28 00:11:57.580745+00, LOGIN_SUCCESS, 
 DETAIL:  Failing row contains (9, 2025-08-28 00:26:31.93239+00, LOGIN_SUCCESS, LOW, null, Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537...., 127.0.0.1, , POST, /api/users/login/, http://localhost:5173/, User stephendeslate@gmail.com logged in successfully, {"user_id": 1, "logged_at": "2025-08-28T00:26:31.932299+00:00", ..., 10, f, 1).
 
 🔒 SECURITY 2025-08-28 08:26:31,934 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully (IP: 127.0.0.1, User: None)
+🔒 SECURITY 2025-08-28 09:46:28,033 ERROR Failed to log security event: null value in column "username" of relation "security_events" violates not-null constraint
+DETAIL:  Failing row contains (10, 2025-08-28 01:46:28.031069+00, LOGIN_SUCCESS, LOW, null, Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537...., 127.0.0.1, , POST, /api/users/login/, http://localhost:5173/, User stephendeslate@gmail.com logged in successfully, {"user_id": 1, "logged_at": "2025-08-28T01:46:28.030968+00:00", ..., 10, f, 1).
+
+🔒 SECURITY 2025-08-28 09:46:28,033 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully (IP: 127.0.0.1, User: None)
+🔒 SECURITY 2025-08-28 10:11:47,166 ERROR Failed to log security event: null value in column "username" of relation "security_events" violates not-null constraint
+DETAIL:  Failing row contains (11, 2025-08-28 02:11:47.164733+00, LOGIN_SUCCESS, LOW, null, Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537...., 127.0.0.1, , POST, /api/users/login/, http://localhost:5173/, User stephendeslate@gmail.com logged in successfully, {"user_id": 1, "logged_at": "2025-08-28T02:11:47.164642+00:00", ..., 10, f, 1).
+
+🔒 SECURITY 2025-08-28 10:11:47,166 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully (IP: 127.0.0.1, User: None)
+🔒 SECURITY 2025-08-28 10:21:02,373 ERROR Failed to log security event: null value in column "username" of relation "security_events" violates not-null constraint
+DETAIL:  Failing row contains (12, 2025-08-28 02:21:02.372393+00, LOGIN_SUCCESS, LOW, null, Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537...., 127.0.0.1, , POST, /api/users/login/, http://localhost:5173/, User stephendeslate@gmail.com logged in successfully, {"user_id": 1, "logged_at": "2025-08-28T02:21:02.372305+00:00", ..., 10, f, 1).
+
+🔒 SECURITY 2025-08-28 10:21:02,373 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully (IP: 127.0.0.1, User: None)
