@@ -75,16 +75,37 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
     }
   }, [data, onDataChange, onValidate]);
 
-  // Handle date change
+  // Handle date change - ensure we save in Philippines timezone format
   const handleDateChange = useCallback((date: Date | null) => {
-    const dateString = date ? date.toISOString().split('T')[0] : '';
-    updateData({ start_date: dateString });
+    if (!date) {
+      updateData({ start_date: '' });
+      return;
+    }
+    
+    // Format date as YYYY-MM-DD in Philippines timezone
+    const philippinesDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Manila'
+    }).format(date);
+    
+    updateData({ start_date: philippinesDate });
   }, [updateData]);
 
-  // Handle time change
+  // Handle time change - ensure we save in Philippines timezone format
   const handleTimeChange = useCallback((time: Date | null) => {
-    const timeString = time ? time.toTimeString().split(' ')[0].slice(0, 5) : '';
-    updateData({ start_time: timeString });
+    if (!time) {
+      updateData({ start_time: '' });
+      return;
+    }
+    
+    // Format time as HH:mm in Philippines timezone
+    const philippinesTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(time);
+    
+    updateData({ start_time: philippinesTime });
   }, [updateData]);
 
   // Handle duration change
@@ -123,9 +144,9 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
     return !!(externalValidationErrors[fieldName]?.length > 0);
   }, [externalValidationErrors]);
 
-  // Convert data for date/time pickers
-  const selectedDate = data.start_date ? new Date(data.start_date) : null;
-  const selectedTime = data.start_time ? new Date(`2000-01-01T${data.start_time}`) : null;
+  // Convert data for date/time pickers - ensure we're using Philippines timezone
+  const selectedDate = data.start_date ? new Date(`${data.start_date}T00:00:00+08:00`) : null;
+  const selectedTime = data.start_time ? new Date(`2000-01-01T${data.start_time}+08:00`) : null;
 
   const isProcessing = externalIsValidating;
 
@@ -136,8 +157,26 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
           Select Your Event Date & Time
         </Typography>
 
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          gap: 1,
+          mb: 2
+        }}>
+          <Chip 
+            label="PHT" 
+            color="primary" 
+            size="small" 
+            sx={{ fontWeight: 600 }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            Philippines Timezone
+          </Typography>
+        </Box>
+
         <Typography variant="body1" sx={{ mb: 4, textAlign: 'center', color: 'text.secondary' }}>
-          Choose your preferred date and time for your event. We'll check availability and confirm with you.
+          Choose your preferred date and time in Philippines timezone (PHT). We'll check availability and confirm with you.
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -151,7 +190,7 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
                 </Typography>
                 
                 <DatePicker
-                  label="Select Date"
+                  label="Select Date (Philippines)"
                   value={selectedDate}
                   onChange={handleDateChange}
                   minDate={minDate}
@@ -160,7 +199,7 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
                     textField: {
                       fullWidth: true,
                       error: hasFieldError('start_date'),
-                      helperText: getFieldError('start_date'),
+                      helperText: getFieldError('start_date') || "Date in Philippines timezone",
                     },
                   }}
                 />
@@ -189,7 +228,7 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
                   </Typography>
                   
                   <TimePicker
-                    label="Select Time"
+                    label="Select Time (Philippines)"
                     value={selectedTime}
                     onChange={handleTimeChange}
                     disabled={isProcessing}
@@ -197,7 +236,7 @@ export const DateTimeStep: React.FC<DateTimeStepProps> = ({
                       textField: {
                         fullWidth: true,
                         error: hasFieldError('start_time'),
-                        helperText: getFieldError('start_time'),
+                        helperText: getFieldError('start_time') || "Time in PHT timezone",
                       },
                     }}
                   />

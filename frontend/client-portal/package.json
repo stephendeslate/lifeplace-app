@@ -28,6 +28,7 @@
     "@tanstack/react-query-devtools": "^5.80.5",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "dompurify": "^3.0.8",
     "lodash": "^4.17.21",
     "react": "^19.1.0",
