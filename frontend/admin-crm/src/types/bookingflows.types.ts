@@ -151,6 +151,8 @@ export interface DateTimeStepConfiguration {
   enable_real_time_availability: boolean;
   show_availability_status: boolean;
   auto_check_conflicts: boolean;
+  show_next_available_date: boolean;
+  show_conflict_details: boolean;
   
   blocked_dates: string[];
   available_days_of_week: number[];

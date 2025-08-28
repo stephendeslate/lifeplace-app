@@ -39,6 +39,14 @@ if not SECRET_KEY:
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
+
+# Add common development hosts
+if DEBUG:
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', 'testserver'])
+else:
+    # Ensure production has at least localhost
+    if not ALLOWED_HOSTS:
+        ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if os.getenv('CSRF_TRUSTED_ORIGINS') else []
 
 # Custom User Model
