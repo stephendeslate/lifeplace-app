@@ -24,6 +24,29 @@ class PaymentGatewayService:
     """Service for processing payments through gateways"""
 
     @staticmethod
+    def _get_payment_currency(payment):
+        """
+        Determine the currency for a payment.
+        Priority:
+        1. Payment currency field
+        2. Currency from event's product options
+        3. Default to PHP (95% of business is in Philippines)
+        """
+        # Use payment's currency field (now available)
+        if payment.currency:
+            return payment.currency
+        
+        # Try to get currency from event's product options as fallback
+        if payment.event and hasattr(payment.event, 'product_options'):
+            # Get the first product's currency if available
+            product_option = payment.event.product_options.first()
+            if product_option and hasattr(product_option, 'currency'):
+                return product_option.currency
+        
+        # Default to PHP since 95% of business is in Philippines
+        return 'PHP'
+
+    @staticmethod
     def process_gateway_payment(payment_id, gateway_code, payment_data, user):
         """Process payment through any gateway - routes to appropriate processor"""
         
@@ -106,10 +129,13 @@ class PaymentGatewayService:
         
         with transaction.atomic():
             try:
+                # Determine currency for payment
+                payment_currency = PaymentGatewayService._get_payment_currency(payment)
+                
                 # Create payment intent with Stripe
                 intent_data = {
                     'amount': int(payment.amount * 100),  # Convert to cents
-                    'currency': 'usd',
+                    'currency': payment_currency.lower(),
                     'confirmation_method': 'manual',
                     'confirm': True,
                 }
@@ -136,6 +162,7 @@ class PaymentGatewayService:
                     gateway=gateway,
                     transaction_id=intent.id,
                     amount=payment.amount,
+                    currency=payment_currency,
                     status='PROCESSING',
                     response_data=intent,
                     is_test=payment_data.get('is_test', False)
@@ -171,6 +198,7 @@ class PaymentGatewayService:
                     gateway=gateway,
                     transaction_id='',
                     amount=payment.amount,
+                    currency=payment_currency,
                     status='FAILED',
                     error_message=str(e),
                     response_data={'error': str(e), 'error_type': type(e).__name__},

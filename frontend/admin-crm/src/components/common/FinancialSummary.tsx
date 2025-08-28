@@ -54,8 +54,8 @@ export interface FinancialSummaryProps {
   compactMode?: boolean;
 }
 
-const formatCurrency = (amount: number, currency = 'USD') => {
-  return new Intl.NumberFormat('en-US', {
+const formatCurrency = (amount: number, currency = 'PHP') => {
+  return new Intl.NumberFormat('en-PH', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 0,
@@ -77,7 +77,7 @@ const MetricCard: React.FC<{
   metric: FinancialMetric; 
   compactMode?: boolean;
   currency?: string;
-}> = ({ metric, currency = 'USD' }) => {
+}> = ({ metric, currency = 'PHP' }) => {
   const displayValue = metric.formatted || formatCurrency(metric.value, metric.currency || currency);
   
   return (
@@ -130,7 +130,7 @@ const PaymentBreakdownCard: React.FC<{
   breakdown: PaymentBreakdown; 
   compactMode?: boolean;
   currency?: string;
-}> = ({ breakdown, currency = 'USD' }) => {
+}> = ({ breakdown, currency = 'PHP' }) => {
   const paidPercentage = breakdown.total > 0 ? (breakdown.paid / breakdown.total) * 100 : 0;
   const pendingPercentage = breakdown.total > 0 ? (breakdown.pending / breakdown.total) * 100 : 0;
   const overduePercentage = breakdown.total > 0 ? (breakdown.overdue / breakdown.total) * 100 : 0;
@@ -268,7 +268,7 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
   metrics = [],
   paymentBreakdown,
   compactMode = false,
-  currency = 'USD',
+  currency = 'PHP',
 }) => {
   if (metrics.length === 0 && !paymentBreakdown) {
     return (

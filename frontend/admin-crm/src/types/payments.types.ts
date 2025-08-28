@@ -86,6 +86,7 @@ export interface Payment {
     status: string;
   };
   amount: string;
+  currency: string;
   status: PaymentStatus;
   status_display: string;
   due_date: string;
@@ -146,6 +147,7 @@ export interface PaymentPlan {
   };
   total_amount: string;
   down_payment_amount: string;
+  currency: string;
   down_payment_due_date: string;
   number_of_installments: number;
   frequency: PaymentFrequency;
@@ -191,6 +193,7 @@ export interface PaymentTransaction {
   gateway_details?: PaymentGateway;
   transaction_id: string;
   amount: string;
+  currency: string;
   status: TransactionStatus;
   status_display: string;
   response_data: Record<string, any>;
@@ -220,6 +223,7 @@ export interface Invoice {
   subtotal: string;
   tax_amount: string;
   total_amount: string;
+  currency: string;
   issue_date: string;
   due_date: string;
   status: InvoiceStatus;
@@ -291,6 +295,7 @@ export interface Refund {
     amount: string;
   };
   amount: string;
+  currency: string;
   reason: string;
   status: RefundStatus;
   status_display: string;
@@ -379,6 +384,7 @@ export const REFUND_STATUSES = [
 export interface CreatePaymentData {
   event: number;
   amount: string;
+  currency?: string;
   status?: PaymentStatus;
   due_date: string;
   payment_method?: number;
@@ -410,6 +416,7 @@ export interface CreatePaymentPlanData {
   event: number;
   total_amount: string;
   down_payment_amount: string;
+  currency?: string;
   down_payment_due_date: string;
   number_of_installments: number;
   frequency: PaymentFrequency;
@@ -463,6 +470,7 @@ export interface UpdateInvoiceData {
 export interface CreateRefundData {
   payment: number;
   amount: string;
+  currency?: string;
   reason: string;
 }
 
@@ -518,6 +526,7 @@ export interface RefundFilters {
 export interface PaymentFormData {
   event: string;
   amount: string;
+  currency: string;
   status: PaymentStatus;
   due_date: string;
   payment_method: string;
@@ -531,6 +540,7 @@ export interface PaymentPlanFormData {
   event: string;
   total_amount: string;
   down_payment_amount: string;
+  currency: string;
   down_payment_due_date: string;
   number_of_installments: string;
   frequency: PaymentFrequency;
