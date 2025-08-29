@@ -1,11 +1,10 @@
-// frontend/admin-crm/src/pages/payments/PaymentsOverview.tsx
+// Modern Glassmorphic Payments Overview
+// Enhanced with world-class design patterns while preserving full functionality
 
 import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Dialog,
   DialogContent,
@@ -15,7 +14,6 @@ import {
   InputLabel,
   Menu,
   MenuItem,
-  Paper,
   Select,
   Stack,
   Table,
@@ -27,12 +25,9 @@ import {
   TablePagination,
   TextField,
   Typography,
-  CircularProgress,
-  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  FileDownload as ExportIcon,
   MoreVert as MoreVertIcon,
   Payment as PaymentIcon,
   Person as PersonIcon,
@@ -43,6 +38,7 @@ import {
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  AccountBalance as AccountBalanceIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
@@ -50,6 +46,20 @@ import { usePayments } from '../../hooks/usePayments';
 import { PaymentForm } from '../../components/payments/PaymentForm';
 import type { Payment, PaymentFilters, CreatePaymentData, PaymentStatus } from '../../types/payments.types';
 import { PAYMENT_STATUSES } from '../../types/payments.types';
+
+// Modern Design System Components
+import {
+  ModernOverviewLayout,
+  ModernOverviewHeader,
+  ModernGlassCard,
+  ModernEmptyState,
+  ModernTableSkeleton,
+  createAddAction,
+  createExportAction,
+} from '../../components/common';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { createTransition } from '../../design-system/utils/animations';
 
 export const PaymentsOverview: React.FC = () => {
   const navigate = useNavigate();
@@ -64,7 +74,7 @@ export const PaymentsOverview: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
 
   const {
-    payments = [],
+    payments = [], // Add default empty array
     totalPayments,
     isLoadingPayments,
     createPayment,
@@ -93,16 +103,6 @@ export const PaymentsOverview: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [searchValue]);
-
-  // @ts-ignore
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
 
   const handleRowClick = (payment: Payment) => {
     navigate(`/payments/${payment.id}`);
@@ -203,92 +203,115 @@ export const PaymentsOverview: React.FC = () => {
     }).format(num);
   };
 
-  // Empty state when no payments exist
+  // Modern empty state when no payments exist
   const renderNoPaymentsState = () => (
-    <Paper 
-      elevation={0} 
-      sx={{ 
-        p: 6, 
-        textAlign: 'center',
-        bgcolor: 'grey.50',
-        border: '2px dashed',
-        borderColor: 'grey.300'
+    <ModernEmptyState
+      icon={AccountBalanceIcon}
+      title="No Payments Yet"
+      description="Start managing payments by creating your first payment record. Track invoices, due dates, and payment statuses."
+      primaryAction={{
+        label: "Create First Payment",
+        onClick: () => setCreateDialogOpen(true),
+        icon: <AddIcon />,
+        color: 'primary'
       }}
-    >
-      <PaymentIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        No Payments Yet
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
-        Start managing payments by creating your first payment record. Track invoices, due dates, and payment statuses.
-      </Typography>
-      
-      <Button
-        variant="contained"
-        size="large"
-        startIcon={<AddIcon />}
-        onClick={() => setCreateDialogOpen(true)}
-      >
-        Create First Payment
-      </Button>
-
-      <Divider sx={{ my: 3 }} />
-      
-      <Typography variant="body2" color="text.secondary">
-        💡 <strong>Tip:</strong> Payments can be linked to events and invoices for complete tracking
-      </Typography>
-    </Paper>
+      tip={{
+        text: "Payments can be linked to events and invoices for complete tracking and better organization.",
+        type: 'info'
+      }}
+      size="large"
+      color="primary"
+      illustration="gradient"
+    />
   );
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
-  const filteredCount = totalPayments ?? (Array.isArray(payments) ? payments.length : 0);
+  const filteredCount = totalPayments ?? 0;
 
+  // Loading state with modern skeleton
   if (isLoadingPayments) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
+      <ModernOverviewLayout>
+        <ModernOverviewHeader
+          title="Payments"
+          subtitle="Loading payment data..."
+          icon={<AccountBalanceIcon />}
+        />
+        <ModernTableSkeleton 
+          rows={8} 
+          columns={7}
+        />
+      </ModernOverviewLayout>
     );
   }
 
-  return (
-    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold">
-            Payments
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {filteredCount} payment{filteredCount !== 1 ? 's' : ''} found
-          </Typography>
-        </Box>
-        
-        <Stack direction="row" spacing={2}>
-          <Button
-            variant="outlined"
-            startIcon={<ExportIcon />}
-            onClick={handleExport}
-          >
-            Export
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            Add Payment
-          </Button>
-        </Stack>
-      </Box>
+  // @ts-expect-error
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
 
-      {payments.length === 0 && !hasActiveFilters ? (
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  return (
+    <ModernOverviewLayout>
+      {/* Modern Header */}
+      <ModernOverviewHeader
+        title="Payments"
+        subtitle={`${filteredCount} payment${filteredCount !== 1 ? 's' : ''} found`}
+        icon={<AccountBalanceIcon />}
+        primaryAction={createAddAction('Add Payment', () => setCreateDialogOpen(true))}
+        secondaryActions={[
+          createExportAction(handleExport)
+        ]}
+        stats={[
+          { label: 'Total Payments', value: filteredCount },
+          { 
+            label: 'Completed', 
+            value: payments?.filter(p => p.status === 'COMPLETED').length || 0
+          },
+          { 
+            label: 'Pending', 
+            value: payments?.filter(p => p.status === 'PENDING').length || 0
+          },
+          {
+            label: 'Overdue',
+            value: payments?.filter(p => {
+              if (p.status === 'COMPLETED') return false;
+              const due = new Date(p.due_date);
+              const today = new Date();
+              return due < today;
+            }).length || 0
+          }
+        ]}
+      />
+
+      {totalPayments === 0 && !hasActiveFilters ? (
         renderNoPaymentsState()
       ) : (
         <>
-          {/* Filters */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
+          {/* Modern Filters Card */}
+          <ModernGlassCard 
+            size="medium" 
+            sx={{ 
+              mb: 4,
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}03 0%, ${tokens.color.success[500]}02 100%)`,
+                borderRadius: tokens.spacing.radius.xxl,
+                pointerEvents: 'none',
+              }
+            }}
+          >
+            <Box sx={{ position: 'relative', zIndex: 1 }}>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
                 <TextField
                   size="small"
@@ -298,7 +321,26 @@ export const PaymentsOverview: React.FC = () => {
                   InputProps={{
                     startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />
                   }}
-                  sx={{ flex: 1, minWidth: 200 }}
+                  sx={{ 
+                    flex: 1, 
+                    minWidth: 200,
+                    '& .MuiOutlinedInput-root': {
+                      ...glassPresets.light,
+                      border: `1px solid ${tokens.color.borders.glass}`,
+                      borderRadius: tokens.spacing.radius.full,
+                      transition: createTransition(['border-color', 'box-shadow'], 'fast'),
+                      
+                      '&:hover': {
+                        border: `1px solid ${tokens.color.primary[500]}40`,
+                      },
+                      
+                      '&.Mui-focused': {
+                        ...glassPresets.medium,
+                        border: `1px solid ${tokens.color.primary[500]}60`,
+                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}10`,
+                      }
+                    }
+                  }}
                 />
                 
                 <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -307,6 +349,13 @@ export const PaymentsOverview: React.FC = () => {
                     value={filters.status || 'all'}
                     label="Status"
                     onChange={(e) => handleFilterChange('status', e.target.value)}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        ...glassPresets.light,
+                        border: `1px solid ${tokens.color.borders.glass}`,
+                        borderRadius: tokens.spacing.radius.lg,
+                      }
+                    }}
                   >
                     <MenuItem value="all">All Status</MenuItem>
                     {PAYMENT_STATUSES.map((status) => (
@@ -325,150 +374,370 @@ export const PaymentsOverview: React.FC = () => {
                       setFilters({});
                       setSearchValue('');
                     }}
+                    sx={{
+                      ...glassPresets.light,
+                      border: `1px solid ${tokens.color.warning[500]}30`,
+                      color: tokens.color.warning[600],
+                      borderRadius: tokens.spacing.radius.full,
+                      
+                      '&:hover': {
+                        ...glassPresets.medium,
+                        border: `1px solid ${tokens.color.warning[500]}50`,
+                      }
+                    }}
                   >
                     Clear Filters
                   </Button>
                 )}
               </Stack>
-            </CardContent>
-          </Card>
+            </Box>
+          </ModernGlassCard>
 
-          {/* Payments Table */}
-          <Card>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Due Date</TableCell>
-                    <TableCell>Invoice ID</TableCell>
-                    <TableCell>Client</TableCell>
-                    <TableCell>Event</TableCell>
-                    <TableCell>Balance Due</TableCell>
-                    <TableCell width="50"></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {Array.isArray(payments) && payments.map((payment) => {
-                    const daysRemaining = getDaysRemaining(payment.due_date);
+          {/* Modern Payments Table Card */}
+          <ModernGlassCard 
+            size="medium"
+            sx={{
+              position: 'relative',
+              overflow: 'hidden',
+              
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}02 0%, ${tokens.color.success[500]}01 100%)`,
+                borderRadius: tokens.spacing.radius.xxl,
+                pointerEvents: 'none',
+              }
+            }}
+          >
+            <Box sx={{ position: 'relative', zIndex: 1 }}>
+              <TableContainer 
+                sx={{
+                  '& .MuiTable-root': {
+                    '& .MuiTableHead-root': {
+                      '& .MuiTableCell-head': {
+                        backgroundColor: 'transparent',
+                        borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                        fontWeight: 600,
+                        color: tokens.color.neutral[700],
+                        fontSize: '0.875rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        py: 2,
+                      }
+                    },
                     
-                    return (
-                      <TableRow 
-                        key={payment.id} 
-                        hover 
-                        sx={{ cursor: 'pointer' }}
-                        onClick={() => handleRowClick(payment)}
-                      >
-                        <TableCell>
-                          <Chip
-                            icon={getStatusIcon(payment.status)}
-                            label={PAYMENT_STATUSES.find(s => s.value === payment.status)?.label || payment.status}
-                            color={getStatusColor(payment.status)}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </TableCell>
+                    '& .MuiTableBody-root': {
+                      '& .MuiTableRow-root': {
+                        transition: createTransition(['background-color', 'transform'], 'fast'),
+                        cursor: 'pointer',
                         
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2" fontWeight="medium">
-                              {new Date(payment.due_date).toLocaleDateString()}
-                            </Typography>
+                        '&:hover': {
+                          backgroundColor: `${tokens.color.primary[50]}40`,
+                          transform: 'translateY(-1px)',
+                          
+                          '& .action-button': {
+                            opacity: 1,
+                            transform: 'scale(1)',
+                          }
+                        },
+                        
+                        '& .MuiTableCell-body': {
+                          borderBottom: `1px solid ${tokens.color.borders.subtle}`,
+                          py: 2,
+                          fontSize: '0.875rem',
+                        }
+                      }
+                    }
+                  }
+                }}
+              >
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Due Date</TableCell>
+                      <TableCell>Invoice ID</TableCell>
+                      <TableCell>Client</TableCell>
+                      <TableCell>Event</TableCell>
+                      <TableCell>Balance Due</TableCell>
+                      <TableCell width="50"></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Array.isArray(payments) && payments.map((payment) => {
+                      const daysRemaining = getDaysRemaining(payment.due_date);
+                      
+                      return (
+                        <TableRow 
+                          key={payment.id} 
+                          hover 
+                          onClick={() => handleRowClick(payment)}
+                          sx={{
+                            '&:last-child .MuiTableCell-body': {
+                              borderBottom: 'none',
+                            }
+                          }}
+                        >
+                          <TableCell>
+                            <Chip
+                              icon={getStatusIcon(payment.status)}
+                              label={PAYMENT_STATUSES.find(s => s.value === payment.status)?.label || payment.status}
+                              color={getStatusColor(payment.status)}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                ...glassPresets.light,
+                                border: `1px solid ${(tokens.color as any)[getStatusColor(payment.status) === 'default' ? 'primary' : getStatusColor(payment.status)][500]}30`,
+                                fontWeight: 600,
+                              }}
+                            />
+                          </TableCell>
+                          
+                          <TableCell>
+                            <Box>
+                              <Typography 
+                                variant="body2" 
+                                fontWeight="600"
+                                sx={{ color: tokens.color.neutral[800] }}
+                              >
+                                {new Date(payment.due_date).toLocaleDateString()}
+                              </Typography>
+                              <Typography 
+                                variant="caption" 
+                                sx={{ 
+                                  color: daysRemaining.color,
+                                  fontWeight: daysRemaining.severity === 'overdue' ? 'bold' : 'normal'
+                                }}
+                              >
+                                {daysRemaining.text}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={1.5}>
+                              <Box
+                                sx={{
+                                  ...glassPresets.light,
+                                  borderRadius: '50%',
+                                  p: 0.75,
+                                  border: `1px solid ${tokens.color.info[500]}20`,
+                                  background: `${tokens.color.info[50]}60`,
+                                }}
+                              >
+                                <ReceiptIcon 
+                                  sx={{ 
+                                    fontSize: 16,
+                                    color: tokens.color.info[600] 
+                                  }} 
+                                />
+                              </Box>
+                              <Typography 
+                                variant="body2" 
+                                fontFamily="monospace"
+                                fontWeight="600"
+                                sx={{ color: tokens.color.neutral[700] }}
+                              >
+                                {payment.invoice_details?.invoice_id || payment.payment_number}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <PersonIcon 
+                                sx={{ 
+                                  fontSize: 16,
+                                  color: tokens.color.neutral[500] 
+                                }} 
+                              />
+                              <Typography 
+                                variant="body2"
+                                sx={{ color: tokens.color.neutral[600] }}
+                              >
+                                {payment.event_details?.client_name || 'Unknown Client'}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <EventIcon 
+                                sx={{ 
+                                  fontSize: 16,
+                                  color: tokens.color.neutral[500] 
+                                }} 
+                              />
+                              <Typography 
+                                variant="body2"
+                                sx={{ color: tokens.color.neutral[600] }}
+                              >
+                                {payment.event_details?.name || 'No Event'}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          
+                          <TableCell>
                             <Typography 
-                              variant="caption" 
-                              sx={{ 
-                                color: daysRemaining.color,
-                                fontWeight: daysRemaining.severity === 'overdue' ? 'bold' : 'normal'
+                              variant="body2" 
+                              fontWeight="600"
+                              sx={{
+                                color: payment.status === 'COMPLETED' ? tokens.color.success[600] : tokens.color.neutral[800]
                               }}
                             >
-                              {daysRemaining.text}
+                              {payment.status === 'COMPLETED' ? 'Paid' : formatCurrency(payment.amount)}
                             </Typography>
-                          </Box>
-                        </TableCell>
-                        
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <ReceiptIcon color="action" fontSize="small" />
-                            <Typography variant="body2" fontFamily="monospace">
-                              {payment.invoice_details?.invoice_id || payment.payment_number}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <PersonIcon color="action" fontSize="small" />
-                            <Typography variant="body2">
-                              {payment.event_details?.client_name || 'Unknown Client'}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <EventIcon color="action" fontSize="small" />
-                            <Typography variant="body2">
-                              {payment.event_details?.name || 'No Event'}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        
-                        <TableCell>
-                          <Typography 
-                            variant="body2" 
-                            fontWeight="medium"
-                            color={payment.status === 'COMPLETED' ? 'success.main' : 'text.primary'}
-                          >
-                            {payment.status === 'COMPLETED' ? 'Paid' : formatCurrency(payment.amount)}
-                          </Typography>
-                        </TableCell>
-                        
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, payment)}
-                          >
-                            <MoreVertIcon />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <TablePagination
-              rowsPerPageOptions={[10, 25, 50, 100]}
-              component="div"
-              count={totalPayments || 0}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-          </Card>
+                          </TableCell>
+                          
+                          <TableCell>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleMenuOpen(e, payment)}
+                              className="action-button"
+                              sx={{
+                                ...glassPresets.light,
+                                border: `1px solid ${tokens.color.borders.glass}`,
+                                opacity: 0.7,
+                                transform: 'scale(0.9)',
+                                transition: createTransition(['opacity', 'transform', 'background'], 'fast'),
+                                
+                                '&:hover': {
+                                  ...glassPresets.medium,
+                                  opacity: 1,
+                                  transform: 'scale(1)',
+                                }
+                              }}
+                            >
+                              <MoreVertIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              
+              {/* Modern Pagination */}
+              <Box 
+                sx={{
+                  p: 2,
+                  borderTop: `1px solid ${tokens.color.borders.glass}`,
+                  background: `linear-gradient(135deg, ${tokens.color.neutral[50]}40 0%, ${tokens.color.primary[50]}10 100%)`,
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                <TablePagination
+                  rowsPerPageOptions={[10, 25, 50, 100]}
+                  component="div"
+                  count={totalPayments || 0}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  sx={{
+                    '& .MuiTablePagination-toolbar': {
+                      color: tokens.color.neutral[600],
+                      fontSize: '0.875rem',
+                    },
+                    
+                    '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                      fontWeight: 500,
+                    },
+                    
+                    '& .MuiIconButton-root': {
+                      ...glassPresets.light,
+                      border: `1px solid ${tokens.color.borders.glass}`,
+                      borderRadius: tokens.spacing.radius.sm,
+                      mx: 0.25,
+                      
+                      '&:hover': {
+                        ...glassPresets.medium,
+                      },
+                      
+                      '&.Mui-disabled': {
+                        opacity: 0.4,
+                      }
+                    }
+                  }}
+                />
+              </Box>
+            </Box>
+          </ModernGlassCard>
         </>
       )}
 
-      {/* Action Menu */}
+      {/* Modern Action Menu */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            borderRadius: tokens.spacing.radius.lg,
+            mt: 1,
+            minWidth: 180,
+            
+            '& .MuiMenuItem-root': {
+              borderRadius: tokens.spacing.radius.md,
+              mx: 1,
+              my: 0.5,
+              transition: createTransition(['background-color'], 'fast'),
+              
+              '&:hover': {
+                backgroundColor: `${tokens.color.primary[50]}60`,
+              }
+            }
+          }
+        }}
       >
-        <MenuItem onClick={() => {
-          if (selectedPayment) navigate(`/payments/${selectedPayment.id}`);
-          handleMenuClose();
-        }}>
-          <PaymentIcon sx={{ mr: 1 }} />
+        <MenuItem 
+          onClick={() => {
+            if (selectedPayment) navigate(`/payments/${selectedPayment.id}`);
+            handleMenuClose();
+          }}
+          sx={{ fontWeight: 500 }}
+        >
+          <PaymentIcon sx={{ mr: 1.5, color: tokens.color.primary[600] }} />
           View Payment
         </MenuItem>
       </Menu>
 
-      {/* Create Payment Dialog */}
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Create New Payment</DialogTitle>
-        <DialogContent>
+      {/* Modern Create Payment Dialog */}
+      <Dialog 
+        open={createDialogOpen} 
+        onClose={() => setCreateDialogOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            borderRadius: tokens.spacing.radius.xxl,
+            background: `linear-gradient(135deg, ${tokens.color.primary[500]}06 0%, ${tokens.color.success[500]}04 100%)`,
+          }
+        }}
+      >
+        <DialogTitle 
+          sx={{ 
+            background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[500]} 100%)`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+            fontWeight: 700,
+            fontSize: '1.5rem',
+            pb: 2
+          }}
+        >
+          Create New Payment
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
           <PaymentForm
             onSubmit={(data) => {
               createPayment(data as CreatePaymentData, {
@@ -480,6 +749,6 @@ export const PaymentsOverview: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-    </Box>
+    </ModernOverviewLayout>
   );
 };

@@ -2,11 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
   FormControl,
   InputLabel,
@@ -18,9 +13,9 @@ import {
   Stack,
   Typography,
   Divider,
-  CircularProgress,
   InputAdornment,
 } from '@mui/material';
+import { ModernDialog, createStandardActions } from '../common';
 import { useProductCategories } from '../../hooks/useProducts';
 import type { 
   ProductCategory, 
@@ -28,6 +23,7 @@ import type {
   UpdateCategoryData, 
   CategoryFormData 
 } from '../../types/products.types';
+import { tokens } from '../../design-system/tokens';
 
 interface CategoryFormDialogProps {
   open: boolean;
@@ -178,20 +174,28 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
     }
   };
 
+  const actions = createStandardActions(
+    handleClose,
+    handleSubmit,
+    {
+      cancelLabel: 'Cancel',
+      confirmLabel: editingCategory ? 'Update Category' : 'Create Category',
+      isLoading,
+      confirmDisabled: isLoading,
+    }
+  );
+
   return (
-    <Dialog 
-      open={open} 
+    <ModernDialog
+      open={open}
       onClose={handleClose}
+      title={editingCategory ? 'Edit Category' : 'Create New Category'}
+      actions={actions}
       maxWidth="sm"
       fullWidth
+      contentSx={{ minHeight: '60vh' }}
     >
       {open && (
-        <>
-          <DialogTitle>
-            {editingCategory ? 'Edit Category' : 'Create New Category'}
-          </DialogTitle>
-          
-          <DialogContent>
             <Box component="form" noValidate sx={{ mt: 1 }}>
               {/* Basic Information */}
               <Typography variant="h6" gutterBottom>
@@ -299,26 +303,7 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
                 />
               </Stack>
             </Box>
-          </DialogContent>
-          
-          <DialogActions sx={{ p: 3 }}>
-            <Button 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSubmit}
-              variant="contained"
-              disabled={isLoading}
-              startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
-            >
-              {isLoading ? 'Saving...' : editingCategory ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
-        </>
       )}
-    </Dialog>
+    </ModernDialog>
   );
 };

@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Button,
   LinearProgress,
@@ -13,10 +11,10 @@ import {
   Alert,
   IconButton,
   Tooltip,
-  Paper,
   Avatar,
   Divider,
 } from '@mui/material';
+import { ModernCard } from '../../common/ModernCard';
 import {
   Preview as PreviewIcon,
   NavigateNext as NextIcon,
@@ -41,6 +39,9 @@ import {
   Info as IntroIcon,
   Schedule as PricingIcon,
 } from '@mui/icons-material';
+// Modern Design System imports
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import type { 
   BookingFlowDetail, 
   BookingFlowStep,
@@ -311,7 +312,12 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             <Typography variant="subtitle1" gutterBottom>
               Pricing Summary
             </Typography>
-            <Paper sx={{ p: 2, backgroundColor: 'grey.50' }}>
+            <Box sx={{ 
+              p: 2, 
+              ...glassPresets.light,
+              border: `1px solid ${tokens.color.borders.glass}`,
+              borderRadius: tokens.spacing.radius.lg
+            }}>
               <Stack spacing={1}>
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2">Premium Package</Typography>
@@ -329,7 +335,7 @@ const StepPreview: React.FC<StepPreviewProps> = ({
                   </Typography>
                 </Box>
               </Stack>
-            </Paper>
+            </Box>
           </Box>
         );
 
@@ -432,7 +438,12 @@ const StepPreview: React.FC<StepPreviewProps> = ({
               Please review all details before confirming your booking.
             </Typography>
             
-            <Paper sx={{ p: 2, backgroundColor: 'grey.50' }}>
+            <Box sx={{ 
+              p: 2, 
+              ...glassPresets.light,
+              border: `1px solid ${tokens.color.borders.glass}`,
+              borderRadius: tokens.spacing.radius.lg
+            }}>
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="body2" color="text.secondary">Event Date</Typography>
@@ -452,7 +463,7 @@ const StepPreview: React.FC<StepPreviewProps> = ({
                   <Typography variant="h6" color="primary">$1,250.00</Typography>
                 </Box>
               </Stack>
-            </Paper>
+            </Box>
           </Box>
         );
 
@@ -544,9 +555,15 @@ const StepPreview: React.FC<StepPreviewProps> = ({
       </Box>
       
       {isActive && !compact && (
-        <Paper sx={{ p: 2, mb: 2, backgroundColor: 'grey.50' }}>
+        <Box sx={{ 
+          p: 2, 
+          mb: 2, 
+          ...glassPresets.light,
+          border: `1px solid ${tokens.color.borders.glass}`,
+          borderRadius: tokens.spacing.radius.lg
+        }}>
           {getStepContent()}
-        </Paper>
+        </Box>
       )}
     </Box>
   );
@@ -591,8 +608,8 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
 
   if (!flow.steps || flow.steps.length === 0) {
     return (
-      <Card variant="outlined">
-        <CardContent sx={{ textAlign: 'center', py: 4 }}>
+      <ModernCard variant="glass" size="large">
+        <Box sx={{ textAlign: 'center', py: 4 }}>
           <PreviewIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No Steps to Preview
@@ -600,32 +617,32 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
           <Typography variant="body2" color="text.secondary">
             Add steps to this booking flow to see the preview
           </Typography>
-        </CardContent>
-      </Card>
+        </Box>
+      </ModernCard>
     );
   }
 
   if (enabledSteps.length === 0) {
     return (
-      <Card variant="outlined">
-        <CardContent>
-          <Alert severity="warning">
-            All steps in this booking flow are disabled. Enable at least one step to preview the client experience.
+      <ModernCard variant="glass" size="large" color="warning">
+        <Alert severity="warning">
+          All steps in this booking flow are disabled. Enable at least one step to preview the client experience.
+        </Alert>
+        {hasDeprecatedSteps && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            This flow contains deprecated step types (availability_check, event_details). 
+            Please migrate or remove these steps for the flow to function properly.
           </Alert>
-          {hasDeprecatedSteps && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              This flow contains deprecated step types (availability_check, event_details). 
-              Please migrate or remove these steps for the flow to function properly.
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </ModernCard>
     );
   }
 
   return (
-    <Card 
-      variant="outlined"
+    <ModernCard 
+      variant="glass" 
+      size="large" 
+      color="primary"
       sx={{
         maxWidth: isMobileView ? 375 : '100%',
         mx: isMobileView ? 'auto' : 0,
@@ -633,7 +650,7 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
       }}
     >
       {/* Preview Header */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ p: 3, borderBottom: 1, borderColor: tokens.color.borders.glass }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
             <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
@@ -737,7 +754,7 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
         )}
       </Box>
 
-      <CardContent>
+      <Box sx={{ p: 3 }}>
         {compact ? (
           /* Compact View - List all steps */
           <Stack spacing={1}>
@@ -797,7 +814,7 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
             {isMobileView && ' Viewing in mobile format.'}
           </Typography>
         </Alert>
-      </CardContent>
-    </Card>
+      </Box>
+    </ModernCard>
   );
 };

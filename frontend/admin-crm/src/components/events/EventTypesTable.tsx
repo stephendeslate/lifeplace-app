@@ -8,7 +8,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   Menu,
@@ -19,7 +18,7 @@ import {
   Box,
   CircularProgress,
   TableSortLabel,
-  Skeleton,
+  Tooltip,
 } from '@mui/material';
 import {
   MoreVert as MoreVertIcon,
@@ -29,7 +28,11 @@ import {
   CheckCircle as ActiveIcon,
   Cancel as InactiveIcon,
 } from '@mui/icons-material';
-import type { EventTypeTableProps } from '../../types/events.types';
+import type { EventTypeTableProps, EventType } from '../../types/events.types';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { ModernEmptyState } from '../common/ModernEmptyState';
+import ModernLoadingStates from '../common/ModernLoadingStates';
 
 export const EventTypesTable: React.FC<EventTypeTableProps> = ({
   eventTypes,
@@ -39,9 +42,9 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
   isDeleting,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedEventType, setSelectedEventType] = useState<any>(null);
+  const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, eventType: any) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, eventType: EventType) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
     setSelectedEventType(eventType);
@@ -78,54 +81,63 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
 
   if (isLoading) {
     return (
-      <Box p={3}>
-        {[...Array(5)].map((_, index) => (
-          <Box key={index} display="flex" gap={2} mb={2}>
-            <Skeleton variant="text" width="30%" />
-            <Skeleton variant="text" width="40%" />
-            <Skeleton variant="text" width="15%" />
-            <Skeleton variant="text" width="15%" />
-          </Box>
-        ))}
-      </Box>
+      <ModernLoadingStates.ModernTableSkeleton
+        rows={5}
+        columns={5}
+        hasHeader
+      />
     );
   }
 
   if (eventTypes.length === 0) {
     return (
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center" 
-        justifyContent="center" 
-        py={8}
-        textAlign="center"
-      >
-        <EventIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          No event types found
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Create your first event type to organize your events by category
-        </Typography>
-      </Box>
+      <ModernEmptyState
+        icon={EventIcon}
+        title="No event types found"
+        description="Create your first event type to organize your events by category and streamline your booking process."
+        tip={{
+          text: "Event types help categorize your events and can be used in booking flows, questionnaires, and reports.",
+          type: 'info'
+        }}
+        size="medium"
+        color="primary"
+      />
     );
   }
 
   return (
     <>
-      <TableContainer component={Paper} elevation={0}>
+      <TableContainer
+        sx={{
+          background: 'transparent',
+          borderRadius: tokens.spacing.radius.xxl,
+        }}
+      >
         <Table>
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ 
+              '& .MuiTableCell-head': { 
+                fontWeight: 600, 
+                color: tokens.color.neutral[700],
+                borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                fontSize: '0.875rem',
+              } 
+            }}>
               <TableCell>
-                <TableSortLabel>
-                  Name
+                <TableSortLabel sx={{ 
+                  '&.MuiTableSortLabel-root': {
+                    color: tokens.color.neutral[700],
+                    '&:hover': {
+                      color: tokens.color.primary[600],
+                    }
+                  }
+                }}>
+                  Event Type
                 </TableSortLabel>
               </TableCell>
               <TableCell>Description</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell>Created</TableCell>
+              <TableCell>Created Date</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -134,14 +146,35 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
               <TableRow 
                 key={eventType.id} 
                 hover
-                sx={{ cursor: 'pointer' }}
+                sx={{ 
+                  cursor: 'pointer',
+                  '&:hover': {
+                    background: `${tokens.color.primary[50]}50`,
+                  },
+                  '& .MuiTableCell-root': {
+                    borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                    py: 2,
+                  }
+                }}
                 onClick={() => onEdit(eventType)}
               >
                 <TableCell>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <EventIcon color="primary" />
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Box
+                      sx={{
+                        p: 1.5,
+                        borderRadius: tokens.spacing.radius.lg,
+                        background: `${tokens.color.primary[50]}80`,
+                        border: `1px solid ${tokens.color.primary[200]}40`,
+                      }}
+                    >
+                      <EventIcon sx={{ 
+                        color: tokens.color.primary[600],
+                        fontSize: 20 
+                      }} />
+                    </Box>
                     <Box>
-                      <Typography variant="subtitle2" fontWeight="medium">
+                      <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0.5 }}>
                         {eventType.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -151,42 +184,87 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography 
-                    variant="body2" 
-                    color={eventType.description ? 'text.primary' : 'text.secondary'}
-                    sx={{
-                      maxWidth: 300,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {eventType.description || 'No description provided'}
-                  </Typography>
+                  <Box>
+                    {eventType.description ? (
+                      <Tooltip title={eventType.description} arrow>
+                        <Typography 
+                          variant="body2" 
+                          color="text.primary"
+                          sx={{
+                            maxWidth: 280,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {eventType.description}
+                        </Typography>
+                      </Tooltip>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                        No description
+                      </Typography>
+                    )}
+                  </Box>
                 </TableCell>
                 <TableCell>
                   {getStatusChip(eventType.is_active)}
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {new Date(eventType.created_at).toLocaleDateString()}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {new Date(eventType.created_at).toLocaleTimeString()}
-                  </Typography>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" fontWeight="500">
+                      {new Date(eventType.created_at).toLocaleDateString()}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(eventType.created_at).toLocaleTimeString()}
+                    </Typography>
+                  </Box>
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, eventType)}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting && selectedEventType?.id === eventType.id ? (
-                      <CircularProgress size={20} />
-                    ) : (
-                      <MoreVertIcon />
-                    )}
-                  </IconButton>
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    <Tooltip title="Edit Event Type">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(eventType);
+                        }}
+                        sx={{
+                          ...glassPresets.light,
+                          border: `1px solid ${tokens.color.primary[200]}40`,
+                          color: tokens.color.primary[600],
+                          '&:hover': {
+                            ...glassPresets.medium,
+                            color: tokens.color.primary[700],
+                          },
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, eventType)}
+                      disabled={isDeleting}
+                      sx={{
+                        ...glassPresets.light,
+                        border: `1px solid ${tokens.color.neutral[300]}40`,
+                        color: tokens.color.neutral[600],
+                        '&:hover': {
+                          ...glassPresets.medium,
+                          color: tokens.color.neutral[700],
+                        },
+                      }}
+                    >
+                      {isDeleting && selectedEventType?.id === eventType.id ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <MoreVertIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -194,22 +272,61 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
         </Table>
       </TableContainer>
 
-      {/* Action Menu */}
+      {/* Modern Action Menu */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
+        onClick={(e) => e.stopPropagation()}
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            borderRadius: tokens.spacing.radius.lg,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            boxShadow: tokens.shadow.glass.floating,
+            minWidth: 200,
+            mt: 0.5,
+          }
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <MenuItem onClick={handleEdit}>
-          <ListItemIcon>
+        <MenuItem 
+          onClick={handleEdit}
+          sx={{
+            py: 1.5,
+            px: 2,
+            borderRadius: tokens.spacing.radius.md,
+            mx: 0.5,
+            mb: 0.5,
+            '&:hover': {
+              background: `${tokens.color.primary[50]}80`,
+              color: tokens.color.primary[700],
+            },
+          }}
+        >
+          <ListItemIcon sx={{ color: 'inherit' }}>
             <EditIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Edit Event Type</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
+        <MenuItem 
+          onClick={handleDelete} 
+          sx={{ 
+            py: 1.5,
+            px: 2,
+            borderRadius: tokens.spacing.radius.md,
+            mx: 0.5,
+            color: tokens.color.error[600],
+            '&:hover': {
+              background: `${tokens.color.error[50]}80`,
+              color: tokens.color.error[700],
+            },
+          }}
+        >
+          <ListItemIcon sx={{ color: 'inherit' }}>
+            <DeleteIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Delete Event Type</ListItemText>
         </MenuItem>

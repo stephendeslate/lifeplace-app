@@ -10,11 +10,12 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Divider,
   CircularProgress,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   CheckCircle as ConfirmIcon,
   Email as EmailIcon,
@@ -192,8 +193,8 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
 
       <Stack spacing={3}>
         {/* Confirmation Message */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Confirmation Message
             </Typography>
@@ -223,12 +224,12 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 disabled={isSubmitting}
               />
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Display Options */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Display Options
             </Typography>
@@ -282,12 +283,12 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 />
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Automated Actions */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Automated Actions
             </Typography>
@@ -346,12 +347,12 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 Automatically create an event record in the system upon booking completion
               </Typography>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Preview */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <PreviewIcon color="primary" />
               <Typography variant="subtitle1">
@@ -404,12 +405,12 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 </Box>
               )}
             </Box>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Configuration Summary */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Configuration Summary
             </Typography>
@@ -438,8 +439,8 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 </Typography>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

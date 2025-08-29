@@ -8,7 +8,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   Menu,
@@ -19,10 +18,15 @@ import {
   Box,
   CircularProgress,
   TableSortLabel,
-  Skeleton,
   Tooltip,
   LinearProgress,
 } from '@mui/material';
+// Modern Design System imports
+import { 
+  ModernCard,
+  ModernEmptyState,
+  ModernLoadingStates
+} from '../../common';
 import {
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
@@ -40,7 +44,14 @@ import {
   CheckCircle as ActiveIcon,
   RadioButtonUnchecked as InactiveIcon,
 } from '@mui/icons-material';
+// Modern Design System imports
+import { tokens } from '../../../design-system';
 import type { BookingFlowTableProps, BookingFlow } from '../../../types/bookingflows.types';
+import { 
+  getEventTypeDisplayName, 
+  hasSpecificEventType,
+  getEventTypeChipColor 
+} from '../../../utils/bookingFlowUtils';
 
 export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
   bookingFlows,
@@ -118,25 +129,21 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
   };
 
   const getEventTypeChip = (flow: BookingFlow) => {
-    // Use event_type_name from the evolved backend serializer
-    if (!flow.event_type_name || flow.event_type_name === 'Any Event Type') {
-      return (
-        <Chip
-          label="Any Event Type"
-          size="small"
-          variant="outlined"
-          color="default"
-        />
-      );
-    }
+    const displayName = getEventTypeDisplayName(flow);
+    const isSpecific = hasSpecificEventType(flow);
+    const chipColor = getEventTypeChipColor(flow);
     
     return (
       <Chip
-        icon={<EventIcon />}
-        label={flow.event_type_name}
+        icon={isSpecific ? <EventIcon /> : undefined}
+        label={displayName}
         size="small"
-        color="primary"
         variant="outlined"
+        color={chipColor}
+        sx={{ 
+          fontStyle: isSpecific ? 'normal' : 'italic',
+          opacity: isSpecific ? 1 : 0.8 
+        }}
       />
     );
   };
@@ -240,49 +247,42 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
   };
 
   if (isLoading) {
-    return (
-      <Box p={3}>
-        {[...Array(5)].map((_, index) => (
-          <Box key={index} display="flex" gap={2} mb={2}>
-            <Skeleton variant="text" width="25%" />
-            <Skeleton variant="text" width="20%" />
-            <Skeleton variant="text" width="15%" />
-            <Skeleton variant="text" width="15%" />
-            <Skeleton variant="text" width="10%" />
-            <Skeleton variant="text" width="15%" />
-          </Box>
-        ))}
-      </Box>
-    );
+    return <ModernLoadingStates.ModernTableSkeleton rows={5} columns={7} />;
   }
 
   if (bookingFlows.length === 0) {
     return (
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center" 
-        justifyContent="center" 
-        py={8}
-        textAlign="center"
-      >
-        <FlowIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          No booking flows found
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Create your first booking flow to guide clients through the booking process
-        </Typography>
-      </Box>
+      <ModernEmptyState
+        icon={FlowIcon}
+        title="No booking flows found"
+        description="Create your first booking flow to guide clients through the booking process"
+        size="large"
+        color="primary"
+      />
     );
   }
 
   return (
     <>
-      <TableContainer component={Paper} elevation={0}>
+      <ModernCard
+        variant="glass"
+        size="large"
+        animation="none"
+        sx={{
+          overflow: 'visible',
+          position: 'relative',
+        }}
+      >
+        <TableContainer>
         <Table>
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ 
+              '& .MuiTableCell-head': { 
+                fontWeight: 600, 
+                color: tokens.color.neutral[700],
+                borderBottom: `1px solid ${tokens.color.borders.glass}`,
+              } 
+            }}>
               <TableCell>
                 <TableSortLabel>
                   Name & Details
@@ -301,7 +301,15 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
               <TableRow 
                 key={flow.id} 
                 hover
-                sx={{ cursor: 'pointer' }}
+                sx={{ 
+                  cursor: 'pointer',
+                  '&:hover': {
+                    background: `${tokens.color.primary[50]}50`,
+                  },
+                  '& .MuiTableCell-root': {
+                    borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                  }
+                }}
                 onClick={() => onEdit(flow)}
               >
                 <TableCell>
@@ -413,7 +421,8 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+        </TableContainer>
+      </ModernCard>
 
       {/* Action Menu */}
       <Menu
@@ -424,6 +433,16 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
         MenuListProps={{
           'aria-labelledby': 'booking-flow-actions-menu',
           role: 'menu',
+        }}
+        PaperProps={{
+          sx: {
+            backdropFilter: 'blur(20px)',
+            borderRadius: tokens.spacing.radius.lg,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+            boxShadow: `0 25px 80px ${tokens.color.neutral[900]}15`,
+            minWidth: 200,
+          },
         }}
       >
         <MenuItem onClick={handleEdit} role="menuitem">

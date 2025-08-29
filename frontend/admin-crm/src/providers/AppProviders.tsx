@@ -1,14 +1,14 @@
 // frontend/admin-crm/src/providers/AppProviders.tsx
 
 import React from 'react';
-import { ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-import theme from '../utils/theme';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { LayoutProvider } from '../contexts/LayoutContext';
@@ -40,24 +40,37 @@ const queryClient = new QueryClient({
   },
 });
 
+// Inner component that has access to our theme context
+const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { theme } = useTheme();
+
+  return (
+    <MuiThemeProvider theme={theme}>
+      <CssBaseline enableColorScheme />
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <AuthProvider>
+          <LayoutProvider>
+            <ToastProvider>
+              <ConfirmDialogProvider>
+                {children}
+                {/* Only show React Query devtools in development */}
+                {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+              </ConfirmDialogProvider>
+            </ToastProvider>
+          </LayoutProvider>
+        </AuthProvider>
+      </LocalizationProvider>
+    </MuiThemeProvider>
+  );
+};
+
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <AuthProvider>
-            <LayoutProvider>
-              <ToastProvider>
-                <ConfirmDialogProvider>
-                  {children}
-                  {/* Only show React Query devtools in development */}
-                  {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-                </ConfirmDialogProvider>
-              </ToastProvider>
-            </LayoutProvider>
-          </AuthProvider>
-        </LocalizationProvider>
+      <ThemeProvider>
+        <ThemedApp>
+          {children}
+        </ThemedApp>
       </ThemeProvider>
     </QueryClientProvider>
   );

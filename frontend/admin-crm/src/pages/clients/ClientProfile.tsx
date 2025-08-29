@@ -1,4 +1,5 @@
-// frontend/admin-crm/src/pages/clients/ClientProfile.tsx
+// Modern Glassmorphic Client Profile
+// Enhanced with professional design patterns and comprehensive client management
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -25,7 +26,11 @@ import {
   DialogTitle,
   Paper,
   Tab,
-  Tabs
+  Tabs,
+  Fade,
+  Container,
+  Avatar,
+  Tooltip,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -44,7 +49,8 @@ import {
   AttachMoney as QuoteIcon,
   Payment as InvoiceIcon,
   Message as MessageIcon,
-  Schedule as ScheduleIcon
+  Schedule as ScheduleIcon,
+  Star as StarIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useClients } from '../../hooks/useClients';
@@ -71,6 +77,8 @@ import {
   type ActivityItem,
   type QuickAction,
 } from '../../components/common';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -97,6 +105,7 @@ export const ClientProfile: React.FC = () => {
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   // Hooks
   const { 
@@ -213,6 +222,8 @@ export const ClientProfile: React.FC = () => {
         { label: `${client.first_name} ${client.last_name}` },
       ]);
     }
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
   }, [client, setBreadcrumbs]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -263,48 +274,234 @@ export const ClientProfile: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-        <CircularProgress />
-      </Box>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Box 
+          display="flex" 
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{
+            minHeight: '60vh',
+            ...glassPresets.light,
+            borderRadius: tokens.spacing.radius.xxl,
+            p: 6,
+          }}
+        >
+          <CircularProgress size={48} sx={{ mb: 3, color: tokens.color.primary[500] }} />
+          <Typography variant="h6" sx={{ color: tokens.color.neutral[600] }}>
+            Loading client profile...
+          </Typography>
+        </Box>
+      </Container>
     );
   }
 
   if (error || !client) {
     return (
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/clients')}
-          sx={{ mb: 2 }}
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Box 
+          sx={{
+            ...glassPresets.light,
+            borderRadius: tokens.spacing.radius.xxl,
+            p: 6,
+            textAlign: 'center'
+          }}
         >
-          Back to Clients
-        </Button>
-        <Alert severity="error">
-          {error ? 'Failed to load client details' : 'Client not found'}
-        </Alert>
-      </Box>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3,
+              ...glassPresets.light,
+              borderRadius: tokens.spacing.radius.xl,
+              border: `1px solid ${tokens.color.error[500]}30`,
+            }}
+          >
+            {error ? 'Error loading client profile' : 'Client not found'}
+          </Alert>
+          <Button 
+            variant="outlined" 
+            size="large"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/clients')}
+            sx={{
+              ...glassPresets.light,
+              borderRadius: tokens.spacing.radius.full,
+              border: `1px solid ${tokens.color.primary[500]}30`,
+              color: tokens.color.primary[600],
+              px: 4,
+              
+              '&:hover': {
+                ...glassPresets.medium,
+                transform: 'translateY(-2px)',
+              }
+            }}
+          >
+            Back to Clients
+          </Button>
+        </Box>
+      </Container>
     );
   }
 
   const statusSummary = getClientStatusSummary(client);
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box display="flex" alignItems="center" gap={2}>
-          <IconButton onClick={() => navigate('/clients')} size="small">
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h5">
-            {client.first_name} {client.last_name}
-          </Typography>
-          <Chip
-            label={statusSummary.registration.label}
-            color={statusSummary.registration.color}
-            size="small"
-          />
-        </Box>
+    <Box sx={{ 
+      minHeight: '100vh',
+      position: 'relative',
+      '&::before': {
+        content: '""',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: `
+          radial-gradient(circle at 20% 20%, ${tokens.color.primary[500]}04 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, ${tokens.color.success[500]}04 0%, transparent 50%)
+        `,
+        pointerEvents: 'none',
+        zIndex: -1,
+      }
+    }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+        {/* Enhanced Header */}
+        <Fade in={isLoaded} timeout={500}>
+          <Box sx={{ mb: 4 }}>
+            <Box 
+              display="flex" 
+              justifyContent="space-between" 
+              alignItems="flex-start"
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xxl,
+                p: { xs: 3, md: 4 },
+                border: `1px solid ${tokens.color.borders.glass}`,
+                position: 'relative',
+                overflow: 'visible',
+                
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}06 0%, ${tokens.color.success[500]}06 100%)`,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  pointerEvents: 'none',
+                }
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={3} sx={{ position: 'relative', zIndex: 1 }}>
+                <Tooltip title="Back to clients">
+                  <IconButton 
+                    onClick={() => navigate('/clients')} 
+                    sx={{
+                      ...glassPresets.light,
+                      borderRadius: tokens.spacing.radius.full,
+                      width: 48,
+                      height: 48,
+                      color: tokens.color.primary[600],
+                      
+                      '&:hover': {
+                        ...glassPresets.medium,
+                        transform: 'translateX(-4px)',
+                      }
+                    }}
+                  >
+                    <ArrowBackIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                <Box display="flex" alignItems="center" gap={3}>
+                  <Avatar
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.secondary[500]} 100%)`,
+                      fontSize: '2rem',
+                      fontWeight: 700,
+                      boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
+                    }}
+                  >
+                    {client.first_name?.charAt(0)}{client.last_name?.charAt(0)}
+                  </Avatar>
+                  
+                  <Box>
+                    <Typography 
+                      variant="h3" 
+                      component="h1" 
+                      sx={{ 
+                        fontWeight: 700,
+                        background: tokens.color.backgrounds.primaryGradient,
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        color: 'transparent',
+                        mb: 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {client.first_name} {client.last_name}
+                    </Typography>
+                    
+                    <Box display="flex" alignItems="center" gap={2} mb={1}>
+                      {client.email && (
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <EmailIcon sx={{ fontSize: 16, color: tokens.color.neutral[500] }} />
+                          <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
+                            {client.email}
+                          </Typography>
+                        </Box>
+                      )}
+                      {client.profile?.phone && (
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <PhoneIcon sx={{ fontSize: 16, color: tokens.color.neutral[500] }} />
+                          <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
+                            {client.profile.phone}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                    
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Chip
+                        icon={statusSummary.registration.icon}
+                        label={statusSummary.registration.label}
+                        color={statusSummary.registration.color}
+                        variant="outlined"
+                        sx={{
+                          ...glassPresets.light,
+                          fontWeight: 600,
+                        }}
+                      />
+                      
+                      <Chip
+                        icon={statusSummary.active.icon}
+                        label={statusSummary.active.label}
+                        color={statusSummary.active.color}
+                        variant="outlined"
+                        sx={{
+                          ...glassPresets.light,
+                          fontWeight: 600,
+                        }}
+                      />
+                      
+                      <Chip 
+                        icon={<StarIcon />}
+                        label="VIP Client"
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                        sx={{
+                          ...glassPresets.light,
+                          fontWeight: 600,
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
         
         <Box display="flex" gap={1}>
           <Button
@@ -318,9 +515,11 @@ export const ClientProfile: React.FC = () => {
             <MoreVertIcon />
           </IconButton>
         </Box>
-      </Box>
+            </Box>
+          </Box>
+        </Fade>
 
-      {/* Menu */}
+        {/* Menu */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -631,12 +830,13 @@ export const ClientProfile: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Send Message Dialog */}
-      <SendMessageDialog
-        open={sendMessageOpen}
-        onClose={() => setSendMessageOpen(false)}
-        client={client}
-      />
+        {/* Send Message Dialog */}
+        <SendMessageDialog
+          open={sendMessageOpen}
+          onClose={() => setSendMessageOpen(false)}
+          client={client}
+        />
+      </Container>
     </Box>
   );
 };

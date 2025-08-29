@@ -8,7 +8,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   Menu,
@@ -19,7 +18,6 @@ import {
   Box,
   CircularProgress,
   TableSortLabel,
-  Skeleton,
   Tooltip,
 } from '@mui/material';
 import {
@@ -33,7 +31,11 @@ import {
   VisibilityOff as WitnessIcon,
   FileCopy as DuplicateIcon,
 } from '@mui/icons-material';
-import type { ContractTemplateTableProps } from '../../types/contracts.types';
+import type { ContractTemplateTableProps, ContractTemplate } from '../../types/contracts.types';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { ModernEmptyState } from '../common/ModernEmptyState';
+import ModernLoadingStates from '../common/ModernLoadingStates';
 
 export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
   templates,
@@ -44,9 +46,9 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
   isDeleting,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate | null>(null);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, template: any) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, template: ContractTemplate) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
     setSelectedTemplate(template);
@@ -78,8 +80,8 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
     handleMenuClose();
   };
 
-  const getRequirementChips = (template: any) => {
-    const chips = [];
+  const getRequirementChips = (template: ContractTemplate) => {
+    const chips: React.ReactElement[] = [];
     
     if (template.requires_signature) {
       chips.push(
@@ -148,49 +150,83 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
 
   if (isLoading) {
     return (
-      <Box p={3}>
-        {[...Array(5)].map((_, index) => (
-          <Box key={index} display="flex" gap={2} mb={2}>
-            <Skeleton variant="text" width="25%" />
-            <Skeleton variant="text" width="20%" />
-            <Skeleton variant="text" width="15%" />
-            <Skeleton variant="text" width="20%" />
-            <Skeleton variant="text" width="20%" />
-          </Box>
-        ))}
-      </Box>
+      <ModernLoadingStates.ModernTableSkeleton 
+        rows={5} 
+        columns={7} 
+        hasHeader 
+      />
     );
   }
 
   if (templates.length === 0) {
     return (
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center" 
-        justifyContent="center" 
-        py={8}
-        textAlign="center"
-      >
-        <ContractIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          No contract templates found
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Create your first contract template to streamline your contract process
-        </Typography>
-      </Box>
+      <ModernEmptyState
+        icon={ContractIcon}
+        title="No contract templates found"
+        description="Create your first contract template to streamline your contract process"
+        size="medium"
+        illustration="gradient"
+        tip={{
+          text: "Contract templates help standardize legal documents across your events",
+          type: "info"
+        }}
+      />
     );
   }
 
   return (
     <>
-      <TableContainer component={Paper} elevation={0}>
-        <Table>
+      <TableContainer 
+        sx={{ 
+          background: 'transparent',
+          borderRadius: tokens.spacing.radius.xxl,
+          overflow: 'hidden',
+          '&::-webkit-scrollbar': {
+            width: 8,
+            height: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: tokens.color.neutral[300],
+            borderRadius: 4,
+            '&:hover': {
+              background: tokens.color.neutral[400],
+            },
+          },
+        }}
+      >
+        <Table sx={{ background: 'transparent' }}>
           <TableHead>
-            <TableRow>
+            <TableRow
+              sx={{
+                '& .MuiTableCell-head': {
+                  background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+                  fontWeight: 600,
+                  color: tokens.color.neutral[700],
+                  borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                  fontSize: '0.875rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  py: 2.5,
+                },
+              }}
+            >
               <TableCell>
-                <TableSortLabel>
+                <TableSortLabel
+                  sx={{
+                    '& .MuiTableSortLabel-icon': {
+                      color: `${tokens.color.primary[500]} !important`,
+                    },
+                    '&:hover': {
+                      color: tokens.color.primary[600],
+                    },
+                    '&.Mui-active': {
+                      color: tokens.color.primary[600],
+                    },
+                  }}
+                >
                   Template Name
                 </TableSortLabel>
               </TableCell>
@@ -203,11 +239,25 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {templates.map((template) => (
+            {templates.map((template, index) => (
               <TableRow 
                 key={template.id} 
-                hover
-                sx={{ cursor: 'pointer' }}
+                sx={{
+                  cursor: 'pointer',
+                  background: index % 2 === 0 
+                    ? `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`
+                    : 'transparent',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
+                    transform: 'translateY(-1px)',
+                    boxShadow: `0 4px 20px ${tokens.color.primary[500]}08`,
+                  },
+                  '& .MuiTableCell-root': {
+                    borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                    py: 2.5,
+                  },
+                }}
                 onClick={() => onEdit(template)}
               >
                 <TableCell>
@@ -264,11 +314,25 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
                     size="small"
                     onClick={(e) => handleMenuOpen(e, template)}
                     disabled={isDeleting}
+                    sx={{
+                      ...glassPresets.light,
+                      border: `1px solid ${tokens.color.borders.glass}`,
+                      borderRadius: tokens.spacing.radius.full,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        ...glassPresets.medium,
+                        transform: 'scale(1.05)',
+                        border: `1px solid ${tokens.color.primary[300]}`,
+                      },
+                      '&:disabled': {
+                        opacity: 0.5,
+                      },
+                    }}
                   >
                     {isDeleting && selectedTemplate?.id === template.id ? (
-                      <CircularProgress size={20} />
+                      <CircularProgress size={20} color="primary" />
                     ) : (
-                      <MoreVertIcon />
+                      <MoreVertIcon sx={{ color: tokens.color.neutral[600] }} />
                     )}
                   </IconButton>
                 </TableCell>
@@ -283,28 +347,110 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
+        PaperProps={{
+          sx: {
+            backdropFilter: 'blur(20px)',
+            borderRadius: tokens.spacing.radius.lg,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+            boxShadow: `0 25px 80px ${tokens.color.neutral[900]}15`,
+            minWidth: 200,
+          },
+        }}
       >
-        <MenuItem onClick={handleEdit}>
+        <MenuItem 
+          onClick={handleEdit}
+          sx={{
+            borderRadius: tokens.spacing.radius.md,
+            mx: 1,
+            my: 0.5,
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
+              transform: 'translateX(4px)',
+            },
+          }}
+        >
           <ListItemIcon>
-            <EditIcon fontSize="small" />
+            <EditIcon 
+              fontSize="small" 
+              sx={{ color: tokens.color.primary[600] }} 
+            />
           </ListItemIcon>
-          <ListItemText>Edit Template</ListItemText>
+          <ListItemText 
+            sx={{ 
+              '& .MuiTypography-root': { 
+                fontWeight: 500,
+                color: tokens.color.neutral[700],
+              } 
+            }}
+          >
+            Edit Template
+          </ListItemText>
         </MenuItem>
         
         {onDuplicate && (
-          <MenuItem onClick={handleDuplicate}>
+          <MenuItem 
+            onClick={handleDuplicate}
+            sx={{
+              borderRadius: tokens.spacing.radius.md,
+              mx: 1,
+              my: 0.5,
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                background: `linear-gradient(135deg, ${tokens.color.info[50]} 0%, ${tokens.color.info[100]} 100%)`,
+                transform: 'translateX(4px)',
+              },
+            }}
+          >
             <ListItemIcon>
-              <DuplicateIcon fontSize="small" />
+              <DuplicateIcon 
+                fontSize="small" 
+                sx={{ color: tokens.color.info[600] }} 
+              />
             </ListItemIcon>
-            <ListItemText>Duplicate Template</ListItemText>
+            <ListItemText 
+              sx={{ 
+                '& .MuiTypography-root': { 
+                  fontWeight: 500,
+                  color: tokens.color.neutral[700],
+                } 
+              }}
+            >
+              Duplicate Template
+            </ListItemText>
           </MenuItem>
         )}
         
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+        <MenuItem 
+          onClick={handleDelete}
+          sx={{
+            borderRadius: tokens.spacing.radius.md,
+            mx: 1,
+            my: 0.5,
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              background: `linear-gradient(135deg, ${tokens.color.error[50]} 0%, ${tokens.color.error[100]} 100%)`,
+              transform: 'translateX(4px)',
+            },
+          }}
+        >
           <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
+            <DeleteIcon 
+              fontSize="small" 
+              sx={{ color: tokens.color.error[600] }} 
+            />
           </ListItemIcon>
-          <ListItemText>Delete Template</ListItemText>
+          <ListItemText 
+            sx={{ 
+              '& .MuiTypography-root': { 
+                fontWeight: 500,
+                color: tokens.color.error[600],
+              } 
+            }}
+          >
+            Delete Template
+          </ListItemText>
         </MenuItem>
       </Menu>
     </>

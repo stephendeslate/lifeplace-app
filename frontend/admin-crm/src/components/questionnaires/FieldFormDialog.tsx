@@ -32,6 +32,8 @@ import {
   type UpdateQuestionnaireFieldData,
   QUESTIONNAIRE_FIELD_TYPES,
 } from '../../types/questionnaires.types';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 const defaultFormData: QuestionnaireFieldFormData = {
   id: '',
@@ -173,10 +175,30 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      PaperProps={{
+        sx: {
+          ...glassPresets.light,
+          borderRadius: tokens.spacing.radius.xxl,
+          border: `1px solid ${tokens.color.borders.glass}`,
+          background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+          boxShadow: `0 25px 80px ${tokens.color.neutral[900]}20`,
+        }
+      }}
     >
       {open && (
         <>
-          <DialogTitle>
+          <DialogTitle
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[500]} 100%)`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent',
+              fontWeight: 700,
+              fontSize: '1.25rem',
+              textAlign: 'center',
+              pb: 1,
+            }}
+          >
             {editingField ? 'Edit Field' : 'Create New Field'}
           </DialogTitle>
       
@@ -285,10 +307,29 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
             </Box>
           </DialogContent>
           
-          <DialogActions sx={{ p: 3 }}>
+          <DialogActions 
+            sx={{ 
+              p: 3,
+              background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+              borderTop: `1px solid ${tokens.color.borders.glass}`,
+              gap: 2,
+            }}
+          >
             <Button 
               onClick={handleClose}
               disabled={isLoading}
+              sx={{
+                ...glassPresets.light,
+                border: `1px solid ${tokens.color.neutral[300]}`,
+                borderRadius: tokens.spacing.radius.full,
+                px: 3,
+                py: 1,
+                fontWeight: 600,
+                '&:hover': {
+                  ...glassPresets.medium,
+                  border: `1px solid ${tokens.color.neutral[400]}`,
+                },
+              }}
             >
               Cancel
             </Button>
@@ -296,7 +337,23 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading}
-              startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
+              startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : undefined}
+              sx={{
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                borderRadius: tokens.spacing.radius.full,
+                px: 4,
+                py: 1,
+                fontWeight: 600,
+                boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
+                '&:hover': {
+                  background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+                  boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
+                },
+                '&:disabled': {
+                  background: tokens.color.neutral[300],
+                  boxShadow: 'none',
+                },
+              }}
             >
               {isLoading ? 'Saving...' : editingField ? 'Update' : 'Create'}
             </Button>

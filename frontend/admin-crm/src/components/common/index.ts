@@ -1,14 +1,93 @@
 // frontend/admin-crm/src/components/common/index.ts
 
-export { EmptyState } from './EmptyState';
-export { LoadingTable } from './LoadingTable';
-export { ErrorBoundary, useErrorHandler, withErrorBoundary } from './ErrorBoundary';
-export { ConfirmDialogProvider, useConfirmDialog, SimpleConfirmDialog } from './ConfirmDialog';
-export { TableSkeleton, CardSkeleton, ListSkeleton, FormSkeleton } from './TableSkeleton';
+// Modern shared components for consistent UI across all settings pages
+export { default as ModernTable, createStandardActions } from './ModernTable';
+export type { ModernTableColumn, ModernTableAction, ModernTableProps } from './ModernTable';
 
-// Enhanced profile components
-export * from './ActivityTimeline';
-export * from './QuickActions';
-export * from './FinancialSummary';
-export * from './EntityNavigation';
-export * from './WorkflowVisualization';
+export { default as ModernDialog, createStandardActions as createDialogActions, createDeleteActions } from './ModernDialog';
+export type { ModernDialogAction, ModernDialogProps } from './ModernDialog';
+
+export { default as ModernForm, createFormSection } from './ModernForm';
+export type { ModernFormField, ModernFormSection, ModernFormProps } from './ModernForm';
+
+export { default as ModernSearch } from './ModernSearch';
+export type { ModernSearchFilter, ModernSearchProps } from './ModernSearch';
+
+// Modern Page Layout
+export { 
+  ModernPageLayout, 
+  ModernDashboardLayout, 
+  ModernSettingsLayout, 
+  ModernOverviewLayout 
+} from './ModernPageLayout';
+
+// Modern Card System
+export {
+  ModernCard,
+  ModernGlassCard,
+  ModernElevatedCard,
+  ModernOutlinedCard,
+  ModernMinimalCard,
+  ModernInteractiveCard,
+  ModernMetricCard,
+} from './ModernCard';
+
+// Modern Page Header
+export {
+  ModernPageHeader,
+  ModernDashboardHeader,
+  ModernSettingsHeader,
+  ModernOverviewHeader,
+  createRefreshAction,
+  createFilterAction,
+  createExportAction,
+  createSettingsAction,
+  createAddAction,
+} from './ModernPageHeader';
+
+// Activity Timeline
+export { ActivityTimeline } from './ActivityTimeline';
+export type { ActivityItem } from './ActivityTimeline';
+
+// Quick Actions
+export { 
+  QuickActions,
+  createEventActions,
+  createClientActions,
+  createPaymentActions 
+} from './QuickActions';
+export type { QuickAction } from './QuickActions';
+
+// Financial Summary
+export { 
+  FinancialSummary,
+  calculateEventFinancials,
+  calculateClientFinancials 
+} from './FinancialSummary';
+export type { FinancialMetric, PaymentBreakdown } from './FinancialSummary';
+
+// Entity Navigation
+export { 
+  EntityNavigation,
+  createClientReference,
+  createEventReference,
+  createPaymentReference 
+} from './EntityNavigation';
+export type { EntityReference } from './EntityNavigation';
+
+// Workflow Visualization
+export { WorkflowVisualization } from './WorkflowVisualization';
+export type { WorkflowStage, WorkflowTask } from './WorkflowVisualization';
+
+// Table Skeleton (alias as ModernTableSkeleton)
+export { 
+  TableSkeleton,
+  TableSkeleton as ModernTableSkeleton,
+  CardSkeleton,
+  ListSkeleton,
+  FormSkeleton 
+} from './TableSkeleton';
+
+// Existing components
+export { default as ModernLoadingStates } from './ModernLoadingStates';
+export { ModernEmptyState } from './ModernEmptyState';

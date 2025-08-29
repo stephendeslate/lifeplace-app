@@ -10,8 +10,6 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Chip,
   FormControl,
   Select,
@@ -26,6 +24,9 @@ import {
   CircularProgress,
   Badge,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   ExpandMore as ExpandMoreIcon,
   Schedule as TimeIcon,
@@ -388,8 +389,8 @@ export const EnhancedDateTimeStepConfig: React.FC<EnhancedDateTimeStepConfigProp
 
       {/* Configuration Preview/Test Results */}
       {previewMode && (
-        <Card sx={{ mb: 3, bgcolor: 'grey.50' }}>
-          <CardContent>
+        <ModernCard variant="glass" size="small" animation="none" sx={{ mb: 3, bgcolor: 'grey.50' }}>
+          <Box sx={{ p: 3 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
               <Typography variant="subtitle1">
                 Configuration Test Results
@@ -418,14 +419,14 @@ export const EnhancedDateTimeStepConfig: React.FC<EnhancedDateTimeStepConfigProp
                 </Typography>
               </Box>
             ) : null}
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
       )}
 
       <Stack spacing={3}>
         {/* Basic Settings */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Display Options
             </Typography>
@@ -470,12 +471,12 @@ export const EnhancedDateTimeStepConfig: React.FC<EnhancedDateTimeStepConfigProp
                 />
               </Box>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Duration Settings */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Duration Settings
             </Typography>
@@ -516,12 +517,12 @@ export const EnhancedDateTimeStepConfig: React.FC<EnhancedDateTimeStepConfigProp
                 sx={{ maxWidth: 300 }}
               />
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Enterprise Availability Settings */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <AvailabilityIcon color="primary" />
               <Typography variant="subtitle1">
@@ -646,12 +647,12 @@ export const EnhancedDateTimeStepConfig: React.FC<EnhancedDateTimeStepConfigProp
                 </>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Availability Checking Configuration */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Availability Validation Rules
             </Typography>
@@ -732,12 +733,12 @@ export const EnhancedDateTimeStepConfig: React.FC<EnhancedDateTimeStepConfigProp
                 </FormControl>
               </Box>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Conflict Resolution */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Conflict Resolution & Override Policy
             </Typography>
@@ -782,8 +783,8 @@ export const EnhancedDateTimeStepConfig: React.FC<EnhancedDateTimeStepConfigProp
                 />
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Advanced Settings */}
         <Accordion>
@@ -934,8 +935,8 @@ export const EnhancedDateTimeStepConfig: React.FC<EnhancedDateTimeStepConfigProp
         </Accordion>
 
         {/* Configuration Summary */}
-        <Card variant="outlined" sx={{ bgcolor: 'primary.50' }}>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none" sx={{ bgcolor: 'primary.50' }}>
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Enterprise Configuration Summary
             </Typography>
@@ -1014,8 +1015,8 @@ export const EnhancedDateTimeStepConfig: React.FC<EnhancedDateTimeStepConfigProp
                 </Typography>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

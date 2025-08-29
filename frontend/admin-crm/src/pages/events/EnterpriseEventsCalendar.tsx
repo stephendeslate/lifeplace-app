@@ -788,7 +788,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
           <Typography variant="h4" fontWeight="bold">
-            Enterprise Calendar
+            Calendar
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {view === 'month' 

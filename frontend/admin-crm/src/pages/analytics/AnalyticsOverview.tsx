@@ -277,16 +277,18 @@ export const AnalyticsOverview: React.FC = () => {
           </FormControl>
           
           <Tooltip title="Refresh data">
-            <IconButton 
-              onClick={() => refetchBusinessMetrics()}
-              disabled={isLoadingBusinessMetrics}
-            >
+            <span>
+              <IconButton 
+                onClick={() => refetchBusinessMetrics()}
+                disabled={isLoadingBusinessMetrics}
+              >
               {isLoadingBusinessMetrics ? (
                 <CircularProgress size={20} />
               ) : (
                 <RefreshIcon />
               )}
             </IconButton>
+            </span>
           </Tooltip>
         </Box>
       </Box>

@@ -3,8 +3,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Stack,
   Alert,
@@ -14,7 +12,6 @@ import {
   Select,
   MenuItem,
   CircularProgress,
-  Paper,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -22,6 +19,8 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   Block as BlockedIcon,
   NavigateNext as NextIcon,
@@ -368,9 +367,11 @@ export const EnhancedDateTimeStep: React.FC<EnhancedDateTimeStepProps> = ({
                 !isPast;
               
               return (
-                <Paper
+                <ModernCard
                   key={dateStr}
-                  elevation={isSelected ? 2 : 0}
+                  variant="glass"
+                  size="small"
+                  animation="none"
                   sx={{
                     minHeight: 60,
                     p: 1,
@@ -459,7 +460,7 @@ export const EnhancedDateTimeStep: React.FC<EnhancedDateTimeStepProps> = ({
                       />
                     )}
                   </Stack>
-                </Paper>
+                </ModernCard>
               );
             })}
           </Box>
@@ -502,8 +503,8 @@ export const EnhancedDateTimeStep: React.FC<EnhancedDateTimeStepProps> = ({
 
       {/* Selected Date Availability Status */}
       {selectedDate && selectedDateAvailability && config.show_availability_status && (
-        <Card sx={{ mb: 3, bgcolor: 'background.default' }}>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none" sx={{ mb: 3, bgcolor: 'background.default' }}>
+          <Box sx={{ p: 3 }}>
             <AvailabilityIndicator
               availability={selectedDateAvailability}
               showDetails={config.show_conflict_details}
@@ -513,14 +514,14 @@ export const EnhancedDateTimeStep: React.FC<EnhancedDateTimeStepProps> = ({
                 setConflictDetailOpen(true);
               }}
             />
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
       )}
 
       <Stack spacing={3}>
         {/* Duration Selection */}
-        <Card>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Event Duration
             </Typography>
@@ -541,13 +542,13 @@ export const EnhancedDateTimeStep: React.FC<EnhancedDateTimeStepProps> = ({
                 ))}
               </Select>
             </FormControl>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Calendar */}
         {config.show_calendar_view && (
-          <Card>
-            <CardContent>
+          <ModernCard variant="glass" size="medium" animation="none">
+            <Box sx={{ p: 3 }}>
               {/* Month Navigation */}
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
                 <IconButton onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
@@ -562,14 +563,14 @@ export const EnhancedDateTimeStep: React.FC<EnhancedDateTimeStepProps> = ({
               </Stack>
 
               {renderCalendar()}
-            </CardContent>
-          </Card>
+            </Box>
+          </ModernCard>
         )}
 
         {/* Time Selection */}
         {config.allow_time_selection && selectedDate && (
-          <Card>
-            <CardContent>
+          <ModernCard variant="glass" size="medium" animation="none">
+            <Box sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Select Time
               </Typography>
@@ -597,8 +598,8 @@ export const EnhancedDateTimeStep: React.FC<EnhancedDateTimeStepProps> = ({
                   ))}
                 </Box>
               )}
-            </CardContent>
-          </Card>
+            </Box>
+          </ModernCard>
         )}
 
         {/* Next Available Date Suggestion */}

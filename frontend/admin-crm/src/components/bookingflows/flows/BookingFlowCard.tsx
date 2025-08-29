@@ -2,9 +2,6 @@
 
 import React, { useState, useRef } from 'react';
 import {
-  Card,
-  CardContent,
-  CardActions,
   Typography,
   Chip,
   Box,
@@ -19,6 +16,9 @@ import {
   Tooltip,
   Badge,
 } from '@mui/material';
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
+import { tokens } from '../../../design-system';
 import {
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
@@ -37,6 +37,7 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import type { BookingFlow } from '../../../types/bookingflows.types';
+import { getEventTypeDisplayName } from '../../../utils/bookingFlowUtils';
 
 interface BookingFlowCardProps {
   flow: BookingFlow;
@@ -98,15 +99,6 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
     // Don't restore focus when navigating away or opening dialogs
   };
 
-  const handleCardClick = (event: React.MouseEvent) => {
-    // Only trigger edit if not clicking on interactive elements
-    const target = event.target as HTMLElement;
-    const isInteractiveElement = target.closest('button') || target.closest('[role="button"]');
-    
-    if (!isInteractiveElement) {
-      onEdit(flow);
-    }
-  };
 
   const handlePreviewClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -169,10 +161,9 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
 
   const configStatus = getConfigurationStatus();
 
-  // UPDATED: Enhanced event type display with proper null handling
+  // UPDATED: Enhanced event type display with proper null handling using utilities
   const getEventTypeDisplay = () => {
-    // Use event_type_name which is always provided by backend serializer
-    return flow.event_type_name || 'Any Event Type';
+    return getEventTypeDisplayName(flow);
   };
 
   // NEW: Payment configuration indicator
@@ -196,28 +187,17 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
   };
 
   return (
-    <Card 
-      sx={{ 
+    <Box
+      sx={{
         height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
         cursor: 'pointer',
-        transition: 'all 0.2s ease-in-out',
-        border: configStatus.hasIssues ? '1px solid' : undefined,
-        borderColor: configStatus.hasIssues ? 'warning.main' : undefined,
-        '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: 3,
-        },
-        // Ensure card is focusable for keyboard navigation
         '&:focus-visible': {
-          outline: '2px solid',
-          outlineColor: 'primary.main',
+          outline: `2px solid ${tokens.color.primary[500]}`,
           outlineOffset: '2px',
         }
       }}
-      onClick={handleCardClick}
-      onKeyDown={(e) => {
+      onClick={() => onEdit(flow)}
+      onKeyDown={(e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onEdit(flow);
@@ -227,8 +207,25 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
       role="button"
       aria-label={`Edit booking flow: ${flow.name}`}
     >
+      <ModernCard
+        variant="glass"
+        size="large"
+        color={flow.is_active ? 'primary' : 'secondary'}
+        animation="none"
+        sx={{ 
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          ...(configStatus.hasIssues && {
+            border: `2px solid ${tokens.color.warning[400]}`,
+            '&::before': {
+              background: `linear-gradient(135deg, ${tokens.color.warning[500]}08 0%, ${tokens.color.warning[600]}06 100%)`,
+            },
+          }),
+        }}
+      >
       {/* Header */}
-      <CardContent sx={{ flexGrow: 1 }}>
+      <Box sx={{ flexGrow: 1, p: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
             <Badge
@@ -403,10 +400,10 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
             Updated {new Date(flow.updated_at).toLocaleDateString()}
           </Typography>
         </Box>
-      </CardContent>
+      </Box>
 
       {/* Actions */}
-      <CardActions sx={{ px: 2, pb: 2 }}>
+      <Box sx={{ px: 3, pb: 3, pt: 0 }}>
         <Button
           size="small"
           startIcon={<PreviewIcon />}
@@ -442,7 +439,7 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
             </Button>
           </Tooltip>
         )}
-      </CardActions>
+      </Box>
 
       {/* Menu */}
       <Menu
@@ -484,6 +481,7 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
           <ListItemText>Delete Flow</ListItemText>
         </MenuItem>
       </Menu>
-    </Card>
+      </ModernCard>
+    </Box>
   );
 };

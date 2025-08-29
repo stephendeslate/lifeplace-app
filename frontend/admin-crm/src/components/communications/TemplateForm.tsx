@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   FormControl,
   InputLabel,
   MenuItem,
@@ -17,7 +15,6 @@ import {
   CircularProgress,
   ToggleButton,
   ToggleButtonGroup,
-  Paper
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -31,6 +28,13 @@ import { sanitizeHTML } from '../../utils/security';
 import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../types/communications.types';
 import RichTextEditor, { type RichTextEditorHandle } from '../shared/RichTextEditor';
 import VariableInserter from './VariableInserter';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { 
+  ModernCard,
+  ModernPageHeader,
+  ModernPageLayout
+} from '../common';
 
 interface TemplateFormProps {
   template?: CommunicationTemplate;
@@ -238,16 +242,23 @@ The {{ site_name }} Team</p>`
   };
 
   return (
-    <Box>
-      <Typography variant="h5" fontWeight="bold" mb={3}>
-        {isEditing ? 'Edit Template' : 'Create Template'}
-      </Typography>
+    <ModernPageLayout>
+      <ModernPageHeader
+        title={isEditing ? 'Edit Template' : 'Create Template'}
+        subtitle={isEditing ? 'Modify your communication template' : 'Create a new communication template'}
+        size="medium"
+        gradient
+        glass
+      />
 
       <Box component="form" onSubmit={handleSubmit}>
-        <Stack spacing={3}>
+        <Stack spacing={4}>
           {/* Basic Information */}
-          <Card>
-            <CardContent>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+          >
               <Typography variant="h6" gutterBottom>
                 Basic Information
               </Typography>
@@ -261,11 +272,29 @@ The {{ site_name }} Team</p>`
                   fullWidth
                   disabled={template?.is_system}
                   helperText="A descriptive name for this template"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      ...glassPresets.light,
+                      borderRadius: tokens.spacing.radius.lg,
+                      border: `1px solid ${tokens.color.borders.glass}`,
+                      '&:hover': {
+                        border: `1px solid ${tokens.color.primary[300]}`,
+                      },
+                      '&.Mui-focused': {
+                        border: `1px solid ${tokens.color.primary[500]}`,
+                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: tokens.color.neutral[600],
+                      fontWeight: 500,
+                    },
+                  }}
                 />
 
                 <Box display="flex" gap={2}>
                   <FormControl fullWidth>
-                    <InputLabel>Channel</InputLabel>
+                    <InputLabel sx={{ color: tokens.color.neutral[600], fontWeight: 500 }}>Channel</InputLabel>
                     <Select
                       value={formData.channel}
                       label="Channel"
@@ -275,6 +304,22 @@ The {{ site_name }} Team</p>`
                         setEditorMode('visual');
                       }}
                       disabled={template?.is_system}
+                      sx={{
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: tokens.color.borders.glass,
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: tokens.color.primary[300],
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: tokens.color.primary[500],
+                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                        },
+                        '& .MuiSelect-select': {
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.lg,
+                        },
+                      }}
                     >
                       <MenuItem value="EMAIL">Email</MenuItem>
                       <MenuItem value="SMS">SMS</MenuItem>
@@ -282,12 +327,28 @@ The {{ site_name }} Team</p>`
                   </FormControl>
 
                   <FormControl fullWidth>
-                    <InputLabel>Category</InputLabel>
+                    <InputLabel sx={{ color: tokens.color.neutral[600], fontWeight: 500 }}>Category</InputLabel>
                     <Select
                       value={formData.category}
                       label="Category"
                       onChange={(e) => handleInputChange('category', e.target.value)}
                       disabled={template?.is_system}
+                      sx={{
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: tokens.color.borders.glass,
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: tokens.color.primary[300],
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: tokens.color.primary[500],
+                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                        },
+                        '& .MuiSelect-select': {
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.lg,
+                        },
+                      }}
                     >
                       <MenuItem value="MANUAL">Manual</MenuItem>
                       <MenuItem value="AUTO">Auto</MenuItem>
@@ -296,12 +357,14 @@ The {{ site_name }} Team</p>`
                   </FormControl>
                 </Box>
               </Stack>
-            </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* Template Content */}
-          <Card>
-            <CardContent>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+          >
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">
                   Template Content
@@ -313,6 +376,30 @@ The {{ site_name }} Team</p>`
                       exclusive
                       onChange={(_, value) => value && setEditorMode(value)}
                       size="small"
+                      sx={{
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.full,
+                        border: `1px solid ${tokens.color.borders.glass}`,
+                        overflow: 'hidden',
+                        '& .MuiToggleButton-root': {
+                          border: 'none',
+                          borderRadius: 0,
+                          px: 2,
+                          py: 0.5,
+                          fontWeight: 500,
+                          color: tokens.color.neutral[600],
+                          '&.Mui-selected': {
+                            background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                            color: 'white',
+                            '&:hover': {
+                              background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+                            },
+                          },
+                          '&:hover': {
+                            background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[50]} 100%)`,
+                          },
+                        },
+                      }}
                     >
                       <ToggleButton value="visual">
                         <EditIcon sx={{ fontSize: 16, mr: 0.5 }} />
@@ -329,8 +416,21 @@ The {{ site_name }} Team</p>`
                     startIcon={<PreviewIcon />}
                     onClick={handlePreview}
                     disabled={!formData.body_template || isPreviewing}
+                    sx={{
+                      ...glassPresets.light,
+                      border: `1px solid ${tokens.color.primary[300]}`,
+                      borderRadius: tokens.spacing.radius.full,
+                      px: 3,
+                      fontWeight: 600,
+                      color: tokens.color.primary[600],
+                      '&:hover': {
+                        ...glassPresets.medium,
+                        border: `1px solid ${tokens.color.primary[500]}`,
+                        background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[50]} 100%)`,
+                      },
+                    }}
                   >
-                    {isPreviewing ? <CircularProgress size={20} /> : 'Preview'}
+                    {isPreviewing ? <CircularProgress size={20} color="primary" /> : 'Preview'}
                   </Button>
                 </Stack>
               </Box>
@@ -345,6 +445,24 @@ The {{ site_name }} Team</p>`
                     fullWidth
                     placeholder="Use {{ variable_name }} for dynamic content"
                     helperText="The subject line of your email"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.lg,
+                        border: `1px solid ${tokens.color.borders.glass}`,
+                        '&:hover': {
+                          border: `1px solid ${tokens.color.primary[300]}`,
+                        },
+                        '&.Mui-focused': {
+                          border: `1px solid ${tokens.color.primary[500]}`,
+                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: tokens.color.neutral[600],
+                        fontWeight: 500,
+                      },
+                    }}
                   />
                 )}
 
@@ -378,9 +496,26 @@ The {{ site_name }} Team</p>`
                             : "Raw HTML - be careful with syntax"
                         }
                         sx={{
+                          '& .MuiOutlinedInput-root': {
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.lg,
+                            border: `1px solid ${tokens.color.borders.glass}`,
+                            '&:hover': {
+                              border: `1px solid ${tokens.color.primary[300]}`,
+                            },
+                            '&.Mui-focused': {
+                              border: `1px solid ${tokens.color.primary[500]}`,
+                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                            },
+                          },
                           '& .MuiInputBase-input': {
-                            fontFamily: editorMode === 'html' ? 'monospace' : 'inherit'
-                          }
+                            fontFamily: editorMode === 'html' ? 'monospace' : 'inherit',
+                            color: tokens.color.neutral[700],
+                          },
+                          '& .MuiInputLabel-root': {
+                            color: tokens.color.neutral[600],
+                            fontWeight: 500,
+                          },
                         }}
                       />
 
@@ -409,25 +544,30 @@ The {{ site_name }} Team</p>`
                   )}
                 </Box>
               </Stack>
-            </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* Variable Helper */}
-          <Card>
-            <CardContent>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+          >
               <VariableInserter
                 variableSchemas={variableSchemas}
                 onVariableInsert={handleVariableInsert}
                 onTemplateLoad={loadTemplate}
                 channel={formData.channel}
               />
-            </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* Preview */}
           {previewData && (
-            <Card>
-              <CardContent>
+            <ModernCard
+              variant="glass"
+              color="primary"
+              size="medium"
+              animation="none"
+            >
                 <Typography variant="h6" gutterBottom>
                   Preview
                 </Typography>
@@ -482,35 +622,72 @@ The {{ site_name }} Team</p>`
                     </Typography>
                   </Alert>
                 )}
-              </CardContent>
-            </Card>
+            </ModernCard>
           )}
 
           {/* Actions */}
-          <Box display="flex" gap={2} justifyContent="flex-end">
-            <Button
-              variant="outlined"
-              startIcon={<CancelIcon />}
-              onClick={onCancel}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              startIcon={<SaveIcon />}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <CircularProgress size={20} />
-              ) : (
-                isEditing ? 'Update Template' : 'Create Template'
-              )}
-            </Button>
-          </Box>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+              border: `1px solid ${tokens.color.borders.glass}`,
+            }}
+          >
+            <Box display="flex" gap={3} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                startIcon={<CancelIcon />}
+                onClick={onCancel}
+                disabled={isLoading}
+                sx={{
+                  ...glassPresets.light,
+                  border: `1px solid ${tokens.color.neutral[300]}`,
+                  borderRadius: tokens.spacing.radius.full,
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 600,
+                  '&:hover': {
+                    ...glassPresets.medium,
+                    border: `1px solid ${tokens.color.neutral[400]}`,
+                  },
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={<SaveIcon />}
+                disabled={isLoading}
+                sx={{
+                  background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                  borderRadius: tokens.spacing.radius.full,
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 600,
+                  boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+                    boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
+                  },
+                  '&:disabled': {
+                    background: tokens.color.neutral[300],
+                    boxShadow: 'none',
+                  },
+                }}
+              >
+                {isLoading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  isEditing ? 'Update Template' : 'Create Template'
+                )}
+              </Button>
+            </Box>
+          </ModernCard>
         </Stack>
       </Box>
-    </Box>
+    </ModernPageLayout>
   );
 };

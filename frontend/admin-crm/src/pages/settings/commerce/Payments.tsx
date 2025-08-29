@@ -7,8 +7,6 @@ import {
   Tabs,
   Tab,
   Button,
-  Card,
-  CardContent,
   Alert,
 } from '@mui/material';
 import {
@@ -25,6 +23,14 @@ import {
   TaxRateFormDialog,
 } from '../../../components/payments';
 import type { PaymentGateway, TaxRate } from '../../../types/payments.types';
+
+// Modern Design System imports
+import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
+import { ModernCard } from '../../../components/common/ModernCard';
+import { ModernPageHeader, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
+import { createTransition } from '../../../design-system/utils/animations';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -59,12 +65,12 @@ export const Payments: React.FC = () => {
   const [selectedTaxRate, setSelectedTaxRate] = useState<TaxRate | null>(null);
 
   // Data fetching
-  const { data: gateways = [], isLoading: gatewaysLoading } = usePaymentGateways();
-  const { data: taxRates = [], isLoading: taxRatesLoading } = useTaxRates();
+  const { data: gateways = [], isLoading: gatewaysLoading, refetch: refetchGateways } = usePaymentGateways();
+  const { data: taxRates = [], isLoading: taxRatesLoading, refetch: refetchTaxRates } = useTaxRates();
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: 'Settings', path: '/settings' },
+      { label: 'Settings' },
       { label: 'Commerce' },
       { label: 'Payments' },
     ]);
@@ -107,43 +113,134 @@ export const Payments: React.FC = () => {
   };
 
   const hasPayMongo = gateways.some(g => g.code === 'paymongo' && g.is_active);
+  
+  // Calculate stats
+  const activeGateways = gateways.filter(g => g.is_active).length;
+  const activeTaxRates = taxRates.length; // TaxRate doesn't have is_active property
+  
+  // Header actions
+  const headerActions = [
+    createRefreshAction(() => {
+      refetchGateways();
+      refetchTaxRates();
+    }),
+  ];
+
+  const primaryAction = createAddAction(
+    activeTab === 0 ? 'New Gateway' : 'New Tax Rate', 
+    activeTab === 0 ? handleAddGateway : handleAddTaxRate, 
+    'primary'
+  );
 
   return (
-    <Box>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
-          <PaymentIcon color="primary" sx={{ fontSize: 32 }} />
-          <Box>
-            <Typography variant="h4" component="h1" fontWeight="bold">
-              Payment Configuration
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              Configure payment gateways and tax settings for client transactions
-            </Typography>
-          </Box>
-        </Box>
+    <ModernSettingsLayout>
+      {/* Modern Header */}
+      <ModernPageHeader
+        title="Payment Configuration"
+        subtitle="Configure payment gateways and tax settings for client transactions"
+        icon={<PaymentIcon />}
+        breadcrumbs={[
+          { label: 'Settings' },
+          { label: 'Commerce' },
+          { label: 'Payments' },
+        ]}
+        primaryAction={primaryAction}
+        secondaryActions={headerActions}
+        stats={[
+          { label: 'Active Gateways', value: activeGateways },
+          { label: 'Active Tax Rates', value: activeTaxRates },
+          { label: 'Total Gateways', value: gateways.length },
+        ]}
+        size="medium"
+        gradient
+        glass
+      />
 
-        {/* Quick Setup Alert */}
-        {!hasPayMongo && (
-          <Alert 
-            severity="info" 
-            sx={{ mb: 3 }}
-            action={
-              <Button color="inherit" size="small" onClick={handleAddGateway}>
-                Setup PayMongo
-              </Button>
-            }
+      {/* Quick Setup Alert */}
+      {!hasPayMongo && (
+        <Box sx={{ mb: 4 }}>
+          <ModernCard
+            variant="glass"
+            color="primary"
+            size="small"
+            animation="none"
           >
-            <strong>Philippine Business?</strong> Setup PayMongo for seamless local payment processing including cards, e-wallets, and bank transfers.
-          </Alert>
-        )}
-      </Box>
+            <Alert 
+              severity="info"
+              icon={<PaymentIcon />}
+              action={
+                <Button 
+                  color="inherit" 
+                  size="small" 
+                  onClick={handleAddGateway}
+                  sx={{
+                    borderRadius: tokens.spacing.radius.full,
+                    fontWeight: 600,
+                  }}
+                >
+                  Setup PayMongo
+                </Button>
+              }
+              sx={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                '& .MuiAlert-message': {
+                  color: tokens.color.primary[700],
+                },
+              }}
+            >
+              <strong>Philippine Business?</strong> Setup PayMongo for seamless local payment processing including cards, e-wallets, and bank transfers.
+            </Alert>
+          </ModernCard>
+        </Box>
+      )}
 
-      {/* Tabs */}
-      <Card elevation={2}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={activeTab} onChange={handleTabChange} aria-label="payment configuration tabs">
+      {/* Modern Main Content Card */}
+      <ModernCard
+        variant="glass"
+        size="medium"
+        animation="none"
+        sx={{
+          overflow: 'visible',
+          position: 'relative',
+        }}
+      >
+        {/* Modern Tab System */}
+        <Box 
+          sx={{ 
+            borderBottom: `1px solid ${tokens.color.borders.glass}`,
+            position: 'relative',
+            ...glassPresets.light,
+            borderRadius: `${tokens.spacing.radius.xxl} ${tokens.spacing.radius.xxl} 0 0`,
+          }}
+        >
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="payment configuration tabs"
+            sx={{
+              '& .MuiTabs-indicator': {
+                backgroundColor: tokens.color.primary[500],
+                height: 3,
+                borderRadius: '3px 3px 0 0',
+              },
+              '& .MuiTab-root': {
+                fontWeight: 600,
+                textTransform: 'none',
+                borderRadius: `${tokens.spacing.radius.lg} ${tokens.spacing.radius.lg} 0 0`,
+                transition: createTransition(['background', 'color'], 'fast'),
+                
+                '&:hover': {
+                  backgroundColor: `${tokens.color.primary[500]}08`,
+                },
+                
+                '&.Mui-selected': {
+                  backgroundColor: `${tokens.color.primary[500]}12`,
+                  color: tokens.color.primary[700],
+                },
+              },
+            }}
+          >
             <Tab 
               label="Payment Gateways" 
               icon={<PaymentIcon />}
@@ -157,15 +254,28 @@ export const Payments: React.FC = () => {
           </Tabs>
         </Box>
 
-        {/* Payment Gateways Tab */}
-        <TabPanel value={activeTab} index={0}>
-          <CardContent>
+        {/* Tab Content */}
+        <Box sx={{ p: 3, position: 'relative' }}>
+          {/* Payment Gateways Tab */}
+          <TabPanel value={activeTab} index={0}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
               <Box>
-                <Typography variant="h6" fontWeight="bold">
+                <Typography 
+                  variant="h6" 
+                  fontWeight="700"
+                  sx={{ 
+                    color: tokens.color.neutral[800],
+                    mb: 0.5,
+                  }}
+                >
                   Payment Gateways
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: tokens.color.neutral[600],
+                  }}
+                >
                   Configure payment processing providers for accepting client payments
                 </Typography>
               </Box>
@@ -173,6 +283,21 @@ export const Payments: React.FC = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={handleAddGateway}
+                sx={{
+                  background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                  borderRadius: tokens.spacing.radius.full,
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.25,
+                  boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
+                  transition: createTransition(['transform', 'box-shadow'], 'fast'),
+                  
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+                    transform: 'translateY(-2px)',
+                    boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
+                  },
+                }}
               >
                 Add Gateway
               </Button>
@@ -183,18 +308,28 @@ export const Payments: React.FC = () => {
               isLoading={gatewaysLoading}
               onEdit={handleEditGateway}
             />
-          </CardContent>
-        </TabPanel>
+          </TabPanel>
 
-        {/* Tax Rates Tab */}
-        <TabPanel value={activeTab} index={1}>
-          <CardContent>
+          {/* Tax Rates Tab */}
+          <TabPanel value={activeTab} index={1}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
               <Box>
-                <Typography variant="h6" fontWeight="bold">
+                <Typography 
+                  variant="h6" 
+                  fontWeight="700"
+                  sx={{ 
+                    color: tokens.color.neutral[800],
+                    mb: 0.5,
+                  }}
+                >
                   Tax Rates
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: tokens.color.neutral[600],
+                  }}
+                >
                   Manage tax rates applied to invoices and quotes
                 </Typography>
               </Box>
@@ -202,6 +337,21 @@ export const Payments: React.FC = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={handleAddTaxRate}
+                sx={{
+                  background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                  borderRadius: tokens.spacing.radius.full,
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.25,
+                  boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
+                  transition: createTransition(['transform', 'box-shadow'], 'fast'),
+                  
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+                    transform: 'translateY(-2px)',
+                    boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
+                  },
+                }}
               >
                 Add Tax Rate
               </Button>
@@ -212,9 +362,9 @@ export const Payments: React.FC = () => {
               isLoading={taxRatesLoading}
               onEdit={handleEditTaxRate}
             />
-          </CardContent>
-        </TabPanel>
-      </Card>
+          </TabPanel>
+        </Box>
+      </ModernCard>
 
       {/* Dialogs */}
       <PaymentGatewayFormDialog
@@ -228,6 +378,6 @@ export const Payments: React.FC = () => {
         onClose={handleCloseTaxRateDialog}
         taxRate={selectedTaxRate}
       />
-    </Box>
+    </ModernSettingsLayout>
   );
 };

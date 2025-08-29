@@ -1,35 +1,11 @@
 // frontend/admin-crm/src/components/products/ProductsTable.tsx
 
-import React, { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Box,
-  Tooltip,
-  CircularProgress,
-  TableSortLabel,
-  Skeleton,
-} from '@mui/material';
-import {
-  MoreVert as MoreVertIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Star as StarIcon,
-  StarBorder as StarBorderIcon,
-} from '@mui/icons-material';
+import React from 'react';
+import { Box, Typography, Chip, Tooltip } from '@mui/material';
+import { Inventory as ProductIcon, Star as StarIcon, StarBorder as StarBorderIcon } from '@mui/icons-material';
 import type { ProductOption } from '../../types/products.types';
+import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
+import type { ModernTableColumn } from '../common';
 
 interface ProductsTableProps {
   products: ProductOption[];
@@ -44,36 +20,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   isLoading,
   onEdit,
   onDelete,
-  isDeleting,
 }) => {
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(null);
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, product: ProductOption) => {
-    event.stopPropagation();
-    setMenuAnchor(event.currentTarget);
-    setSelectedProduct(product);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
-    setSelectedProduct(null);
-  };
-
-  const handleEdit = () => {
-    if (selectedProduct) {
-      onEdit(selectedProduct);
-    }
-    handleMenuClose();
-  };
-
-  const handleDelete = () => {
-    if (selectedProduct) {
-      onDelete(selectedProduct.id);
-    }
-    handleMenuClose();
-  };
-
   const formatPrice = (product: ProductOption) => {
     if (product.pricing_model === 'CUSTOM') {
       return 'Custom Quote';
@@ -107,150 +54,114 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     />
   );
 
-  if (isLoading) {
-    return (
-      <Box p={3}>
-        {[...Array(5)].map((_, index) => (
-          <Box key={index} display="flex" gap={2} mb={2}>
-            <Skeleton variant="text" width="20%" />
-            <Skeleton variant="text" width="30%" />
-            <Skeleton variant="text" width="15%" />
-            <Skeleton variant="text" width="15%" />
-            <Skeleton variant="text" width="20%" />
+  const columns: ModernTableColumn[] = [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (_, product: ProductOption) => (
+        <Box display="flex" alignItems="center" gap={1}>
+          <ProductIcon color="primary" fontSize="small" />
+          <Box>
+            <Typography variant="subtitle2" fontWeight="medium">
+              {product.name}
+            </Typography>
+            {product.sku && (
+              <Typography variant="caption" color="text.secondary">
+                SKU: {product.sku}
+              </Typography>
+            )}
           </Box>
-        ))}
-      </Box>
-    );
+        </Box>
+      ),
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      render: (_, product: ProductOption) => (
+        <Box>
+          <Typography variant="body2" fontWeight="medium">
+            {product.category_name}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {product.category_path}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      render: (_, product: ProductOption) => 
+        getTypeChip(product.type_display, product.type === 'PACKAGE'),
+    },
+    {
+      key: 'pricing',
+      label: 'Pricing',
+      render: (_, product: ProductOption) => (
+        <Box>
+          <Typography variant="body2" fontWeight="medium">
+            {formatPrice(product)}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {product.pricing_model_display}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      key: 'is_active',
+      label: 'Status',
+      render: (_, product: ProductOption) => getStatusChip(product.is_active),
+    },
+    {
+      key: 'is_featured',
+      label: 'Featured',
+      align: 'center',
+      render: (_, product: ProductOption) => (
+        product.is_featured ? (
+          <Tooltip title="Featured product">
+            <StarIcon color="warning" />
+          </Tooltip>
+        ) : (
+          <StarBorderIcon color="disabled" />
+        )
+      ),
+    },
+  ];
+
+  const actions = createStandardActions(
+    (product: ProductOption) => onEdit(product),
+    (product: ProductOption) => onDelete(product.id),
+    {
+      editLabel: 'Edit Product',
+      deleteLabel: 'Delete Product',
+    }
+  );
+
+  if (isLoading) {
+    return <ModernLoadingStates.ModernTableSkeleton />;
   }
 
   if (products.length === 0) {
     return (
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center" 
-        justifyContent="center" 
-        py={8}
-        textAlign="center"
-      >
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          No products found
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Create your first product or package to get started
-        </Typography>
-      </Box>
+      <ModernEmptyState
+        icon={ProductIcon}
+        title="No products found"
+        description="Create your first product or package to get started"
+        tip={{ text: "Start with individual products, then create packages to bundle services together", type: "info" }}
+      />
     );
   }
 
   return (
-    <>
-      <TableContainer component={Paper} elevation={0}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <TableSortLabel>
-                  Name
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell>Pricing</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="center">Featured</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {products.map((product) => (
-              <TableRow 
-                key={product.id} 
-                hover
-                sx={{ cursor: 'pointer' }}
-                onClick={() => onEdit(product)}
-              >
-                <TableCell>
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight="medium">
-                      {product.name}
-                    </Typography>
-                    {product.sku && (
-                      <Typography variant="caption" color="text.secondary">
-                        SKU: {product.sku}
-                      </Typography>
-                    )}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {product.category_name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {product.category_path}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  {getTypeChip(product.type_display, product.type === 'PACKAGE')}
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {formatPrice(product)}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {product.pricing_model_display}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  {getStatusChip(product.is_active)}
-                </TableCell>
-                <TableCell align="center">
-                  {product.is_featured ? (
-                    <Tooltip title="Featured product">
-                      <StarIcon color="warning" />
-                    </Tooltip>
-                  ) : (
-                    <StarBorderIcon color="disabled" />
-                  )}
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, product)}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting && selectedProduct?.id === product.id ? (
-                      <CircularProgress size={20} />
-                    ) : (
-                      <MoreVertIcon />
-                    )}
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleEdit}>
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Edit</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
-        </MenuItem>
-      </Menu>
-    </>
+    <ModernTable
+      columns={columns}
+      data={products}
+      actions={actions}
+      onRowClick={onEdit}
+      sortBy="name"
+      sortOrder="asc"
+    />
   );
 };
