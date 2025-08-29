@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Alert,
   CircularProgress,
@@ -15,12 +13,16 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
+import { ModernCard } from '../../common/ModernCard';
 import {
   Settings as ConfigIcon,
   Preview as PreviewIcon,
   Refresh as RefreshIcon,
   ContentCopy as CopyIcon,
 } from '@mui/icons-material';
+// Modern Design System imports
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import type { BookingFlowStep } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import {
@@ -238,112 +240,106 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
   // Error handling
   if (configError) {
     return (
-      <Card>
-        <CardContent>
-          <Alert 
-            severity="error" 
-            action={
-              <IconButton 
-                color="inherit" 
-                size="small" 
-                onClick={() => refetchConfig()}
-              >
-                <RefreshIcon />
-              </IconButton>
-            }
-          >
-            Failed to load step configuration: {configError instanceof Error ? configError.message : 'Unknown error'}
-          </Alert>
-        </CardContent>
-      </Card>
+      <ModernCard variant="glass" size="medium" color="error">
+        <Alert 
+          severity="error" 
+          action={
+            <IconButton 
+              color="inherit" 
+              size="small" 
+              onClick={() => refetchConfig()}
+            >
+              <RefreshIcon />
+            </IconButton>
+          }
+        >
+          Failed to load step configuration: {configError instanceof Error ? configError.message : 'Unknown error'}
+        </Alert>
+      </ModernCard>
     );
   }
 
   if (isLoadingConfig) {
     return (
-      <Card>
-        <CardContent>
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
-          </Box>
-        </CardContent>
-      </Card>
+      <ModernCard variant="glass" size="medium" loading={true}>
+        <Box display="flex" justifyContent="center" py={4}>
+          <CircularProgress />
+        </Box>
+      </ModernCard>
     );
   }
 
   return (
-    <Card>
-      <CardContent>
-        {/* Header */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <ConfigIcon color="primary" />
-            <Typography variant="h6">
-              Configure {step.step_type_display}
-            </Typography>
-            <Chip
-              label={step.step_type}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          </Box>
-          
-          <Box display="flex" gap={1}>
-            <Tooltip title="Copy configuration from another step">
-              <span>
-                <IconButton size="small" disabled>
-                  <CopyIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            
-            <Tooltip title="Refresh configuration">
-              <IconButton 
-                size="small"
-                onClick={() => refetchConfig()}
-                disabled={isLoadingConfig}
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
+    <ModernCard variant="glass" size="large" color="primary">
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box display="flex" alignItems="center" gap={1}>
+          <ConfigIcon color="primary" />
+          <Typography variant="h6">
+            Configure {step.step_type_display}
+          </Typography>
+          <Chip
+            label={step.step_type}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
         </Box>
+        
+        <Box display="flex" gap={1}>
+          <Tooltip title="Copy configuration from another step">
+            <span>
+              <IconButton size="small" disabled>
+                <CopyIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          
+          <Tooltip title="Refresh configuration">
+            <IconButton 
+              size="small"
+              onClick={() => refetchConfig()}
+              disabled={isLoadingConfig}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
 
-        {/* Show update errors */}
-        {updateConfigurationError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
-          </Alert>
-        )}
+      {/* Show update errors */}
+      {updateConfigurationError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
+        </Alert>
+      )}
 
-        {/* Tabs - Only show configuration tab for now since preview isn't implemented */}
-        <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-          <Tab 
-            icon={<ConfigIcon />} 
-            label="Configuration" 
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<PreviewIcon />} 
-            label="Preview" 
-            iconPosition="start"
-            disabled
-          />
-        </Tabs>
+      {/* Tabs - Only show configuration tab for now since preview isn't implemented */}
+      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
+        <Tab 
+          icon={<ConfigIcon />} 
+          label="Configuration" 
+          iconPosition="start"
+        />
+        <Tab 
+          icon={<PreviewIcon />} 
+          label="Preview" 
+          iconPosition="start"
+          disabled
+        />
+      </Tabs>
 
-        <Divider sx={{ mb: 2 }} />
+      <Divider sx={{ mb: 2 }} />
 
-        {/* Tab Panels */}
-        <TabPanel value={activeTab} index={0}>
-          {renderStepSpecificConfiguration()}
-        </TabPanel>
+      {/* Tab Panels */}
+      <TabPanel value={activeTab} index={0}>
+        {renderStepSpecificConfiguration()}
+      </TabPanel>
 
-        <TabPanel value={activeTab} index={1}>
-          {renderPreview()}
-        </TabPanel>
-      </CardContent>
-    </Card>
+      <TabPanel value={activeTab} index={1}>
+        {renderPreview()}
+      </TabPanel>
+    </ModernCard>
   );
 };
 
@@ -366,10 +362,9 @@ const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: any }> = ({ s
         <Box 
           sx={{ 
             p: 2, 
-            border: 1, 
-            borderColor: 'divider', 
-            borderRadius: 1,
-            backgroundColor: 'grey.50',
+            ...glassPresets.light,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            borderRadius: tokens.spacing.radius.lg,
             overflow: 'auto'
           }}
         >

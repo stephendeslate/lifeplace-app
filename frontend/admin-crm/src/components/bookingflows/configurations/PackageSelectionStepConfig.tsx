@@ -10,8 +10,6 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Chip,
   FormControl,
   InputLabel,
@@ -26,6 +24,9 @@ import {
   AccordionDetails,
   CircularProgress,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   ExpandMore as ExpandMoreIcon,
   LocalShipping as PackageIcon,
@@ -231,8 +232,8 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
 
       <Stack spacing={3}>
         {/* Package Availability */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Available Packages
             </Typography>
@@ -317,12 +318,12 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
                 <Alert severity="error">{errors.packages}</Alert>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Selection Behavior */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Selection Behavior
             </Typography>
@@ -375,12 +376,12 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
                 </Box>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Display Options */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Display Options
             </Typography>
@@ -438,8 +439,8 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
                 Allow clients to compare packages side-by-side
               </Typography>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Advanced Pricing */}
         <Accordion>
@@ -492,8 +493,8 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
         </Accordion>
 
         {/* Configuration Summary */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Configuration Summary
             </Typography>
@@ -529,8 +530,8 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
                 </Typography>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

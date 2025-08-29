@@ -1,9 +1,8 @@
-// frontend/admin-crm/src/components/analytics/events/EventFilters.tsx
+// Modern EventFilters component with ModernDesignSystem
 
 import React, { useState } from 'react';
 import {
   Box,
-  Paper,
   Stack,
   TextField,
   FormControl,
@@ -16,6 +15,7 @@ import {
   Autocomplete,
   Typography,
   Divider,
+  Badge,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -25,6 +25,9 @@ import {
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import type { EventFilters as EventFiltersType, EventCategory } from '../../../types/analytics.types';
+import { ModernCard } from '../../common/ModernCard';
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
 interface EventFiltersProps {
   filters: EventFiltersType;
@@ -45,7 +48,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
 }) => {
   const [localFilters, setLocalFilters] = useState<EventFiltersType>(filters);
 
-  const handleFilterChange = (field: keyof EventFiltersType, value: any) => {
+  const handleFilterChange = (field: keyof EventFiltersType, value: unknown) => {
     const newFilters = { ...localFilters, [field]: value || undefined };
     setLocalFilters(newFilters);
     onFiltersChange(newFilters);
@@ -73,11 +76,26 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon />
+              <SearchIcon color="action" />
             </InputAdornment>
           ),
         }}
-        sx={{ minWidth: 250 }}
+        sx={{ 
+          minWidth: 280,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: tokens.spacing.radius.full,
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: tokens.color.primary[300],
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: tokens.color.primary[500],
+            },
+          }
+        }}
       />
 
       <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -86,6 +104,10 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           value={localFilters.event_category || ''}
           label="Category"
           onChange={(e) => handleFilterChange('event_category', e.target.value)}
+          sx={{
+            borderRadius: tokens.spacing.radius.lg,
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          }}
         >
           <MenuItem value="">All Categories</MenuItem>
           {availableCategories.map((category) => (
@@ -102,6 +124,10 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           value={localFilters.source_domain || ''}
           label="Domain"
           onChange={(e) => handleFilterChange('source_domain', e.target.value)}
+          sx={{
+            borderRadius: tokens.spacing.radius.lg,
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          }}
         >
           <MenuItem value="">All Domains</MenuItem>
           {availableDomains.map((domain) => (
@@ -112,18 +138,42 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
         </Select>
       </FormControl>
 
-      <Chip
-        icon={<FilterIcon />}
-        label={`${getActiveFilterCount()} filter${getActiveFilterCount() !== 1 ? 's' : ''}`}
-        variant="outlined"
-      />
+      <Badge 
+        badgeContent={getActiveFilterCount()}
+        color="primary"
+        sx={{
+          '& .MuiBadge-badge': {
+            backgroundColor: tokens.color.primary[500],
+          }
+        }}
+      >
+        <Chip
+          icon={<FilterIcon />}
+          label={`Filter${getActiveFilterCount() !== 1 ? 's' : ''}`}
+          variant="outlined"
+          sx={{
+            borderRadius: tokens.spacing.radius.full,
+            border: `1px solid ${tokens.color.neutral[300]}`,
+            color: tokens.color.neutral[600],
+            fontWeight: 500,
+          }}
+        />
+      </Badge>
 
       {getActiveFilterCount() > 0 && (
         <Button
           size="small"
           startIcon={<ClearIcon />}
           onClick={handleClearFilters}
-          color="secondary"
+          variant="text"
+          sx={{
+            color: tokens.color.warning[600],
+            fontWeight: 600,
+            borderRadius: tokens.spacing.radius.full,
+            '&:hover': {
+              backgroundColor: `${tokens.color.warning[500]}08`,
+            }
+          }}
         >
           Clear
         </Button>
@@ -143,11 +193,27 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon />
+                <SearchIcon color="action" />
               </InputAdornment>
             ),
           }}
-          sx={{ flex: 1, minWidth: 300 }}
+          sx={{ 
+            flex: 1, 
+            minWidth: 300,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: tokens.spacing.radius.lg,
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: tokens.color.primary[300],
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: tokens.color.primary[500],
+              },
+            }
+          }}
         />
 
         <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -156,6 +222,10 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             value={localFilters.event_category || ''}
             label="Category"
             onChange={(e) => handleFilterChange('event_category', e.target.value)}
+            sx={{
+              borderRadius: tokens.spacing.radius.lg,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            }}
           >
             <MenuItem value="">All Categories</MenuItem>
             {availableCategories.map((category) => (
@@ -172,6 +242,10 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             value={localFilters.source_domain || ''}
             label="Source Domain"
             onChange={(e) => handleFilterChange('source_domain', e.target.value)}
+            sx={{
+              borderRadius: tokens.spacing.radius.lg,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            }}
           >
             <MenuItem value="">All Domains</MenuItem>
             {availableDomains.map((domain) => (
@@ -183,11 +257,17 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
         </FormControl>
       </Stack>
 
-      <Divider />
+      <Divider sx={{ borderColor: tokens.color.borders.glass }} />
 
       {/* Advanced Filters */}
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
+      <ModernCard
+        variant="glass"
+        sx={{
+          p: 3,
+          border: `1px solid ${tokens.color.borders.glass}`,
+        }}
+      >
+        <Typography variant="subtitle2" gutterBottom fontWeight={600} color={tokens.color.neutral[700]}>
           Advanced Filters
         </Typography>
         
@@ -195,7 +275,13 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           {availableUsers.length > 0 && (
             <Autocomplete
               size="small"
-              sx={{ minWidth: 200 }}
+              sx={{ 
+                minWidth: 200,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: tokens.spacing.radius.lg,
+                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                }
+              }}
               options={availableUsers}
               getOptionLabel={(option) => option.name}
               value={availableUsers.find(user => user.id === localFilters.user_id) || null}
@@ -217,11 +303,17 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             slotProps={{
               textField: {
                 size: 'small',
-                sx: { minWidth: 150 },
+                sx: { 
+                  minWidth: 150,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: tokens.spacing.radius.lg,
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  }
+                },
                 InputProps: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <DateRangeIcon />
+                      <DateRangeIcon color="action" />
                     </InputAdornment>
                   ),
                 },
@@ -236,11 +328,17 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             slotProps={{
               textField: {
                 size: 'small',
-                sx: { minWidth: 150 },
+                sx: { 
+                  minWidth: 150,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: tokens.spacing.radius.lg,
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  }
+                },
                 InputProps: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <DateRangeIcon />
+                      <DateRangeIcon color="action" />
                     </InputAdornment>
                   ),
                 },
@@ -248,7 +346,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             }}
           />
         </Stack>
-      </Box>
+      </ModernCard>
 
       {/* Active Filters Summary */}
       {getActiveFilterCount() > 0 && (
@@ -310,7 +408,15 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
               size="small"
               startIcon={<ClearIcon />}
               onClick={handleClearFilters}
-              color="secondary"
+              variant="text"
+              sx={{
+                color: tokens.color.warning[600],
+                fontWeight: 600,
+                borderRadius: tokens.spacing.radius.full,
+                '&:hover': {
+                  backgroundColor: `${tokens.color.warning[500]}08`,
+                }
+              }}
             >
               Clear All
             </Button>
@@ -322,15 +428,27 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
 
   if (compact) {
     return (
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <ModernCard 
+        variant="glass" 
+        sx={{ 
+          ...glassPresets.light,
+          border: `1px solid ${tokens.color.borders.subtle}`,
+        }}
+      >
         {renderCompactFilters()}
-      </Paper>
+      </ModernCard>
     );
   }
 
   return (
-    <Paper variant="outlined" sx={{ p: 3 }}>
+    <ModernCard 
+      variant="glass" 
+      sx={{ 
+        ...glassPresets.light,
+        border: `1px solid ${tokens.color.borders.subtle}`,
+      }}
+    >
       {renderFullFilters()}
-    </Paper>
+    </ModernCard>
   );
 };

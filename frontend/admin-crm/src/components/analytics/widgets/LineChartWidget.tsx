@@ -1,9 +1,12 @@
-// frontend/admin-crm/src/components/analytics/widgets/LineChartWidget.tsx
+// Modern Glassmorphic LineChart Widget
+// Enhanced with modern design patterns and smooth animations
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
+  Fade,
+  Grow,
 } from '@mui/material';
 import {
   LineChart,
@@ -15,8 +18,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 import type { Widget } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
+import { createTransition } from '../../../design-system/utils/animations';
 
 interface LineChartWidgetProps {
   widget: Widget;
@@ -42,22 +49,53 @@ export const LineChartWidget: React.FC<LineChartWidgetProps> = ({
   compact = false,
   areaChart = false,
 }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const getColorScheme = () => {
     const scheme = widget.chart_config?.color_scheme || 'blue';
     
     switch (scheme) {
       case 'blue':
-        return { primary: '#2563eb', secondary: '#93c5fd' };
+        return { 
+          primary: tokens.color.primary[500], 
+          secondary: tokens.color.primary[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.primary[500]}40 0%, ${tokens.color.primary[300]}20 100%)`
+        };
       case 'green':
-        return { primary: '#16a34a', secondary: '#86efac' };
+        return { 
+          primary: tokens.color.success[500], 
+          secondary: tokens.color.success[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.success[500]}40 0%, ${tokens.color.success[300]}20 100%)`
+        };
       case 'orange':
-        return { primary: '#ea580c', secondary: '#fdba74' };
+        return { 
+          primary: tokens.color.warning[500], 
+          secondary: tokens.color.warning[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.warning[500]}40 0%, ${tokens.color.warning[300]}20 100%)`
+        };
       case 'purple':
-        return { primary: '#9333ea', secondary: '#c4b5fd' };
+        return { 
+          primary: tokens.color.secondary[500], 
+          secondary: tokens.color.secondary[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.secondary[500]}40 0%, ${tokens.color.secondary[300]}20 100%)`
+        };
       case 'red':
-        return { primary: '#dc2626', secondary: '#fca5a5' };
+        return { 
+          primary: tokens.color.error[500], 
+          secondary: tokens.color.error[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.error[500]}40 0%, ${tokens.color.error[300]}20 100%)`
+        };
       default:
-        return { primary: '#2563eb', secondary: '#93c5fd' };
+        return { 
+          primary: tokens.color.primary[500], 
+          secondary: tokens.color.primary[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.primary[500]}40 0%, ${tokens.color.primary[300]}20 100%)`
+        };
     }
   };
 
@@ -109,29 +147,77 @@ export const LineChartWidget: React.FC<LineChartWidgetProps> = ({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <Box
-          sx={{
-            bgcolor: 'background.paper',
-            p: 1.5,
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 1,
-            boxShadow: 2,
-          }}
-        >
-          <Typography variant="body2" fontWeight="medium" gutterBottom>
-            {formatDateLabel(label)}
-          </Typography>
-          {payload.map((entry: any, index: number) => (
-            <Typography
-              key={index}
-              variant="body2"
-              sx={{ color: entry.color }}
+        <Fade in timeout={200}>
+          <Box
+            sx={{
+              ...glassPresets.strong,
+              borderRadius: tokens.spacing.radius.xl,
+              border: `1px solid ${tokens.color.borders.glass}`,
+              p: 2.5,
+              minWidth: 150,
+              boxShadow: tokens.shadow.glass.floating,
+              position: 'relative',
+              
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: colors.gradient,
+                borderRadius: tokens.spacing.radius.xl,
+                opacity: 0.1,
+                pointerEvents: 'none',
+              }
+            }}
+          >
+            <Typography 
+              variant="body2" 
+              fontWeight="bold" 
+              gutterBottom
+              sx={{ 
+                color: tokens.color.neutral[800],
+                position: 'relative',
+                zIndex: 1 
+              }}
             >
-              {entry.name}: {formatTooltipValue(entry.value)}
+              {formatDateLabel(label)}
             </Typography>
-          ))}
-        </Box>
+            {payload.map((entry: any, index: number) => (
+              <Box key={index} display="flex" alignItems="center" gap={1} sx={{ position: 'relative', zIndex: 1 }}>
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: entry.color,
+                    boxShadow: `0 0 8px ${entry.color}40`,
+                  }}
+                />
+                <Typography
+                  variant="body2"
+                  sx={{ 
+                    color: tokens.color.neutral[700],
+                    fontWeight: 500 
+                  }}
+                >
+                  {entry.name}: 
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ 
+                    color: entry.color,
+                    fontWeight: 700,
+                    ml: 'auto'
+                  }}
+                >
+                  {formatTooltipValue(entry.value)}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Fade>
       );
     }
     return null;
@@ -139,133 +225,273 @@ export const LineChartWidget: React.FC<LineChartWidgetProps> = ({
 
   const ChartComponent = areaChart ? AreaChart : LineChart;
 
+  // Calculate chart insights
+  const averageValue = data.summary?.average || data.timeSeries.reduce((sum, item) => sum + item.value, 0) / data.timeSeries.length;
+  const dataWithAverage = data.timeSeries.map(item => ({ ...item, average: averageValue }));
+
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Summary Stats - only show in non-compact mode */}
-      {!compact && data.summary && (
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            mb: 2,
-            flexWrap: 'wrap',
+    <Grow in={isLoaded} timeout={600}>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Modern Summary Stats */}
+        {!compact && data.summary && (
+          <Fade in={isLoaded} timeout={800}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 2,
+                mb: 3,
+              }}
+            >
+              {[
+                { label: 'Total', value: data.summary.total, color: colors.primary },
+                { label: 'Average', value: data.summary.average, color: colors.secondary },
+                { label: 'Peak', value: data.summary.peak, color: tokens.color.success[500] }
+              ].map((stat, index) => (
+                <Box
+                  key={stat.label}
+                  sx={{
+                    ...glassPresets.light,
+                    borderRadius: tokens.spacing.radius.xl,
+                    p: 2,
+                    border: `1px solid ${stat.color}20`,
+                    background: `linear-gradient(135deg, ${stat.color}08 0%, transparent 100%)`,
+                    transition: createTransition(['transform', 'box-shadow'], 'fast'),
+                    animationDelay: `${index * 100}ms`,
+                    
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 8px 25px ${stat.color}15`,
+                    }
+                  }}
+                >
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: tokens.color.neutral[500],
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    {stat.label}
+                  </Typography>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontWeight: 700,
+                      color: stat.color,
+                      mt: 0.5
+                    }}
+                  >
+                    {formatTooltipValue(stat.value)}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Fade>
+        )}
+
+        {/* Enhanced Chart Container */}
+        <Box 
+          sx={{ 
+            flex: 1, 
+            minHeight: 0,
+            position: 'relative',
+            borderRadius: tokens.spacing.radius.lg,
+            background: `linear-gradient(135deg, ${colors.primary}02 0%, transparent 100%)`,
+            p: 1,
           }}
         >
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Total
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {formatTooltipValue(data.summary.total)}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Average
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {formatTooltipValue(data.summary.average)}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Peak
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {formatTooltipValue(data.summary.peak)}
-            </Typography>
-          </Box>
-        </Box>
-      )}
-
-      {/* Chart */}
-      <Box sx={{ flex: 1, minHeight: 0 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ChartComponent data={data.timeSeries}>
-            {showGrid && (
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-            )}
-            <XAxis
-              dataKey="date"
-              tickFormatter={formatDateLabel}
-              fontSize={compact ? 10 : 12}
-              tick={{ fill: '#666' }}
-              axisLine={{ stroke: '#e0e0e0' }}
-              tickLine={{ stroke: '#e0e0e0' }}
-            />
-            <YAxis
-              tickFormatter={formatAxisValue}
-              fontSize={compact ? 10 : 12}
-              tick={{ fill: '#666' }}
-              axisLine={{ stroke: '#e0e0e0' }}
-              tickLine={{ stroke: '#e0e0e0' }}
-              width={compact ? 40 : 60}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            
-            {areaChart ? (
-              <>
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={colors.primary}
-                  fill={colors.primary}
-                  fillOpacity={0.3}
-                  strokeWidth={2}
-                  name={widget.metric_definition_name || 'Value'}
-                  animationDuration={animationEnabled ? 750 : 0}
+          <ResponsiveContainer width="100%" height="100%">
+            <ChartComponent 
+              data={dataWithAverage}
+            >
+              {/* Enhanced Grid */}
+              {showGrid && (
+                <CartesianGrid 
+                  strokeDasharray="2 4" 
+                  stroke={tokens.color.neutral[200]}
+                  strokeOpacity={0.3}
+                  horizontal={true}
+                  vertical={false}
                 />
-                {widget.comparison_enabled && (
+              )}
+
+              {/* Average Reference Line */}
+              {!compact && (
+                <ReferenceLine 
+                  y={averageValue} 
+                  stroke={colors.secondary}
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  strokeOpacity={0.7}
+                />
+              )}
+
+              <XAxis
+                dataKey="date"
+                tickFormatter={formatDateLabel}
+                fontSize={compact ? 10 : 12}
+                tick={{ 
+                  fill: tokens.color.neutral[500], 
+                  fontWeight: 500 
+                }}
+                axisLine={{ stroke: tokens.color.neutral[200], strokeWidth: 1 }}
+                tickLine={{ stroke: 'transparent' }}
+                dy={5}
+              />
+              <YAxis
+                tickFormatter={formatAxisValue}
+                fontSize={compact ? 10 : 12}
+                tick={{ 
+                  fill: tokens.color.neutral[500], 
+                  fontWeight: 500 
+                }}
+                axisLine={{ stroke: 'transparent' }}
+                tickLine={{ stroke: 'transparent' }}
+                width={compact ? 40 : 60}
+                dx={-5}
+              />
+              <Tooltip 
+                content={<CustomTooltip />} 
+                cursor={{ 
+                  stroke: colors.primary, 
+                  strokeWidth: 2,
+                  strokeDasharray: '4 4',
+                  strokeOpacity: 0.5
+                }}
+              />
+            
+              {areaChart ? (
+                <>
+                  <defs>
+                    <linearGradient id={`gradient-${widget.id || 'default'}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={colors.primary} stopOpacity={0.4}/>
+                      <stop offset="50%" stopColor={colors.primary} stopOpacity={0.2}/>
+                      <stop offset="100%" stopColor={colors.primary} stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
                   <Area
                     type="monotone"
-                    dataKey="comparisonValue"
-                    stroke={colors.secondary}
-                    fill={colors.secondary}
-                    fillOpacity={0.2}
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    name="Comparison"
-                    animationDuration={animationEnabled ? 750 : 0}
+                    dataKey="value"
+                    stroke={colors.primary}
+                    fill={`url(#gradient-${widget.id || 'default'})`}
+                    strokeWidth={3}
+                    name={widget.metric_definition_name || 'Value'}
+                    animationDuration={animationEnabled ? 1200 : 0}
+                    animationEasing="ease-out"
                   />
-                )}
-              </>
-            ) : (
-              <>
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={colors.primary}
-                  strokeWidth={2}
-                  dot={compact ? false : { fill: colors.primary, strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: colors.primary }}
-                  name={widget.metric_definition_name || 'Value'}
-                  animationDuration={animationEnabled ? 750 : 0}
-                />
-                {widget.comparison_enabled && (
+                  {widget.comparison_enabled && (
+                    <Area
+                      type="monotone"
+                      dataKey="comparisonValue"
+                      stroke={colors.secondary}
+                      fill={colors.secondary}
+                      fillOpacity={0.15}
+                      strokeWidth={2}
+                      strokeDasharray="6 3"
+                      name="Comparison"
+                      animationDuration={animationEnabled ? 1000 : 0}
+                    />
+                  )}
+                </>
+              ) : (
+                <>
                   <Line
                     type="monotone"
-                    dataKey="comparisonValue"
-                    stroke={colors.secondary}
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={compact ? false : { fill: colors.secondary, strokeWidth: 2, r: 3 }}
-                    activeDot={{ r: 5, fill: colors.secondary }}
-                    name="Comparison"
-                    animationDuration={animationEnabled ? 750 : 0}
+                    dataKey="value"
+                    stroke={colors.primary}
+                    strokeWidth={3}
+                    dot={compact ? false : { 
+                      fill: '#ffffff', 
+                      stroke: colors.primary,
+                      strokeWidth: 3, 
+                      r: 5,
+                      filter: `drop-shadow(0 2px 4px ${colors.primary}40)`
+                    }}
+                    activeDot={{ 
+                      r: 8, 
+                      fill: colors.primary,
+                      stroke: '#ffffff',
+                      strokeWidth: 2,
+                      filter: `drop-shadow(0 4px 8px ${colors.primary}60)`
+                    }}
+                    name={widget.metric_definition_name || 'Value'}
+                    animationDuration={animationEnabled ? 1200 : 0}
+                    animationEasing="ease-out"
                   />
-                )}
-              </>
-            )}
-          </ChartComponent>
-        </ResponsiveContainer>
-      </Box>
+                  {widget.comparison_enabled && (
+                    <Line
+                      type="monotone"
+                      dataKey="comparisonValue"
+                      stroke={colors.secondary}
+                      strokeWidth={2}
+                      strokeDasharray="6 3"
+                      dot={compact ? false : { 
+                        fill: '#ffffff', 
+                        stroke: colors.secondary,
+                        strokeWidth: 2, 
+                        r: 4 
+                      }}
+                      activeDot={{ 
+                        r: 6, 
+                        fill: colors.secondary,
+                        stroke: '#ffffff',
+                        strokeWidth: 2
+                      }}
+                      name="Comparison"
+                      animationDuration={animationEnabled ? 1000 : 0}
+                    />
+                  )}
+                </>
+              )}
+            </ChartComponent>
+          </ResponsiveContainer>
+        </Box>
 
-      {/* Time Range Indicator */}
-      {!compact && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
-          {widget.time_range?.replace('_', ' ') || 'Last 30 days'}
-        </Typography>
-      )}
-    </Box>
+        {/* Enhanced Time Range Indicator */}
+        {!compact && (
+          <Fade in={isLoaded} timeout={1000}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 2,
+                mt: 2,
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.full,
+                py: 1,
+                px: 2,
+                width: 'fit-content',
+                mx: 'auto',
+              }}
+            >
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: colors.primary,
+                  boxShadow: `0 0 8px ${colors.primary}40`,
+                }}
+              />
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: tokens.color.neutral[600],
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                {widget.time_range?.replace('_', ' ') || 'Last 30 days'}
+              </Typography>
+            </Box>
+          </Fade>
+        )}
+      </Box>
+    </Grow>
   );
 };

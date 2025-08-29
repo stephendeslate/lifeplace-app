@@ -10,10 +10,11 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Skeleton,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   RateReview as ReviewIcon,
   Save as SaveIcon,
@@ -140,15 +141,15 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" animation="none">
+        <Box sx={{ p: 3 }}>
           <Stack spacing={2}>
             <Skeleton variant="text" width="60%" height={32} />
             <Skeleton variant="rectangular" height={120} />
             <Skeleton variant="rectangular" height={60} />
           </Stack>
-        </CardContent>
-      </Card>
+        </Box>
+      </ModernCard>
     );
   }
 
@@ -175,8 +176,8 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
         )}
 
         {/* Display Options */}
-        <Card>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <PreviewIcon />
               Display Options
@@ -227,12 +228,12 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
                 label="Require Agreement to Terms"
               />
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Custom Messages */}
-        <Card>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <EditIcon />
               Custom Messages
@@ -285,8 +286,8 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
                 />
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2} justifyContent="flex-end">

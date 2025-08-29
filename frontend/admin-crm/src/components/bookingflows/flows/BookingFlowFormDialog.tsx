@@ -33,6 +33,9 @@ import {
   Email as EmailIcon,
   Payment as PaymentIcon,
 } from '@mui/icons-material';
+// Modern Design System imports
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import { 
   type BookingFlowFormDialogProps,
   type BookingFlowFormData,
@@ -44,6 +47,8 @@ import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
 import { useCommunications } from '../../../hooks/useCommunications';
 import { useDiscounts } from '../../../hooks/useProducts';
 import { usePaymentGateways } from '../../../hooks/usePayments';
+
+// Modern Design System imports
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -359,7 +364,13 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: '80vh' },
+        sx: { 
+          minHeight: '80vh',
+          ...glassPresets.light,
+          borderRadius: tokens.spacing.radius.xxl,
+          border: `1px solid ${tokens.color.borders.glass}`,
+          background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+        },
         onKeyDown: handleKeyDown
       }}
       // Enhanced focus management props

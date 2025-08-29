@@ -10,8 +10,6 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   IconButton,
   List,
   ListItem,
@@ -26,6 +24,9 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -219,8 +220,8 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
 
       <Stack spacing={3}>
         {/* Standard Fields */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Standard Contact Fields
             </Typography>
@@ -296,12 +297,12 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                 />
               </Box>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Custom Fields */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="subtitle1">
                 Custom Fields ({formData.custom_fields.length})
@@ -382,12 +383,12 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                 ))}
               </List>
             )}
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Account Creation */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Account Creation
             </Typography>
@@ -427,12 +428,12 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                 Force all clients to create an account (only available if account creation is offered)
               </Typography>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Configuration Summary */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Configuration Summary
             </Typography>
@@ -470,8 +471,8 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                 }
               </Typography>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

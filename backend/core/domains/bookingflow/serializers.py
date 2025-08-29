@@ -293,6 +293,7 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
 
 
 class BookingFlowSerializer(serializers.ModelSerializer):
+    event_type_name = serializers.SerializerMethodField()
     event_type_details = EventTypeSerializer(source='event_type', read_only=True)
     workflow_template_details = WorkflowTemplateSerializer(source='workflow_template', read_only=True)
     confirmation_email_template_details = CommunicationTemplateSerializer(
@@ -308,7 +309,7 @@ class BookingFlowSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookingFlow
         fields = [
-            'id', 'name', 'description', 'event_type', 'event_type_details',
+            'id', 'name', 'description', 'event_type', 'event_type_name', 'event_type_details',
             'workflow_template', 'workflow_template_details',
             'confirmation_email_template', 'confirmation_email_template_details',
             'reminder_email_template', 'reminder_email_template_details',
@@ -335,6 +336,28 @@ class BookingFlowSerializer(serializers.ModelSerializer):
         except Exception as e:
             logger.warning(f"Error getting enabled_steps_count for flow {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
             return 0
+
+    def get_event_type_name(self, obj):
+        """Get the event type name, handling various edge cases"""
+        try:
+            if not obj:
+                return None
+            
+            # If no event_type is set, return None (frontend will handle as 'All Event Types')
+            if not obj.event_type:
+                return None
+                
+            # Get the event type name
+            if hasattr(obj.event_type, 'name') and obj.event_type.name:
+                return obj.event_type.name.strip()
+            
+            # If event type exists but has no name, log warning and return None
+            logger.warning(f"BookingFlow {obj.id}: EventType {obj.event_type.id} has no name")
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Error getting event_type_name for flow {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return None
 
 
 class BookingFlowDetailSerializer(BookingFlowSerializer):

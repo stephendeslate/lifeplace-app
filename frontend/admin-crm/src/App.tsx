@@ -30,9 +30,9 @@ import {
   AnalyticsSettings,
 } from './pages/analytics';
 
-// Settings imports
-import { SettingsLayout } from './pages/settings';
-import { Settings } from './pages/settings';
+// Enhanced Settings imports
+import { EnhancedSettingsLayout } from './pages/settings/EnhancedSettingsLayout';
+import { EnhancedSettings } from './pages/settings/EnhancedSettings';
 import { AccountSettings, AdminUsers } from './pages/settings/account';
 import { Notifications } from './pages/settings/account/Notifications';
 import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
@@ -98,14 +98,36 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 };
 
-// Settings Route Component
+// Settings Route Component - Uses Enhanced Settings Layout
 const SettingsRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <ProtectedRoute>
-      <SettingsLayout>
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+        gap={2}
+      >
+        <CircularProgress />
+        <Typography variant="body2" color="text.secondary">
+          Loading LifePlace Admin...
+        </Typography>
+      </Box>
+    );
+  }
+
+  return isAuthenticated ? (
+    <AppLayout>
+      <EnhancedSettingsLayout>
         {children}
-      </SettingsLayout>
-    </ProtectedRoute>
+      </EnhancedSettingsLayout>
+    </AppLayout>
+  ) : (
+    <Navigate to="/login" replace />
   );
 };
 
@@ -318,7 +340,7 @@ const AppRouter: React.FC = () => {
         path="/settings"
         element={
           <SettingsRoute>
-            <Settings />
+            <EnhancedSettings />
           </SettingsRoute>
         }
       />

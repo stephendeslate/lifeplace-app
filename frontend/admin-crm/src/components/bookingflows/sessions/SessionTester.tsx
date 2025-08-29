@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Button,
   Alert,
@@ -16,10 +14,6 @@ import {
   LinearProgress,
   Chip,
   Stack,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   IconButton,
   Tooltip,
   FormControl,
@@ -27,6 +21,8 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+// Modern Design System imports
+import { ModernCard, ModernDialog, createStandardActions } from '../../common';
 import {
   PlayArrow as StartIcon,
   NavigateNext as NextIcon,
@@ -631,8 +627,8 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
       )}
 
       {/* Test Controls */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" animation="none" sx={{ mb: 3 }}>
+        <Box sx={{ p: 3 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="subtitle1">Test Controls</Typography>
             
@@ -716,12 +712,12 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
               />
             </Box>
           )}
-        </CardContent>
-      </Card>
+        </Box>
+      </ModernCard>
 
       {/* Test Results */}
-      <Card>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" animation="none">
+        <Box sx={{ p: 3 }}>
           <Typography variant="subtitle1" gutterBottom>
             Test Results ({testResults.filter(r => r.status === 'passed').length}/{testResults.length} passed)
           </Typography>
@@ -807,48 +803,48 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
               );
             })}
           </Stepper>
-        </CardContent>
-      </Card>
+        </Box>
+      </ModernCard>
 
       {/* Test Settings Dialog */}
-      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Test Settings</DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
+      <ModernDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        title="Test Settings"
+        maxWidth="sm"
+        actions={createStandardActions.close(() => setSettingsOpen(false))}
+      >
+        <Stack spacing={3} sx={{ mt: 1 }}>
+          <FormControl fullWidth>
+            <InputLabel>Test Mode</InputLabel>
+            <Select
+              value={testMode}
+              label="Test Mode"
+              onChange={(e) => setTestMode(e.target.value as 'manual' | 'automated')}
+              disabled={isRunning}
+            >
+              <MenuItem value="manual">Manual - Step through each step manually</MenuItem>
+              <MenuItem value="automated">Automated - Run through all steps automatically</MenuItem>
+            </Select>
+          </FormControl>
+
+          {testMode === 'automated' && (
             <FormControl fullWidth>
-              <InputLabel>Test Mode</InputLabel>
+              <InputLabel>Test Speed</InputLabel>
               <Select
-                value={testMode}
-                label="Test Mode"
-                onChange={(e) => setTestMode(e.target.value as 'manual' | 'automated')}
+                value={testSpeed}
+                label="Test Speed"
+                onChange={(e) => setTestSpeed(e.target.value as 'slow' | 'normal' | 'fast')}
                 disabled={isRunning}
               >
-                <MenuItem value="manual">Manual - Step through each step manually</MenuItem>
-                <MenuItem value="automated">Automated - Run through all steps automatically</MenuItem>
+                <MenuItem value="slow">Slow (3s per step)</MenuItem>
+                <MenuItem value="normal">Normal (1.5s per step)</MenuItem>
+                <MenuItem value="fast">Fast (0.5s per step)</MenuItem>
               </Select>
             </FormControl>
-
-            {testMode === 'automated' && (
-              <FormControl fullWidth>
-                <InputLabel>Test Speed</InputLabel>
-                <Select
-                  value={testSpeed}
-                  label="Test Speed"
-                  onChange={(e) => setTestSpeed(e.target.value as 'slow' | 'normal' | 'fast')}
-                  disabled={isRunning}
-                >
-                  <MenuItem value="slow">Slow (3s per step)</MenuItem>
-                  <MenuItem value="normal">Normal (1.5s per step)</MenuItem>
-                  <MenuItem value="fast">Fast (0.5s per step)</MenuItem>
-                </Select>
-              </FormControl>
-            )}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSettingsOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+          )}
+        </Stack>
+      </ModernDialog>
     </Box>
   );
 };

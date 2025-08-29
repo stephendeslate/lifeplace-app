@@ -10,8 +10,6 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Chip,
   FormControl,
   Select,
@@ -24,6 +22,9 @@ import {
   Divider,
   InputLabel,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   ExpandMore as ExpandMoreIcon,
   Schedule as TimeIcon,
@@ -291,8 +292,8 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
 
       <Stack spacing={3}>
         {/* Basic Settings */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Display Options
             </Typography>
@@ -346,12 +347,12 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 Allow events that span multiple days
               </Typography>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Duration Settings */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Duration Settings
             </Typography>
@@ -392,12 +393,12 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 sx={{ maxWidth: 300 }}
               />
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Enhanced Availability Settings */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Real-Time Availability
             </Typography>
@@ -512,12 +513,12 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 </FormControl>
               </Box>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Availability Checking Configuration */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Availability Checking
             </Typography>
@@ -556,12 +557,12 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 label="Check Staff Availability"
               />
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Conflict Resolution */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Conflict Resolution
             </Typography>
@@ -593,12 +594,12 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 />
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Calendar Integration */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <SyncIcon color="primary" />
               <Typography variant="subtitle1">
@@ -649,8 +650,8 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 </FormControl>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Advanced Settings */}
         <Accordion>
@@ -753,8 +754,8 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
         </Accordion>
 
         {/* Configuration Summary */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Configuration Summary
             </Typography>
@@ -817,8 +818,8 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 </Typography>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

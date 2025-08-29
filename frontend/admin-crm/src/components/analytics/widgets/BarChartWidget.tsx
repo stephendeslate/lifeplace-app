@@ -1,9 +1,12 @@
-// frontend/admin-crm/src/components/analytics/widgets/BarChartWidget.tsx
+// Modern Glassmorphic BarChart Widget
+// Enhanced with modern design patterns and smooth animations
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
+  Fade,
+  Grow,
 } from '@mui/material';
 import {
   BarChart,
@@ -15,6 +18,9 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { Widget } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
+import { createTransition } from '../../../design-system/utils/animations';
 
 interface BarChartWidgetProps {
   widget: Widget;
@@ -40,28 +46,66 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
   compact = false,
   horizontal = false,
 }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const getColorScheme = () => {
     const scheme = widget.chart_config?.color_scheme || 'blue';
     
     switch (scheme) {
       case 'blue':
-        return { primary: '#2563eb', secondary: '#93c5fd' };
+        return { 
+          primary: tokens.color.primary[500], 
+          secondary: tokens.color.primary[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[400]} 100%)`
+        };
       case 'green':
-        return { primary: '#16a34a', secondary: '#86efac' };
+        return { 
+          primary: tokens.color.success[500], 
+          secondary: tokens.color.success[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.success[500]} 0%, ${tokens.color.success[400]} 100%)`
+        };
       case 'orange':
-        return { primary: '#ea580c', secondary: '#fdba74' };
+        return { 
+          primary: tokens.color.warning[500], 
+          secondary: tokens.color.warning[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.warning[500]} 0%, ${tokens.color.warning[400]} 100%)`
+        };
       case 'purple':
-        return { primary: '#9333ea', secondary: '#c4b5fd' };
+        return { 
+          primary: tokens.color.secondary[500], 
+          secondary: tokens.color.secondary[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.secondary[500]} 0%, ${tokens.color.secondary[400]} 100%)`
+        };
       case 'red':
-        return { primary: '#dc2626', secondary: '#fca5a5' };
+        return { 
+          primary: tokens.color.error[500], 
+          secondary: tokens.color.error[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.error[500]} 0%, ${tokens.color.error[400]} 100%)`
+        };
       case 'multi':
         return { 
-          primary: '#2563eb', 
-          secondary: '#93c5fd',
-          colors: ['#2563eb', '#16a34a', '#ea580c', '#9333ea', '#dc2626', '#0891b2']
+          primary: tokens.color.primary[500], 
+          secondary: tokens.color.primary[300],
+          colors: [
+            tokens.color.primary[500], 
+            tokens.color.success[500], 
+            tokens.color.warning[500], 
+            tokens.color.secondary[500], 
+            tokens.color.error[500], 
+            tokens.color.info[500]
+          ]
         };
       default:
-        return { primary: '#2563eb', secondary: '#93c5fd' };
+        return { 
+          primary: tokens.color.primary[500], 
+          secondary: tokens.color.primary[300],
+          gradient: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[400]} 100%)`
+        };
     }
   };
 
@@ -150,49 +194,78 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
   }));
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Summary Stats - only show in non-compact mode */}
-      {!compact && data.summary && (
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            mb: 2,
-            flexWrap: 'wrap',
+    <Grow in={isLoaded} timeout={600}>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Modern Summary Stats */}
+        {!compact && data.summary && (
+          <Fade in={isLoaded} timeout={800}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                gap: 2,
+                mb: 3,
+              }}
+            >
+              {[
+                { label: 'Total', value: data.summary.total, color: colors.primary },
+                { label: 'Highest', value: `${data.summary.highest.name}: ${formatTooltipValue(data.summary.highest.value)}`, color: tokens.color.success[500] },
+                { label: 'Lowest', value: `${data.summary.lowest.name}: ${formatTooltipValue(data.summary.lowest.value)}`, color: colors.secondary }
+              ].map((stat) => (
+                <Box
+                  key={stat.label}
+                  sx={{
+                    ...glassPresets.light,
+                    borderRadius: tokens.spacing.radius.xl,
+                    p: 2,
+                    border: `1px solid ${stat.color}20`,
+                    background: `linear-gradient(135deg, ${stat.color}08 0%, transparent 100%)`,
+                    transition: createTransition(['transform', 'box-shadow'], 'fast'),
+                    
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 8px 25px ${stat.color}15`,
+                    }
+                  }}
+                >
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: tokens.color.neutral[500],
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    {stat.label}
+                  </Typography>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontWeight: 600,
+                      color: tokens.color.neutral[700],
+                      mt: 0.5
+                    }}
+                  >
+                    {stat.label === 'Total' ? formatTooltipValue(stat.value as number) : stat.value}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Fade>
+        )}
+
+        {/* Enhanced Chart Container */}
+        <Box 
+          sx={{ 
+            flex: 1, 
+            minHeight: 0,
+            borderRadius: tokens.spacing.radius.lg,
+            background: `linear-gradient(135deg, ${colors.primary}02 0%, transparent 100%)`,
+            p: 1,
           }}
         >
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Total
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {formatTooltipValue(data.summary.total)}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Highest
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {data.summary.highest.name}: {formatTooltipValue(data.summary.highest.value)}
-            </Typography>
-          </Box>
-          {!compact && (
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Lowest
-              </Typography>
-              <Typography variant="body2" fontWeight="medium">
-                {data.summary.lowest.name}: {formatTooltipValue(data.summary.lowest.value)}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {/* Chart */}
-      <Box sx={{ flex: 1, minHeight: 0 }}>
-        <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
             layout={horizontal ? 'horizontal' : 'vertical'}
@@ -272,15 +345,51 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
               />
             )}
           </BarChart>
-        </ResponsiveContainer>
-      </Box>
+          </ResponsiveContainer>
+        </Box>
 
-      {/* Time Range Indicator */}
-      {!compact && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
-          {widget.time_range?.replace('_', ' ') || 'Last 30 days'}
-        </Typography>
-      )}
-    </Box>
+        {/* Enhanced Time Range Indicator */}
+        {!compact && (
+          <Fade in={isLoaded} timeout={1000}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 2,
+                mt: 2,
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.full,
+                py: 1,
+                px: 2,
+                width: 'fit-content',
+                mx: 'auto',
+              }}
+            >
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: colors.primary,
+                  boxShadow: `0 0 8px ${colors.primary}40`,
+                }}
+              />
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: tokens.color.neutral[600],
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                {widget.time_range?.replace('_', ' ') || 'Last 30 days'}
+              </Typography>
+            </Box>
+          </Fade>
+        )}
+      </Box>
+    </Grow>
   );
 };

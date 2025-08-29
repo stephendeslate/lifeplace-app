@@ -1,29 +1,13 @@
 // frontend/admin-crm/src/components/workflows/WorkflowTemplatesTable.tsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
   Typography,
   Box,
-  CircularProgress,
-  TableSortLabel,
-  Skeleton,
+  Chip,
   Tooltip,
 } from '@mui/material';
 import {
-  MoreVert as MoreVertIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   AccountTree as WorkflowIcon,
@@ -32,7 +16,9 @@ import {
   EventNote as EventIcon,
   Timeline as TimelineIcon,
 } from '@mui/icons-material';
-import type { WorkflowTemplateTableProps } from '../../types/workflows.types';
+import type { WorkflowTemplateTableProps, WorkflowTemplate } from '../../types/workflows.types';
+import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common';
 
 export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
   templates,
@@ -43,48 +29,6 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
   onDuplicate,
   isDeleting,
 }) => {
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, template: any) => {
-    event.stopPropagation();
-    setMenuAnchor(event.currentTarget);
-    setSelectedTemplate(template);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
-    setSelectedTemplate(null);
-  };
-
-  const handleEdit = () => {
-    if (selectedTemplate) {
-      onEdit(selectedTemplate);
-    }
-    handleMenuClose();
-  };
-
-  const handleView = () => {
-    if (selectedTemplate) {
-      onView(selectedTemplate);
-    }
-    handleMenuClose();
-  };
-
-  const handleDuplicate = () => {
-    if (selectedTemplate && onDuplicate) {
-      onDuplicate(selectedTemplate);
-    }
-    handleMenuClose();
-  };
-
-  const handleDelete = () => {
-    if (selectedTemplate) {
-      onDelete(selectedTemplate.id);
-    }
-    handleMenuClose();
-  };
-
   const getStatusChip = (isActive: boolean) => (
     <Chip
       label={isActive ? 'Active' : 'Inactive'}
@@ -117,168 +61,122 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
     );
   };
 
-  if (isLoading) {
-    return (
-      <Box p={3}>
-        {[...Array(5)].map((_, index) => (
-          <Box key={index} display="flex" gap={2} mb={2}>
-            <Skeleton variant="text" width="25%" />
-            <Skeleton variant="text" width="20%" />
-            <Skeleton variant="text" width="15%" />
-            <Skeleton variant="text" width="15%" />
-            <Skeleton variant="text" width="10%" />
-            <Skeleton variant="text" width="15%" />
+  const columns: ModernTableColumn[] = [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (_, template: any) => (
+        <Box display="flex" alignItems="center" gap={1}>
+          <WorkflowIcon color="primary" />
+          <Box>
+            <Typography variant="subtitle2" fontWeight="medium">
+              {template.name}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ID: {template.id}
+            </Typography>
           </Box>
-        ))}
-      </Box>
-    );
+        </Box>
+      ),
+    },
+    {
+      key: 'event_type',
+      label: 'Event Type',
+      render: (_, template: any) => getEventTypeChip(template.event_type_name),
+    },
+    {
+      key: 'stages',
+      label: 'Stages',
+      align: 'center',
+      render: (_, template: any) => (
+        <Tooltip title={`${template.stages_count} stages in this workflow`}>
+          <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
+            <TimelineIcon fontSize="small" color="action" />
+            <Typography variant="body2" fontWeight="medium">
+              {template.stages_count}
+            </Typography>
+          </Box>
+        </Tooltip>
+      ),
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      render: (_, template: any) => (
+        <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 300 }}>
+          {template.description || 'No description provided'}
+        </Typography>
+      ),
+    },
+    {
+      key: 'is_active',
+      label: 'Status',
+      render: (_, template: any) => getStatusChip(template.is_active),
+    },
+    {
+      key: 'updated_at',
+      label: 'Last Updated',
+      render: (_, template: any) => (
+        <Box>
+          <Typography variant="body2" color="text.secondary">
+            {new Date(template.updated_at).toLocaleDateString()}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {new Date(template.updated_at).toLocaleTimeString()}
+          </Typography>
+        </Box>
+      ),
+    },
+  ];
+
+  const actions: ModernTableAction[] = [
+    {
+      label: 'View Workflow',
+      icon: <ViewIcon fontSize="small" />,
+      onClick: onView,
+    },
+    {
+      label: 'Edit Template',
+      icon: <EditIcon fontSize="small" />,
+      onClick: onEdit,
+    },
+    ...(onDuplicate ? [{
+      label: 'Duplicate',
+      icon: <DuplicateIcon fontSize="small" />,
+      onClick: onDuplicate,
+    }] : []),
+    {
+      label: 'Delete',
+      icon: <DeleteIcon fontSize="small" />,
+      onClick: onDelete,
+      color: 'error' as const,
+    },
+  ];
+
+  if (isLoading) {
+    return <ModernLoadingStates.table />;
   }
 
   if (templates.length === 0) {
     return (
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center" 
-        justifyContent="center" 
-        py={8}
-        textAlign="center"
-      >
-        <WorkflowIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          No workflow templates found
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Create your first workflow template to automate event processes
-        </Typography>
-      </Box>
+      <ModernEmptyState
+        icon={WorkflowIcon}
+        title="No workflow templates found"
+        description="Create your first workflow template to automate event processes"
+        tip={{ text: "Workflow templates help automate complex event management processes", type: "info" }}
+      />
     );
   }
 
   return (
-    <>
-      <TableContainer component={Paper} elevation={0}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <TableSortLabel>
-                  Name
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>Event Type</TableCell>
-              <TableCell align="center">Stages</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Last Updated</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {templates.map((template) => (
-              <TableRow 
-                key={template.id} 
-                hover
-                sx={{ cursor: 'pointer' }}
-                onClick={() => onView(template)}
-              >
-                <TableCell>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <WorkflowIcon color="primary" />
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight="medium">
-                        {template.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        ID: {template.id}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  {getEventTypeChip(template.event_type_name)}
-                </TableCell>
-                <TableCell align="center">
-                  <Tooltip title={`${template.stages_count} stages in this workflow`}>
-                    <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
-                      <TimelineIcon fontSize="small" color="action" />
-                      <Typography variant="body2" fontWeight="medium">
-                        {template.stages_count}
-                      </Typography>
-                    </Box>
-                  </Tooltip>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 300 }}>
-                    {template.description || 'No description provided'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  {getStatusChip(template.is_active)}
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {new Date(template.updated_at).toLocaleDateString()}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {new Date(template.updated_at).toLocaleTimeString()}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, template)}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting && selectedTemplate?.id === template.id ? (
-                      <CircularProgress size={20} />
-                    ) : (
-                      <MoreVertIcon />
-                    )}
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleView}>
-          <ListItemIcon>
-            <ViewIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>View Workflow</ListItemText>
-        </MenuItem>
-        
-        <MenuItem onClick={handleEdit}>
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Edit Template</ListItemText>
-        </MenuItem>
-        
-        {onDuplicate && (
-          <MenuItem onClick={handleDuplicate}>
-            <ListItemIcon>
-              <DuplicateIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Duplicate</ListItemText>
-          </MenuItem>
-        )}
-        
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
-        </MenuItem>
-      </Menu>
-    </>
+    <ModernTable
+      columns={columns}
+      data={templates}
+      actions={actions}
+      onRowClick={onView}
+      sortBy="name"
+      sortOrder="asc"
+    />
   );
 };

@@ -10,10 +10,11 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Skeleton,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   Receipt as ReceiptIcon,
   Percent as DiscountIcon,
@@ -152,15 +153,15 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" animation="none">
+        <Box sx={{ p: 3 }}>
           <Stack spacing={2}>
             <Skeleton variant="text" width="60%" height={32} />
             <Skeleton variant="rectangular" height={120} />
             <Skeleton variant="rectangular" height={60} />
           </Stack>
-        </CardContent>
-      </Card>
+        </Box>
+      </ModernCard>
     );
   }
 
@@ -187,8 +188,8 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
         )}
 
         {/* Display Options */}
-        <Card>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <PreviewIcon />
               Display Options
@@ -260,12 +261,12 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 />
               </Box>
             </Box>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Behavior Options */}
-        <Card>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <CalculateIcon />
               Behavior Options
@@ -298,12 +299,12 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 />
               </Box>
             </Box>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Custom Messaging */}
-        <Card>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <DiscountIcon />
               Custom Messaging
@@ -340,8 +341,8 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 helperText="Text shown in or near the discount code field"
               />
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2} justifyContent="flex-end">

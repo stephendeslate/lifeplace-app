@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   FormControl,
   InputLabel,
   MenuItem,
@@ -34,6 +32,10 @@ import type {
 } from '../../types/contracts.types';
 import RichTextEditor from '../shared/RichTextEditor';
 import ContractVariableInserter from './ContractVariableInserter';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { ModernCard } from '../common/ModernCard';
+import { ModernPageHeader } from '../common/ModernPageHeader';
 
 interface ContractTemplateFormProps {
   template?: ContractTemplate;
@@ -355,15 +357,22 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight="bold" mb={3}>
-        {isEditing ? 'Edit Contract Template' : 'Create Contract Template'}
-      </Typography>
+      <ModernPageHeader
+        title={isEditing ? 'Edit Contract Template' : 'Create Contract Template'}
+        subtitle={isEditing ? 'Modify your contract template' : 'Create a new contract template for events'}
+        size="medium"
+        gradient
+        glass
+      />
 
       <Box component="form" onSubmit={handleSubmit}>
-        <Stack spacing={3}>
+        <Stack spacing={4}>
           {/* Basic Information */}
-          <Card elevation={2}>
-            <CardContent sx={{ p: 3 }}>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+          >
               <Typography variant="h6" gutterBottom>
                 Basic Information
               </Typography>
@@ -412,12 +421,14 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                   )}
                 </FormControl>
               </Stack>
-            </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* Contract Content */}
-          <Card elevation={2}>
-            <CardContent sx={{ p: 3 }}>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+          >
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">
                   Contract Content
@@ -427,6 +438,19 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                   startIcon={<PreviewIcon />}
                   onClick={handlePreview}
                   disabled={!formData.content}
+                  sx={{
+                    ...glassPresets.light,
+                    border: `1px solid ${tokens.color.primary[300]}`,
+                    borderRadius: tokens.spacing.radius.full,
+                    px: 3,
+                    fontWeight: 600,
+                    color: tokens.color.primary[600],
+                    '&:hover': {
+                      ...glassPresets.medium,
+                      border: `1px solid ${tokens.color.primary[500]}`,
+                      background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
+                    },
+                  }}
                 >
                   Preview
                 </Button>
@@ -444,22 +468,26 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                   minHeight={10}
                 />
               </Stack>
-            </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* Variable Helper */}
-          <Card elevation={2}>
-            <CardContent sx={{ p: 3 }}>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+          >
               <ContractVariableInserter
                 onVariableInsert={handleVariableInsert}
                 onTemplateLoad={loadTemplate}
               />
-            </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* Variables Management */}
-          <Card elevation={2}>
-            <CardContent sx={{ p: 3 }}>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+          >
               <Typography variant="h6" gutterBottom>
                 Template Variables
               </Typography>
@@ -499,12 +527,14 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                   />
                 ))}
               </Box>
-            </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* Signature Settings */}
-          <Card elevation={2}>
-            <CardContent sx={{ p: 3 }}>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+          >
               <Typography variant="h6" gutterBottom>
                 Signature Settings
               </Typography>
@@ -569,12 +599,14 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                   label="Requires Company Signature"
                 />
               </Stack>
-            </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* Amendment Settings */}
-          <Card elevation={2}>
-            <CardContent sx={{ p: 3 }}>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+          >
               <Typography variant="h6" gutterBottom>
                 Amendment Settings
               </Typography>
@@ -602,13 +634,16 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                   />
                 )}
               </Stack>
-            </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* Preview */}
           {previewData && (
-            <Card elevation={2}>
-              <CardContent sx={{ p: 3 }}>
+            <ModernCard
+              variant="glass"
+              color="primary"
+              size="medium"
+              animation="none"
+            >
                 <Typography variant="h6" gutterBottom>
                   Contract Preview
                 </Typography>
@@ -636,33 +671,70 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                     <strong>Preview Note:</strong> This preview uses sample data. Actual contracts will use real client and event information.
                   </Typography>
                 </Alert>
-              </CardContent>
-            </Card>
+            </ModernCard>
           )}
 
           {/* Actions */}
-          <Box display="flex" gap={2} justifyContent="flex-end">
-            <Button
-              variant="outlined"
-              startIcon={<CancelIcon />}
-              onClick={onCancel}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              startIcon={<SaveIcon />}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <CircularProgress size={20} />
-              ) : (
-                isEditing ? 'Update Template' : 'Create Template'
-              )}
-            </Button>
-          </Box>
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="none"
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+              border: `1px solid ${tokens.color.borders.glass}`,
+            }}
+          >
+            <Box display="flex" gap={3} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                startIcon={<CancelIcon />}
+                onClick={onCancel}
+                disabled={isLoading}
+                sx={{
+                  ...glassPresets.light,
+                  border: `1px solid ${tokens.color.neutral[300]}`,
+                  borderRadius: tokens.spacing.radius.full,
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 600,
+                  '&:hover': {
+                    ...glassPresets.medium,
+                    border: `1px solid ${tokens.color.neutral[400]}`,
+                  },
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={<SaveIcon />}
+                disabled={isLoading}
+                sx={{
+                  background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                  borderRadius: tokens.spacing.radius.full,
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 600,
+                  boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+                    boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
+                  },
+                  '&:disabled': {
+                    background: tokens.color.neutral[300],
+                    boxShadow: 'none',
+                  },
+                }}
+              >
+                {isLoading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  isEditing ? 'Update Template' : 'Create Template'
+                )}
+              </Button>
+            </Box>
+          </ModernCard>
         </Stack>
       </Box>
     </Box>

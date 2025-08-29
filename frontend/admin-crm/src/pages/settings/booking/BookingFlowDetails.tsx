@@ -4,29 +4,19 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Typography,
   Tabs,
   Tab,
   Alert,
-  CircularProgress,
   Chip,
-  IconButton,
   Menu,
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Divider,
   Stack,
   Breadcrumbs,
   Link,
-  Skeleton,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -34,13 +24,12 @@ import {
   List as StepsIcon,
   Analytics as AnalyticsIcon,
   Preview as PreviewIcon,
-  MoreVert as MoreVertIcon,
   Edit as EditIcon,
   ContentCopy as DuplicateIcon,
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   NavigateNext as NavigateNextIcon,
-  Refresh as RefreshIcon,
+  PlayArrow as PlayIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
@@ -65,6 +54,26 @@ import type {
   UpdateBookingFlowStepData,
   UpdateBookingFlowData 
 } from '../../../types/bookingflows.types';
+
+// Modern Design System imports
+import { 
+  ModernSettingsLayout,
+  ModernGlassCard,
+  ModernMetricCard,
+  ModernEmptyState,
+  ModernPageHeader,
+  ModernPageLoadingSkeleton,
+  createRefreshAction
+} from '../../../components/common/ModernDesignSystem';
+import { ModernDialog, createDeleteActions } from '../../../components/common';
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
+import { 
+  getEventTypeDisplayName, 
+  getEventTypeChipColor,
+  getEventTypeChipStyles
+} from '../../../utils/bookingFlowUtils';
+
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -161,17 +170,19 @@ export const BookingFlowDetails: React.FC = () => {
     }
   }, [flow, setBreadcrumbs]);
 
-  // @ts-ignore
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-  };
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMenuAnchor(event.currentTarget);
   };
 
   const handleMenuClose = () => {
     setMenuAnchor(null);
+  };
+
+  const handleMenuButtonClick = () => {
+    // Create a synthetic event for the menu button
+    if (menuButtonRef.current) {
+      setMenuAnchor(menuButtonRef.current);
+    }
   };
 
   const handleEditFlow = () => {
@@ -226,7 +237,7 @@ export const BookingFlowDetails: React.FC = () => {
       if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
         try {
           lastFocusedElementRef.current.focus();
-        } catch (error) {
+        } catch {
           menuButtonRef.current?.focus();
         }
       } else {
@@ -269,7 +280,7 @@ export const BookingFlowDetails: React.FC = () => {
       if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
         try {
           lastFocusedElementRef.current.focus();
-        } catch (error) {
+        } catch {
           menuButtonRef.current?.focus();
         }
       } else {
@@ -312,7 +323,7 @@ export const BookingFlowDetails: React.FC = () => {
       if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
         try {
           lastFocusedElementRef.current.focus();
-        } catch (error) {
+        } catch {
           addStepButtonRef.current?.focus();
         }
       } else {
@@ -391,43 +402,7 @@ export const BookingFlowDetails: React.FC = () => {
   }
 
   if (isLoadingFlow) {
-    return (
-      <Box>
-        {/* Header Skeleton */}
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
-          <Box flex={1}>
-            <Box display="flex" alignItems="center" gap={2} mb={1}>
-              <Skeleton variant="circular" width={40} height={40} />
-              <Skeleton variant="text" width={300} height={40} />
-              <Skeleton variant="rectangular" width={80} height={32} />
-            </Box>
-            <Skeleton variant="text" width={400} height={24} />
-            <Box display="flex" gap={1} mt={1}>
-              <Skeleton variant="rectangular" width={100} height={24} />
-              <Skeleton variant="text" width={150} height={24} />
-            </Box>
-          </Box>
-          <Box display="flex" gap={1}>
-            <Skeleton variant="rectangular" width={100} height={36} />
-            <Skeleton variant="circular" width={40} height={40} />
-          </Box>
-        </Box>
-
-        {/* Tabs Skeleton */}
-        <Card sx={{ mb: 3 }}>
-          <Box display="flex" gap={2} p={2}>
-            {[...Array(5)].map((_, index) => (
-              <Skeleton key={index} variant="rectangular" width={120} height={40} />
-            ))}
-          </Box>
-        </Card>
-
-        {/* Content Skeleton */}
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-          <CircularProgress />
-        </Box>
-      </Box>
-    );
+    return <ModernPageLoadingSkeleton />;
   }
 
   if (!flow) {
@@ -447,7 +422,7 @@ export const BookingFlowDetails: React.FC = () => {
   }
 
   return (
-    <Box>
+    <ModernSettingsLayout>
       {/* Enhanced Error Display */}
       {hasErrors && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -465,107 +440,97 @@ export const BookingFlowDetails: React.FC = () => {
         </Alert>
       )}
 
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
-        <Box>
-          <Box display="flex" alignItems="center" gap={2} mb={1}>
-            <IconButton
-              onClick={() => navigate('/settings/booking/booking-flow')}
-              size="small"
-              disabled={isDeletingFlow}
+      {/* Modern Header */}
+      <ModernPageHeader
+        title={flow.name}
+        subtitle={flow.description}
+        icon={<SettingsIcon />}
+        status={{
+          label: flow.is_test_mode ? 'Test Mode' : flow.is_active ? 'Active' : 'Inactive',
+          color: flow.is_test_mode ? 'warning' : flow.is_active ? 'success' : 'secondary',
+          variant: flow.is_active ? 'filled' : 'outlined'
+        }}
+        stats={[
+          {
+            label: 'Steps Enabled',
+            value: `${flow.enabled_steps_count}/${flow.total_steps}`
+          },
+          {
+            label: 'Event Type',
+            value: getEventTypeDisplayName(flow)
+          },
+          {
+            label: 'Last Updated',
+            value: new Date(flow.updated_at).toLocaleDateString()
+          }
+        ]}
+        primaryAction={{
+          icon: <PlayIcon />,
+          label: 'Preview',
+          onClick: handlePreviewFlow,
+          disabled: isDeletingFlow,
+          color: 'primary'
+        }}
+        secondaryActions={[
+          createRefreshAction(() => {
+            refetchFlow();
+            refetchSteps();
+          }),
+          {
+            icon: <BackIcon />,
+            label: 'Back',
+            variant: 'outlined',
+            onClick: () => navigate('/settings/booking/booking-flow'),
+            disabled: isDeletingFlow,
+          },
+          {
+            icon: <SettingsIcon />,
+            label: 'Settings',
+            variant: 'icon',
+            onClick: handleMenuButtonClick,
+            tooltip: 'Open settings'
+          }
+        ]}
+        glass
+        gradient
+      />
+      
+      {/* Configuration Breadcrumb */}
+      {selectedStepForConfig && activeTab === 2 && (
+        <Box mb={3}>
+          <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />}>
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => {
+                setSelectedStepForConfig(null);
+                setActiveTab(1);
+              }}
+              sx={{ textDecoration: 'none' }}
             >
-              <BackIcon />
-            </IconButton>
-            <Typography variant="h4" fontWeight="bold">
-              {flow.name}
+              Steps
+            </Link>
+            <Typography variant="body2" color="text.primary">
+              Configure: {selectedStepForConfig.name}
             </Typography>
-            <Chip
-              label={flow.is_test_mode ? 'Test Mode' : flow.is_active ? 'Active' : 'Inactive'}
-              size="small"
-              color={flow.is_test_mode ? 'warning' : flow.is_active ? 'success' : 'default'}
-              variant={flow.is_active ? 'filled' : 'outlined'}
-            />
-          </Box>
-          {flow.description && (
-            <Typography variant="body1" color="text.secondary">
-              {flow.description}
-            </Typography>
-          )}
-          <Box display="flex" alignItems="center" gap={2} mt={1}>
-            <Chip
-              label={flow.event_type_name}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-            <Typography variant="caption" color="text.secondary">
-              {flow.enabled_steps_count} of {flow.total_steps} steps enabled
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Last updated {new Date(flow.updated_at).toLocaleDateString()}
-            </Typography>
-          </Box>
-
-          {/* Configuration Breadcrumb */}
-          {selectedStepForConfig && activeTab === 2 && (
-            <Box mt={2}>
-              <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />}>
-                <Link
-                  component="button"
-                  variant="body2"
-                  onClick={() => {
-                    setSelectedStepForConfig(null);
-                    setActiveTab(1);
-                  }}
-                  sx={{ textDecoration: 'none' }}
-                >
-                  Steps
-                </Link>
-                <Typography variant="body2" color="text.primary">
-                  Configure: {selectedStepForConfig.name}
-                </Typography>
-              </Breadcrumbs>
-            </Box>
-          )}
+          </Breadcrumbs>
         </Box>
-
-        <Box display="flex" gap={1}>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={() => {
-              refetchFlow();
-              refetchSteps();
-            }}
-            disabled={isLoadingFlow || isLoadingSteps}
-          >
-            Refresh
-          </Button>
-
-          <Button
-            variant="outlined"
-            startIcon={<PreviewIcon />}
-            onClick={handlePreviewFlow}
-            disabled={isDeletingFlow}
-          >
-            Preview
-          </Button>
-
-          <IconButton 
-            ref={menuButtonRef} 
-            onClick={handleMenuOpen}
-            disabled={isDeletingFlow}
-          >
-            <MoreVertIcon />
-          </IconButton>
-        </Box>
-      </Box>
+      )}
 
       {/* Action Menu */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            borderRadius: tokens.spacing.radius.xl,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            boxShadow: tokens.shadow.component.dropdown,
+            mt: 1,
+          },
+        }}
       >
         <MenuItem onClick={handleEditFlow} disabled={isUpdatingFlow}>
           <ListItemIcon>
@@ -600,13 +565,40 @@ export const BookingFlowDetails: React.FC = () => {
         </MenuItem>
       </Menu>
 
-      {/* Tabs */}
-      <Card sx={{ mb: 3 }}>
+      {/* Modern Tabs */}
+      <ModernGlassCard 
+        size="medium" 
+        borderRadius="xxl"
+        sx={{ mb: 4 }}
+      >
         <Tabs 
           value={activeTab} 
           onChange={handleTabChange}
           variant="scrollable"
           scrollButtons="auto"
+          sx={{
+            '& .MuiTabs-indicator': {
+              backgroundColor: tokens.color.primary[500],
+              height: 3,
+              borderRadius: '3px 3px 0 0',
+            },
+            '& .MuiTab-root': {
+              fontWeight: 600,
+              textTransform: 'none',
+              color: tokens.color.neutral[600],
+              borderRadius: tokens.spacing.radius.lg,
+              mx: 0.5,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                color: tokens.color.primary[600],
+                backgroundColor: tokens.color.primary[50],
+              },
+              '&.Mui-selected': {
+                color: tokens.color.primary[700],
+                backgroundColor: `${tokens.color.primary[50]}80`,
+              },
+            },
+          }}
         >
           <Tab 
             icon={<SettingsIcon />} 
@@ -636,130 +628,139 @@ export const BookingFlowDetails: React.FC = () => {
             disabled
           />
         </Tabs>
-      </Card>
+      </ModernGlassCard>
 
       {/* Tab Content */}
       <TabPanel value={activeTab} index={0}>
-        <Stack spacing={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Flow Information
-              </Typography>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Name
-                  </Typography>
-                  <Typography variant="body1">
-                    {flow.name}
-                  </Typography>
-                </Box>
-                
-                {flow.description && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Description
-                    </Typography>
-                    <Typography variant="body1">
-                      {flow.description}
-                    </Typography>
-                  </Box>
-                )}
-                
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Event Type
-                  </Typography>
-                  <Typography variant="body1">
-                    {flow.event_type_name}
-                  </Typography>
-                </Box>
-                
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Status
-                  </Typography>
-                  <Box display="flex" gap={1}>
-                    <Chip
-                      label={flow.is_active ? 'Active' : 'Inactive'}
-                      size="small"
-                      color={flow.is_active ? 'success' : 'default'}
-                      variant={flow.is_active ? 'filled' : 'outlined'}
-                    />
-                    {flow.is_test_mode && (
-                      <Chip
-                        label="Test Mode"
-                        size="small"
-                        color="warning"
-                        variant="filled"
-                      />
-                    )}
-                  </Box>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+        <Stack spacing={4}>
+          {/* Flow Metrics Grid */}
+          <Box 
+            display="grid" 
+            gridTemplateColumns={{ xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }}
+            gap={3}
+          >
+            <ModernMetricCard
+              title="Flow Status"
+              value={flow.is_active ? 'Active' : 'Inactive'}
+              description={flow.is_test_mode ? 'Test Mode Enabled' : 'Production Ready'}
+              color={flow.is_active ? 'success' : 'warning'}
+              icon={<SettingsIcon />}
+            />
+            
+            <ModernMetricCard
+              title="Steps Progress"
+              value={`${flow.enabled_steps_count}/${flow.total_steps}`}
+              description="Steps Configured"
+              color="primary"
+              icon={<StepsIcon />}
+            />
+            
+            <ModernMetricCard
+              title="Guest Booking"
+              value={flow.allow_guest_booking ? 'Allowed' : 'Restricted'}
+              description="Access Control"
+              color={flow.allow_guest_booking ? 'success' : 'warning'}
+              icon={<SettingsIcon />}
+            />
+            
+            <ModernMetricCard
+              title="Auto Approval"
+              value={flow.auto_approve_bookings ? 'Enabled' : 'Manual'}
+              description="Approval Process"
+              color={flow.auto_approve_bookings ? 'success' : 'warning'}
+              icon={<SettingsIcon />}
+            />
+          </Box>
 
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Configuration Summary
-              </Typography>
-              <Stack spacing={2}>
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="body2">Steps Configured:</Typography>
-                  <Typography variant="body2" fontWeight="medium">
-                    {flow.enabled_steps_count} of {flow.total_steps}
+          {/* Flow Information */}
+          <ModernGlassCard 
+            title="Flow Information"
+            size="large"
+            borderRadius="xxl"
+          >
+            <Stack spacing={3}>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Name
+                </Typography>
+                <Typography variant="h6" fontWeight="600">
+                  {flow.name}
+                </Typography>
+              </Box>
+              
+              {flow.description && (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Description
+                  </Typography>
+                  <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
+                    {flow.description}
                   </Typography>
                 </Box>
-                
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="body2">Guest Booking:</Typography>
-                  <Typography variant="body2" fontWeight="medium">
-                    {flow.allow_guest_booking ? 'Allowed' : 'Not Allowed'}
-                  </Typography>
-                </Box>
-                
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="body2">Auto Approval:</Typography>
-                  <Typography variant="body2" fontWeight="medium">
-                    {flow.auto_approve_bookings ? 'Enabled' : 'Disabled'}
-                  </Typography>
-                </Box>
-                
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="body2">Booking Window:</Typography>
-                  <Typography variant="body2" fontWeight="medium">
-                    {flow.min_advance_booking_days} - {flow.max_advance_booking_days} days
-                  </Typography>
-                </Box>
-                
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="body2">Discounts:</Typography>
-                  <Typography variant="body2" fontWeight="medium">
-                    {flow.allow_discounts ? 'Enabled' : 'Disabled'}
-                  </Typography>
-                </Box>
+              )}
+              
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Event Type
+                </Typography>
+                <Chip
+                  label={getEventTypeDisplayName(flow)}
+                  size="medium"
+                  color={getEventTypeChipColor(flow)}
+                  variant="outlined"
+                  sx={getEventTypeChipStyles(flow)}
+                />
+              </Box>
+            </Stack>
+          </ModernGlassCard>
 
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="body2">Payment Processing:</Typography>
-                  <Typography variant="body2" fontWeight="medium">
-                    {flow.require_immediate_payment ? 'Immediate' : 'Deferred'}
-                  </Typography>
-                </Box>
+          {/* Configuration Summary */}
+          <ModernGlassCard 
+            title="Configuration Summary"
+            size="large"
+            borderRadius="xxl"
+          >
+            <Stack spacing={2.5}>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2" fontWeight="500">Booking Window:</Typography>
+                <Typography variant="body2" fontWeight="600" color="primary.main">
+                  {flow.min_advance_booking_days} - {flow.max_advance_booking_days} days
+                </Typography>
+              </Box>
+              
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2" fontWeight="500">Discounts:</Typography>
+                <Chip 
+                  label={flow.allow_discounts ? 'Enabled' : 'Disabled'} 
+                  size="small" 
+                  color={flow.allow_discounts ? 'success' : 'default'}
+                  variant={flow.allow_discounts ? 'filled' : 'outlined'}
+                />
+              </Box>
 
-                {flow.default_payment_gateway && (
-                  <Box display="flex" justifyContent="space-between">
-                    <Typography variant="body2">Default Payment Gateway:</Typography>
-                    <Typography variant="body2" fontWeight="medium">
-                      Configured
-                    </Typography>
-                  </Box>
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2" fontWeight="500">Payment Processing:</Typography>
+                <Chip 
+                  label={flow.require_immediate_payment ? 'Immediate' : 'Deferred'} 
+                  size="small" 
+                  color={flow.require_immediate_payment ? 'success' : 'warning'}
+                  variant="outlined"
+                />
+              </Box>
+
+              {flow.default_payment_gateway && (
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2" fontWeight="500">Payment Gateway:</Typography>
+                  <Chip 
+                    label="Configured" 
+                    size="small" 
+                    color="success"
+                    variant="filled"
+                  />
+                </Box>
+              )}
+            </Stack>
+          </ModernGlassCard>
         </Stack>
       </TabPanel>
 
@@ -798,25 +799,23 @@ export const BookingFlowDetails: React.FC = () => {
           )}
 
           {steps.length === 0 && !isLoadingSteps ? (
-            <Card>
-              <CardContent sx={{ textAlign: 'center', py: 6 }}>
-                <StepsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No steps configured
-                </Typography>
-                <Typography variant="body2" color="text.secondary" mb={3}>
-                  Add steps to guide clients through the booking process
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<StepsIcon />}
-                  onClick={handleCreateStep}
-                  disabled={isCreatingStep}
-                >
-                  {isCreatingStep ? 'Adding...' : 'Add First Step'}
-                </Button>
-              </CardContent>
-            </Card>
+            <ModernEmptyState
+              icon={StepsIcon}
+              title="No steps configured"
+              description="Add steps to guide clients through the booking process and create a seamless booking experience."
+              primaryAction={{
+                label: isCreatingStep ? 'Adding...' : 'Add First Step',
+                onClick: handleCreateStep,
+                icon: <StepsIcon />,
+                color: 'primary'
+              }}
+              tip={{
+                text: "Start with basic steps like Contact Info, DateTime, and Package Selection for a complete booking flow.",
+                type: 'info'
+              }}
+              size="medium"
+              color="primary"
+            />
           ) : (
             <BookingFlowStepsTable
               flowId={flowId}
@@ -851,23 +850,23 @@ export const BookingFlowDetails: React.FC = () => {
             />
           </Box>
         ) : (
-          <Card>
-            <CardContent sx={{ textAlign: 'center', py: 6 }}>
-              <SettingsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Select a step to configure
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mb={3}>
-                Choose a step from the Steps tab to configure its specific settings and behavior
-              </Typography>
-              <Button
-                variant="outlined"
-                onClick={() => setActiveTab(1)}
-              >
-                Go to Steps
-              </Button>
-            </CardContent>
-          </Card>
+          <ModernEmptyState
+            icon={SettingsIcon}
+            title="Select a step to configure"
+            description="Choose a step from the Steps tab to configure its specific settings, validation rules, and behavior customizations."
+            primaryAction={{
+              label: 'Go to Steps',
+              onClick: () => setActiveTab(1),
+              icon: <StepsIcon />,
+              color: 'primary'
+            }}
+            tip={{
+              text: "Each step can be customized with unique settings, conditional logic, and validation rules to match your business needs.",
+              type: 'info'
+            }}
+            size="medium"
+            color="secondary"
+          />
         )}
       </TabPanel>
 
@@ -882,17 +881,18 @@ export const BookingFlowDetails: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={4}>
-        <Card>
-          <CardContent sx={{ textAlign: 'center', py: 6 }}>
-            <AnalyticsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              Analytics Coming Soon
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              View booking flow performance, conversion rates, and step completion analytics
-            </Typography>
-          </CardContent>
-        </Card>
+        <ModernEmptyState
+          icon={AnalyticsIcon}
+          title="Analytics Coming Soon"
+          description="Advanced analytics dashboard will show booking flow performance, conversion rates, step completion metrics, and detailed user behavior insights."
+          tip={{
+            text: "Analytics will include conversion funnels, A/B testing capabilities, user journey mapping, and performance optimization recommendations.",
+            type: 'pro'
+          }}
+          size="large"
+          color="primary"
+          illustration="gradient"
+        />
       </TabPanel>
 
       {/* Dialogs */}
@@ -914,68 +914,78 @@ export const BookingFlowDetails: React.FC = () => {
       />
 
       {/* Enhanced Delete Confirmation Dialog */}
-      <Dialog
+      <ModernDialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
-        disableRestoreFocus
-        disableEnforceFocus={false}
-        keepMounted={false}
+        title="Delete Booking Flow"
         maxWidth="sm"
         fullWidth
+        disableEscapeKeyDown={isDeletingFlow}
+        disableBackdropClick={isDeletingFlow}
+        actions={createDeleteActions(handleDeleteCancel, handleDeleteConfirm, isDeletingFlow)}
       >
-        <DialogTitle>Delete Booking Flow</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
+        <Stack spacing={3}>
+          <Typography variant="body1" sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
             Are you sure you want to delete <strong>"{flow.name}"</strong>?
-          </DialogContentText>
-          <Box mt={2}>
-            <Alert severity="warning">
-              <Typography variant="subtitle2" gutterBottom>
-                This action cannot be undone and will:
-              </Typography>
-              <Typography variant="body2" component="div">
-                • Delete all {flow.total_steps} configured steps
-              </Typography>
-              <Typography variant="body2" component="div">
-                • Mark any active booking sessions as abandoned
-              </Typography>
-              <Typography variant="body2" component="div">
-                • Remove all analytics data for this flow
-              </Typography>
-            </Alert>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeletingFlow}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
-            color="error" 
-            variant="contained"
-            disabled={isDeletingFlow}
-            startIcon={isDeletingFlow ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
+          </Typography>
+          <Alert 
+            severity="warning"
+            sx={{
+              ...glassPresets.light,
+              borderRadius: tokens.spacing.radius.lg,
+              border: `1px solid ${tokens.color.warning[300]}`,
+              '& .MuiAlert-icon': {
+                color: tokens.color.warning[600]
+              }
+            }}
           >
-            {isDeletingFlow ? 'Deleting...' : 'Delete Flow'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Typography variant="subtitle2" gutterBottom fontWeight="600">
+              This action cannot be undone and will:
+            </Typography>
+            <Typography variant="body2" component="div" sx={{ mb: 0.5 }}>
+              • Delete all {flow.total_steps} configured steps
+            </Typography>
+            <Typography variant="body2" component="div" sx={{ mb: 0.5 }}>
+              • Mark any active booking sessions as abandoned
+            </Typography>
+            <Typography variant="body2" component="div">
+              • Remove all analytics data for this flow
+            </Typography>
+          </Alert>
+        </Stack>
+      </ModernDialog>
 
       {/* Step Reorder Dialog */}
-      <Dialog
+      <ModernDialog
         open={reorderDialogOpen}
         onClose={() => setReorderDialogOpen(false)}
+        title="Reorder Booking Flow Steps"
         maxWidth="md"
         fullWidth
         disableEscapeKeyDown={isReorderingSteps}
+        disableBackdropClick={isReorderingSteps}
+        actions={[
+          {
+            label: 'Cancel',
+            onClick: () => setReorderDialogOpen(false),
+            variant: 'outlined',
+            disabled: isReorderingSteps,
+          },
+          {
+            label: isReorderingSteps ? 'Saving...' : 'Save Order',
+            onClick: () => setReorderDialogOpen(false),
+            variant: 'contained',
+            color: 'primary',
+            loading: isReorderingSteps,
+          },
+        ]}
       >
-        <DialogTitle>Reorder Booking Flow Steps</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Drag and drop steps to change their order in the booking flow.
+        <Stack spacing={3}>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+            Drag and drop steps to change their order in the booking flow. The order affects how clients progress through your booking process.
           </Typography>
           
-          <Box mt={2}>
+          <Box>
             <ImprovedStepReorderList 
               flowId={Number(id)}
               steps={steps}
@@ -985,26 +995,8 @@ export const BookingFlowDetails: React.FC = () => {
               }}
             />
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={() => setReorderDialogOpen(false)}
-            disabled={isReorderingSteps}
-          >
-            Cancel
-          </Button>
-          <Button 
-            variant="contained"
-            disabled={isReorderingSteps}
-            onClick={() => {
-              // PLACEHOLDER: Will be implemented when reorder component is available
-              setReorderDialogOpen(false);
-            }}
-          >
-            {isReorderingSteps ? 'Saving...' : 'Save Order'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        </Stack>
+      </ModernDialog>
+    </ModernSettingsLayout>
   );
 };

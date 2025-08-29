@@ -8,7 +8,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   Menu,
@@ -19,11 +18,16 @@ import {
   Box,
   CircularProgress,
   TableSortLabel,
-  Skeleton,
   Tooltip,
   Button,
   Alert,
 } from '@mui/material';
+// Modern Design System imports
+import { 
+  ModernCard,
+  ModernEmptyState,
+  ModernLoadingStates
+} from '../../common';
 import {
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
@@ -278,7 +282,16 @@ export const BookingFlowStepsTable: React.FC<BookingFlowStepsTableProps> = ({
         </Alert>
       )}
 
-      <TableContainer component={Paper} elevation={0}>
+      <ModernCard
+        variant="glass"
+        size="large"
+        animation="none"
+        sx={{
+          overflow: 'visible',
+          position: 'relative',
+        }}
+      >
+        <TableContainer>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -464,7 +477,8 @@ export const BookingFlowStepsTable: React.FC<BookingFlowStepsTableProps> = ({
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+        </TableContainer>
+      </ModernCard>
 
       {/* Action Menu */}
       <Menu
