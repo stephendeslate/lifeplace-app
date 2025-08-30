@@ -25,4 +25,16 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Disable fast refresh warnings for context files, common utilities, and analytics components
+    // These files legitimately export both components and utility functions/hooks
+    files: [
+      '**/contexts/**/*.tsx',
+      '**/components/common/*.tsx',
+      '**/components/analytics/common/*.tsx'
+    ],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 )

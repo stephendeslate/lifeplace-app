@@ -1,7 +1,6 @@
 // frontend/admin-crm/src/utils/api.ts
 
 import axios from "axios";
-import type { AxiosRequestConfig, AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import { storage } from "./storage";
 import type {
   LoginCredentials,
