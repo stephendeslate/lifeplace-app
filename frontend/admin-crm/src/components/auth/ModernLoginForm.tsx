@@ -13,6 +13,7 @@ import {
   FormControlLabel,
   Checkbox,
   Divider,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Visibility,
@@ -24,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
@@ -36,6 +38,9 @@ interface ModernLoginFormProps {
 export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) => {
   const { login, isLoading } = useAuth();
   const { showError } = useToastActions();
+  const { effectiveMode } = useTheme();
+  const muiTheme = useMuiTheme();
+  const isDarkMode = effectiveMode === 'dark';
   
   const [formData, setFormData] = useState<LoginCredentials>({
     email: '',
@@ -220,7 +225,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
                 sx={{ 
                   color: errors.email 
                     ? tokens.color.error[500] 
-                    : tokens.color.neutral[500] 
+                    : isDarkMode ? tokens.color.neutral[400] : tokens.color.neutral[500] 
                 }} 
               />
             </InputAdornment>
@@ -229,19 +234,27 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         sx={{
           '& .MuiOutlinedInput-root': {
             borderRadius: tokens.spacing.radius.lg,
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.8)' : 'rgba(255, 255, 255, 0.8)',
             backdropFilter: 'blur(12px)',
             border: `1px solid ${tokens.color.borders.subtle}`,
             transition: createTransition(['border-color', 'background-color', 'box-shadow'], 'fast'),
             padding: '2px 0',
+            color: isDarkMode ? tokens.color.neutral[200] : tokens.color.neutral[800],
+            
+            '& input': {
+              color: isDarkMode ? tokens.color.neutral[200] : tokens.color.neutral[800],
+              '&::placeholder': {
+                color: isDarkMode ? tokens.color.neutral[500] : tokens.color.neutral[400],
+              },
+            },
             
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               borderColor: tokens.color.primary[300],
             },
             
             '&.Mui-focused': {
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.95)' : 'rgba(255, 255, 255, 0.95)',
               borderColor: tokens.color.primary[500],
               boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
             },
@@ -259,13 +272,13 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
           },
           
           '& .MuiInputLabel-root': {
-            color: tokens.color.neutral[600],
+            color: isDarkMode ? tokens.color.neutral[400] : tokens.color.neutral[600],
             fontWeight: 500,
             backgroundColor: 'transparent',
             padding: '0 4px',
             
             '&.Mui-focused': {
-              color: tokens.color.primary[600],
+              color: tokens.color.primary[isDarkMode ? 400 : 600],
             },
             
             '&.Mui-error': {
@@ -274,7 +287,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             
             '&.MuiInputLabel-shrink': {
               transform: 'translate(14px, -9px) scale(0.75)',
-              backgroundColor: 'white',
+              backgroundColor: isDarkMode ? muiTheme.palette.background.paper : 'white',
               padding: '0 8px',
             },
           },
@@ -283,6 +296,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             marginLeft: 0,
             marginTop: 1,
             fontWeight: 500,
+            color: isDarkMode ? tokens.color.neutral[400] : 'inherit',
           },
         }}
       />
@@ -306,7 +320,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
                 sx={{ 
                   color: errors.password 
                     ? tokens.color.error[500] 
-                    : tokens.color.neutral[500] 
+                    : isDarkMode ? tokens.color.neutral[400] : tokens.color.neutral[500] 
                 }} 
               />
             </InputAdornment>
@@ -318,7 +332,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
                 edge="end"
                 disabled={isLoading}
                 sx={{
-                  color: tokens.color.neutral[500],
+                  color: isDarkMode ? tokens.color.neutral[400] : tokens.color.neutral[500],
                   '&:hover': {
                     color: tokens.color.primary[500],
                     backgroundColor: `${tokens.color.primary[500]}10`,
@@ -333,19 +347,27 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         sx={{
           '& .MuiOutlinedInput-root': {
             borderRadius: tokens.spacing.radius.lg,
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.8)' : 'rgba(255, 255, 255, 0.8)',
             backdropFilter: 'blur(12px)',
             border: `1px solid ${tokens.color.borders.subtle}`,
             transition: createTransition(['border-color', 'background-color', 'box-shadow'], 'fast'),
             padding: '2px 0',
+            color: isDarkMode ? tokens.color.neutral[200] : tokens.color.neutral[800],
+            
+            '& input': {
+              color: isDarkMode ? tokens.color.neutral[200] : tokens.color.neutral[800],
+              '&::placeholder': {
+                color: isDarkMode ? tokens.color.neutral[500] : tokens.color.neutral[400],
+              },
+            },
             
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               borderColor: tokens.color.primary[300],
             },
             
             '&.Mui-focused': {
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.95)' : 'rgba(255, 255, 255, 0.95)',
               borderColor: tokens.color.primary[500],
               boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
             },
@@ -363,13 +385,13 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
           },
           
           '& .MuiInputLabel-root': {
-            color: tokens.color.neutral[600],
+            color: isDarkMode ? tokens.color.neutral[400] : tokens.color.neutral[600],
             fontWeight: 500,
             backgroundColor: 'transparent',
             padding: '0 4px',
             
             '&.Mui-focused': {
-              color: tokens.color.primary[600],
+              color: tokens.color.primary[isDarkMode ? 400 : 600],
             },
             
             '&.Mui-error': {
@@ -378,7 +400,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             
             '&.MuiInputLabel-shrink': {
               transform: 'translate(14px, -9px) scale(0.75)',
-              backgroundColor: 'white',
+              backgroundColor: isDarkMode ? muiTheme.palette.background.paper : 'white',
               padding: '0 8px',
             },
           },
@@ -387,6 +409,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             marginLeft: 0,
             marginTop: 1,
             fontWeight: 500,
+            color: isDarkMode ? tokens.color.neutral[400] : 'inherit',
           },
         }}
       />
