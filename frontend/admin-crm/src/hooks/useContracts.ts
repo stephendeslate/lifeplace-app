@@ -49,8 +49,10 @@ export const useCreateContractTemplate = () => {
         message: 'Contract template has been created successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create contract template';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create contract template'
+        : 'Failed to create contract template';
       showToast({
         type: 'error',
         title: 'Creation Failed',
@@ -76,8 +78,10 @@ export const useUpdateContractTemplate = () => {
         message: 'Contract template has been updated successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update contract template';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update contract template'
+        : 'Failed to update contract template';
       showToast({
         type: 'error',
         title: 'Update Failed',
@@ -101,8 +105,10 @@ export const useDeleteContractTemplate = () => {
         message: 'Contract template has been deleted successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete contract template';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete contract template'
+        : 'Failed to delete contract template';
       showToast({
         type: 'error',
         title: 'Deletion Failed',
@@ -150,8 +156,10 @@ export const useCreateEventContract = () => {
         message: 'Event contract has been created successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create event contract';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create event contract'
+        : 'Failed to create event contract';
       showToast({
         type: 'error',
         title: 'Creation Failed',
@@ -177,8 +185,10 @@ export const useUpdateEventContract = () => {
         message: 'Event contract has been updated successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update event contract';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update event contract'
+        : 'Failed to update event contract';
       showToast({
         type: 'error',
         title: 'Update Failed',
@@ -211,8 +221,10 @@ export const useDeleteEventContract = () => {
         message: 'Event contract has been deleted successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete event contract';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete event contract'
+        : 'Failed to delete event contract';
       showToast({
         type: 'error',
         title: 'Deletion Failed',
@@ -238,8 +250,10 @@ export const useSignContract = () => {
         message: 'Contract has been signed successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to sign contract';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to sign contract'
+        : 'Failed to sign contract';
       showToast({
         type: 'error',
         title: 'Signing Failed',
@@ -265,8 +279,10 @@ export const useAddContractSignature = () => {
         message: 'Signature has been added to the contract.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to add signature';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to add signature'
+        : 'Failed to add signature';
       showToast({
         type: 'error',
         title: 'Signature Failed',
@@ -292,8 +308,10 @@ export const useVoidContract = () => {
         message: 'Contract has been voided successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to void contract';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to void contract'
+        : 'Failed to void contract';
       showToast({
         type: 'error',
         title: 'Void Failed',
@@ -334,8 +352,10 @@ export const useVerifySignature = () => {
         message: 'Signature has been verified successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to verify signature';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to verify signature'
+        : 'Failed to verify signature';
       showToast({
         type: 'error',
         title: 'Verification Failed',
@@ -376,8 +396,10 @@ export const useRequestAmendment = () => {
         message: 'Contract amendment has been requested successfully.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to request amendment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to request amendment'
+        : 'Failed to request amendment';
       showToast({
         type: 'error',
         title: 'Request Failed',
@@ -397,8 +419,10 @@ export const useApproveAmendment = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractAmendments'] });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to approve amendment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to approve amendment'
+        : 'Failed to approve amendment';
       showToast({
         type: 'error',
         title: 'Approval Failed',
@@ -423,8 +447,10 @@ export const useRejectAmendment = () => {
         message: 'Contract amendment has been rejected.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to reject amendment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to reject amendment'
+        : 'Failed to reject amendment';
       showToast({
         type: 'error',
         title: 'Rejection Failed',
@@ -458,8 +484,10 @@ export const useAddContractDocument = () => {
         message: 'Document has been added to the contract.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to add document';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to add document'
+        : 'Failed to add document';
       showToast({
         type: 'error',
         title: 'Upload Failed',
@@ -493,8 +521,10 @@ export const useAddContractNote = () => {
         message: 'Note has been added to the contract.',
       });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to add note';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to add note'
+        : 'Failed to add note';
       showToast({
         type: 'error',
         title: 'Note Failed',

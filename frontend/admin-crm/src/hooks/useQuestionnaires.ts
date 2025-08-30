@@ -56,8 +56,10 @@ export const useQuestionnaires = (filters?: QuestionnaireFilters) => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       showSuccess('Questionnaire Created', `${newQuestionnaire.name} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create questionnaire';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create questionnaire'
+        : 'Failed to create questionnaire';
       showError('Create Failed', message);
     },
   });
@@ -70,8 +72,10 @@ export const useQuestionnaires = (filters?: QuestionnaireFilters) => {
       queryClient.invalidateQueries({ queryKey: ['questionnaire', updatedQuestionnaire.id] });
       showSuccess('Questionnaire Updated', `${updatedQuestionnaire.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update questionnaire';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update questionnaire'
+        : 'Failed to update questionnaire';
       showError('Update Failed', message);
     },
   });
@@ -82,8 +86,10 @@ export const useQuestionnaires = (filters?: QuestionnaireFilters) => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       showSuccess('Questionnaire Deleted', 'Questionnaire has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete questionnaire';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete questionnaire'
+        : 'Failed to delete questionnaire';
       showError('Delete Failed', message);
     },
   });
@@ -94,8 +100,10 @@ export const useQuestionnaires = (filters?: QuestionnaireFilters) => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       showSuccess('Order Updated', 'Questionnaires have been reordered successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to reorder questionnaires';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to reorder questionnaires'
+        : 'Failed to reorder questionnaires';
       showError('Reorder Failed', message);
     },
   });
@@ -172,8 +180,10 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       showSuccess('Field Created', `${newField.name} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create field';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create field'
+        : 'Failed to create field';
       showError('Create Failed', message);
     },
   });
@@ -187,8 +197,10 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       showSuccess('Field Updated', `${updatedField.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update field';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update field'
+        : 'Failed to update field';
       showError('Update Failed', message);
     },
   });
@@ -200,8 +212,10 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       showSuccess('Field Deleted', 'Field has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete field';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete field'
+        : 'Failed to delete field';
       showError('Delete Failed', message);
     },
   });
@@ -212,8 +226,10 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
       queryClient.invalidateQueries({ queryKey: ['questionnaire-fields'] });
       showSuccess('Order Updated', 'Fields have been reordered successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to reorder fields';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to reorder fields'
+        : 'Failed to reorder fields';
       showError('Reorder Failed', message);
     },
   });
@@ -281,8 +297,10 @@ export const useQuestionnaireResponses = (filters?: QuestionnaireResponseFilters
       queryClient.invalidateQueries({ queryKey: ['questionnaire-responses'] });
       showSuccess('Response Saved', 'Response has been saved successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to save response';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to save response'
+        : 'Failed to save response';
       showError('Save Failed', message);
     },
   });
@@ -294,8 +312,10 @@ export const useQuestionnaireResponses = (filters?: QuestionnaireResponseFilters
       queryClient.invalidateQueries({ queryKey: ['questionnaire-responses'] });
       showSuccess('Response Updated', 'Response has been updated successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update response';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update response'
+        : 'Failed to update response';
       showError('Update Failed', message);
     },
   });
@@ -306,8 +326,10 @@ export const useQuestionnaireResponses = (filters?: QuestionnaireResponseFilters
       queryClient.invalidateQueries({ queryKey: ['questionnaire-responses'] });
       showSuccess('Responses Saved', `${responses.length} responses have been saved successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to save responses';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to save responses'
+        : 'Failed to save responses';
       showError('Save Failed', message);
     },
   });

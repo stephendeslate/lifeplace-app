@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/bookingflows/sessions/SessionTester.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -52,7 +52,7 @@ interface SessionTesterProps {
 interface TestSession {
   sessionId: string;
   currentStepIndex: number;
-  stepData: Record<number, any>;
+  stepData: Record<number, Record<string, unknown>>;
   errors: Record<number, string[]>;
   startedAt: Date;
   status: 'running' | 'completed' | 'abandoned' | 'error';
@@ -66,7 +66,7 @@ interface StepTestResult {
   status: 'pending' | 'testing' | 'passed' | 'failed' | 'skipped';
   errors: string[];
   warnings: string[];
-  testData: any;
+  testData: Record<string, unknown>;
   duration?: number;
 }
 
@@ -93,7 +93,10 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
   } = useBookingSessions();
 
   // Get enabled steps only
-  const enabledSteps = flow.steps?.filter(step => step.is_enabled).sort((a, b) => a.order - b.order) || [];
+  const enabledSteps = useMemo(() => 
+    flow.steps?.filter(step => step.is_enabled).sort((a, b) => a.order - b.order) || [],
+    [flow.steps]
+  );
 
   useEffect(() => {
     // Initialize test results
@@ -278,7 +281,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     }
   };
 
-  // @ts-ignore
+  // @ts-expect-error - Legacy code requiring type fix
   const runAutomatedTest = async (session: TestSession, bookingSession: BookingSession) => {
     const delay = testSpeed === 'fast' ? 500 : testSpeed === 'normal' ? 1500 : 3000;
 
@@ -376,7 +379,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     await handleCompleteTest();
   };
 
-  const generateTestDataForStep = (step: BookingFlowStep): any => {
+  const generateTestDataForStep = (step: BookingFlowStep): Record<string, unknown> => {
     const baseData = {
       step_id: step.id,
       timestamp: new Date().toISOString(),
@@ -386,7 +389,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
       case 'introduction':
         return { ...baseData, acknowledged: true };
       
-      case 'date_time':
+      case 'date_time': {
         const eventDate = new Date();
         eventDate.setDate(eventDate.getDate() + 30); // 30 days from now
         return {
@@ -396,6 +399,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
           end_time: '18:00',
           duration: 4,
         };
+      }
       
       case 'questionnaire':
         return {
@@ -483,7 +487,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     }
   };
 
-  const validateStepData = (step: BookingFlowStep, data: any): {
+  const validateStepData = (step: BookingFlowStep, data: Record<string, unknown>): {
     isValid: boolean;
     errors: string[];
     warnings: string[];
@@ -724,8 +728,6 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
           
           <Stepper orientation="vertical" nonLinear>
             {testResults.map((result, index) => {
-              // @ts-ignore
-              const step = enabledSteps.find(s => s.id === result.stepId);
               const isActive = testSession?.currentStepIndex === index;
               
               return (

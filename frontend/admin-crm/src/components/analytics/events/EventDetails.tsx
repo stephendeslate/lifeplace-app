@@ -183,7 +183,7 @@ export const EventDetails: React.FC<EventDetailsProps> = ({
                       <Chip 
                         label={event.event_category.replace('_', ' ')} 
                         size="small" 
-                        color={getCategoryColor(event.event_category) as any}
+                        color={getCategoryColor(event.event_category) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                         variant="outlined" 
                       />
                     </TableCell>

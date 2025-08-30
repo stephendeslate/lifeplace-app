@@ -36,7 +36,7 @@ export interface EntityReference {
   status?: string;
   statusColor?: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
   avatar?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   badges?: Array<{ label: string; color?: string; count?: number }>;
 }
 
@@ -140,7 +140,7 @@ const EntityCard: React.FC<{
                 label={badge.label}
                 size="small"
                 variant="outlined"
-                color={badge.color as any || 'default'}
+                color={(badge.color as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning') || 'default'}
               />
             </Badge>
           ))}
@@ -213,7 +213,7 @@ const EntityCard: React.FC<{
                           label={badge.label}
                           size="small"
                           variant="outlined"
-                          color={badge.color as any || 'default'}
+                          color={(badge.color as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning') || 'default'}
                         />
                       </Badge>
                     ))}
@@ -303,7 +303,7 @@ const EntityCard: React.FC<{
                   label={badge.label}
                   size="small"
                   variant="outlined"
-                  color={badge.color as any || 'default'}
+                  color={(badge.color as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning') || 'default'}
                 />
               </Badge>
             ))}
@@ -414,7 +414,43 @@ export const EntityNavigation: React.FC<EntityNavigationProps> = ({
 };
 
 // Utility functions to create entity references from data
-export const createClientReference = (client: any): EntityReference => ({
+interface ClientData {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  has_account: boolean;
+  profile?: {
+    avatar?: string;
+    phone?: string;
+    company?: string;
+  };
+}
+
+interface EventData {
+  id: number;
+  name: string;
+  event_type_name?: string;
+  status: string;
+  client_name?: string;
+  start_date: string;
+  total_price?: string | null;
+  total_amount_due?: string | number | null;
+}
+
+interface PaymentData {
+  id: number;
+  payment_number: string;
+  status: string;
+  amount: string;
+  due_date: string;
+  event_details?: {
+    name: string;
+    client_name: string;
+  };
+}
+
+export const createClientReference = (client: ClientData): EntityReference => ({
   id: client.id,
   type: 'client',
   name: `${client.first_name} ${client.last_name}`,
@@ -429,22 +465,22 @@ export const createClientReference = (client: any): EntityReference => ({
   },
 });
 
-export const createEventReference = (event: any): EntityReference => ({
+export const createEventReference = (event: EventData): EntityReference => ({
   id: event.id,
   type: 'event',
   name: event.name,
-  subtitle: event.event_type_name,
+  subtitle: event.event_type_name || 'No Event Type',
   status: event.status,
   statusColor: event.status === 'CONFIRMED' ? 'success' : event.status === 'COMPLETED' ? 'default' : 'primary',
   metadata: {
-    client: event.client_name,
+    client: event.client_name || 'Unknown Client',
     date: new Date(event.start_date).toLocaleDateString(),
-    value: event.total_price ? `$${parseFloat(event.total_price).toLocaleString()}` : null,
+    value: event.total_price ? `$${parseFloat(String(event.total_price)).toLocaleString()}` : null,
   },
-  badges: event.total_amount_due > 0 ? [{ label: 'Payment Due', color: 'warning' }] : [],
+  badges: (event.total_amount_due && parseFloat(String(event.total_amount_due)) > 0) ? [{ label: 'Payment Due', color: 'warning' }] : [],
 });
 
-export const createPaymentReference = (payment: any): EntityReference => ({
+export const createPaymentReference = (payment: PaymentData): EntityReference => ({
   id: payment.id,
   type: 'payment',
   name: `Payment ${payment.payment_number}`,

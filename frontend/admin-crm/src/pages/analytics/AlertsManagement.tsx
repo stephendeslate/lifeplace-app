@@ -33,7 +33,7 @@ import { AlertRuleForm } from '../../components/analytics/alerts/AlertRuleForm';
 import { AlertRuleTable } from '../../components/analytics/alerts/AlertRuleTable';
 import { AlertTester } from '../../components/analytics/alerts/AlertTester';
 import { NotificationSettings } from '../../components/analytics/alerts/NotificationSettings';
-import type { AlertRule, AlertRuleFilters } from '../../types/analytics.types';
+import type { AlertRule, AlertRuleFilters, CreateAlertRuleData, UpdateAlertRuleData } from '../../types/analytics.types';
 
 export const AlertsManagement: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
@@ -106,7 +106,7 @@ export const AlertsManagement: React.FC = () => {
     setTestingRule(null);
   };
 
-  const handleSubmitRule = (data: any) => {
+  const handleSubmitRule = (data: CreateAlertRuleData | UpdateAlertRuleData) => {
     if (editingRule) {
       updateRule({ id: editingRule.id, data });
     } else {
@@ -122,7 +122,7 @@ export const AlertsManagement: React.FC = () => {
     });
   };
 
-  const handleSaveNotificationSettings = (settings: any) => {
+  const handleSaveNotificationSettings = (settings: Record<string, unknown>) => {
     // TODO: Implement notification settings save
     console.log('Saving notification settings:', settings);
     setShowNotificationSettings(false);

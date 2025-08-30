@@ -157,7 +157,7 @@ const ReportExecutionDetails: React.FC<{ execution: ReportExecution }> = ({ exec
         <Chip
           label={execution.status}
           size="small"
-          color={getStatusColor(execution.status) as any}
+          color={getStatusColor(execution.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
           variant={execution.status === 'COMPLETED' ? 'filled' : 'outlined'}
         />
       </Box>
@@ -528,7 +528,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
               <Chip
                 label={report.report_type.replace('_', ' ')}
                 size="small"
-                color={getReportTypeColor(report.report_type) as any}
+                color={getReportTypeColor(report.report_type) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                 variant="outlined"
               />
               <Chip

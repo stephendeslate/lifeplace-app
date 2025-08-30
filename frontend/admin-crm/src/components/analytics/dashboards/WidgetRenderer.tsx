@@ -36,7 +36,7 @@ interface WidgetRendererProps {
   widget: Widget;
   isLoading?: boolean;
   error?: string | null;
-  data?: any;
+  data?: Record<string, unknown>;
   compact?: boolean;
 }
 

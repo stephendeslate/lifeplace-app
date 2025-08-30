@@ -38,7 +38,7 @@ export interface ModernDialogProps {
   disableEscapeKeyDown?: boolean;
   disableBackdropClick?: boolean;
   className?: string;
-  contentSx?: Record<string, any>;
+  contentSx?: Record<string, unknown>;
 }
 
 export const ModernDialog: React.FC<ModernDialogProps> = ({
@@ -55,7 +55,7 @@ export const ModernDialog: React.FC<ModernDialogProps> = ({
   className,
   contentSx = {},
 }) => {
-  const handleClose = (_event: any, reason?: string) => {
+  const handleClose = (_event: unknown, reason?: string) => {
     if (disableBackdropClick && reason === 'backdropClick') {
       return;
     }

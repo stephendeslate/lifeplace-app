@@ -6,6 +6,16 @@ import { useAuth as useAuthContext } from '../contexts/AuthContext';
 import { useToastActions } from '../contexts/ToastContext';
 import type { LoginCredentials } from '../types/auth.types';
 
+interface AuthApiError {
+  response?: {
+    data?: {
+      detail?: string;
+      [key: string]: unknown;
+    };
+  };
+  message?: string;
+}
+
 /**
  * Hook for authentication operations using React Query
  */
@@ -22,7 +32,7 @@ export const useAuthOperations = () => {
       // Invalidate and refetch user data
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     },
-    onError: (error: any) => {
+    onError: (error: AuthApiError) => {
       const message = error.response?.data?.detail || error.message || 'Login failed';
       showError('Login Failed', message);
     },
@@ -42,7 +52,7 @@ export const useAuthOperations = () => {
     onSuccess: () => {
       showSuccess('Password Changed', 'Your password has been updated successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: AuthApiError) => {
       const message = error.response?.data?.detail || 'Failed to change password';
       showError('Password Change Failed', message);
     },

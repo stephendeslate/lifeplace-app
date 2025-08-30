@@ -333,10 +333,16 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
 };
 
 // Utility functions for common financial calculations
-export const calculateEventFinancials = (event: any): FinancialMetric[] => {
-  const totalPrice = parseFloat(event.total_price || '0');
-  const totalPaid = parseFloat(event.total_amount_paid || '0');
-  const totalDue = parseFloat(event.total_amount_due || '0');
+interface EventFinancialData {
+  total_price?: string | number | null;
+  total_amount_paid?: string | number | null;
+  total_amount_due?: string | number | null;
+}
+
+export const calculateEventFinancials = (event: EventFinancialData): FinancialMetric[] => {
+  const totalPrice = parseFloat(String(event.total_price || '0'));
+  const totalPaid = parseFloat(String(event.total_amount_paid || '0'));
+  const totalDue = parseFloat(String(event.total_amount_due || '0'));
   
   return [
     {
@@ -360,9 +366,9 @@ export const calculateEventFinancials = (event: any): FinancialMetric[] => {
   ];
 };
 
-export const calculateClientFinancials = (events: any[]): FinancialMetric[] => {
-  const totalRevenue = events.reduce((sum, event) => sum + parseFloat(event.total_price || '0'), 0);
-  const totalPaid = events.reduce((sum, event) => sum + parseFloat(event.total_amount_paid || '0'), 0);
+export const calculateClientFinancials = (events: EventFinancialData[]): FinancialMetric[] => {
+  const totalRevenue = events.reduce((sum, event) => sum + parseFloat(String(event.total_price || '0')), 0);
+  const totalPaid = events.reduce((sum, event) => sum + parseFloat(String(event.total_amount_paid || '0')), 0);
   const averageEventValue = events.length > 0 ? totalRevenue / events.length : 0;
   
   return [

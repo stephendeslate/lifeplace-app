@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/communications/SendMessageDialog.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -50,7 +50,7 @@ interface MessageFormData {
   channel: 'EMAIL' | 'SMS';
   subject: string;
   body: string;
-  variables: Record<string, any>;
+  variables: Record<string, unknown>;
 }
 
 export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
@@ -85,7 +85,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
   const { mutate: sendMessage, isPending: isSending } = useSendManual();
 
   // Generate context variables for the client
-  const clientVariables = {
+  const clientVariables = useMemo(() => ({
     first_name: client.first_name || '',
     last_name: client.last_name || '',
     email: client.email,
@@ -96,7 +96,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
     site_name: 'LifePlace',
     current_date: new Date().toLocaleDateString(),
     support_email: 'support@lifeplace.com'
-  };
+  }), [client.first_name, client.last_name, client.email, client.profile?.company, client.profile?.phone]);
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -111,7 +111,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
       setPreviewExpanded(false);
       setVariablesExpanded(false);
     }
-  }, [open, client]);
+  }, [open, clientVariables]);
 
   // Update variables when client changes
   useEffect(() => {
@@ -119,9 +119,9 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
       ...prev,
       variables: { ...prev.variables, ...clientVariables }
     }));
-  }, [client]);
+  }, [clientVariables]);
 
-  const handleInputChange = (field: keyof MessageFormData, value: any) => {
+  const handleInputChange = (field: keyof MessageFormData, value: MessageFormData[keyof MessageFormData]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

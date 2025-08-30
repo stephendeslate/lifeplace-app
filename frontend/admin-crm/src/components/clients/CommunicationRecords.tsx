@@ -265,7 +265,7 @@ export const CommunicationRecords: React.FC<CommunicationRecordsProps> = ({ clie
                       <Chip
                         label={record.category}
                         size="small"
-                        color={getCategoryColor(record.category) as any}
+                        color={getCategoryColor(record.category) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                         variant="outlined"
                       />
                     </TableCell>
@@ -288,7 +288,7 @@ export const CommunicationRecords: React.FC<CommunicationRecordsProps> = ({ clie
                         <Chip
                           label={record.is_opened ? 'Opened' : record.delivery_status}
                           size="small"
-                          color={getStatusColor(record.delivery_status) as any}
+                          color={getStatusColor(record.delivery_status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                           variant="outlined"
                         />
                       </Box>
@@ -355,7 +355,7 @@ export const CommunicationRecords: React.FC<CommunicationRecordsProps> = ({ clie
                     <Chip 
                       label={selectedRecord.category} 
                       size="small" 
-                      color={getCategoryColor(selectedRecord.category) as any}
+                      color={getCategoryColor(selectedRecord.category) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                     />
                   </Box>
                   <Box display="flex" justifyContent="space-between">
@@ -384,7 +384,7 @@ export const CommunicationRecords: React.FC<CommunicationRecordsProps> = ({ clie
                       <Chip 
                         label={selectedRecord.is_opened ? 'Opened' : selectedRecord.delivery_status}
                         size="small" 
-                        color={getStatusColor(selectedRecord.delivery_status) as any}
+                        color={getStatusColor(selectedRecord.delivery_status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                       />
                     </Box>
                   </Box>

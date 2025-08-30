@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/contexts/AuthContext.tsx
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { User, AuthContextType, LoginCredentials, AuthTokens } from '../types/auth.types';
 import { storage } from '../utils/storage';
 import { authApi } from '../apis/auth.api';
@@ -27,7 +27,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Refresh access token using API client
-  const refreshToken = async (): Promise<void> => {
+  const refreshToken = useCallback(async (): Promise<void> => {
     const tokens = storage.getTokens();
     if (!tokens?.refresh) {
       throw new Error('No refresh token available');
@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logout();
       throw error;
     }
-  };
+  }, []);
 
   // Login function using API client
   const login = async (credentials: LoginCredentials): Promise<void> => {
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       storage.setTokens(data.tokens);
       storage.setUser(data.user);
       setUser(data.user);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
       
       // Extract meaningful error message from API response
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Preserve original error properties for debugging
       if (error.response?.status) {
-        (enhancedError as any).status = error.response.status;
+        (enhancedError as Error & { status?: number }).status = error.response.status;
       }
       
       throw enhancedError;
@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeAuth();
-  }, []);
+  }, [refreshToken]);
 
   // Set up token refresh interval
   useEffect(() => {
@@ -162,7 +162,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user, refreshToken]);
 
   // Handle storage events (for cross-tab logout)
   useEffect(() => {
@@ -190,7 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user]);
+  }, [user, refreshToken]);
 
   const value: AuthContextType = {
     user,

@@ -129,17 +129,17 @@ export const WidgetEditor: React.FC = () => {
     setPreviewMode(!previewMode);
   };
 
-  const handleFieldChange = (field: string, value: any) => {
+  const handleFieldChange = (field: string, value: unknown) => {
     setFormData(prev => {
       const newData = { ...prev };
       if (field.includes('.')) {
         const [parent, child] = field.split('.');
         newData[parent as keyof UpdateWidgetData] = {
-          ...(newData[parent as keyof UpdateWidgetData] as any),
+          ...(newData[parent as keyof UpdateWidgetData] as Record<string, unknown>),
           [child]: value,
         };
       } else {
-        (newData as any)[field] = value;
+        (newData as Record<string, unknown>)[field] = value;
       }
       return newData;
     });

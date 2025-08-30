@@ -108,7 +108,7 @@ export const AlertRuleForm: React.FC<AlertRuleFormDialogProps> = ({
     setErrors({});
   }, [editingRule, open]);
 
-  const handleFieldChange = (field: keyof AlertRuleFormData, value: any) => {
+  const handleFieldChange = (field: keyof AlertRuleFormData, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));

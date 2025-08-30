@@ -10,7 +10,7 @@ import { createTransition } from '../../../design-system/utils/animations';
 
 interface GaugeWidgetProps {
   widget: Widget;
-  data: any;
+  data: { value: number; target?: number; min?: number; max?: number; };
   compact?: boolean;
 }
 

@@ -30,7 +30,7 @@ export interface ModernSearchFilter {
   key: string;
   label: string;
   type: 'select' | 'multiselect' | 'text' | 'number' | 'date';
-  options?: { value: any; label: string }[];
+  options?: { value: unknown; label: string }[];
   placeholder?: string;
   width?: string;
 }
@@ -39,8 +39,8 @@ export interface ModernSearchProps {
   searchValue?: string;
   onSearchChange: (value: string) => void;
   filters?: ModernSearchFilter[];
-  filterValues?: Record<string, any>;
-  onFilterChange?: (key: string, value: any) => void;
+  filterValues?: Record<string, unknown>;
+  onFilterChange?: (key: string, value: unknown) => void;
   onClearFilters?: () => void;
   placeholder?: string;
   showFilterButton?: boolean;
@@ -69,7 +69,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
     (Array.isArray(value) ? value.length > 0 : true)
   );
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: unknown) => {
     onFilterChange?.(key, value);
   };
 
@@ -119,14 +119,14 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
               disabled={disabled}
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {(selected as any[]).slice(0, 2).map((val) => {
+                  {(selected as unknown[]).slice(0, 2).map((val) => {
                     const option = filter.options?.find(opt => opt.value === val);
                     return (
                       <Chip key={val} label={option?.label || val} size="small" />
                     );
                   })}
-                  {(selected as any[]).length > 2 && (
-                    <Chip label={`+${(selected as any[]).length - 2}`} size="small" />
+                  {(selected as unknown[]).length > 2 && (
+                    <Chip label={`+${(selected as unknown[]).length - 2}`} size="small" />
                   )}
                 </Box>
               )}

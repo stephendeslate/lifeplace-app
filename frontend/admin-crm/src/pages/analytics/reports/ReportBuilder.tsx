@@ -119,7 +119,7 @@ interface ReportBuilderState {
       id: string;
       field: string;
       operator: string;
-      value: any;
+      value: unknown;
       enabled: boolean;
     }>;
   };

@@ -127,7 +127,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     }
   }, [initialData]);
 
-  const updateSettings = (section: keyof NotificationSettingsData, field: string, value: any) => {
+  const updateSettings = (section: keyof NotificationSettingsData, field: string, value: boolean | string | string[]) => {
     setSettings(prev => ({
       ...prev,
       [section]: {

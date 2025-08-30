@@ -84,19 +84,21 @@ export const MetricValueDisplay: React.FC<MetricValueDisplayProps> = ({
           maximumFractionDigits: decimals,
         }).format(numValue);
       
-      case 'duration':
+      case 'duration': {
         const hours = Math.floor(numValue / 60);
         const minutes = Math.round(numValue % 60);
         if (hours > 0) {
           return `${hours}h ${minutes}m`;
         }
         return `${minutes}m`;
+      }
       
-      case 'bytes':
+      case 'bytes': {
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         if (numValue === 0) return '0 B';
         const i = Math.floor(Math.log(numValue) / Math.log(1024));
         return `${(numValue / Math.pow(1024, i)).toFixed(decimals)} ${sizes[i]}`;
+      }
       
       default:
         return numValue.toFixed(decimals);

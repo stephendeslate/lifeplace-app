@@ -7,7 +7,7 @@ import {
   Button,
   Divider,
 } from '@mui/material';
-import { Settings as SettingsIcon, ChevronRight } from '@mui/icons-material';
+import { ChevronRight } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { settingsNavigationConfig } from '../../config/settings-navigation';

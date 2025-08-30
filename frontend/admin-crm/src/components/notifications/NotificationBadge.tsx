@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
+import type { Notification } from '../../types/notifications.types';
 
 interface NotificationBadgeProps {
   showLabel?: boolean;
@@ -55,7 +56,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
     setAnchorEl(null);
   };
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: Notification) => {
     // Mark as read
     if (!notification.is_read) {
       markAsRead(notification.id);

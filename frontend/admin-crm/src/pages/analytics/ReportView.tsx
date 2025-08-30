@@ -103,7 +103,7 @@ const ExecutionTableRow: React.FC<ExecutionTableRowProps> = ({
         <Chip
           label={execution.status}
           size="small"
-          color={getStatusColor(execution.status) as any}
+          color={getStatusColor(execution.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
           variant={execution.status === 'COMPLETED' ? 'filled' : 'outlined'}
         />
       </TableCell>

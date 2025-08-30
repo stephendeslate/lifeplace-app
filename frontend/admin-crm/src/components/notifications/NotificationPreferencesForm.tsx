@@ -121,7 +121,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
     }
   }, [preferences]);
 
-  const handleFieldChange = (field: keyof UpdateNotificationPreferenceData, value: any) => {
+  const handleFieldChange = (field: keyof UpdateNotificationPreferenceData, value: boolean | string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,

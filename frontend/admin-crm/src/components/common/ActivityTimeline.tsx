@@ -101,7 +101,7 @@ export interface ActivityItem {
   description?: string;
   timestamp: string;
   status?: 'completed' | 'pending' | 'failed' | 'in_progress';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   relatedEntity?: {
     type: 'client' | 'event' | 'payment' | 'contract' | 'invoice';
     id: number;

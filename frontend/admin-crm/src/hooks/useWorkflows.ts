@@ -13,6 +13,15 @@ import type {
   ReorderStagesData,
 } from '../types/workflows.types';
 
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+      [key: string]: unknown;
+    };
+  };
+}
+
 export const useWorkflowTemplates = (filters?: WorkflowTemplateFilters) => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
@@ -53,7 +62,7 @@ export const useWorkflowTemplates = (filters?: WorkflowTemplateFilters) => {
       queryClient.invalidateQueries({ queryKey: ['workflow-templates'] });
       showSuccess('Template Created', `${newTemplate.name} has been created successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create workflow template';
       showError('Create Failed', message);
     },
@@ -67,7 +76,7 @@ export const useWorkflowTemplates = (filters?: WorkflowTemplateFilters) => {
       queryClient.invalidateQueries({ queryKey: ['workflow-template', updatedTemplate.id] });
       showSuccess('Template Updated', `${updatedTemplate.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update workflow template';
       showError('Update Failed', message);
     },
@@ -79,7 +88,7 @@ export const useWorkflowTemplates = (filters?: WorkflowTemplateFilters) => {
       queryClient.invalidateQueries({ queryKey: ['workflow-templates'] });
       showSuccess('Template Deleted', 'Workflow template has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete workflow template';
       showError('Delete Failed', message);
     },
@@ -154,7 +163,7 @@ export const useWorkflowStages = (filters?: WorkflowStageFilters) => {
       queryClient.invalidateQueries({ queryKey: ['workflow-templates'] });
       showSuccess('Stage Created', `${newStage.name} has been created successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create workflow stage';
       showError('Create Failed', message);
     },
@@ -169,7 +178,7 @@ export const useWorkflowStages = (filters?: WorkflowStageFilters) => {
       queryClient.invalidateQueries({ queryKey: ['workflow-templates'] });
       showSuccess('Stage Updated', `${updatedStage.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update workflow stage';
       showError('Update Failed', message);
     },
@@ -182,7 +191,7 @@ export const useWorkflowStages = (filters?: WorkflowStageFilters) => {
       queryClient.invalidateQueries({ queryKey: ['workflow-templates'] });
       showSuccess('Stage Deleted', 'Workflow stage has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete workflow stage';
       showError('Delete Failed', message);
     },
@@ -195,7 +204,7 @@ export const useWorkflowStages = (filters?: WorkflowStageFilters) => {
       queryClient.invalidateQueries({ queryKey: ['workflow-templates'] });
       showSuccess('Order Updated', 'Workflow stages have been reordered successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to reorder workflow stages';
       showError('Reorder Failed', message);
     },

@@ -85,7 +85,7 @@ export interface Notification {
   title: string;
   content: string;
   action_url: string;
-  context_data: Record<string, any>;
+  context_data: Record<string, unknown>;
   event: number | null;
   event_name?: string;
   client: number | null;
@@ -93,7 +93,7 @@ export interface Notification {
   is_read: boolean;
   read_at: string | null;
   delivered_via: string[];
-  delivery_attempts: Record<string, any>;
+  delivery_attempts: Record<string, unknown>;
   expires_at: string | null;
   is_expired: boolean;
   time_since_created: string;
@@ -165,7 +165,7 @@ export interface NotificationBulkActionData {
 export interface CreateNotificationData {
   recipient_ids: number[];
   notification_type_code: string;
-  context_data?: Record<string, any>;
+  context_data?: Record<string, unknown>;
   force_delivery_methods?: ('email' | 'sms' | 'in_app')[];
 }
 

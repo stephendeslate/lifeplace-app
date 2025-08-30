@@ -19,6 +19,15 @@ import type {
   QuoteSigningData,
 } from '../types/sales.types';
 
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+      [key: string]: unknown;
+    };
+  };
+}
+
 // Quote Templates
 export const useQuoteTemplates = (filters?: QuoteTemplateFilters) => {
   return useQuery({
@@ -56,7 +65,7 @@ export const useCreateQuoteTemplate = () => {
         message: 'Quote template has been created successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create quote template';
       showToast({
         type: 'error',
@@ -83,7 +92,7 @@ export const useUpdateQuoteTemplate = () => {
         message: 'Quote template has been updated successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update quote template';
       showToast({
         type: 'error',
@@ -108,7 +117,7 @@ export const useDeleteQuoteTemplate = () => {
         message: 'Quote template has been deleted successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete quote template';
       showToast({
         type: 'error',
@@ -142,7 +151,7 @@ export const useCreateQuoteTemplateProduct = () => {
         message: 'Product has been added to the template.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to add product to template';
       showToast({
         type: 'error',
@@ -169,7 +178,7 @@ export const useUpdateQuoteTemplateProduct = () => {
         message: 'Template product has been updated successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update template product';
       showToast({
         type: 'error',
@@ -195,7 +204,7 @@ export const useDeleteQuoteTemplateProduct = () => {
         message: 'Product has been removed from the template.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to remove product from template';
       showToast({
         type: 'error',
@@ -253,7 +262,7 @@ export const useCreateEventQuote = () => {
         message: 'Event quote has been created successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create event quote';
       showToast({
         type: 'error',
@@ -280,7 +289,7 @@ export const useUpdateEventQuote = () => {
         message: 'Event quote has been updated successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update event quote';
       showToast({
         type: 'error',
@@ -305,7 +314,7 @@ export const useDeleteEventQuote = () => {
         message: 'Event quote has been deleted successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete event quote';
       showToast({
         type: 'error',
@@ -331,7 +340,7 @@ export const useSendQuote = () => {
         message: 'Quote has been sent to the client.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to send quote';
       showToast({
         type: 'error',
@@ -358,7 +367,7 @@ export const useAcceptQuote = () => {
         message: 'Quote has been accepted successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to accept quote';
       showToast({
         type: 'error',
@@ -385,7 +394,7 @@ export const useRejectQuote = () => {
         message: 'Quote has been rejected.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to reject quote';
       showToast({
         type: 'error',
@@ -410,7 +419,7 @@ export const useDuplicateQuote = () => {
         message: 'Quote has been duplicated successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to duplicate quote';
       showToast({
         type: 'error',
@@ -444,7 +453,7 @@ export const useCreateQuoteLineItem = () => {
         message: 'Line item has been added to the quote.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to add line item';
       showToast({
         type: 'error',
@@ -471,7 +480,7 @@ export const useUpdateQuoteLineItem = () => {
         message: 'Line item has been updated successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update line item';
       showToast({
         type: 'error',
@@ -497,7 +506,7 @@ export const useDeleteQuoteLineItem = () => {
         message: 'Line item has been removed from the quote.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to remove line item';
       showToast({
         type: 'error',
@@ -531,7 +540,7 @@ export const useCreateQuoteOption = () => {
         message: 'Quote option has been added successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to add quote option';
       showToast({
         type: 'error',
@@ -575,7 +584,7 @@ export const useCreateQuoteReminder = () => {
         message: 'Quote reminder has been scheduled.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create reminder';
       showToast({
         type: 'error',
@@ -603,7 +612,7 @@ export const useSignQuote = () => {
         message: 'Quote has been signed successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to sign quote';
       showToast({
         type: 'error',

@@ -97,7 +97,7 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
     }
   }, [editingStage, templateId, open]);
 
-  const handleInputChange = (field: keyof CreateWorkflowStageData, value: any) => {
+  const handleInputChange = (field: keyof CreateWorkflowStageData, value: string | boolean | number | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,

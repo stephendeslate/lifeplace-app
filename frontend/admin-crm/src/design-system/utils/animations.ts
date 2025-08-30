@@ -345,9 +345,9 @@ export const glassAnimations = {
 
 // Helper function to create animation styles
 export const createAnimation = (
-  animation: any,
+  animation: string,
   config: AnimationConfig = {}
-): any => {
+): Record<string, string | number> => {
   const {
     duration = 'normal',
     easing = 'standard',
@@ -404,10 +404,10 @@ export const staggerUtilities = {
   createStaggerStyles: (
     totalItems: number, 
     baseDelay: number = 50,
-    animation: any,
+    animation: string,
     config: AnimationConfig = {}
   ) => {
-    const styles: any = {};
+    const styles: Record<string, string | number> = {};
     
     for (let i = 1; i <= totalItems; i++) {
       const delay = (i - 1) * baseDelay;
@@ -471,13 +471,13 @@ export const hoverAnimations = {
 
 // Loading animations
 export const loadingAnimations = {
-  spinner: (spin: any) => createAnimation(spin, {
+  spinner: (spin: string) => createAnimation(spin, {
     duration: 1000,
     easing: 'linear' as const,
     iterationCount: 'infinite',
   }),
 
-  pulse: (pulse: any) => createAnimation(pulse, {
+  pulse: (pulse: string) => createAnimation(pulse, {
     duration: 2000,
     easing: 'standard',
     iterationCount: 'infinite',
@@ -527,7 +527,7 @@ export const pageTransitions = {
 
 // Utility function to create custom animations
 export const createCustomAnimation = (
-  keyframes: any,
+  keyframes: string,
   config: AnimationConfig = {}
 ) => {
   return createAnimation(keyframes, config);
@@ -558,12 +558,12 @@ export const performanceUtils = {
   },
 
   // Conditionally apply animation based on user preference
-  respectReducedMotion: (animationStyle: any, fallbackStyle: any = {}) => {
+  respectReducedMotion: (animationStyle: Record<string, unknown>, fallbackStyle: Record<string, unknown> = {}) => {
     return performanceUtils.prefersReducedMotion() ? fallbackStyle : animationStyle;
   },
 
   // Optimize animations for performance
-  optimizeForPerformance: (animationStyle: any) => ({
+  optimizeForPerformance: (animationStyle: Record<string, unknown>) => ({
     ...animationStyle,
     willChange: 'transform, opacity',
     backfaceVisibility: 'hidden',

@@ -7,33 +7,22 @@ import {
   TextField,
   Typography,
   Chip,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   CircularProgress,
-  Menu,
-  MenuItem,
   Alert,
   Divider,
   Stack,
   Tooltip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   InputAdornment,
 } from '@mui/material';
 import {
-  MoreVert as MoreVertIcon,
   Delete as DeleteIcon,
   Email as EmailIcon,
   AdminPanelSettings as AdminIcon,
   PersonAdd as PersonAddIcon,
-  Visibility as ViewIcon,
   Person,
   Search as SearchIcon,
 } from '@mui/icons-material';
@@ -44,6 +33,7 @@ import { useCommunications } from '../../../hooks/useCommunications';
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
 import { ModernCard } from '../../../components/common/ModernCard';
+import { ModernTable, type ModernTableColumn, type ModernTableAction } from '../../../components/common';
 import { ModernPageHeader, createAddAction, createRefreshAction } from '../../../components/common/ModernPageHeader';
 import { ModernEmptyState } from '../../../components/common/ModernEmptyState';
 import ModernLoadingStates from '../../../components/common/ModernLoadingStates';
@@ -58,7 +48,6 @@ export const AdminUsers: React.FC = () => {
   const [viewRecordsDialogOpen, setViewRecordsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [selectedInvitation, setSelectedInvitation] = useState<AdminInvitation | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuType, setMenuType] = useState<'user' | 'invitation'>('user');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -120,34 +109,20 @@ export const AdminUsers: React.FC = () => {
     });
   };
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    type: 'user' | 'invitation',
-    item: AdminUser | AdminInvitation
-  ) => {
-    setAnchorEl(event.currentTarget);
+
+
+  const handleDeleteClick = (type: 'user' | 'invitation', item: AdminUser | AdminInvitation) => {
     setMenuType(type);
     if (type === 'user') {
       setSelectedUser(item as AdminUser);
     } else {
       setSelectedInvitation(item as AdminInvitation);
     }
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedUser(null);
-    setSelectedInvitation(null);
-  };
-
-  const handleDeleteClick = () => {
     setDeleteDialogOpen(true);
-    handleMenuClose();
   };
 
   const handleViewRecordsClick = () => {
     setViewRecordsDialogOpen(true);
-    handleMenuClose();
   };
 
   const handleDeleteConfirm = () => {
@@ -220,6 +195,200 @@ export const AdminUsers: React.FC = () => {
   });
 
   const isLoading = isLoadingAdminUsers || isLoadingInvitations;
+
+  // Table columns for Admin Users
+  const getAdminUsersColumns = (): ModernTableColumn<AdminUser>[] => [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (_, user) => (
+        <Box display="flex" alignItems="center" gap={1.5}>
+          <AdminIcon sx={{ color: tokens.color.primary[600] }} />
+          <Typography variant="body2" fontWeight="medium" sx={{ color: tokens.color.neutral[800] }}>
+            {user.first_name} {user.last_name}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      render: (_, user) => (
+        <Typography variant="body2" sx={{ color: tokens.color.neutral[700] }}>
+          {user.email}
+        </Typography>
+      ),
+    },
+    {
+      key: 'company',
+      label: 'Company',
+      render: (_, user) => (
+        <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
+          {user.profile?.company || '-'}
+        </Typography>
+      ),
+    },
+    {
+      key: 'date_joined',
+      label: 'Joined',
+      sortable: true,
+      render: (_, user) => (
+        <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
+          {new Date(user.date_joined).toLocaleDateString()}
+        </Typography>
+      ),
+    },
+    {
+      key: 'is_active',
+      label: 'Status',
+      render: (_, user) => (
+        <Chip 
+          label={user.is_active ? 'Active' : 'Inactive'} 
+          color={user.is_active ? 'success' : 'default'}
+          size="small"
+          sx={{
+            fontWeight: 600,
+            ...(user.is_active && {
+              background: `linear-gradient(135deg, ${tokens.color.success[500]} 0%, ${tokens.color.success[600]} 100%)`,
+              color: 'white',
+            }),
+          }}
+        />
+      ),
+    },
+  ];
+
+  // Table actions for Admin Users
+  const getAdminUsersActions = (): ModernTableAction<AdminUser>[] => [
+    {
+      label: 'Delete User',
+      icon: <DeleteIcon />,
+      onClick: (user) => handleDeleteClick('user', user),
+      color: 'error',
+    },
+  ];
+
+  // Table columns for Invitations
+  const getInvitationsColumns = (): ModernTableColumn<AdminInvitation>[] => [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (_, invitation) => (
+        <Box display="flex" alignItems="center" gap={1.5}>
+          <PersonAddIcon sx={{ color: tokens.color.warning[600] }} />
+          <Typography variant="body2" fontWeight="medium" sx={{ color: tokens.color.neutral[800] }}>
+            {invitation.first_name} {invitation.last_name}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      render: (_, invitation) => (
+        <Typography variant="body2" sx={{ color: tokens.color.neutral[700] }}>
+          {invitation.email}
+        </Typography>
+      ),
+    },
+    {
+      key: 'invited_by',
+      label: 'Invited By',
+      render: (_, invitation) => (
+        <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
+          {invitation.invited_by}
+        </Typography>
+      ),
+    },
+    {
+      key: 'created_at',
+      label: 'Sent',
+      sortable: true,
+      render: (_, invitation) => (
+        <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
+          {new Date(invitation.created_at).toLocaleDateString()}
+        </Typography>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (_, invitation) => {
+        const status = getInvitationStatus(invitation);
+        return (
+          <Chip 
+            label={status.label} 
+            color={status.color}
+            size="small"
+            sx={{
+              fontWeight: 600,
+              ...(status.color === 'success' && {
+                background: `linear-gradient(135deg, ${tokens.color.success[500]} 0%, ${tokens.color.success[600]} 100%)`,
+                color: 'white',
+              }),
+              ...(status.color === 'error' && {
+                background: `linear-gradient(135deg, ${tokens.color.error[500]} 0%, ${tokens.color.error[600]} 100%)`,
+                color: 'white',
+              }),
+              ...(status.color === 'warning' && {
+                background: `linear-gradient(135deg, ${tokens.color.warning[500]} 0%, ${tokens.color.warning[600]} 100%)`,
+                color: 'white',
+              }),
+            }}
+          />
+        );
+      },
+    },
+    {
+      key: 'email_status',
+      label: 'Email Status',
+      render: (_, invitation) => {
+        const record = getInvitationRecord(invitation);
+        return record ? (
+          <Tooltip title={`${record.delivery_status} - Click to view details`}>
+            <Chip 
+              label={record.delivery_status}
+              size="small"
+              color={record.delivery_status === 'DELIVERED' ? 'success' : 
+                     record.delivery_status === 'FAILED' ? 'error' : 'warning'}
+              variant="outlined"
+              clickable
+              onClick={() => handleViewRecordsClick()}
+              sx={{
+                fontWeight: 600,
+                '&:hover': {
+                  background: `${record.delivery_status === 'DELIVERED' 
+                    ? tokens.color.success[500] 
+                    : record.delivery_status === 'FAILED' 
+                    ? tokens.color.error[500] 
+                    : tokens.color.warning[500]}15`,
+                }
+              }}
+            />
+          </Tooltip>
+        ) : (
+          <Chip 
+            label="Queued" 
+            size="small" 
+            variant="outlined"
+            sx={{ fontWeight: 600, color: tokens.color.neutral[500] }}
+          />
+        );
+      },
+    },
+  ];
+
+  // Table actions for Invitations
+  const getInvitationsActions = (): ModernTableAction<AdminInvitation>[] => [
+    {
+      label: 'Delete Invitation',
+      icon: <DeleteIcon />,
+      onClick: (invitation) => handleDeleteClick('invitation', invitation),
+      color: 'error',
+    },
+  ];
 
   if (isLoading) {
     return (
@@ -344,82 +513,21 @@ export const AdminUsers: React.FC = () => {
                 position: 'relative',
               }}
             >
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Name</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Email</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Company</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Joined</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Status</TableCell>
-                      <TableCell width="50"></TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredAdminUsers.map((user) => (
-                      <TableRow 
-                        key={user.id} 
-                        hover
-                        sx={{
-                          '&:hover': {
-                            background: `${tokens.color.primary[50]}50`,
-                          }
-                        }}
-                      >
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1.5}>
-                            <AdminIcon sx={{ color: tokens.color.primary[600] }} />
-                            <Typography variant="body2" fontWeight="medium" sx={{ color: tokens.color.neutral[800] }}>
-                              {user.first_name} {user.last_name}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ color: tokens.color.neutral[700] }}>{user.email}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
-                            {user.profile?.company || '-'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
-                            {new Date(user.date_joined).toLocaleDateString()}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={user.is_active ? 'Active' : 'Inactive'} 
-                            color={user.is_active ? 'success' : 'default'}
-                            size="small"
-                            sx={{
-                              fontWeight: 600,
-                              ...(user.is_active && {
-                                background: `linear-gradient(135deg, ${tokens.color.success[500]} 0%, ${tokens.color.success[600]} 100%)`,
-                                color: 'white',
-                              }),
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, 'user', user)}
-                            sx={{
-                              '&:hover': {
-                                background: `${tokens.color.primary[500]}15`,
-                              }
-                            }}
-                          >
-                            <MoreVertIcon sx={{ color: tokens.color.neutral[600] }} />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <ModernTable
+                columns={getAdminUsersColumns()}
+                data={filteredAdminUsers}
+                actions={getAdminUsersActions()}
+                loading={isLoadingAdminUsers}
+                emptyState={
+                  <ModernEmptyState
+                    icon={AdminIcon}
+                    title="No Admin Users Found"
+                    description={searchQuery ? `No users match "${searchQuery}"` : "No admin users available"}
+                    size="medium"
+                    color="primary"
+                  />
+                }
+              />
             </ModernCard>
           )}
 
@@ -435,128 +543,21 @@ export const AdminUsers: React.FC = () => {
                 position: 'relative',
               }}
             >
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Name</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Email</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Invited By</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Sent</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Status</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: tokens.color.neutral[700] }}>Email Status</TableCell>
-                      <TableCell width="50"></TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredInvitations.map((invitation) => {
-                      const status = getInvitationStatus(invitation);
-                      const record = getInvitationRecord(invitation);
-                      
-                      return (
-                        <TableRow 
-                          key={invitation.id} 
-                          hover
-                          sx={{
-                            '&:hover': {
-                              background: `${tokens.color.warning[50]}50`,
-                            }
-                          }}
-                        >
-                          <TableCell>
-                            <Box display="flex" alignItems="center" gap={1.5}>
-                              <PersonAddIcon sx={{ color: tokens.color.warning[600] }} />
-                              <Typography variant="body2" fontWeight="medium" sx={{ color: tokens.color.neutral[800] }}>
-                                {invitation.first_name} {invitation.last_name}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" sx={{ color: tokens.color.neutral[700] }}>{invitation.email}</Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
-                              {invitation.invited_by}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
-                              {new Date(invitation.created_at).toLocaleDateString()}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={status.label} 
-                              color={status.color}
-                              size="small"
-                              sx={{
-                                fontWeight: 600,
-                                ...(status.color === 'success' && {
-                                  background: `linear-gradient(135deg, ${tokens.color.success[500]} 0%, ${tokens.color.success[600]} 100%)`,
-                                  color: 'white',
-                                }),
-                                ...(status.color === 'error' && {
-                                  background: `linear-gradient(135deg, ${tokens.color.error[500]} 0%, ${tokens.color.error[600]} 100%)`,
-                                  color: 'white',
-                                }),
-                                ...(status.color === 'warning' && {
-                                  background: `linear-gradient(135deg, ${tokens.color.warning[500]} 0%, ${tokens.color.warning[600]} 100%)`,
-                                  color: 'white',
-                                }),
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {record ? (
-                              <Tooltip title={`${record.delivery_status} - Click to view details`}>
-                                <Chip 
-                                  label={record.delivery_status}
-                                  size="small"
-                                  color={record.delivery_status === 'DELIVERED' ? 'success' : 
-                                         record.delivery_status === 'FAILED' ? 'error' : 'warning'}
-                                  variant="outlined"
-                                  clickable
-                                  onClick={() => handleViewRecordsClick()}
-                                  sx={{
-                                    fontWeight: 600,
-                                    '&:hover': {
-                                      background: `${record.delivery_status === 'DELIVERED' 
-                                        ? tokens.color.success[500] 
-                                        : record.delivery_status === 'FAILED' 
-                                        ? tokens.color.error[500] 
-                                        : tokens.color.warning[500]}15`,
-                                    }
-                                  }}
-                                />
-                              </Tooltip>
-                            ) : (
-                              <Chip 
-                                label="No record" 
-                                size="small" 
-                                variant="outlined"
-                                sx={{ fontWeight: 600, color: tokens.color.neutral[500] }}
-                              />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleMenuOpen(e, 'invitation', invitation)}
-                              sx={{
-                                '&:hover': {
-                                  background: `${tokens.color.warning[500]}15`,
-                                }
-                              }}
-                            >
-                              <MoreVertIcon sx={{ color: tokens.color.neutral[600] }} />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <ModernTable
+                columns={getInvitationsColumns()}
+                data={filteredInvitations}
+                actions={getInvitationsActions()}
+                loading={false}
+                emptyState={
+                  <ModernEmptyState
+                    icon={PersonAddIcon}
+                    title="No pending invitations"
+                    description="All invitations have been accepted or expired"
+                    size="medium"
+                    color="warning"
+                  />
+                }
+              />
             </ModernCard>
           )}
 
@@ -803,19 +804,6 @@ export const AdminUsers: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Action Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        {menuType === 'invitation' && (
-          <MenuItem onClick={handleViewRecordsClick}>
-            <ViewIcon sx={{ mr: 1 }} />
-            View Email Status
-          </MenuItem>
-        )}
-        <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
-          <DeleteIcon sx={{ mr: 1 }} />
-          {menuType === 'user' ? 'Deactivate User' : 'Cancel Invitation'}
-        </MenuItem>
-      </Menu>
 
       {/* Delete Confirmation Dialog */}
       <Dialog 

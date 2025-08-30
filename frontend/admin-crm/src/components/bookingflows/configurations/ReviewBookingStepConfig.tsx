@@ -27,8 +27,8 @@ import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows'
 
 interface ReviewBookingStepConfigProps {
   step: BookingFlowStep;
-  config?: any;
-  onUpdate: (data: Record<string, any>) => void;
+  config?: Record<string, unknown>;
+  onUpdate: (data: Record<string, unknown>) => void;
   isLoading?: boolean;
 }
 
@@ -73,14 +73,14 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
   useEffect(() => {
     if (config) {
       setFormData({
-        allow_editing: config.allow_editing ?? defaultFormData.allow_editing,
-        show_summary: config.show_summary ?? defaultFormData.show_summary,
-        show_terms_and_conditions: config.show_terms_and_conditions ?? defaultFormData.show_terms_and_conditions,
-        require_agreement: config.require_agreement ?? defaultFormData.require_agreement,
-        custom_message: config.custom_message || defaultFormData.custom_message,
-        edit_button_text: config.edit_button_text || defaultFormData.edit_button_text,
-        continue_button_text: config.continue_button_text || defaultFormData.continue_button_text,
-        terms_text: config.terms_text || defaultFormData.terms_text,
+        allow_editing: typeof config.allow_editing === 'boolean' ? config.allow_editing : defaultFormData.allow_editing,
+        show_summary: typeof config.show_summary === 'boolean' ? config.show_summary : defaultFormData.show_summary,
+        show_terms_and_conditions: typeof config.show_terms_and_conditions === 'boolean' ? config.show_terms_and_conditions : defaultFormData.show_terms_and_conditions,
+        require_agreement: typeof config.require_agreement === 'boolean' ? config.require_agreement : defaultFormData.require_agreement,
+        custom_message: typeof config.custom_message === 'string' ? config.custom_message : defaultFormData.custom_message,
+        edit_button_text: typeof config.edit_button_text === 'string' ? config.edit_button_text : defaultFormData.edit_button_text,
+        continue_button_text: typeof config.continue_button_text === 'string' ? config.continue_button_text : defaultFormData.continue_button_text,
+        terms_text: typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
       });
       setHasUnsavedChanges(false);
     } else {
@@ -89,7 +89,7 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
     }
   }, [config]);
 
-  const handleFormChange = (field: keyof ReviewBookingConfigFormData, value: any) => {
+  const handleFormChange = (field: keyof ReviewBookingConfigFormData, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -105,13 +105,13 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
     try {
       await updateConfiguration({
         stepId: step.id,
-        data: formData
+        data: { ...formData } as Record<string, unknown>
       });
       
       setHasUnsavedChanges(false);
       
       // Call parent callback
-      onUpdate(formData);
+      onUpdate({ ...formData } as Record<string, unknown>);
     } catch (error) {
       console.error('Failed to save review booking configuration:', error);
       setSaveError(error instanceof Error ? error.message : 'Failed to save configuration');
@@ -123,14 +123,14 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
   const handleReset = () => {
     if (config) {
       setFormData({
-        allow_editing: config.allow_editing ?? defaultFormData.allow_editing,
-        show_summary: config.show_summary ?? defaultFormData.show_summary,
-        show_terms_and_conditions: config.show_terms_and_conditions ?? defaultFormData.show_terms_and_conditions,
-        require_agreement: config.require_agreement ?? defaultFormData.require_agreement,
-        custom_message: config.custom_message || defaultFormData.custom_message,
-        edit_button_text: config.edit_button_text || defaultFormData.edit_button_text,
-        continue_button_text: config.continue_button_text || defaultFormData.continue_button_text,
-        terms_text: config.terms_text || defaultFormData.terms_text,
+        allow_editing: typeof config.allow_editing === 'boolean' ? config.allow_editing : defaultFormData.allow_editing,
+        show_summary: typeof config.show_summary === 'boolean' ? config.show_summary : defaultFormData.show_summary,
+        show_terms_and_conditions: typeof config.show_terms_and_conditions === 'boolean' ? config.show_terms_and_conditions : defaultFormData.show_terms_and_conditions,
+        require_agreement: typeof config.require_agreement === 'boolean' ? config.require_agreement : defaultFormData.require_agreement,
+        custom_message: typeof config.custom_message === 'string' ? config.custom_message : defaultFormData.custom_message,
+        edit_button_text: typeof config.edit_button_text === 'string' ? config.edit_button_text : defaultFormData.edit_button_text,
+        continue_button_text: typeof config.continue_button_text === 'string' ? config.continue_button_text : defaultFormData.continue_button_text,
+        terms_text: typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
       });
     } else {
       setFormData(defaultFormData);

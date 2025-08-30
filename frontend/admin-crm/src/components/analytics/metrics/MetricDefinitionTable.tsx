@@ -121,7 +121,7 @@ const MetricRow: React.FC<MetricRowProps> = ({
     }
   };
 
-  // @ts-ignore
+  // @ts-expect-error - Complex table column render function types
   const getAggregationIcon = (period: string, isRealTime: boolean) => {
     if (isRealTime) {
       return <TrendingUpIcon color="warning" fontSize="small" />;
@@ -169,7 +169,7 @@ const MetricRow: React.FC<MetricRowProps> = ({
           <Chip
             label={metric.metric_type}
             size="small"
-            color={getMetricTypeColor(metric.metric_type) as any}
+            color={getMetricTypeColor(metric.metric_type) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
             variant="outlined"
           />
           <Chip

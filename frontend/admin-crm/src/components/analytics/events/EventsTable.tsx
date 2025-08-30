@@ -145,7 +145,7 @@ const EventTableRow: React.FC<EventTableRowProps> = ({
           <Chip
             label={event.event_category.replace('_', ' ')}
             size="small"
-            color={getCategoryColor(event.event_category) as any}
+            color={getCategoryColor(event.event_category) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
             variant="outlined"
             sx={{
               borderRadius: tokens.spacing.radius.full,
@@ -329,7 +329,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(pageSize);
 
-  // @ts-expect-error
+  // @ts-expect-error - Type compatibility issue requiring attention
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };

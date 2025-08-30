@@ -5,7 +5,7 @@ export interface PaymentGateway {
   name: string;
   code: string;
   is_active: boolean;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   description: string;
   created_at: string;
   updated_at: string;
@@ -15,14 +15,14 @@ export interface CreatePaymentGatewayData {
   name: string;
   code: string;
   is_active?: boolean;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   description?: string;
 }
 
 export interface UpdatePaymentGatewayData {
   name?: string;
   is_active?: boolean;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   description?: string;
 }
 
@@ -69,7 +69,7 @@ export interface PaymentMethod {
   token_reference: string;
   last_four: string;
   expiry_date: string | null;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -196,7 +196,7 @@ export interface PaymentTransaction {
   currency: string;
   status: TransactionStatus;
   status_display: string;
-  response_data: Record<string, any>;
+  response_data: Record<string, unknown>;
   error_message: string;
   is_test: boolean;
   created_at: string;
@@ -307,7 +307,7 @@ export interface Refund {
     last_name: string;
   };
   refund_transaction_id: string;
-  gateway_response: Record<string, any>;
+  gateway_response: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -674,7 +674,7 @@ export interface PaymentGatewayFormData {
   name: string;
   code: string;
   is_active: boolean;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   description: string;
 }
 

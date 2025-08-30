@@ -56,6 +56,7 @@ import { useLayout } from '../../contexts/LayoutContext';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuotesForClient } from '../../hooks/useSales';
+import type { UpdateClientData } from '../../types/clients.types';
 import { useContractsForClient } from '../../hooks/useContracts';
 import { useInvoicesForClient } from '../../hooks/usePayments';
 import { getClientStatusSummary } from '../../utils/clientStatus';
@@ -256,7 +257,7 @@ export const ClientProfile: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleEdit = (data: any) => {
+  const handleEdit = (data: UpdateClientData) => {
     updateClient(
       { id: clientId, data },
       { onSuccess: () => setEditDialogOpen(false) }

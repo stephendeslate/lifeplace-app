@@ -19,7 +19,7 @@ export interface ManualSendData {
   template_id: number;
   recipient: string;
   client_id?: number;
-  context_data?: Record<string, any>;
+  context_data?: Record<string, unknown>;
   custom_subject?: string;
   custom_body?: string;
 }

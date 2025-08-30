@@ -55,7 +55,7 @@ interface PackageConfigFormData {
   show_images: boolean;
   enable_comparison: boolean;
   enable_dynamic_pricing: boolean;
-  pricing_factors: Record<string, any>;
+  pricing_factors: Record<string, unknown>;
 }
 
 const defaultFormData: PackageConfigFormData = {

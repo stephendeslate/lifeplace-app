@@ -38,8 +38,10 @@ export const useCommunications = () => {
         queryClient.invalidateQueries({ queryKey: ['communication-templates'] });
         showSuccess('Template Created', 'Communication template created successfully');
       },
-      onError: (error: any) => {
-        const message = error.response?.data?.detail || 'Failed to create template';
+      onError: (error: unknown) => {
+        const message = (error && typeof error === 'object' && 'response' in error)
+          ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create template'
+          : 'Failed to create template';
         showError('Creation Failed', message);
       },
     });
@@ -54,8 +56,10 @@ export const useCommunications = () => {
         queryClient.invalidateQueries({ queryKey: ['communication-template', data.id] });
         showSuccess('Template Updated', 'Communication template updated successfully');
       },
-      onError: (error: any) => {
-        const message = error.response?.data?.detail || 'Failed to update template';
+      onError: (error: unknown) => {
+        const message = (error && typeof error === 'object' && 'response' in error)
+          ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update template'
+          : 'Failed to update template';
         showError('Update Failed', message);
       },
     });
@@ -68,8 +72,10 @@ export const useCommunications = () => {
         queryClient.invalidateQueries({ queryKey: ['communication-templates'] });
         showSuccess('Template Deleted', 'Communication template deleted successfully');
       },
-      onError: (error: any) => {
-        const message = error.response?.data?.detail || 'Failed to delete template';
+      onError: (error: unknown) => {
+        const message = (error && typeof error === 'object' && 'response' in error)
+          ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete template'
+          : 'Failed to delete template';
         showError('Deletion Failed', message);
       },
     });
@@ -79,8 +85,10 @@ export const useCommunications = () => {
     return useMutation({
       mutationFn: ({ id, data }: { id: number; data: PreviewData | ManualPreviewData }) =>
         communicationsApi.previewTemplate(id, data),
-      onError: (error: any) => {
-        const message = error.response?.data?.detail || 'Failed to preview template';
+      onError: (error: unknown) => {
+        const message = (error && typeof error === 'object' && 'response' in error)
+          ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to preview template'
+          : 'Failed to preview template';
         showError('Preview Failed', message);
       },
     });
@@ -116,11 +124,21 @@ export const useCommunications = () => {
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
         showSuccess('Message Sent', 'Your message has been sent successfully');
       },
-      onError: (error: any) => {
-        const message = error.response?.data?.detail || 
-                       error.response?.data?.custom_subject?.[0] ||
-                       error.response?.data?.custom_body?.[0] ||
-                       'Failed to send message';
+      onError: (error: unknown) => {
+        let message = 'Failed to send message';
+        if (error && typeof error === 'object' && 'response' in error) {
+          const response = (error as { response?: { data?: Record<string, unknown> } }).response;
+          if (response?.data) {
+            const errorData = response.data;
+            if (errorData.detail) {
+              message = String(errorData.detail);
+            } else if (errorData.custom_subject && Array.isArray(errorData.custom_subject)) {
+              message = String(errorData.custom_subject[0]);
+            } else if (errorData.custom_body && Array.isArray(errorData.custom_body)) {
+              message = String(errorData.custom_body[0]);
+            }
+          }
+        }
         showError('Send Failed', message);
       },
     });
@@ -136,8 +154,10 @@ export const useCommunications = () => {
           `Successfully sent ${result.sent_count} communications`
         );
       },
-      onError: (error: any) => {
-        const message = error.response?.data?.detail || 'Failed to send bulk communications';
+      onError: (error: unknown) => {
+        const message = (error && typeof error === 'object' && 'response' in error)
+          ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to send bulk communications'
+          : 'Failed to send bulk communications';
         showError('Bulk Send Failed', message);
       },
     });

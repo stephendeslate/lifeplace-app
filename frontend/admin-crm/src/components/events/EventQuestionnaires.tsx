@@ -130,7 +130,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
     switch (field.type) {
       case 'text':
       case 'email':
-      case 'phone':
+      case 'phone': {
         return (
           <TextField
             fullWidth
@@ -142,8 +142,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
             required={field.required}
           />
         );
+      }
 
-      case 'number':
+      case 'number': {
         return (
           <TextField
             fullWidth
@@ -154,8 +155,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
             required={field.required}
           />
         );
+      }
 
-      case 'date':
+      case 'date': {
         return (
           <TextField
             fullWidth
@@ -167,8 +169,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
             InputLabelProps={{ shrink: true }}
           />
         );
+      }
 
-      case 'time':
+      case 'time': {
         return (
           <TextField
             fullWidth
@@ -180,8 +183,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
             InputLabelProps={{ shrink: true }}
           />
         );
+      }
 
-      case 'boolean':
+      case 'boolean': {
         return (
           <FormControlLabel
             control={
@@ -194,8 +198,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
             label={value === 'true' ? 'Yes' : 'No'}
           />
         );
+      }
 
-      case 'select':
+      case 'select': {
         return (
           <FormControl fullWidth disabled={!editMode}>
             <Select
@@ -214,8 +219,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
             </Select>
           </FormControl>
         );
+      }
 
-      case 'multi-select':
+      case 'multi-select': {
         const selectedValues = value ? value.split(',') : [];
         return (
           <FormControl fullWidth disabled={!editMode}>
@@ -243,8 +249,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
             </Select>
           </FormControl>
         );
+      }
 
-      default:
+      default: {
         return (
           <TextField
             fullWidth
@@ -256,6 +263,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
             required={field.required}
           />
         );
+      }
     }
   };
 

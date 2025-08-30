@@ -280,7 +280,7 @@ export const staggerAnimations = {
 
   // Create stagger style for nth-child
   createStaggerStyle: (totalItems: number, baseDelay: number = 50) => {
-    const styles: Record<string, any> = {};
+    const styles: Record<string, unknown> = {};
     
     for (let i = 1; i <= totalItems; i++) {
       styles[`&:nth-child(${i})`] = {
@@ -349,7 +349,7 @@ export const createTransition = (
 };
 
 // Keyframes generator for CSS-in-JS
-export const createKeyframes = (name: string, keyframes: Record<string, any>) => {
+export const createKeyframes = (name: string, keyframes: Record<string, unknown>) => {
   return {
     [`@keyframes ${name}`]: keyframes,
   };

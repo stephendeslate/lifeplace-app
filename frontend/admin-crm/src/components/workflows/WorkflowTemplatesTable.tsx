@@ -27,7 +27,6 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
   onView,
   onDelete,
   onDuplicate,
-  isDeleting,
 }) => {
   const getStatusChip = (isActive: boolean) => (
     <Chip
@@ -66,7 +65,7 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (_, template: any) => (
+      render: (_, template: WorkflowTemplate) => (
         <Box display="flex" alignItems="center" gap={1}>
           <WorkflowIcon color="primary" />
           <Box>
@@ -83,13 +82,13 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
     {
       key: 'event_type',
       label: 'Event Type',
-      render: (_, template: any) => getEventTypeChip(template.event_type_name),
+      render: (_, template: WorkflowTemplate) => getEventTypeChip(template.event_type_name),
     },
     {
       key: 'stages',
       label: 'Stages',
       align: 'center',
-      render: (_, template: any) => (
+      render: (_, template: WorkflowTemplate) => (
         <Tooltip title={`${template.stages_count} stages in this workflow`}>
           <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
             <TimelineIcon fontSize="small" color="action" />
@@ -103,7 +102,7 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
     {
       key: 'description',
       label: 'Description',
-      render: (_, template: any) => (
+      render: (_, template: WorkflowTemplate) => (
         <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 300 }}>
           {template.description || 'No description provided'}
         </Typography>
@@ -112,12 +111,12 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, template: any) => getStatusChip(template.is_active),
+      render: (_, template: WorkflowTemplate) => getStatusChip(template.is_active),
     },
     {
       key: 'updated_at',
       label: 'Last Updated',
-      render: (_, template: any) => (
+      render: (_, template: WorkflowTemplate) => (
         <Box>
           <Typography variant="body2" color="text.secondary">
             {new Date(template.updated_at).toLocaleDateString()}

@@ -144,7 +144,7 @@ export const LineChartWidget: React.FC<LineChartWidgetProps> = ({
     });
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; color: string; dataKey: string; name?: string; }>; label?: string; }) => {
     if (active && payload && payload.length) {
       return (
         <Fade in timeout={200}>
@@ -184,7 +184,7 @@ export const LineChartWidget: React.FC<LineChartWidgetProps> = ({
             >
               {formatDateLabel(label)}
             </Typography>
-            {payload.map((entry: any, index: number) => (
+            {payload.map((entry, index: number) => (
               <Box key={index} display="flex" alignItems="center" gap={1} sx={{ position: 'relative', zIndex: 1 }}>
                 <Box
                   sx={{

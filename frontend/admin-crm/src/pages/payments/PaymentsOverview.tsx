@@ -245,7 +245,7 @@ export const PaymentsOverview: React.FC = () => {
     );
   }
 
-  // @ts-expect-error
+  // @ts-expect-error - Type compatibility issue requiring attention
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -491,7 +491,7 @@ export const PaymentsOverview: React.FC = () => {
                               variant="outlined"
                               sx={{
                                 ...glassPresets.light,
-                                border: `1px solid ${(tokens.color as any)[getStatusColor(payment.status) === 'default' ? 'primary' : getStatusColor(payment.status)][500]}30`,
+                                border: `1px solid ${(tokens.color as Record<string, Record<string, string>>)[getStatusColor(payment.status) === 'default' ? 'primary' : getStatusColor(payment.status)][500]}30`,
                                 fontWeight: 600,
                               }}
                             />

@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/pages/settings/booking/BookingFlowDetails.tsx
 
 import React, { useEffect, useState, useRef } from 'react';
+
 import {
   Box,
   Button,
@@ -66,6 +67,7 @@ import {
   createRefreshAction
 } from '../../../components/common/ModernDesignSystem';
 import { ModernDialog, createDeleteActions } from '../../../components/common';
+import { ErrorDisplay } from '../../../components/common/ErrorDisplay';
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import { 
@@ -377,10 +379,7 @@ export const BookingFlowDetails: React.FC = () => {
     </Box>
   );
 
-  // FIXED: Enhanced error display
-  const hasErrors = flowError || stepsError || updateError || deleteError || duplicateError || 
-                   createStepError || updateStepError || deleteStepError || reorderStepsError || 
-                   updateConfigurationError;
+  // Error handling is now managed by the ErrorDisplay component
 
   if (flowError || !id || isNaN(flowId)) {
     return (
@@ -424,21 +423,20 @@ export const BookingFlowDetails: React.FC = () => {
   return (
     <ModernSettingsLayout>
       {/* Enhanced Error Display */}
-      {hasErrors && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Operation Failed
-          </Typography>
-          {updateError && <Typography variant="body2">Update: {updateError instanceof Error ? updateError.message : 'Unknown error'}</Typography>}
-          {deleteError && <Typography variant="body2">Delete: {deleteError instanceof Error ? deleteError.message : 'Unknown error'}</Typography>}
-          {duplicateError && <Typography variant="body2">Duplicate: {duplicateError instanceof Error ? duplicateError.message : 'Unknown error'}</Typography>}
-          {createStepError && <Typography variant="body2">Create Step: {createStepError instanceof Error ? createStepError.message : 'Unknown error'}</Typography>}
-          {updateStepError && <Typography variant="body2">Update Step: {updateStepError instanceof Error ? updateStepError.message : 'Unknown error'}</Typography>}
-          {deleteStepError && <Typography variant="body2">Delete Step: {deleteStepError instanceof Error ? deleteStepError.message : 'Unknown error'}</Typography>}
-          {reorderStepsError && <Typography variant="body2">Reorder Steps: {reorderStepsError instanceof Error ? reorderStepsError.message : 'Unknown error'}</Typography>}
-          {updateConfigurationError && <Typography variant="body2">Configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}</Typography>}
-        </Alert>
-      )}
+      <ErrorDisplay 
+        errors={{
+          ...(updateError ? { update: updateError } : {}),
+          ...(deleteError ? { delete: deleteError } : {}),
+          ...(duplicateError ? { duplicate: duplicateError } : {}),
+          ...(createStepError ? { createStep: createStepError } : {}),
+          ...(updateStepError ? { updateStep: updateStepError } : {}),
+          ...(deleteStepError ? { deleteStep: deleteStepError } : {}),
+          ...(reorderStepsError ? { reorderSteps: reorderStepsError } : {}),
+          ...(updateConfigurationError ? { configuration: updateConfigurationError } : {}),
+        }}
+        title="Operation Failed"
+        variant="inline"
+      />
 
       {/* Modern Header */}
       <ModernPageHeader

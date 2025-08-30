@@ -236,17 +236,18 @@ export type BackgroundVariant = keyof typeof colorTokens.backgrounds;
 // Helper function to get nested color values
 export const getColor = (path: string): string => {
   const keys = path.split('.');
-  let value: any = colorTokens;
+  let value: unknown = colorTokens;
   
   for (const key of keys) {
-    value = value[key];
-    if (value === undefined) {
+    if (value && typeof value === 'object' && key in value) {
+      value = (value as Record<string, unknown>)[key];
+    } else {
       console.warn(`Color token "${path}" not found`);
       return colorTokens.neutral[500];
     }
   }
   
-  return value;
+  return typeof value === 'string' ? value : colorTokens.neutral[500];
 };
 
 // Helper function to create glass color with custom opacity
@@ -262,7 +263,7 @@ export const createGlassColor = (baseColor: string, opacity: number): string => 
   
   // If already rgba, modify opacity
   if (baseColor.startsWith('rgba')) {
-    return baseColor.replace(/[\d\.]+\)$/g, `${opacity})`);
+    return baseColor.replace(/[\d.]+\)$/g, `${opacity})`);
   }
   
   return baseColor;

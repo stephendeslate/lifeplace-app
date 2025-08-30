@@ -359,7 +359,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
     onWidgetUpdate?.({ ...widget, ...updatedWidget });
   };
 
-  const handleWidgetFormSubmit = useCallback((data: any) => {
+  const handleWidgetFormSubmit = useCallback((data: Partial<Widget>) => {
     if (editingWidget) {
       updateWidget({ id: editingWidget.id, data });
       onWidgetUpdate?.({ ...editingWidget, ...data });

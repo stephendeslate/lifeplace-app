@@ -43,7 +43,7 @@ import { useDashboards } from '../../hooks/useAnalytics';
 import { DashboardForm } from '../../components/analytics/dashboards/DashboardForm';
 import { LoadingTable } from '../../components/common/LoadingTable';
 import { EmptyState } from '../../components/common/EmptyState';
-import type { Dashboard, DashboardFilters } from '../../types/analytics.types';
+import type { Dashboard, DashboardFilters, CreateDashboardData, UpdateDashboardData } from '../../types/analytics.types';
 
 interface DashboardCardActionsProps {
   dashboard: Dashboard;
@@ -188,7 +188,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
           <Chip
             label={dashboard.dashboard_type.replace('_', ' ')}
             size="small"
-            color={getDashboardTypeColor(dashboard.dashboard_type) as any}
+            color={getDashboardTypeColor(dashboard.dashboard_type) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
             variant="outlined"
           />
           <Chip
@@ -313,7 +313,7 @@ export const DashboardsManagement: React.FC = () => {
     setEditingDashboard(null);
   };
 
-  const handleSubmit = (data: any) => {
+  const handleSubmit = (data: CreateDashboardData | UpdateDashboardData) => {
     if (editingDashboard) {
       updateDashboard({ id: editingDashboard.id, data });
     } else {

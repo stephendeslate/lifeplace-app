@@ -11,7 +11,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
-import type { QuoteTemplateTableProps } from '../../types/sales.types';
+import type { QuoteTemplateTableProps, QuoteTemplate } from '../../types/sales.types';
 import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
 import type { ModernTableColumn, ModernTableAction } from '../common';
 
@@ -69,7 +69,7 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
       key: 'name',
       label: 'Template Name',
       sortable: true,
-      render: (_, template: any) => (
+      render: (_, template: QuoteTemplate) => (
         <Box display="flex" alignItems="center" gap={1}>
           <QuoteIcon color="primary" />
           <Box>
@@ -90,13 +90,13 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
     {
       key: 'event_type',
       label: 'Event Type',
-      render: (_, template: any) => getEventTypeChip(template.event_type_name),
+      render: (_, template: QuoteTemplate) => getEventTypeChip(template.event_type_name),
     },
     {
       key: 'products',
       label: 'Products',
       align: 'center',
-      render: (_, template: any) => (
+      render: (_, template: QuoteTemplate) => (
         <Tooltip title={`${template.products?.length || 0} products in this template`}>
           <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
             <ProductIcon fontSize="small" color="action" />
@@ -111,12 +111,12 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
       key: 'validity',
       label: 'Validity',
       align: 'center',
-      render: (_, template: any) => getValidityChip(template.default_validity_days),
+      render: (_, template: QuoteTemplate) => getValidityChip(template.default_validity_days),
     },
     {
       key: 'options',
       label: 'Options',
-      render: (_, template: any) => (
+      render: (_, template: QuoteTemplate) => (
         <Chip
           label={template.has_multiple_options ? 'Multiple Options' : 'Single Option'}
           size="small"
@@ -128,12 +128,12 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, template: any) => getStatusChip(template.is_active),
+      render: (_, template: QuoteTemplate) => getStatusChip(template.is_active),
     },
     {
       key: 'updated_at',
       label: 'Last Updated',
-      render: (_, template: any) => (
+      render: (_, template: QuoteTemplate) => (
         <Box>
           <Typography variant="body2" color="text.secondary">
             {new Date(template.updated_at).toLocaleDateString()}

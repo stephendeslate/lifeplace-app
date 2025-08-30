@@ -259,7 +259,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
     }
   }, [template]);
 
-  const handleInputChange = (field: keyof CreateContractTemplateData, value: any) => {
+  const handleInputChange = (field: keyof CreateContractTemplateData, value: string | boolean | number | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -326,8 +326,8 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
 
   const handleVariableInsert = (variable: string) => {
     // For rich text editor, we'll use the global function if available
-    if ((window as any)._richTextEditorInsertVariable) {
-      (window as any)._richTextEditorInsertVariable(variable);
+    if ((window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable) {
+      (window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable(variable);
     }
 
     // Add to variables array if not already present

@@ -141,16 +141,14 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
     }
   };
 
-  // @ts-ignore
-  const handleProductsChange = (event: any, newValue: number[]) => {
+  const handleProductsChange = (event: React.SyntheticEvent, newValue: number[]) => {
     setFormData(prev => ({
       ...prev,
       applicable_products: newValue,
     }));
   };
 
-  // @ts-ignore
-  const handleCategoriesChange = (event: any, newValue: number[]) => {
+  const handleCategoriesChange = (event: React.SyntheticEvent, newValue: number[]) => {
     setFormData(prev => ({
       ...prev,
       applicable_categories: newValue,

@@ -15,33 +15,23 @@ import {
   MenuItem,
   TextField,
   InputAdornment,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Collapse,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
 } from '@mui/material';
+import { ModernTable, ModernEmptyState, type ModernTableColumn, type ModernTableAction } from '../../components/common';
 import {
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
   Search as SearchIcon,
   Timeline as EventIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
   Info as InfoIcon,
   Person as UserIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useAnalyticsEvents } from '../../hooks/useAnalytics';
-import { LoadingTable } from '../../components/common/LoadingTable';
-import { EmptyState } from '../../components/common/EmptyState';
 import type { AnalyticsEvent, EventFilters } from '../../types/analytics.types';
 
 interface EventDetailsDialogProps {
@@ -166,152 +156,6 @@ const EventDetailsDialog: React.FC<EventDetailsDialogProps> = ({ event, open, on
   );
 };
 
-interface EventTableRowProps {
-  event: AnalyticsEvent;
-  onViewDetails: (event: AnalyticsEvent) => void;
-}
-
-const EventTableRow: React.FC<EventTableRowProps> = ({ event, onViewDetails }) => {
-  const [expanded, setExpanded] = useState(false);
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'USER_ACTION': return 'primary';
-      case 'SYSTEM_EVENT': return 'info';
-      case 'BUSINESS_EVENT': return 'success';
-      case 'ERROR_EVENT': return 'error';
-      case 'PERFORMANCE': return 'warning';
-      default: return 'default';
-    }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    
-    if (diffHours < 1) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return `${diffMinutes}m ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    } else {
-      const diffDays = Math.floor(diffHours / 24);
-      return `${diffDays}d ago`;
-    }
-  };
-
-  return (
-    <>
-      <TableRow hover>
-        <TableCell>
-          <Box display="flex" alignItems="center" gap={1}>
-            <IconButton
-              size="small"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </IconButton>
-            <Box>
-              <Typography variant="subtitle2" fontWeight="medium">
-                {event.event_name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatTimestamp(event.event_timestamp)}
-              </Typography>
-            </Box>
-          </Box>
-        </TableCell>
-        
-        <TableCell>
-          <Chip
-            label={event.event_category}
-            size="small"
-            color={getCategoryColor(event.event_category) as any}
-            variant="outlined"
-          />
-        </TableCell>
-        
-        <TableCell>
-          <Box display="flex" alignItems="center" gap={1}>
-            <UserIcon fontSize="small" color="action" />
-            <Typography variant="body2">
-              {event.user_name || 'Anonymous'}
-            </Typography>
-          </Box>
-        </TableCell>
-        
-        <TableCell>
-          {event.numeric_value !== null ? (
-            <Typography variant="body2" fontWeight="medium">
-              {event.numeric_value}
-            </Typography>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              N/A
-            </Typography>
-          )}
-        </TableCell>
-        
-        <TableCell>
-          <Typography variant="body2" color="text.secondary">
-            {new Date(event.event_timestamp).toLocaleString()}
-          </Typography>
-        </TableCell>
-        
-        <TableCell align="right">
-          <Tooltip title="View details">
-            <IconButton size="small" onClick={() => onViewDetails(event)}>
-              <InfoIcon />
-            </IconButton>
-          </Tooltip>
-        </TableCell>
-      </TableRow>
-      
-      <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
-          <Collapse in={expanded} timeout="auto" unmountOnExit>
-            <Box sx={{ margin: 2 }}>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Source Details
-                  </Typography>
-                  <Stack direction="row" spacing={2}>
-                    <Typography variant="body2" color="text.secondary">
-                      Model: {event.source_model || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      ID: {event.source_id || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Session: {event.session_id?.slice(0, 8) || 'N/A'}...
-                    </Typography>
-                  </Stack>
-                </Box>
-                
-                {Object.keys(event.event_data).length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Event Data Preview
-                    </Typography>
-                    <Paper variant="outlined" sx={{ p: 1, bgcolor: 'grey.50', maxHeight: 100, overflow: 'auto' }}>
-                      <Typography variant="body2" fontFamily="monospace">
-                        {JSON.stringify(event.event_data, null, 2).slice(0, 200)}
-                        {JSON.stringify(event.event_data).length > 200 && '...'}
-                      </Typography>
-                    </Paper>
-                  </Box>
-                )}
-              </Stack>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
-    </>
-  );
-};
 
 export const EventsExplorer: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
@@ -355,6 +199,105 @@ export const EventsExplorer: React.FC = () => {
     setSelectedEvent(null);
     setDetailsDialogOpen(false);
   };
+
+  // Helper function for category colors
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'USER_ACTION': return 'primary';
+      case 'SYSTEM_EVENT': return 'info';
+      case 'BUSINESS_EVENT': return 'success';
+      case 'ERROR_EVENT': return 'error';
+      case 'PERFORMANCE': return 'warning';
+      default: return 'default';
+    }
+  };
+
+  // Table columns for ModernTable
+  const getTableColumns = (): ModernTableColumn<AnalyticsEvent>[] => [
+    {
+      key: 'event_name',
+      label: 'Event',
+      sortable: true,
+      render: (_, event) => (
+        <Box>
+          <Typography variant="subtitle2" fontWeight="medium">
+            {event.event_name}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" fontFamily="monospace">
+            {event.id}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      key: 'event_category',
+      label: 'Category',
+      render: (_, event) => (
+        <Chip
+          label={event.event_category}
+          size="small"
+          color={getCategoryColor(event.event_category) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
+          variant="outlined"
+        />
+      ),
+    },
+    {
+      key: 'source_domain',
+      label: 'Domain',
+      render: (_, event) => (
+        <Typography variant="body2" color="text.secondary">
+          {event.source_domain || 'N/A'}
+        </Typography>
+      ),
+    },
+    {
+      key: 'user_name',
+      label: 'User',
+      render: (_, event) => (
+        <Box display="flex" alignItems="center" gap={1}>
+          <UserIcon fontSize="small" color="action" />
+          <Typography variant="body2">
+            {event.user_name || 'Anonymous'}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      key: 'numeric_value',
+      label: 'Value',
+      render: (_, event) => (
+        event.numeric_value !== null ? (
+          <Typography variant="body2" fontWeight="medium">
+            {event.numeric_value}
+          </Typography>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            N/A
+          </Typography>
+        )
+      ),
+    },
+    {
+      key: 'event_timestamp',
+      label: 'Timestamp',
+      sortable: true,
+      render: (_, event) => (
+        <Typography variant="body2" color="text.secondary">
+          {new Date(event.event_timestamp).toLocaleString()}
+        </Typography>
+      ),
+    },
+  ];
+
+  // Table actions for ModernTable
+  const getTableActions = (): ModernTableAction<AnalyticsEvent>[] => [
+    {
+      label: 'View Details',
+      icon: <InfoIcon />,
+      onClick: handleViewDetails,
+      color: 'primary',
+    },
+  ];
 
   // Get unique values for filters
   const categories = Array.from(new Set(events.map(e => e.event_category))).filter(Boolean);
@@ -455,30 +398,25 @@ export const EventsExplorer: React.FC = () => {
             }
           />
         ) : (
-          <TableContainer sx={{ maxHeight: 600 }}>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Event</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Domain</TableCell>
-                  <TableCell>User</TableCell>
-                  <TableCell>Value</TableCell>
-                  <TableCell>Timestamp</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {events.map((event) => (
-                  <EventTableRow
-                    key={event.id}
-                    event={event}
-                    onViewDetails={handleViewDetails}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <ModernTable
+            columns={getTableColumns()}
+            data={events}
+            actions={getTableActions()}
+            loading={isLoadingEvents}
+            emptyState={
+              <ModernEmptyState
+                icon={EventIcon}
+                title="No Events Found"
+                description={
+                  Object.keys(filters).length > 0
+                    ? "No events match your current filters. Try adjusting your search criteria."
+                    : "No analytics events have been recorded yet. Events will appear here as users interact with your application."
+                }
+                size="large"
+                color="primary"
+              />
+            }
+          />
         )}
       </Paper>
 
