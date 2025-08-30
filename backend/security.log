@@ -203,3 +203,15 @@ DETAIL:  Failing row contains (51, 2025-08-29 08:04:57.99513+00, LOGIN_SUCCESS, 
 DETAIL:  Failing row contains (52, 2025-08-30 04:08:21.385216+00, LOGIN_SUCCESS, LOW, null, Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537...., 127.0.0.1, , POST, /api/users/login/, http://localhost:5173/, User stephendeslate@gmail.com logged in successfully, {"user_id": 1, "logged_at": "2025-08-30T04:08:21.385075+00:00", ..., 10, f, 1).
 
 🔒 SECURITY 2025-08-30 12:08:21,387 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully (IP: 127.0.0.1, User: None)
+🔒 SECURITY 2025-08-30 12:13:06,241 ERROR Failed to log security event: null value in column "username" of relation "security_events" violates not-null constraint
+DETAIL:  Failing row contains (53, 2025-08-30 04:13:06.239449+00, LOGIN_SUCCESS, LOW, null, Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537...., 127.0.0.1, , POST, /api/users/login/, http://localhost:5173/, User stephendeslate@gmail.com logged in successfully, {"user_id": 1, "logged_at": "2025-08-30T04:13:06.239349+00:00", ..., 10, f, 1).
+
+🔒 SECURITY 2025-08-30 12:13:06,241 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully (IP: 127.0.0.1, User: None)
+🔒 SECURITY 2025-08-30 12:45:20,369 ERROR Failed to log security event: null value in column "username" of relation "security_events" violates not-null constraint
+DETAIL:  Failing row contains (54, 2025-08-30 04:45:20.368025+00, LOGIN_SUCCESS, LOW, null, Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537...., 127.0.0.1, , POST, /api/users/login/, http://localhost:5173/, User stephendeslate@gmail.com logged in successfully, {"user_id": 1, "logged_at": "2025-08-30T04:45:20.367949+00:00", ..., 10, f, 1).
+
+🔒 SECURITY 2025-08-30 12:45:20,369 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully (IP: 127.0.0.1, User: None)
+🔒 SECURITY 2025-08-30 12:47:26,815 ERROR Failed to log security event: null value in column "username" of relation "security_events" violates not-null constraint
+DETAIL:  Failing row contains (55, 2025-08-30 04:47:26.813629+00, LOGIN_SUCCESS, LOW, null, Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537...., 127.0.0.1, , POST, /api/users/login/, http://localhost:5173/, User stephendeslate@gmail.com logged in successfully, {"user_id": 1, "logged_at": "2025-08-30T04:47:26.813537+00:00", ..., 10, f, 1).
+
+🔒 SECURITY 2025-08-30 12:47:26,815 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully (IP: 127.0.0.1, User: None)

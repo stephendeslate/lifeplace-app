@@ -203,6 +203,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
       {/* Email Field */}
       <TextField
         fullWidth
+        variant="outlined"
         label="Email Address"
         type="email"
         value={formData.email}
@@ -232,6 +233,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             backdropFilter: 'blur(12px)',
             border: `1px solid ${tokens.color.borders.subtle}`,
             transition: createTransition(['border-color', 'background-color', 'box-shadow'], 'fast'),
+            padding: '2px 0',
             
             '&:hover': {
               backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -259,6 +261,8 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
           '& .MuiInputLabel-root': {
             color: tokens.color.neutral[600],
             fontWeight: 500,
+            backgroundColor: 'transparent',
+            padding: '0 4px',
             
             '&.Mui-focused': {
               color: tokens.color.primary[600],
@@ -266,6 +270,12 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             
             '&.Mui-error': {
               color: tokens.color.error[600],
+            },
+            
+            '&.MuiInputLabel-shrink': {
+              transform: 'translate(14px, -9px) scale(0.75)',
+              backgroundColor: 'white',
+              padding: '0 8px',
             },
           },
           
@@ -280,6 +290,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
       {/* Password Field */}
       <TextField
         fullWidth
+        variant="outlined"
         label="Password"
         type={showPassword ? 'text' : 'password'}
         value={formData.password}
@@ -326,6 +337,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             backdropFilter: 'blur(12px)',
             border: `1px solid ${tokens.color.borders.subtle}`,
             transition: createTransition(['border-color', 'background-color', 'box-shadow'], 'fast'),
+            padding: '2px 0',
             
             '&:hover': {
               backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -353,6 +365,8 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
           '& .MuiInputLabel-root': {
             color: tokens.color.neutral[600],
             fontWeight: 500,
+            backgroundColor: 'transparent',
+            padding: '0 4px',
             
             '&.Mui-focused': {
               color: tokens.color.primary[600],
@@ -360,6 +374,12 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             
             '&.Mui-error': {
               color: tokens.color.error[600],
+            },
+            
+            '&.MuiInputLabel-shrink': {
+              transform: 'translate(14px, -9px) scale(0.75)',
+              backgroundColor: 'white',
+              padding: '0 8px',
             },
           },
           
