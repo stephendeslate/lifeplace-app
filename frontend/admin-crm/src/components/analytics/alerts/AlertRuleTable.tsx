@@ -116,7 +116,7 @@ const NotificationMethodsDisplay: React.FC<NotificationMethodsDisplayProps> = ({
     }
   };
 
-  const getMethodColor = (method: string) => {
+  const getMethodColor = (method: string): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (method) {
       case 'EMAIL': return 'primary';
       case 'SMS': return 'success';
@@ -134,7 +134,7 @@ const NotificationMethodsDisplay: React.FC<NotificationMethodsDisplayProps> = ({
           icon={getMethodIcon(method)}
           label={method.replace('_', ' ')}
           size="small"
-          color={getMethodColor(method) as any}
+          color={getMethodColor(method)}
           variant="outlined"
         />
       ))}

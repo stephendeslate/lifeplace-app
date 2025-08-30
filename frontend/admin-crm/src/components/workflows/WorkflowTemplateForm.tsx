@@ -111,7 +111,7 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
     }
   }, [template]);
 
-  const handleInputChange = (field: keyof CreateWorkflowTemplateData, value: any) => {
+  const handleInputChange = (field: keyof CreateWorkflowTemplateData, value: string | boolean | number | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,

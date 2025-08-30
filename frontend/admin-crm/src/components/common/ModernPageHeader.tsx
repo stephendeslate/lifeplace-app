@@ -35,7 +35,7 @@ interface BreadcrumbItem {
   current?: boolean;
 }
 
-interface HeaderAction {
+export interface HeaderAction {
   icon?: React.ReactNode;
   label: string;
   onClick: () => void;
@@ -112,7 +112,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
     }
   };
 
-  const renderAction = (action: HeaderAction, isSecondary: boolean = false, key?: string) => {
+  const renderAction = (action: HeaderAction, isSecondary: boolean = false) => {
     const baseButtonProps = {
       disabled: action.disabled,
       onClick: action.onClick,
@@ -315,7 +315,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                   }}
                 >
                   {React.isValidElement(icon) 
-                    ? React.cloneElement(icon as React.ReactElement<any>, { 
+                    ? React.cloneElement(icon as React.ReactElement<{ sx?: object }>, { 
                         sx: { 
                           fontSize: getIconSize(), 
                           color: tokens.color.primary[600] 

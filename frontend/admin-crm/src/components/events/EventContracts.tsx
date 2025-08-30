@@ -232,7 +232,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                 <TableCell>
                   <Chip
                     label={contract.status_display || contract.status}
-                    color={getStatusColor(contract.status) as any}
+                    color={getStatusColor(contract.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                     size="small"
                   />
                 </TableCell>

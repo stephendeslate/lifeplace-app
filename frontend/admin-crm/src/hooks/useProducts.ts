@@ -60,8 +60,10 @@ export const useProductCategories = (filters?: CategoryFilters & { use_paginatio
       queryClient.invalidateQueries({ queryKey: ['product-categories'] });
       showSuccess('Category Created', `${newCategory.name} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create category';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create category'
+        : 'Failed to create category';
       showError('Create Failed', message);
     },
   });
@@ -74,8 +76,10 @@ export const useProductCategories = (filters?: CategoryFilters & { use_paginatio
       queryClient.invalidateQueries({ queryKey: ['product-category', updatedCategory.id] });
       showSuccess('Category Updated', `${updatedCategory.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update category';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update category'
+        : 'Failed to update category';
       showError('Update Failed', message);
     },
   });
@@ -86,8 +90,10 @@ export const useProductCategories = (filters?: CategoryFilters & { use_paginatio
       queryClient.invalidateQueries({ queryKey: ['product-categories'] });
       showSuccess('Category Deleted', 'Category has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete category';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete category'
+        : 'Failed to delete category';
       showError('Delete Failed', message);
     },
   });
@@ -193,8 +199,10 @@ export const useProducts = (filters?: ProductFilters & { use_pagination?: boolea
       queryClient.invalidateQueries({ queryKey: ['products'] });
       showSuccess('Product Created', `${newProduct.name} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create product';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create product'
+        : 'Failed to create product';
       showError('Create Failed', message);
     },
   });
@@ -207,8 +215,10 @@ export const useProducts = (filters?: ProductFilters & { use_pagination?: boolea
       queryClient.invalidateQueries({ queryKey: ['product', updatedProduct.id] });
       showSuccess('Product Updated', `${updatedProduct.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update product';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update product'
+        : 'Failed to update product';
       showError('Update Failed', message);
     },
   });
@@ -219,8 +229,10 @@ export const useProducts = (filters?: ProductFilters & { use_pagination?: boolea
       queryClient.invalidateQueries({ queryKey: ['products'] });
       showSuccess('Product Deleted', 'Product has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete product';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete product'
+        : 'Failed to delete product';
       showError('Delete Failed', message);
     },
   });
@@ -305,8 +317,10 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
       queryClient.invalidateQueries({ queryKey: ['discounts'] });
       showSuccess('Discount Created', `${newDiscount.name} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create discount';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create discount'
+        : 'Failed to create discount';
       showError('Create Failed', message);
     },
   });
@@ -319,8 +333,10 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
       queryClient.invalidateQueries({ queryKey: ['discount', updatedDiscount.id] });
       showSuccess('Discount Updated', `${updatedDiscount.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update discount';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update discount'
+        : 'Failed to update discount';
       showError('Update Failed', message);
     },
   });
@@ -331,8 +347,10 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
       queryClient.invalidateQueries({ queryKey: ['discounts'] });
       showSuccess('Discount Deleted', 'Discount has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete discount';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete discount'
+        : 'Failed to delete discount';
       showError('Delete Failed', message);
     },
   });
@@ -344,8 +362,10 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
       queryClient.invalidateQueries({ queryKey: ['discount', updatedDiscount.id] });
       showSuccess('Usage Updated', 'Discount usage has been incremented.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to increment usage';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to increment usage'
+        : 'Failed to increment usage';
       showError('Update Failed', message);
     },
   });
@@ -353,8 +373,10 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
   const validateDiscountMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: ValidateDiscountData }) =>
       productsApi.validateDiscountForOrder(id, data),
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to validate discount';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to validate discount'
+        : 'Failed to validate discount';
       showError('Validation Failed', message);
     },
   });

@@ -9,7 +9,7 @@ export interface ContractTemplate {
   content: string;
   variables: string[];
   requires_signature: boolean;
-  sections: any[];
+  sections: unknown[];
   signature_requirements: string[];
   requires_witness: boolean;
   requires_company_signature: boolean;
@@ -92,7 +92,7 @@ export interface ContractAmendment {
   amendment_contract: number | null;
   amendment_reason: string;
   changes_description: string;
-  section_changes: Record<string, any>;
+  section_changes: Record<string, unknown>;
   status: AmendmentStatus;
   status_display: string;
   original_value: string | null;
@@ -221,7 +221,7 @@ export interface CreateContractTemplateData {
   content: string;
   variables?: string[];
   requires_signature?: boolean;
-  sections?: any[];
+  sections?: unknown[];
   signature_requirements?: string[];
   requires_witness?: boolean;
   requires_company_signature?: boolean;
@@ -229,7 +229,7 @@ export interface CreateContractTemplateData {
   amendment_requires_signature?: boolean;
 }
 
-export interface UpdateContractTemplateData extends Partial<CreateContractTemplateData> {}
+export type UpdateContractTemplateData = Partial<CreateContractTemplateData>;
 
 export interface CreateEventContractData {
   event: number;
@@ -239,7 +239,7 @@ export interface CreateEventContractData {
   contract_value?: string;
   payment_schedule_reference?: string;
   currency?: string;
-  context_data?: Record<string, any>;
+  context_data?: Record<string, unknown>;
 }
 
 export interface UpdateEventContractData {
@@ -266,7 +266,7 @@ export interface CreateContractAmendmentData {
   original_contract: number;
   amendment_reason: string;
   changes_description: string;
-  section_changes?: Record<string, any>;
+  section_changes?: Record<string, unknown>;
   new_value?: string;
   requires_new_signatures?: boolean;
   signature_deadline?: string;
@@ -319,7 +319,7 @@ export interface ContractTemplateFormData {
   content: string;
   variables: string[];
   requires_signature: boolean;
-  sections: any[];
+  sections: unknown[];
   signature_requirements: string[];
   requires_witness: boolean;
   requires_company_signature: boolean;

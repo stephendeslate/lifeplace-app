@@ -11,26 +11,19 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  Menu,
   MenuItem,
   FormControl,
   InputLabel,
   Select,
   TextField,
   InputAdornment,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
 } from '@mui/material';
+import { ModernTable, ModernEmptyState, type ModernTableColumn, type ModernTableAction } from '../../components/common';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
   Search as SearchIcon,
-  MoreVert as MoreVertIcon,
   PlayArrow as ExecuteIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
@@ -41,230 +34,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useAnalyticsReports } from '../../hooks/useAnalytics';
-import { LoadingTable } from '../../components/common/LoadingTable';
-import { EmptyState } from '../../components/common/EmptyState';
 import type { AnalyticsReport, AnalyticsReportFilters } from '../../types/analytics.types';
 
-interface ReportRowActionsProps {
-  report: AnalyticsReport;
-  onView: (report: AnalyticsReport) => void;
-  onEdit: (report: AnalyticsReport) => void;
-  onExecute: (report: AnalyticsReport) => void;
-  onDelete: (id: number) => void;
-}
-
-const ReportRowActions: React.FC<ReportRowActionsProps> = ({
-  report,
-  onView,
-  onEdit,
-  onExecute,
-  onDelete,
-}) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleView = () => {
-    onView(report);
-    handleClose();
-  };
-
-  const handleEdit = () => {
-    onEdit(report);
-    handleClose();
-  };
-
-  const handleExecute = () => {
-    onExecute(report);
-    handleClose();
-  };
-
-  const handleDelete = () => {
-    onDelete(report.id);
-    handleClose();
-  };
-
-  return (
-    <>
-      <IconButton size="small" onClick={handleClick}>
-        <MoreVertIcon />
-      </IconButton>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      >
-        <MenuItem onClick={handleView}>
-          <ViewIcon sx={{ mr: 1 }} fontSize="small" />
-          View
-        </MenuItem>
-        <MenuItem onClick={handleExecute}>
-          <ExecuteIcon sx={{ mr: 1 }} fontSize="small" />
-          Execute Now
-        </MenuItem>
-        <MenuItem onClick={handleEdit}>
-          <EditIcon sx={{ mr: 1 }} fontSize="small" />
-          Edit
-        </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
-          Delete
-        </MenuItem>
-      </Menu>
-    </>
-  );
-};
-
-interface ReportTableRowProps {
-  report: AnalyticsReport;
-  onView: (report: AnalyticsReport) => void;
-  onEdit: (report: AnalyticsReport) => void;
-  onExecute: (report: AnalyticsReport) => void;
-  onDelete: (id: number) => void;
-}
-
-const ReportTableRow: React.FC<ReportTableRowProps> = ({
-  report,
-  onView,
-  onEdit,
-  onExecute,
-  onDelete,
-}) => {
-  const getReportTypeColor = (type: string) => {
-    switch (type) {
-      case 'BUSINESS_SUMMARY':
-        return 'primary';
-      case 'FINANCIAL':
-        return 'success';
-      case 'BOOKING_PERFORMANCE':
-        return 'info';
-      case 'CLIENT_ANALYSIS':
-        return 'warning';
-      case 'WORKFLOW_EFFICIENCY':
-        return 'secondary';
-      case 'PAYMENT_ANALYSIS':
-        return 'success';
-      default:
-        return 'default';
-    }
-  };
-
-  const getScheduleText = (report: AnalyticsReport) => {
-    if (report.schedule_frequency === 'MANUAL') {
-      return 'Manual';
-    }
-    
-    let text = report.schedule_frequency.toLowerCase();
-    
-    if (report.schedule_time) {
-      text += ` at ${report.schedule_time}`;
-    }
-    
-    if (report.schedule_frequency === 'WEEKLY' && report.schedule_day_of_week !== null) {
-      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-      text += ` (${days[report.schedule_day_of_week]})`;
-    }
-    
-    if (report.schedule_frequency === 'MONTHLY' && report.schedule_day_of_month) {
-      text += ` (${report.schedule_day_of_month}${getOrdinalSuffix(report.schedule_day_of_month)})`;
-    }
-    
-    return text;
-  };
-
-  const getOrdinalSuffix = (num: number) => {
-    const j = num % 10;
-    const k = num % 100;
-    if (j === 1 && k !== 11) return 'st';
-    if (j === 2 && k !== 12) return 'nd';
-    if (j === 3 && k !== 13) return 'rd';
-    return 'th';
-  };
-
-  return (
-    <TableRow hover>
-      <TableCell>
-        <Box>
-          <Typography variant="subtitle2" fontWeight="medium">
-            {report.name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {report.description || 'No description'}
-          </Typography>
-        </Box>
-      </TableCell>
-      
-      <TableCell>
-        <Chip
-          label={report.report_type.replace('_', ' ')}
-          size="small"
-          color={getReportTypeColor(report.report_type) as any}
-          variant="outlined"
-        />
-      </TableCell>
-      
-      <TableCell>
-        <Box display="flex" alignItems="center" gap={1}>
-          <ScheduleIcon fontSize="small" color="action" />
-          <Typography variant="body2">
-            {getScheduleText(report)}
-          </Typography>
-        </Box>
-      </TableCell>
-      
-      <TableCell>
-        <Chip
-          label={report.output_format}
-          size="small"
-          variant="outlined"
-        />
-      </TableCell>
-      
-      <TableCell>
-        <Typography variant="body2">
-          {report.metrics_count || 0} metric{(report.metrics_count || 0) !== 1 ? 's' : ''}
-        </Typography>
-      </TableCell>
-      
-      <TableCell>
-        <Typography variant="body2" color="text.secondary">
-          {report.last_generated 
-            ? new Date(report.last_generated).toLocaleDateString()
-            : 'Never'
-          }
-        </Typography>
-      </TableCell>
-      
-      <TableCell>
-        <Chip
-          label={report.is_active ? 'Active' : 'Inactive'}
-          size="small"
-          color={report.is_active ? 'success' : 'default'}
-          variant={report.is_active ? 'filled' : 'outlined'}
-        />
-      </TableCell>
-      
-      <TableCell align="right">
-        <ReportRowActions
-          report={report}
-          onView={onView}
-          onEdit={onEdit}
-          onExecute={onExecute}
-          onDelete={onDelete}
-        />
-      </TableCell>
-    </TableRow>
-  );
-};
 
 export const ReportsManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -327,7 +98,172 @@ export const ReportsManagement: React.FC = () => {
     }
   };
 
+  // Helper functions for table rendering
+  const getReportTypeColor = (type: string) => {
+    switch (type) {
+      case 'BUSINESS_SUMMARY':
+        return 'primary';
+      case 'FINANCIAL':
+        return 'success';
+      case 'BOOKING_PERFORMANCE':
+        return 'info';
+      case 'CLIENT_ANALYSIS':
+        return 'warning';
+      case 'WORKFLOW_EFFICIENCY':
+        return 'secondary';
+      case 'PAYMENT_ANALYSIS':
+        return 'success';
+      default:
+        return 'default';
+    }
+  };
 
+  const getScheduleText = (report: AnalyticsReport) => {
+    if (report.schedule_frequency === 'MANUAL') {
+      return 'Manual';
+    }
+    
+    let text = report.schedule_frequency.toLowerCase();
+    
+    if (report.schedule_time) {
+      text += ` at ${report.schedule_time}`;
+    }
+    
+    if (report.schedule_frequency === 'WEEKLY' && report.schedule_day_of_week !== null) {
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      text += ` (${days[report.schedule_day_of_week]})`;
+    }
+    
+    if (report.schedule_frequency === 'MONTHLY' && report.schedule_day_of_month) {
+      text += ` (${report.schedule_day_of_month}${getOrdinalSuffix(report.schedule_day_of_month)})`;
+    }
+    
+    return text;
+  };
+
+  const getOrdinalSuffix = (num: number) => {
+    const j = num % 10;
+    const k = num % 100;
+    if (j === 1 && k !== 11) return 'st';
+    if (j === 2 && k !== 12) return 'nd';
+    if (j === 3 && k !== 13) return 'rd';
+    return 'th';
+  };
+
+  // Table columns for ModernTable
+  const getTableColumns = (): ModernTableColumn<AnalyticsReport>[] => [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (_, report) => (
+        <Box>
+          <Typography variant="subtitle2" fontWeight="medium">
+            {report.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {report.description || 'No description'}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      key: 'report_type',
+      label: 'Type',
+      render: (_, report) => (
+        <Chip
+          label={report.report_type.replace('_', ' ')}
+          size="small"
+          color={getReportTypeColor(report.report_type) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
+          variant="outlined"
+        />
+      ),
+    },
+    {
+      key: 'schedule',
+      label: 'Schedule',
+      render: (_, report) => (
+        <Box display="flex" alignItems="center" gap={1}>
+          <ScheduleIcon fontSize="small" color="action" />
+          <Typography variant="body2">
+            {getScheduleText(report)}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      key: 'output_format',
+      label: 'Format',
+      render: (_, report) => (
+        <Chip
+          label={report.output_format}
+          size="small"
+          variant="outlined"
+        />
+      ),
+    },
+    {
+      key: 'metrics_count',
+      label: 'Metrics',
+      render: (_, report) => (
+        <Typography variant="body2">
+          {report.metrics_count || 0} metric{(report.metrics_count || 0) !== 1 ? 's' : ''}
+        </Typography>
+      ),
+    },
+    {
+      key: 'last_generated',
+      label: 'Last Generated',
+      render: (_, report) => (
+        <Typography variant="body2" color="text.secondary">
+          {report.last_generated 
+            ? new Date(report.last_generated).toLocaleDateString()
+            : 'Never'
+          }
+        </Typography>
+      ),
+    },
+    {
+      key: 'is_active',
+      label: 'Status',
+      render: (_, report) => (
+        <Chip
+          label={report.is_active ? 'Active' : 'Inactive'}
+          size="small"
+          color={report.is_active ? 'success' : 'default'}
+          variant={report.is_active ? 'filled' : 'outlined'}
+        />
+      ),
+    },
+  ];
+
+  // Table actions for ModernTable
+  const getTableActions = (): ModernTableAction<AnalyticsReport>[] => [
+    {
+      label: 'View Report',
+      icon: <ViewIcon />,
+      onClick: handleView,
+      color: 'primary',
+    },
+    {
+      label: 'Execute Report',
+      icon: <ExecuteIcon />,
+      onClick: handleExecute,
+      color: 'default',
+    },
+    {
+      label: 'Edit Report',
+      icon: <EditIcon />,
+      onClick: handleEdit,
+      color: 'default',
+    },
+    {
+      label: 'Delete Report',
+      icon: <DeleteIcon />,
+      onClick: (report) => handleDelete(report.id),
+      color: 'error',
+    },
+  ];
 
   // Get unique report types for filter
   const reportTypes = ['BUSINESS_SUMMARY', 'FINANCIAL', 'BOOKING_PERFORMANCE', 'CLIENT_ANALYSIS', 'WORKFLOW_EFFICIENCY', 'PAYMENT_ANALYSIS', 'CUSTOM'];
@@ -444,34 +380,31 @@ export const ReportsManagement: React.FC = () => {
             }
           />
         ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Schedule</TableCell>
-                  <TableCell>Format</TableCell>
-                  <TableCell>Metrics</TableCell>
-                  <TableCell>Last Generated</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {reports.map((report) => (
-                  <ReportTableRow
-                    key={report.id}
-                    report={report}
-                    onView={handleView}
-                    onEdit={handleEdit}
-                    onExecute={handleExecute}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <ModernTable
+            columns={getTableColumns()}
+            data={reports}
+            actions={getTableActions()}
+            loading={isLoadingReports}
+            emptyState={
+              <ModernEmptyState
+                icon={ReportIcon}
+                title="No Reports Found"
+                description={
+                  Object.keys(filters).length > 0
+                    ? "No reports match your current filters. Try adjusting your search criteria."
+                    : "Create your first analytics report to start generating insights from your business data."
+                }
+                size="large"
+                color="primary"
+                primaryAction={{
+                  label: "Create First Report",
+                  onClick: () => setShowCreateDialog(true),
+                  icon: <AddIcon />,
+                  color: 'primary'
+                }}
+              />
+            }
+          />
         )}
       </Paper>
 

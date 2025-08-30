@@ -83,7 +83,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     }
   }, [template]);
 
-  const handleInputChange = (field: keyof CreateTemplateData, value: any) => {
+  const handleInputChange = (field: keyof CreateTemplateData, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

@@ -156,7 +156,7 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
     return colors.primary;
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; color: string; dataKey: string; }>; label?: string; }) => {
     if (active && payload && payload.length) {
       return (
         <Box
@@ -172,7 +172,7 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
           <Typography variant="body2" fontWeight="medium" gutterBottom>
             {label}
           </Typography>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <Typography
               key={index}
               variant="body2"

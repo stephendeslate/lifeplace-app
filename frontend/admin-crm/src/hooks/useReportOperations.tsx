@@ -49,7 +49,7 @@ export const useReportOperations = (options: ReportOperationsOptions = {}) => {
       nextScheduled,
       canExecute: report.is_active && !hasRunningExecution,
     };
-  }, [reportQuery.data, executionsQuery.data]);
+  }, [reportQuery.data, executionsQuery.data, calculateNextScheduledTime]);
 
   // Execution statistics
   const executionStats = useMemo(() => {
@@ -163,7 +163,7 @@ export const useReportOperations = (options: ReportOperationsOptions = {}) => {
         }
         break;
 
-      case 'QUARTERLY':
+      case 'QUARTERLY': {
         // Find next quarter start
         const currentQuarter = Math.floor(now.getMonth() / 3);
         const nextQuarterMonth = (currentQuarter + 1) * 3;
@@ -173,6 +173,7 @@ export const useReportOperations = (options: ReportOperationsOptions = {}) => {
           nextExecution.setMonth(nextQuarterMonth, 1);
         }
         break;
+      }
 
       default:
         return null;

@@ -405,7 +405,7 @@ export const FunnelTable: React.FC<FunnelTableProps> = ({
     return (
       <ModernEmptyState
         icon={FunnelIcon}
-        title="No conversion funnels found"
+        title={emptyMessage}
         description="Create conversion funnels to track user journeys and identify optimization opportunities in your business processes"
         tip={{ text: "Funnels help you understand where users drop off in your process", type: "info" }}
       />

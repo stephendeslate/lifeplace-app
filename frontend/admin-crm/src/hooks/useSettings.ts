@@ -6,6 +6,15 @@ import { useToastActions } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import type { AccountSettingsFormData, PasswordChangeFormData } from '../types/settings.types';
 
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+      [key: string]: unknown;
+    };
+  };
+}
+
 /**
  * Hook for account settings operations
  */
@@ -22,7 +31,7 @@ export const useAccountSettings = () => {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       showSuccess('Profile Updated', 'Your profile has been updated successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update profile';
       showError('Update Failed', message);
     },
@@ -34,7 +43,7 @@ export const useAccountSettings = () => {
     onSuccess: () => {
       showSuccess('Password Changed', 'Your password has been updated successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to change password';
       showError('Password Change Failed', message);
     },
@@ -89,7 +98,7 @@ export const useAdminUsers = () => {
       queryClient.invalidateQueries({ queryKey: ['adminInvitations'] });
       showSuccess('Invitation Sent', 'Admin invitation has been sent successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to send invitation';
       showError('Invitation Failed', message);
     },
@@ -102,7 +111,7 @@ export const useAdminUsers = () => {
       queryClient.invalidateQueries({ queryKey: ['adminInvitations'] });
       showSuccess('Invitation Deleted', 'Admin invitation has been deleted.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete invitation';
       showError('Delete Failed', message);
     },
@@ -115,7 +124,7 @@ export const useAdminUsers = () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       showSuccess('User Deleted', 'Admin user has been deactivated.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete user';
       showError('Delete Failed', message);
     },

@@ -81,28 +81,39 @@ const StepPreview: React.FC<StepPreviewProps> = ({
     const iconProps = { color: isActive ? 'primary' : 'action' } as const;
     
     switch (step.step_type) {
-      case 'introduction':
+      case 'introduction': {
         return <IntroIcon {...iconProps} />;
-      case 'date_time':
+      }
+      case 'date_time': {
         return <CalendarIcon {...iconProps} />;
-      case 'questionnaire':
+      }
+      case 'questionnaire': {
         return <QuestionnaireIcon {...iconProps} />;
-      case 'package_selection':
+      }
+      case 'package_selection': {
         return <PackageIcon {...iconProps} />;
-      case 'addon_selection':
+      }
+      case 'addon_selection': {
         return <AddonIcon {...iconProps} />;
-      case 'pricing_summary':
+      }
+      case 'pricing_summary': {
         return <PricingIcon {...iconProps} />;
-      case 'contact_info':
+      }
+      case 'contact_info': {
         return <ContactIcon {...iconProps} />;
-      case 'payment_info':
+      }
+      case 'payment_info': {
         return <PaymentIcon {...iconProps} />;
-      case 'review_booking':
+      }
+      case 'review_booking': {
         return <ReviewIcon {...iconProps} />;
-      case 'confirmation':
+      }
+      case 'confirmation': {
         return <ConfirmationIcon {...iconProps} />;
-      default:
+      }
+      default: {
         return isActive ? <StartIcon color="primary" /> : <PendingIcon color="action" />;
+      }
     }
   };
 
@@ -110,7 +121,7 @@ const StepPreview: React.FC<StepPreviewProps> = ({
     const config = step.configuration_data;
 
     switch (step.step_type) {
-      case 'introduction':
+      case 'introduction': {
         const introConfig = config as IntroductionStepConfiguration;
         return (
           <Box>
@@ -132,8 +143,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             )}
           </Box>
         );
+      }
 
-      case 'date_time':
+      case 'date_time': {
         const dateTimeConfig = config as DateTimeStepConfiguration;
         return (
           <Box>
@@ -173,8 +185,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             )}
           </Box>
         );
+      }
 
-      case 'questionnaire':
+      case 'questionnaire': {
         const questionnaireConfig = config as QuestionnaireStepConfiguration;
         return (
           <Box>
@@ -201,8 +214,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             </Box>
           </Box>
         );
+      }
 
-      case 'package_selection':
+      case 'package_selection': {
         const packageConfig = config as PackageSelectionStepConfiguration;
         return (
           <Box>
@@ -256,8 +270,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             )}
           </Box>
         );
+      }
 
-      case 'addon_selection':
+      case 'addon_selection': {
         const addonConfig = config as AddonSelectionStepConfiguration;
         return (
           <Box>
@@ -305,8 +320,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             )}
           </Box>
         );
+      }
 
-      case 'pricing_summary':
+      case 'pricing_summary': {
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
@@ -338,8 +354,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             </Box>
           </Box>
         );
+      }
 
-      case 'contact_info':
+      case 'contact_info': {
         const contactConfig = config as ContactInfoStepConfiguration;
         return (
           <Box>
@@ -386,8 +403,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             )}
           </Box>
         );
+      }
 
-      case 'payment_info':
+      case 'payment_info': {
         const paymentConfig = config as PaymentInfoStepConfiguration;
         return (
           <Box>
@@ -427,8 +445,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             )}
           </Box>
         );
+      }
 
-      case 'review_booking':
+      case 'review_booking': {
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
@@ -466,8 +485,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             </Box>
           </Box>
         );
+      }
 
-      case 'confirmation':
+      case 'confirmation': {
         const confirmationConfig = config as ConfirmationStepConfiguration;
         return (
           <Box textAlign="center">
@@ -499,8 +519,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             )}
           </Box>
         );
+      }
 
-      default:
+      default: {
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
@@ -516,6 +537,7 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             </Alert>
           </Box>
         );
+      }
     }
   };
 

@@ -85,7 +85,7 @@ export const ReportTable: React.FC<ReportTableProps> = ({
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (_, report: any) => (
+      render: (_, report: AnalyticsReport) => (
         <Box>
           <Typography variant="subtitle2" fontWeight="medium">
             {report.name}
@@ -99,11 +99,11 @@ export const ReportTable: React.FC<ReportTableProps> = ({
     {
       key: 'type',
       label: 'Type',
-      render: (_, report: any) => (
+      render: (_, report: AnalyticsReport) => (
         <Chip
           label={report.report_type.replace('_', ' ')}
           size="small"
-          color={getReportTypeColor(report.report_type) as any}
+          color={getReportTypeColor(report.report_type) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
           variant="outlined"
         />
       ),
@@ -111,7 +111,7 @@ export const ReportTable: React.FC<ReportTableProps> = ({
     {
       key: 'schedule',
       label: 'Schedule',
-      render: (_, report: any) => (
+      render: (_, report: AnalyticsReport) => (
         <Box display="flex" alignItems="center" gap={1}>
           <ScheduleIcon fontSize="small" color="action" />
           <Typography variant="body2">
@@ -123,7 +123,7 @@ export const ReportTable: React.FC<ReportTableProps> = ({
     {
       key: 'format',
       label: 'Format',
-      render: (_, report: any) => (
+      render: (_, report: AnalyticsReport) => (
         <Chip
           label={report.output_format}
           size="small"
@@ -134,7 +134,7 @@ export const ReportTable: React.FC<ReportTableProps> = ({
     {
       key: 'metrics',
       label: 'Metrics',
-      render: (_, report: any) => (
+      render: (_, report: AnalyticsReport) => (
         <Typography variant="body2">
           {report.metrics_count || 0} metric{(report.metrics_count || 0) !== 1 ? 's' : ''}
         </Typography>
@@ -143,7 +143,7 @@ export const ReportTable: React.FC<ReportTableProps> = ({
     {
       key: 'last_generated',
       label: 'Last Generated',
-      render: (_, report: any) => (
+      render: (_, report: AnalyticsReport) => (
         <Typography variant="body2" color="text.secondary">
           {report.last_generated 
             ? new Date(report.last_generated).toLocaleDateString()
@@ -155,7 +155,7 @@ export const ReportTable: React.FC<ReportTableProps> = ({
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, report: any) => (
+      render: (_, report: AnalyticsReport) => (
         <Chip
           label={report.is_active ? 'Active' : 'Inactive'}
           size="small"

@@ -29,7 +29,7 @@ export interface CreateCategoryData {
   typical_duration_hours?: number | null;
 }
 
-export interface UpdateCategoryData extends Partial<CreateCategoryData> {}
+export type UpdateCategoryData = Partial<CreateCategoryData>;
 
 export type PricingModel = 'FIXED' | 'HOURLY' | 'TIERED' | 'CUSTOM';
 export type ProductType = 'PRODUCT' | 'PACKAGE';
@@ -93,7 +93,7 @@ export interface CreateProductData {
   event_type?: number | null;
 }
 
-export interface UpdateProductData extends Partial<CreateProductData> {}
+export type UpdateProductData = Partial<CreateProductData>;
 
 export type DiscountType = 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS';
 export type ApplicationType = 'AUTOMATIC' | 'CODE_REQUIRED' | 'ADMIN_ONLY';
@@ -150,7 +150,7 @@ export interface CreateDiscountData {
   applicable_categories?: number[];
 }
 
-export interface UpdateDiscountData extends Partial<CreateDiscountData> {}
+export type UpdateDiscountData = Partial<CreateDiscountData>;
 
 export interface ProductFilters {
   search?: string;

@@ -45,23 +45,23 @@ export type ResponsiveValue<T> = {
 export const createResponsiveStyles = <T>(
   property: string,
   values: ResponsiveValue<T>
-): any => {
+): Record<string, unknown> => {
   if (typeof values !== 'object' || values === null) {
     return { [property]: values };
   }
 
-  const styles: any = {};
+  const styles: Record<string, unknown> = {};
   const breakpointKeys = Object.keys(breakpoints) as Breakpoint[];
 
   // Add base value (xs or first defined value)
-  const baseValue = (values as any).xs || Object.values(values)[0];
+  const baseValue = (values as Record<string, unknown>).xs || Object.values(values)[0];
   if (baseValue !== undefined) {
     styles[property] = baseValue;
   }
 
   // Add media query styles for each breakpoint
   breakpointKeys.forEach(bp => {
-    const value = (values as any)[bp];
+    const value = (values as Record<string, unknown>)[bp];
     if (value !== undefined && bp !== 'xs') {
       styles[mediaQueries.up(bp)] = {
         [property]: String(value),
@@ -178,7 +178,7 @@ export const layoutUtils = {
 
   // Hide on specific breakpoints
   hideOn: (...breakpoints: Breakpoint[]) => {
-    const styles: any = {};
+    const styles: Record<string, unknown> = {};
     breakpoints.forEach(bp => {
       styles[mediaQueries.only(bp)] = {
         display: 'none',
@@ -192,7 +192,7 @@ export const layoutUtils = {
     const allBreakpoints = Object.keys(tokens.spacing.breakpoints) as Breakpoint[];
     const hideBreakpoints = allBreakpoints.filter(bp => !breakpoints.includes(bp));
     
-    const styles: any = {};
+    const styles: Record<string, unknown> = {};
     hideBreakpoints.forEach(bp => {
       styles[mediaQueries.only(bp)] = {
         display: 'none',
@@ -345,14 +345,14 @@ export const componentResponsive = {
 };
 
 // Hook-like utility for responsive values
-export const useResponsiveValue = <T>(values: ResponsiveValue<T>): any => {
+export const useResponsiveValue = <T>(values: ResponsiveValue<T>): T => {
   if (typeof values !== 'object' || values === null) {
     return values;
   }
 
   // This would typically be used with a React hook to detect current breakpoint
   // For now, return the mobile value as default
-  return (values as any).xs || Object.values(values)[0];
+  return (values as Record<string, T>).xs || Object.values(values)[0];
 };
 
 // Utility to detect current breakpoint (for use in components)

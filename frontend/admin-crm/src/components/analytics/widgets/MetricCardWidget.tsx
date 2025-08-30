@@ -157,14 +157,14 @@ export const MetricCardWidget: React.FC<MetricCardWidgetProps> = ({
                 icon={getTrendIcon() as React.ReactElement}
                 label={`${data.trend.value > 0 ? '+' : ''}${data.trend.value}%`}
                 size="small"
-                color={getTrendChipColor() as any}
+                color={getTrendChipColor() as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                 variant="outlined"
               />
             ) : (
               <Chip
                 label={`${data.trend.value > 0 ? '+' : ''}${data.trend.value}%`}
                 size="small"
-                color={getTrendChipColor() as any}
+                color={getTrendChipColor() as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                 variant="outlined"
               />
             )

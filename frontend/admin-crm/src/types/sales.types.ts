@@ -13,8 +13,8 @@ export interface QuoteTemplate {
   default_tax_rate: number | null;
   workflow_template: number | null;
   products: QuoteTemplateProduct[];
-  contract_templates: any[];
-  questionnaires: any[];
+  contract_templates: unknown[];
+  questionnaires: unknown[];
   created_at: string;
   updated_at: string;
 }
@@ -169,7 +169,7 @@ export interface CreateQuoteTemplateData {
   questionnaires?: number[];
 }
 
-export interface UpdateQuoteTemplateData extends Partial<CreateQuoteTemplateData> {}
+export type UpdateQuoteTemplateData = Partial<CreateQuoteTemplateData>;
 
 export interface CreateQuoteTemplateProductData {
   product: number;
@@ -177,7 +177,7 @@ export interface CreateQuoteTemplateProductData {
   is_required?: boolean;
 }
 
-export interface UpdateQuoteTemplateProductData extends Partial<CreateQuoteTemplateProductData> {}
+export type UpdateQuoteTemplateProductData = Partial<CreateQuoteTemplateProductData>;
 
 export interface CreateEventQuoteData {
   event: number;
@@ -208,7 +208,7 @@ export interface CreateQuoteLineItemData {
   notes?: string;
 }
 
-export interface UpdateQuoteLineItemData extends Partial<CreateQuoteLineItemData> {}
+export type UpdateQuoteLineItemData = Partial<CreateQuoteLineItemData>;
 
 export interface CreateQuoteOptionData {
   quote: number;

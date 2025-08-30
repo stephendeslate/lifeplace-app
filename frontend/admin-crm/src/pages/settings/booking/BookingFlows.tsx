@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/pages/settings/booking/BookingFlows.tsx
 
 import React, { useEffect, useState, useRef } from 'react';
+
 import {
   Box,
   Button,
@@ -54,7 +55,8 @@ import { ModernSettingsLayout } from '../../../components/common/ModernPageLayou
 import { ModernCard } from '../../../components/common/ModernCard';
 import { ModernEmptyState } from '../../../components/common/ModernEmptyState';
 import ModernLoadingStates from '../../../components/common/ModernLoadingStates';
-import { ModernPageHeader, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
+import { ModernPageHeader, createRefreshAction, createAddAction, type HeaderAction } from '../../../components/common/ModernPageHeader';
+import { ErrorDisplay } from '../../../components/common/ErrorDisplay';
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
@@ -300,11 +302,10 @@ export const BookingFlows: React.FC = () => {
 
   const statusCounts = getStatusCounts();
 
-  // FIXED: Better error handling display
-  const hasErrors = flowsError || eventTypesError || createError || updateError || deleteError || duplicateError;
+  // Error handling is now managed by the ErrorDisplay component
 
   // Modern header actions
-  const headerActions = [
+  const headerActions: HeaderAction[] = [
     createRefreshAction(() => refetchFlows()),
     ...(hasActiveFilters ? [{
       icon: <FilterIcon />,
@@ -312,7 +313,7 @@ export const BookingFlows: React.FC = () => {
       variant: 'outlined' as const,
       onClick: handleClearFilters,
       tooltip: 'Clear all active filters',
-    }] : []),
+    } as HeaderAction] : []),
   ];
 
   const primaryAction = createAddAction('New Booking Flow', handleCreateNew, 'primary');
@@ -342,35 +343,18 @@ export const BookingFlows: React.FC = () => {
       />
 
       {/* Error Display */}
-      {hasErrors && (
-        <Box sx={{ mb: 4 }}>
-          <ModernCard
-            variant="glass"
-            color="error"
-            size="small"
-            animation="none"
-          >
-            <Alert 
-              severity="error"
-              sx={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                '& .MuiAlert-message': {
-                  color: tokens.color.error[700],
-                },
-              }}
-            >
-              {flowsError?.message || 
-               eventTypesError?.message || 
-               createError?.message || 
-               updateError?.message || 
-               deleteError?.message || 
-               duplicateError?.message || 
-               'An error occurred while managing booking flows'}
-            </Alert>
-          </ModernCard>
-        </Box>
-      )}
+      <ErrorDisplay 
+        errors={{
+          ...(flowsError ? { flows: flowsError } : {}),
+          ...(eventTypesError ? { eventTypes: eventTypesError } : {}),
+          ...(createError ? { create: createError } : {}),
+          ...(updateError ? { update: updateError } : {}),
+          ...(deleteError ? { delete: deleteError } : {}),
+          ...(duplicateError ? { duplicate: duplicateError } : {}),
+        }}
+        title="Booking Flow Management Error"
+        variant="card"
+      />
 
       {/* Info Alert */}
       <Box sx={{ mb: 4 }}>

@@ -8,7 +8,7 @@ export interface CommunicationTemplate {
   subject_template?: string;
   body_template: string;
   is_system: boolean;
-  variables_schema: Record<string, any>;
+  variables_schema: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -32,7 +32,7 @@ export interface CommunicationRecord {
   delivered_at?: string;
   opened_at?: string;
   is_opened: boolean;
-  context_data: Record<string, any>;
+  context_data: Record<string, unknown>;
   created_at: string;
 }
 
@@ -42,23 +42,23 @@ export interface CreateTemplateData {
   category: 'SYSTEM' | 'MANUAL' | 'AUTO';
   subject_template?: string;
   body_template: string;
-  variables_schema?: Record<string, any>;
+  variables_schema?: Record<string, unknown>;
 }
 
-export interface UpdateTemplateData extends Partial<CreateTemplateData> {}
+export type UpdateTemplateData = Partial<CreateTemplateData>;
 
 export interface SendCommunicationData {
   template_id: number;
   recipient: string;
   client_id?: number;
-  context_data?: Record<string, any>;
+  context_data?: Record<string, unknown>;
 }
 
 export interface ManualSendData {
   template_id: number;
   recipient: string;
   client_id?: number;
-  context_data?: Record<string, any>;
+  context_data?: Record<string, unknown>;
   custom_subject?: string;
   custom_body?: string;
 }
@@ -68,13 +68,13 @@ export interface BulkSendData {
   recipients: Array<{
     recipient: string;
     client_id?: number;
-    context_data?: Record<string, any>;
+    context_data?: Record<string, unknown>;
   }>;
 }
 
 export interface PreviewData {
   template_id: number;
-  context_data?: Record<string, any>;
+  context_data?: Record<string, unknown>;
 }
 
 export interface ManualPreviewData extends PreviewData {

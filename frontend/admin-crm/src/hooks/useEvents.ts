@@ -52,8 +52,10 @@ export const useEventTypes = (filters?: EventTypeFilters) => {
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
       showSuccess('Event Type Created', `${newEventType.name} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create event type';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create event type'
+        : 'Failed to create event type';
       showError('Create Failed', message);
     },
   });
@@ -67,8 +69,10 @@ export const useEventTypes = (filters?: EventTypeFilters) => {
       queryClient.invalidateQueries({ queryKey: ['event-type', updatedEventType.id] });
       showSuccess('Event Type Updated', `${updatedEventType.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update event type';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update event type'
+        : 'Failed to update event type';
       showError('Update Failed', message);
     },
   });
@@ -84,8 +88,10 @@ export const useEventTypes = (filters?: EventTypeFilters) => {
         showSuccess('Event Type Deactivated', result.message || 'Event type has been marked as inactive.');
       }
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete event type';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete event type'
+        : 'Failed to delete event type';
       showError('Delete Failed', message);
     },
   });
@@ -149,8 +155,10 @@ export const useEvents = (filters?: EventFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       showSuccess('Event Created', `${newEvent.name} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create event';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create event'
+        : 'Failed to create event';
       showError('Create Failed', message);
     },
   });
@@ -163,8 +171,10 @@ export const useEvents = (filters?: EventFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['event', updatedEvent.id] });
       showSuccess('Event Updated', `${updatedEvent.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update event';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update event'
+        : 'Failed to update event';
       showError('Update Failed', message);
     },
   });
@@ -175,8 +185,10 @@ export const useEvents = (filters?: EventFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       showSuccess('Event Deleted', 'Event has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete event';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete event'
+        : 'Failed to delete event';
       showError('Delete Failed', message);
     },
   });
@@ -241,8 +253,10 @@ export const useEventFiles = (eventId: number, category?: string) => {
       showSuccess('File Uploaded', 'File has been uploaded successfully.');
       queryClient.invalidateQueries({ queryKey: ['event', eventId, 'files'] });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to upload file';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to upload file'
+        : 'Failed to upload file';
       showError('Upload Failed', message);
     },
   });
@@ -262,8 +276,10 @@ export const useEventFiles = (eventId: number, category?: string) => {
       showSuccess('File Updated', 'File has been updated successfully.');
       queryClient.invalidateQueries({ queryKey: ['event', eventId, 'files'] });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update file';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update file'
+        : 'Failed to update file';
       showError('Update Failed', message);
     },
   });
@@ -275,8 +291,10 @@ export const useEventFiles = (eventId: number, category?: string) => {
       showSuccess('File Deleted', 'File has been deleted successfully.');
       queryClient.invalidateQueries({ queryKey: ['event', eventId, 'files'] });
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete file';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete file'
+        : 'Failed to delete file';
       showError('Delete Failed', message);
     },
   });
@@ -293,7 +311,7 @@ export const useEventFiles = (eventId: number, category?: string) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (error: any) {
+    } catch {
       showError('Download Failed', 'Failed to download file');
     }
   };

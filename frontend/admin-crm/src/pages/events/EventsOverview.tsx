@@ -106,7 +106,7 @@ export const EventsOverview: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  // @ts-expect-error
+  // @ts-expect-error - Type compatibility issue requiring attention
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };

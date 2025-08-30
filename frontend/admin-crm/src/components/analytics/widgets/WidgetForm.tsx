@@ -282,14 +282,14 @@ export const WidgetForm: React.FC<WidgetFormProps> = ({
     onClose();
   };
 
-  const handleFieldChange = (field: keyof FormData | string, value: any) => {
+  const handleFieldChange = (field: keyof FormData | string, value: unknown) => {
     if (field.includes('.')) {
       // Handle nested fields like chart_config.color_scheme
       const [parent, child] = field.split('.');
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof FormData] as any),
+          ...(prev[parent as keyof FormData] as Record<string, unknown>),
           [child]: value,
         },
       }));

@@ -68,7 +68,7 @@ export interface CreateEventTypeData {
   is_active?: boolean;
 }
 
-export interface UpdateEventTypeData extends Partial<CreateEventTypeData> {}
+export type UpdateEventTypeData = Partial<CreateEventTypeData>;
 
 export interface CreateEventData {
   client: number;
@@ -82,7 +82,7 @@ export interface CreateEventData {
   total_price?: string | null;
 }
 
-export interface UpdateEventData extends Partial<CreateEventData> {}
+export type UpdateEventData = Partial<CreateEventData>;
 
 // Filter types
 export interface EventTypeFilters {

@@ -61,7 +61,7 @@ interface DateTimeConfigFormData {
   
   blocked_dates: string[];
   available_days_of_week: number[];
-  available_time_slots: any[];
+  available_time_slots: unknown[];
   
   // Buffer settings
   buffer_before_hours: number;

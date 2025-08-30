@@ -32,7 +32,7 @@ export interface TableSettings {
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     pageSize?: number;
-    filters?: Record<string, any>;
+    filters?: Record<string, unknown>;
   };
 }
 
@@ -163,8 +163,8 @@ class Storage {
   }
 
   // Export data for backup
-  exportData(): Record<string, any> {
-    const data: Record<string, any> = {};
+  exportData(): Record<string, unknown> {
+    const data: Record<string, unknown> = {};
     
     Object.entries(STORAGE_KEYS).forEach(([key, storageKey]) => {
       const value = localStorage.getItem(storageKey);
@@ -177,7 +177,7 @@ class Storage {
   }
 
   // Import data from backup (excluding sensitive auth data)
-  importData(data: Record<string, any>): void {
+  importData(data: Record<string, unknown>): void {
     // Don't import tokens for security reasons
     const allowedKeys = ['PREFERENCES', 'THEME_MODE', 'SIDEBAR_COLLAPSED', 'TABLE_SETTINGS'];
     
@@ -211,7 +211,7 @@ class Storage {
 
     let used = 0;
     for (const key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
         used += localStorage[key].length + key.length;
       }
     }

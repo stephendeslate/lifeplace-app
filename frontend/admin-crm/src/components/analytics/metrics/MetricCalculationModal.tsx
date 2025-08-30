@@ -41,7 +41,7 @@ interface MetricCalculationModalProps {
   onCalculate: (request: MetricCalculationRequest) => void;
   isCalculating: boolean;
   calculationResult?: MetricCalculationResult;
-  calculationError?: any;
+  calculationError?: string | Error;
 }
 
 export const MetricCalculationModal: React.FC<MetricCalculationModalProps> = ({
@@ -118,14 +118,16 @@ export const MetricCalculationModal: React.FC<MetricCalculationModalProps> = ({
           minimumFractionDigits: decimals,
           maximumFractionDigits: decimals,
         }).format(numValue);
-      case 'duration':
+      case 'duration': {
         const hours = Math.floor(numValue / 60);
         const minutes = Math.round(numValue % 60);
         return `${hours}h ${minutes}m`;
-      case 'bytes':
+      }
+      case 'bytes': {
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(numValue) / Math.log(1024));
         return `${(numValue / Math.pow(1024, i)).toFixed(decimals)} ${sizes[i]}`;
+      }
       default:
         return numValue.toFixed(decimals);
     }

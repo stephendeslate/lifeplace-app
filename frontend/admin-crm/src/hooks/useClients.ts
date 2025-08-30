@@ -11,6 +11,15 @@ import type {
 } from '../types/clients.types';
 import type { PaginationParams } from '../types/common.types';
 
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+      [key: string]: unknown;
+    };
+  };
+}
+
 export const useClients = (filters?: ClientFilters & PaginationParams) => {
   const { showSuccess, showError } = useToastActions();
   const queryClient = useQueryClient();
@@ -50,7 +59,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       showSuccess('Client Created', `${newClient.first_name} ${newClient.last_name} has been added successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create client';
       showError('Create Failed', message);
     },
@@ -64,7 +73,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['client', updatedClient.id] });
       showSuccess('Client Updated', `${updatedClient.first_name} ${updatedClient.last_name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update client';
       showError('Update Failed', message);
     },
@@ -76,7 +85,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       showSuccess('Client Deleted', 'Client has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete client';
       showError('Delete Failed', message);
     },
@@ -88,7 +97,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       showSuccess('Invitation Sent', 'Invitation has been sent to the client.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to send invitation';
       showError('Send Failed', message);
     },
@@ -103,7 +112,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
         showError('Import Errors', result.errors.join(', '));
       }
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to import clients';
       showError('Import Failed', message);
     },
@@ -167,7 +176,7 @@ export const useClientInvitations = () => {
     onSuccess: () => {
       showSuccess('Account Activated', 'Your account has been activated successfully!');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to accept invitation';
       showError('Activation Failed', message);
     },

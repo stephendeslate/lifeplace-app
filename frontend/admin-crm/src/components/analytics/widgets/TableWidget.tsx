@@ -1,37 +1,47 @@
 // frontend/admin-crm/src/components/analytics/widgets/TableWidget.tsx
 import React from 'react';
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@mui/material';
+import { Box } from '@mui/material';
+import { ModernTable, type ModernTableColumn } from '../../common';
 import type { Widget } from '../../../types/analytics.types';
+
+interface TableRowData {
+  name: string;
+  value: number;
+}
+
+interface TableWidgetData {
+  categories?: TableRowData[];
+}
 
 interface TableWidgetProps {
   widget: Widget;
-  data: any;
+  data: TableWidgetData;
   compact?: boolean;
 }
 
-export const TableWidget: React.FC<TableWidgetProps> = ({ widget: _, data, compact }) => {
+export const TableWidget: React.FC<TableWidgetProps> = ({ data }) => {
   const tableData = data.categories || [];
   
+  const columns: ModernTableColumn<TableRowData>[] = [
+    {
+      key: 'name',
+      label: 'Category',
+      align: 'left',
+    },
+    {
+      key: 'value',
+      label: 'Value',
+      align: 'right',
+      render: (value) => (value as number).toLocaleString(),
+    },
+  ];
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <TableContainer sx={{ flex: 1 }}>
-        <Table size={compact ? 'small' : 'medium'}>
-          <TableHead>
-            <TableRow>
-              <TableCell>Category</TableCell>
-              <TableCell align="right">Value</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {tableData.map((row: any, index: number) => (
-              <TableRow key={index}>
-                <TableCell>{row.name}</TableCell>
-                <TableCell align="right">{row.value.toLocaleString()}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <ModernTable
+        columns={columns}
+        data={tableData}
+      />
     </Box>
   );
 };

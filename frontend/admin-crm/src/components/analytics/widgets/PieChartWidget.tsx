@@ -6,11 +6,11 @@ import type { Widget } from '../../../types/analytics.types';
 
 interface PieChartWidgetProps {
   widget: Widget;
-  data: any;
+  data: { categories: Array<{ value: number; label: string; }> };
   compact?: boolean;
 }
 
-export const PieChartWidget: React.FC<PieChartWidgetProps> = ({ widget: _, data, compact }) => {
+export const PieChartWidget: React.FC<PieChartWidgetProps> = ({ data, compact }) => {
   const COLORS = ['#2563eb', '#16a34a', '#ea580c', '#9333ea', '#dc2626'];
   
   return (
@@ -26,7 +26,7 @@ export const PieChartWidget: React.FC<PieChartWidgetProps> = ({ widget: _, data,
               outerRadius={compact ? 60 : 80}
               dataKey="value"
             >
-              {data.categories.map((_: any, index: number) => (
+              {data.categories.map((_, index: number) => (
                 <Cell key={index} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>

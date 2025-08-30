@@ -382,14 +382,14 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     }));
   }, []);
   
-  const handleAvailabilityFilterChange = useCallback((key: keyof AvailabilityFilters, value: any) => {
+  const handleAvailabilityFilterChange = useCallback((key: keyof AvailabilityFilters, value: unknown) => {
     setAvailabilityFilters(prev => ({
       ...prev,
       [key]: value === 'all' ? undefined : value
     }));
   }, []);
   
-  const handleSettingChange = useCallback((key: keyof EnhancedCalendarSettings, value: any) => {
+  const handleSettingChange = useCallback((key: keyof EnhancedCalendarSettings, value: unknown) => {
     setSettings(prev => ({
       ...prev,
       [key]: value

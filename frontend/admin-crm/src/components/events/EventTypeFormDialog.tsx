@@ -9,7 +9,6 @@ import {
   Typography,
   Stack,
 } from '@mui/material';
-import { Save as SaveIcon } from '@mui/icons-material';
 import { ModernDialog, createStandardActions } from '../common';
 import { 
   type EventTypeFormDialogProps,

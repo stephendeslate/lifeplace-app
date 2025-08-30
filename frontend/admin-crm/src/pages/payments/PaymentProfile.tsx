@@ -1,7 +1,7 @@
 // Modern Payment Profile Page
 // Completely modernized with ModernDesignSystem components and no animations
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -59,7 +59,7 @@ import {
   type QuickAction,
 } from '../../components/common';
 import { PAYMENT_STATUSES } from '../../types/payments.types';
-import type { PaymentStatus } from '../../types/payments.types';
+import type { PaymentStatus, UpdatePaymentData } from '../../types/payments.types';
 
 // Modern Design System imports
 import { 
@@ -128,6 +128,24 @@ export const PaymentProfile: React.FC = () => {
     refetchPayment,
   } = usePaymentManagement(paymentId);
 
+  // Menu close handler
+  const handleMenuClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
+
+  // Handler functions (need to be defined before useMemo)
+  const handleProcessPayment = useCallback(() => {
+    if (payment?.payment_method) {
+      processPayment({ payment_method: payment.payment_method });
+    }
+    handleMenuClose();
+  }, [payment?.payment_method, processPayment, handleMenuClose]);
+
+  const handleSendReceipt = useCallback(() => {
+    sendReceipt();
+    handleMenuClose();
+  }, [sendReceipt, handleMenuClose]);
+
   // Enhanced components data
   const quickActions: QuickAction[] = useMemo(() => {
     if (!payment) return [];
@@ -151,7 +169,7 @@ export const PaymentProfile: React.FC = () => {
           break;
       }
     });
-  }, [payment]);
+  }, [payment, handleProcessPayment, handleSendReceipt]);
 
   const relatedEntities = useMemo(() => {
     const entities = [];
@@ -225,9 +243,6 @@ export const PaymentProfile: React.FC = () => {
   }, [payment, setBreadcrumbs]);
 
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleEditPayment = () => {
     setEditDialogOpen(true);
@@ -239,19 +254,7 @@ export const PaymentProfile: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleProcessPayment = () => {
-    if (payment?.payment_method) {
-      processPayment({ payment_method: payment.payment_method });
-    }
-    handleMenuClose();
-  };
-
-  const handleSendReceipt = () => {
-    sendReceipt();
-    handleMenuClose();
-  };
-
-  const handleEdit = (data: any) => {
+  const handleEdit = (data: UpdatePaymentData) => {
     updatePayment(data, {
       onSuccess: () => {
         setEditDialogOpen(false);

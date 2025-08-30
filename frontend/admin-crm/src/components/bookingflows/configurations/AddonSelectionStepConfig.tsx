@@ -52,7 +52,7 @@ interface AddonConfigFormData {
   max_selection: number;
   group_by_category: boolean;
   show_recommendations: boolean;
-  recommendation_logic: Record<string, any>;
+  recommendation_logic: Record<string, unknown>;
 }
 
 const defaultFormData: AddonConfigFormData = {

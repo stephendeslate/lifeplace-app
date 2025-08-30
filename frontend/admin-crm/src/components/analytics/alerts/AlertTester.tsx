@@ -39,7 +39,7 @@ interface AlertTesterProps {
     threshold_met: boolean;
     test_time: string;
   } | null;
-  error?: any;
+  error?: Error | string;
 }
 
 export const AlertTester: React.FC<AlertTesterProps> = ({

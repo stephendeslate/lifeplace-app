@@ -165,7 +165,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
     products: [],
   });
 
-  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Record<string, unknown>[]>([]);
   const [previewData, setPreviewData] = useState<{ introduction?: string; terms?: string } | null>(null);
 
   // Get active event types and products
@@ -208,7 +208,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
     }
   }, [template, products]);
 
-  const handleInputChange = (field: keyof CreateQuoteTemplateData, value: any) => {
+  const handleInputChange = (field: keyof CreateQuoteTemplateData, value: string | boolean | number | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -284,8 +284,8 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
 
   const handleVariableInsert = (variable: string) => {
     // Use the global function to insert variable if available
-    if ((window as any)._richTextEditorInsertVariable) {
-      (window as any)._richTextEditorInsertVariable(variable);
+    if ((window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable) {
+      (window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable(variable);
     }
   };
 
@@ -298,8 +298,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
     }
   };
 
-  // @ts-ignore
-  const handleProductsChange = (event: any, newValue: any[]) => {
+  const handleProductsChange = (event: React.SyntheticEvent, newValue: unknown[]) => {
     setSelectedProducts(newValue);
     
     // Update form data with selected products

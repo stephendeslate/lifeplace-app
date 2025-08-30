@@ -2,7 +2,7 @@
 // Enhanced layout system with modern design patterns
 
 import React, { useState, useEffect } from 'react';
-import { Box, useTheme, useMediaQuery, Fade, Fab, Tooltip } from '@mui/material';
+import { Box, useTheme, Fade, Fab, Tooltip } from '@mui/material';
 import { KeyboardArrowUp, Palette } from '@mui/icons-material';
 import { ModernHeader } from '../ModernHeader';
 import { ContextualContentArea } from '../ContextualContentArea';
@@ -23,7 +23,6 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
   enableScrollEffects = true 
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const {
     headerHeight = 64,

@@ -81,12 +81,11 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
     error: configError,
   } = useStepConfiguration(step.id);
 
-  // @ts-ignore
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
-  const handleConfigurationUpdate = async (data: Record<string, any>) => {
+  const handleConfigurationUpdate = async (data: Record<string, unknown>) => {
     try {
       await updateConfiguration({
         stepId: step.id,
@@ -344,7 +343,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
 };
 
 // Generic configuration form for unsupported step types
-const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: any }> = ({ step, config }) => (
+const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: unknown }> = ({ step, config }) => (
   <Box>
     <Alert severity="info" sx={{ mb: 2 }}>
       Configuration for "{step.step_type_display}" step type is not yet implemented.

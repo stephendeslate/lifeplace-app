@@ -1,34 +1,21 @@
 // frontend/admin-crm/src/components/bookingflows/flows/BookingFlowsTable.tsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Chip,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
   Typography,
   Box,
-  CircularProgress,
-  TableSortLabel,
   Tooltip,
   LinearProgress,
 } from '@mui/material';
 // Modern Design System imports
 import { 
-  ModernCard,
+  ModernTable,
   ModernEmptyState,
-  ModernLoadingStates
+  type ModernTableColumn,
+  type ModernTableAction
 } from '../../common';
 import {
-  MoreVert as MoreVertIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   ContentCopy as DuplicateIcon,
@@ -44,8 +31,6 @@ import {
   CheckCircle as ActiveIcon,
   RadioButtonUnchecked as InactiveIcon,
 } from '@mui/icons-material';
-// Modern Design System imports
-import { tokens } from '../../../design-system';
 import type { BookingFlowTableProps, BookingFlow } from '../../../types/bookingflows.types';
 import { 
   getEventTypeDisplayName, 
@@ -60,49 +45,7 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
   onPreview,
   onDuplicate,
   onDelete,
-  isDeleting,
 }) => {
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedFlow, setSelectedFlow] = useState<BookingFlow | null>(null);
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, flow: BookingFlow) => {
-    event.stopPropagation();
-    setMenuAnchor(event.currentTarget);
-    setSelectedFlow(flow);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
-    setSelectedFlow(null);
-  };
-
-  const handleEdit = () => {
-    if (selectedFlow) {
-      onEdit(selectedFlow);
-    }
-    handleMenuClose();
-  };
-
-  const handlePreview = () => {
-    if (selectedFlow) {
-      onPreview(selectedFlow);
-    }
-    handleMenuClose();
-  };
-
-  const handleDuplicate = () => {
-    if (selectedFlow) {
-      onDuplicate(selectedFlow);
-    }
-    handleMenuClose();
-  };
-
-  const handleDelete = () => {
-    if (selectedFlow) {
-      onDelete(selectedFlow.id);
-    }
-    handleMenuClose();
-  };
 
   const getStatusChip = (flow: BookingFlow) => {
     if (flow.is_test_mode) {
@@ -246,251 +189,157 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
     );
   };
 
-  if (isLoading) {
-    return <ModernLoadingStates.ModernTableSkeleton rows={5} columns={7} />;
-  }
+  const columns: ModernTableColumn<BookingFlow>[] = [
+    {
+      key: 'name',
+      label: 'Name & Details',
+      sortable: true,
+      render: (_, flow) => (
+        <Box display="flex" alignItems="center" gap={1}>
+          <FlowIcon color="primary" />
+          <Box>
+            <Typography variant="subtitle2" fontWeight="medium">
+              {flow.name}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ID: {flow.id}
+            </Typography>
+            {flow.description && (
+              <Typography 
+                variant="caption" 
+                color="text.secondary"
+                display="block"
+                sx={{ 
+                  maxWidth: 250,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {flow.description}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      ),
+    },
+    {
+      key: 'event_type',
+      label: 'Event Type',
+      render: (_, flow) => getEventTypeChip(flow),
+    },
+    {
+      key: 'steps',
+      label: 'Steps Configuration',
+      align: 'center',
+      render: (_, flow) => (
+        <Tooltip 
+          title={`${flow.enabled_steps_count} of ${flow.total_steps} steps enabled`}
+          arrow
+        >
+          <Box>
+            {getStepsInfo(flow)}
+          </Box>
+        </Tooltip>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status & Features',
+      render: (_, flow) => (
+        <Box display="flex" flexDirection="column" gap={0.5}>
+          {getStatusChip(flow)}
+          <Box display="flex" flexWrap="wrap" gap={0.5}>
+            {getFeatureChips(flow).slice(0, 2)}
+            {getFeatureChips(flow).length > 2 && (
+              <Chip
+                label={`+${getFeatureChips(flow).length - 2}`}
+                size="small"
+                variant="outlined"
+                color="default"
+              />
+            )}
+          </Box>
+        </Box>
+      ),
+    },
+    {
+      key: 'booking_window',
+      label: 'Booking Window',
+      render: (_, flow) => getBookingWindow(flow),
+    },
+    {
+      key: 'updated_at',
+      label: 'Last Updated',
+      render: (_, flow) => (
+        <Box>
+          <Typography variant="body2" color="text.secondary">
+            {new Date(flow.updated_at).toLocaleDateString()}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {new Date(flow.updated_at).toLocaleTimeString()}
+          </Typography>
+        </Box>
+      ),
+    },
+  ];
 
-  if (bookingFlows.length === 0) {
-    return (
-      <ModernEmptyState
-        icon={FlowIcon}
-        title="No booking flows found"
-        description="Create your first booking flow to guide clients through the booking process"
-        size="large"
-        color="primary"
-      />
-    );
-  }
+
+  const actions: ModernTableAction<BookingFlow>[] = [
+    {
+      label: 'Edit Flow',
+      icon: <EditIcon />,
+      onClick: (flow) => onEdit(flow),
+      color: 'primary',
+    },
+    {
+      label: 'Preview Flow',
+      icon: <PreviewIcon />,
+      onClick: (flow) => onPreview(flow),
+      color: 'default',
+    },
+    {
+      label: 'Duplicate Flow',
+      icon: <DuplicateIcon />,
+      onClick: (flow) => onDuplicate(flow),
+      color: 'default',
+    },
+    {
+      label: 'View Analytics',
+      icon: <AnalyticsIcon />,
+      onClick: (flow) => {
+        // Navigate to analytics - this would be handled by parent component
+        console.log(`Navigate to analytics for flow ${flow.id}`);
+      },
+      color: 'default',
+    },
+    {
+      label: 'Delete Flow',
+      icon: <DeleteIcon />,
+      onClick: (flow) => onDelete(flow.id),
+      color: 'error',
+    },
+  ];
+
+  const emptyState = (
+    <ModernEmptyState
+      icon={FlowIcon}
+      title="No booking flows found"
+      description="Create your first booking flow to guide clients through the booking process"
+      size="large"
+      color="primary"
+    />
+  );
+
 
   return (
-    <>
-      <ModernCard
-        variant="glass"
-        size="large"
-        animation="none"
-        sx={{
-          overflow: 'visible',
-          position: 'relative',
-        }}
-      >
-        <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ 
-              '& .MuiTableCell-head': { 
-                fontWeight: 600, 
-                color: tokens.color.neutral[700],
-                borderBottom: `1px solid ${tokens.color.borders.glass}`,
-              } 
-            }}>
-              <TableCell>
-                <TableSortLabel>
-                  Name & Details
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>Event Type</TableCell>
-              <TableCell align="center">Steps Configuration</TableCell>
-              <TableCell>Status & Features</TableCell>
-              <TableCell>Booking Window</TableCell>
-              <TableCell>Last Updated</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {bookingFlows.map((flow) => (
-              <TableRow 
-                key={flow.id} 
-                hover
-                sx={{ 
-                  cursor: 'pointer',
-                  '&:hover': {
-                    background: `${tokens.color.primary[50]}50`,
-                  },
-                  '& .MuiTableCell-root': {
-                    borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                  }
-                }}
-                onClick={() => onEdit(flow)}
-              >
-                <TableCell>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <FlowIcon color="primary" />
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight="medium">
-                        {flow.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        ID: {flow.id}
-                      </Typography>
-                      {flow.description && (
-                        <Typography 
-                          variant="caption" 
-                          color="text.secondary"
-                          display="block"
-                          sx={{ 
-                            maxWidth: 250,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {flow.description}
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                </TableCell>
-
-                <TableCell>
-                  {getEventTypeChip(flow)}
-                </TableCell>
-
-                <TableCell align="center">
-                  <Tooltip 
-                    title={`${flow.enabled_steps_count} of ${flow.total_steps} steps enabled`}
-                    arrow
-                  >
-                    <Box>
-                      {getStepsInfo(flow)}
-                    </Box>
-                  </Tooltip>
-                </TableCell>
-
-                <TableCell>
-                  <Box display="flex" flexDirection="column" gap={0.5}>
-                    {getStatusChip(flow)}
-                    <Box display="flex" flexWrap="wrap" gap={0.5}>
-                      {getFeatureChips(flow).slice(0, 2)}
-                      {getFeatureChips(flow).length > 2 && (
-                        <Chip
-                          label={`+${getFeatureChips(flow).length - 2}`}
-                          size="small"
-                          variant="outlined"
-                          color="default"
-                        />
-                      )}
-                    </Box>
-                  </Box>
-                </TableCell>
-
-                <TableCell>
-                  {getBookingWindow(flow)}
-                </TableCell>
-
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {new Date(flow.updated_at).toLocaleDateString()}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {new Date(flow.updated_at).toLocaleTimeString()}
-                  </Typography>
-                </TableCell>
-
-                <TableCell align="right">
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    {/* Quick Preview Button */}
-                    <Tooltip title="Preview Flow">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onPreview(flow);
-                        }}
-                        aria-label={`Preview ${flow.name}`}
-                      >
-                        <PreviewIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    
-                    {/* More Actions Menu */}
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuOpen(e, flow)}
-                      disabled={isDeleting}
-                      aria-label={`More actions for ${flow.name}`}
-                    >
-                      {isDeleting && selectedFlow?.id === flow.id ? (
-                        <CircularProgress size={20} />
-                      ) : (
-                        <MoreVertIcon fontSize="small" />
-                      )}
-                    </IconButton>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        </TableContainer>
-      </ModernCard>
-
-      {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-        onClick={(e) => e.stopPropagation()}
-        MenuListProps={{
-          'aria-labelledby': 'booking-flow-actions-menu',
-          role: 'menu',
-        }}
-        PaperProps={{
-          sx: {
-            backdropFilter: 'blur(20px)',
-            borderRadius: tokens.spacing.radius.lg,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
-            boxShadow: `0 25px 80px ${tokens.color.neutral[900]}15`,
-            minWidth: 200,
-          },
-        }}
-      >
-        <MenuItem onClick={handleEdit} role="menuitem">
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Edit Flow</ListItemText>
-        </MenuItem>
-        
-        <MenuItem onClick={handlePreview} role="menuitem">
-          <ListItemIcon>
-            <PreviewIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Preview Flow</ListItemText>
-        </MenuItem>
-        
-        <MenuItem onClick={handleDuplicate} role="menuitem">
-          <ListItemIcon>
-            <DuplicateIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Duplicate Flow</ListItemText>
-        </MenuItem>
-        
-        <MenuItem 
-          onClick={() => {
-            // Navigate to analytics - this would be handled by parent component
-            // Using the evolved analytics route structure
-            if (selectedFlow) {
-              // Would navigate to `/analytics/funnels/${selectedFlow.id}/analytics`
-              console.log(`Navigate to analytics for flow ${selectedFlow.id}`);
-            }
-            handleMenuClose();
-          }}
-          role="menuitem"
-        >
-          <ListItemIcon>
-            <AnalyticsIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>View Analytics</ListItemText>
-        </MenuItem>
-        
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }} role="menuitem">
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Delete Flow</ListItemText>
-        </MenuItem>
-      </Menu>
-    </>
+    <ModernTable
+      columns={columns}
+      data={bookingFlows}
+      actions={actions}
+      onRowClick={(flow) => onEdit(flow)}
+      loading={isLoading}
+      emptyState={emptyState}
+    />
   );
 };

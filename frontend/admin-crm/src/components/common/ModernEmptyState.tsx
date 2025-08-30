@@ -213,7 +213,7 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
               {React.isValidElement(FinalIcon) ? (
                 FinalIcon
               ) : typeof FinalIcon === 'function' ? (
-                React.createElement(FinalIcon as React.ComponentType<any>, {
+                React.createElement(FinalIcon as React.ComponentType<{ sx?: object }>, {
                   sx: { 
                     fontSize: iconSize, 
                     color: illustration === 'gradient' ? 'white' : 'inherit' 

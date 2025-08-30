@@ -110,7 +110,7 @@ export const ModernHeader: React.FC = () => {
           ? '0 2px 8px 0 rgba(0, 0, 0, 0.3)' 
           : '0 2px 8px 0 rgba(0, 0, 0, 0.04)',
       };
-    } catch (error) {
+    } catch {
       // Fallback styling if glass effect fails
       return {
         borderBottom: isDark 

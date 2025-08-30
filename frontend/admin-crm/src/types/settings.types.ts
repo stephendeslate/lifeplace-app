@@ -77,6 +77,30 @@ export interface AcceptInvitationResponse {
   user: AdminUser;
 }
 
+export interface CreateAdminUserData {
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  is_active?: boolean;
+  profile?: {
+    phone?: string;
+    company?: string;
+  };
+}
+
+export interface UpdateAdminUserData {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  is_active?: boolean;
+  profile?: {
+    phone?: string;
+    company?: string;
+  };
+}
+
 export interface SettingsCardProps {
   title: string;
   description?: string;

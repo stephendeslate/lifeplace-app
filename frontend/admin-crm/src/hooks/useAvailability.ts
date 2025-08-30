@@ -4,6 +4,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { availabilityApi } from '../apis/availability.api';
 import { useToastActions } from '../contexts/ToastContext';
+
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+      [key: string]: unknown;
+    };
+  };
+}
 import type {
   DateAvailabilityInfo,
   AvailabilityRequest,
@@ -173,7 +182,7 @@ export const useBookingValidation = () => {
         showError('Validation Failed', result.errors.join(', '));
       }
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.error || 'Validation failed';
       showError('Validation Error', message);
     },

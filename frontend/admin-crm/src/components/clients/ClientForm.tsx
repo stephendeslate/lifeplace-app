@@ -73,11 +73,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({
 
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/\S+@\S+.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    if (formData.profile?.phone && !/^[\d\s\-\+\(\)]+$/.test(formData.profile.phone)) {
+    if (formData.profile?.phone && !/^[\d\s\-+()]+$/.test(formData.profile.phone)) {
       newErrors.phone = 'Please enter a valid phone number';
     }
 

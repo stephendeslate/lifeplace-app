@@ -24,15 +24,14 @@ import {
   Visibility as PreviewIcon,
 } from '@mui/icons-material';
 import type { 
-  BookingFlowStep, 
-  PricingSummaryStepConfiguration 
+  BookingFlowStep
 } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
 interface PricingSummaryStepConfigProps {
   step: BookingFlowStep;
-  config?: PricingSummaryStepConfiguration | null;
-  onUpdate: (data: Record<string, any>) => void;
+  config?: Record<string, unknown> | null;
+  onUpdate: (data: Record<string, unknown>) => void;
   isLoading?: boolean;
 }
 
@@ -81,16 +80,16 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
   useEffect(() => {
     if (config) {
       setFormData({
-        show_package_breakdown: config.show_package_breakdown ?? defaultFormData.show_package_breakdown,
-        show_addon_breakdown: config.show_addon_breakdown ?? defaultFormData.show_addon_breakdown,
-        show_tax_breakdown: config.show_tax_breakdown ?? defaultFormData.show_tax_breakdown,
-        show_discount_field: config.show_discount_field ?? defaultFormData.show_discount_field,
-        show_subtotal: config.show_subtotal ?? defaultFormData.show_subtotal,
-        allow_discount_codes: config.allow_discount_codes ?? defaultFormData.allow_discount_codes,
-        calculate_tax: config.calculate_tax ?? defaultFormData.calculate_tax,
-        header_text: config.header_text || defaultFormData.header_text,
-        footer_text: config.footer_text || defaultFormData.footer_text,
-        discount_help_text: config.discount_help_text || defaultFormData.discount_help_text,
+        show_package_breakdown: typeof config.show_package_breakdown === 'boolean' ? config.show_package_breakdown : defaultFormData.show_package_breakdown,
+        show_addon_breakdown: typeof config.show_addon_breakdown === 'boolean' ? config.show_addon_breakdown : defaultFormData.show_addon_breakdown,
+        show_tax_breakdown: typeof config.show_tax_breakdown === 'boolean' ? config.show_tax_breakdown : defaultFormData.show_tax_breakdown,
+        show_discount_field: typeof config.show_discount_field === 'boolean' ? config.show_discount_field : defaultFormData.show_discount_field,
+        show_subtotal: typeof config.show_subtotal === 'boolean' ? config.show_subtotal : defaultFormData.show_subtotal,
+        allow_discount_codes: typeof config.allow_discount_codes === 'boolean' ? config.allow_discount_codes : defaultFormData.allow_discount_codes,
+        calculate_tax: typeof config.calculate_tax === 'boolean' ? config.calculate_tax : defaultFormData.calculate_tax,
+        header_text: typeof config.header_text === 'string' ? config.header_text : defaultFormData.header_text,
+        footer_text: typeof config.footer_text === 'string' ? config.footer_text : defaultFormData.footer_text,
+        discount_help_text: typeof config.discount_help_text === 'string' ? config.discount_help_text : defaultFormData.discount_help_text,
       });
       setHasUnsavedChanges(false);
     } else {
@@ -99,7 +98,7 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
     }
   }, [config]);
 
-  const handleFormChange = (field: keyof PricingSummaryConfigFormData, value: any) => {
+  const handleFormChange = (field: keyof PricingSummaryConfigFormData, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -115,13 +114,13 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
     try {
       await updateConfiguration({
         stepId: step.id,
-        data: formData
+        data: { ...formData } as Record<string, unknown>
       });
       
       setHasUnsavedChanges(false);
       
       // Call parent callback
-      onUpdate(formData);
+      onUpdate({ ...formData } as Record<string, unknown>);
     } catch (error) {
       console.error('Failed to save pricing summary configuration:', error);
       setSaveError(error instanceof Error ? error.message : 'Failed to save configuration');
@@ -133,16 +132,16 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
   const handleReset = () => {
     if (config) {
       setFormData({
-        show_package_breakdown: config.show_package_breakdown ?? defaultFormData.show_package_breakdown,
-        show_addon_breakdown: config.show_addon_breakdown ?? defaultFormData.show_addon_breakdown,
-        show_tax_breakdown: config.show_tax_breakdown ?? defaultFormData.show_tax_breakdown,
-        show_discount_field: config.show_discount_field ?? defaultFormData.show_discount_field,
-        show_subtotal: config.show_subtotal ?? defaultFormData.show_subtotal,
-        allow_discount_codes: config.allow_discount_codes ?? defaultFormData.allow_discount_codes,
-        calculate_tax: config.calculate_tax ?? defaultFormData.calculate_tax,
-        header_text: config.header_text || defaultFormData.header_text,
-        footer_text: config.footer_text || defaultFormData.footer_text,
-        discount_help_text: config.discount_help_text || defaultFormData.discount_help_text,
+        show_package_breakdown: typeof config.show_package_breakdown === 'boolean' ? config.show_package_breakdown : defaultFormData.show_package_breakdown,
+        show_addon_breakdown: typeof config.show_addon_breakdown === 'boolean' ? config.show_addon_breakdown : defaultFormData.show_addon_breakdown,
+        show_tax_breakdown: typeof config.show_tax_breakdown === 'boolean' ? config.show_tax_breakdown : defaultFormData.show_tax_breakdown,
+        show_discount_field: typeof config.show_discount_field === 'boolean' ? config.show_discount_field : defaultFormData.show_discount_field,
+        show_subtotal: typeof config.show_subtotal === 'boolean' ? config.show_subtotal : defaultFormData.show_subtotal,
+        allow_discount_codes: typeof config.allow_discount_codes === 'boolean' ? config.allow_discount_codes : defaultFormData.allow_discount_codes,
+        calculate_tax: typeof config.calculate_tax === 'boolean' ? config.calculate_tax : defaultFormData.calculate_tax,
+        header_text: typeof config.header_text === 'string' ? config.header_text : defaultFormData.header_text,
+        footer_text: typeof config.footer_text === 'string' ? config.footer_text : defaultFormData.footer_text,
+        discount_help_text: typeof config.discount_help_text === 'string' ? config.discount_help_text : defaultFormData.discount_help_text,
       });
     } else {
       setFormData(defaultFormData);

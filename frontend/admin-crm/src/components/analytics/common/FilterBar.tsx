@@ -42,7 +42,7 @@ export interface FilterOption {
 }
 
 export interface FilterValue {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface FilterBarProps {
@@ -114,7 +114,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     onSearchChange?.(value);
   };
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: string | string[] | number | boolean | undefined) => {
     const newFilters = { ...filterValues, [key]: value };
     onFilterChange?.(newFilters);
   };
@@ -444,7 +444,7 @@ export const useFilters = <T extends FilterValue>(initialFilters?: T) => {
   const [filters, setFilters] = useState<T>(initialFilters || {} as T);
   const [search, setSearch] = useState('');
 
-  const updateFilter = (key: string, value: any) => {
+  const updateFilter = (key: string, value: string | string[] | number | boolean | undefined) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 

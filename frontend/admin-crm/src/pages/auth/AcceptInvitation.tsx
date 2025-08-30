@@ -98,9 +98,9 @@ export const AcceptInvitation: React.FC = () => {
         }
 
         setInvitation(invitationData);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error fetching invitation:', error);
-        const message = error.response?.data?.detail || 'Invalid or expired invitation link';
+        const message = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Invalid or expired invitation link';
         setError(message);
       } finally {
         setIsLoading(false);
@@ -157,11 +157,12 @@ export const AcceptInvitation: React.FC = () => {
       navigate('/dashboard', { replace: true });
       window.location.reload();
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error accepting invitation:', error);
-      const message = error.response?.data?.detail || 
-                     error.response?.data?.password?.[0] ||
-                     error.response?.data?.non_field_errors?.[0] ||
+      const apiError = error as { response?: { data?: { detail?: string; password?: string[]; non_field_errors?: string[] } } };
+      const message = apiError.response?.data?.detail || 
+                     apiError.response?.data?.password?.[0] ||
+                     apiError.response?.data?.non_field_errors?.[0] ||
                      'Failed to accept invitation';
       showError('Account Creation Failed', message);
     } finally {

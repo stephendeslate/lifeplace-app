@@ -84,7 +84,7 @@ export const glassPresets = {
 } as const;
 
 // Glass hover effects
-export const glassHoverEffect = (baseGlass: any, intensity: 'subtle' | 'medium' | 'strong' = 'medium') => {
+export const glassHoverEffect = (baseGlass: Record<string, unknown>, intensity: 'subtle' | 'medium' | 'strong' = 'medium') => {
   const intensityMap = {
     subtle: { opacityIncrease: 0.05, blurIncrease: 5, transform: 'translateY(-1px)' },
     medium: { opacityIncrease: 0.1, blurIncrease: 10, transform: 'translateY(-2px)' },
@@ -300,9 +300,9 @@ export const createGlassFormField = (
 
 // Utility to add glass effect to existing styles
 export const addGlassEffect = (
-  existingStyles: any,
+  existingStyles: Record<string, unknown>,
   glassType: keyof typeof glassPresets = 'medium'
-): any => ({
+): Record<string, unknown> => ({
   ...existingStyles,
   ...glassPresets[glassType],
 });
@@ -314,7 +314,7 @@ export const supportsBackdropFilter = (): boolean => {
 };
 
 // Fallback styles for unsupported browsers
-export const createFallbackGlass = (glassStyle: any) => {
+export const createFallbackGlass = (glassStyle: Record<string, unknown>) => {
   if (supportsBackdropFilter()) {
     return glassStyle;
   }

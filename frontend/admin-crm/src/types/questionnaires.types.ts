@@ -71,7 +71,7 @@ export interface CreateQuestionnaireData {
   fields?: CreateQuestionnaireFieldData[];
 }
 
-export interface UpdateQuestionnaireData extends Partial<CreateQuestionnaireData> {}
+export type UpdateQuestionnaireData = Partial<CreateQuestionnaireData>;
 
 export interface CreateQuestionnaireFieldData {
   questionnaire?: number;
@@ -82,7 +82,7 @@ export interface CreateQuestionnaireFieldData {
   options?: string[] | null;
 }
 
-export interface UpdateQuestionnaireFieldData extends Partial<CreateQuestionnaireFieldData> {}
+export type UpdateQuestionnaireFieldData = Partial<CreateQuestionnaireFieldData>;
 
 // Filter types
 export interface QuestionnaireFilters {

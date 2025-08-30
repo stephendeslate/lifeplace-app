@@ -54,12 +54,12 @@ interface PaymentGateway {
   code: string;
   description: string;
   supported_methods: string[];
-  public_config: Record<string, any>;
+  public_config: Record<string, unknown>;
 }
 
 interface PaymentOptions {
   available_gateways: PaymentGateway[];
-  saved_payment_methods: any[];
+  saved_payment_methods: unknown[];
   require_immediate_payment: boolean;
   accept_deposit: boolean;
   deposit_amount: string | null;

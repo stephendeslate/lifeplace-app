@@ -27,20 +27,20 @@ export interface ModernFormField {
   name: string;
   label: string;
   type: 'text' | 'email' | 'password' | 'number' | 'select' | 'multiselect' | 'switch' | 'checkbox' | 'radio' | 'textarea';
-  value?: any;
+  value?: unknown;
   placeholder?: string;
   helperText?: string;
   error?: string;
   required?: boolean;
   disabled?: boolean;
-  options?: { value: any; label: string }[];
+  options?: { value: unknown; label: string }[];
   multiline?: boolean;
   rows?: number;
   startAdornment?: React.ReactNode;
   endAdornment?: React.ReactNode;
   fullWidth?: boolean;
   size?: 'small' | 'medium';
-  sx?: Record<string, any>;
+  sx?: Record<string, unknown>;
   show?: boolean;
 }
 
@@ -56,8 +56,8 @@ export interface ModernFormSection {
 
 export interface ModernFormProps {
   sections: ModernFormSection[];
-  values: Record<string, any>;
-  onChange: (name: string, value: any) => void;
+  values: Record<string, unknown>;
+  onChange: (name: string, value: unknown) => void;
   onSubmit?: (event: React.FormEvent) => void;
   className?: string;
   spacing?: number;
@@ -169,7 +169,7 @@ export const ModernForm: React.FC<ModernFormProps> = ({
               disabled={field.disabled}
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {(selected as any[]).map((value) => {
+                  {(selected as unknown[]).map((value) => {
                     const option = field.options?.find(opt => opt.value === value);
                     return (
                       <Chip key={value} label={option?.label || value} size="small" />

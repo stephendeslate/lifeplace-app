@@ -80,7 +80,7 @@ import {
   type ActivityItem,
   type QuickAction,
 } from '../../components/common';
-import { EVENT_STATUSES } from '../../types/events.types';
+import { EVENT_STATUSES, type UpdateEventData } from '../../types/events.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -269,7 +269,7 @@ export const EventProfile: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleEdit = (data: any) => {
+  const handleEdit = (data: UpdateEventData) => {
     updateEvent(
       { id: eventId, data },
       { 

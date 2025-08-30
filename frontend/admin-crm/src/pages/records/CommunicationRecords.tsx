@@ -74,7 +74,7 @@ export const CommunicationRecords: React.FC = () => {
     setPage(0);
   };
 
-  // @ts-ignore
+  // @ts-expect-error - Legacy code requiring type fix
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -387,7 +387,7 @@ export const CommunicationRecords: React.FC = () => {
                         <Chip
                           label={record.category}
                           size="small"
-                          color={getCategoryColor(record.category) as any}
+                          color={getCategoryColor(record.category) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                           variant="outlined"
                         />
                       </Box>
@@ -416,7 +416,7 @@ export const CommunicationRecords: React.FC = () => {
                     <Chip
                       label={record.delivery_status}
                       size="small"
-                      color={getStatusColor(record.delivery_status) as any}
+                      color={getStatusColor(record.delivery_status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                       variant="filled"
                     />
                   </TableCell>

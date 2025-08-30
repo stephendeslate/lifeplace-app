@@ -168,7 +168,7 @@ export const handleKeyboardActivation = (
 /**
  * Enhanced focus styles for custom interactive elements
  */
-export const getFocusVisibleStyles = (theme?: any) => ({
+export const getFocusVisibleStyles = (theme?: { palette?: { primary?: { main?: string } } }) => ({
   '&:focus-visible': {
     outline: '2px solid',
     outlineColor: theme?.palette?.primary?.main || '#1976d2',

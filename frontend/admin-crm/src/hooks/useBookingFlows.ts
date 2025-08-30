@@ -65,12 +65,14 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flows'] });
       showSuccess('Booking Flow Created', `${newFlow.name} has been created successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Create booking flow error:', error);
       
       // Handle validation errors from backend
-      if (error.response?.data) {
-        const errorData = error.response.data;
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as { response?: { data?: Record<string, unknown> } }).response;
+        if (response?.data) {
+          const errorData = response.data;
         
         // Handle event type uniqueness constraint (matches backend validation)
         if (errorData.event_type) {
@@ -95,6 +97,7 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
             .join('\n');
           showError('Validation Errors', fieldErrors);
         }
+        }
       } else {
         showError('Create Failed', 'Failed to create booking flow. Please try again.');
       }
@@ -109,33 +112,34 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flow', updatedFlow.id] });
       showSuccess('Booking Flow Updated', `${updatedFlow.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Update booking flow error:', error);
       
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        
-        // Handle event type uniqueness constraint
-        if (errorData.event_type) {
-          const message = Array.isArray(errorData.event_type)
-            ? errorData.event_type[0]
-            : errorData.event_type;
-          showError('Event Type Conflict', message);
-        } else if (errorData.non_field_errors) {
-          const message = Array.isArray(errorData.non_field_errors)
-            ? errorData.non_field_errors[0]
-            : errorData.non_field_errors;
-          showError('Validation Error', message);
-        } else if (errorData.detail) {
-          showError('Update Failed', errorData.detail);
-        } else {
-          const fieldErrors = Object.entries(errorData)
-            .map(([field, messages]) => {
-              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
-              return `${field}: ${messageText}`;
-            })
-            .join('\n');
-          showError('Validation Errors', fieldErrors);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as { response?: { data?: Record<string, unknown> } }).response;
+        if (response?.data) {
+          const errorData = response.data;
+          
+          // Handle event type uniqueness constraint
+          if (errorData.event_type) {
+            const eventTypeError = errorData.event_type;
+            const message = Array.isArray(eventTypeError) ? eventTypeError[0] : String(eventTypeError);
+            showError('Event Type Conflict', message);
+          } else if (errorData.non_field_errors) {
+            const nonFieldErrors = errorData.non_field_errors;
+            const message = Array.isArray(nonFieldErrors) ? String(nonFieldErrors[0]) : String(nonFieldErrors);
+            showError('Validation Error', message);
+          } else if (errorData.detail) {
+            showError('Update Failed', String(errorData.detail));
+          } else {
+            const fieldErrors = Object.entries(errorData)
+              .map(([field, messages]) => {
+                const messageText = Array.isArray(messages) ? messages.join(', ') : String(messages);
+                return `${field}: ${messageText}`;
+              })
+              .join('\n');
+            showError('Validation Errors', fieldErrors);
+          }
         }
       } else {
         showError('Update Failed', 'Failed to update booking flow. Please try again.');
@@ -149,8 +153,10 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flows'] });
       showSuccess('Booking Flow Deleted', 'Booking flow has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete booking flow';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete booking flow'
+        : 'Failed to delete booking flow';
       showError('Delete Failed', message);
     },
   });
@@ -162,8 +168,10 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flows'] });
       showSuccess('Booking Flow Duplicated', `${newFlow.name} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to duplicate booking flow';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to duplicate booking flow'
+        : 'Failed to duplicate booking flow';
       showError('Duplicate Failed', message);
     },
   });
@@ -249,33 +257,34 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flows'] });
       showSuccess('Step Created', `${newStep.name} has been created successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Create step error:', error);
       
       // Handle backend validation errors
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        
-        if (errorData.step_type) {
-          const message = Array.isArray(errorData.step_type)
-            ? errorData.step_type[0]
-            : errorData.step_type;
-          showError('Step Type Error', message);
-        } else if (errorData.detail) {
-          showError('Create Failed', errorData.detail);
-        } else if (errorData.non_field_errors) {
-          const message = Array.isArray(errorData.non_field_errors)
-            ? errorData.non_field_errors[0]
-            : errorData.non_field_errors;
-          showError('Validation Error', message);
-        } else {
-          const fieldErrors = Object.entries(errorData)
-            .map(([field, messages]) => {
-              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
-              return `${field}: ${messageText}`;
-            })
-            .join('\n');
-          showError('Validation Errors', fieldErrors);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as { response?: { data?: Record<string, unknown> } }).response;
+        if (response?.data) {
+          const errorData = response.data;
+          
+          if (errorData.step_type) {
+            const stepTypeError = errorData.step_type;
+            const message = Array.isArray(stepTypeError) ? String(stepTypeError[0]) : String(stepTypeError);
+            showError('Step Type Error', message);
+          } else if (errorData.detail) {
+            showError('Create Failed', String(errorData.detail));
+          } else if (errorData.non_field_errors) {
+            const nonFieldErrors = errorData.non_field_errors;
+            const message = Array.isArray(nonFieldErrors) ? String(nonFieldErrors[0]) : String(nonFieldErrors);
+            showError('Validation Error', message);
+          } else {
+            const fieldErrors = Object.entries(errorData)
+              .map(([field, messages]) => {
+                const messageText = Array.isArray(messages) ? messages.join(', ') : String(messages);
+                return `${field}: ${messageText}`;
+              })
+              .join('\n');
+            showError('Validation Errors', fieldErrors);
+          }
         }
       } else {
         showError('Create Failed', 'Failed to create step. Please try again.');
@@ -292,27 +301,29 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flows'] });
       showSuccess('Step Updated', `${updatedStep.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Update step error:', error);
       
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        
-        if (errorData.step_type) {
-          const message = Array.isArray(errorData.step_type)
-            ? errorData.step_type[0]
-            : errorData.step_type;
-          showError('Step Type Error', message);
-        } else if (errorData.detail) {
-          showError('Update Failed', errorData.detail);
-        } else {
-          const fieldErrors = Object.entries(errorData)
-            .map(([field, messages]) => {
-              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
-              return `${field}: ${messageText}`;
-            })
-            .join('\n');
-          showError('Validation Errors', fieldErrors);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as { response?: { data?: Record<string, unknown> } }).response;
+        if (response?.data) {
+          const errorData = response.data;
+          
+          if (errorData.step_type) {
+            const stepTypeError = errorData.step_type;
+            const message = Array.isArray(stepTypeError) ? String(stepTypeError[0]) : String(stepTypeError);
+            showError('Step Type Error', message);
+          } else if (errorData.detail) {
+            showError('Update Failed', String(errorData.detail));
+          } else {
+            const fieldErrors = Object.entries(errorData)
+              .map(([field, messages]) => {
+                const messageText = Array.isArray(messages) ? messages.join(', ') : String(messages);
+                return `${field}: ${messageText}`;
+              })
+              .join('\n');
+            showError('Validation Errors', fieldErrors);
+          }
         }
       } else {
         showError('Update Failed', 'Failed to update step. Please try again.');
@@ -327,8 +338,10 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flows'] });
       showSuccess('Step Deleted', 'Step has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete step';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete step'
+        : 'Failed to delete step';
       showError('Delete Failed', message);
     },
   });
@@ -339,8 +352,10 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flow-steps'] });
       showSuccess('Steps Reordered', 'Steps have been reordered successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to reorder steps';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to reorder steps'
+        : 'Failed to reorder steps';
       showError('Reorder Failed', message);
     },
   });
@@ -353,8 +368,10 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flow-step', updatedStep.id] });
       showSuccess('Step Migrated', 'Availability check step has been migrated to date & time step with availability features.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to migrate step';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to migrate step'
+        : 'Failed to migrate step';
       showError('Migration Failed', message);
     },
   });
@@ -440,7 +457,7 @@ export const useBookingFlowStepConfiguration = () => {
 
   // Configuration mutations
   const updateConfigurationMutation = useMutation({
-    mutationFn: ({ stepId, data }: { stepId: number; data: Record<string, any> }) =>
+    mutationFn: ({ stepId, data }: { stepId: number; data: Record<string, unknown> }) =>
       bookingFlowsApi.updateStepConfiguration(stepId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['step-configuration'] });
@@ -448,22 +465,25 @@ export const useBookingFlowStepConfiguration = () => {
       queryClient.invalidateQueries({ queryKey: ['payment-options'] });
       showSuccess('Configuration Updated', 'Step configuration has been updated successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Update configuration error:', error);
       
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        
-        if (errorData.detail) {
-          showError('Update Failed', errorData.detail);
-        } else {
-          const fieldErrors = Object.entries(errorData)
-            .map(([field, messages]) => {
-              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
-              return `${field}: ${messageText}`;
-            })
-            .join('\n');
-          showError('Validation Errors', fieldErrors);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as { response?: { data?: Record<string, unknown> } }).response;
+        if (response?.data) {
+          const errorData = response.data;
+          
+          if (errorData.detail) {
+            showError('Update Failed', String(errorData.detail));
+          } else {
+            const fieldErrors = Object.entries(errorData)
+              .map(([field, messages]) => {
+                const messageText = Array.isArray(messages) ? messages.join(', ') : String(messages);
+                return `${field}: ${messageText}`;
+              })
+              .join('\n');
+            showError('Validation Errors', fieldErrors);
+          }
         }
       } else {
         showError('Update Failed', 'Failed to update configuration. Please try again.');
@@ -488,8 +508,10 @@ export const useBookingFlowStepConfiguration = () => {
       queryClient.invalidateQueries({ queryKey: ['step-configuration'] });
       showSuccess('Questionnaires Assigned', 'Questionnaires have been assigned successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to assign questionnaires';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to assign questionnaires'
+        : 'Failed to assign questionnaires';
       showError('Assignment Failed', message);
     },
   });
@@ -580,8 +602,10 @@ export const useBookingSessions = (filters?: BookingSessionFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-sessions'] });
       showSuccess('Session Created', 'Booking session has been created successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create session';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create session'
+        : 'Failed to create session';
       showError('Create Failed', message);
     },
   });
@@ -593,8 +617,10 @@ export const useBookingSessions = (filters?: BookingSessionFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-sessions'] });
       showSuccess('Session Updated', 'Session data has been updated successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update session';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update session'
+        : 'Failed to update session';
       showError('Update Failed', message);
     },
   });
@@ -605,8 +631,10 @@ export const useBookingSessions = (filters?: BookingSessionFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-sessions'] });
       showSuccess('Booking Completed', 'Booking has been completed successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to complete booking';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to complete booking'
+        : 'Failed to complete booking';
       showError('Completion Failed', message);
     },
   });
@@ -618,8 +646,10 @@ export const useBookingSessions = (filters?: BookingSessionFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-sessions'] });
       showSuccess('Session Abandoned', 'Session has been marked as abandoned.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to abandon session';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to abandon session'
+        : 'Failed to abandon session';
       showError('Action Failed', message);
     },
   });
@@ -687,8 +717,10 @@ export const useBookingFlowAnalytics = (filters?: BookingFlowAnalyticsFilters) =
       queryClient.invalidateQueries({ queryKey: ['booking-flow-analytics'] });
       showSuccess('Analytics Updated', 'Analytics have been updated successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update analytics';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update analytics'
+        : 'Failed to update analytics';
       showError('Update Failed', message);
     },
   });

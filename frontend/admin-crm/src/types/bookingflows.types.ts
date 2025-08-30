@@ -82,14 +82,14 @@ export interface BookingFlowStep {
   is_skippable: boolean;
   
   // Conditional display
-  display_conditions: Record<string, any>;
+  display_conditions: Record<string, unknown>;
   
   // Step configuration
-  configuration: Record<string, any>;
+  configuration: Record<string, unknown>;
   configuration_data?: StepConfiguration;
   
   // Validation rules
-  validation_rules: Record<string, any>;
+  validation_rules: Record<string, unknown>;
   
   created_at: string;
   updated_at: string;
@@ -156,7 +156,12 @@ export interface DateTimeStepConfiguration {
   
   blocked_dates: string[];
   available_days_of_week: number[];
-  available_time_slots: any[];
+  available_time_slots: Array<{
+    start_time: string;
+    end_time: string;
+    day_of_week?: number;
+    is_available: boolean;
+  }>;
   
   // Buffer settings
   buffer_before_hours: number;
@@ -204,7 +209,7 @@ export interface QuestionnaireStepItem {
   };
   order: number;
   is_conditional: boolean;
-  show_conditions: Record<string, any>;
+  show_conditions: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -239,7 +244,7 @@ export interface PackageSelectionStepConfiguration {
   
   // Dynamic pricing
   enable_dynamic_pricing: boolean;
-  pricing_factors: Record<string, any>;
+  pricing_factors: Record<string, unknown>;
   
   created_at: string;
   updated_at: string;
@@ -269,7 +274,7 @@ export interface AddonSelectionStepConfiguration {
   // Display options
   group_by_category: boolean;
   show_recommendations: boolean;
-  recommendation_logic: Record<string, any>;
+  recommendation_logic: Record<string, unknown>;
   
   created_at: string;
   updated_at: string;
@@ -309,7 +314,12 @@ export interface ContactInfoStepConfiguration {
   require_company: boolean;
   
   // Additional fields
-  custom_fields: any[];
+  custom_fields: Array<{
+    name: string;
+    type: string;
+    required: boolean;
+    placeholder?: string;
+  }>;
   
   // Account creation
   offer_account_creation: boolean;
@@ -392,8 +402,8 @@ export interface BookingSession {
   client: number | null;
   current_step: number | null;
   current_step_details?: BookingFlowStep;
-  booking_data: Record<string, any>;
-  validation_errors: Record<string, any>;
+  booking_data: Record<string, unknown>;
+  validation_errors: Record<string, unknown>;
   is_completed: boolean;
   is_abandoned: boolean;
   completed_at: string | null;
@@ -415,8 +425,8 @@ export interface BookingFlowAnalytics {
   completed_bookings: number;
   abandoned_sessions: number;
   conversion_rate: string;
-  step_completion_data: Record<string, any>;
-  step_drop_off_data: Record<string, any>;
+  step_completion_data: Record<string, number>;
+  step_drop_off_data: Record<string, number>;
   total_revenue: string;
   average_booking_value: string;
   average_completion_time: string | null;
@@ -451,7 +461,7 @@ export interface CreateBookingFlowData {
   conversion_tracking_code?: string;
 }
 
-export interface UpdateBookingFlowData extends Partial<CreateBookingFlowData> {}
+export type UpdateBookingFlowData = Partial<CreateBookingFlowData>;
 
 export interface CreateBookingFlowStepData {
   booking_flow?: number;
@@ -462,12 +472,12 @@ export interface CreateBookingFlowStepData {
   is_enabled?: boolean;
   is_required?: boolean;
   is_skippable?: boolean;
-  display_conditions?: Record<string, any>;
-  configuration?: Record<string, any>;
-  validation_rules?: Record<string, any>;
+  display_conditions?: Record<string, unknown>;
+  configuration?: Record<string, unknown>;
+  validation_rules?: Record<string, unknown>;
 }
 
-export interface UpdateBookingFlowStepData extends Partial<CreateBookingFlowStepData> {}
+export type UpdateBookingFlowStepData = Partial<CreateBookingFlowStepData>;
 
 export interface CreateBookingSessionData {
   booking_flow: number;
@@ -479,7 +489,7 @@ export interface CreateBookingSessionData {
 export interface UpdateBookingSessionData {
   session_id: string;
   step_id: number;
-  step_data: Record<string, any>;
+  step_data: Record<string, unknown>;
   mark_completed?: boolean;
 }
 
@@ -535,7 +545,7 @@ export interface ConfigurePackagesData {
   show_images?: boolean;
   enable_comparison?: boolean;
   enable_dynamic_pricing?: boolean;
-  pricing_factors?: Record<string, any>;
+  pricing_factors?: Record<string, unknown>;
 }
 
 export interface ConfigureAddonsData {
@@ -545,14 +555,60 @@ export interface ConfigureAddonsData {
   max_selection?: number;
   group_by_category?: boolean;
   show_recommendations?: boolean;
-  recommendation_logic?: Record<string, any>;
+  recommendation_logic?: Record<string, unknown>;
+}
+
+// API Response Types
+export interface PaymentGateway {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  is_active: boolean;
+  public_config: Record<string, unknown>;
+  supported_methods?: string[];
+}
+
+export interface SavedPaymentMethod {
+  id: number;
+  type: string;
+  last_four: string;
+  expires_at?: string;
+  is_default: boolean;
+}
+
+export interface ValidationRule {
+  field: string;
+  rule_type: string;
+  parameters: Record<string, unknown>;
+  error_message: string;
+}
+
+export interface AvailabilityTimeSlot {
+  start_time: string;
+  end_time: string;
+  day_of_week?: number;
+  is_available: boolean;
+}
+
+export interface CompletedBookingEvent {
+  id: number;
+  name: string;
+  event_date: string;
+  status: string;
+  client_id: number;
+  total_price: string;
 }
 
 // Preview Data Types
 export interface StepPreviewData {
   step: BookingFlowStep;
   configuration: StepConfiguration | null;
-  preview_elements: any[];
+  preview_elements: Array<{
+    type: string;
+    content: string;
+    order: number;
+  }>;
   validation: {
     is_valid: boolean;
     errors: string[];
@@ -593,9 +649,9 @@ export interface BookingFlowStepFormData {
   is_enabled: boolean;
   is_required: boolean;
   is_skippable: boolean;
-  display_conditions: Record<string, any>;
-  configuration: Record<string, any>;
-  validation_rules: Record<string, any>;
+  display_conditions: Record<string, unknown>;
+  configuration: Record<string, unknown>;
+  validation_rules: Record<string, unknown>;
 }
 
 // Component Props Types

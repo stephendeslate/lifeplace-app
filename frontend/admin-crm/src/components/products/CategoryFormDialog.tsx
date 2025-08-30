@@ -23,7 +23,6 @@ import type {
   UpdateCategoryData, 
   CategoryFormData 
 } from '../../types/products.types';
-import { tokens } from '../../design-system/tokens';
 
 interface CategoryFormDialogProps {
   open: boolean;

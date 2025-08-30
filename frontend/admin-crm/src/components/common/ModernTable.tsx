@@ -23,27 +23,27 @@ import {
 import { tokens } from '../../design-system/tokens';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 
-export interface ModernTableColumn {
+export interface ModernTableColumn<T = Record<string, unknown>> {
   key: string;
   label: string;
   sortable?: boolean;
   align?: 'left' | 'center' | 'right';
   width?: string;
-  render?: (value: any, row: any, index: number) => React.ReactNode;
+  render?: (value: unknown, row: T, index: number) => React.ReactNode;
 }
 
-export interface ModernTableAction {
+export interface ModernTableAction<T = Record<string, unknown>> {
   label: string;
   icon: React.ReactNode;
-  onClick: (row: any) => void;
+  onClick: (row: T) => void;
   color?: 'default' | 'primary' | 'secondary' | 'error';
-  show?: (row: any) => boolean;
+  show?: (row: T) => boolean;
 }
 
-export interface ModernTableProps<T = any> {
-  columns: ModernTableColumn[];
+export interface ModernTableProps<T = Record<string, unknown>> {
+  columns: ModernTableColumn<T>[];
   data: T[];
-  actions?: ModernTableAction[];
+  actions?: ModernTableAction<T>[];
   onRowClick?: (row: T, index: number) => void;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
@@ -53,7 +53,7 @@ export interface ModernTableProps<T = any> {
   className?: string;
 }
 
-export const ModernTable = <T extends Record<string, any>>({
+export const ModernTable = <T extends Record<string, unknown>>({
   columns,
   data,
   actions = [],
@@ -79,7 +79,7 @@ export const ModernTable = <T extends Record<string, any>>({
     setSelectedRow(null);
   };
 
-  const handleActionClick = (action: ModernTableAction) => {
+  const handleActionClick = (action: ModernTableAction<T>) => {
     if (selectedRow) {
       action.onClick(selectedRow);
     }
@@ -281,16 +281,16 @@ export const ModernTable = <T extends Record<string, any>>({
 };
 
 // Convenience component for common Edit/Delete actions
-export const createStandardActions = (
-  onEdit: (row: any) => void,
-  onDelete: (row: any) => void,
+export const createStandardActions = <T = Record<string, unknown>>(
+  onEdit: (row: T) => void,
+  onDelete: (row: T) => void,
   options?: {
     editLabel?: string;
     deleteLabel?: string;
-    showEdit?: (row: any) => boolean;
-    showDelete?: (row: any) => boolean;
+    showEdit?: (row: T) => boolean;
+    showDelete?: (row: T) => boolean;
   }
-): ModernTableAction[] => [
+): ModernTableAction<T>[] => [
   {
     label: options?.editLabel || 'Edit',
     icon: <EditIcon fontSize="small" />,
