@@ -98,7 +98,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd frontend/${{ matrix.app }}
-        npm ci
+        npm ci --legacy-peer-deps
 
     - name: Install testing dependencies
       run: |
@@ -148,7 +148,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd frontend/admin-crm
-        npm ci
+        npm ci --legacy-peer-deps
 
     - name: Build application
       env:
@@ -189,7 +189,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd frontend/client-portal
-        npm ci
+        npm ci --legacy-peer-deps
 
     - name: Build application
       env:

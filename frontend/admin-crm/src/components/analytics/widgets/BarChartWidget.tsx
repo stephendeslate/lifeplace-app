@@ -122,7 +122,7 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
     switch (widget.metric_definition_type) {
       case 'PERCENTAGE':
         return `${value.toFixed(1)}%`;
-      case 'REVENUE':
+      case 'REVENUE': {
         const currency = currencySettings?.defaultCurrency || 'PHP';
         return formatCurrency(value, currency, {
           showSymbol: currencySettings?.displayFormat !== 'code',
@@ -130,6 +130,7 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
           minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
           maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
         });
+      }
       case 'COUNT':
         return value.toLocaleString();
       default:
