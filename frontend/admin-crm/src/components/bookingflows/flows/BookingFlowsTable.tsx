@@ -334,10 +334,10 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={bookingFlows}
-      actions={actions}
-      onRowClick={(flow) => onEdit(flow)}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={bookingFlows as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as BookingFlow)}
       loading={isLoading}
       emptyState={emptyState}
     />

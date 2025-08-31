@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 
 
-interface NotificationSettingsData {
+export interface NotificationSettingsData {
   email: {
     enabled: boolean;
     smtp_server: string;

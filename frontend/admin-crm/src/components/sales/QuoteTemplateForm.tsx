@@ -34,6 +34,7 @@ import type {
   QuoteTemplate, 
   CreateQuoteTemplateData, 
 } from '../../types/sales.types';
+import type { ProductOption } from '../../types/products.types';
 import RichTextEditor from '../shared/RichTextEditor';
 import QuoteVariableInserter from './QuoteVariableInserter';
 
@@ -204,7 +205,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
       const selectedProductsData = template.products?.map(p => 
         products.find(prod => prod.id === p.product)
       ).filter(Boolean) || [];
-      setSelectedProducts(selectedProductsData);
+      setSelectedProducts(selectedProductsData.filter(Boolean) as unknown as Record<string, unknown>[]);
     }
   }, [template, products]);
 
@@ -284,8 +285,9 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
 
   const handleVariableInsert = (variable: string) => {
     // Use the global function to insert variable if available
-    if ((window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable) {
-      (window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable(variable);
+    const insertFunction = (window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable;
+    if (insertFunction) {
+      insertFunction(variable);
     }
   };
 
@@ -298,31 +300,31 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
     }
   };
 
-  const handleProductsChange = (event: React.SyntheticEvent, newValue: unknown[]) => {
-    setSelectedProducts(newValue);
+  const handleProductsChange = (_event: React.SyntheticEvent, newValue: unknown[]) => {
+    setSelectedProducts(newValue as Record<string, unknown>[]);
     
     // Update form data with selected products
     const productFormData = newValue.map(product => ({
-      product: product.id,
+      product: (product as any).id,
       quantity: 1,
       is_required: false,
     }));
     
-    handleInputChange('products', productFormData);
+    handleInputChange('products', productFormData as any);
   };
 
   const handleProductQuantityChange = (index: number, quantity: number) => {
     const updatedProducts = (formData.products ?? []).map((product, i) => 
       i === index ? { ...product, quantity } : product
     );
-    handleInputChange('products', updatedProducts);
+    handleInputChange('products', updatedProducts as any);
   };
 
   const handleProductRequiredChange = (index: number, is_required: boolean) => {
     const updatedProducts = (formData.products ?? []).map((product, i) => 
       i === index ? { ...product, is_required } : product
     );
-    handleInputChange('products', updatedProducts);
+    handleInputChange('products', updatedProducts as any);
   };
 
   return (
@@ -453,8 +455,8 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
               <Autocomplete
                 multiple
                 options={products}
-                getOptionLabel={(option) => option.name}
-                value={selectedProducts}
+                getOptionLabel={(option) => (option as any).name}
+                value={selectedProducts as unknown as ProductOption[]}
                 onChange={handleProductsChange}
                 renderInput={(params) => (
                   <TextField
@@ -488,7 +490,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
                         <Box key={index} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
                           <Box display="flex" alignItems="center" gap={2} mb={1}>
                             <Typography variant="subtitle2" sx={{ flex: 1 }}>
-                              {productData?.name}
+                              {String(productData?.name || 'Unknown Product')}
                             </Typography>
                             <TextField
                               size="small"

@@ -20,7 +20,7 @@ export const FunnelWidget: React.FC<FunnelWidgetProps> = ({ data, compact }) => 
         return (
           <Box key={index} sx={{ mb: 1 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-              <Typography variant={compact ? "caption" : "body2"}>{step.name}</Typography>
+              <Typography variant={compact ? "caption" : "body2"}>{(step as { name?: string }).name || step.label}</Typography>
               <Typography variant={compact ? "caption" : "body2"} fontWeight="medium">
                 {step.value.toLocaleString()}
               </Typography>

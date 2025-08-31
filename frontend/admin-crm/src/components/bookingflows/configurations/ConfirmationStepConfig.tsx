@@ -185,11 +185,11 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
       </Alert>
 
       {/* Display API errors */}
-      {updateConfigurationError && (
+      {updateConfigurationError ? (
         <Alert severity="error" sx={{ mb: 3 }}>
-          Failed to save configuration. Please try again.
+          {String(updateConfigurationError) || 'Failed to save configuration. Please try again.'}
         </Alert>
-      )}
+      ) : null}
 
       <Stack spacing={3}>
         {/* Confirmation Message */}

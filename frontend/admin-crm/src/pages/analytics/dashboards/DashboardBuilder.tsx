@@ -211,7 +211,7 @@ export const DashboardBuilder: React.FC = () => {
 
   const handleDashboardFormSubmit = (data: CreateDashboardData | UpdateDashboardData) => {
     if (isNewDashboard) {
-      createDashboard(data);
+      createDashboard(data as CreateDashboardData);
     } else if (dashboard) {
       updateDashboard({ id: dashboard.id, data });
     }

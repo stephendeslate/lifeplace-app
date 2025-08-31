@@ -317,7 +317,7 @@ export const DashboardsManagement: React.FC = () => {
     if (editingDashboard) {
       updateDashboard({ id: editingDashboard.id, data });
     } else {
-      createDashboard(data);
+      createDashboard(data as CreateDashboardData);
     }
     handleCloseDialog();
   };

@@ -357,7 +357,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <MetricCardWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { value: number; trend?: { value: number; direction: "up" | "down" | "neutral"; }; previousValue?: number; unit?: string; prefix?: string; suffix?: string; }}
             compact={compact}
           />
         );
@@ -366,7 +366,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <LineChartWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { timeSeries: { date: string; value: number; comparisonValue?: number; }[]; summary?: { total: number; average: number; peak: number; }; }}
             compact={compact}
           />
         );
@@ -375,7 +375,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <BarChartWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { categories: { name: string; value: number; comparisonValue?: number; }[]; summary?: { total: number; highest: { name: string; value: number; }; lowest: { name: string; value: number; }; }; }}
             compact={compact}
           />
         );
@@ -384,7 +384,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <PieChartWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { categories: { value: number; label: string; }[]; }}
             compact={compact}
           />
         );
@@ -393,7 +393,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <GaugeWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { value: number; target?: number; min?: number; max?: number; }}
             compact={compact}
           />
         );
@@ -411,7 +411,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <FunnelWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { categories?: { value: number; label: string; }[]; }}
             compact={compact}
           />
         );
@@ -421,7 +421,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <LineChartWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { timeSeries: { date: string; value: number; comparisonValue?: number; }[]; summary?: { total: number; average: number; peak: number; }; }}
             compact={compact}
             areaChart={true}
           />

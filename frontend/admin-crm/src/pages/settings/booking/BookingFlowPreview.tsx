@@ -126,7 +126,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
 
   // Loading state
   if (isLoadingFlow) {
-    return <ModernLoadingStates.page />;
+    return <ModernLoadingStates.ModernPageLoadingSkeleton />;
   }
 
   // Error state
@@ -336,7 +336,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
         </Typography>
         
         {isLoadingPaymentGateways ? (
-          <ModernLoadingStates type="list" />
+          <ModernLoadingStates.ModernListSkeleton />
         ) : paymentGateways ? (
           <Stack spacing={2}>
             <Box display="flex" justifyContent="space-between" alignItems="center">

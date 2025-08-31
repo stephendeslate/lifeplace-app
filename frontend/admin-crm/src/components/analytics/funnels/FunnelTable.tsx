@@ -278,7 +278,7 @@ const FunnelCard: React.FC<FunnelCardProps> = ({
     <ModernCard 
       variant="glass" 
       size="medium" 
-      animation="hover"
+      animation="grow"
       sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
     >
       <CardContent sx={{ flex: 1 }}>
@@ -398,7 +398,13 @@ export const FunnelTable: React.FC<FunnelTableProps> = ({
   showMockAnalytics = true,
 }) => {
   if (isLoading) {
-    return <ModernLoadingStates.cards count={6} />;
+    return (
+      <Box display="grid" gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))" gap={3}>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <ModernLoadingStates.ModernCardSkeleton key={index} hasHeader />
+        ))}
+      </Box>
+    );
   }
 
   if (funnels.length === 0) {

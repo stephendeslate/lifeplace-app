@@ -25,6 +25,24 @@ export const useReportOperations = (options: ReportOperationsOptions = {}) => {
   // Get specific execution data if executionId is provided
   const executionQuery = useReportExecution(executionId || '');
 
+  // Helper function to calculate next scheduled time
+  const calculateNextScheduledTime = (report: AnalyticsReport): Date | null => {
+    if (report.schedule_frequency === 'MANUAL' || !report.schedule_time) {
+      return null;
+    }
+
+    const now = new Date();
+    const [hours, minutes] = report.schedule_time.split(':').map(Number);
+    const nextExecution = new Date();
+    nextExecution.setHours(hours, minutes, 0, 0);
+
+    // Simplified logic - just return next execution time
+    if (nextExecution <= now) {
+      nextExecution.setDate(nextExecution.getDate() + 1);
+    }
+    return nextExecution;
+  };
+
   // Report status calculations
   const reportStatus = useMemo(() => {
     const report = reportQuery.data;
@@ -49,7 +67,7 @@ export const useReportOperations = (options: ReportOperationsOptions = {}) => {
       nextScheduled,
       canExecute: report.is_active && !hasRunningExecution,
     };
-  }, [reportQuery.data, executionsQuery.data, calculateNextScheduledTime]);
+  }, [reportQuery.data, executionsQuery.data]);
 
   // Execution statistics
   const executionStats = useMemo(() => {
@@ -121,7 +139,8 @@ export const useReportOperations = (options: ReportOperationsOptions = {}) => {
   }, [reportQuery.data]);
 
   // Helper functions
-  const calculateNextScheduledTime = useCallback((report: AnalyticsReport): Date | null => {
+  // Removed duplicate - function is already defined above
+  /* const calculateNextScheduledTime = useCallback((report: AnalyticsReport): Date | null => {
     if (report.schedule_frequency === 'MANUAL' || !report.schedule_time) {
       return null;
     }
@@ -180,7 +199,7 @@ export const useReportOperations = (options: ReportOperationsOptions = {}) => {
     }
 
     return nextExecution;
-  }, []);
+  }, []); */
 
   const formatScheduleFrequency = useCallback((frequency: ScheduleFrequency): string => {
     switch (frequency) {

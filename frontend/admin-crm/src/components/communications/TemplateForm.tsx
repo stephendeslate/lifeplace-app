@@ -15,6 +15,7 @@ import {
   CircularProgress,
   ToggleButton,
   ToggleButtonGroup,
+  Paper,
 } from '@mui/material';
 import {
   Save as SaveIcon,

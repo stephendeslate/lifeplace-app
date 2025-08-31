@@ -65,7 +65,9 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (_, template: WorkflowTemplate) => (
+      render: (_, row) => {
+        const template = row as unknown as WorkflowTemplate;
+        return (
         <Box display="flex" alignItems="center" gap={1}>
           <WorkflowIcon color="primary" />
           <Box>
@@ -77,18 +79,24 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
             </Typography>
           </Box>
         </Box>
-      ),
+        );
+      }
     },
     {
       key: 'event_type',
       label: 'Event Type',
-      render: (_, template: WorkflowTemplate) => getEventTypeChip(template.event_type_name),
+      render: (_, row) => {
+        const template = row as unknown as WorkflowTemplate;
+        return getEventTypeChip(template.event_type_name);
+      },
     },
     {
       key: 'stages',
       label: 'Stages',
       align: 'center',
-      render: (_, template: WorkflowTemplate) => (
+      render: (_, row) => {
+        const template = row as unknown as WorkflowTemplate;
+        return (
         <Tooltip title={`${template.stages_count} stages in this workflow`}>
           <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
             <TimelineIcon fontSize="small" color="action" />
@@ -97,26 +105,35 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
             </Typography>
           </Box>
         </Tooltip>
-      ),
+        );
+      }
     },
     {
       key: 'description',
       label: 'Description',
-      render: (_, template: WorkflowTemplate) => (
+      render: (_, row) => {
+        const template = row as unknown as WorkflowTemplate;
+        return (
         <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 300 }}>
           {template.description || 'No description provided'}
         </Typography>
-      ),
+        );
+      }
     },
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, template: WorkflowTemplate) => getStatusChip(template.is_active),
+      render: (_, row) => {
+        const template = row as unknown as WorkflowTemplate;
+        return getStatusChip(template.is_active);
+      },
     },
     {
       key: 'updated_at',
       label: 'Last Updated',
-      render: (_, template: WorkflowTemplate) => (
+      render: (_, row) => {
+        const template = row as unknown as WorkflowTemplate;
+        return (
         <Box>
           <Typography variant="body2" color="text.secondary">
             {new Date(template.updated_at).toLocaleDateString()}
@@ -125,7 +142,8 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
             {new Date(template.updated_at).toLocaleTimeString()}
           </Typography>
         </Box>
-      ),
+        );
+      }
     },
   ];
 
@@ -133,28 +151,28 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
     {
       label: 'View Workflow',
       icon: <ViewIcon fontSize="small" />,
-      onClick: onView,
+      onClick: (row) => onView(row as unknown as WorkflowTemplate),
     },
     {
       label: 'Edit Template',
       icon: <EditIcon fontSize="small" />,
-      onClick: onEdit,
+      onClick: (row: Record<string, unknown>) => onEdit(row as unknown as WorkflowTemplate),
     },
     ...(onDuplicate ? [{
       label: 'Duplicate',
       icon: <DuplicateIcon fontSize="small" />,
-      onClick: onDuplicate,
+      onClick: (row: Record<string, unknown>) => onDuplicate && onDuplicate(row as unknown as WorkflowTemplate),
     }] : []),
     {
       label: 'Delete',
       icon: <DeleteIcon fontSize="small" />,
-      onClick: onDelete,
+      onClick: (row) => onDelete((row as { id: number }).id),
       color: 'error' as const,
     },
   ];
 
   if (isLoading) {
-    return <ModernLoadingStates.table />;
+    return <ModernLoadingStates.ModernTableSkeleton />;
   }
 
   if (templates.length === 0) {
@@ -170,10 +188,10 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={templates}
-      actions={actions}
-      onRowClick={onView}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={templates as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onView(row as unknown as WorkflowTemplate)}
       sortBy="name"
       sortOrder="asc"
     />

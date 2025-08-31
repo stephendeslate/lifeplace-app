@@ -23,7 +23,12 @@ import {
 // Modern Design System imports
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
-import type { BookingFlowStep } from '../../../types/bookingflows.types';
+import type { 
+  BookingFlowStep,
+  QuestionnaireStepConfiguration,
+  AddonSelectionStepConfiguration,
+  PaymentInfoStepConfiguration
+} from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import {
   IntroductionStepConfig,
@@ -112,7 +117,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
     }
   };
 
-  const renderStepSpecificConfiguration = () => {
+  const renderStepSpecificConfiguration = (): React.ReactNode => {
     // Block access to removed step types
     if (step.step_type as string === 'availability_check') {
       return (
@@ -136,7 +141,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           <DateTimeStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').DateTimeStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={(updatedStep: BookingFlowStep) => handleConfigurationUpdate(updatedStep.configuration_data as unknown as Record<string, unknown>)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -146,7 +151,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           <QuestionnaireStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').QuestionnaireStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={(data: Partial<QuestionnaireStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -164,7 +169,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         return (
           <AddonSelectionStepConfig
             step={step}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={(data: Partial<AddonSelectionStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -173,8 +178,8 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         return (
           <PricingSummaryStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').PricingSummaryStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            config={currentConfig as Record<string, unknown> | null | undefined}
+            onUpdate={(data: Record<string, unknown>) => handleConfigurationUpdate(data)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -194,7 +199,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           <PaymentInfoStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').PaymentInfoStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={(data: Partial<PaymentInfoStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -203,8 +208,8 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         return (
           <ReviewBookingStepConfig
             step={step}
-            config={currentConfig}
-            onUpdate={handleConfigurationUpdate}
+            config={currentConfig as Record<string, unknown> | undefined}
+            onUpdate={(data: Record<string, unknown>) => handleConfigurationUpdate(data)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -222,11 +227,11 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
       // Remove event_details case since it doesn't exist in the evolved types
       
       default:
-        return <GenericConfigForm step={step} config={currentConfig} />;
+        return <GenericConfigForm step={step} config={currentConfig as any} />;
     }
   };
 
-  const renderPreview = () => {
+  const renderPreview = (): React.ReactNode => {
     // Preview functionality not implemented in the evolved backend
     // Only show configuration tab for now
     return (
@@ -275,10 +280,10 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         <Box display="flex" alignItems="center" gap={1}>
           <ConfigIcon color="primary" />
           <Typography variant="h6">
-            Configure {step.step_type_display}
+            Configure {String(step.step_type_display || step.step_type || 'Step')}
           </Typography>
           <Chip
-            label={step.step_type}
+            label={String(step.step_type || 'unknown')}
             size="small"
             color="primary"
             variant="outlined"
@@ -332,11 +337,11 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
 
       {/* Tab Panels */}
       <TabPanel value={activeTab} index={0}>
-        {renderStepSpecificConfiguration()}
+        {renderStepSpecificConfiguration() as React.ReactNode}
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        {renderPreview()}
+        {renderPreview() as React.ReactNode}
       </TabPanel>
     </ModernCard>
   );
@@ -353,7 +358,7 @@ const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: unknown }> = 
       This step will use default settings and behavior. Custom configuration will be available in a future update.
     </Typography>
     
-    {config && (
+    {config ? (
       <Box sx={{ mt: 2 }}>
         <Typography variant="subtitle2" gutterBottom>
           Current Configuration (Raw Data)
@@ -368,10 +373,10 @@ const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: unknown }> = 
           }}
         >
           <pre style={{ margin: 0, fontSize: '0.875rem' }}>
-            {JSON.stringify(config, null, 2)}
+            {JSON.stringify(config as Record<string, unknown>, null, 2)}
           </pre>
         </Box>
       </Box>
-    )}
+    ) : null}
   </Box>
 );

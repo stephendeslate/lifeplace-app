@@ -1,5 +1,6 @@
 // frontend/admin-crm/src/components/settings/index.ts
 
-export { SettingsCard } from './SettingsCard';
-export { SettingsForm } from './SettingsForm';
-export { SettingsNavigation } from './SettingsNavigation';
+export { CurrencySettingsForm } from './CurrencySettingsForm';
+export { EnhancedSettingsNavigation } from './EnhancedSettingsNavigation';
+export { ProgressiveForm } from './ProgressiveForm';
+export { SmartCard } from './SmartCard';

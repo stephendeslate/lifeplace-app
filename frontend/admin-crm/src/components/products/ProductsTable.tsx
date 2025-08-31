@@ -5,7 +5,7 @@ import { Box, Typography, Chip, Tooltip } from '@mui/material';
 import { Inventory as ProductIcon, Star as StarIcon, StarBorder as StarBorderIcon } from '@mui/icons-material';
 import type { ProductOption } from '../../types/products.types';
 import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
-import type { ModernTableColumn } from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common';
 
 interface ProductsTableProps {
   products: ProductOption[];
@@ -59,74 +59,91 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (_, product: ProductOption) => (
-        <Box display="flex" alignItems="center" gap={1}>
-          <ProductIcon color="primary" fontSize="small" />
-          <Box>
-            <Typography variant="subtitle2" fontWeight="medium">
-              {product.name}
-            </Typography>
-            {product.sku && (
-              <Typography variant="caption" color="text.secondary">
-                SKU: {product.sku}
+      render: (_, row) => {
+        const product = row as unknown as ProductOption;
+        return (
+          <Box display="flex" alignItems="center" gap={1}>
+            <ProductIcon color="primary" fontSize="small" />
+            <Box>
+              <Typography variant="subtitle2" fontWeight="medium">
+                {product.name}
               </Typography>
-            )}
+              {product.sku && (
+                <Typography variant="caption" color="text.secondary">
+                  SKU: {product.sku}
+                </Typography>
+              )}
+            </Box>
           </Box>
-        </Box>
-      ),
+        );
+      },
     },
     {
       key: 'category',
       label: 'Category',
-      render: (_, product: ProductOption) => (
-        <Box>
-          <Typography variant="body2" fontWeight="medium">
-            {product.category_name}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {product.category_path}
-          </Typography>
-        </Box>
-      ),
+      render: (_, row) => {
+        const product = row as unknown as ProductOption;
+        return (
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              {product.category_name}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {product.category_path}
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       key: 'type',
       label: 'Type',
-      render: (_, product: ProductOption) => 
-        getTypeChip(product.type_display, product.type === 'PACKAGE'),
+      render: (_, row) => {
+        const product = row as unknown as ProductOption;
+        return getTypeChip(product.type_display, product.type === 'PACKAGE');
+      },
     },
     {
       key: 'pricing',
       label: 'Pricing',
-      render: (_, product: ProductOption) => (
-        <Box>
-          <Typography variant="body2" fontWeight="medium">
-            {formatPrice(product)}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {product.pricing_model_display}
-          </Typography>
-        </Box>
-      ),
+      render: (_, row) => {
+        const product = row as unknown as ProductOption;
+        return (
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              {formatPrice(product)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {product.pricing_model_display}
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, product: ProductOption) => getStatusChip(product.is_active),
+      render: (_, row) => {
+        const product = row as unknown as ProductOption;
+        return getStatusChip(product.is_active);
+      },
     },
     {
       key: 'is_featured',
       label: 'Featured',
       align: 'center',
-      render: (_, product: ProductOption) => (
-        product.is_featured ? (
-          <Tooltip title="Featured product">
-            <StarIcon color="warning" />
-          </Tooltip>
-        ) : (
-          <StarBorderIcon color="disabled" />
-        )
-      ),
+      render: (_, row) => {
+        const product = row as unknown as ProductOption;
+        return (
+          product.is_featured ? (
+            <Tooltip title="Featured product">
+              <StarIcon color="warning" />
+            </Tooltip>
+          ) : (
+            <StarBorderIcon color="disabled" />
+          )
+        );
+      },
     },
   ];
 
@@ -156,10 +173,10 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={products}
-      actions={actions}
-      onRowClick={onEdit}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={products as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as ProductOption)}
       sortBy="name"
       sortOrder="asc"
     />

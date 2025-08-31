@@ -267,7 +267,9 @@ export const MetricCalculationModal: React.FC<MetricCalculationModalProps> = ({
                     Calculation Error
                   </Typography>
                   <Typography variant="body2">
-                    {calculationError.response?.data?.detail || calculationError.message || 'Unknown error occurred'}
+                    {typeof calculationError === 'string' 
+                      ? calculationError 
+                      : (calculationError as { response?: { data?: { detail?: string } }; message?: string }).response?.data?.detail || (calculationError as { message?: string }).message || 'Unknown error occurred'}
                   </Typography>
                 </Alert>
               )}

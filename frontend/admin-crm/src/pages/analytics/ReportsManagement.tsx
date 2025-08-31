@@ -18,7 +18,7 @@ import {
   TextField,
   InputAdornment,
 } from '@mui/material';
-import { ModernTable, ModernEmptyState, type ModernTableColumn, type ModernTableAction } from '../../components/common';
+import { ModernTable, ModernEmptyState, TableSkeleton, type ModernTableColumn, type ModernTableAction } from '../../components/common';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
@@ -357,9 +357,9 @@ export const ReportsManagement: React.FC = () => {
       {/* Content */}
       <Paper variant="outlined">
         {isLoadingReports ? (
-          <LoadingTable />
+          <TableSkeleton />
         ) : reports.length === 0 ? (
-          <EmptyState
+          <ModernEmptyState
             icon={ReportIcon}
             title="No reports found"
             description={
@@ -367,23 +367,20 @@ export const ReportsManagement: React.FC = () => {
                 ? "No reports match your current filters. Try adjusting your search criteria."
                 : "Get started by creating your first analytics report to track business metrics over time."
             }
-            action={
-              Object.keys(filters).length === 0 && (
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => setShowCreateDialog(true)}
-                >
-                  Create First Report
-                </Button>
-              )
+            primaryAction={
+              Object.keys(filters).length === 0 ? {
+                label: 'Create First Report',
+                onClick: () => setShowCreateDialog(true),
+                icon: <AddIcon />,
+                color: 'primary' as const
+              } : undefined
             }
           />
         ) : (
           <ModernTable
-            columns={getTableColumns()}
-            data={reports}
-            actions={getTableActions()}
+            columns={getTableColumns() as unknown as ModernTableColumn<Record<string, unknown>>[]}
+            data={reports as unknown as Record<string, unknown>[]}
+            actions={getTableActions() as unknown as ModernTableAction<Record<string, unknown>>[]}
             loading={isLoadingReports}
             emptyState={
               <ModernEmptyState

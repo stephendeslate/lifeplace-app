@@ -18,7 +18,7 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ data, compact }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [animatedValue, setAnimatedValue] = useState(0);
   
-  const maxValue = data.maxValue || 1000;
+  const maxValue = data.max || 1000;
   const actualPercentage = Math.min(100, Math.max(0, (data.value / maxValue) * 100));
   
   useEffect(() => {

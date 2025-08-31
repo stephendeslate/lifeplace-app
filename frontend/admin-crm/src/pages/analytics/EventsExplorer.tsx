@@ -386,9 +386,11 @@ export const EventsExplorer: React.FC = () => {
       {/* Content */}
       <Paper variant="outlined">
         {isLoadingEvents ? (
-          <LoadingTable />
+          <Box p={2}>
+            <Typography>Loading events...</Typography>
+          </Box>
         ) : events.length === 0 ? (
-          <EmptyState
+          <ModernEmptyState
             icon={EventIcon}
             title="No events found"
             description={
@@ -399,9 +401,9 @@ export const EventsExplorer: React.FC = () => {
           />
         ) : (
           <ModernTable
-            columns={getTableColumns()}
-            data={events}
-            actions={getTableActions()}
+            columns={getTableColumns() as unknown as ModernTableColumn<Record<string, unknown>>[]}
+            data={events as unknown as Record<string, unknown>[]}
+            actions={getTableActions() as unknown as ModernTableAction<Record<string, unknown>>[]}
             loading={isLoadingEvents}
             emptyState={
               <ModernEmptyState

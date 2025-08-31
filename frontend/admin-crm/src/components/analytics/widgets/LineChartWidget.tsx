@@ -182,7 +182,7 @@ export const LineChartWidget: React.FC<LineChartWidgetProps> = ({
                 zIndex: 1 
               }}
             >
-              {formatDateLabel(label)}
+              {formatDateLabel(label || '')}
             </Typography>
             {payload.map((entry, index: number) => (
               <Box key={index} display="flex" alignItems="center" gap={1} sx={{ position: 'relative', zIndex: 1 }}>

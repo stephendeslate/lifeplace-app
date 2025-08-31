@@ -22,7 +22,7 @@ import {
   MenuItem,
 } from '@mui/material';
 // Modern Design System imports
-import { ModernCard, ModernDialog, createStandardActions } from '../../common';
+import { ModernCard, ModernDialog } from '../../common';
 import {
   PlayArrow as StartIcon,
   NavigateNext as NextIcon,
@@ -507,7 +507,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
         if (!data.start_date) {
           errors.push('Start date is required');
         } else {
-          const eventDate = new Date(data.start_date);
+          const eventDate = new Date(data.start_date as string | number | Date);
           const minDate = new Date();
           minDate.setDate(minDate.getDate() + (flow.min_advance_booking_days || 1));
           
@@ -814,7 +814,12 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
         onClose={() => setSettingsOpen(false)}
         title="Test Settings"
         maxWidth="sm"
-        actions={createStandardActions.close(() => setSettingsOpen(false))}
+        actions={[{
+          label: 'Close',
+          onClick: () => setSettingsOpen(false),
+          variant: 'contained',
+          color: 'primary'
+        }]}
       >
         <Stack spacing={3} sx={{ mt: 1 }}>
           <FormControl fullWidth>

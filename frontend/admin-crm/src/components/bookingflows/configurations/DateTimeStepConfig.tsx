@@ -264,7 +264,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
 
     updateConfiguration({
       stepId: step.id,
-      data: formData,
+      data: formData as unknown as Record<string, unknown>,
     }, {
       onSuccess: () => {
         // Create updated step object for parent callback

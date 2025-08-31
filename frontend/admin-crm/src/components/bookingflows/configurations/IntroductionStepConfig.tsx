@@ -279,11 +279,11 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
       </Alert>
 
       {/* Show update errors */}
-      {updateConfigurationError && (
+      {updateConfigurationError ? (
         <Alert severity="error" sx={{ mb: 3 }}>
           Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
         </Alert>
-      )}
+      ) : null}
 
       <Stack spacing={3}>
         {/* Basic Content */}

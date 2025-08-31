@@ -116,8 +116,8 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
   // Clear errors when data changes
   useEffect(() => {
     if (assignQuestionnairesError || updateConfigurationError) {
-      const errorMessage = assignQuestionnairesError?.message || 
-                          updateConfigurationError?.message || 
+      const errorMessage = (assignQuestionnairesError as { message?: string })?.message || 
+                          (updateConfigurationError as { message?: string })?.message || 
                           'An error occurred';
       setErrors({ general: errorMessage });
     } else {

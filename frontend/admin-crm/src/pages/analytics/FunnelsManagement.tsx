@@ -108,7 +108,7 @@ export const FunnelsManagement: React.FC = () => {
     if (editingFunnel) {
       updateFunnel({ id: editingFunnel.id, data });
     } else {
-      createFunnel(data);
+      createFunnel(data as CreateConversionFunnelData);
     }
     handleCloseDialog();
   };

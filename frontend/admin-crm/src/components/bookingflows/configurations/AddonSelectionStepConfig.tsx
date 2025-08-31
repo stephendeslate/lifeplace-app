@@ -291,11 +291,11 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
       <Box>
         <Alert severity="error" sx={{ mb: 2 }}>
           Failed to load configuration data. Please try refreshing the page.
-          {updateConfigurationError && (
+          {updateConfigurationError ? (
             <Typography variant="body2" sx={{ mt: 1 }}>
-              Update Error: {updateConfigurationError.message}
+              Update Error: {(updateConfigurationError as { message?: string }).message || 'Unknown error'}
             </Typography>
-          )}
+          ) : null}
         </Alert>
         <Button startIcon={<RefreshIcon />} onClick={() => window.location.reload()}>
           Refresh Page

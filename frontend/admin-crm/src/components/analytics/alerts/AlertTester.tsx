@@ -177,7 +177,9 @@ export const AlertTester: React.FC<AlertTesterProps> = ({
                 Test Failed
               </Typography>
               <Typography variant="body2">
-                {error.response?.data?.detail || error.message || 'An error occurred while testing the alert rule'}
+                {typeof error === 'string' 
+                  ? error 
+                  : (error as { response?: { data?: { detail?: string } }; message?: string }).response?.data?.detail || (error as { message?: string }).message || 'An error occurred while testing the alert rule'}
               </Typography>
             </Alert>
           )}

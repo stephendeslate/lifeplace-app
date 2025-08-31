@@ -86,7 +86,7 @@ export const useBookingFlows = (filters?: BookingFlowFilters) => {
             : errorData.non_field_errors;
           showError('Validation Error', message);
         } else if (errorData.detail) {
-          showError('Create Failed', errorData.detail);
+          showError('Create Failed', String(errorData.detail));
         } else {
           // Handle field-specific errors
           const fieldErrors = Object.entries(errorData)

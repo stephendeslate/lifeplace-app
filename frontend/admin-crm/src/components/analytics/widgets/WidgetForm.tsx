@@ -169,10 +169,10 @@ export const WidgetForm: React.FC<WidgetFormProps> = ({
         comparison_period: editingWidget.comparison_period || 'previous_period',
         is_visible: editingWidget.is_visible,
         chart_config: {
-          color_scheme: editingWidget.chart_config?.color_scheme || 'blue',
-          show_legend: editingWidget.chart_config?.show_legend ?? true,
-          show_grid: editingWidget.chart_config?.show_grid ?? true,
-          animation_enabled: editingWidget.chart_config?.animation_enabled ?? true,
+          color_scheme: (editingWidget.chart_config as { color_scheme?: string })?.color_scheme || 'blue',
+          show_legend: (editingWidget.chart_config as { show_legend?: boolean })?.show_legend ?? true,
+          show_grid: (editingWidget.chart_config as { show_grid?: boolean })?.show_grid ?? true,
+          animation_enabled: (editingWidget.chart_config as { animation_enabled?: boolean })?.animation_enabled ?? true,
         },
       });
     } else {

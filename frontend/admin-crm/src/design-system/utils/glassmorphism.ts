@@ -96,12 +96,12 @@ export const glassHoverEffect = (baseGlass: Record<string, unknown>, intensity: 
   return {
     transition: tokens.animation.transitions.glassHover,
     '&:hover': {
-      background: baseGlass.background.replace(
+      background: String(baseGlass.background).replace(
         /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/,
         (_: string, r: string, g: string, b: string, a: string) => 
           `rgba(${r}, ${g}, ${b}, ${parseFloat(a) + config.opacityIncrease})`
       ),
-      backdropFilter: baseGlass.backdropFilter.replace(
+      backdropFilter: String(baseGlass.backdropFilter).replace(
         /blur\((\d+)px\)/,
         (_: string, blur: string) => `blur(${parseInt(blur) + config.blurIncrease}px)`
       ),
@@ -322,7 +322,7 @@ export const createFallbackGlass = (glassStyle: Record<string, unknown>) => {
   return {
     ...glassStyle,
     backdropFilter: 'none',
-    background: glassStyle.background.replace(/rgba\((.*),\s*([\d.]+)\)/, 'rgba($1, 0.9)'),
+    background: String(glassStyle.background).replace(/rgba\((.*),\s*([\d.]+)\)/, 'rgba($1, 0.9)'),
     boxShadow: tokens.shadow.elevation.lg,
   };
 };

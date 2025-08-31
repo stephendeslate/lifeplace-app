@@ -9,7 +9,7 @@ import {
   Typography,
   Stack,
 } from '@mui/material';
-import { ModernDialog, createStandardActions } from '../common';
+import { ModernDialog, createDialogActions } from '../common';
 import { 
   type EventTypeFormDialogProps,
   type EventTypeFormData,
@@ -106,7 +106,7 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
     }
   };
 
-  const actions = createStandardActions(
+  const actions = createDialogActions(
     handleClose,
     handleSubmit,
     {

@@ -136,7 +136,9 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       key: 'name',
       label: 'Template Name',
       sortable: true,
-      render: (value, template: CommunicationTemplate) => (
+      render: (_, row) => {
+        const template = row as unknown as CommunicationTemplate;
+        return (
         <Box display="flex" alignItems="center" gap={2}>
           <Box
             sx={{
@@ -167,14 +169,15 @@ export const TemplateList: React.FC<TemplateListProps> = ({
             )}
           </Box>
         </Box>
-      )
+        );
+      }
     },
     {
       key: 'channel',
       label: 'Channel',
-      render: (value) => (
+      render: (value, _row) => (
         <Chip
-          label={value}
+          label={String(value)}
           size="small"
           variant="outlined"
           color={value === 'EMAIL' ? 'primary' : 'secondary'}
@@ -188,11 +191,11 @@ export const TemplateList: React.FC<TemplateListProps> = ({
     {
       key: 'category',
       label: 'Category',
-      render: (value) => (
+      render: (value, _row) => (
         <Chip
-          label={value}
+          label={String(value)}
           size="small"
-          color={getCategoryColor(value) as 'primary' | 'secondary' | 'default'}
+          color={getCategoryColor(String(value)) as 'primary' | 'secondary' | 'default'}
           variant="outlined"
           sx={{
             fontWeight: 500,
@@ -204,10 +207,10 @@ export const TemplateList: React.FC<TemplateListProps> = ({
     {
       key: 'subject_template',
       label: 'Subject/Content',
-      render: (value) => (
+      render: (value, _row) => (
         <Box>
           {value ? (
-            <Tooltip title={value} arrow>
+            <Tooltip title={String(value)} arrow>
               <Typography 
                 variant="body2" 
                 color="text.primary"
@@ -219,7 +222,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
                   fontWeight: 500,
                 }}
               >
-                {value}
+                {String(value)}
               </Typography>
             </Tooltip>
           ) : (
@@ -234,13 +237,13 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       key: 'updated_at',
       label: 'Last Updated',
       sortable: true,
-      render: (value) => (
+      render: (value, _row) => (
         <Box>
           <Typography variant="body2" color="text.secondary" fontWeight="500">
-            {new Date(value).toLocaleDateString()}
+            {new Date(String(value)).toLocaleDateString()}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {new Date(value).toLocaleTimeString()}
+            {new Date(String(value)).toLocaleTimeString()}
           </Typography>
         </Box>
       )
@@ -252,21 +255,24 @@ export const TemplateList: React.FC<TemplateListProps> = ({
     {
       label: 'Preview Template',
       icon: <PreviewIcon fontSize="small" />,
-      onClick: (template: CommunicationTemplate) => onPreviewClick(template),
+      onClick: (row) => onPreviewClick(row as unknown as CommunicationTemplate),
       color: 'secondary'
     },
     {
       label: 'Edit Template',
       icon: <EditIcon fontSize="small" />,
-      onClick: (template: CommunicationTemplate) => onEditClick(template),
+      onClick: (row) => onEditClick(row as unknown as CommunicationTemplate),
       color: 'primary'
     },
     {
       label: 'Delete Template',
       icon: <DeleteIcon fontSize="small" />,
-      onClick: (template: CommunicationTemplate) => handleDeleteClick(template),
+      onClick: (row) => handleDeleteClick(row as unknown as CommunicationTemplate),
       color: 'error',
-      show: (template: CommunicationTemplate) => template && !template.is_system
+      show: (row) => {
+        const template = row as unknown as CommunicationTemplate;
+        return template && !template.is_system;
+      }
     }
   ];
 
@@ -478,10 +484,10 @@ export const TemplateList: React.FC<TemplateListProps> = ({
 
       {/* Modern Table */}
       <ModernTable
-        columns={columns}
-        data={templates || []}
-        actions={actions}
-        onRowClick={(template) => onEditClick(template)}
+        columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+        data={(templates || []) as unknown as Record<string, unknown>[]}
+        actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+        onRowClick={(row) => onEditClick(row as unknown as CommunicationTemplate)}
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSort={handleSort}

@@ -14,7 +14,7 @@ import {
   Chip,
   Button,
 } from '@mui/material';
-import { ModernDialog, createStandardActions } from '../common';
+import { ModernDialog, createDialogActions } from '../common';
 import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
@@ -127,7 +127,7 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
       name: template.name,
       code: template.code,
       description: template.description,
-      config: template.config,
+      config: template.config as unknown as Record<string, unknown>,
     }));
     setShowAdvanced(true);
   };
@@ -147,7 +147,7 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
 
     // Stripe specific validation
     if (formData.code === 'stripe') {
-      const config = formData.config as StripeConfig;
+      const config = formData.config as unknown as StripeConfig;
       if (!config.publishable_key?.trim()) {
         newErrors.publishable_key = 'Publishable key is required for Stripe';
       }
@@ -158,7 +158,7 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
 
     // PayMongo specific validation
     if (formData.code === 'paymongo') {
-      const config = formData.config as PayMongoConfig;
+      const config = formData.config as unknown as PayMongoConfig;
       if (!config.public_key?.trim()) {
         newErrors.public_key = 'Public key is required for PayMongo';
       }
@@ -195,10 +195,10 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
 
   const isStripe = formData.code === 'stripe';
   const isPayMongo = formData.code === 'paymongo';
-  const stripeConfig = formData.config as StripeConfig;
-  const paymongoConfig = formData.config as PayMongoConfig;
+  const stripeConfig = formData.config as unknown as StripeConfig;
+  const paymongoConfig = formData.config as unknown as PayMongoConfig;
 
-  const actions = createStandardActions(
+  const actions = createDialogActions(
     onClose,
     handleSubmit,
     {

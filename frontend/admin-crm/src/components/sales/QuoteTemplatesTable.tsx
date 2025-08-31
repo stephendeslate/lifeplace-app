@@ -69,7 +69,9 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
       key: 'name',
       label: 'Template Name',
       sortable: true,
-      render: (_, template: QuoteTemplate) => (
+      render: (_, row) => {
+        const template = row as unknown as QuoteTemplate;
+        return (
         <Box display="flex" alignItems="center" gap={1}>
           <QuoteIcon color="primary" />
           <Box>
@@ -85,18 +87,24 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
             )}
           </Box>
         </Box>
-      ),
+        );
+      },
     },
     {
       key: 'event_type',
       label: 'Event Type',
-      render: (_, template: QuoteTemplate) => getEventTypeChip(template.event_type_name),
+      render: (_, row) => {
+        const template = row as unknown as QuoteTemplate;
+        return getEventTypeChip(template.event_type_name);
+      },
     },
     {
       key: 'products',
       label: 'Products',
       align: 'center',
-      render: (_, template: QuoteTemplate) => (
+      render: (_, row) => {
+        const template = row as unknown as QuoteTemplate;
+        return (
         <Tooltip title={`${template.products?.length || 0} products in this template`}>
           <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
             <ProductIcon fontSize="small" color="action" />
@@ -105,35 +113,47 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
             </Typography>
           </Box>
         </Tooltip>
-      ),
+        );
+      },
     },
     {
       key: 'validity',
       label: 'Validity',
       align: 'center',
-      render: (_, template: QuoteTemplate) => getValidityChip(template.default_validity_days),
+      render: (_, row) => {
+        const template = row as unknown as QuoteTemplate;
+        return getValidityChip(template.default_validity_days);
+      },
     },
     {
       key: 'options',
       label: 'Options',
-      render: (_, template: QuoteTemplate) => (
+      render: (_, row) => {
+        const template = row as unknown as QuoteTemplate;
+        return (
         <Chip
           label={template.has_multiple_options ? 'Multiple Options' : 'Single Option'}
           size="small"
           color={template.has_multiple_options ? 'secondary' : 'default'}
           variant="outlined"
         />
-      ),
+        );
+      },
     },
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, template: QuoteTemplate) => getStatusChip(template.is_active),
+      render: (_, row) => {
+        const template = row as unknown as QuoteTemplate;
+        return getStatusChip(template.is_active);
+      },
     },
     {
       key: 'updated_at',
       label: 'Last Updated',
-      render: (_, template: QuoteTemplate) => (
+      render: (_, row) => {
+        const template = row as unknown as QuoteTemplate;
+        return (
         <Box>
           <Typography variant="body2" color="text.secondary">
             {new Date(template.updated_at).toLocaleDateString()}
@@ -142,7 +162,8 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
             {new Date(template.updated_at).toLocaleTimeString()}
           </Typography>
         </Box>
-      ),
+        );
+      },
     },
   ];
 
@@ -151,17 +172,17 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
     {
       label: 'Edit Template',
       icon: <EditIcon fontSize="small" />,
-      onClick: onEdit,
+      onClick: (row) => onEdit(row as unknown as QuoteTemplate),
     },
     ...(onDuplicate ? [{
       label: 'Duplicate Template',
       icon: <DuplicateIcon fontSize="small" />,
-      onClick: onDuplicate,
+      onClick: (row: Record<string, unknown>) => onDuplicate && onDuplicate(row as unknown as QuoteTemplate),
     }] : []),
     {
       label: 'Delete Template',
       icon: <DeleteIcon fontSize="small" />,
-      onClick: onDelete,
+      onClick: (row) => onDelete((row as { id: number }).id),
       color: 'error' as const,
     },
   ];
@@ -183,10 +204,10 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={templates}
-      actions={actions}
-      onRowClick={onEdit}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={templates as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as QuoteTemplate)}
       sortBy="name"
       sortOrder="asc"
     />

@@ -17,7 +17,7 @@ import {
 } from '@mui/icons-material';
 import type { Discount } from '../../types/products.types';
 import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
-import type { ModernTableColumn } from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common';
 
 interface DiscountsTableProps {
   discounts: Discount[];
@@ -135,73 +135,94 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
       key: 'name',
       label: 'Name & Code',
       sortable: true,
-      render: (_, discount: Discount) => (
-        <Box>
-          <Typography variant="subtitle2" fontWeight="medium">
-            {discount.name}
-          </Typography>
-          {discount.code && (
-            <Box display="flex" alignItems="center" gap={0.5}>
-              <CodeIcon fontSize="small" color="action" />
-              <Typography variant="caption" color="text.secondary">
-                {discount.code}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      ),
+      render: (_, row) => {
+        const discount = row as unknown as Discount;
+        return (
+          <Box>
+            <Typography variant="subtitle2" fontWeight="medium">
+              {discount.name}
+            </Typography>
+            {discount.code && (
+              <Box display="flex" alignItems="center" gap={0.5}>
+                <CodeIcon fontSize="small" color="action" />
+                <Typography variant="caption" color="text.secondary">
+                  {discount.code}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        );
+      },
     },
     {
       key: 'discount_type',
       label: 'Type',
-      render: (_, discount: Discount) => getTypeChip(discount.discount_type),
+      render: (_, row) => {
+        const discount = row as unknown as Discount;
+        return getTypeChip(discount.discount_type);
+      },
     },
     {
       key: 'value',
       label: 'Value',
-      render: (_, discount: Discount) => (
-        <Typography variant="body2" fontWeight="medium">
-          {formatValue(discount)}
-        </Typography>
-      ),
+      render: (_, row) => {
+        const discount = row as unknown as Discount;
+        return (
+          <Typography variant="body2" fontWeight="medium">
+            {formatValue(discount)}
+          </Typography>
+        );
+      },
     },
     {
       key: 'application_type',
       label: 'Application',
-      render: (_, discount: Discount) => (
-        <Box display="flex" alignItems="center" gap={1}>
-          {getApplicationIcon(discount.application_type)}
-          <Typography variant="body2">
-            {discount.application_type_display}
-          </Typography>
-        </Box>
-      ),
+      render: (_, row) => {
+        const discount = row as unknown as Discount;
+        return (
+          <Box display="flex" alignItems="center" gap={1}>
+            {getApplicationIcon(discount.application_type)}
+            <Typography variant="body2">
+              {discount.application_type_display}
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       key: 'valid_period',
       label: 'Valid Period',
-      render: (_, discount: Discount) => (
-        <Box>
-          <Typography variant="body2">
-            {new Date(discount.valid_from).toLocaleDateString()}
-          </Typography>
-          {discount.valid_until && (
-            <Typography variant="caption" color="text.secondary">
-              to {new Date(discount.valid_until).toLocaleDateString()}
+      render: (_, row) => {
+        const discount = row as unknown as Discount;
+        return (
+          <Box>
+            <Typography variant="body2">
+              {new Date(discount.valid_from).toLocaleDateString()}
             </Typography>
-          )}
-        </Box>
-      ),
+            {discount.valid_until && (
+              <Typography variant="caption" color="text.secondary">
+                to {new Date(discount.valid_until).toLocaleDateString()}
+              </Typography>
+            )}
+          </Box>
+        );
+      },
     },
     {
       key: 'usage',
       label: 'Usage',
-      render: (_, discount: Discount) => getUsageProgress(discount),
+      render: (_, row) => {
+        const discount = row as unknown as Discount;
+        return getUsageProgress(discount);
+      },
     },
     {
       key: 'status',
       label: 'Status',
-      render: (_, discount: Discount) => getStatusChip(discount.is_valid_now, discount.is_active),
+      render: (_, row) => {
+        const discount = row as unknown as Discount;
+        return getStatusChip(discount.is_valid_now, discount.is_active);
+      },
     },
   ];
 
@@ -231,10 +252,10 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={discounts}
-      actions={actions}
-      onRowClick={onEdit}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={discounts as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as Discount)}
       sortBy="name"
       sortOrder="asc"
     />

@@ -39,8 +39,8 @@ export const TableWidget: React.FC<TableWidgetProps> = ({ data }) => {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <ModernTable
-        columns={columns}
-        data={tableData}
+        columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+        data={tableData as unknown as Record<string, unknown>[]}
       />
     </Box>
   );
