@@ -27,6 +27,7 @@ import {
   ArrowForward as ArrowForwardIcon,
   Launch as LaunchIcon,
 } from '@mui/icons-material';
+import { formatCurrency } from '../../utils/currency';
 
 export interface EntityReference {
   id: number;
@@ -475,7 +476,7 @@ export const createEventReference = (event: EventData): EntityReference => ({
   metadata: {
     client: event.client_name || 'Unknown Client',
     date: new Date(event.start_date).toLocaleDateString(),
-    value: event.total_price ? `$${parseFloat(String(event.total_price)).toLocaleString()}` : null,
+    value: event.total_price ? formatCurrency(event.total_price, 'PHP') : null,
   },
   badges: (event.total_amount_due && parseFloat(String(event.total_amount_due)) > 0) ? [{ label: 'Payment Due', color: 'warning' }] : [],
 });
@@ -488,7 +489,7 @@ export const createPaymentReference = (payment: PaymentData): EntityReference =>
   status: payment.status,
   statusColor: payment.status === 'COMPLETED' ? 'success' : payment.status === 'FAILED' ? 'error' : 'warning',
   metadata: {
-    amount: `$${parseFloat(payment.amount).toLocaleString()}`,
+    amount: formatCurrency(payment.amount, 'PHP'),
     due: new Date(payment.due_date).toLocaleDateString(),
     client: payment.event_details?.client_name,
   },

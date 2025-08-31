@@ -70,6 +70,8 @@ import {
   ModernPageHeader,
   createRefreshAction,
 } from '../../components/common/ModernDesignSystem';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
@@ -88,21 +90,12 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
   );
 };
 
-// Utility function moved to top to avoid initialization error
-const formatCurrency = (amount: string | number) => {
-  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num);
-};
 
 export const PaymentProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
+  const { settings: currencySettings } = useCurrencySettings();
   
   // State
   const [tabValue, setTabValue] = useState(0);
@@ -127,6 +120,17 @@ export const PaymentProfile: React.FC = () => {
     isSendingReceipt,
     refetchPayment,
   } = usePaymentManagement(paymentId);
+
+  // Currency formatting function that uses payment currency or system default
+  const formatPaymentAmount = (amount: string | number, currency?: string) => {
+    const paymentCurrency = currency || payment?.currency || currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, paymentCurrency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (paymentCurrency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (paymentCurrency === 'PHP' ? 0 : 2),
+    });
+  };
 
   // Menu close handler
   const handleMenuClose = useCallback(() => {
@@ -194,7 +198,7 @@ export const PaymentProfile: React.FC = () => {
         id: `payment-created-${payment.id}`,
         type: 'payment',
         title: 'Payment Created',
-        description: `Payment ${payment.payment_number} was created for ${formatCurrency(payment.amount)}`,
+        description: `Payment ${payment.payment_number} was created for ${formatPaymentAmount(payment.amount)}`,
         timestamp: payment.created_at,
         status: 'completed',
         user: { name: 'System' },
@@ -405,7 +409,7 @@ export const PaymentProfile: React.FC = () => {
         stats={[
           {
             label: 'Amount',
-            value: formatCurrency(payment.amount)
+            value: formatPaymentAmount(payment.amount)
           },
           {
             label: 'Due Date',
@@ -522,7 +526,7 @@ export const PaymentProfile: React.FC = () => {
                       fontWeight: 700,
                     }}
                   >
-                    {formatCurrency(payment.amount)}
+                    {formatPaymentAmount(payment.amount)}
                   </Typography>
                 </Box>
                 
@@ -973,8 +977,8 @@ export const PaymentProfile: React.FC = () => {
                   Payment Plan for {payment.event_details?.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  Total Amount: {formatCurrency(paymentPlan.total_amount)} • 
-                  Down Payment: {formatCurrency(paymentPlan.down_payment_amount)} • 
+                  Total Amount: {formatPaymentAmount(paymentPlan.total_amount)} • 
+                  Down Payment: {formatPaymentAmount(paymentPlan.down_payment_amount)} • 
                   {paymentPlan.number_of_installments} installments
                 </Typography>
 
@@ -1027,7 +1031,7 @@ export const PaymentProfile: React.FC = () => {
                             </TableCell>
                             <TableCell>
                               <Typography variant="body1" fontWeight="600">
-                                {formatCurrency(installment.amount)}
+                                {formatPaymentAmount(installment.amount)}
                               </Typography>
                             </TableCell>
                             <TableCell>
@@ -1132,11 +1136,11 @@ export const PaymentProfile: React.FC = () => {
                   <Stack spacing={2}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body1" fontWeight="medium">Subtotal:</Typography>
-                      <Typography variant="body1" fontWeight="600">{formatCurrency(invoice.subtotal)}</Typography>
+                      <Typography variant="body1" fontWeight="600">{formatPaymentAmount(invoice.subtotal)}</Typography>
                     </Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body1" fontWeight="medium">Tax:</Typography>
-                      <Typography variant="body1" fontWeight="600">{formatCurrency(invoice.tax_amount)}</Typography>
+                      <Typography variant="body1" fontWeight="600">{formatPaymentAmount(invoice.tax_amount)}</Typography>
                     </Box>
                     <Divider sx={{ borderColor: tokens.color.borders.glass }} />
                     <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -1162,7 +1166,7 @@ export const PaymentProfile: React.FC = () => {
                           fontWeight: 700,
                         }}
                       >
-                        {formatCurrency(invoice.total_amount)}
+                        {formatPaymentAmount(invoice.total_amount)}
                       </Typography>
                     </Box>
                   </Stack>
@@ -1212,9 +1216,9 @@ export const PaymentProfile: React.FC = () => {
                           >
                             <TableCell>{item.description}</TableCell>
                             <TableCell align="right">{item.quantity}</TableCell>
-                            <TableCell align="right">{formatCurrency(item.unit_price)}</TableCell>
+                            <TableCell align="right">{formatPaymentAmount(item.unit_price)}</TableCell>
                             <TableCell align="right">{parseFloat(item.tax_rate)}%</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 600 }}>{formatCurrency(item.total)}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>{formatPaymentAmount(item.total)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

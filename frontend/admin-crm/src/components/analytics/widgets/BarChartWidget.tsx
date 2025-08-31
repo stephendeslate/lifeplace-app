@@ -21,6 +21,8 @@ import type { Widget } from '../../../types/analytics.types';
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import { createTransition } from '../../../design-system/utils/animations';
+import { formatCurrency } from '../../../utils/currency';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 
 interface BarChartWidgetProps {
   widget: Widget;
@@ -47,6 +49,7 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
   horizontal = false,
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const { settings: currencySettings } = useCurrencySettings();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
@@ -120,10 +123,13 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
       case 'PERCENTAGE':
         return `${value.toFixed(1)}%`;
       case 'REVENUE':
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-        }).format(value);
+        const currency = currencySettings?.defaultCurrency || 'PHP';
+        return formatCurrency(value, currency, {
+          showSymbol: currencySettings?.displayFormat !== 'code',
+          showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+          minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+          maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+        });
       case 'COUNT':
         return value.toLocaleString();
       default:

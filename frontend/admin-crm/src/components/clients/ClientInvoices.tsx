@@ -34,6 +34,8 @@ import { useNavigate } from 'react-router-dom';
 import { useInvoicesForClient } from '../../hooks/usePayments';
 import type { Invoice } from '../../types/payments.types';
 import type { Client } from '../../types/clients.types';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface ClientInvoicesProps {
   client: Client;
@@ -43,6 +45,7 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const { settings: currencySettings } = useCurrencySettings();
 
   const { data: invoices = [], isLoading } = useInvoicesForClient(client.id);
 
@@ -72,12 +75,14 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
     navigate(`/payments/new?invoice=${invoice.id}`);
   };
 
-  const formatCurrency = (amount: string | number) => {
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(numAmount);
+  const formatInvoiceAmount = (amount: string | number, invoiceCurrency?: string) => {
+    const currency = invoiceCurrency || currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
   };
 
   const getStatusColor = (status: string): "default" | "primary" | "success" | "warning" | "error" => {
@@ -170,7 +175,7 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" fontWeight="medium">
-                    {formatCurrency(invoice.total_amount)}
+                    {formatInvoiceAmount(invoice.total_amount, invoice.currency)}
                   </Typography>
                 </TableCell>
                 <TableCell>

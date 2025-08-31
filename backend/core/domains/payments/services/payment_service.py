@@ -90,7 +90,7 @@ class PaymentService:
             EventTimeline.objects.create(
                 event=event,
                 action_type='PAYMENT_RECEIVED' if payment.status == 'COMPLETED' else 'SYSTEM_UPDATE',
-                description=f"Payment of ${amount} {payment.get_status_display().lower()}",
+                description=f"Payment of {payment.format_amount_with_currency()} {payment.get_status_display().lower()}",
                 actor=user,
                 is_public=True,
                 action_data={

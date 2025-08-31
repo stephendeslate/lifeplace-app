@@ -43,6 +43,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { usePayments } from '../../hooks/usePayments';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import { formatCurrency } from '../../utils/currency';
 import { PaymentForm } from '../../components/payments/PaymentForm';
 import type { Payment, PaymentFilters, CreatePaymentData, PaymentStatus } from '../../types/payments.types';
 import { PAYMENT_STATUSES } from '../../types/payments.types';
@@ -84,6 +86,9 @@ export const PaymentsOverview: React.FC = () => {
     page: page + 1, // API uses 1-based pagination
     page_size: rowsPerPage,
   });
+
+  // Get user's currency settings for proper formatting
+  const { settings: currencySettings } = useCurrencySettings();
 
   useEffect(() => {
     setBreadcrumbs([
@@ -195,12 +200,14 @@ export const PaymentsOverview: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: string) => {
-    const num = parseFloat(amount);
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(num);
+  // Format currency based on payment's currency and user's settings
+  const formatPaymentAmount = (payment: Payment) => {
+    return formatCurrency(payment.amount, payment.currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (payment.currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (payment.currency === 'PHP' ? 0 : 2),
+    });
   };
 
   // Modern empty state when no payments exist
@@ -589,7 +596,7 @@ export const PaymentsOverview: React.FC = () => {
                                 color: payment.status === 'COMPLETED' ? tokens.color.success[600] : tokens.color.neutral[800]
                               }}
                             >
-                              {payment.status === 'COMPLETED' ? 'Paid' : formatCurrency(payment.amount)}
+                              {payment.status === 'COMPLETED' ? 'Paid' : formatPaymentAmount(payment)}
                             </Typography>
                           </TableCell>
                           

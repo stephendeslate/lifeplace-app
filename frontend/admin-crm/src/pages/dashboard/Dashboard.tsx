@@ -40,6 +40,8 @@ import { useClients } from '../../hooks/useClients';
 import { usePayments } from '../../hooks/usePayments';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import { formatCurrency } from '../../utils/currency';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
@@ -74,6 +76,20 @@ export const Dashboard: React.FC = () => {
   const { useNotificationCounts, useRecentNotifications } = useNotifications();
   const { data: notificationCounts } = useNotificationCounts();
   const { data: recentNotifications = [] } = useRecentNotifications(5);
+
+  // Get user's currency settings for proper formatting
+  const { settings: currencySettings } = useCurrencySettings();
+
+  // Format revenue based on user's currency settings
+  const formatRevenue = (amount: string | number) => {
+    const currency = currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
+  };
 
   // Set breadcrumbs for dashboard and trigger loading animation
   useEffect(() => {
@@ -277,7 +293,7 @@ export const Dashboard: React.FC = () => {
             >
               <MetricCard
                 title="Total Revenue"
-                value={`$${parseFloat(totalRevenue).toLocaleString()}`}
+                value={formatRevenue(totalRevenue)}
                 description="Last 30 days"
                 color="success"
                 icon={<AttachMoney />}

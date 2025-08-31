@@ -41,7 +41,7 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Business as BusinessIcon,
-  AttachMoney as MoneyIcon,
+  LocalAtm as CashIcon,
   TrendingUp as TrendingUpIcon,
   Message as MessageIcon,
   Description as ContractIcon,
@@ -57,6 +57,8 @@ import { useEvents } from '../../hooks/useEvents';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuestionnaires } from '../../hooks/useQuestionnaires';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import { formatCurrency } from '../../utils/currency';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
@@ -119,6 +121,20 @@ export const EventProfile: React.FC = () => {
   
   const { useClient } = useClients();
   const { useRecords } = useCommunications();
+  
+  // Get user's currency settings for proper formatting
+  const { settings: currencySettings } = useCurrencySettings();
+  
+  // Format event price based on user's currency settings
+  const formatEventPrice = (price: string | number) => {
+    const currency = currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(price, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
+  };
   
   const eventId = parseInt(id || '0');
   const { data: event, isLoading, error, refetch } = useEvent(eventId);
@@ -994,7 +1010,7 @@ export const EventProfile: React.FC = () => {
                               background: `${tokens.color.success[500]}20`,
                             }}
                           >
-                            <MoneyIcon sx={{ fontSize: 16, color: tokens.color.success[700] }} />
+                            <CashIcon sx={{ fontSize: 16, color: tokens.color.success[700] }} />
                           </Box>
                           <Typography 
                             variant="h6" 
@@ -1003,7 +1019,7 @@ export const EventProfile: React.FC = () => {
                               fontWeight: 700
                             }}
                           >
-                            ${parseFloat(event.total_price).toLocaleString()}
+                            {formatEventPrice(event.total_price)}
                           </Typography>
                         </Box>
                       </Box>

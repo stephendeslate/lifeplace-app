@@ -510,7 +510,7 @@ export const MetricDefinitionForm: React.FC<MetricDefinitionFormProps> = ({
                       onChange={handleInputChange('display_format')}
                     >
                       <MenuItem value="number">Number (1,234)</MenuItem>
-                      <MenuItem value="currency">Currency ($1,234.56)</MenuItem>
+                      <MenuItem value="currency">Currency (₱1,234)</MenuItem>
                       <MenuItem value="percentage">Percentage (12.34%)</MenuItem>
                       <MenuItem value="duration">Duration (1h 23m)</MenuItem>
                       <MenuItem value="bytes">File Size (1.2 MB)</MenuItem>

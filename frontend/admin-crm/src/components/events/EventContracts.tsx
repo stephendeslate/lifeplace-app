@@ -47,6 +47,8 @@ import { useNavigate } from 'react-router-dom';
 import { useContractsForEvent, useContractTemplates, useCreateEventContract } from '../../hooks/useContracts';
 import type { Event } from '../../types/events.types';
 import type { EventContract } from '../../types/contracts.types';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface EventContractsProps {
   event: Event;
@@ -81,6 +83,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [templateId, setTemplateId] = useState<string>('');
   const [validUntil, setValidUntil] = useState<string>('');
+  const { settings: currencySettings } = useCurrencySettings();
 
   const { data: contracts = [], isLoading } = useContractsForEvent(event.id);
   const { data: templates = [] } = useContractTemplates({ 
@@ -145,12 +148,14 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
     handleMenuClose();
   };
 
-  const formatCurrency = (amount: string | number) => {
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(numAmount);
+  const formatContractAmount = (amount: string | number, contractCurrency?: string) => {
+    const currency = contractCurrency || currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
   };
 
   if (isLoading) {
@@ -238,7 +243,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                 </TableCell>
                 <TableCell>
                   {contract.contract_value
-                    ? formatCurrency(contract.contract_value)
+                    ? formatContractAmount(contract.contract_value, contract.currency)
                     : '-'}
                 </TableCell>
                 <TableCell>
@@ -398,10 +403,11 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                   Total Value
                 </Typography>
                 <Typography variant="h6">
-                  {formatCurrency(
+                  {formatContractAmount(
                     contracts
                       .filter((c) => c.contract_value)
-                      .reduce((sum, c) => sum + parseFloat(c.contract_value || '0'), 0)
+                      .reduce((sum, c) => sum + parseFloat(c.contract_value || '0'), 0),
+                    contracts.find(c => c.contract_value)?.currency
                   )}
                 </Typography>
               </Box>

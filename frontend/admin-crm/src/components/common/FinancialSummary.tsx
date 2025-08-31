@@ -21,6 +21,7 @@ import {
   Payment as PaymentIcon,
   AccountBalance as BalanceIcon,
 } from '@mui/icons-material';
+import { formatCurrency } from '../../utils/currency';
 
 export interface FinancialMetric {
   label: string;
@@ -54,13 +55,13 @@ export interface FinancialSummaryProps {
   compactMode?: boolean;
 }
 
-const formatCurrency = (amount: number, currency = 'PHP') => {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+const formatFinancialAmount = (amount: number, currency = 'PHP') => {
+  return formatCurrency(amount, currency, {
+    showSymbol: true,
+    showCode: false,
+    minimumFractionDigits: currency === 'PHP' ? 0 : 2,
+    maximumFractionDigits: currency === 'PHP' ? 0 : 2,
+  });
 };
 
 const getStatusColor = (status?: string): 'success' | 'error' | 'warning' | 'info' | 'default' => {
@@ -78,7 +79,7 @@ const MetricCard: React.FC<{
   compactMode?: boolean;
   currency?: string;
 }> = ({ metric, currency = 'PHP' }) => {
-  const displayValue = metric.formatted || formatCurrency(metric.value, metric.currency || currency);
+  const displayValue = metric.formatted || formatFinancialAmount(metric.value, metric.currency || currency);
   
   return (
     <Card variant="outlined" sx={{ height: '100%' }}>
@@ -150,7 +151,7 @@ const PaymentBreakdownCard: React.FC<{
               Total Amount
             </Typography>
             <Typography variant="h4" fontWeight="bold" color="primary">
-              {formatCurrency(breakdown.total, breakdown.currency || currency)}
+              {formatFinancialAmount(breakdown.total, breakdown.currency || currency)}
             </Typography>
           </Box>
 
@@ -210,7 +211,7 @@ const PaymentBreakdownCard: React.FC<{
                 </Typography>
               </Box>
               <Typography variant="body2" fontWeight="medium" color="success.main">
-                {formatCurrency(breakdown.paid, breakdown.currency || currency)}
+                {formatFinancialAmount(breakdown.paid, breakdown.currency || currency)}
               </Typography>
             </Box>
 
@@ -222,7 +223,7 @@ const PaymentBreakdownCard: React.FC<{
                 </Typography>
               </Box>
               <Typography variant="body2" fontWeight="medium" color="warning.main">
-                {formatCurrency(breakdown.pending, breakdown.currency || currency)}
+                {formatFinancialAmount(breakdown.pending, breakdown.currency || currency)}
               </Typography>
             </Box>
 
@@ -235,7 +236,7 @@ const PaymentBreakdownCard: React.FC<{
                   </Typography>
                 </Box>
                 <Typography variant="body2" fontWeight="medium" color="error.main">
-                  {formatCurrency(breakdown.overdue, breakdown.currency || currency)}
+                  {formatFinancialAmount(breakdown.overdue, breakdown.currency || currency)}
                 </Typography>
               </Box>
             )}
@@ -245,7 +246,7 @@ const PaymentBreakdownCard: React.FC<{
           {breakdown.overdue > 0 && (
             <Alert severity="warning" sx={{ mt: 1 }}>
               <Typography variant="body2">
-                {formatCurrency(breakdown.overdue, breakdown.currency || currency)} is overdue and requires immediate attention.
+                {formatFinancialAmount(breakdown.overdue, breakdown.currency || currency)} is overdue and requires immediate attention.
               </Typography>
             </Alert>
           )}

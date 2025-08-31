@@ -26,6 +26,8 @@ import {
 import { useEventTypes } from '../../hooks/useEvents';
 import { useCreateContractTemplate, useUpdateContractTemplate } from '../../hooks/useContracts';
 import { sanitizeHTML } from '../../utils/security';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 import type { 
   ContractTemplate, 
   CreateContractTemplateData, 
@@ -228,6 +230,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
 
   const [newVariable, setNewVariable] = useState('');
   const [previewData, setPreviewData] = useState<string | null>(null);
+  const { settings: currencySettings } = useCurrencySettings();
 
   // Get active event types
   const { useActiveEventTypes } = useEventTypes();
@@ -309,8 +312,8 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
       event_start_time: '6:00 PM',
       event_end_time: '11:00 PM',
       event_venue: 'Grand Ballroom Hotel',
-      contract_value: '$15,000.00',
-      contract_currency: 'USD',
+      contract_value: formatCurrency(15000, currencySettings?.defaultCurrency || 'PHP'),
+      contract_currency: currencySettings?.defaultCurrency || 'PHP',
       payment_schedule: '50% deposit, balance due 7 days before event'
     };
 
