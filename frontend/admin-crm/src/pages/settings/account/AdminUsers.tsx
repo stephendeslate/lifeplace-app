@@ -514,9 +514,9 @@ export const AdminUsers: React.FC = () => {
               }}
             >
               <ModernTable
-                columns={getAdminUsersColumns()}
-                data={filteredAdminUsers}
-                actions={getAdminUsersActions()}
+                columns={getAdminUsersColumns() as unknown as ModernTableColumn<Record<string, unknown>>[]}
+                data={filteredAdminUsers as unknown as Record<string, unknown>[]}
+                actions={getAdminUsersActions() as unknown as ModernTableAction<Record<string, unknown>>[]}
                 loading={isLoadingAdminUsers}
                 emptyState={
                   <ModernEmptyState
@@ -544,9 +544,9 @@ export const AdminUsers: React.FC = () => {
               }}
             >
               <ModernTable
-                columns={getInvitationsColumns()}
-                data={filteredInvitations}
-                actions={getInvitationsActions()}
+                columns={getInvitationsColumns() as unknown as ModernTableColumn<Record<string, unknown>>[]}
+                data={filteredInvitations as unknown as Record<string, unknown>[]}
+                actions={getInvitationsActions() as unknown as ModernTableAction<Record<string, unknown>>[]}
                 loading={false}
                 emptyState={
                   <ModernEmptyState

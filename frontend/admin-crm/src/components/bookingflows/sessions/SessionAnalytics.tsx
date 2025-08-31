@@ -178,7 +178,8 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
         // Use the latest analytics data for step completion info
         const latestAnalytics = analyticsData[analyticsData.length - 1];
         if (latestAnalytics.step_completion_data && latestAnalytics.step_completion_data[step.id.toString()]) {
-          completionRate = latestAnalytics.step_completion_data[step.id.toString()].completion_rate || 0;
+          const stepData = latestAnalytics.step_completion_data[step.id.toString()];
+          completionRate = typeof stepData === 'number' ? stepData : (stepData as { completion_rate?: number })?.completion_rate || 0;
         }
         
         if (latestAnalytics.step_drop_off_data && latestAnalytics.step_drop_off_data[step.id.toString()]) {

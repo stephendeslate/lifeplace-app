@@ -196,7 +196,7 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
     // Use the updateConfiguration method from the hook
     updateConfiguration({
       stepId: step.id,
-      data: formData, // Send the entire form data as the configuration update
+      data: formData as unknown as Record<string, unknown>, // Send the entire form data as the configuration update
     }, {
       onSuccess: () => {
         onUpdate?.();
@@ -224,11 +224,11 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
       </Alert>
 
       {/* Show configuration update errors */}
-      {updateConfigurationError && (
+      {updateConfigurationError ? (
         <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to update configuration: {updateConfigurationError.message}
+          Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : String(updateConfigurationError)}
         </Alert>
-      )}
+      ) : null}
 
       <Stack spacing={3}>
         {/* Package Availability */}

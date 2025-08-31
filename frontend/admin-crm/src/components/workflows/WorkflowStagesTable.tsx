@@ -33,7 +33,7 @@ import {
   Notifications as NotificationIcon,
   Handyman as ManualIcon,
 } from '@mui/icons-material';
-import type { WorkflowStageTableProps } from '../../types/workflows.types';
+import type { WorkflowStage, WorkflowStageTableProps } from '../../types/workflows.types';
 
 export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
   stages,
@@ -58,14 +58,14 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
 
   const handleEdit = () => {
     if (selectedStage) {
-      onEdit(selectedStage);
+      onEdit(selectedStage as unknown as WorkflowStage);
     }
     handleMenuClose();
   };
 
   const handleDelete = () => {
     if (selectedStage) {
-      onDelete(selectedStage.id);
+      onDelete((selectedStage as any).id);
     }
     handleMenuClose();
   };
@@ -272,7 +272,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
                     <TableCell align="right">
                       <IconButton
                         size="small"
-                        onClick={(e) => handleMenuOpen(e, stage)}
+                        onClick={(e) => handleMenuOpen(e, stage as unknown as Record<string, unknown>)}
                         disabled={isDeleting}
                       >
                         {isDeleting && selectedStage?.id === stage.id ? (

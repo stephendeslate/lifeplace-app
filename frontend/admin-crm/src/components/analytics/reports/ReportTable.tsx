@@ -85,7 +85,9 @@ export const ReportTable: React.FC<ReportTableProps> = ({
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (_, report: AnalyticsReport) => (
+      render: (_, row) => {
+        const report = row as unknown as AnalyticsReport;
+        return (
         <Box>
           <Typography variant="subtitle2" fontWeight="medium">
             {report.name}
@@ -94,75 +96,94 @@ export const ReportTable: React.FC<ReportTableProps> = ({
             {report.description || 'No description'}
           </Typography>
         </Box>
-      ),
+        );
+      },
     },
     {
       key: 'type',
       label: 'Type',
-      render: (_, report: AnalyticsReport) => (
+      render: (_, row) => {
+        const report = row as unknown as AnalyticsReport;
+        return (
         <Chip
           label={report.report_type.replace('_', ' ')}
           size="small"
           color={getReportTypeColor(report.report_type) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
           variant="outlined"
         />
-      ),
+        );
+      },
     },
     {
       key: 'schedule',
       label: 'Schedule',
-      render: (_, report: AnalyticsReport) => (
+      render: (_, row) => {
+        const report = row as unknown as AnalyticsReport;
+        return (
         <Box display="flex" alignItems="center" gap={1}>
           <ScheduleIcon fontSize="small" color="action" />
           <Typography variant="body2">
             {getScheduleText(report)}
           </Typography>
         </Box>
-      ),
+        );
+      },
     },
     {
       key: 'format',
       label: 'Format',
-      render: (_, report: AnalyticsReport) => (
+      render: (_, row) => {
+        const report = row as unknown as AnalyticsReport;
+        return (
         <Chip
           label={report.output_format}
           size="small"
           variant="outlined"
         />
-      ),
+        );
+      },
     },
     {
       key: 'metrics',
       label: 'Metrics',
-      render: (_, report: AnalyticsReport) => (
+      render: (_, row) => {
+        const report = row as unknown as AnalyticsReport;
+        return (
         <Typography variant="body2">
           {report.metrics_count || 0} metric{(report.metrics_count || 0) !== 1 ? 's' : ''}
         </Typography>
-      ),
+        );
+      },
     },
     {
       key: 'last_generated',
       label: 'Last Generated',
-      render: (_, report: AnalyticsReport) => (
+      render: (_, row) => {
+        const report = row as unknown as AnalyticsReport;
+        return (
         <Typography variant="body2" color="text.secondary">
           {report.last_generated 
             ? new Date(report.last_generated).toLocaleDateString()
             : 'Never'
           }
         </Typography>
-      ),
+        );
+      },
     },
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, report: AnalyticsReport) => (
+      render: (_, row) => {
+        const report = row as unknown as AnalyticsReport;
+        return (
         <Chip
           label={report.is_active ? 'Active' : 'Inactive'}
           size="small"
           color={report.is_active ? 'success' : 'default'}
           variant={report.is_active ? 'filled' : 'outlined'}
         />
-      ),
+        );
+      },
     },
   ];
 
@@ -170,28 +191,28 @@ export const ReportTable: React.FC<ReportTableProps> = ({
     {
       label: 'View',
       icon: <ViewIcon fontSize="small" />,
-      onClick: onView,
+      onClick: (row) => onView(row as unknown as AnalyticsReport),
     },
     {
       label: 'Execute Now',
       icon: <ExecuteIcon fontSize="small" />,
-      onClick: onExecute,
+      onClick: (row) => onExecute(row as unknown as AnalyticsReport),
     },
     {
       label: 'Edit',
       icon: <EditIcon fontSize="small" />,
-      onClick: onEdit,
+      onClick: (row) => onEdit(row as unknown as AnalyticsReport),
     },
     {
       label: 'Delete',
       icon: <DeleteIcon fontSize="small" />,
-      onClick: onDelete,
+      onClick: (row) => onDelete((row as { id: number }).id),
       color: 'error' as const,
     },
   ];
 
   if (isLoading) {
-    return <ModernLoadingStates.table />;
+    return <ModernLoadingStates.ModernTableSkeleton />;
   }
 
   if (reports.length === 0) {
@@ -208,9 +229,9 @@ export const ReportTable: React.FC<ReportTableProps> = ({
   return (
     <ModernTable
       columns={columns}
-      data={reports}
+      data={reports as unknown as Record<string, unknown>[]}
       actions={actions}
-      onRowClick={onView}
+      onRowClick={(row) => onView(row as unknown as AnalyticsReport)}
       sortBy="name"
       sortOrder="asc"
     />

@@ -15,7 +15,7 @@ import {
   Divider,
   InputAdornment,
 } from '@mui/material';
-import { ModernDialog, createStandardActions } from '../common';
+import { ModernDialog, createDialogActions } from '../common';
 import { useProductCategories } from '../../hooks/useProducts';
 import type { 
   ProductCategory, 
@@ -173,7 +173,7 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
     }
   };
 
-  const actions = createStandardActions(
+  const actions = createDialogActions(
     handleClose,
     handleSubmit,
     {

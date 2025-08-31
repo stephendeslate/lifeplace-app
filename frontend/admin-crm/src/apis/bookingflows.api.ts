@@ -1,7 +1,6 @@
 // frontend/admin-crm/src/apis/bookingflows.api.ts
 
 import api from '../utils/api';
-import { isAxiosError } from 'axios';
 import type {
   BookingFlow,
   BookingFlowDetail,
@@ -181,8 +180,8 @@ export const bookingFlowsApi = {
     try {
       const response = await api.get<StepConfiguration>(`/bookingflow/steps/${stepId}/configuration/`);
       return response.data;
-    } catch (error: unknown) {
-      if (isAxiosError(error) && error.response?.status === 404) {
+    } catch (error) {
+      if ((error as { response?: { status?: number } }).response?.status === 404) {
         return null;
       }
       throw error;

@@ -327,12 +327,12 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
   const handleVariableInsert = (variable: string) => {
     // For rich text editor, we'll use the global function if available
     if ((window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable) {
-      (window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable(variable);
+      (window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable?.(variable);
     }
 
     // Add to variables array if not already present
     if (!(formData.variables ?? []).includes(variable)) {
-      handleInputChange('variables', [...(formData.variables ?? []), variable]);
+      handleInputChange('variables', [...(formData.variables ?? []), variable] as any);
     }
   };
 
@@ -346,13 +346,13 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
 
   const handleAddVariable = () => {
     if (newVariable.trim() && !(formData.variables ?? []).includes(newVariable.trim())) {
-      handleInputChange('variables', [...(formData.variables ?? []), newVariable.trim()]);
+      handleInputChange('variables', [...(formData.variables ?? []), newVariable.trim()] as any);
       setNewVariable('');
     }
   };
 
   const handleRemoveVariable = (variable: string) => {
-    handleInputChange('variables', (formData.variables ?? []).filter(v => v !== variable));
+    handleInputChange('variables', (formData.variables ?? []).filter(v => v !== variable) as any);
   };
 
   return (
@@ -556,7 +556,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                     <Select
                       multiple
                       value={formData.signature_requirements}
-                      onChange={(e) => handleInputChange('signature_requirements', e.target.value)}
+                      onChange={(e) => handleInputChange('signature_requirements', e.target.value as any)}
                       label="Required Signature Roles"
                       renderValue={(selected) => (
                         <Box display="flex" flexWrap="wrap" gap={0.5}>

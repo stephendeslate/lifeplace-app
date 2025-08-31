@@ -178,7 +178,7 @@ export const ModernTable = <T extends Record<string, unknown>>({
           <TableBody>
             {data.map((row, index) => (
               <TableRow 
-                key={row.id || index}
+                key={(row as { id?: string | number }).id || index}
                 sx={{
                   cursor: onRowClick ? 'pointer' : 'default',
                   background: index % 2 === 0 
@@ -204,7 +204,7 @@ export const ModernTable = <T extends Record<string, unknown>>({
                   >
                     {column.render 
                       ? column.render(row[column.key], row, index)
-                      : row[column.key]
+                      : String(row[column.key] || '')
                     }
                   </TableCell>
                 ))}

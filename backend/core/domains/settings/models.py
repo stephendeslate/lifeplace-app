@@ -1,0 +1,259 @@
+# backend/core/domains/settings/models.py
+
+from django.db import models
+from core.utils.models import BaseModel
+from core.utils.encryption import EncryptedJSONField
+from decimal import Decimal
+import json
+
+
+class AppSettings(BaseModel):
+    """
+    Centralized application settings
+    Following the pattern established by PaymentGateway and other domain models
+    """
+    SETTING_CATEGORIES = [
+        ('CURRENCY', 'Currency Settings'),
+        ('PAYMENT', 'Payment Settings'),
+        ('NOTIFICATION', 'Notification Settings'),
+        ('SYSTEM', 'System Settings'),
+        ('ANALYTICS', 'Analytics Settings'),
+    ]
+
+    category = models.CharField(max_length=50, choices=SETTING_CATEGORIES)
+    key = models.CharField(max_length=100)
+    value = models.JSONField()
+    description = models.TextField(blank=True)
+    is_encrypted = models.BooleanField(default=False)
+    encrypted_value = EncryptedJSONField(default=dict, blank=True)
+    
+    # User/organization level settings (for multi-tenant future)
+    user = models.ForeignKey(
+        'users.User', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        help_text="Leave null for system-wide settings"
+    )
+    
+    class Meta:
+        unique_together = ['category', 'key', 'user']
+        ordering = ['category', 'key']
+        indexes = [
+            models.Index(fields=['category', 'key']),
+            models.Index(fields=['user', 'category']),
+        ]
+
+    def __str__(self):
+        scope = f"User {self.user.id}" if self.user else "System"
+        return f"{scope} - {self.category}: {self.key}"
+
+    def get_value(self):
+        """Get the actual value, handling encryption if needed"""
+        if self.is_encrypted and self.encrypted_value:
+            return self.encrypted_value
+        return self.value
+
+    def set_value(self, value, encrypt=False):
+        """Set value with optional encryption"""
+        if encrypt:
+            self.encrypted_value = value
+            self.value = {}
+            self.is_encrypted = True
+        else:
+            self.value = value
+            self.encrypted_value = {}
+            self.is_encrypted = False
+
+    @classmethod
+    def get_setting(cls, category, key, default=None, user=None):
+        """Get a specific setting value"""
+        try:
+            setting = cls.objects.get(category=category, key=key, user=user)
+            return setting.get_value()
+        except cls.DoesNotExist:
+            return default
+
+    @classmethod
+    def set_setting(cls, category, key, value, description='', encrypt=False, user=None):
+        """Set a specific setting value"""
+        setting, created = cls.objects.get_or_create(
+            category=category,
+            key=key,
+            user=user,
+            defaults={
+                'description': description,
+            }
+        )
+        setting.set_value(value, encrypt)
+        if description and not created:
+            setting.description = description
+        setting.save()
+        return setting
+
+    @classmethod
+    def get_category_settings(cls, category, user=None):
+        """Get all settings for a category as a dict"""
+        settings = cls.objects.filter(category=category, user=user)
+        return {setting.key: setting.get_value() for setting in settings}
+
+
+class CurrencySettings(BaseModel):
+    """
+    Currency-specific settings model
+    Specialized model for currency configuration following the domain pattern
+    """
+    SUPPORTED_CURRENCIES = [
+        ('PHP', 'Philippine Peso'),
+        ('USD', 'US Dollar'),
+        ('EUR', 'Euro'),
+        ('SGD', 'Singapore Dollar'),
+        ('HKD', 'Hong Kong Dollar'),
+    ]
+
+    DISPLAY_FORMATS = [
+        ('symbol', 'Symbol Only (₱)'),
+        ('code', 'Code Only (PHP)'),
+        ('both', 'Symbol and Code (₱ PHP)'),
+    ]
+
+    SEPARATORS = [
+        (',', 'Comma (,)'),
+        ('.', 'Period (.)'),
+        (' ', 'Space ( )'),
+    ]
+
+    # Primary currency configuration
+    default_currency = models.CharField(
+        max_length=3,
+        choices=SUPPORTED_CURRENCIES,
+        default='PHP',
+        help_text="Default currency for the application"
+    )
+    
+    enabled_currencies = models.JSONField(
+        default=list,
+        help_text="List of enabled currency codes"
+    )
+    
+    # Display settings
+    display_format = models.CharField(
+        max_length=10,
+        choices=DISPLAY_FORMATS,
+        default='symbol',
+        help_text="How to display currency values"
+    )
+    
+    decimal_places = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of decimal places to show (0 for PHP business context)"
+    )
+    
+    thousands_separator = models.CharField(
+        max_length=1,
+        choices=SEPARATORS,
+        default=',',
+        help_text="Thousands separator character"
+    )
+    
+    decimal_separator = models.CharField(
+        max_length=1,
+        choices=[('.', 'Period (.)'), (',', 'Comma (,)')],
+        default='.',
+        help_text="Decimal separator character"
+    )
+    
+    # Behavior settings
+    auto_format = models.BooleanField(
+        default=True,
+        help_text="Automatically format currency inputs"
+    )
+    
+    compact_format = models.BooleanField(
+        default=False,
+        help_text="Use compact format for large amounts (1K, 1M)"
+    )
+    
+    # Organization level (for future multi-tenant support)
+    user = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        help_text="Leave null for system-wide settings"
+    )
+
+    class Meta:
+        # Only one currency setting per user (or system-wide if user is null)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user'],
+                condition=models.Q(user__isnull=False),
+                name='unique_currency_settings_per_user'
+            ),
+            models.UniqueConstraint(
+                fields=['id'],
+                condition=models.Q(user__isnull=True),
+                name='unique_system_currency_settings'
+            )
+        ]
+        verbose_name = "Currency Settings"
+        verbose_name_plural = "Currency Settings"
+
+    def __str__(self):
+        scope = f"User {self.user.id}" if self.user else "System"
+        return f"{scope} Currency Settings - Default: {self.default_currency}"
+
+    def clean(self):
+        """Validate the currency settings"""
+        super().clean()
+        
+        # Ensure default currency is in enabled currencies
+        if self.enabled_currencies and self.default_currency not in self.enabled_currencies:
+            self.enabled_currencies.append(self.default_currency)
+        
+        # Set default enabled currencies if empty
+        if not self.enabled_currencies:
+            self.enabled_currencies = [self.default_currency]
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_system_settings(cls):
+        """Get system-wide currency settings"""
+        try:
+            return cls.objects.get(user__isnull=True)
+        except cls.DoesNotExist:
+            # Create default system settings
+            return cls.objects.create(
+                default_currency='PHP',
+                enabled_currencies=['PHP'],
+                display_format='symbol',
+                decimal_places=0,
+            )
+
+    @classmethod
+    def get_user_settings(cls, user):
+        """Get user-specific currency settings, fallback to system"""
+        try:
+            return cls.objects.get(user=user)
+        except cls.DoesNotExist:
+            return cls.get_system_settings()
+
+    def to_dict(self):
+        """Convert to dictionary for API responses"""
+        return {
+            'id': self.id,
+            'default_currency': self.default_currency,
+            'enabled_currencies': self.enabled_currencies,
+            'display_format': self.display_format,
+            'decimal_places': self.decimal_places,
+            'thousands_separator': self.thousands_separator,
+            'decimal_separator': self.decimal_separator,
+            'auto_format': self.auto_format,
+            'compact_format': self.compact_format,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }

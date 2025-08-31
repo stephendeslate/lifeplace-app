@@ -60,7 +60,9 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (_, questionnaire: Questionnaire) => (
+      render: (_, row) => {
+        const questionnaire = row as unknown as Questionnaire;
+        return (
         <Box display="flex" alignItems="center" gap={1}>
           <QuestionnaireIcon color="primary" />
           <Box>
@@ -72,45 +74,60 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
             </Typography>
           </Box>
         </Box>
-      ),
+        );
+      },
     },
     {
       key: 'event_type',
       label: 'Event Type',
-      render: (_, questionnaire: Questionnaire) => getEventTypeChip(questionnaire.event_type_name),
+      render: (_, row) => {
+        const questionnaire = row as unknown as Questionnaire;
+        return getEventTypeChip(questionnaire.event_type_name);
+      },
     },
     {
       key: 'fields',
       label: 'Fields',
       align: 'center',
-      render: (_, questionnaire: Questionnaire) => (
+      render: (_, row) => {
+        const questionnaire = row as unknown as Questionnaire;
+        return (
         <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
           <FieldsIcon fontSize="small" color="action" />
           <Typography variant="body2" fontWeight="medium">
             {questionnaire.fields_count || 0}
           </Typography>
         </Box>
-      ),
+        );
+      },
     },
     {
       key: 'sort_order',
       label: 'Order',
       align: 'center',
-      render: (_, questionnaire: Questionnaire) => (
+      render: (_, row) => {
+        const questionnaire = row as unknown as Questionnaire;
+        return (
         <Typography variant="body2" color="text.secondary">
           {questionnaire.order || 0}
         </Typography>
-      ),
+        );
+      },
     },
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, questionnaire: Questionnaire) => getStatusChip(questionnaire.is_active),
+      render: (_, row) => {
+        const questionnaire = row as unknown as Questionnaire;
+        return getStatusChip(questionnaire.is_active);
+      },
     },
     {
       key: 'updated_at',
       label: 'Last Updated',
-      render: (_, questionnaire: Questionnaire) => (
+      render: (_, row) => {
+        const questionnaire = row as unknown as Questionnaire;
+        return (
         <Box>
           <Typography variant="body2" color="text.secondary">
             {new Date(questionnaire.updated_at).toLocaleDateString()}
@@ -119,7 +136,8 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
             {new Date(questionnaire.updated_at).toLocaleTimeString()}
           </Typography>
         </Box>
-      ),
+        );
+      },
     },
   ];
 
@@ -128,22 +146,22 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
     ...(onPreview ? [{
       label: 'Preview',
       icon: <ViewIcon fontSize="small" />,
-      onClick: onPreview,
+      onClick: (row: Record<string, unknown>) => onPreview && onPreview(row as unknown as Questionnaire),
     }] : []),
     {
       label: 'Edit',
       icon: <EditIcon fontSize="small" />,
-      onClick: onEdit,
+      onClick: (row: Record<string, unknown>) => onEdit(row as unknown as Questionnaire),
     },
     ...(onDuplicate ? [{
       label: 'Duplicate',
       icon: <DuplicateIcon fontSize="small" />,
-      onClick: onDuplicate,
+      onClick: (row: Record<string, unknown>) => onDuplicate && onDuplicate(row as unknown as Questionnaire),
     }] : []),
     {
       label: 'Delete',
       icon: <DeleteIcon fontSize="small" />,
-      onClick: onDelete,
+      onClick: (row) => onDelete((row as { id: number }).id),
       color: 'error' as const,
     },
   ];
@@ -170,10 +188,10 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={questionnaires}
-      actions={actions}
-      onRowClick={onEdit}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={questionnaires as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as Questionnaire)}
       sortBy="sort_order"
       sortOrder="asc"
     />

@@ -10,7 +10,7 @@ import {
 } from '@mui/icons-material';
 import type { ProductCategory } from '../../types/products.types';
 import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
-import type { ModernTableColumn } from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common';
 import { tokens } from '../../design-system/tokens';
 
 interface CategoriesTableProps {
@@ -99,7 +99,9 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
       key: 'name',
       label: 'Category Name',
       sortable: true,
-      render: (_, category: HierarchicalCategory) => (
+      render: (_, row) => {
+        const category = row as unknown as HierarchicalCategory;
+        return (
         <Box display="flex" alignItems="center" sx={{ ml: category.level * 2 }}>
           {category.children && category.children.length > 0 ? (
             <IconButton
@@ -127,70 +129,86 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
             )}
           </Box>
         </Box>
-      ),
+        );
+      },
     },
     {
       key: 'full_path',
       label: 'Path',
-      render: (_, category: ProductCategory) => (
-        <Typography 
-          variant="body2" 
-          color="text.secondary"
-          sx={{
-            fontFamily: 'monospace',
-            background: tokens.color.neutral[100],
-            px: 1,
-            py: 0.5,
-            borderRadius: tokens.spacing.radius.sm,
-            fontSize: '0.75rem',
-            display: 'inline-block',
-          }}
-        >
-          {category.full_path}
-        </Typography>
-      ),
+      render: (_, row) => {
+        const category = row as unknown as ProductCategory;
+        return (
+          <Typography 
+            variant="body2" 
+            color="text.secondary"
+            sx={{
+              fontFamily: 'monospace',
+              background: tokens.color.neutral[100],
+              px: 1,
+              py: 0.5,
+              borderRadius: tokens.spacing.radius.sm,
+              fontSize: '0.75rem',
+              display: 'inline-block',
+            }}
+          >
+            {category.full_path}
+          </Typography>
+        );
+      },
     },
     {
       key: 'requires_venue',
       label: 'Venue Required',
-      render: (_, category: ProductCategory) => (
-        <Chip
-          label={category.requires_venue ? 'Yes' : 'No'}
-          size="small"
-          color={category.requires_venue ? 'warning' : 'default'}
-          variant="outlined"
-        />
-      ),
+      render: (_, row) => {
+        const category = row as unknown as ProductCategory;
+        return (
+          <Chip
+            label={category.requires_venue ? 'Yes' : 'No'}
+            size="small"
+            color={category.requires_venue ? 'warning' : 'default'}
+            variant="outlined"
+          />
+        );
+      },
     },
     {
       key: 'typical_duration_hours',
       label: 'Duration',
-      render: (_, category: ProductCategory) => (
-        category.typical_duration_hours ? (
-          <Typography variant="body2">
-            {category.typical_duration_hours}h
-          </Typography>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            —
-          </Typography>
-        )
-      ),
+      render: (_, row) => {
+        const category = row as unknown as ProductCategory;
+        return (
+          category.typical_duration_hours ? (
+            <Typography variant="body2">
+              {category.typical_duration_hours}h
+            </Typography>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              —
+            </Typography>
+          )
+        );
+      },
     },
     {
       key: 'sort_order',
       label: 'Order',
       align: 'center',
-      render: (_, category: ProductCategory) => (
-        <Typography variant="body2" color="text.secondary">
-          {category.sort_order}
-        </Typography>
-      ),
+      render: (_, row) => {
+        const category = row as unknown as ProductCategory;
+        return (
+          <Typography variant="body2" color="text.secondary">
+            {category.sort_order}
+          </Typography>
+        );
+      },
     },
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, category: ProductCategory) => getStatusChip(category.is_active),
+      render: (_, row) => {
+        const category = row as unknown as ProductCategory;
+        return getStatusChip(category.is_active);
+      },
     },
   ];
 
@@ -220,10 +238,10 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={hierarchicalCategories}
-      actions={actions}
-      onRowClick={onEdit}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={hierarchicalCategories as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as ProductCategory)}
       sortBy="sort_order"
       sortOrder="asc"
     />

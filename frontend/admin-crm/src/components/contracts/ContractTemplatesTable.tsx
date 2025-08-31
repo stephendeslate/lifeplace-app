@@ -213,9 +213,9 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
 
   return (
     <ModernTable
-      columns={getTableColumns()}
-      data={templates}
-      actions={getTableActions()}
+      columns={getTableColumns() as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={templates as unknown as Record<string, unknown>[]}
+      actions={getTableActions() as unknown as ModernTableAction<Record<string, unknown>>[]}
       loading={isLoading}
       emptyState={emptyState}
     />

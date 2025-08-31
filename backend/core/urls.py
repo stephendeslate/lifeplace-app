@@ -22,6 +22,7 @@ urlpatterns = [
     path('api/notes/', include('core.domains.notes.urls')),
     path('api/notifications/', include('core.domains.notifications.urls')),
     path('api/analytics/', include('core.domains.analytics.urls')),
+    path('api/settings/', include('core.domains.settings.urls')),
     # Client-specific endpoint routing for frontend compatibility
     path('api/client/', include('core.domains.events.client_urls')),
 ]

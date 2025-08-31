@@ -8,7 +8,7 @@ import type { PaymentGateway } from '../../types/payments.types';
 import ModernLoadingStates from '../common/ModernLoadingStates';
 import { ModernEmptyState } from '../common/ModernEmptyState';
 import ModernTable, { createStandardActions } from '../common/ModernTable';
-import type { ModernTableColumn } from '../common/ModernTable';
+import type { ModernTableColumn, ModernTableAction } from '../common/ModernTable';
 import { tokens } from '../../design-system/tokens';
 
 interface PaymentGatewayTableProps {
@@ -30,19 +30,24 @@ export const PaymentGatewayTable: React.FC<PaymentGatewayTableProps> = ({
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (_, gateway: PaymentGateway) => (
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
         <Box display="flex" alignItems="center" gap={1}>
           <PaymentIcon color="primary" fontSize="small" />
           <Typography variant="body2" fontWeight="medium">
             {gateway.name}
           </Typography>
         </Box>
-      ),
+        );
+      },
     },
     {
       key: 'code',
       label: 'Code',
-      render: (_, gateway: PaymentGateway) => (
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
         <Typography 
           variant="body2" 
           fontFamily="monospace"
@@ -56,39 +61,49 @@ export const PaymentGatewayTable: React.FC<PaymentGatewayTableProps> = ({
         >
           {gateway.code}
         </Typography>
-      ),
+        );
+      },
     },
     {
       key: 'is_active',
       label: 'Status',
-      render: (_, gateway: PaymentGateway) => (
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
         <Chip
           label={gateway.is_active ? 'Active' : 'Inactive'}
           color={gateway.is_active ? 'success' : 'default'}
           size="small"
           variant={gateway.is_active ? 'filled' : 'outlined'}
         />
-      ),
+        );
+      },
     },
     {
       key: 'description',
       label: 'Description',
-      render: (_, gateway: PaymentGateway) => (
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
         <Typography variant="body2" color="text.secondary">
           {gateway.description || 'No description'}
         </Typography>
-      ),
+        );
+      },
     },
     {
       key: 'created_at',
       label: 'Created',
-      render: (_, gateway: PaymentGateway) => (
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
         <Tooltip title={new Date(gateway.created_at).toLocaleString()}>
           <Typography variant="body2" color="text.secondary">
             {formatDistanceToNow(new Date(gateway.created_at), { addSuffix: true })}
           </Typography>
         </Tooltip>
-      ),
+        );
+      },
     },
   ];
 
@@ -118,10 +133,10 @@ export const PaymentGatewayTable: React.FC<PaymentGatewayTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={gateways}
-      actions={actions}
-      onRowClick={onEdit}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={gateways as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as PaymentGateway)}
       sortBy="name"
       sortOrder="asc"
     />

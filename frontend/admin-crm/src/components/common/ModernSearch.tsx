@@ -99,7 +99,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
             >
               <MenuItem value="">All {filter.label}</MenuItem>
               {filter.options?.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+                <MenuItem key={String(option.value)} value={option.value as string | number}>
                   {option.label}
                 </MenuItem>
               ))}
@@ -122,7 +122,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
                   {(selected as unknown[]).slice(0, 2).map((val) => {
                     const option = filter.options?.find(opt => opt.value === val);
                     return (
-                      <Chip key={val} label={option?.label || val} size="small" />
+                      <Chip key={String(val)} label={option?.label || String(val)} size="small" />
                     );
                   })}
                   {(selected as unknown[]).length > 2 && (
@@ -138,7 +138,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
               }}
             >
               {filter.options?.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+                <MenuItem key={String(option.value)} value={option.value as string | number}>
                   {option.label}
                 </MenuItem>
               ))}

@@ -593,10 +593,6 @@ export const createModernTheme = (mode: 'light' | 'dark' = 'light') => {
         default: tokens.color.neutral[950],
         paper: tokens.color.neutral[900],
       },
-      surface: {
-        main: tokens.color.neutral[800],
-        dark: tokens.color.neutral[900],
-      },
       text: {
         primary: tokens.color.neutral[50],
         secondary: tokens.color.neutral[300],

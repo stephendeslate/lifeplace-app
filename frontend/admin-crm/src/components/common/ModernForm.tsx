@@ -140,7 +140,7 @@ export const ModernForm: React.FC<ModernFormProps> = ({
               disabled={field.disabled}
             >
               {field.options?.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+                <MenuItem key={String(option.value)} value={option.value as string | number}>
                   {option.label}
                 </MenuItem>
               ))}
@@ -172,14 +172,14 @@ export const ModernForm: React.FC<ModernFormProps> = ({
                   {(selected as unknown[]).map((value) => {
                     const option = field.options?.find(opt => opt.value === value);
                     return (
-                      <Chip key={value} label={option?.label || value} size="small" />
+                      <Chip key={String(value)} label={option?.label || String(value)} size="small" />
                     );
                   })}
                 </Box>
               )}
             >
               {field.options?.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+                <MenuItem key={String(option.value)} value={option.value as string | number}>
                   {option.label}
                 </MenuItem>
               ))}
@@ -202,7 +202,7 @@ export const ModernForm: React.FC<ModernFormProps> = ({
             <FormControlLabel
               control={
                 <Switch
-                  checked={values[field.name] || false}
+                  checked={!!values[field.name]}
                   onChange={(e) => onChange(field.name, e.target.checked)}
                   disabled={field.disabled}
                 />
@@ -228,7 +228,7 @@ export const ModernForm: React.FC<ModernFormProps> = ({
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={values[field.name] || false}
+                  checked={!!values[field.name]}
                   onChange={(e) => onChange(field.name, e.target.checked)}
                   disabled={field.disabled}
                 />
@@ -260,7 +260,7 @@ export const ModernForm: React.FC<ModernFormProps> = ({
             >
               {field.options?.map((option) => (
                 <FormControlLabel
-                  key={option.value}
+                  key={String(option.value)}
                   value={option.value}
                   control={<Radio disabled={field.disabled} />}
                   label={option.label}

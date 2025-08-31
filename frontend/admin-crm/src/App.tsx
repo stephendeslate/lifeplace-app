@@ -38,6 +38,7 @@ import { Notifications } from './pages/settings/account/Notifications';
 import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
+import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
 import { PaymentsOverview, PaymentProfile } from './pages/payments';
 import { FunnelAnalytics } from './pages/analytics/funnels/FunnelAnalytics';
@@ -445,6 +446,14 @@ const AppRouter: React.FC = () => {
         element={
           <SettingsRoute>
             <ProductsPackages />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/commerce/currency-taxes"
+        element={
+          <SettingsRoute>
+            <CurrencyTaxes />
           </SettingsRoute>
         }
       />

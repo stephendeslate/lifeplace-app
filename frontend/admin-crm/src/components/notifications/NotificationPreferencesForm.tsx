@@ -133,11 +133,11 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
     if (field === 'start') {
       setQuietHoursStart(value);
       const timeString = value ? `${value.getHours().toString().padStart(2, '0')}:${value.getMinutes().toString().padStart(2, '0')}` : null;
-      handleFieldChange('quiet_hours_start', timeString);
+      handleFieldChange('quiet_hours_start', timeString || '');
     } else {
       setQuietHoursEnd(value);
       const timeString = value ? `${value.getHours().toString().padStart(2, '0')}:${value.getMinutes().toString().padStart(2, '0')}` : null;
-      handleFieldChange('quiet_hours_end', timeString);
+      handleFieldChange('quiet_hours_end', timeString || '');
     }
   };
 
@@ -151,7 +151,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
       newDisabled = currentDisabled.filter(id => id !== typeId);
     }
 
-    handleFieldChange('disabled_types', newDisabled);
+    handleFieldChange('disabled_types', newDisabled as any);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

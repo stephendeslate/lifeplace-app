@@ -10,7 +10,7 @@ import {
   Alert,
   Stack,
 } from '@mui/material';
-import { ModernDialog, createStandardActions } from '../common';
+import { ModernDialog, createDialogActions } from '../common';
 import { Percent as PercentIcon } from '@mui/icons-material';
 import { useCreateTaxRate, useUpdateTaxRate } from '../../hooks/usePayments';
 import type { TaxRate, TaxRateFormData } from '../../types/payments.types';
@@ -131,7 +131,7 @@ export const TaxRateFormDialog: React.FC<TaxRateFormDialogProps> = ({
     return '';
   };
 
-  const actions = createStandardActions(
+  const actions = createDialogActions(
     onClose,
     handleSubmit,
     {

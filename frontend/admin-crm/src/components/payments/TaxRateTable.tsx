@@ -6,7 +6,7 @@ import { Percent as TaxIcon, Star as StarIcon } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaxRate } from '../../types/payments.types';
 import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
-import type { ModernTableColumn } from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common';
 import { tokens } from '../../design-system/tokens';
 
 interface TaxRateTableProps {
@@ -33,78 +33,93 @@ export const TaxRateTable: React.FC<TaxRateTableProps> = ({
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (_, taxRate: TaxRate) => (
-        <Box display="flex" alignItems="center" gap={1}>
-          <TaxIcon color="primary" fontSize="small" />
-          <Typography variant="body2" fontWeight="medium">
-            {taxRate.name}
-          </Typography>
-          {taxRate.is_default && (
-            <Tooltip title="Default tax rate">
-              <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-            </Tooltip>
-          )}
-        </Box>
-      ),
+      render: (_, row) => {
+        const taxRate = row as unknown as TaxRate;
+        return (
+          <Box display="flex" alignItems="center" gap={1}>
+            <TaxIcon color="primary" fontSize="small" />
+            <Typography variant="body2" fontWeight="medium">
+              {taxRate.name}
+            </Typography>
+            {taxRate.is_default && (
+              <Tooltip title="Default tax rate">
+                <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+              </Tooltip>
+            )}
+          </Box>
+        );
+      },
     },
     {
       key: 'rate',
       label: 'Rate',
-      render: (_, taxRate: TaxRate) => (
-        <Typography 
-          variant="body2" 
-          fontWeight="medium"
-          sx={{
-            background: `linear-gradient(135deg, ${tokens.color.success[50]} 0%, ${tokens.color.success[100]} 100%)`,
-            px: 1,
-            py: 0.5,
-            borderRadius: tokens.spacing.radius.sm,
-            fontSize: '0.875rem',
-            display: 'inline-block',
-          }}
-        >
-          {formatTaxRate(taxRate.rate)}
-        </Typography>
-      ),
+      render: (_, row) => {
+        const taxRate = row as unknown as TaxRate;
+        return (
+          <Typography 
+            variant="body2" 
+            fontWeight="medium"
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.success[50]} 0%, ${tokens.color.success[100]} 100%)`,
+              px: 1,
+              py: 0.5,
+              borderRadius: tokens.spacing.radius.sm,
+              fontSize: '0.875rem',
+              display: 'inline-block',
+            }}
+          >
+            {formatTaxRate(taxRate.rate)}
+          </Typography>
+        );
+      },
     },
     {
       key: 'region',
       label: 'Region',
-      render: (_, taxRate: TaxRate) => (
-        <Typography variant="body2" color="text.secondary">
-          {taxRate.region || 'Global'}
-        </Typography>
-      ),
+      render: (_, row) => {
+        const taxRate = row as unknown as TaxRate;
+        return (
+          <Typography variant="body2" color="text.secondary">
+            {taxRate.region || 'Global'}
+          </Typography>
+        );
+      },
     },
     {
       key: 'is_default',
       label: 'Default',
-      render: (_, taxRate: TaxRate) => (
-        taxRate.is_default ? (
-          <Chip
-            label="Default"
-            color="warning"
-            size="small"
-            icon={<StarIcon />}
-            variant="filled"
-          />
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            —
-          </Typography>
-        )
-      ),
+      render: (_, row) => {
+        const taxRate = row as unknown as TaxRate;
+        return (
+          taxRate.is_default ? (
+            <Chip
+              label="Default"
+              color="warning"
+              size="small"
+              icon={<StarIcon />}
+              variant="filled"
+            />
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              —
+            </Typography>
+          )
+        );
+      },
     },
     {
       key: 'created_at',
       label: 'Created',
-      render: (_, taxRate: TaxRate) => (
-        <Tooltip title={new Date(taxRate.created_at).toLocaleString()}>
-          <Typography variant="body2" color="text.secondary">
-            {formatDistanceToNow(new Date(taxRate.created_at), { addSuffix: true })}
-          </Typography>
-        </Tooltip>
-      ),
+      render: (_, row) => {
+        const taxRate = row as unknown as TaxRate;
+        return (
+          <Tooltip title={new Date(taxRate.created_at).toLocaleString()}>
+            <Typography variant="body2" color="text.secondary">
+              {formatDistanceToNow(new Date(taxRate.created_at), { addSuffix: true })}
+            </Typography>
+          </Tooltip>
+        );
+      },
     },
   ];
 
@@ -134,10 +149,10 @@ export const TaxRateTable: React.FC<TaxRateTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={taxRates}
-      actions={actions}
-      onRowClick={onEdit}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={taxRates as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as TaxRate)}
       sortBy="name"
       sortOrder="asc"
     />

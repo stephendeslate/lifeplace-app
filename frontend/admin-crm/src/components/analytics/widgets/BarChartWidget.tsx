@@ -178,7 +178,7 @@ export const BarChartWidget: React.FC<BarChartWidgetProps> = ({
               variant="body2"
               sx={{ color: entry.color }}
             >
-              {entry.name}: {formatTooltipValue(entry.value)}
+              {(entry as { name?: string }).name || entry.dataKey}: {formatTooltipValue(entry.value)}
             </Typography>
           ))}
         </Box>

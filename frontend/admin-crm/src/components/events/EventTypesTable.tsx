@@ -16,6 +16,7 @@ import {
 } from '@mui/icons-material';
 import type { EventTypeTableProps, EventType } from '../../types/events.types';
 import { ModernTable, ModernEmptyState, type ModernTableColumn, type ModernTableAction } from '../common';
+import { tokens } from '../../design-system';
 
 export const EventTypesTable: React.FC<EventTypeTableProps> = ({
   eventTypes,
@@ -147,10 +148,10 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns}
-      data={eventTypes}
-      actions={actions}
-      onRowClick={(eventType) => onEdit(eventType)}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={eventTypes as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as EventType)}
       loading={isLoading}
       emptyState={emptyState}
     />

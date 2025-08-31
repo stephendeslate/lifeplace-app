@@ -32,7 +32,7 @@ import { NoAlertRulesEmptyState } from '../../components/common/EmptyState';
 import { AlertRuleForm } from '../../components/analytics/alerts/AlertRuleForm';
 import { AlertRuleTable } from '../../components/analytics/alerts/AlertRuleTable';
 import { AlertTester } from '../../components/analytics/alerts/AlertTester';
-import { NotificationSettings } from '../../components/analytics/alerts/NotificationSettings';
+import { NotificationSettings, type NotificationSettingsData } from '../../components/analytics/alerts/NotificationSettings';
 import type { AlertRule, AlertRuleFilters, CreateAlertRuleData, UpdateAlertRuleData } from '../../types/analytics.types';
 
 export const AlertsManagement: React.FC = () => {
@@ -110,7 +110,7 @@ export const AlertsManagement: React.FC = () => {
     if (editingRule) {
       updateRule({ id: editingRule.id, data });
     } else {
-      createRule(data);
+      createRule(data as CreateAlertRuleData);
     }
     handleCloseCreateDialog();
   };
@@ -249,14 +249,14 @@ export const AlertsManagement: React.FC = () => {
         onTest={handleTestRule}
         isLoading={isTestingRule}
         testResult={testResult}
-        error={testError}
+        error={testError ? String(testError) : undefined}
       />
 
       {/* Notification Settings Dialog */}
       <NotificationSettings
         open={showNotificationSettings}
         onClose={() => setShowNotificationSettings(false)}
-        onSave={handleSaveNotificationSettings}
+        onSave={(settings: NotificationSettingsData) => handleSaveNotificationSettings(settings as unknown as Record<string, unknown>)}
         isLoading={false}
         initialData={{}}
       />

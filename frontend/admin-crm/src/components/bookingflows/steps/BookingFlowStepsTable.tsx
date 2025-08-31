@@ -3,7 +3,6 @@
 import React from 'react';
 import {
   Chip,
-  IconButton,
   Typography,
   Box,
   Tooltip,
@@ -47,7 +46,7 @@ export const BookingFlowStepsTable: React.FC<BookingFlowStepsTableProps> = ({
   flowId,
   onEdit,
   onConfigure,
-  onReorder,
+  // onReorder is intentionally not destructured as it's handled in the column definition
 }) => {
   const {
     useFlowSteps,
@@ -178,13 +177,7 @@ export const BookingFlowStepsTable: React.FC<BookingFlowStepsTableProps> = ({
   const columns: ModernTableColumn<BookingFlowStep>[] = [
     {
       key: 'drag',
-      label: onReorder ? (
-        <Tooltip title="Reorder steps">
-          <IconButton size="small" onClick={onReorder}>
-            <DragIcon />
-          </IconButton>
-        </Tooltip>
-      ) : '',
+      label: '',
       width: '30px',
       render: () => <DragIcon color="action" fontSize="small" />,
     },
@@ -416,9 +409,9 @@ export const BookingFlowStepsTable: React.FC<BookingFlowStepsTableProps> = ({
       )}
 
       <ModernTable
-        columns={allColumns}
-        data={sortedSteps}
-        actions={actions}
+        columns={allColumns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+        data={sortedSteps as unknown as Record<string, unknown>[]}
+        actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
         loading={isLoading}
         emptyState={emptyState}
       />
