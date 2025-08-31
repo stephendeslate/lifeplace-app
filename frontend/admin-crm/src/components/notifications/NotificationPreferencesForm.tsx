@@ -121,7 +121,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
     }
   }, [preferences]);
 
-  const handleFieldChange = (field: keyof UpdateNotificationPreferenceData, value: boolean | string) => {
+  const handleFieldChange = (field: keyof UpdateNotificationPreferenceData, value: boolean | string | number[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -151,7 +151,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
       newDisabled = currentDisabled.filter(id => id !== typeId);
     }
 
-    handleFieldChange('disabled_types', newDisabled as any);
+    handleFieldChange('disabled_types', newDisabled);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

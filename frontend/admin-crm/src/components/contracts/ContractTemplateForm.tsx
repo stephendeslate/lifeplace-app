@@ -259,7 +259,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
     }
   }, [template]);
 
-  const handleInputChange = (field: keyof CreateContractTemplateData, value: string | boolean | number | null) => {
+  const handleInputChange = (field: keyof CreateContractTemplateData, value: string | boolean | number | null | string[] | unknown[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -332,7 +332,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
 
     // Add to variables array if not already present
     if (!(formData.variables ?? []).includes(variable)) {
-      handleInputChange('variables', [...(formData.variables ?? []), variable] as any);
+      handleInputChange('variables', [...(formData.variables ?? []), variable]);
     }
   };
 
@@ -346,13 +346,13 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
 
   const handleAddVariable = () => {
     if (newVariable.trim() && !(formData.variables ?? []).includes(newVariable.trim())) {
-      handleInputChange('variables', [...(formData.variables ?? []), newVariable.trim()] as any);
+      handleInputChange('variables', [...(formData.variables ?? []), newVariable.trim()]);
       setNewVariable('');
     }
   };
 
   const handleRemoveVariable = (variable: string) => {
-    handleInputChange('variables', (formData.variables ?? []).filter(v => v !== variable) as any);
+    handleInputChange('variables', (formData.variables ?? []).filter(v => v !== variable));
   };
 
   return (
@@ -556,7 +556,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                     <Select
                       multiple
                       value={formData.signature_requirements}
-                      onChange={(e) => handleInputChange('signature_requirements', e.target.value as any)}
+                      onChange={(e) => handleInputChange('signature_requirements', e.target.value)}
                       label="Required Signature Roles"
                       renderValue={(selected) => (
                         <Box display="flex" flexWrap="wrap" gap={0.5}>

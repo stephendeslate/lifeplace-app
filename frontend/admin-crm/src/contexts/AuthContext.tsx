@@ -72,17 +72,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: unknown) {
       console.error('Login error:', error);
       
+      // Type guard for API error with response structure
+      interface ApiError {
+        response?: {
+          data?: { detail?: string };
+          status?: number;
+        };
+        message?: string;
+      }
+      
       // Extract meaningful error message from API response
-      const errorMessage = (error as any)?.response?.data?.detail || 
-                          (error as any)?.message || 
+      const apiError = error as ApiError;
+      const errorMessage = apiError?.response?.data?.detail || 
+                          apiError?.message || 
                           'Login failed. Please try again.';
       
       // Create a new error with the extracted message
       const enhancedError = new Error(errorMessage);
       
       // Preserve original error properties for debugging
-      if ((error as any)?.response?.status) {
-        (enhancedError as Error & { status?: number }).status = (error as any).response.status;
+      if (apiError?.response?.status) {
+        (enhancedError as Error & { status?: number }).status = apiError.response.status;
       }
       
       throw enhancedError;

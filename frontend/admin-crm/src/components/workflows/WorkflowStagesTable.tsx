@@ -65,7 +65,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
 
   const handleDelete = () => {
     if (selectedStage) {
-      onDelete((selectedStage as any).id);
+      onDelete((selectedStage as unknown as WorkflowStage).id);
     }
     handleMenuClose();
   };

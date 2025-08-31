@@ -134,8 +134,9 @@ export const WidgetEditor: React.FC = () => {
       const newData = { ...prev };
       if (field.includes('.')) {
         const [parent, child] = field.split('.');
-        (newData as any)[parent] = {
-          ...((newData as any)[parent] || {}),
+        const typedData = newData as Record<string, Record<string, unknown>>;
+        typedData[parent] = {
+          ...(typedData[parent] || {}),
           [child]: value,
         };
       } else {

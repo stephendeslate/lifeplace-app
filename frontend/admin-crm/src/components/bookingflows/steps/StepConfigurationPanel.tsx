@@ -69,7 +69,7 @@ interface StepConfigurationPanelProps {
 export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
   step,
   onUpdate,
-}) => {
+}): React.ReactElement => {
   const [activeTab, setActiveTab] = useState(0);
 
   const {
@@ -227,7 +227,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
       // Remove event_details case since it doesn't exist in the evolved types
       
       default:
-        return <GenericConfigForm step={step} config={currentConfig as any} />;
+        return <GenericConfigForm step={step} config={currentConfig as Record<string, unknown> | null} />;
     }
   };
 
@@ -257,7 +257,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             </IconButton>
           }
         >
-          Failed to load step configuration: {configError instanceof Error ? configError.message : 'Unknown error'}
+          Failed to load step configuration: {configError instanceof Error ? configError.message : String(configError)}
         </Alert>
       </ModernCard>
     );
@@ -275,7 +275,6 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
 
   return (
     <ModernCard variant="glass" size="large" color="primary">
-      {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box display="flex" alignItems="center" gap={1}>
           <ConfigIcon color="primary" />
@@ -311,14 +310,12 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         </Box>
       </Box>
 
-      {/* Show update errors */}
-      {updateConfigurationError && (
+      {updateConfigurationError ? (
         <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
+          Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : String(updateConfigurationError)}
         </Alert>
-      )}
+      ) : null}
 
-      {/* Tabs - Only show configuration tab for now since preview isn't implemented */}
       <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
         <Tab 
           icon={<ConfigIcon />} 
@@ -335,13 +332,12 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
 
       <Divider sx={{ mb: 2 }} />
 
-      {/* Tab Panels */}
       <TabPanel value={activeTab} index={0}>
-        {renderStepSpecificConfiguration() as React.ReactNode}
+        {renderStepSpecificConfiguration()}
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        {renderPreview() as React.ReactNode}
+        {renderPreview()}
       </TabPanel>
     </ModernCard>
   );
