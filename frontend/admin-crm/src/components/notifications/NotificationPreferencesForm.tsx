@@ -121,7 +121,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
     }
   }, [preferences]);
 
-  const handleFieldChange = (field: keyof UpdateNotificationPreferenceData, value: any) => {
+  const handleFieldChange = (field: keyof UpdateNotificationPreferenceData, value: boolean | string | number[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -133,11 +133,11 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
     if (field === 'start') {
       setQuietHoursStart(value);
       const timeString = value ? `${value.getHours().toString().padStart(2, '0')}:${value.getMinutes().toString().padStart(2, '0')}` : null;
-      handleFieldChange('quiet_hours_start', timeString);
+      handleFieldChange('quiet_hours_start', timeString || '');
     } else {
       setQuietHoursEnd(value);
       const timeString = value ? `${value.getHours().toString().padStart(2, '0')}:${value.getMinutes().toString().padStart(2, '0')}` : null;
-      handleFieldChange('quiet_hours_end', timeString);
+      handleFieldChange('quiet_hours_end', timeString || '');
     }
   };
 

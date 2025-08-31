@@ -1,227 +1,144 @@
 // frontend/admin-crm/src/components/payments/PaymentGatewayTable.tsx
 
-import React, { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Box,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-  CircularProgress,
-} from '@mui/material';
-import {
-  MoreVert as MoreVertIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-} from '@mui/icons-material';
+import React from 'react';
+import { Box, Typography, Chip, Tooltip } from '@mui/material';
+import { Payment as PaymentIcon } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
-import { useDeletePaymentGateway } from '../../hooks/usePayments';
 import type { PaymentGateway } from '../../types/payments.types';
+import ModernLoadingStates from '../common/ModernLoadingStates';
+import { ModernEmptyState } from '../common/ModernEmptyState';
+import ModernTable, { createStandardActions } from '../common/ModernTable';
+import type { ModernTableColumn, ModernTableAction } from '../common/ModernTable';
+import { tokens } from '../../design-system/tokens';
 
 interface PaymentGatewayTableProps {
   gateways: PaymentGateway[];
   isLoading: boolean;
   onEdit: (gateway: PaymentGateway) => void;
+  onDelete?: (id: number) => void;
+  isDeleting?: boolean;
 }
 
 export const PaymentGatewayTable: React.FC<PaymentGatewayTableProps> = ({
   gateways,
   isLoading,
   onEdit,
+  onDelete,
 }) => {
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [gatewayToDelete, setGatewayToDelete] = useState<PaymentGateway | null>(null);
+  const columns: ModernTableColumn[] = [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
+        <Box display="flex" alignItems="center" gap={1}>
+          <PaymentIcon color="primary" fontSize="small" />
+          <Typography variant="body2" fontWeight="medium">
+            {gateway.name}
+          </Typography>
+        </Box>
+        );
+      },
+    },
+    {
+      key: 'code',
+      label: 'Code',
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
+        <Typography 
+          variant="body2" 
+          fontFamily="monospace"
+          sx={{
+            background: tokens.color.neutral[100],
+            px: 1,
+            py: 0.5,
+            borderRadius: tokens.spacing.radius.sm,
+            fontSize: '0.75rem',
+          }}
+        >
+          {gateway.code}
+        </Typography>
+        );
+      },
+    },
+    {
+      key: 'is_active',
+      label: 'Status',
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
+        <Chip
+          label={gateway.is_active ? 'Active' : 'Inactive'}
+          color={gateway.is_active ? 'success' : 'default'}
+          size="small"
+          variant={gateway.is_active ? 'filled' : 'outlined'}
+        />
+        );
+      },
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
+        <Typography variant="body2" color="text.secondary">
+          {gateway.description || 'No description'}
+        </Typography>
+        );
+      },
+    },
+    {
+      key: 'created_at',
+      label: 'Created',
+      render: (_, row) => {
+        const gateway = row as unknown as PaymentGateway;
+        return (
+        <Tooltip title={new Date(gateway.created_at).toLocaleString()}>
+          <Typography variant="body2" color="text.secondary">
+            {formatDistanceToNow(new Date(gateway.created_at), { addSuffix: true })}
+          </Typography>
+        </Tooltip>
+        );
+      },
+    },
+  ];
 
-  const { mutate: deleteGateway, isPending: isDeleting } = useDeletePaymentGateway();
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, gateway: PaymentGateway) => {
-    event.stopPropagation();
-    setMenuAnchor(event.currentTarget);
-    setSelectedGateway(gateway);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
-    setSelectedGateway(null);
-  };
-
-  const handleEdit = () => {
-    if (selectedGateway) {
-      onEdit(selectedGateway);
-      handleMenuClose();
+  const actions = onDelete ? createStandardActions(
+    (gateway: PaymentGateway) => onEdit(gateway),
+    (gateway: PaymentGateway) => onDelete!(gateway.id),
+    {
+      editLabel: 'Edit Gateway',
+      deleteLabel: 'Delete Gateway',
     }
-  };
-
-  const handleDelete = () => {
-    if (selectedGateway) {
-      setGatewayToDelete(selectedGateway);
-      setDeleteDialogOpen(true);
-      handleMenuClose();
-    }
-  };
-
-  const handleDeleteConfirm = () => {
-    if (gatewayToDelete) {
-      deleteGateway(gatewayToDelete.id, {
-        onSuccess: () => {
-          setDeleteDialogOpen(false);
-          setGatewayToDelete(null);
-        },
-      });
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setGatewayToDelete(null);
-  };
+  ) : [];
 
   if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
-    );
+    return <ModernLoadingStates.ModernTableSkeleton />;
   }
 
   if (gateways.length === 0) {
     return (
-      <Paper elevation={1} sx={{ p: 4, textAlign: 'center' }}>
-        <Typography variant="body1" color="text.secondary">
-          No payment gateways configured yet.
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Add a payment gateway to start processing payments.
-        </Typography>
-      </Paper>
+      <ModernEmptyState
+        icon={PaymentIcon}
+        title="No payment gateways configured"
+        description="Add a payment gateway to start processing payments"
+        tip={{ text: "Start with Stripe for quick setup and add PayMongo for Philippine payments", type: "info" }}
+      />
     );
   }
 
   return (
-    <>
-      <TableContainer component={Paper} elevation={1}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>Name</strong></TableCell>
-              <TableCell><strong>Code</strong></TableCell>
-              <TableCell><strong>Status</strong></TableCell>
-              <TableCell><strong>Description</strong></TableCell>
-              <TableCell><strong>Created</strong></TableCell>
-              <TableCell align="right"><strong>Actions</strong></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {gateways.map((gateway) => (
-              <TableRow key={gateway.id} hover>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {gateway.name}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontFamily="monospace">
-                    {gateway.code}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={gateway.is_active ? 'Active' : 'Inactive'}
-                    color={gateway.is_active ? 'success' : 'default'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {gateway.description || 'No description'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Tooltip title={new Date(gateway.created_at).toLocaleString()}>
-                    <Typography variant="body2" color="text.secondary">
-                      {formatDistanceToNow(new Date(gateway.created_at), { addSuffix: true })}
-                    </Typography>
-                  </Tooltip>
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, gateway)}
-                  >
-                    <MoreVertIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleEdit}>
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Edit</ListItemText>
-        </MenuItem>
-        
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
-        </MenuItem>
-      </Menu>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleDeleteCancel}
-      >
-        <DialogTitle>Delete Payment Gateway</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete "{gatewayToDelete?.name}"? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
-            color="error" 
-            variant="contained"
-            disabled={isDeleting}
-          >
-            {isDeleting ? <CircularProgress size={20} /> : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+    <ModernTable
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={gateways as unknown as Record<string, unknown>[]}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      onRowClick={(row) => onEdit(row as unknown as PaymentGateway)}
+      sortBy="name"
+      sortOrder="asc"
+    />
   );
 };

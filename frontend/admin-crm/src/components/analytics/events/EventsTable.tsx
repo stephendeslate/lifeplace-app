@@ -1,4 +1,4 @@
-// frontend/admin-crm/src/components/analytics/events/EventsTable.tsx
+// Modern EventsTable component with ModernDesignSystem
 
 import React, { useState } from 'react';
 import {
@@ -15,7 +15,6 @@ import {
   Tooltip,
   Typography,
   Collapse,
-  Paper,
   Stack,
   Skeleton,
 } from '@mui/material';
@@ -28,6 +27,10 @@ import {
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import type { AnalyticsEvent } from '../../../types/analytics.types';
+import { ModernCard } from '../../common/ModernCard';
+import { ModernEmptyState } from '../../common/ModernEmptyState';
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
 interface EventsTableProps {
   events: AnalyticsEvent[];
@@ -104,12 +107,26 @@ const EventTableRow: React.FC<EventTableRowProps> = ({
 
   return (
     <>
-      <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }}>
+      <TableRow 
+        hover 
+        sx={{ 
+          '& > *': { borderBottom: 'unset' },
+          '&:hover': {
+            backgroundColor: `${tokens.color.primary[500]}08`,
+          }
+        }}
+      >
         <TableCell>
           <Box display="flex" alignItems="center" gap={1}>
             <IconButton
               size="small"
               onClick={() => setExpanded(!expanded)}
+              sx={{
+                color: tokens.color.primary[500],
+                '&:hover': {
+                  backgroundColor: `${tokens.color.primary[500]}15`,
+                }
+              }}
             >
               {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
@@ -128,8 +145,12 @@ const EventTableRow: React.FC<EventTableRowProps> = ({
           <Chip
             label={event.event_category.replace('_', ' ')}
             size="small"
-            color={getCategoryColor(event.event_category) as any}
+            color={getCategoryColor(event.event_category) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
             variant="outlined"
+            sx={{
+              borderRadius: tokens.spacing.radius.full,
+              fontWeight: 500,
+            }}
           />
         </TableCell>
         
@@ -179,8 +200,14 @@ const EventTableRow: React.FC<EventTableRowProps> = ({
           <Collapse in={expanded} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 2 }}>
               <Stack spacing={2}>
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
+                <ModernCard
+                  variant="glass"
+                  sx={{
+                    p: 2,
+                    border: `1px solid ${tokens.color.borders.glass}`,
+                  }}
+                >
+                  <Typography variant="subtitle2" gutterBottom fontWeight={600} color={tokens.color.neutral[700]}>
                     Source Details
                   </Typography>
                   <Stack direction="row" spacing={2} flexWrap="wrap">
@@ -197,24 +224,45 @@ const EventTableRow: React.FC<EventTableRowProps> = ({
                       IP: {event.ip_address || 'N/A'}
                     </Typography>
                   </Stack>
-                </Box>
+                </ModernCard>
                 
                 {Object.keys(event.event_data).length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" gutterBottom>
+                  <ModernCard
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      border: `1px solid ${tokens.color.borders.subtle}`,
+                      backgroundColor: `${tokens.color.neutral[50]}50`,
+                    }}
+                  >
+                    <Typography variant="subtitle2" gutterBottom fontWeight={600} color={tokens.color.neutral[700]}>
                       Event Data Preview
                     </Typography>
-                    <Paper variant="outlined" sx={{ p: 1, bgcolor: 'grey.50', maxHeight: 100, overflow: 'auto' }}>
+                    <Box sx={{ 
+                      p: 1.5, 
+                      borderRadius: tokens.spacing.radius.lg,
+                      backgroundColor: `${tokens.color.neutral[100]}80`,
+                      border: `1px solid ${tokens.color.borders.subtle}`,
+                      maxHeight: 100, 
+                      overflow: 'auto' 
+                    }}>
                       <Typography variant="body2" fontFamily="monospace" fontSize="0.75rem">
                         {getEventDataPreview()}
                       </Typography>
-                    </Paper>
-                  </Box>
+                    </Box>
+                  </ModernCard>
                 )}
                 
                 {event.user_agent && (
-                  <Box>
-                    <Typography variant="subtitle2" gutterBottom>
+                  <ModernCard
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      border: `1px solid ${tokens.color.borders.subtle}`,
+                      backgroundColor: `${tokens.color.neutral[50]}30`,
+                    }}
+                  >
+                    <Typography variant="subtitle2" gutterBottom fontWeight={600} color={tokens.color.neutral[700]}>
                       User Agent
                     </Typography>
                     <Typography 
@@ -227,7 +275,7 @@ const EventTableRow: React.FC<EventTableRowProps> = ({
                     >
                       {event.user_agent}
                     </Typography>
-                  </Box>
+                  </ModernCard>
                 )}
               </Stack>
             </Box>
@@ -281,7 +329,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(pageSize);
 
-  // @ts-ignore
+  // @ts-expect-error - Type compatibility issue requiring attention
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -306,7 +354,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   ];
 
   return (
-    <Box>
+    <ModernCard variant="glass" sx={{ overflow: 'hidden' }}>
       <TableContainer sx={{ maxHeight }}>
         <Table stickyHeader size="medium">
           <TableHead>
@@ -316,8 +364,11 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                   key={header}
                   align={header === 'Actions' ? 'right' : 'left'}
                   sx={{ 
-                    fontWeight: 'bold',
-                    backgroundColor: 'grey.50'
+                    fontWeight: 700,
+                    color: tokens.color.neutral[700],
+                    backgroundColor: `${tokens.color.neutral[50]}80`,
+                    borderBottom: `2px solid ${tokens.color.borders.subtle}`,
+                    fontSize: '0.875rem',
                   }}
                 >
                   {header}
@@ -334,16 +385,14 @@ export const EventsTable: React.FC<EventsTableProps> = ({
             ) : paginatedEvents.length === 0 ? (
               // Empty state
               <TableRow>
-                <TableCell colSpan={tableHeaders.length} align="center" sx={{ py: 4 }}>
-                  <Stack spacing={1} alignItems="center">
-                    <TimeIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
-                    <Typography variant="h6" color="text.secondary">
-                      No events found
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      No analytics events match your current filters
-                    </Typography>
-                  </Stack>
+                <TableCell colSpan={tableHeaders.length} align="center" sx={{ py: 6 }}>
+                  <ModernEmptyState
+                    icon={TimeIcon}
+                    title="No Events Found"
+                    description="No analytics events match your current filters. Try adjusting your search criteria."
+                    size="small"
+                    illustration="minimal"
+                  />
                 </TableCell>
               </TableRow>
             ) : (
@@ -361,18 +410,30 @@ export const EventsTable: React.FC<EventsTableProps> = ({
       </TableContainer>
 
       {showPagination && !isLoading && events.length > 0 && (
-        <TablePagination
-          rowsPerPageOptions={[10, 25, 50, 100]}
-          component="div"
-          count={events.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          showFirstButton
-          showLastButton
-        />
+        <Box
+          sx={{
+            ...glassPresets.light,
+            borderTop: `1px solid ${tokens.color.borders.glass}`,
+          }}
+        >
+          <TablePagination
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            component="div"
+            count={events.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            showFirstButton
+            showLastButton
+            sx={{
+              '& .MuiTablePagination-toolbar': {
+                backgroundColor: 'transparent',
+              }
+            }}
+          />
+        </Box>
       )}
-    </Box>
+    </ModernCard>
   );
 };

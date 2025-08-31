@@ -24,8 +24,8 @@ import {
 import {
   Add as AddIcon,
   Remove as RemoveIcon,
-  DragIndicator as DragIcon,
 } from '@mui/icons-material';
+import { DraggableList } from '../common/DraggableList';
 import { 
   type QuestionnaireFormDialogProps,
   type QuestionnaireFormData,
@@ -36,6 +36,8 @@ import {
   QUESTIONNAIRE_FIELD_TYPES,
 } from '../../types/questionnaires.types';
 import { useEventTypes } from '../../hooks/useEvents';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 const defaultFormData: QuestionnaireFormData = {
   name: '',
@@ -46,10 +48,11 @@ const defaultFormData: QuestionnaireFormData = {
 };
 
 const defaultFieldData: QuestionnaireFieldFormData = {
+  id: '',
   name: '',
   type: 'text',
   required: false,
-  order: '1',
+  order: 1,
   options: [],
 };
 
@@ -81,10 +84,11 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
           is_active: editingQuestionnaire.is_active ?? true,
           order: editingQuestionnaire.order?.toString() || '1',
           fields: editingQuestionnaire.fields?.map((field, index) => ({
+            id: field.id.toString(),
             name: field.name,
             type: field.type,
             required: field.required,
-            order: (field.order || index + 1).toString(),
+            order: field.order || index + 1,
             options: field.options || [],
           })) || [],
         });
@@ -124,7 +128,7 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
     }));
   };
 
-  const handleFieldChange = (index: number, field: keyof QuestionnaireFieldFormData, value: any) => {
+  const handleFieldChange = (index: number, field: keyof QuestionnaireFieldFormData, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       fields: prev.fields.map((f, i) => 
@@ -147,7 +151,8 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
       ...prev,
       fields: [...prev.fields, {
         ...defaultFieldData,
-        order: (prev.fields.length + 1).toString(),
+        id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        order: prev.fields.length + 1,
       }],
     }));
   };
@@ -257,6 +262,128 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
   const requiresOptions = (type: QuestionnaireFieldType) => 
     type === 'select' || type === 'multi-select';
 
+  const handleFieldReorder = (reorderedFields: QuestionnaireFieldFormData[]) => {
+    // Update the order property of each field
+    const fieldsWithUpdatedOrder = reorderedFields.map((field, index) => ({
+      ...field,
+      order: index + 1,
+    }));
+    
+    setFormData(prev => ({
+      ...prev,
+      fields: fieldsWithUpdatedOrder,
+    }));
+  };
+
+  const renderFieldItem = (field: QuestionnaireFieldFormData) => {
+    const fieldIndex = formData.fields.findIndex(f => f === field);
+    
+    return (
+      <Box>
+        <Stack spacing={2}>
+          <TextField
+            fullWidth
+            label="Field Name"
+            value={field.name}
+            onChange={(e) => handleFieldChange(fieldIndex, 'name', e.target.value)}
+            error={!!errors[`field_${fieldIndex}_name`]}
+            helperText={errors[`field_${fieldIndex}_name`]}
+            required
+            size="small"
+          />
+
+          <Box display="flex" gap={2}>
+            <FormControl sx={{ flex: 1 }} size="small">
+              <InputLabel>Field Type</InputLabel>
+              <Select
+                value={field.type}
+                onChange={(e) => handleFieldChange(fieldIndex, 'type', e.target.value)}
+                label="Field Type"
+              >
+                {QUESTIONNAIRE_FIELD_TYPES.map((type) => (
+                  <MenuItem key={type.value} value={type.value}>
+                    {type.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={field.required}
+                    onChange={(e) => handleFieldChange(fieldIndex, 'required', e.target.checked)}
+                  />
+                }
+                label="Required"
+              />
+            </Box>
+
+            <IconButton 
+              size="small" 
+              color="error"
+              onClick={() => handleRemoveField(fieldIndex)}
+              sx={{ alignSelf: 'center' }}
+            >
+              <RemoveIcon />
+            </IconButton>
+          </Box>
+
+          {requiresOptions(field.type) && (
+            <Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="subtitle2">
+                  Options
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleAddOption(fieldIndex)}
+                >
+                  Add Option
+                </Button>
+              </Box>
+
+              {field.options.length === 0 ? (
+                <Alert severity="warning" sx={{ mb: 1 }}>
+                  At least one option is required for select fields.
+                </Alert>
+              ) : (
+                <Stack spacing={1}>
+                  {field.options.map((option, optionIndex) => (
+                    <Box key={optionIndex} display="flex" gap={1}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        placeholder={`Option ${optionIndex + 1}`}
+                        value={option}
+                        onChange={(e) => handleOptionChange(fieldIndex, optionIndex, e.target.value)}
+                      />
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleRemoveOption(fieldIndex, optionIndex)}
+                      >
+                        <RemoveIcon />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+
+              {errors[`field_${fieldIndex}_options`] && (
+                <Typography variant="caption" color="error">
+                  {errors[`field_${fieldIndex}_options`]}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Stack>
+      </Box>
+    );
+  };
+
   return (
     <Dialog 
       open={open} 
@@ -264,23 +391,66 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: '80vh' }
+        sx: { 
+          minHeight: '80vh',
+          ...glassPresets.light,
+          borderRadius: tokens.spacing.radius.xxl,
+          border: `1px solid ${tokens.color.borders.glass}`,
+          background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+          boxShadow: `0 25px 80px ${tokens.color.neutral[900]}20`,
+        }
       }}
     >
       {open && (
         <>
-          <DialogTitle>
+          <DialogTitle 
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[500]} 100%)`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent',
+              fontWeight: 700,
+              fontSize: '1.5rem',
+              textAlign: 'center',
+              pb: 1,
+            }}
+          >
             {editingQuestionnaire ? 'Edit Questionnaire' : 'Create New Questionnaire'}
           </DialogTitle>
       
           <DialogContent>
             <Box sx={{ mt: 1 }}>
               {/* Tab Navigation */}
-              <Box display="flex" gap={1} mb={3}>
+              <Box 
+                display="flex" 
+                gap={2} 
+                mb={4}
+                sx={{
+                  ...glassPresets.light,
+                  borderRadius: tokens.spacing.radius.full,
+                  p: 1,
+                  border: `1px solid ${tokens.color.borders.glass}`,
+                }}
+              >
                 <Button
                   variant={activeTab === 'basic' ? 'contained' : 'outlined'}
                   onClick={() => setActiveTab('basic')}
                   size="small"
+                  sx={{
+                    flex: 1,
+                    borderRadius: tokens.spacing.radius.full,
+                    fontWeight: 600,
+                    ...(activeTab === 'basic' ? {
+                      background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                      boxShadow: `0 4px 20px ${tokens.color.primary[500]}25`,
+                    } : {
+                      ...glassPresets.light,
+                      border: 'none',
+                      '&:hover': {
+                        background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
+                      },
+                    }),
+                  }}
                 >
                   Basic Information
                 </Button>
@@ -288,6 +458,21 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
                   variant={activeTab === 'fields' ? 'contained' : 'outlined'}
                   onClick={() => setActiveTab('fields')}
                   size="small"
+                  sx={{
+                    flex: 1,
+                    borderRadius: tokens.spacing.radius.full,
+                    fontWeight: 600,
+                    ...(activeTab === 'fields' ? {
+                      background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                      boxShadow: `0 4px 20px ${tokens.color.primary[500]}25`,
+                    } : {
+                      ...glassPresets.light,
+                      border: 'none',
+                      '&:hover': {
+                        background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
+                      },
+                    }),
+                  }}
                 >
                   Fields ({formData.fields.length})
                 </Button>
@@ -392,128 +577,44 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
                       No fields added yet. Click "Add Field" to create your first question.
                     </Alert>
                   ) : (
-                    <Stack spacing={3}>
-                      {formData.fields.map((field, index) => (
-                        <Box key={index} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
-                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <DragIcon color="action" />
-                              <Typography variant="subtitle2">
-                                Field #{index + 1}
-                              </Typography>
-                            </Box>
-                            <IconButton 
-                              size="small" 
-                              color="error"
-                              onClick={() => handleRemoveField(index)}
-                            >
-                              <RemoveIcon />
-                            </IconButton>
-                          </Box>
-
-                          <Stack spacing={2}>
-                            <TextField
-                              fullWidth
-                              label="Field Name"
-                              value={field.name}
-                              onChange={(e) => handleFieldChange(index, 'name', e.target.value)}
-                              error={!!errors[`field_${index}_name`]}
-                              helperText={errors[`field_${index}_name`]}
-                              required
-                            />
-
-                            <Box display="flex" gap={2}>
-                              <FormControl sx={{ flex: 1 }}>
-                                <InputLabel>Field Type</InputLabel>
-                                <Select
-                                  value={field.type}
-                                  onChange={(e) => handleFieldChange(index, 'type', e.target.value)}
-                                  label="Field Type"
-                                >
-                                  {QUESTIONNAIRE_FIELD_TYPES.map((type) => (
-                                    <MenuItem key={type.value} value={type.value}>
-                                      {type.label}
-                                    </MenuItem>
-                                  ))}
-                                </Select>
-                              </FormControl>
-
-                              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                                <FormControlLabel
-                                  control={
-                                    <Switch
-                                      checked={field.required}
-                                      onChange={(e) => handleFieldChange(index, 'required', e.target.checked)}
-                                    />
-                                  }
-                                  label="Required"
-                                />
-                              </Box>
-                            </Box>
-
-                            {requiresOptions(field.type) && (
-                              <Box>
-                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                                  <Typography variant="subtitle2">
-                                    Options
-                                  </Typography>
-                                  <Button
-                                    size="small"
-                                    startIcon={<AddIcon />}
-                                    onClick={() => handleAddOption(index)}
-                                  >
-                                    Add Option
-                                  </Button>
-                                </Box>
-
-                                {field.options.length === 0 ? (
-                                  <Alert severity="warning" sx={{ mb: 1 }}>
-                                    At least one option is required for select fields.
-                                  </Alert>
-                                ) : (
-                                  <Stack spacing={1}>
-                                    {field.options.map((option, optionIndex) => (
-                                      <Box key={optionIndex} display="flex" gap={1}>
-                                        <TextField
-                                          size="small"
-                                          fullWidth
-                                          placeholder={`Option ${optionIndex + 1}`}
-                                          value={option}
-                                          onChange={(e) => handleOptionChange(index, optionIndex, e.target.value)}
-                                        />
-                                        <IconButton
-                                          size="small"
-                                          color="error"
-                                          onClick={() => handleRemoveOption(index, optionIndex)}
-                                        >
-                                          <RemoveIcon />
-                                        </IconButton>
-                                      </Box>
-                                    ))}
-                                  </Stack>
-                                )}
-
-                                {errors[`field_${index}_options`] && (
-                                  <Typography variant="caption" color="error">
-                                    {errors[`field_${index}_options`]}
-                                  </Typography>
-                                )}
-                              </Box>
-                            )}
-                          </Stack>
-                        </Box>
-                      ))}
-                    </Stack>
+                    <DraggableList
+                      items={formData.fields}
+                      onReorder={handleFieldReorder}
+                      renderItem={renderFieldItem}
+                      keyExtractor={(field) => field.id}
+                      showSaveButton={false}
+                      enableKeyboardReorder={true}
+                      emptyMessage="No fields added yet."
+                    />
                   )}
                 </Box>
               )}
             </Box>
           </DialogContent>
           
-          <DialogActions sx={{ p: 3 }}>
+          <DialogActions 
+            sx={{ 
+              p: 3,
+              background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+              borderTop: `1px solid ${tokens.color.borders.glass}`,
+              gap: 2,
+            }}
+          >
             <Button 
               onClick={handleClose}
               disabled={isLoading}
+              sx={{
+                ...glassPresets.light,
+                border: `1px solid ${tokens.color.neutral[300]}`,
+                borderRadius: tokens.spacing.radius.full,
+                px: 3,
+                py: 1,
+                fontWeight: 600,
+                '&:hover': {
+                  ...glassPresets.medium,
+                  border: `1px solid ${tokens.color.neutral[400]}`,
+                },
+              }}
             >
               Cancel
             </Button>
@@ -521,7 +622,23 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading}
-              startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
+              startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : undefined}
+              sx={{
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                borderRadius: tokens.spacing.radius.full,
+                px: 4,
+                py: 1,
+                fontWeight: 600,
+                boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
+                '&:hover': {
+                  background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+                  boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
+                },
+                '&:disabled': {
+                  background: tokens.color.neutral[300],
+                  boxShadow: 'none',
+                },
+              }}
             >
               {isLoading ? 'Saving...' : editingQuestionnaire ? 'Update' : 'Create'}
             </Button>

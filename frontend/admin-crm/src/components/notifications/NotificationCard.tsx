@@ -18,14 +18,16 @@ import {
 } from '@mui/material';
 import {
   MoreVert,
-  MarkEmailRead,
-  MarkEmailUnread,
   Delete,
   OpenInNew,
   Circle,
   Schedule,
   Person,
   Notifications as NotificationIcon,
+  CheckCircle,
+  RadioButtonUnchecked,
+  ExpandMore,
+  ExpandLess,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { Notification } from '../../types/notifications.types';
@@ -48,6 +50,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   const theme = useTheme();
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -74,13 +77,13 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   };
 
   const handleCardClick = () => {
-    // Mark as read when clicked if not already read
-    if (!notification.is_read && notification.can_mark_read) {
-      onMarkRead(notification.id);
-    }
+    // Only navigate if not expanding and has action URL
+    if (!expanded && notification.action_url) {
+      // Mark as read when clicked if not already read
+      if (!notification.is_read && notification.can_mark_read) {
+        onMarkRead(notification.id);
+      }
 
-    // Navigate to action URL if available
-    if (notification.action_url) {
       if (notification.action_url.startsWith('http')) {
         window.open(notification.action_url, '_blank');
       } else {
@@ -88,6 +91,23 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       }
     }
   };
+
+  const handleExpandToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpanded(!expanded);
+  };
+
+  // Check if notification has expandable content
+  const hasExpandableContent = () => {
+    const contentLength = notification.content?.length || 0;
+    const hasContext = notification.context_data && Object.keys(notification.context_data).length > 0;
+    const hasLongContent = contentLength > 100;
+    const hasMetadata = notification.delivered_via && notification.delivered_via.length > 0;
+    
+    return hasLongContent || hasContext || hasMetadata;
+  };
+
+  const isExpandable = hasExpandableContent();
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -129,38 +149,94 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
   return (
     <Card
-      elevation={notification.is_read ? 1 : 3}
+      elevation={notification.is_read ? 1 : (notification.notification_type_details?.priority === 'URGENT' ? 6 : 3)}
       sx={{
         cursor: notification.action_url ? 'pointer' : 'default',
         transition: 'all 0.2s ease-in-out',
+        position: 'relative',
+        overflow: 'visible',
+        // Base styling for all notifications
         bgcolor: notification.is_read ? 'background.paper' : 'background.paper',
         borderLeft: `4px solid ${getCategoryColor(notification.notification_type_details?.category || 'SYSTEM')}`,
-        '&:hover': {
-          elevation: 4,
-          transform: 'translateY(-1px)',
-          boxShadow: theme.shadows[4],
-        },
+        
+        // Priority-based styling
+        ...(notification.notification_type_details?.priority === 'URGENT' && {
+          borderLeft: `6px solid #d32f2f`,
+          bgcolor: notification.is_read ? 'error.50' : '#ffebee',
+          border: '2px solid #d32f2f',
+          boxShadow: '0 0 0 2px rgba(211, 47, 47, 0.1)',
+        }),
+        
+        ...(notification.notification_type_details?.priority === 'HIGH' && {
+          borderLeft: `5px solid #f57c00`,
+          bgcolor: notification.is_read ? 'warning.50' : '#fff3e0',
+        }),
+        
+        // Read/Unread styling
         ...(notification.is_read 
-          ? { opacity: 0.8 }
+          ? { 
+              opacity: 0.75,
+              filter: 'grayscale(0.2)'
+            }
           : { 
-              border: '1px solid',
-              borderColor: 'primary.light',
-              bgcolor: 'primary.50'
+              border: notification.notification_type_details?.priority !== 'URGENT' ? '1px solid' : undefined,
+              borderColor: notification.notification_type_details?.priority !== 'URGENT' ? 'primary.light' : undefined,
+              bgcolor: notification.notification_type_details?.priority === 'URGENT' 
+                ? '#ffebee' 
+                : notification.notification_type_details?.priority === 'HIGH'
+                ? '#fff3e0'
+                : 'primary.50',
+              boxShadow: notification.notification_type_details?.priority === 'URGENT' 
+                ? '0 4px 20px rgba(211, 47, 47, 0.15)' 
+                : notification.notification_type_details?.priority === 'HIGH'
+                ? '0 2px 12px rgba(245, 124, 0, 0.1)'
+                : theme.shadows[2]
             }
         ),
+        
+        '&:hover': {
+          elevation: notification.notification_type_details?.priority === 'URGENT' ? 8 : 4,
+          transform: 'translateY(-2px)',
+          boxShadow: notification.notification_type_details?.priority === 'URGENT' 
+            ? '0 8px 32px rgba(211, 47, 47, 0.2)' 
+            : notification.notification_type_details?.priority === 'HIGH'
+            ? '0 6px 24px rgba(245, 124, 0, 0.15)'
+            : theme.shadows[6],
+        },
       }}
       onClick={handleCardClick}
     >
-      <CardContent sx={{ py: compact ? 1.5 : 2 }}>
+      <CardContent sx={{ py: compact ? 1 : 1.5, px: 2 }}>
         <Box display="flex" alignItems="flex-start" justifyContent="space-between">
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             {/* Header */}
-            <Box display="flex" alignItems="center" gap={1} mb={1}>
+            <Box display="flex" alignItems="center" gap={1} mb={compact ? 0.5 : 1}>
               {!notification.is_read && (
                 <Circle
                   sx={{
-                    fontSize: 8,
-                    color: 'primary.main',
+                    fontSize: notification.notification_type_details?.priority === 'URGENT' ? 10 : 8,
+                    color: notification.notification_type_details?.priority === 'URGENT' 
+                      ? 'error.main' 
+                      : notification.notification_type_details?.priority === 'HIGH'
+                      ? 'warning.main'
+                      : 'primary.main',
+                    animation: notification.notification_type_details?.priority === 'URGENT' 
+                      ? 'pulse 2s infinite' 
+                      : 'none',
+                    '@keyframes pulse': {
+                      '0%': {
+                        transform: 'scale(1)',
+                        opacity: 1,
+                      },
+                      '50%': {
+                        transform: 'scale(1.2)',
+                        opacity: 0.7,
+                      },
+                      '100%': {
+                        transform: 'scale(1)',
+                        opacity: 1,
+                      },
+                    },
                   }}
                 />
               )}
@@ -177,13 +253,24 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
               <Typography
                 variant={compact ? 'body2' : 'subtitle2'}
-                fontWeight={notification.is_read ? 'medium' : 'bold'}
+                fontWeight={notification.is_read ? 'medium' : (notification.notification_type_details?.priority === 'URGENT' ? '800' : 'bold')}
                 sx={{
-                  color: notification.is_read ? 'text.primary' : 'text.primary',
+                  color: notification.is_read 
+                    ? 'text.secondary' 
+                    : notification.notification_type_details?.priority === 'URGENT' 
+                    ? 'error.dark'
+                    : notification.notification_type_details?.priority === 'HIGH'
+                    ? 'warning.dark'
+                    : 'text.primary',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   flexGrow: 1,
+                  fontSize: compact ? '0.85rem' : '0.9rem',
+                  lineHeight: compact ? 1.3 : 1.4,
+                  textShadow: notification.notification_type_details?.priority === 'URGENT' && !notification.is_read 
+                    ? '0 1px 2px rgba(211, 47, 47, 0.1)' 
+                    : 'none',
                 }}
               >
                 {notification.title}
@@ -194,8 +281,24 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 <Chip
                   label={notification.notification_type_details?.priority}
                   size="small"
-                  color={getPriorityColor(notification.notification_type_details?.priority || 'NORMAL') as any}
-                  sx={{ height: 20, fontSize: '0.75rem' }}
+                  color={getPriorityColor(notification.notification_type_details?.priority || 'NORMAL') as 'error' | 'warning' | 'info' | 'default'}
+                  variant={notification.notification_type_details?.priority === 'URGENT' ? 'filled' : 'outlined'}
+                  sx={{ 
+                    height: notification.notification_type_details?.priority === 'URGENT' ? 22 : 20, 
+                    fontSize: notification.notification_type_details?.priority === 'URGENT' ? '0.8rem' : '0.75rem',
+                    fontWeight: notification.notification_type_details?.priority === 'URGENT' ? '700' : '500',
+                    animation: notification.notification_type_details?.priority === 'URGENT' && !notification.is_read 
+                      ? 'glow 3s ease-in-out infinite alternate' 
+                      : 'none',
+                    '@keyframes glow': {
+                      '0%': {
+                        boxShadow: '0 0 5px rgba(211, 47, 47, 0.3)',
+                      },
+                      '100%': {
+                        boxShadow: '0 0 15px rgba(211, 47, 47, 0.6)',
+                      },
+                    },
+                  }}
                 />
               )}
 
@@ -214,129 +317,232 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             </Box>
 
             {/* Content */}
-            <Typography
-              variant="body2"
-              color={notification.is_read ? 'text.secondary' : 'text.primary'}
-              sx={{
-                mb: 1,
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: compact ? 2 : 3,
-                WebkitBoxOrient: 'vertical',
-                lineHeight: 1.4,
-              }}
-            >
-              {notification.content}
-            </Typography>
+            <Box>
+              <Typography
+                variant="body2"
+                color={notification.is_read 
+                  ? 'text.secondary' 
+                  : notification.notification_type_details?.priority === 'URGENT' 
+                  ? 'error.dark'
+                  : notification.notification_type_details?.priority === 'HIGH'
+                  ? 'warning.dark'
+                  : 'text.primary'
+                }
+                sx={{
+                  mb: compact ? 0.75 : 1,
+                  overflow: expanded ? 'visible' : 'hidden',
+                  display: expanded ? 'block' : '-webkit-box',
+                  WebkitLineClamp: expanded ? 'none' : (compact ? 1 : 2),
+                  WebkitBoxOrient: 'vertical',
+                  lineHeight: compact ? 1.3 : 1.4,
+                  fontSize: compact ? '0.82rem' : '0.875rem',
+                  fontWeight: notification.notification_type_details?.priority === 'URGENT' && !notification.is_read ? '500' : '400',
+                }}
+              >
+                {notification.content}
+              </Typography>
 
-            {/* Footer */}
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Box display="flex" alignItems="center" gap={2}>
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <Schedule fontSize="small" sx={{ color: 'text.secondary', fontSize: 14 }} />
+              {/* Expanded Content Details */}
+              {expanded && (
+                <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                  {/* Context Information */}
+                  {notification.context_data && Object.keys(notification.context_data).length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Details
+                      </Typography>
+                      <Box sx={{ mt: 1 }}>
+                        {Object.entries(notification.context_data).map(([key, value]) => (
+                          <Typography key={key} variant="body2" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
+                            <strong>{key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> {String(value)}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Full metadata */}
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Schedule sx={{ fontSize: 12 }} />
+                      Created: {new Date(notification.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })} PHT
+                    </Typography>
+                    
+                    {notification.delivered_via && notification.delivered_via.length > 0 && (
+                      <Typography variant="caption" color="text.secondary">
+                        Delivered via: {notification.delivered_via.join(', ')}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Expand/Collapse button */}
+              {isExpandable && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                  <IconButton
+                    size="small"
+                    onClick={handleExpandToggle}
+                    sx={{ 
+                      color: 'text.secondary',
+                      opacity: 0.7,
+                      '&:hover': { opacity: 1 }
+                    }}
+                  >
+                    {expanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                  </IconButton>
+                </Box>
+              )}
+            </Box>
+
+            {/* Footer - Compact metadata line */}
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box display="flex" alignItems="center" gap={1.5}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ 
+                    opacity: 0.8,
+                    fontSize: compact ? '0.7rem' : '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.3
+                  }}
+                >
+                  <Schedule sx={{ fontSize: 12 }} />
+                  {notification.time_since_created}
+                </Typography>
+
+                {/* Compact delivery status */}
+                {Array.isArray(notification.delivered_via) && notification.delivered_via.length > 0 && (
                   <Typography
                     variant="caption"
-                    color={notification.is_read ? 'text.secondary' : 'text.secondary'}
-                    sx={{ opacity: 0.8 }}
+                    sx={{
+                      fontSize: '0.65rem',
+                      opacity: 0.6,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                    }}
                   >
-                    {notification.time_since_created}
+                    {notification.delivered_via.join('+')}
                   </Typography>
-                </Box>
-
-                {/* Delivery Status */}
-                {Array.isArray(notification.delivered_via) && notification.delivered_via.length > 0 && (
-                  <Stack direction="row" spacing={0.5}>
-                    {notification.delivered_via.map((method) => (
-                      <Chip
-                        key={method}
-                        label={method.toUpperCase()}
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                          height: 16,
-                          fontSize: '0.6rem',
-                          opacity: 0.7,
-                          '& .MuiChip-label': {
-                            px: 0.5,
-                          },
-                        }}
-                      />
-                    ))}
-                  </Stack>
                 )}
               </Box>
 
               {notification.action_url && (
-                <Tooltip title="Click to view details">
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={0.5}
-                    sx={{
-                      color: 'primary.main',
-                      opacity: 0.8,
-                      '&:hover': { opacity: 1 }
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      color="primary"
-                      fontWeight="medium"
-                    >
-                      View
-                    </Typography>
-                    <OpenInNew sx={{ fontSize: 12 }} />
-                  </Box>
-                </Tooltip>
+                <Typography
+                  variant="caption"
+                  color="primary"
+                  sx={{
+                    fontSize: '0.7rem',
+                    opacity: 0.8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.3,
+                    '&:hover': { opacity: 1 }
+                  }}
+                >
+                  View
+                  <OpenInNew sx={{ fontSize: 10 }} />
+                </Typography>
               )}
-            </Stack>
+            </Box>
           </Box>
 
-          {/* Actions Menu */}
+          {/* Quick Actions */}
           <Box sx={{ ml: 1 }}>
-            <IconButton
-              size="small"
-              onClick={handleMenuOpen}
-              sx={{
-                color: notification.is_read ? 'text.secondary' : 'text.secondary',
-                opacity: 0.7,
-                '&:hover': { opacity: 1 },
-              }}
-            >
-              <MoreVert fontSize="small" />
-            </IconButton>
+            <Stack direction="row" spacing={0.5}>
+              {/* Read/Unread Toggle */}
+              <Tooltip title={notification.is_read ? 'Mark as unread' : 'Mark as read'}>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (notification.is_read) {
+                      handleMarkUnread();
+                    } else {
+                      handleMarkRead();
+                    }
+                  }}
+                  sx={{
+                    color: notification.is_read ? 'text.secondary' : 'primary.main',
+                    opacity: 0.8,
+                    '&:hover': { 
+                      opacity: 1,
+                      backgroundColor: notification.is_read ? 'action.hover' : 'primary.50'
+                    },
+                  }}
+                >
+                  {notification.is_read ? (
+                    <RadioButtonUnchecked fontSize="small" />
+                  ) : (
+                    <CheckCircle fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
 
-            <Menu
-              anchorEl={menuAnchor}
-              open={Boolean(menuAnchor)}
-              onClose={handleMenuClose}
-              onClick={(e) => e.stopPropagation()}
-              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            >
-              {notification.is_read ? (
-                <MenuItem onClick={handleMarkUnread}>
-                  <ListItemIcon>
-                    <MarkEmailUnread fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Mark as Unread</ListItemText>
-                </MenuItem>
-              ) : (
-                <MenuItem onClick={handleMarkRead}>
-                  <ListItemIcon>
-                    <MarkEmailRead fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Mark as Read</ListItemText>
-                </MenuItem>
-              )}
+              {/* Delete */}
+              <Tooltip title="Delete notification">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete();
+                  }}
+                  sx={{
+                    color: 'text.secondary',
+                    opacity: 0.7,
+                    '&:hover': { 
+                      opacity: 1,
+                      color: 'error.main',
+                      backgroundColor: 'error.50'
+                    },
+                  }}
+                >
+                  <Delete fontSize="small" />
+                </IconButton>
+              </Tooltip>
 
-              <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-                <ListItemIcon>
-                  <Delete fontSize="small" color="error" />
-                </ListItemIcon>
-                <ListItemText>Delete</ListItemText>
-              </MenuItem>
-            </Menu>
+              {/* More Actions Menu (overflow) */}
+              <Tooltip title="More actions">
+                <IconButton
+                  size="small"
+                  onClick={handleMenuOpen}
+                  sx={{
+                    color: 'text.secondary',
+                    opacity: 0.6,
+                    '&:hover': { opacity: 1 },
+                  }}
+                >
+                  <MoreVert fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
+              <Menu
+                anchorEl={menuAnchor}
+                open={Boolean(menuAnchor)}
+                onClose={handleMenuClose}
+                onClick={(e) => e.stopPropagation()}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              >
+                {notification.action_url && (
+                  <MenuItem onClick={() => {
+                    handleMenuClose();
+                    if (notification.action_url?.startsWith('http')) {
+                      window.open(notification.action_url, '_blank');
+                    } else if (notification.action_url) {
+                      navigate(notification.action_url);
+                    }
+                  }}>
+                    <ListItemIcon>
+                      <OpenInNew fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>View Details</ListItemText>
+                  </MenuItem>
+                )}
+              </Menu>
+            </Stack>
           </Box>
         </Box>
       </CardContent>

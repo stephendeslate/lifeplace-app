@@ -308,7 +308,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
                   <Chip
                     label={FILE_CATEGORIES.find((c) => c.value === file.category)?.label || file.category}
                     size="small"
-                    color={getCategoryColor(file.category) as any}
+                    color={getCategoryColor(file.category) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                   />
                 </TableCell>
                 <TableCell>

@@ -33,6 +33,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQuotesForClient } from '../../hooks/useSales';
 import type { EventQuote } from '../../types/sales.types';
 import type { Client } from '../../types/clients.types';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface ClientQuotesProps {
   client: Client;
@@ -42,6 +44,7 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<EventQuote | null>(null);
+  const { settings: currencySettings } = useCurrencySettings();
 
   const { data: quotes = [], isLoading } = useQuotesForClient(client.id);
 
@@ -67,12 +70,14 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
     navigate(`/quotes/new?client=${client.id}`);
   };
 
-  const formatCurrency = (amount: string | number) => {
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(numAmount);
+  const formatQuoteAmount = (amount: string | number, quoteCurrency?: string) => {
+    const currency = quoteCurrency || currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
   };
 
   const getStatusColor = (status: string): "default" | "primary" | "success" | "warning" | "error" => {
@@ -161,7 +166,7 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" fontWeight="medium">
-                    {formatCurrency(quote.total_amount)}
+                    {formatQuoteAmount(quote.total_amount)}
                   </Typography>
                 </TableCell>
                 <TableCell>

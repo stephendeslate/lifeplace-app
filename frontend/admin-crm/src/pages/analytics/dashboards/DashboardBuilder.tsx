@@ -42,7 +42,7 @@ import { useDashboards, useWidgets, useMetricDefinitions } from '../../../hooks/
 import { DashboardGrid } from '../../../components/analytics/dashboards/DashboardGrid';
 import { WidgetForm } from '../../../components/analytics/widgets/WidgetForm';
 import { DashboardForm } from '../../../components/analytics/dashboards/DashboardForm';
-import type { Widget, CreateWidgetData, UpdateWidgetData } from '../../../types/analytics.types';
+import type { Widget, CreateWidgetData, UpdateWidgetData, CreateDashboardData, UpdateDashboardData } from '../../../types/analytics.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -209,9 +209,9 @@ export const DashboardBuilder: React.FC = () => {
     setEditingWidget(null);
   };
 
-  const handleDashboardFormSubmit = (data: any) => {
+  const handleDashboardFormSubmit = (data: CreateDashboardData | UpdateDashboardData) => {
     if (isNewDashboard) {
-      createDashboard(data);
+      createDashboard(data as CreateDashboardData);
     } else if (dashboard) {
       updateDashboard({ id: dashboard.id, data });
     }

@@ -16,6 +16,13 @@ import {
   Explore,
   BarChart,
   TrendingUp,
+  AccountCircle,
+  AdminPanelSettings,
+  Assignment,
+  Psychology,
+  AccountTree,
+  Message,
+  Inventory,
 } from '@mui/icons-material';
 import type { NavigationGroup } from '../types/layout.types';
 
@@ -165,6 +172,92 @@ export const navigationConfig: NavigationGroup[] = [
         path: '/settings',
         icon: Settings,
         roles: ['ADMIN'],
+        children: [
+          {
+            id: 'account-settings',
+            label: 'Account Settings',
+            path: '/settings/account/account-settings',
+            icon: AccountCircle,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'admin-users',
+            label: 'Admin Users',
+            path: '/settings/account/admin-users',
+            icon: AdminPanelSettings,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'notifications-settings',
+            label: 'Notifications',
+            path: '/settings/account/notifications',
+            icon: Notifications,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'booking-flows',
+            label: 'Booking Flow',
+            path: '/settings/booking/booking-flow',
+            icon: EventNote,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'event-types',
+            label: 'Event Types',
+            path: '/settings/booking/event-types',
+            icon: Assignment,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'contract-templates',
+            label: 'Contract Templates',
+            path: '/settings/templates/contract-templates',
+            icon: Description,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'questionnaire-templates',
+            label: 'Questionnaire Templates',
+            path: '/settings/templates/questionnaire-templates',
+            icon: Psychology,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'workflow-templates',
+            label: 'Workflow Templates',
+            path: '/settings/templates/workflow-templates',
+            icon: AccountTree,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'communication-templates',
+            label: 'Communication Templates',
+            path: '/settings/templates/communication-templates',
+            icon: Message,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'products-packages',
+            label: 'Products & Packages',
+            path: '/settings/commerce/products-packages',
+            icon: Inventory,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'payment-settings',
+            label: 'Payments',
+            path: '/settings/commerce/payments',
+            icon: Payment,
+            roles: ['ADMIN'],
+          },
+          {
+            id: 'sales-settings',
+            label: 'Sales',
+            path: '/settings/commerce/sales',
+            icon: TrendingUp,
+            roles: ['ADMIN'],
+          },
+        ],
       },
     ],
     roles: ['ADMIN'],
@@ -195,14 +288,14 @@ export const getNavigationItemByPath = (path: string) => {
 // Helper function to filter navigation by user role
 export const filterNavigationByRole = (role: string): NavigationGroup[] => {
   return navigationConfig
-    .filter(group => !group.roles || group.roles.includes(role as any))
+    .filter(group => !group.roles || group.roles.includes(role as 'ADMIN' | 'CLIENT'))
     .map(group => ({
       ...group,
       items: group.items
-        .filter(item => !item.roles || item.roles.includes(role as any))
+        .filter(item => !item.roles || item.roles.includes(role as 'ADMIN' | 'CLIENT'))
         .map(item => ({
           ...item,
-          children: item.children?.filter(child => !child.roles || child.roles.includes(role as any))
+          children: item.children?.filter(child => !child.roles || child.roles.includes(role as 'ADMIN' | 'CLIENT'))
         }))
     }))
     .filter(group => group.items.length > 0);

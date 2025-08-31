@@ -2,5 +2,5 @@
 
 export { BookingFlowStepsTable } from './BookingFlowStepsTable';
 export { BookingFlowStepFormDialog } from './BookingFlowStepFormDialog';
-export { StepReorderList } from './StepReorderList';
+export { ImprovedStepReorderList } from './ImprovedStepReorderList';
 export { StepConfigurationPanel } from './StepConfigurationPanel';

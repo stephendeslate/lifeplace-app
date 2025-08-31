@@ -1,8 +1,8 @@
 // frontend/admin-crm/src/pages/settings/communication/CommunicationTemplates.tsx
 
 import React, { useEffect, useState } from 'react';
-import { Box } from '@mui/material';
 import { useLayout } from '../../../contexts/LayoutContext';
+import { ModernSettingsLayout } from '../../../components/common';
 import { TemplateList } from '../../../components/communications/TemplateList';
 import { TemplateForm } from '../../../components/communications/TemplateForm';
 import type { CommunicationTemplate } from '../../../types/communications.types';
@@ -71,8 +71,8 @@ export const CommunicationTemplates: React.FC = () => {
   };
 
   return (
-    <Box>
+    <ModernSettingsLayout>
       {renderContent()}
-    </Box>
+    </ModernSettingsLayout>
   );
 };

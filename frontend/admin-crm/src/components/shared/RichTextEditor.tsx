@@ -119,7 +119,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   // Expose insertVariable globally for external use (backwards compatibility)
   useEffect(() => {
     if (onVariableInsert && showVariableInsert) {
-      (window as any)._richTextEditorInsertVariable = insertVariable;
+      (window as Window & { _richTextEditorInsertVariable?: typeof insertVariable })._richTextEditorInsertVariable = insertVariable;
     }
   }, [onVariableInsert, showVariableInsert]);
 

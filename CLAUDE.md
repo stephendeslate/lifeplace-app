@@ -16,6 +16,7 @@ Before running any python commands, run the virtual environment found in the roo
 
 ### Backend (Django)
 ```bash
+source venv/bin/activate
 cd backend
 
 # Setup

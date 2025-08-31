@@ -20,6 +20,7 @@ class Payment(BaseModel):
     payment_number = models.CharField(max_length=50, unique=True)
     event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Payment currency (ISO 4217 code)")
     status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
     due_date = models.DateField()
     paid_on = models.DateField(null=True, blank=True)
@@ -61,7 +62,7 @@ class Payment(BaseModel):
                 event=self.event,
                 stage=self.event.current_stage,
                 trigger_type='PAYMENT_RECEIVED',
-                details=f"Payment of ${self.amount} received",
+                details=f"Payment of {self.format_amount_with_currency()} received",
                 result_data={
                     'payment_id': self.id,
                     'amount': str(self.amount),
@@ -95,7 +96,7 @@ class Payment(BaseModel):
         EventTimeline.objects.create(
             event=self.event,
             action_type='PAYMENT_RECEIVED',
-            description=f"Payment of ${self.amount} received",
+            description=f"Payment of {self.format_amount_with_currency()} received",
             is_public=True,
             action_data={
                 'payment_id': self.id,
@@ -147,6 +148,63 @@ class Payment(BaseModel):
             
             return True
         return False
+    
+    def format_amount_with_currency(self, user=None):
+        """
+        Format the payment amount with appropriate currency symbol and formatting
+        Uses the user's currency settings if available, falls back to system settings
+        """
+        try:
+            from core.domains.settings.models import CurrencySettings
+            
+            # Get currency settings (user-specific or system-wide)
+            if user:
+                settings = CurrencySettings.get_user_settings(user)
+            else:
+                settings = CurrencySettings.get_system_settings()
+            
+            # Get the currency configuration for this payment's currency
+            currency_configs = {
+                'PHP': {'symbol': '₱', 'decimals': 0},
+                'USD': {'symbol': '$', 'decimals': 2}, 
+                'EUR': {'symbol': '€', 'decimals': 2},
+                'SGD': {'symbol': 'S$', 'decimals': 2},
+                'HKD': {'symbol': 'HK$', 'decimals': 2},
+            }
+            
+            currency_config = currency_configs.get(self.currency, currency_configs['PHP'])
+            symbol = currency_config['symbol']
+            decimals = currency_config['decimals']
+            
+            # Use the user's decimal places preference if they override it
+            if hasattr(settings, 'decimal_places'):
+                decimals = settings.decimal_places
+                
+            # Format the amount based on decimal places
+            if decimals == 0:
+                formatted_amount = f"{int(self.amount):,}"
+            else:
+                formatted_amount = f"{float(self.amount):,.{decimals}f}"
+            
+            # Apply thousands separator from settings if available
+            if hasattr(settings, 'thousands_separator') and settings.thousands_separator != ',':
+                formatted_amount = formatted_amount.replace(',', settings.thousands_separator)
+            
+            return f"{symbol}{formatted_amount}"
+            
+        except Exception as e:
+            # Fallback to simple formatting if anything goes wrong
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to format currency for payment {self.id}: {e}")
+            
+            # Simple fallback based on currency
+            if self.currency == 'PHP':
+                return f"₱{int(self.amount):,}"
+            elif self.currency == 'USD':
+                return f"${float(self.amount):,.2f}"
+            else:
+                return f"{self.currency} {float(self.amount):,.2f}"
     
     def __str__(self):
         return f"Payment {self.payment_number} for Event {self.event.id}"
@@ -239,6 +297,7 @@ class PaymentTransaction(BaseModel):
     gateway = models.ForeignKey(PaymentGateway, on_delete=models.PROTECT)
     transaction_id = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Transaction currency (ISO 4217 code)")
     status = models.CharField(max_length=50, choices=[
         ('PENDING', 'Pending'),
         ('PROCESSING', 'Processing'),
@@ -272,6 +331,7 @@ class PaymentPlan(BaseModel):
     event = models.OneToOneField('events.Event', on_delete=models.CASCADE, related_name='payment_plan')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     down_payment_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Payment plan currency (ISO 4217 code)")
     down_payment_due_date = models.DateField()
     number_of_installments = models.PositiveIntegerField()
     frequency = models.CharField(max_length=20, choices=[
@@ -412,6 +472,7 @@ class Refund(BaseModel):
     """Refund records for payments"""
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='refunds')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Refund currency (ISO 4217 code)")
     reason = models.TextField()
     status = models.CharField(max_length=20, choices=[
         ('PENDING', 'Pending'),
@@ -459,6 +520,7 @@ class Invoice(BaseModel):
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='PHP', help_text="Invoice currency (ISO 4217 code)")
     issue_date = models.DateField()
     due_date = models.DateField()
     status = models.CharField(max_length=20, choices=[

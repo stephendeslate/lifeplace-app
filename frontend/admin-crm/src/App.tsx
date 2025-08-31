@@ -1,11 +1,12 @@
 // frontend/admin-crm/src/App.tsx
-// UPDATED: Added comprehensive analytics routes
+// UPDATED: Added comprehensive analytics routes and error boundary
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProviders } from './providers/AppProviders';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Login } from './pages/auth';
 import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
@@ -29,16 +30,17 @@ import {
   AnalyticsSettings,
 } from './pages/analytics';
 
-// Settings imports
-import { SettingsLayout } from './pages/settings';
-import { Settings } from './pages/settings';
+// Enhanced Settings imports
+import { EnhancedSettingsLayout } from './pages/settings/EnhancedSettingsLayout';
+import { EnhancedSettings } from './pages/settings/EnhancedSettings';
 import { AccountSettings, AdminUsers } from './pages/settings/account';
 import { Notifications } from './pages/settings/account/Notifications';
 import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
+import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
-import { PaymentsOverview } from './pages/payments';
+import { PaymentsOverview, PaymentProfile } from './pages/payments';
 import { FunnelAnalytics } from './pages/analytics/funnels/FunnelAnalytics';
 
 // Protected Route Component
@@ -97,14 +99,36 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 };
 
-// Settings Route Component
+// Settings Route Component - Uses Enhanced Settings Layout
 const SettingsRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <ProtectedRoute>
-      <SettingsLayout>
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+        gap={2}
+      >
+        <CircularProgress />
+        <Typography variant="body2" color="text.secondary">
+          Loading LifePlace Admin...
+        </Typography>
+      </Box>
+    );
+  }
+
+  return isAuthenticated ? (
+    <AppLayout>
+      <EnhancedSettingsLayout>
         {children}
-      </SettingsLayout>
-    </ProtectedRoute>
+      </EnhancedSettingsLayout>
+    </AppLayout>
+  ) : (
+    <Navigate to="/login" replace />
   );
 };
 
@@ -274,12 +298,20 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Payments Route */}
+      {/* Payments Routes */}
       <Route
         path="/payments"
         element={
           <ProtectedRoute>
             <PaymentsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments/:id"
+        element={
+          <ProtectedRoute>
+            <PaymentProfile />
           </ProtectedRoute>
         }
       />
@@ -309,7 +341,7 @@ const AppRouter: React.FC = () => {
         path="/settings"
         element={
           <SettingsRoute>
-            <Settings />
+            <EnhancedSettings />
           </SettingsRoute>
         }
       />
@@ -418,6 +450,14 @@ const AppRouter: React.FC = () => {
         }
       />
       <Route
+        path="/settings/commerce/currency-taxes"
+        element={
+          <SettingsRoute>
+            <CurrencyTaxes />
+          </SettingsRoute>
+        }
+      />
+      <Route
         path="/settings/commerce/payments"
         element={
           <SettingsRoute>
@@ -507,6 +547,7 @@ const AppRouter: React.FC = () => {
         }
       />
 
+
       {/* Default Route */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
@@ -519,9 +560,11 @@ const AppRouter: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AppProviders>
-      <Router>
-        <AppRouter />
-      </Router>
+      <ErrorBoundary>
+        <Router>
+          <AppRouter />
+        </Router>
+      </ErrorBoundary>
     </AppProviders>
   );
 };

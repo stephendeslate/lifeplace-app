@@ -8,6 +8,8 @@ export interface Toast {
   title: string;
   message?: string;
   duration?: number;
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
+  severity?: ToastType; // Allow overriding display severity
   action?: {
     label: string;
     onClick: () => void;
@@ -26,6 +28,8 @@ export interface ShowToastOptions {
   title: string;
   message?: string;
   duration?: number;
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
+  severity?: ToastType; // Allow overriding display severity
   action?: {
     label: string;
     onClick: () => void;

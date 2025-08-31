@@ -1,10 +1,8 @@
 // frontend/admin-crm/src/components/bookingflows/sessions/SessionTester.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Button,
   Alert,
@@ -16,10 +14,6 @@ import {
   LinearProgress,
   Chip,
   Stack,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   IconButton,
   Tooltip,
   FormControl,
@@ -27,6 +21,8 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+// Modern Design System imports
+import { ModernCard, ModernDialog } from '../../common';
 import {
   PlayArrow as StartIcon,
   NavigateNext as NextIcon,
@@ -56,7 +52,7 @@ interface SessionTesterProps {
 interface TestSession {
   sessionId: string;
   currentStepIndex: number;
-  stepData: Record<number, any>;
+  stepData: Record<number, Record<string, unknown>>;
   errors: Record<number, string[]>;
   startedAt: Date;
   status: 'running' | 'completed' | 'abandoned' | 'error';
@@ -70,7 +66,7 @@ interface StepTestResult {
   status: 'pending' | 'testing' | 'passed' | 'failed' | 'skipped';
   errors: string[];
   warnings: string[];
-  testData: any;
+  testData: Record<string, unknown>;
   duration?: number;
 }
 
@@ -97,7 +93,10 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
   } = useBookingSessions();
 
   // Get enabled steps only
-  const enabledSteps = flow.steps?.filter(step => step.is_enabled).sort((a, b) => a.order - b.order) || [];
+  const enabledSteps = useMemo(() => 
+    flow.steps?.filter(step => step.is_enabled).sort((a, b) => a.order - b.order) || [],
+    [flow.steps]
+  );
 
   useEffect(() => {
     // Initialize test results
@@ -282,7 +281,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     }
   };
 
-  // @ts-ignore
+  // @ts-expect-error - Legacy code requiring type fix
   const runAutomatedTest = async (session: TestSession, bookingSession: BookingSession) => {
     const delay = testSpeed === 'fast' ? 500 : testSpeed === 'normal' ? 1500 : 3000;
 
@@ -380,7 +379,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     await handleCompleteTest();
   };
 
-  const generateTestDataForStep = (step: BookingFlowStep): any => {
+  const generateTestDataForStep = (step: BookingFlowStep): Record<string, unknown> => {
     const baseData = {
       step_id: step.id,
       timestamp: new Date().toISOString(),
@@ -390,7 +389,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
       case 'introduction':
         return { ...baseData, acknowledged: true };
       
-      case 'date_time':
+      case 'date_time': {
         const eventDate = new Date();
         eventDate.setDate(eventDate.getDate() + 30); // 30 days from now
         return {
@@ -400,6 +399,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
           end_time: '18:00',
           duration: 4,
         };
+      }
       
       case 'questionnaire':
         return {
@@ -487,7 +487,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     }
   };
 
-  const validateStepData = (step: BookingFlowStep, data: any): {
+  const validateStepData = (step: BookingFlowStep, data: Record<string, unknown>): {
     isValid: boolean;
     errors: string[];
     warnings: string[];
@@ -507,7 +507,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
         if (!data.start_date) {
           errors.push('Start date is required');
         } else {
-          const eventDate = new Date(data.start_date);
+          const eventDate = new Date(data.start_date as string | number | Date);
           const minDate = new Date();
           minDate.setDate(minDate.getDate() + (flow.min_advance_booking_days || 1));
           
@@ -631,8 +631,8 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
       )}
 
       {/* Test Controls */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" animation="none" sx={{ mb: 3 }}>
+        <Box sx={{ p: 3 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="subtitle1">Test Controls</Typography>
             
@@ -716,20 +716,18 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
               />
             </Box>
           )}
-        </CardContent>
-      </Card>
+        </Box>
+      </ModernCard>
 
       {/* Test Results */}
-      <Card>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" animation="none">
+        <Box sx={{ p: 3 }}>
           <Typography variant="subtitle1" gutterBottom>
             Test Results ({testResults.filter(r => r.status === 'passed').length}/{testResults.length} passed)
           </Typography>
           
           <Stepper orientation="vertical" nonLinear>
             {testResults.map((result, index) => {
-              // @ts-ignore
-              const step = enabledSteps.find(s => s.id === result.stepId);
               const isActive = testSession?.currentStepIndex === index;
               
               return (
@@ -807,48 +805,53 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
               );
             })}
           </Stepper>
-        </CardContent>
-      </Card>
+        </Box>
+      </ModernCard>
 
       {/* Test Settings Dialog */}
-      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Test Settings</DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
+      <ModernDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        title="Test Settings"
+        maxWidth="sm"
+        actions={[{
+          label: 'Close',
+          onClick: () => setSettingsOpen(false),
+          variant: 'contained',
+          color: 'primary'
+        }]}
+      >
+        <Stack spacing={3} sx={{ mt: 1 }}>
+          <FormControl fullWidth>
+            <InputLabel>Test Mode</InputLabel>
+            <Select
+              value={testMode}
+              label="Test Mode"
+              onChange={(e) => setTestMode(e.target.value as 'manual' | 'automated')}
+              disabled={isRunning}
+            >
+              <MenuItem value="manual">Manual - Step through each step manually</MenuItem>
+              <MenuItem value="automated">Automated - Run through all steps automatically</MenuItem>
+            </Select>
+          </FormControl>
+
+          {testMode === 'automated' && (
             <FormControl fullWidth>
-              <InputLabel>Test Mode</InputLabel>
+              <InputLabel>Test Speed</InputLabel>
               <Select
-                value={testMode}
-                label="Test Mode"
-                onChange={(e) => setTestMode(e.target.value as 'manual' | 'automated')}
+                value={testSpeed}
+                label="Test Speed"
+                onChange={(e) => setTestSpeed(e.target.value as 'slow' | 'normal' | 'fast')}
                 disabled={isRunning}
               >
-                <MenuItem value="manual">Manual - Step through each step manually</MenuItem>
-                <MenuItem value="automated">Automated - Run through all steps automatically</MenuItem>
+                <MenuItem value="slow">Slow (3s per step)</MenuItem>
+                <MenuItem value="normal">Normal (1.5s per step)</MenuItem>
+                <MenuItem value="fast">Fast (0.5s per step)</MenuItem>
               </Select>
             </FormControl>
-
-            {testMode === 'automated' && (
-              <FormControl fullWidth>
-                <InputLabel>Test Speed</InputLabel>
-                <Select
-                  value={testSpeed}
-                  label="Test Speed"
-                  onChange={(e) => setTestSpeed(e.target.value as 'slow' | 'normal' | 'fast')}
-                  disabled={isRunning}
-                >
-                  <MenuItem value="slow">Slow (3s per step)</MenuItem>
-                  <MenuItem value="normal">Normal (1.5s per step)</MenuItem>
-                  <MenuItem value="fast">Fast (0.5s per step)</MenuItem>
-                </Select>
-              </FormControl>
-            )}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSettingsOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+          )}
+        </Stack>
+      </ModernDialog>
     </Box>
   );
 };

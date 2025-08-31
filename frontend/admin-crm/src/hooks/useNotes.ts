@@ -9,6 +9,15 @@ import type {
   UpdateNoteData,
 } from '../types/notes.types';
 
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+      [key: string]: unknown;
+    };
+  };
+}
+
 export const useNotes = (filters?: NoteFilters) => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
@@ -54,7 +63,7 @@ export const useNotes = (filters?: NoteFilters) => {
       });
       showSuccess('Note Created', 'Note has been added successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create note';
       showError('Create Failed', message);
     },
@@ -72,7 +81,7 @@ export const useNotes = (filters?: NoteFilters) => {
       });
       showSuccess('Note Updated', 'Note has been updated successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update note';
       showError('Update Failed', message);
     },
@@ -86,7 +95,7 @@ export const useNotes = (filters?: NoteFilters) => {
       queryClient.removeQueries({ queryKey: ['note', deletedId] });
       showSuccess('Note Deleted', 'Note has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete note';
       showError('Delete Failed', message);
     },

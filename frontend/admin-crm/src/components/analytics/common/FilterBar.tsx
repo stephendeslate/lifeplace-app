@@ -42,7 +42,7 @@ export interface FilterOption {
 }
 
 export interface FilterValue {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface FilterBarProps {
@@ -114,7 +114,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     onSearchChange?.(value);
   };
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: string | string[] | number | boolean | undefined) => {
     const newFilters = { ...filterValues, [key]: value };
     onFilterChange?.(newFilters);
   };
@@ -155,7 +155,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               value={value || (filter.multiple ? [] : '')}
               label={filter.label}
               multiple={filter.multiple}
-              onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                handleFilterChange(filter.key, typeof val === 'string' ? val : val as string | string[]);
+              }}
               renderValue={filter.multiple ? (selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {(selected as string[]).map((val) => {
@@ -224,7 +227,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <FormControl key={filter.key} size="small" sx={{ minWidth: filter.width || 120 }}>
             <InputLabel>{filter.label}</InputLabel>
             <Select
-              value={value === undefined ? 'all' : value.toString()}
+              value={value === undefined || value === null ? 'all' : value.toString()}
               label={filter.label}
               onChange={(e) => {
                 const val = e.target.value;
@@ -444,7 +447,7 @@ export const useFilters = <T extends FilterValue>(initialFilters?: T) => {
   const [filters, setFilters] = useState<T>(initialFilters || {} as T);
   const [search, setSearch] = useState('');
 
-  const updateFilter = (key: string, value: any) => {
+  const updateFilter = (key: string, value: string | string[] | number | boolean | undefined) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 

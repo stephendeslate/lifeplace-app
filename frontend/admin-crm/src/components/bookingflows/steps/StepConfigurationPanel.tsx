@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Alert,
   CircularProgress,
@@ -15,13 +13,22 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
+import { ModernCard } from '../../common/ModernCard';
 import {
   Settings as ConfigIcon,
   Preview as PreviewIcon,
   Refresh as RefreshIcon,
   ContentCopy as CopyIcon,
 } from '@mui/icons-material';
-import type { BookingFlowStep } from '../../../types/bookingflows.types';
+// Modern Design System imports
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
+import type { 
+  BookingFlowStep,
+  QuestionnaireStepConfiguration,
+  AddonSelectionStepConfiguration,
+  PaymentInfoStepConfiguration
+} from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import {
   IntroductionStepConfig,
@@ -62,7 +69,7 @@ interface StepConfigurationPanelProps {
 export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
   step,
   onUpdate,
-}) => {
+}): React.ReactElement => {
   const [activeTab, setActiveTab] = useState(0);
 
   const {
@@ -79,12 +86,11 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
     error: configError,
   } = useStepConfiguration(step.id);
 
-  // @ts-ignore
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
-  const handleConfigurationUpdate = async (data: Record<string, any>) => {
+  const handleConfigurationUpdate = async (data: Record<string, unknown>) => {
     try {
       await updateConfiguration({
         stepId: step.id,
@@ -111,7 +117,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
     }
   };
 
-  const renderStepSpecificConfiguration = () => {
+  const renderStepSpecificConfiguration = (): React.ReactNode => {
     // Block access to removed step types
     if (step.step_type as string === 'availability_check') {
       return (
@@ -135,7 +141,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           <DateTimeStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').DateTimeStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={(updatedStep: BookingFlowStep) => handleConfigurationUpdate(updatedStep.configuration_data as unknown as Record<string, unknown>)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -145,7 +151,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           <QuestionnaireStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').QuestionnaireStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={(data: Partial<QuestionnaireStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -163,7 +169,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         return (
           <AddonSelectionStepConfig
             step={step}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={(data: Partial<AddonSelectionStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -172,8 +178,8 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         return (
           <PricingSummaryStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').PricingSummaryStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            config={currentConfig as Record<string, unknown> | null | undefined}
+            onUpdate={(data: Record<string, unknown>) => handleConfigurationUpdate(data)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -193,7 +199,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           <PaymentInfoStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').PaymentInfoStepConfiguration | null | undefined}
-            onUpdate={handleConfigurationUpdate}
+            onUpdate={(data: Partial<PaymentInfoStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -202,8 +208,8 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         return (
           <ReviewBookingStepConfig
             step={step}
-            config={currentConfig}
-            onUpdate={handleConfigurationUpdate}
+            config={currentConfig as Record<string, unknown> | undefined}
+            onUpdate={(data: Record<string, unknown>) => handleConfigurationUpdate(data)}
             isLoading={isUpdatingConfiguration}
           />
         );
@@ -221,11 +227,11 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
       // Remove event_details case since it doesn't exist in the evolved types
       
       default:
-        return <GenericConfigForm step={step} config={currentConfig} />;
+        return <GenericConfigForm step={step} config={currentConfig as Record<string, unknown> | null} />;
     }
   };
 
-  const renderPreview = () => {
+  const renderPreview = (): React.ReactNode => {
     // Preview functionality not implemented in the evolved backend
     // Only show configuration tab for now
     return (
@@ -238,117 +244,107 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
   // Error handling
   if (configError) {
     return (
-      <Card>
-        <CardContent>
-          <Alert 
-            severity="error" 
-            action={
-              <IconButton 
-                color="inherit" 
-                size="small" 
-                onClick={() => refetchConfig()}
-              >
-                <RefreshIcon />
-              </IconButton>
-            }
-          >
-            Failed to load step configuration: {configError instanceof Error ? configError.message : 'Unknown error'}
-          </Alert>
-        </CardContent>
-      </Card>
+      <ModernCard variant="glass" size="medium" color="error">
+        <Alert 
+          severity="error" 
+          action={
+            <IconButton 
+              color="inherit" 
+              size="small" 
+              onClick={() => refetchConfig()}
+            >
+              <RefreshIcon />
+            </IconButton>
+          }
+        >
+          Failed to load step configuration: {configError instanceof Error ? configError.message : String(configError)}
+        </Alert>
+      </ModernCard>
     );
   }
 
   if (isLoadingConfig) {
     return (
-      <Card>
-        <CardContent>
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
-          </Box>
-        </CardContent>
-      </Card>
+      <ModernCard variant="glass" size="medium" loading={true}>
+        <Box display="flex" justifyContent="center" py={4}>
+          <CircularProgress />
+        </Box>
+      </ModernCard>
     );
   }
 
   return (
-    <Card>
-      <CardContent>
-        {/* Header */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <ConfigIcon color="primary" />
-            <Typography variant="h6">
-              Configure {step.step_type_display}
-            </Typography>
-            <Chip
-              label={step.step_type}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          </Box>
-          
-          <Box display="flex" gap={1}>
-            <Tooltip title="Copy configuration from another step">
-              <span>
-                <IconButton size="small" disabled>
-                  <CopyIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            
-            <Tooltip title="Refresh configuration">
-              <IconButton 
-                size="small"
-                onClick={() => refetchConfig()}
-                disabled={isLoadingConfig}
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
+    <ModernCard variant="glass" size="large" color="primary">
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box display="flex" alignItems="center" gap={1}>
+          <ConfigIcon color="primary" />
+          <Typography variant="h6">
+            Configure {String(step.step_type_display || step.step_type || 'Step')}
+          </Typography>
+          <Chip
+            label={String(step.step_type || 'unknown')}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
         </Box>
+        
+        <Box display="flex" gap={1}>
+          <Tooltip title="Copy configuration from another step">
+            <span>
+              <IconButton size="small" disabled>
+                <CopyIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          
+          <Tooltip title="Refresh configuration">
+            <IconButton 
+              size="small"
+              onClick={() => refetchConfig()}
+              disabled={isLoadingConfig}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
 
-        {/* Show update errors */}
-        {updateConfigurationError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
-          </Alert>
-        )}
+      {updateConfigurationError ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : String(updateConfigurationError)}
+        </Alert>
+      ) : null}
 
-        {/* Tabs - Only show configuration tab for now since preview isn't implemented */}
-        <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-          <Tab 
-            icon={<ConfigIcon />} 
-            label="Configuration" 
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<PreviewIcon />} 
-            label="Preview" 
-            iconPosition="start"
-            disabled
-          />
-        </Tabs>
+      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
+        <Tab 
+          icon={<ConfigIcon />} 
+          label="Configuration" 
+          iconPosition="start"
+        />
+        <Tab 
+          icon={<PreviewIcon />} 
+          label="Preview" 
+          iconPosition="start"
+          disabled
+        />
+      </Tabs>
 
-        <Divider sx={{ mb: 2 }} />
+      <Divider sx={{ mb: 2 }} />
 
-        {/* Tab Panels */}
-        <TabPanel value={activeTab} index={0}>
-          {renderStepSpecificConfiguration()}
-        </TabPanel>
+      <TabPanel value={activeTab} index={0}>
+        {renderStepSpecificConfiguration()}
+      </TabPanel>
 
-        <TabPanel value={activeTab} index={1}>
-          {renderPreview()}
-        </TabPanel>
-      </CardContent>
-    </Card>
+      <TabPanel value={activeTab} index={1}>
+        {renderPreview()}
+      </TabPanel>
+    </ModernCard>
   );
 };
 
 // Generic configuration form for unsupported step types
-const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: any }> = ({ step, config }) => (
+const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: unknown }> = ({ step, config }) => (
   <Box>
     <Alert severity="info" sx={{ mb: 2 }}>
       Configuration for "{step.step_type_display}" step type is not yet implemented.
@@ -358,7 +354,7 @@ const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: any }> = ({ s
       This step will use default settings and behavior. Custom configuration will be available in a future update.
     </Typography>
     
-    {config && (
+    {config ? (
       <Box sx={{ mt: 2 }}>
         <Typography variant="subtitle2" gutterBottom>
           Current Configuration (Raw Data)
@@ -366,18 +362,17 @@ const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: any }> = ({ s
         <Box 
           sx={{ 
             p: 2, 
-            border: 1, 
-            borderColor: 'divider', 
-            borderRadius: 1,
-            backgroundColor: 'grey.50',
+            ...glassPresets.light,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            borderRadius: tokens.spacing.radius.lg,
             overflow: 'auto'
           }}
         >
           <pre style={{ margin: 0, fontSize: '0.875rem' }}>
-            {JSON.stringify(config, null, 2)}
+            {JSON.stringify(config as Record<string, unknown>, null, 2)}
           </pre>
         </Box>
       </Box>
-    )}
+    ) : null}
   </Box>
 );

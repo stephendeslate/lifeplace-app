@@ -10,8 +10,6 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   FormControl,
   InputLabel,
   Select,
@@ -25,15 +23,19 @@ import {
   Autocomplete,
   CircularProgress,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   Payment as PaymentIcon,
   AccountBalance as BankIcon,
-  CreditCard as CardIcon,
+  CreditCard as CreditCardIcon,
   Schedule as PlanIcon,
   AttachMoney as MoneyIcon,
   Security as SecurityIcon,
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import type { 
   BookingFlowStep, 
@@ -53,12 +55,12 @@ interface PaymentGateway {
   code: string;
   description: string;
   supported_methods: string[];
-  public_config: Record<string, any>;
+  public_config: Record<string, unknown>;
 }
 
 interface PaymentOptions {
   available_gateways: PaymentGateway[];
-  saved_payment_methods: any[];
+  saved_payment_methods: unknown[];
   require_immediate_payment: boolean;
   accept_deposit: boolean;
   deposit_amount: string | null;
@@ -94,7 +96,7 @@ const defaultFormData: PaymentInfoConfigFormData = {
 };
 
 const PAYMENT_METHODS = [
-  { value: 'CREDIT_CARD', label: 'Credit Card', icon: <CardIcon /> },
+  { value: 'CREDIT_CARD', label: 'Credit ModernCard', icon: <CreditCardIcon /> },
   { value: 'BANK_TRANSFER', label: 'Bank Transfer', icon: <BankIcon /> },
   { value: 'CHECK', label: 'Check', icon: <PaymentIcon /> },
   { value: 'CASH', label: 'Cash', icon: <MoneyIcon /> },
@@ -112,6 +114,9 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
   const [paymentOptions, setPaymentOptions] = useState<PaymentOptions | null>(null);
 
   const { usePaymentOptions } = useBookingFlowStepConfiguration();
+  
+  // Get user's currency settings
+  const { settings: currencySettings } = useCurrencySettings();
   
   // Fetch payment options for this step
   const {
@@ -295,8 +300,8 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
 
       <Stack spacing={3}>
         {/* Payment Options */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Payment Options
             </Typography>
@@ -338,13 +343,13 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 <Alert severity="error">{errors.payment_options}</Alert>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Deposit Settings */}
         {formData.accept_deposit && (
-          <Card variant="outlined">
-            <CardContent>
+          <ModernCard variant="glass" size="medium" animation="none">
+            <Box sx={{ p: 3 }}>
               <Typography variant="subtitle1" gutterBottom>
                 Deposit Settings
               </Typography>
@@ -393,13 +398,13 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                   sx={{ maxWidth: 300 }}
                 />
               </Stack>
-            </CardContent>
-          </Card>
+            </Box>
+          </ModernCard>
         )}
 
         {/* Payment Methods */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Available Payment Methods
             </Typography>
@@ -442,12 +447,12 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 )}
               </FormControl>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Payment Gateways */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <SecurityIcon color="primary" />
               <Typography variant="subtitle1">
@@ -540,12 +545,12 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 </Alert>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Payment Processing */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Payment Processing
             </Typography>
@@ -583,12 +588,12 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 Enable installment payment options for clients
               </Typography>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Payment Terms */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Payment Terms & Conditions
             </Typography>
@@ -603,12 +608,12 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
               helperText="Additional terms and conditions regarding payment (optional)"
               placeholder="Enter payment terms, cancellation policy, refund information, etc."
             />
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Configuration Summary */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Configuration Summary
             </Typography>
@@ -618,7 +623,7 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 <strong>Payment Options:</strong>{' '}
                 {[
                   formData.accept_full_payment && 'Full Payment',
-                  formData.accept_deposit && `Deposit (${formData.deposit_amount}${formData.deposit_type === 'PERCENTAGE' ? '%' : ' USD'})`
+                  formData.accept_deposit && `Deposit (${formData.deposit_amount}${formData.deposit_type === 'PERCENTAGE' ? '%' : ` ${currencySettings?.defaultCurrency || 'PHP'}`})`
                 ].filter(Boolean).join(', ') || 'None configured'}
               </Typography>
               
@@ -651,8 +656,8 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 </Typography>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

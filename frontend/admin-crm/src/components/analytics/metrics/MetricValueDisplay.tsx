@@ -17,6 +17,8 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
+import { formatCurrency } from '../../../utils/currency';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 
 interface TrendData {
   value: number;
@@ -55,6 +57,8 @@ export const MetricValueDisplay: React.FC<MetricValueDisplayProps> = ({
   showTrend = true,
   color = 'primary',
 }) => {
+  const { settings: currencySettings } = useCurrencySettings();
+  
   const formatValue = (val: string | number, format: string, decimals: number): string => {
     if (val === null || val === undefined || val === '') {
       return '--';
@@ -67,13 +71,15 @@ export const MetricValueDisplay: React.FC<MetricValueDisplayProps> = ({
     }
 
     switch (format) {
-      case 'currency':
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: decimals,
-          maximumFractionDigits: decimals,
-        }).format(numValue);
+      case 'currency': {
+        const currency = currencySettings?.defaultCurrency || 'PHP';
+        return formatCurrency(numValue, currency, {
+          showSymbol: currencySettings?.displayFormat !== 'code',
+          showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+          minimumFractionDigits: decimals ?? currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+          maximumFractionDigits: decimals ?? currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+        });
+      }
       
       case 'percentage':
         return `${numValue.toFixed(decimals)}%`;
@@ -84,19 +90,21 @@ export const MetricValueDisplay: React.FC<MetricValueDisplayProps> = ({
           maximumFractionDigits: decimals,
         }).format(numValue);
       
-      case 'duration':
+      case 'duration': {
         const hours = Math.floor(numValue / 60);
         const minutes = Math.round(numValue % 60);
         if (hours > 0) {
           return `${hours}h ${minutes}m`;
         }
         return `${minutes}m`;
+      }
       
-      case 'bytes':
+      case 'bytes': {
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         if (numValue === 0) return '0 B';
         const i = Math.floor(Math.log(numValue) / Math.log(1024));
         return `${(numValue / Math.pow(1024, i)).toFixed(decimals)} ${sizes[i]}`;
+      }
       
       default:
         return numValue.toFixed(decimals);

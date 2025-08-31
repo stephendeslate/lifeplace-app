@@ -9,7 +9,9 @@ import type {
   AdminInvitation,
   InviteAdminFormData,
   AcceptInvitationFormData,
-  AcceptInvitationResponse
+  AcceptInvitationResponse,
+  CreateAdminUserData,
+  UpdateAdminUserData
 } from '../types/settings.types';
 
 // Define paginated response types
@@ -49,12 +51,12 @@ export const settingsApi = {
     }
   },
 
-  createAdminUser: async (data: any): Promise<AdminUser> => {
+  createAdminUser: async (data: CreateAdminUserData): Promise<AdminUser> => {
     const response = await api.post<AdminUser>('/users/', data);
     return response.data;
   },
 
-  updateAdminUser: async (id: number, data: any): Promise<AdminUser> => {
+  updateAdminUser: async (id: number, data: UpdateAdminUserData): Promise<AdminUser> => {
     const response = await api.put<AdminUser>(`/users/${id}/`, data);
     return response.data;
   },

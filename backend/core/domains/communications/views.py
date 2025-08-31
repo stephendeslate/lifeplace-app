@@ -17,6 +17,8 @@ from .serializers import (
 )
 from .services import CommunicationTemplateService, CommunicationService, AnalyticsService
 from .cache_service import communications_cache_service
+from .resilience import provider_manager
+from .monitoring import health_checker, alert_manager, communication_metrics
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -172,7 +174,10 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
 
 class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for communication records"""
-    queryset = CommunicationRecord.objects.all().order_by('-created_at')
+    queryset = CommunicationRecord.objects.select_related(
+        'client',
+        'sent_by'
+    ).order_by('-created_at')
     serializer_class = CommunicationRecordSerializer
     permission_classes = [IsAdminOrClient]  # Both admins and clients can view records
     
@@ -236,6 +241,7 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
         recipient = serializer.validated_data['recipient']
         client_id = serializer.validated_data.get('client_id')
         context_data = serializer.validated_data.get('context_data', {})
+        use_async = serializer.validated_data.get('use_async', False)
         
         # Get client if provided
         client = None
@@ -259,24 +265,42 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
         
         # Send communication
         communication_service = CommunicationService()
-        record = communication_service.send_communication_by_template(
-            template=template,
-            recipient=recipient,
-            context_data=context_data,
-            client=client,
-            sent_by=request.user
-        )
         
-        if record:
-            return Response(
-                CommunicationRecordSerializer(record).data,
-                status=status.HTTP_201_CREATED
+        if use_async:
+            # For async, use the template name method
+            record = communication_service.send_communication(
+                template_name=template.name,
+                recipient=recipient,
+                context_data=context_data,
+                client=client,
+                sent_by=request.user,
+                use_async=True
             )
+            
+            return Response({
+                'message': 'Communication queued for async processing',
+                'async': True
+            }, status=status.HTTP_202_ACCEPTED)
         else:
-            return Response(
-                {'error': 'Failed to send communication'},
-                status=status.HTTP_400_BAD_REQUEST
+            # Synchronous sending
+            record = communication_service.send_communication_by_template(
+                template=template,
+                recipient=recipient,
+                context_data=context_data,
+                client=client,
+                sent_by=request.user
             )
+            
+            if record:
+                return Response(
+                    CommunicationRecordSerializer(record).data,
+                    status=status.HTTP_201_CREATED
+                )
+            else:
+                return Response(
+                    {'error': 'Failed to send communication'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
     
     @action(detail=False, methods=['post'])
     def send_bulk(self, request):
@@ -304,17 +328,28 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
             )
         
         # Send bulk communications
+        use_async = request.data.get('use_async', len(recipients) > 5)  # Auto-async for large batches
+        
         communication_service = CommunicationService()
         records = communication_service.send_bulk_communications(
             template=template,
             recipients=recipients,
-            sent_by=request.user
+            sent_by=request.user,
+            use_async=use_async
         )
         
-        return Response({
-            'sent_count': len(records),
-            'records': CommunicationRecordSerializer(records, many=True).data
-        }, status=status.HTTP_201_CREATED)
+        if use_async and not records:
+            return Response({
+                'message': f'Bulk communication queued for async processing ({len(recipients)} recipients)',
+                'async': True,
+                'recipient_count': len(recipients)
+            }, status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response({
+                'sent_count': len(records),
+                'records': CommunicationRecordSerializer(records, many=True).data,
+                'async': False
+            }, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['get'])
     def analytics(self, request):
@@ -458,3 +493,228 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
                 {'error': f'Failed to mark message as unread: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=False, methods=['get'])
+    def health_check(self, request):
+        """Get communication system health status"""
+        # Only admins can access health check
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can access health status'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        communication_service = CommunicationService()
+        
+        try:
+            health_data = {
+                'providers': communication_service.get_provider_health(),
+                'timestamp': timezone.now().isoformat(),
+                'system_status': 'healthy'
+            }
+            
+            # Check if any providers are unhealthy
+            unhealthy_providers = [
+                name for name, data in health_data['providers'].items()
+                if not data.get('healthy', False)
+            ]
+            
+            if unhealthy_providers:
+                health_data['system_status'] = 'degraded'
+                health_data['unhealthy_providers'] = unhealthy_providers
+            
+            return Response(health_data)
+            
+        except Exception as e:
+            return Response({
+                'system_status': 'error',
+                'error': str(e),
+                'timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def reset_provider(self, request):
+        """Reset circuit breaker for a specific provider"""
+        # Only admins can reset providers
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can reset providers'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        provider_name = request.data.get('provider_name')
+        if not provider_name:
+            return Response(
+                {'error': 'provider_name is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            communication_service = CommunicationService()
+            communication_service.reset_provider(provider_name)
+            
+            return Response({
+                'message': f'Provider {provider_name} circuit breaker reset successfully',
+                'timestamp': timezone.now().isoformat()
+            })
+            
+        except Exception as e:
+            return Response({
+                'error': f'Failed to reset provider {provider_name}: {str(e)}',
+                'timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['post'])
+    def process_retry_queue(self, request):
+        """Manually process the retry queue"""
+        # Only admins can process retry queue
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can process retry queue'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            communication_service = CommunicationService()
+            results = communication_service.process_retry_queue()
+            
+            return Response({
+                'message': 'Retry queue processed successfully',
+                'results': results,
+                'timestamp': timezone.now().isoformat()
+            })
+            
+        except Exception as e:
+            return Response({
+                'error': f'Failed to process retry queue: {str(e)}',
+                'timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'])
+    def system_health(self, request):
+        """Get comprehensive system health report"""
+        # Only admins can access system health
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can access system health'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            # Check if we have a recent health report cached
+            cached_health = health_checker.get_cached_health()
+            
+            if not cached_health:
+                # Perform full health check
+                health_report = health_checker.check_all_systems()
+                
+                # Generate alerts based on health
+                alerts = alert_manager.check_and_alert(health_report)
+                health_report['alerts'] = alerts
+            else:
+                health_report = cached_health
+                # Get current alerts
+                health_report['alerts'] = alert_manager.get_active_alerts()
+            
+            return Response(health_report)
+            
+        except Exception as e:
+            logger.error(f"Health check failed: {str(e)}")
+            return Response({
+                'overall_status': 'error',
+                'error': str(e),
+                'timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def metrics(self, request):
+        """Get communication metrics and analytics"""
+        # Only admins can access metrics
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can access metrics'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            hours = int(request.query_params.get('hours', 24))
+            include_database = request.query_params.get('include_db', 'true').lower() == 'true'
+            
+            # Get cache-based metrics (real-time)
+            cache_metrics = communication_metrics.get_hourly_metrics(hours)
+            
+            response_data = {
+                'cache_metrics': cache_metrics,
+                'timestamp': timezone.now().isoformat(),
+                'period_hours': hours
+            }
+            
+            # Add database metrics if requested
+            if include_database:
+                db_metrics = communication_metrics.get_database_metrics(hours)
+                response_data['database_metrics'] = db_metrics
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Metrics retrieval failed: {str(e)}")
+            return Response({
+                'error': str(e),
+                'timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def alerts(self, request):
+        """Get system alerts"""
+        # Only admins can access alerts
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can access alerts'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            include_history = request.query_params.get('include_history', 'false').lower() == 'true'
+            
+            response_data = {
+                'active_alerts': alert_manager.get_active_alerts(),
+                'timestamp': timezone.now().isoformat()
+            }
+            
+            if include_history:
+                limit = int(request.query_params.get('history_limit', 50))
+                response_data['alert_history'] = alert_manager.get_alert_history(limit)
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Alerts retrieval failed: {str(e)}")
+            return Response({
+                'error': str(e),
+                'timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def clear_alerts(self, request):
+        """Clear active alerts"""
+        # Only admins can clear alerts
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can clear alerts'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            alert_manager.clear_alerts()
+            
+            return Response({
+                'message': 'Active alerts cleared successfully',
+                'timestamp': timezone.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"Clear alerts failed: {str(e)}")
+            return Response({
+                'error': str(e),
+                'timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

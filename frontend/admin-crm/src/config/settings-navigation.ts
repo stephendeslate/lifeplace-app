@@ -13,6 +13,7 @@ import {
   AccountTree,
   TrendingUp,
   Psychology,
+  CurrencyExchange,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -108,6 +109,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/commerce/products-packages',
         icon: Inventory,
         description: 'Manage products and packages',
+      },
+      {
+        id: 'currency-taxes',
+        label: 'Currency & Taxes',
+        path: '/settings/commerce/currency-taxes',
+        icon: CurrencyExchange,
+        description: 'Configure currency display and tax rates',
       },
       {
         id: 'payments',

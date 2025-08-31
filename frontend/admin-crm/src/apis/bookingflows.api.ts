@@ -86,7 +86,7 @@ export const bookingFlowsApi = {
       code: string;
       description: string;
       is_active: boolean;
-      public_config: Record<string, any>;
+      public_config: Record<string, unknown>;
     }>;
     default_gateway: number | null;
     require_immediate_payment: boolean;
@@ -98,7 +98,7 @@ export const bookingFlowsApi = {
         code: string;
         description: string;
         is_active: boolean;
-        public_config: Record<string, any>;
+        public_config: Record<string, unknown>;
       }>;
       default_gateway: number | null;
       require_immediate_payment: boolean;
@@ -180,15 +180,15 @@ export const bookingFlowsApi = {
     try {
       const response = await api.get<StepConfiguration>(`/bookingflow/steps/${stepId}/configuration/`);
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error) {
+      if ((error as { response?: { status?: number } }).response?.status === 404) {
         return null;
       }
       throw error;
     }
   },
 
-  updateStepConfiguration: async (stepId: number, data: Record<string, any>): Promise<StepConfiguration> => {
+  updateStepConfiguration: async (stepId: number, data: Record<string, unknown>): Promise<StepConfiguration> => {
     const response = await api.patch<StepConfiguration>(`/bookingflow/steps/${stepId}/update_configuration/`, data);
     return response.data;
   },
@@ -202,13 +202,13 @@ export const bookingFlowsApi = {
   // FIXED: Step validation rules endpoint
   getStepValidationRules: async (stepId: number): Promise<{
     step_type: string;
-    validation_rules: Record<string, any>;
-    custom_rules: Record<string, any>;
+    validation_rules: Record<string, unknown>;
+    custom_rules: Record<string, unknown>;
   }> => {
     const response = await api.get<{
       step_type: string;
-      validation_rules: Record<string, any>;
-      custom_rules: Record<string, any>;
+      validation_rules: Record<string, unknown>;
+      custom_rules: Record<string, unknown>;
     }>(`/bookingflow/steps/${stepId}/step_validation_rules/`);
     return response.data;
   },
@@ -228,7 +228,12 @@ export const bookingFlowsApi = {
     calendar_source: string;
     blocked_dates: string[];
     available_days_of_week: number[];
-    available_time_slots: any[];
+    available_time_slots: Array<{
+      start_time: string;
+      end_time: string;
+      day_of_week?: number;
+      is_available: boolean;
+    }>;
     buffer_before_hours: number;
     buffer_after_hours: number;
   }> => {
@@ -246,7 +251,12 @@ export const bookingFlowsApi = {
       calendar_source: string;
       blocked_dates: string[];
       available_days_of_week: number[];
-      available_time_slots: any[];
+      available_time_slots: Array<{
+      start_time: string;
+      end_time: string;
+      day_of_week?: number;
+      is_available: boolean;
+    }>;
       buffer_before_hours: number;
       buffer_after_hours: number;
     }>(`/bookingflow/steps/${stepId}/availability_settings/`);
@@ -261,9 +271,15 @@ export const bookingFlowsApi = {
       code: string;
       description: string;
       supported_methods: string[];
-      public_config: Record<string, any>;
+      public_config: Record<string, unknown>;
     }>;
-    saved_payment_methods: any[];
+    saved_payment_methods: Array<{
+        id: number;
+        type: string;
+        last_four: string;
+        expires_at?: string;
+        is_default: boolean;
+      }>;
     require_immediate_payment: boolean;
     accept_deposit: boolean;
     deposit_amount: string | null;
@@ -278,9 +294,15 @@ export const bookingFlowsApi = {
         code: string;
         description: string;
         supported_methods: string[];
-        public_config: Record<string, any>;
+        public_config: Record<string, unknown>;
       }>;
-      saved_payment_methods: any[];
+      saved_payment_methods: Array<{
+        id: number;
+        type: string;
+        last_four: string;
+        expires_at?: string;
+        is_default: boolean;
+      }>;
       require_immediate_payment: boolean;
       accept_deposit: boolean;
       deposit_amount: string | null;
@@ -430,12 +452,26 @@ export const bookingFlowsApi = {
 
   completeBooking: async (id: number): Promise<{ 
     detail: string;
-    event: any; 
+    event: {
+      id: number;
+      name: string;
+      event_date: string;
+      status: string;
+      client_id: number;
+      total_price: string;
+    }; 
     session: BookingSession;
   }> => {
     const response = await api.post<{ 
       detail: string;
-      event: any; 
+      event: {
+      id: number;
+      name: string;
+      event_date: string;
+      status: string;
+      client_id: number;
+      total_price: string;
+    }; 
       session: BookingSession;
     }>(`/bookingflow/sessions/${id}/complete_booking/`);
     return response.data;
@@ -474,7 +510,7 @@ export const bookingFlowsApi = {
       name: string;
       code: string;
       description: string;
-      public_config: Record<string, any>;
+      public_config: Record<string, unknown>;
     }>;
     default_gateway: number | null;
     require_immediate_payment: boolean;
@@ -485,7 +521,7 @@ export const bookingFlowsApi = {
         name: string;
         code: string;
         description: string;
-        public_config: Record<string, any>;
+        public_config: Record<string, unknown>;
       }>;
       default_gateway: number | null;
       require_immediate_payment: boolean;

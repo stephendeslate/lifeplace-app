@@ -10,8 +10,6 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Chip,
   FormControl,
   InputLabel,
@@ -25,6 +23,9 @@ import {
   CircularProgress,
   Skeleton,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   ExpandMore as ExpandMoreIcon,
   ShoppingCart as AddonIcon,
@@ -51,7 +52,7 @@ interface AddonConfigFormData {
   max_selection: number;
   group_by_category: boolean;
   show_recommendations: boolean;
-  recommendation_logic: Record<string, any>;
+  recommendation_logic: Record<string, unknown>;
 }
 
 const defaultFormData: AddonConfigFormData = {
@@ -290,11 +291,11 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
       <Box>
         <Alert severity="error" sx={{ mb: 2 }}>
           Failed to load configuration data. Please try refreshing the page.
-          {updateConfigurationError && (
+          {updateConfigurationError ? (
             <Typography variant="body2" sx={{ mt: 1 }}>
-              Update Error: {updateConfigurationError.message}
+              Update Error: {(updateConfigurationError as { message?: string }).message || 'Unknown error'}
             </Typography>
-          )}
+          ) : null}
         </Alert>
         <Button startIcon={<RefreshIcon />} onClick={() => window.location.reload()}>
           Refresh Page
@@ -315,8 +316,8 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
 
       <Stack spacing={3}>
         {/* Add-on Availability */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Available Add-ons
             </Typography>
@@ -421,12 +422,12 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 <Alert severity="error">{errors.selection}</Alert>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Selection Behavior */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Selection Behavior
             </Typography>
@@ -458,12 +459,12 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 />
               </Box>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Display Options */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Display Options
             </Typography>
@@ -497,8 +498,8 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 Highlight recommended add-ons based on the client's selections
               </Typography>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Advanced Recommendations */}
         <Accordion>
@@ -541,8 +542,8 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
         </Accordion>
 
         {/* Configuration Summary */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Configuration Summary
             </Typography>
@@ -585,8 +586,8 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 )}
               </Stack>
             )}
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2} alignItems="center">

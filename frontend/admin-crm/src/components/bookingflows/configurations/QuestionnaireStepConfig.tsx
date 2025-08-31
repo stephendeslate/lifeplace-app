@@ -10,8 +10,6 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Chip,
   IconButton,
   List,
@@ -29,6 +27,9 @@ import {
   MenuItem,
   ListItemText as MuiListItemText,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -115,8 +116,8 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
   // Clear errors when data changes
   useEffect(() => {
     if (assignQuestionnairesError || updateConfigurationError) {
-      const errorMessage = assignQuestionnairesError?.message || 
-                          updateConfigurationError?.message || 
+      const errorMessage = (assignQuestionnairesError as { message?: string })?.message || 
+                          (updateConfigurationError as { message?: string })?.message || 
                           'An error occurred';
       setErrors({ general: errorMessage });
     } else {
@@ -270,8 +271,8 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
 
       <Stack spacing={3}>
         {/* Assigned Questionnaires */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="subtitle1">
                 Assigned Questionnaires ({questionnaireItems.length})
@@ -359,12 +360,12 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                 ))}
               </List>
             )}
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* File Upload Settings */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               File Upload Settings
             </Typography>
@@ -433,12 +434,12 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                 </>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Summary */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Configuration Summary
             </Typography>
@@ -464,8 +465,8 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                 </>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

@@ -33,6 +33,19 @@ import type {
   ExportOptions,
 } from '../types/analytics.types';
 
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+      name?: string | string[];
+      title?: string | string[];
+      metric_definition?: string | string[];
+      non_field_errors?: string[];
+      [key: string]: unknown;
+    };
+  };
+}
+
 export const useMetricDefinitions = (filters?: MetricDefinitionFilters) => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
@@ -73,7 +86,7 @@ export const useMetricDefinitions = (filters?: MetricDefinitionFilters) => {
       queryClient.invalidateQueries({ queryKey: ['metric-definitions'] });
       showSuccess('Metric Created', `${newMetric.name} has been created successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       console.error('Create metric error:', error);
       
       if (error.response?.data) {
@@ -88,7 +101,7 @@ export const useMetricDefinitions = (filters?: MetricDefinitionFilters) => {
         } else {
           const fieldErrors = Object.entries(errorData)
             .map(([field, messages]) => {
-              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              const messageText = Array.isArray(messages) ? messages.join(', ') : String(messages);
               return `${field}: ${messageText}`;
             })
             .join('\n');
@@ -108,7 +121,7 @@ export const useMetricDefinitions = (filters?: MetricDefinitionFilters) => {
       queryClient.invalidateQueries({ queryKey: ['metric-definition', updatedMetric.id] });
       showSuccess('Metric Updated', `${updatedMetric.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update metric definition';
       showError('Update Failed', message);
     },
@@ -120,7 +133,7 @@ export const useMetricDefinitions = (filters?: MetricDefinitionFilters) => {
       queryClient.invalidateQueries({ queryKey: ['metric-definitions'] });
       showSuccess('Metric Deleted', 'Metric definition has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete metric definition';
       showError('Delete Failed', message);
     },
@@ -129,7 +142,7 @@ export const useMetricDefinitions = (filters?: MetricDefinitionFilters) => {
   const calculateMetricMutation = useMutation({
     mutationFn: ({ id, request }: { id: number; request: MetricCalculationRequest }) =>
       analyticsApi.calculateMetric(id, request),
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to calculate metric';
       showError('Calculation Failed', message);
     },
@@ -211,7 +224,7 @@ export const useDashboards = (filters?: DashboardFilters) => {
       queryClient.invalidateQueries({ queryKey: ['dashboards'] });
       showSuccess('Dashboard Created', `${newDashboard.name} has been created successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create dashboard';
       showError('Create Failed', message);
     },
@@ -225,7 +238,7 @@ export const useDashboards = (filters?: DashboardFilters) => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', updatedDashboard.id] });
       showSuccess('Dashboard Updated', `${updatedDashboard.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update dashboard';
       showError('Update Failed', message);
     },
@@ -237,7 +250,7 @@ export const useDashboards = (filters?: DashboardFilters) => {
       queryClient.invalidateQueries({ queryKey: ['dashboards'] });
       showSuccess('Dashboard Deleted', 'Dashboard has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete dashboard';
       showError('Delete Failed', message);
     },
@@ -251,7 +264,7 @@ export const useDashboards = (filters?: DashboardFilters) => {
       queryClient.invalidateQueries({ queryKey: ['widgets'] });
       showSuccess('Widget Added', 'Widget has been added to dashboard successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to add widget';
       showError('Add Widget Failed', message);
     },
@@ -327,7 +340,7 @@ export const useWidgets = (filters?: { dashboard_id?: number }) => {
       }
       showSuccess('Widget Added', `${newWidget.title} has been added to the dashboard successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       console.error('Add widget error:', error);
       
       if (error.response?.data) {
@@ -344,7 +357,7 @@ export const useWidgets = (filters?: { dashboard_id?: number }) => {
         } else {
           const fieldErrors = Object.entries(errorData)
             .map(([field, messages]) => {
-              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              const messageText = Array.isArray(messages) ? messages.join(', ') : String(messages);
               return `${field}: ${messageText}`;
             })
             .join('\n');
@@ -371,7 +384,7 @@ export const useWidgets = (filters?: { dashboard_id?: number }) => {
       }
       showSuccess('Widget Updated', `${updatedWidget.title} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       console.error('Update widget error:', error);
       
       if (error.response?.data) {
@@ -386,7 +399,7 @@ export const useWidgets = (filters?: { dashboard_id?: number }) => {
         } else {
           const fieldErrors = Object.entries(errorData)
             .map(([field, messages]) => {
-              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              const messageText = Array.isArray(messages) ? messages.join(', ') : String(messages);
               return `${field}: ${messageText}`;
             })
             .join('\n');
@@ -411,7 +424,7 @@ export const useWidgets = (filters?: { dashboard_id?: number }) => {
       }
       showSuccess('Widget Deleted', 'Widget has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       console.error('Delete widget error:', error);
       const message = error.response?.data?.detail || 'Failed to delete widget. Please try again.';
       showError('Delete Failed', message);
@@ -489,7 +502,7 @@ export const useAnalyticsReports = (filters?: AnalyticsReportFilters) => {
       queryClient.invalidateQueries({ queryKey: ['analytics-reports'] });
       showSuccess('Report Created', `${newReport.name} has been created successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create report';
       showError('Create Failed', message);
     },
@@ -503,7 +516,7 @@ export const useAnalyticsReports = (filters?: AnalyticsReportFilters) => {
       queryClient.invalidateQueries({ queryKey: ['analytics-report', updatedReport.id] });
       showSuccess('Report Updated', `${updatedReport.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update report';
       showError('Update Failed', message);
     },
@@ -515,7 +528,7 @@ export const useAnalyticsReports = (filters?: AnalyticsReportFilters) => {
       queryClient.invalidateQueries({ queryKey: ['analytics-reports'] });
       showSuccess('Report Deleted', 'Report has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete report';
       showError('Delete Failed', message);
     },
@@ -529,7 +542,7 @@ export const useAnalyticsReports = (filters?: AnalyticsReportFilters) => {
       queryClient.invalidateQueries({ queryKey: ['analytics-reports'] });
       showSuccess('Report Executed', 'Report has been executed successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to execute report';
       showError('Execution Failed', message);
     },
@@ -606,7 +619,7 @@ export const useAnalyticsEvents = (filters?: EventFilters) => {
       queryClient.invalidateQueries({ queryKey: ['analytics-events'] });
       // Don't show success toast for tracking - too noisy
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       // Only show error if it's a manual tracking attempt
       console.error('Event tracking failed:', error);
     },
@@ -614,7 +627,7 @@ export const useAnalyticsEvents = (filters?: EventFilters) => {
 
   const trackPublicEventMutation = useMutation({
     mutationFn: (request: EventTrackingRequest) => analyticsApi.trackPublicEvent(request),
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       console.error('Public event tracking failed:', error);
     },
   });
@@ -681,7 +694,7 @@ export const useConversionFunnels = (filters?: FunnelFilters) => {
       queryClient.invalidateQueries({ queryKey: ['conversion-funnels'] });
       showSuccess('Funnel Created', `${newFunnel.name} has been created successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create funnel';
       showError('Create Failed', message);
     },
@@ -695,7 +708,7 @@ export const useConversionFunnels = (filters?: FunnelFilters) => {
       queryClient.invalidateQueries({ queryKey: ['conversion-funnel', updatedFunnel.id] });
       showSuccess('Funnel Updated', `${updatedFunnel.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update funnel';
       showError('Update Failed', message);
     },
@@ -707,7 +720,7 @@ export const useConversionFunnels = (filters?: FunnelFilters) => {
       queryClient.invalidateQueries({ queryKey: ['conversion-funnels'] });
       showSuccess('Funnel Deleted', 'Funnel has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete funnel';
       showError('Delete Failed', message);
     },
@@ -720,7 +733,7 @@ export const useConversionFunnels = (filters?: FunnelFilters) => {
       queryClient.invalidateQueries({ queryKey: ['funnel-analytics'] });
       // Don't show success toast for tracking - too noisy
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       console.error('Funnel tracking failed:', error);
     },
   });
@@ -788,7 +801,7 @@ export const useAlertRules = (filters?: AlertRuleFilters) => {
       queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
       showSuccess('Alert Rule Created', `${newRule.name} has been created successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create alert rule';
       showError('Create Failed', message);
     },
@@ -802,7 +815,7 @@ export const useAlertRules = (filters?: AlertRuleFilters) => {
       queryClient.invalidateQueries({ queryKey: ['alert-rule', updatedRule.id] });
       showSuccess('Alert Rule Updated', `${updatedRule.name} has been updated successfully.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update alert rule';
       showError('Update Failed', message);
     },
@@ -814,7 +827,7 @@ export const useAlertRules = (filters?: AlertRuleFilters) => {
       queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
       showSuccess('Alert Rule Deleted', 'Alert rule has been deleted successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete alert rule';
       showError('Delete Failed', message);
     },
@@ -829,7 +842,7 @@ export const useAlertRules = (filters?: AlertRuleFilters) => {
         `Alert would not trigger. Current value: ${result.current_value}`;
       showSuccess('Test Completed', message);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to test alert rule';
       showError('Test Failed', message);
     },
@@ -933,7 +946,7 @@ export const useAnalyticsAdmin = () => {
       queryClient.invalidateQueries({ queryKey: ['event-aggregations'] });
       showSuccess('Aggregations Created', `Daily aggregations created for ${result.date}`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create daily aggregations';
       showError('Aggregation Failed', message);
     },
@@ -945,7 +958,7 @@ export const useAnalyticsAdmin = () => {
       queryClient.invalidateQueries({ queryKey: ['analytics-events'] });
       showSuccess('Cleanup Completed', `Deleted ${result.deleted_count} old events`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to cleanup old events';
       showError('Cleanup Failed', message);
     },
@@ -956,7 +969,7 @@ export const useAnalyticsAdmin = () => {
     onSuccess: () => {
       showSuccess('Alerts Evaluated', 'All alert rules have been evaluated');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to evaluate alerts';
       showError('Evaluation Failed', message);
     },
@@ -984,7 +997,7 @@ export const useAnalyticsAdmin = () => {
 export const usePublicAnalytics = () => {
   const trackPublicMutation = useMutation({
     mutationFn: (request: EventTrackingRequest) => analyticsApi.trackPublicAnalytics(request),
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       // Silent fail for public tracking
       console.warn('Public analytics tracking failed:', error);
     },
@@ -1102,7 +1115,7 @@ export const useAnalyticsExport = () => {
         showSuccess('Metrics configuration downloaded successfully');
       }
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       showError(error?.response?.data?.detail || 'Failed to export metrics configuration');
     },
   });
@@ -1116,7 +1129,7 @@ export const useAnalyticsExport = () => {
         showSuccess('Dashboard settings downloaded successfully');
       }
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       showError(error?.response?.data?.detail || 'Failed to export dashboard settings');
     },
   });
@@ -1130,7 +1143,7 @@ export const useAnalyticsExport = () => {
         showSuccess('Alert rules downloaded successfully');
       }
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       showError(error?.response?.data?.detail || 'Failed to export alert rules');
     },
   });
@@ -1140,7 +1153,7 @@ export const useAnalyticsExport = () => {
     onSuccess: () => {
       showSuccess('Full analytics backup created and downloaded successfully');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       showError(error?.response?.data?.detail || 'Failed to create full backup');
     },
   });

@@ -1,17 +1,18 @@
 // frontend/admin-crm/src/providers/AppProviders.tsx
 
 import React from 'react';
-import { ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-import theme from '../utils/theme';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { LayoutProvider } from '../contexts/LayoutContext';
+import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -23,9 +24,9 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-      retry: (failureCount, error: any) => {
+      retry: (failureCount, error: unknown) => {
         // Don't retry on 401/403 errors
-        if (error?.response?.status === 401 || error?.response?.status === 403) {
+        if ((error as { response?: { status?: number } })?.response?.status === 401 || (error as { response?: { status?: number } })?.response?.status === 403) {
           return false;
         }
         // Retry up to 3 times for other errors
@@ -39,22 +40,37 @@ const queryClient = new QueryClient({
   },
 });
 
-export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
+// Inner component that has access to our theme context
+const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { theme } = useTheme();
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <AuthProvider>
-            <LayoutProvider>
-              <ToastProvider>
+    <MuiThemeProvider theme={theme}>
+      <CssBaseline enableColorScheme />
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <AuthProvider>
+          <LayoutProvider>
+            <ToastProvider>
+              <ConfirmDialogProvider>
                 {children}
                 {/* Only show React Query devtools in development */}
                 {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-              </ToastProvider>
-            </LayoutProvider>
-          </AuthProvider>
-        </LocalizationProvider>
+              </ConfirmDialogProvider>
+            </ToastProvider>
+          </LayoutProvider>
+        </AuthProvider>
+      </LocalizationProvider>
+    </MuiThemeProvider>
+  );
+};
+
+export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <ThemedApp>
+          {children}
+        </ThemedApp>
       </ThemeProvider>
     </QueryClientProvider>
   );

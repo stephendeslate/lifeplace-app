@@ -143,7 +143,7 @@ class QuestionnaireFieldViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     
     def get_queryset(self):
-        return QuestionnaireField.objects.all().order_by('questionnaire', 'order')
+        return QuestionnaireField.objects.select_related('questionnaire').order_by('questionnaire', 'order')
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -225,7 +225,7 @@ class QuestionnaireResponseViewSet(viewsets.ModelViewSet):
     permission_classes = [IsOwnerOrAdmin]
     
     def get_queryset(self):
-        return QuestionnaireResponse.objects.all()
+        return QuestionnaireResponse.objects.select_related('event', 'field', 'field__questionnaire')
     
     def list(self, request, *args, **kwargs):
         event_id = request.query_params.get('event')

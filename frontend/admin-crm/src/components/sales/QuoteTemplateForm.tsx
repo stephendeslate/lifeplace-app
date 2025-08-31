@@ -29,11 +29,14 @@ import {
 import { useEventTypes } from '../../hooks/useEvents';
 import { useProducts } from '../../hooks/useProducts';
 import { useCreateQuoteTemplate, useUpdateQuoteTemplate } from '../../hooks/useSales';
+import { formatCurrency } from '../../utils/currency';
 import { sanitizeHTML } from '../../utils/security';
 import type { 
   QuoteTemplate, 
-  CreateQuoteTemplateData, 
+  CreateQuoteTemplateData,
+  CreateQuoteTemplateProductData,
 } from '../../types/sales.types';
+import type { ProductOption } from '../../types/products.types';
 import RichTextEditor from '../shared/RichTextEditor';
 import QuoteVariableInserter from './QuoteVariableInserter';
 
@@ -103,7 +106,7 @@ const quoteTemplateStarters = {
 
 <h3>Cancellation Policy</h3>
 <ul>
-  <li>30+ days notice: Full refund minus $500 processing fee</li>
+  <li>30+ days notice: Full refund minus ${formatCurrency(500, 'PHP')} processing fee</li>
   <li>15-29 days notice: 50% refund</li>
   <li>Less than 15 days: No refund</li>
 </ul>
@@ -165,7 +168,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
     products: [],
   });
 
-  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Record<string, unknown>[]>([]);
   const [previewData, setPreviewData] = useState<{ introduction?: string; terms?: string } | null>(null);
 
   // Get active event types and products
@@ -204,11 +207,11 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
       const selectedProductsData = template.products?.map(p => 
         products.find(prod => prod.id === p.product)
       ).filter(Boolean) || [];
-      setSelectedProducts(selectedProductsData);
+      setSelectedProducts(selectedProductsData.filter(Boolean) as unknown as Record<string, unknown>[]);
     }
   }, [template, products]);
 
-  const handleInputChange = (field: keyof CreateQuoteTemplateData, value: any) => {
+  const handleInputChange = (field: keyof CreateQuoteTemplateData, value: string | boolean | number | null | CreateQuoteTemplateProductData[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -258,10 +261,10 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
       event_date: 'March 15, 2024',
       event_venue: 'Grand Ballroom Hotel',
       event_guest_count: '150',
-      total_amount: '$15,000.00',
+      total_amount: formatCurrency(15000, 'PHP'),
       deposit_percentage: '50',
       final_payment_due: '7 days before event date',
-      late_fee: '$100',
+      late_fee: formatCurrency(100, 'PHP'),
       cancellation_policy: 'Cancellation must be made 30 days in advance for full refund.',
       service_hours: '8'
     };
@@ -284,8 +287,9 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
 
   const handleVariableInsert = (variable: string) => {
     // Use the global function to insert variable if available
-    if ((window as any)._richTextEditorInsertVariable) {
-      (window as any)._richTextEditorInsertVariable(variable);
+    const insertFunction = (window as Window & { _richTextEditorInsertVariable?: (variable: string) => void })._richTextEditorInsertVariable;
+    if (insertFunction) {
+      insertFunction(variable);
     }
   };
 
@@ -298,13 +302,12 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
     }
   };
 
-  // @ts-ignore
-  const handleProductsChange = (event: any, newValue: any[]) => {
-    setSelectedProducts(newValue);
+  const handleProductsChange = (_event: React.SyntheticEvent, newValue: unknown[]) => {
+    setSelectedProducts(newValue as Record<string, unknown>[]);
     
     // Update form data with selected products
     const productFormData = newValue.map(product => ({
-      product: product.id,
+      product: (product as ProductOption).id,
       quantity: 1,
       is_required: false,
     }));
@@ -454,8 +457,8 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
               <Autocomplete
                 multiple
                 options={products}
-                getOptionLabel={(option) => option.name}
-                value={selectedProducts}
+                getOptionLabel={(option) => (option as ProductOption).name}
+                value={selectedProducts as unknown as ProductOption[]}
                 onChange={handleProductsChange}
                 renderInput={(params) => (
                   <TextField
@@ -489,7 +492,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
                         <Box key={index} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
                           <Box display="flex" alignItems="center" gap={2} mb={1}>
                             <Typography variant="subtitle2" sx={{ flex: 1 }}>
-                              {productData?.name}
+                              {String(productData?.name || 'Unknown Product')}
                             </Typography>
                             <TextField
                               size="small"

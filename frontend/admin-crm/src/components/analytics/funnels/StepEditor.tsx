@@ -26,13 +26,13 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
-  DragIndicator as DragIcon,
   PlayArrow as StartIcon,
   CheckCircle as CompleteIcon,
   Edit as EditIcon,
   Search as SearchIcon,
   Event as EventIcon,
 } from '@mui/icons-material';
+import { DraggableList } from '../../common/DraggableList';
 import type { FunnelStep } from '../../../types/analytics.types';
 
 interface StepEditorProps {
@@ -156,8 +156,6 @@ interface StepCardProps {
   totalSteps: number;
   onUpdate: (updatedStep: Partial<FunnelStep>) => void;
   onRemove: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
   availableEvents?: string[];
 }
 
@@ -167,8 +165,6 @@ const StepCard: React.FC<StepCardProps> = ({
   totalSteps,
   onUpdate,
   onRemove,
-  onMoveUp,
-  onMoveDown,
   availableEvents,
 }) => {
   const [showEventSelector, setShowEventSelector] = useState(false);
@@ -291,16 +287,6 @@ const StepCard: React.FC<StepCardProps> = ({
                 </IconButton>
               </Tooltip>
               
-              <Tooltip title="Move up">
-                <IconButton
-                  size="small"
-                  onClick={onMoveUp}
-                  disabled={index === 0}
-                >
-                  <DragIcon />
-                </IconButton>
-              </Tooltip>
-              
               <Tooltip title="Remove step">
                 <IconButton
                   size="small"
@@ -309,16 +295,6 @@ const StepCard: React.FC<StepCardProps> = ({
                   color="error"
                 >
                   <DeleteIcon />
-                </IconButton>
-              </Tooltip>
-              
-              <Tooltip title="Move down">
-                <IconButton
-                  size="small"
-                  onClick={onMoveDown}
-                  disabled={index === totalSteps - 1}
-                >
-                  <DragIcon />
                 </IconButton>
               </Tooltip>
             </Box>
@@ -367,6 +343,7 @@ export const StepEditor: React.FC<StepEditorProps> = ({
 }) => {
   const addStep = () => {
     const newStep: FunnelStep = {
+      id: `step-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       event_name: '',
       name: '',
       description: '',
@@ -389,16 +366,6 @@ export const StepEditor: React.FC<StepEditorProps> = ({
     onChange(reorderedSteps);
   };
 
-  const moveStep = (fromIndex: number, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= steps.length) return;
-    
-    const newSteps = [...steps];
-    const [movedStep] = newSteps.splice(fromIndex, 1);
-    newSteps.splice(toIndex, 0, movedStep);
-    // Reorder all steps
-    const reorderedSteps = newSteps.map((step, i) => ({ ...step, order: i }));
-    onChange(reorderedSteps);
-  };
 
   const isValid = steps.length >= 2 && steps.every(step => step.name && step.event_name);
 
@@ -428,21 +395,32 @@ export const StepEditor: React.FC<StepEditorProps> = ({
           Add at least 2 steps to create a conversion funnel. Steps represent events that users complete in sequence.
         </Alert>
       ) : (
-        <Stack spacing={2}>
-          {steps.map((step, index) => (
-            <StepCard
-              key={index}
-              step={step}
-              index={index}
-              totalSteps={steps.length}
-              onUpdate={(updatedStep) => updateStep(index, updatedStep)}
-              onRemove={() => removeStep(index)}
-              onMoveUp={() => moveStep(index, index - 1)}
-              onMoveDown={() => moveStep(index, index + 1)}
-              availableEvents={availableEvents}
-            />
-          ))}
-        </Stack>
+        <DraggableList
+          items={steps}
+          onReorder={(reorderedSteps) => {
+            const stepsWithNewOrder = reorderedSteps.map((step, i) => ({ ...step, order: i }));
+            onChange(stepsWithNewOrder);
+          }}
+          renderItem={(step) => {
+            const stepIndex = steps.findIndex(s => s === step);
+            return (
+              <Box sx={{ width: '100%' }}>
+                <StepCard
+                  step={step}
+                  index={stepIndex}
+                  totalSteps={steps.length}
+                  onUpdate={(updatedStep) => updateStep(stepIndex, updatedStep)}
+                  onRemove={() => removeStep(stepIndex)}
+                  availableEvents={availableEvents}
+                />
+              </Box>
+            );
+          }}
+          keyExtractor={(step) => step.id}
+          showSaveButton={false}
+          enableKeyboardReorder={true}
+          emptyMessage="No steps added yet."
+        />
       )}
 
       {/* Funnel Preview */}

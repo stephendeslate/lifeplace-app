@@ -25,7 +25,6 @@ import {
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  DragIndicator as DragIcon,
   Schedule as ScheduleIcon,
   Email as EmailIcon,
   Task as TaskIcon,
@@ -34,7 +33,7 @@ import {
   Notifications as NotificationIcon,
   Handyman as ManualIcon,
 } from '@mui/icons-material';
-import type { WorkflowStageTableProps } from '../../types/workflows.types';
+import type { WorkflowStage, WorkflowStageTableProps } from '../../types/workflows.types';
 
 export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
   stages,
@@ -44,9 +43,9 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
   isDeleting,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedStage, setSelectedStage] = useState<any>(null);
+  const [selectedStage, setSelectedStage] = useState<Record<string, unknown> | null>(null);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, stage: any) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, stage: Record<string, unknown>) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
     setSelectedStage(stage);
@@ -59,14 +58,14 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
 
   const handleEdit = () => {
     if (selectedStage) {
-      onEdit(selectedStage);
+      onEdit(selectedStage as unknown as WorkflowStage);
     }
     handleMenuClose();
   };
 
   const handleDelete = () => {
     if (selectedStage) {
-      onDelete(selectedStage.id);
+      onDelete((selectedStage as unknown as WorkflowStage).id);
     }
     handleMenuClose();
   };
@@ -233,7 +232,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
                     onClick={() => onEdit(stage)}
                   >
                     <TableCell>
-                      <DragIcon color="action" fontSize="small" />
+                      {stage.order}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight="medium">
@@ -273,7 +272,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
                     <TableCell align="right">
                       <IconButton
                         size="small"
-                        onClick={(e) => handleMenuOpen(e, stage)}
+                        onClick={(e) => handleMenuOpen(e, stage as unknown as Record<string, unknown>)}
                         disabled={isDeleting}
                       >
                         {isDeleting && selectedStage?.id === stage.id ? (

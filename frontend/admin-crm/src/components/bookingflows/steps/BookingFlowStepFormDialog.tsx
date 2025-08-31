@@ -46,9 +46,9 @@ interface StepFormData {
   is_enabled: boolean;
   is_required: boolean;
   is_skippable: boolean;
-  display_conditions: Record<string, any>;
-  configuration: Record<string, any>;
-  validation_rules: Record<string, any>;
+  display_conditions: Record<string, unknown>;
+  configuration: Record<string, unknown>;
+  validation_rules: Record<string, unknown>;
 }
 
 const defaultFormData: StepFormData = {

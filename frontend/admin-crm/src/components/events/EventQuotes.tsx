@@ -44,6 +44,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQuotesForEvent } from '../../hooks/useSales';
 import type { Event } from '../../types/events.types';
 import type { EventQuote } from '../../types/sales.types';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface EventQuotesProps {
   event: Event;
@@ -87,6 +89,7 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<EventQuote | null>(null);
+  const { settings: currencySettings } = useCurrencySettings();
 
   const {
     data: quotes = [],
@@ -139,11 +142,14 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+  const formatQuoteAmount = (amount: string | number, quoteCurrency?: string) => {
+    const currency = quoteCurrency || currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
   };
 
   if (isLoading) {
@@ -221,11 +227,11 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" fontWeight="bold">
-                    {formatCurrency(Number(quote.total_amount))}
+                    {formatQuoteAmount(quote.total_amount)}
                   </Typography>
                   {Number(quote.discount_amount) > 0 && (
                     <Typography variant="caption" color="text.secondary">
-                      Discount: {formatCurrency(Number(quote.discount_amount))}
+                      Discount: {formatQuoteAmount(quote.discount_amount)}
                     </Typography>
                   )}
                 </TableCell>
@@ -332,8 +338,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
                 </Typography>
                 <Typography variant="h6">
                   {quotes.find((q: EventQuote) => q.status === 'ACCEPTED')
-                    ? formatCurrency(
-                        Number(quotes.find((q: EventQuote) => q.status === 'ACCEPTED')!.total_amount)
+                    ? formatQuoteAmount(
+                        quotes.find((q: EventQuote) => q.status === 'ACCEPTED')!.total_amount
                       )
                     : 'None'}
                 </Typography>

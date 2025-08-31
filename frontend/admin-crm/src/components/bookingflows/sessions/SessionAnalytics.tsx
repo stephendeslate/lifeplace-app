@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Chip,
   Button,
@@ -20,10 +18,11 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   LinearProgress,
   Stack,
 } from '@mui/material';
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   Analytics as AnalyticsIcon,
   TrendingUp as TrendingUpIcon,
@@ -41,6 +40,8 @@ import type {
   BookingFlowAnalytics,
 } from '../../../types/bookingflows.types';
 import { useBookingFlowAnalytics, useBookingSessions } from '../../../hooks/useBookingFlows';
+import { formatCurrency } from '../../../utils/currency';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 
 interface SessionAnalyticsProps {
   flow: BookingFlowDetail;
@@ -71,6 +72,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<'sessions' | 'conversions' | 'revenue'>('sessions');
+  const { settings: currencySettings } = useCurrencySettings();
 
   const { 
     useFlowAnalytics,
@@ -179,7 +181,8 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
         // Use the latest analytics data for step completion info
         const latestAnalytics = analyticsData[analyticsData.length - 1];
         if (latestAnalytics.step_completion_data && latestAnalytics.step_completion_data[step.id.toString()]) {
-          completionRate = latestAnalytics.step_completion_data[step.id.toString()].completion_rate || 0;
+          const stepData = latestAnalytics.step_completion_data[step.id.toString()];
+          completionRate = typeof stepData === 'number' ? stepData : (stepData as { completion_rate?: number })?.completion_rate || 0;
         }
         
         if (latestAnalytics.step_drop_off_data && latestAnalytics.step_drop_off_data[step.id.toString()]) {
@@ -266,11 +269,14 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
     return `${Math.round(seconds / 3600)}h`;
   };
 
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+  const formatAnalyticsCurrency = (amount: number): string => {
+    const currency = currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
   };
 
   // Parse duration string from backend (e.g., "00:15:30" -> seconds)
@@ -346,8 +352,8 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
           {/* Key Metrics */}
           <Box display="flex" flexWrap="wrap" gap={3}>
             <Box flex="1 1 200px" minWidth={200}>
-              <Card>
-                <CardContent>
+              <ModernCard variant="glass" size="medium" animation="none">
+                <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <PeopleIcon color="primary" />
                     <Typography variant="subtitle2" color="text.secondary">
@@ -363,13 +369,13 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       +12% vs previous period
                     </Typography>
                   </Box>
-                </CardContent>
-              </Card>
+                </Box>
+              </ModernCard>
             </Box>
 
             <Box flex="1 1 200px" minWidth={200}>
-              <Card>
-                <CardContent>
+              <ModernCard variant="glass" size="medium" animation="none">
+                <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <CompleteIcon color="success" />
                     <Typography variant="subtitle2" color="text.secondary">
@@ -385,13 +391,13 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       -2.3% vs previous period
                     </Typography>
                   </Box>
-                </CardContent>
-              </Card>
+                </Box>
+              </ModernCard>
             </Box>
 
             <Box flex="1 1 200px" minWidth={200}>
-              <Card>
-                <CardContent>
+              <ModernCard variant="glass" size="medium" animation="none">
+                <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <RevenueIcon color="success" />
                     <Typography variant="subtitle2" color="text.secondary">
@@ -399,7 +405,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     </Typography>
                   </Box>
                   <Typography variant="h4" fontWeight="bold">
-                    {formatCurrency(metrics.totalRevenue)}
+                    {formatAnalyticsCurrency(metrics.totalRevenue)}
                   </Typography>
                   <Box display="flex" alignItems="center" gap={0.5} mt={1}>
                     <TrendingUpIcon fontSize="small" color="success" />
@@ -407,13 +413,13 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       +8.7% vs previous period
                     </Typography>
                   </Box>
-                </CardContent>
-              </Card>
+                </Box>
+              </ModernCard>
             </Box>
 
             <Box flex="1 1 200px" minWidth={200}>
-              <Card>
-                <CardContent>
+              <ModernCard variant="glass" size="medium" animation="none">
+                <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <TimeIcon color="info" />
                     <Typography variant="subtitle2" color="text.secondary">
@@ -429,8 +435,8 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       -15s vs previous period
                     </Typography>
                   </Box>
-                </CardContent>
-              </Card>
+                </Box>
+              </ModernCard>
             </Box>
           </Box>
 
@@ -438,8 +444,8 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
           <Box display="flex" flexWrap="wrap" gap={3}>
             {/* Trend Chart */}
             <Box flex="1 1 600px" minWidth={300}>
-              <Card>
-                <CardContent>
+              <ModernCard variant="glass" size="medium" animation="none">
+                <Box sx={{ p: 3 }}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                     <Typography variant="h6">Performance Trends</Typography>
                     <FormControl size="small">
@@ -469,14 +475,14 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       />
                     </LineChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                </Box>
+              </ModernCard>
             </Box>
 
             {/* Session Status Distribution */}
             <Box flex="1 1 300px" minWidth={300}>
-              <Card>
-                <CardContent>
+              <ModernCard variant="glass" size="medium" animation="none">
+                <Box sx={{ p: 3 }}>
                   <Typography variant="h6" gutterBottom>Session Status</Typography>
                   
                   <ResponsiveContainer width="100%" height={300}>
@@ -515,14 +521,14 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       </Box>
                     ))}
                   </Box>
-                </CardContent>
-              </Card>
+                </Box>
+              </ModernCard>
             </Box>
           </Box>
 
           {/* Conversion Funnel */}
-          <Card>
-            <CardContent>
+          <ModernCard variant="glass" size="medium" animation="none">
+            <Box sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>Conversion Funnel</Typography>
               
               <ResponsiveContainer width="100%" height={400}>
@@ -539,15 +545,15 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                   <Bar dataKey="completionRate" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </ModernCard>
 
           {/* Step Analytics Table */}
-          <Card>
-            <CardContent>
+          <ModernCard variant="glass" size="medium" animation="none">
+            <Box sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>Step Performance</Typography>
               
-              <TableContainer component={Paper} variant="outlined">
+              <TableContainer component={ModernCard} variant="glass" size="small" animation="none"  sx={{ '&.MuiTableContainer-root': { p: 0, borderRadius: 2, boxShadow: 'none', border: '1px solid', borderColor: 'divider' } }}>
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -615,21 +621,21 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                   </TableBody>
                 </Table>
               </TableContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </ModernCard>
 
           {/* Additional Metrics */}
           <Box display="flex" flexWrap="wrap" gap={3}>
             <Box flex="1 1 300px" minWidth={300}>
-              <Card>
-                <CardContent>
+              <ModernCard variant="glass" size="medium" animation="none">
+                <Box sx={{ p: 3 }}>
                   <Typography variant="h6" gutterBottom>Key Performance Indicators</Typography>
                   
                   <Stack spacing={2}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body2">Average Booking Value</Typography>
                       <Typography variant="body2" fontWeight="medium">
-                        {formatCurrency(metrics.averageBookingValue)}
+                        {formatAnalyticsCurrency(metrics.averageBookingValue)}
                       </Typography>
                     </Box>
                     
@@ -654,13 +660,13 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       </Typography>
                     </Box>
                   </Stack>
-                </CardContent>
-              </Card>
+                </Box>
+              </ModernCard>
             </Box>
 
             <Box flex="1 1 300px" minWidth={300}>
-              <Card>
-                <CardContent>
+              <ModernCard variant="glass" size="medium" animation="none">
+                <Box sx={{ p: 3 }}>
                   <Typography variant="h6" gutterBottom>Optimization Suggestions</Typography>
                   
                   <Stack spacing={2}>
@@ -702,8 +708,8 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       </Alert>
                     )}
                   </Stack>
-                </CardContent>
-              </Card>
+                </Box>
+              </ModernCard>
             </Box>
           </Box>
         </Stack>

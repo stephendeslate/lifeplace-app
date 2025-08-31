@@ -5,7 +5,7 @@ export interface ExportData {
   export_type: string;
   exported_at: string;
   exported_by: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ExportOptions {
@@ -28,8 +28,8 @@ export interface MetricDefinition {
   source_domain: string;
   source_model: string;
   source_field: string;
-  calculation_rules: Record<string, any>;
-  filters: Record<string, any>;
+  calculation_rules: Record<string, unknown>;
+  filters: Record<string, unknown>;
   aggregation_period: AggregationPeriod;
   is_real_time: boolean;
   display_format: string;
@@ -48,7 +48,7 @@ export interface Dashboard {
   allowed_roles: string[];
   created_by: number;
   created_by_name?: string;
-  layout_config: Record<string, any>;
+  layout_config: Record<string, unknown>;
   auto_refresh_interval: number;
   is_active: boolean;
   is_default: boolean;
@@ -71,9 +71,9 @@ export interface Widget {
   position_x: number;
   position_y: number;
   order: number;
-  chart_config: Record<string, any>;
+  chart_config: Record<string, unknown>;
   time_range: string;
-  data_filters: Record<string, any>;
+  data_filters: Record<string, unknown>;
   comparison_enabled: boolean;
   comparison_period: string;
   is_visible: boolean;
@@ -86,8 +86,8 @@ export interface AnalyticsReport {
   name: string;
   description: string;
   report_type: ReportType;
-  template_config: Record<string, any>;
-  filters: Record<string, any>;
+  template_config: Record<string, unknown>;
+  filters: Record<string, unknown>;
   schedule_frequency: ScheduleFrequency;
   schedule_time: string | null;
   schedule_day_of_week: number | null;
@@ -113,10 +113,10 @@ export interface ReportExecution {
   status: ExecutionStatus;
   started_at: string | null;
   completed_at: string | null;
-  execution_params: Record<string, any>;
+  execution_params: Record<string, unknown>;
   date_range_start: string;
   date_range_end: string;
-  result_data: Record<string, any>;
+  result_data: Record<string, unknown>;
   file_path: string;
   file_size: number | null;
   execution_time_seconds: number | null;
@@ -139,7 +139,7 @@ export interface AnalyticsEvent {
   session_id: string;
   ip_address: string | null;
   user_agent: string;
-  event_data: Record<string, any>;
+  event_data: Record<string, unknown>;
   numeric_value: number | null;
   event_timestamp: string;
   created_at: string;
@@ -158,7 +158,7 @@ export interface EventAggregation {
   average_value: string | null;
   min_value: string | null;
   max_value: string | null;
-  aggregated_data: Record<string, any>;
+  aggregated_data: Record<string, unknown>;
   is_complete: boolean;
   processed_at: string;
   created_at: string;
@@ -177,6 +177,7 @@ export interface ConversionFunnel {
 }
 
 export interface FunnelStep {
+  id: string;
   event_name: string;
   name: string;
   description?: string;
@@ -194,8 +195,8 @@ export interface FunnelConversion {
   completed_at: string | null;
   is_completed: boolean;
   current_step: number;
-  completed_steps: any[];
-  conversion_data: Record<string, any>;
+  completed_steps: unknown[];
+  conversion_data: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -355,8 +356,8 @@ export interface CreateMetricDefinitionData {
   source_domain: string;
   source_model: string;
   source_field?: string;
-  calculation_rules?: Record<string, any>;
-  filters?: Record<string, any>;
+  calculation_rules?: Record<string, unknown>;
+  filters?: Record<string, unknown>;
   aggregation_period?: AggregationPeriod;
   is_real_time?: boolean;
   display_format?: string;
@@ -373,13 +374,13 @@ export interface CreateDashboardData {
   dashboard_type: DashboardType;
   is_public?: boolean;
   allowed_roles?: string[];
-  layout_config?: Record<string, any>;
+  layout_config?: Record<string, unknown>;
   auto_refresh_interval?: number;
   is_active?: boolean;
   is_default?: boolean;
 }
 
-export interface UpdateDashboardData extends Partial<CreateDashboardData> {}
+export type UpdateDashboardData = Partial<CreateDashboardData>;
 
 export interface CreateWidgetData {
   metric_definition: number;
@@ -389,23 +390,23 @@ export interface CreateWidgetData {
   position_x?: number;
   position_y?: number;
   order?: number;
-  chart_config?: Record<string, any>;
+  chart_config?: Record<string, unknown>;
   time_range?: string;
-  data_filters?: Record<string, any>;
+  data_filters?: Record<string, unknown>;
   comparison_enabled?: boolean;
   comparison_period?: string;
   is_visible?: boolean;
 }
 
-export interface UpdateWidgetData extends Partial<CreateWidgetData> {}
+export type UpdateWidgetData = Partial<CreateWidgetData>;
 
 export interface CreateAnalyticsReportData {
   name: string;
   description?: string;
   report_type: ReportType;
   metrics?: number[];
-  template_config?: Record<string, any>;
-  filters?: Record<string, any>;
+  template_config?: Record<string, unknown>;
+  filters?: Record<string, unknown>;
   schedule_frequency?: ScheduleFrequency;
   schedule_time?: string;
   schedule_day_of_week?: number;
@@ -415,7 +416,7 @@ export interface CreateAnalyticsReportData {
   is_active?: boolean;
 }
 
-export interface UpdateAnalyticsReportData extends Partial<CreateAnalyticsReportData> {}
+export type UpdateAnalyticsReportData = Partial<CreateAnalyticsReportData>;
 
 export interface CreateConversionFunnelData {
   name: string;
@@ -425,7 +426,7 @@ export interface CreateConversionFunnelData {
   is_active?: boolean;
 }
 
-export interface UpdateConversionFunnelData extends Partial<CreateConversionFunnelData> {}
+export type UpdateConversionFunnelData = Partial<CreateConversionFunnelData>;
 
 export interface CreateAlertRuleData {
   name: string;
@@ -441,13 +442,13 @@ export interface CreateAlertRuleData {
   is_active?: boolean;
 }
 
-export interface UpdateAlertRuleData extends Partial<CreateAlertRuleData> {}
+export type UpdateAlertRuleData = Partial<CreateAlertRuleData>;
 
 // Request/Response Types
 export interface MetricCalculationRequest {
   start_date?: string;
   end_date?: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
 }
 
 export interface MetricCalculationResult {
@@ -485,7 +486,7 @@ export interface DashboardDataResult {
 export interface ReportExecutionRequest {
   start_date?: string;
   end_date?: string;
-  custom_filters?: Record<string, any>;
+  custom_filters?: Record<string, unknown>;
   output_format?: OutputFormat;
 }
 
@@ -496,14 +497,14 @@ export interface EventTrackingRequest {
   source_model?: string;
   source_id?: number;
   session_id?: string;
-  event_data?: Record<string, any>;
+  event_data?: Record<string, unknown>;
   numeric_value?: number;
 }
 
 export interface FunnelTrackingRequest {
   event_name: string;
   session_id?: string;
-  event_data?: Record<string, any>;
+  event_data?: Record<string, unknown>;
 }
 
 export interface AlertRuleTestRequest {
@@ -619,8 +620,8 @@ export interface MetricDefinitionFormData {
   source_domain: string;
   source_model: string;
   source_field: string;
-  calculation_rules: Record<string, any>;
-  filters: Record<string, any>;
+  calculation_rules: Record<string, unknown>;
+  filters: Record<string, unknown>;
   aggregation_period: AggregationPeriod;
   is_real_time: boolean;
   display_format: string;
@@ -634,7 +635,7 @@ export interface DashboardFormData {
   dashboard_type: DashboardType;
   is_public: boolean;
   allowed_roles: string[];
-  layout_config: Record<string, any>;
+  layout_config: Record<string, unknown>;
   auto_refresh_interval: string;
   is_active: boolean;
   is_default: boolean;
@@ -648,9 +649,9 @@ export interface WidgetFormData {
   position_x: string;
   position_y: string;
   order: string;
-  chart_config: Record<string, any>;
+  chart_config: Record<string, unknown>;
   time_range: string;
-  data_filters: Record<string, any>;
+  data_filters: Record<string, unknown>;
   comparison_enabled: boolean;
   comparison_period: string;
   is_visible: boolean;
@@ -661,8 +662,8 @@ export interface AnalyticsReportFormData {
   description: string;
   report_type: ReportType;
   metrics: number[];
-  template_config: Record<string, any>;
-  filters: Record<string, any>;
+  template_config: Record<string, unknown>;
+  filters: Record<string, unknown>;
   schedule_frequency: ScheduleFrequency;
   schedule_time: string;
   schedule_day_of_week: string;

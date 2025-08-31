@@ -1,5 +1,9 @@
 // frontend/admin-crm/src/components/layout/index.ts
 
-export { AppLayout } from './AppLayout';
-export { Header } from './Header';
-export { Sidebar } from './Sidebar';
+// Modern layout system - single unified layout
+export { ModernAppLayout as AppLayout } from './ModernAppLayout';
+export { ModernHeader } from './ModernHeader/ModernHeader';
+export { SmartSidebar } from './SmartSidebar';
+
+// Shared components
+export { ContextualContentArea } from './ContextualContentArea';

@@ -81,8 +81,10 @@ export const useCreatePaymentGateway = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentGateways });
       showSuccess('Gateway Created', `Payment gateway "${newGateway.name}" has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create payment gateway';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create payment gateway'
+        : 'Failed to create payment gateway';
       showError('Creation Failed', message);
     },
   });
@@ -109,8 +111,10 @@ export const useUpdatePaymentGateway = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentGateway(updatedGateway.id) });
       showSuccess('Gateway Updated', `Payment gateway "${updatedGateway.name}" has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update payment gateway';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update payment gateway'
+        : 'Failed to update payment gateway';
       showError('Update Failed', message);
     },
   });
@@ -126,8 +130,10 @@ export const useDeletePaymentGateway = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentGateways });
       showSuccess('Gateway Deleted', 'Payment gateway has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete payment gateway';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete payment gateway'
+        : 'Failed to delete payment gateway';
       showError('Delete Failed', message);
     },
   });
@@ -161,8 +167,10 @@ export const useCreateTaxRate = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.taxRates });
       showSuccess('Tax Rate Created', `Tax rate "${newTaxRate.name}" has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create tax rate';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create tax rate'
+        : 'Failed to create tax rate';
       showError('Creation Failed', message);
     },
   });
@@ -180,8 +188,10 @@ export const useUpdateTaxRate = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.taxRate(updatedTaxRate.id) });
       showSuccess('Tax Rate Updated', `Tax rate "${updatedTaxRate.name}" has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update tax rate';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update tax rate'
+        : 'Failed to update tax rate';
       showError('Update Failed', message);
     },
   });
@@ -197,8 +207,10 @@ export const useDeleteTaxRate = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.taxRates });
       showSuccess('Tax Rate Deleted', 'Tax rate has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete tax rate';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete tax rate'
+        : 'Failed to delete tax rate';
       showError('Delete Failed', message);
     },
   });
@@ -258,8 +270,10 @@ export const usePayments = (filters?: PaymentFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       showSuccess('Payment Created', `Payment ${newPayment.payment_number} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create payment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create payment'
+        : 'Failed to create payment';
       showError('Create Failed', message);
     },
   });
@@ -272,8 +286,10 @@ export const usePayments = (filters?: PaymentFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['payment', updatedPayment.id] });
       showSuccess('Payment Updated', `Payment ${updatedPayment.payment_number} has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update payment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update payment'
+        : 'Failed to update payment';
       showError('Update Failed', message);
     },
   });
@@ -284,8 +300,10 @@ export const usePayments = (filters?: PaymentFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       showSuccess('Payment Deleted', 'Payment has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete payment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete payment'
+        : 'Failed to delete payment';
       showError('Delete Failed', message);
     },
   });
@@ -302,8 +320,10 @@ export const usePayments = (filters?: PaymentFilters & PaginationParams) => {
         showError('Payment Failed', 'Payment processing failed. Please try again.');
       }
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to process payment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to process payment'
+        : 'Failed to process payment';
       showError('Processing Failed', message);
     },
   });
@@ -315,8 +335,10 @@ export const usePayments = (filters?: PaymentFilters & PaginationParams) => {
       queryClient.invalidateQueries({ queryKey: ['payment-notifications'] });
       showSuccess('Receipt Sent', 'Receipt has been sent to the client successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to send receipt';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to send receipt'
+        : 'Failed to send receipt';
       showError('Send Failed', message);
     },
   });
@@ -396,8 +418,10 @@ export const usePaymentPlans = (filters?: PaymentPlanFilters) => {
       queryClient.invalidateQueries({ queryKey: ['payment-installments'] });
       showSuccess('Payment Plan Created', 'Payment plan has been created successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create payment plan';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create payment plan'
+        : 'Failed to create payment plan';
       showError('Create Failed', message);
     },
   });
@@ -409,8 +433,10 @@ export const usePaymentPlans = (filters?: PaymentPlanFilters) => {
       queryClient.invalidateQueries({ queryKey: ['payment-plans'] });
       showSuccess('Payment Plan Updated', 'Payment plan has been updated successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update payment plan';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update payment plan'
+        : 'Failed to update payment plan';
       showError('Update Failed', message);
     },
   });
@@ -422,8 +448,10 @@ export const usePaymentPlans = (filters?: PaymentPlanFilters) => {
       queryClient.invalidateQueries({ queryKey: ['payment-installments'] });
       showSuccess('Payment Plan Deleted', 'Payment plan has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete payment plan';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete payment plan'
+        : 'Failed to delete payment plan';
       showError('Delete Failed', message);
     },
   });
@@ -491,8 +519,10 @@ export const usePaymentInstallments = (filters?: PaymentInstallmentFilters) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       showSuccess('Payment Created', 'Payment has been created from installment.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create payment from installment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create payment from installment'
+        : 'Failed to create payment from installment';
       showError('Create Failed', message);
     },
   });
@@ -553,8 +583,10 @@ export const useInvoices = (filters?: InvoiceFilters) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       showSuccess('Invoice Created', `Invoice ${newInvoice.invoice_id} has been created successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create invoice';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create invoice'
+        : 'Failed to create invoice';
       showError('Create Failed', message);
     },
   });
@@ -567,8 +599,10 @@ export const useInvoices = (filters?: InvoiceFilters) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.invoice(updatedInvoice.id) });
       showSuccess('Invoice Updated', `Invoice ${updatedInvoice.invoice_id} has been updated successfully.`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update invoice';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update invoice'
+        : 'Failed to update invoice';
       showError('Update Failed', message);
     },
   });
@@ -579,8 +613,10 @@ export const useInvoices = (filters?: InvoiceFilters) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       showSuccess('Invoice Deleted', 'Invoice has been deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to delete invoice';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete invoice'
+        : 'Failed to delete invoice';
       showError('Delete Failed', message);
     },
   });
@@ -731,8 +767,10 @@ export const useRefunds = (filters?: RefundFilters) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       showSuccess('Refund Created', 'Refund has been processed successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create refund';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create refund'
+        : 'Failed to create refund';
       showError('Refund Failed', message);
     },
   });
@@ -822,8 +860,10 @@ export const usePaymentManagement = (paymentId: number) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       showSuccess('Payment Updated', 'Payment has been updated successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to update payment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update payment'
+        : 'Failed to update payment';
       showError('Update Failed', message);
     },
   });
@@ -839,8 +879,10 @@ export const usePaymentManagement = (paymentId: number) => {
         showError('Payment Failed', 'Payment processing failed. Please try again.');
       }
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to process payment';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to process payment'
+        : 'Failed to process payment';
       showError('Processing Failed', message);
     },
   });
@@ -852,8 +894,10 @@ export const usePaymentManagement = (paymentId: number) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentNotifications({ payment: paymentId }) });
       showSuccess('Receipt Sent', 'Receipt has been sent to the client successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to send receipt';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to send receipt'
+        : 'Failed to send receipt';
       showError('Send Failed', message);
     },
   });
@@ -865,8 +909,10 @@ export const usePaymentManagement = (paymentId: number) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.payment(paymentId) });
       showSuccess('Refund Created', 'Refund has been processed successfully.');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to create refund';
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create refund'
+        : 'Failed to create refund';
       showError('Refund Failed', message);
     },
   });

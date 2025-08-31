@@ -31,7 +31,7 @@ import { useConversionFunnels } from '../../hooks/useAnalytics';
 import { FunnelTable, FunnelForm } from '../../components/analytics/funnels';
 import { LoadingTable } from '../../components/common/LoadingTable';
 import { EmptyState } from '../../components/common/EmptyState';
-import type { ConversionFunnel, FunnelFilters } from '../../types/analytics.types';
+import type { ConversionFunnel, FunnelFilters, CreateConversionFunnelData, UpdateConversionFunnelData } from '../../types/analytics.types';
 
 export const FunnelsManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -104,11 +104,11 @@ export const FunnelsManagement: React.FC = () => {
     setEditingFunnel(null);
   };
 
-  const handleSubmit = (data: any) => {
+  const handleSubmit = (data: CreateConversionFunnelData | UpdateConversionFunnelData) => {
     if (editingFunnel) {
       updateFunnel({ id: editingFunnel.id, data });
     } else {
-      createFunnel(data);
+      createFunnel(data as CreateConversionFunnelData);
     }
     handleCloseDialog();
   };

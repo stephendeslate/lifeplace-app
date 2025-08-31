@@ -10,6 +10,15 @@ import type {
   UpdateNotificationPreferenceData,
 } from '../types/notifications.types';
 
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+      [key: string]: unknown;
+    };
+  };
+}
+
 export const useNotifications = (filters?: NotificationFilters) => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
@@ -23,7 +32,9 @@ export const useNotifications = (filters?: NotificationFilters) => {
   } = useQuery({
     queryKey: ['notifications', filters],
     queryFn: () => notificationsApi.getNotifications(filters),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 15 * 1000, // 15 seconds
+    refetchInterval: 15 * 1000, // Refetch every 15 seconds
+    refetchIntervalInBackground: true,
   });
 
   const useNotification = (id: number) => {
@@ -38,7 +49,9 @@ export const useNotifications = (filters?: NotificationFilters) => {
     return useQuery({
       queryKey: ['notifications', 'unread', limit],
       queryFn: () => notificationsApi.getUnread(limit),
-      staleTime: 30 * 1000, // 30 seconds
+      staleTime: 15 * 1000, // 15 seconds
+      refetchInterval: 15 * 1000, // Refetch every 15 seconds
+      refetchIntervalInBackground: true,
     });
   };
 
@@ -54,8 +67,9 @@ export const useNotifications = (filters?: NotificationFilters) => {
     return useQuery({
       queryKey: ['notification-counts'],
       queryFn: notificationsApi.getCounts,
-      staleTime: 30 * 1000, // 30 seconds
-      refetchInterval: 60 * 1000, // Refetch every minute
+      staleTime: 15 * 1000, // 15 seconds
+      refetchInterval: 15 * 1000, // Refetch every 15 seconds
+      refetchIntervalInBackground: true,
     });
   };
 
@@ -74,7 +88,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to mark notification as read';
       showError('Action Failed', message);
     },
@@ -86,7 +100,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to mark notification as unread';
       showError('Action Failed', message);
     },
@@ -99,7 +113,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
       queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
       showSuccess('All Read', `Marked ${data.marked_read} notifications as read.`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to mark all notifications as read';
       showError('Action Failed', message);
     },
@@ -112,7 +126,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
       queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
       showSuccess('Bulk Action Complete', result.message);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to perform bulk action';
       showError('Bulk Action Failed', message);
     },
@@ -125,7 +139,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
       queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
       showSuccess('Notification Deleted', 'Notification has been deleted.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete notification';
       showError('Delete Failed', message);
     },
@@ -141,7 +155,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
         `Successfully sent ${result.created_count} of ${result.total_recipients} notifications.`
       );
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create notifications';
       showError('Creation Failed', message);
     },
@@ -290,7 +304,7 @@ export const useNotificationPreferences = () => {
       queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
       showSuccess('Preferences Updated', 'Your notification preferences have been updated successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update preferences';
       showError('Update Failed', message);
     },
@@ -302,7 +316,7 @@ export const useNotificationPreferences = () => {
       queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
       showSuccess('Preferences Reset', result.message);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to reset preferences';
       showError('Reset Failed', message);
     },

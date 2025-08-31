@@ -12,6 +12,8 @@ import {
   TrendingFlat as TrendingFlatIcon,
 } from '@mui/icons-material';
 import type { Widget } from '../../../types/analytics.types';
+import { formatCurrency } from '../../../utils/currency';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 
 interface MetricCardWidgetProps {
   widget: Widget;
@@ -34,6 +36,8 @@ export const MetricCardWidget: React.FC<MetricCardWidgetProps> = ({
   data,
   compact = false,
 }) => {
+  const { settings: currencySettings } = useCurrencySettings();
+  
   const formatValue = (value: number): string => {
     const { metric_definition_type } = widget;
     
@@ -41,11 +45,15 @@ export const MetricCardWidget: React.FC<MetricCardWidgetProps> = ({
     switch (metric_definition_type) {
       case 'PERCENTAGE':
         return `${value.toFixed(1)}%`;
-      case 'REVENUE':
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-        }).format(value);
+      case 'REVENUE': {
+        const currency = currencySettings?.defaultCurrency || 'PHP';
+        return formatCurrency(value, currency, {
+          showSymbol: currencySettings?.displayFormat !== 'code',
+          showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+          minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+          maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+        });
+      }
       case 'COUNT':
         return value.toLocaleString();
       default:
@@ -157,14 +165,14 @@ export const MetricCardWidget: React.FC<MetricCardWidgetProps> = ({
                 icon={getTrendIcon() as React.ReactElement}
                 label={`${data.trend.value > 0 ? '+' : ''}${data.trend.value}%`}
                 size="small"
-                color={getTrendChipColor() as any}
+                color={getTrendChipColor() as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                 variant="outlined"
               />
             ) : (
               <Chip
                 label={`${data.trend.value > 0 ? '+' : ''}${data.trend.value}%`}
                 size="small"
-                color={getTrendChipColor() as any}
+                color={getTrendChipColor() as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                 variant="outlined"
               />
             )

@@ -10,10 +10,11 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Skeleton,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   RateReview as ReviewIcon,
   Save as SaveIcon,
@@ -26,8 +27,8 @@ import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows'
 
 interface ReviewBookingStepConfigProps {
   step: BookingFlowStep;
-  config?: any;
-  onUpdate: (data: Record<string, any>) => void;
+  config?: Record<string, unknown>;
+  onUpdate: (data: Record<string, unknown>) => void;
   isLoading?: boolean;
 }
 
@@ -72,14 +73,14 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
   useEffect(() => {
     if (config) {
       setFormData({
-        allow_editing: config.allow_editing ?? defaultFormData.allow_editing,
-        show_summary: config.show_summary ?? defaultFormData.show_summary,
-        show_terms_and_conditions: config.show_terms_and_conditions ?? defaultFormData.show_terms_and_conditions,
-        require_agreement: config.require_agreement ?? defaultFormData.require_agreement,
-        custom_message: config.custom_message || defaultFormData.custom_message,
-        edit_button_text: config.edit_button_text || defaultFormData.edit_button_text,
-        continue_button_text: config.continue_button_text || defaultFormData.continue_button_text,
-        terms_text: config.terms_text || defaultFormData.terms_text,
+        allow_editing: typeof config.allow_editing === 'boolean' ? config.allow_editing : defaultFormData.allow_editing,
+        show_summary: typeof config.show_summary === 'boolean' ? config.show_summary : defaultFormData.show_summary,
+        show_terms_and_conditions: typeof config.show_terms_and_conditions === 'boolean' ? config.show_terms_and_conditions : defaultFormData.show_terms_and_conditions,
+        require_agreement: typeof config.require_agreement === 'boolean' ? config.require_agreement : defaultFormData.require_agreement,
+        custom_message: typeof config.custom_message === 'string' ? config.custom_message : defaultFormData.custom_message,
+        edit_button_text: typeof config.edit_button_text === 'string' ? config.edit_button_text : defaultFormData.edit_button_text,
+        continue_button_text: typeof config.continue_button_text === 'string' ? config.continue_button_text : defaultFormData.continue_button_text,
+        terms_text: typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
       });
       setHasUnsavedChanges(false);
     } else {
@@ -88,7 +89,7 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
     }
   }, [config]);
 
-  const handleFormChange = (field: keyof ReviewBookingConfigFormData, value: any) => {
+  const handleFormChange = (field: keyof ReviewBookingConfigFormData, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -104,13 +105,13 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
     try {
       await updateConfiguration({
         stepId: step.id,
-        data: formData
+        data: { ...formData } as Record<string, unknown>
       });
       
       setHasUnsavedChanges(false);
       
       // Call parent callback
-      onUpdate(formData);
+      onUpdate({ ...formData } as Record<string, unknown>);
     } catch (error) {
       console.error('Failed to save review booking configuration:', error);
       setSaveError(error instanceof Error ? error.message : 'Failed to save configuration');
@@ -122,14 +123,14 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
   const handleReset = () => {
     if (config) {
       setFormData({
-        allow_editing: config.allow_editing ?? defaultFormData.allow_editing,
-        show_summary: config.show_summary ?? defaultFormData.show_summary,
-        show_terms_and_conditions: config.show_terms_and_conditions ?? defaultFormData.show_terms_and_conditions,
-        require_agreement: config.require_agreement ?? defaultFormData.require_agreement,
-        custom_message: config.custom_message || defaultFormData.custom_message,
-        edit_button_text: config.edit_button_text || defaultFormData.edit_button_text,
-        continue_button_text: config.continue_button_text || defaultFormData.continue_button_text,
-        terms_text: config.terms_text || defaultFormData.terms_text,
+        allow_editing: typeof config.allow_editing === 'boolean' ? config.allow_editing : defaultFormData.allow_editing,
+        show_summary: typeof config.show_summary === 'boolean' ? config.show_summary : defaultFormData.show_summary,
+        show_terms_and_conditions: typeof config.show_terms_and_conditions === 'boolean' ? config.show_terms_and_conditions : defaultFormData.show_terms_and_conditions,
+        require_agreement: typeof config.require_agreement === 'boolean' ? config.require_agreement : defaultFormData.require_agreement,
+        custom_message: typeof config.custom_message === 'string' ? config.custom_message : defaultFormData.custom_message,
+        edit_button_text: typeof config.edit_button_text === 'string' ? config.edit_button_text : defaultFormData.edit_button_text,
+        continue_button_text: typeof config.continue_button_text === 'string' ? config.continue_button_text : defaultFormData.continue_button_text,
+        terms_text: typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
       });
     } else {
       setFormData(defaultFormData);
@@ -140,15 +141,15 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" animation="none">
+        <Box sx={{ p: 3 }}>
           <Stack spacing={2}>
             <Skeleton variant="text" width="60%" height={32} />
             <Skeleton variant="rectangular" height={120} />
             <Skeleton variant="rectangular" height={60} />
           </Stack>
-        </CardContent>
-      </Card>
+        </Box>
+      </ModernCard>
     );
   }
 
@@ -175,8 +176,8 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
         )}
 
         {/* Display Options */}
-        <Card>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <PreviewIcon />
               Display Options
@@ -227,12 +228,12 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
                 label="Require Agreement to Terms"
               />
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Custom Messages */}
-        <Card>
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <EditIcon />
               Custom Messages
@@ -285,8 +286,8 @@ export const ReviewBookingStepConfig: React.FC<ReviewBookingStepConfigProps> = (
                 />
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2} justifyContent="flex-end">

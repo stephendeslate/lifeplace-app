@@ -129,17 +129,18 @@ export const WidgetEditor: React.FC = () => {
     setPreviewMode(!previewMode);
   };
 
-  const handleFieldChange = (field: string, value: any) => {
+  const handleFieldChange = (field: string, value: unknown) => {
     setFormData(prev => {
       const newData = { ...prev };
       if (field.includes('.')) {
         const [parent, child] = field.split('.');
-        newData[parent as keyof UpdateWidgetData] = {
-          ...(newData[parent as keyof UpdateWidgetData] as any),
+        const typedData = newData as Record<string, Record<string, unknown>>;
+        typedData[parent] = {
+          ...(typedData[parent] || {}),
           [child]: value,
         };
       } else {
-        (newData as any)[field] = value;
+        (newData as Record<string, unknown>)[field] = value;
       }
       return newData;
     });
@@ -307,7 +308,7 @@ export const WidgetEditor: React.FC = () => {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={formData.chart_config?.show_legend ?? widget.chart_config?.show_legend ?? true}
+                    checked={Boolean(formData.chart_config?.show_legend ?? widget.chart_config?.show_legend ?? true)}
                     onChange={(e) => handleFieldChange('chart_config.show_legend', e.target.checked)}
                   />
                 }
@@ -317,7 +318,7 @@ export const WidgetEditor: React.FC = () => {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={formData.chart_config?.show_grid ?? widget.chart_config?.show_grid ?? true}
+                    checked={Boolean(formData.chart_config?.show_grid ?? widget.chart_config?.show_grid ?? true)}
                     onChange={(e) => handleFieldChange('chart_config.show_grid', e.target.checked)}
                   />
                 }
@@ -327,7 +328,7 @@ export const WidgetEditor: React.FC = () => {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={formData.chart_config?.animation_enabled ?? widget.chart_config?.animation_enabled ?? true}
+                    checked={Boolean(formData.chart_config?.animation_enabled ?? widget.chart_config?.animation_enabled ?? true)}
                     onChange={(e) => handleFieldChange('chart_config.animation_enabled', e.target.checked)}
                   />
                 }

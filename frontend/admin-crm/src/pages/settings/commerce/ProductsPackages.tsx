@@ -13,16 +13,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Paper,
   Alert,
   Chip,
   Stack,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -33,6 +26,13 @@ import {
   FilterList as FilterIcon,
 } from '@mui/icons-material';
 import { useProductCategories, useProducts, useDiscounts } from '../../../hooks/useProducts';
+import { 
+  ModernCard,
+  ModernPageHeader,
+  ModernDialog,
+  createDeleteActions,
+  ModernSettingsLayout
+} from '../../../components/common';
 import { CategoriesTable } from '../../../components/products/CategoriesTable';
 import { ProductsTable } from '../../../components/products/ProductsTable';
 import { DiscountsTable } from '../../../components/products/DiscountsTable';
@@ -310,19 +310,21 @@ export const ProductsPackages: React.FC = () => {
   };
 
   return (
-    <Box>
-      {/* Header */}
-      <Box mb={3}>
-        <Typography variant="h4" gutterBottom>
-          Products & Packages
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage your service offerings, pricing, and promotional discounts
-        </Typography>
-      </Box>
+    <ModernSettingsLayout>
+      {/* Modern Header */}
+      <ModernPageHeader
+        title="Products & Packages"
+        subtitle="Manage your service offerings, pricing, and promotional discounts"
+        icon={<ProductIcon />}
+        stats={[
+          { label: 'Products', value: products.length },
+          { label: 'Categories', value: categories.length },
+          { label: 'Active Discounts', value: discounts.filter(d => d.is_active).length },
+        ]}
+      />
 
       {/* Tabs */}
-      <Paper sx={{ mb: 3 }}>
+      <ModernCard sx={{ mb: 3 }}>
         <Tabs 
           value={activeTab} 
           onChange={handleTabChange}
@@ -385,7 +387,7 @@ export const ProductsPackages: React.FC = () => {
                     <InputLabel>Type</InputLabel>
                     <Select
                       value={productTypeFilter}
-                      onChange={(e) => setProductTypeFilter(e.target.value as any)}
+                      onChange={(e) => setProductTypeFilter(e.target.value as 'all' | 'PRODUCT' | 'PACKAGE')}
                       label="Type"
                     >
                       <MenuItem value="all">All</MenuItem>
@@ -400,7 +402,7 @@ export const ProductsPackages: React.FC = () => {
                     <InputLabel>Status</InputLabel>
                     <Select
                       value={productActiveFilter}
-                      onChange={(e) => setProductActiveFilter(e.target.value as any)}
+                      onChange={(e) => setProductActiveFilter(e.target.value as 'all' | 'active' | 'inactive')}
                       label="Status"
                     >
                       <MenuItem value="all">All</MenuItem>
@@ -473,7 +475,7 @@ export const ProductsPackages: React.FC = () => {
                     <InputLabel>Status</InputLabel>
                     <Select
                       value={categoryActiveFilter}
-                      onChange={(e) => setCategoryActiveFilter(e.target.value as any)}
+                      onChange={(e) => setCategoryActiveFilter(e.target.value as 'all' | 'active' | 'inactive')}
                       label="Status"
                     >
                       <MenuItem value="all">All</MenuItem>
@@ -546,7 +548,7 @@ export const ProductsPackages: React.FC = () => {
                     <InputLabel>Type</InputLabel>
                     <Select
                       value={discountTypeFilter}
-                      onChange={(e) => setDiscountTypeFilter(e.target.value as any)}
+                      onChange={(e) => setDiscountTypeFilter(e.target.value as 'all' | 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS')}
                       label="Type"
                     >
                       <MenuItem value="all">All</MenuItem>
@@ -562,7 +564,7 @@ export const ProductsPackages: React.FC = () => {
                     <InputLabel>Validity</InputLabel>
                     <Select
                       value={discountValidFilter}
-                      onChange={(e) => setDiscountValidFilter(e.target.value as any)}
+                      onChange={(e) => setDiscountValidFilter(e.target.value as 'all' | 'valid' | 'invalid')}
                       label="Validity"
                     >
                       <MenuItem value="all">All</MenuItem>
@@ -606,7 +608,7 @@ export const ProductsPackages: React.FC = () => {
             />
           </Box>
         </TabPanel>
-      </Paper>
+      </ModernCard>
 
       {/* Dialogs */}
       <CategoryFormDialog
@@ -634,30 +636,18 @@ export const ProductsPackages: React.FC = () => {
       />
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
+      <ModernDialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
+        title={`Delete ${getDeleteItemType()}`}
+        maxWidth="sm"
+        fullWidth
+        actions={createDeleteActions(handleDeleteCancel, handleDeleteConfirm, isDeleting())}
       >
-        <DialogTitle>Delete {getDeleteItemType()}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete "{itemToDelete?.name}"? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting()}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
-            color="error" 
-            variant="contained"
-            disabled={isDeleting()}
-          >
-            {isDeleting() ? <CircularProgress size={20} /> : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        <Typography>
+          Are you sure you want to delete "{itemToDelete?.name}"? This action cannot be undone.
+        </Typography>
+      </ModernDialog>
+    </ModernSettingsLayout>
   );
 };

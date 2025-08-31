@@ -2,23 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
   FormControlLabel,
   Switch,
   Box,
   Typography,
   Divider,
-  CircularProgress,
   Alert,
   Collapse,
   Stack,
   Chip,
+  Button,
 } from '@mui/material';
+import { ModernDialog, createDialogActions } from '../common';
 import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
@@ -34,6 +30,7 @@ import type {
   PayMongoConfig,
 } from '../../types/payments.types';
 import { GATEWAY_TEMPLATES } from '../../types/payments.types';
+import { tokens } from '../../design-system/tokens';
 
 interface PaymentGatewayFormDialogProps {
   open: boolean;
@@ -130,7 +127,7 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
       name: template.name,
       code: template.code,
       description: template.description,
-      config: template.config,
+      config: template.config as unknown as Record<string, unknown>,
     }));
     setShowAdvanced(true);
   };
@@ -150,7 +147,7 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
 
     // Stripe specific validation
     if (formData.code === 'stripe') {
-      const config = formData.config as StripeConfig;
+      const config = formData.config as unknown as StripeConfig;
       if (!config.publishable_key?.trim()) {
         newErrors.publishable_key = 'Publishable key is required for Stripe';
       }
@@ -161,7 +158,7 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
 
     // PayMongo specific validation
     if (formData.code === 'paymongo') {
-      const config = formData.config as PayMongoConfig;
+      const config = formData.config as unknown as PayMongoConfig;
       if (!config.public_key?.trim()) {
         newErrors.public_key = 'Public key is required for PayMongo';
       }
@@ -198,21 +195,30 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
 
   const isStripe = formData.code === 'stripe';
   const isPayMongo = formData.code === 'paymongo';
-  const stripeConfig = formData.config as StripeConfig;
-  const paymongoConfig = formData.config as PayMongoConfig;
+  const stripeConfig = formData.config as unknown as StripeConfig;
+  const paymongoConfig = formData.config as unknown as PayMongoConfig;
+
+  const actions = createDialogActions(
+    onClose,
+    handleSubmit,
+    {
+      cancelLabel: 'Cancel',
+      confirmLabel: isEditing ? 'Update Gateway' : 'Create Gateway',
+      isLoading: isSubmitting,
+      confirmDisabled: isSubmitting,
+    }
+  );
 
   return (
-    <Dialog
+    <ModernDialog
       open={open}
       onClose={onClose}
+      title={isEditing ? 'Edit Payment Gateway' : 'Add Payment Gateway'}
+      actions={actions}
       maxWidth="md"
       fullWidth
+      contentSx={{ minHeight: '60vh' }}
     >
-      <DialogTitle>
-        {isEditing ? 'Edit Payment Gateway' : 'Add Payment Gateway'}
-      </DialogTitle>
-      
-      <DialogContent>
         <Box sx={{ mt: 2 }}>
           {/* Quick Setup Options */}
           {!isEditing && (
@@ -239,7 +245,16 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                 </Button>
               </Stack>
               
-              <Alert severity="info" sx={{ mt: 2 }}>
+              <Alert 
+                severity="info" 
+                sx={{ 
+                  mt: 2,
+                  backdropFilter: 'blur(10px)',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: tokens.spacing.radius.lg,
+                  border: `1px solid ${tokens.color.borders.glass}`,
+                }}
+              >
                 <strong>Recommendation:</strong> Start with Stripe for immediate development, 
                 then add PayMongo for Philippine-specific payment methods.
               </Alert>
@@ -484,24 +499,6 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
             </Collapse>
           </Box>
         </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} disabled={isSubmitting}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <CircularProgress size={20} />
-          ) : (
-            isEditing ? 'Update Gateway' : 'Create Gateway'
-          )}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </ModernDialog>
   );
 };

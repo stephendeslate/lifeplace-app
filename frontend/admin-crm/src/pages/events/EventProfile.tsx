@@ -1,4 +1,5 @@
-// frontend/admin-crm/src/pages/events/EventProfile.tsx
+// Modern Glassmorphic Event Profile
+// Enhanced with world-class design patterns and sophisticated styling
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -25,7 +26,10 @@ import {
   DialogTitle,
   Tab,
   Tabs,
-  LinearProgress
+  Container,
+  Fade,
+  Grow,
+  Tooltip,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -37,7 +41,7 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Business as BusinessIcon,
-  AttachMoney as MoneyIcon,
+  LocalAtm as CashIcon,
   TrendingUp as TrendingUpIcon,
   Message as MessageIcon,
   Description as ContractIcon,
@@ -46,13 +50,18 @@ import {
   Assignment as QuestionnaireIcon,
   Folder as FilesIcon,
   Note as NoteIcon,
-  AccountTree as WorkflowIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuestionnaires } from '../../hooks/useQuestionnaires';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import { formatCurrency } from '../../utils/currency';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { createTransition } from '../../design-system/utils/animations';
 import { EventForm } from '../../components/events/EventForm';
 import { EventCommunications } from '../../components/events/EventCommunications';
 import { EventQuestionnaires } from '../../components/events/EventQuestionnaires';
@@ -61,7 +70,19 @@ import { EventContracts } from '../../components/events/EventContracts';
 import { EventInvoices } from '../../components/events/EventInvoices';
 import { EventFiles } from '../../components/events/EventFiles';
 import { NotesList } from '../../components/notes';
-import { EVENT_STATUSES } from '../../types/events.types';
+import { 
+  ActivityTimeline,
+  QuickActions,
+  FinancialSummary,
+  EntityNavigation,
+  WorkflowVisualization,
+  createEventActions,
+  createClientReference,
+  calculateEventFinancials,
+  type ActivityItem,
+  type QuickAction,
+} from '../../components/common';
+import { EVENT_STATUSES, type UpdateEventData } from '../../types/events.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -87,6 +108,7 @@ export const EventProfile: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   // Hooks
   const { 
@@ -99,6 +121,20 @@ export const EventProfile: React.FC = () => {
   
   const { useClient } = useClients();
   const { useRecords } = useCommunications();
+  
+  // Get user's currency settings for proper formatting
+  const { settings: currencySettings } = useCurrencySettings();
+  
+  // Format event price based on user's currency settings
+  const formatEventPrice = (price: string | number) => {
+    const currency = currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(price, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
+  };
   
   const eventId = parseInt(id || '0');
   const { data: event, isLoading, error, refetch } = useEvent(eventId);
@@ -131,6 +167,94 @@ export const EventProfile: React.FC = () => {
     ).length;
   }, [allQuestionnaires, event?.event_type]);
 
+  // Enhanced components data
+  const financialMetrics = useMemo(() => {
+    return event ? calculateEventFinancials(event) : [];
+  }, [event]);
+
+  const quickActions: QuickAction[] = useMemo(() => {
+    if (!event) return [];
+    return createEventActions(event.id, (actionType: string, eventId: number) => {
+      // Handle quick actions
+      console.log('Quick action:', actionType, 'for event:', eventId);
+      // In a real implementation, these would trigger actual actions
+      switch (actionType) {
+        case 'send-contract':
+          // Open contract sending dialog
+          break;
+        case 'generate-invoice':
+          // Open invoice generation dialog
+          break;
+        case 'send-message':
+          // Open message dialog
+          break;
+        case 'create-quote':
+          // Navigate to quote creation
+          break;
+        case 'add-note':
+          setTabValue(7); // Switch to notes tab
+          break;
+      }
+    });
+  }, [event]);
+
+  const relatedEntities = useMemo(() => {
+    const entities = [];
+    if (client) {
+      entities.push(createClientReference(client));
+    }
+    return entities;
+  }, [client]);
+
+  const activityItems: ActivityItem[] = useMemo(() => {
+    const items: ActivityItem[] = [];
+    
+    // Add communications as activities
+    communications.forEach(comm => {
+      items.push({
+        id: `comm-${comm.id}`,
+        type: 'communication',
+        title: comm.subject || comm.template_name,
+        description: comm.body?.substring(0, 100) + '...',
+        timestamp: comm.sent_at || comm.created_at,
+        status: 'completed',
+        relatedEntity: client ? {
+          type: 'client',
+          id: clientId,
+          name: client.first_name + ' ' + client.last_name
+        } : undefined,
+        user: { name: 'System' }, // This would come from the API
+      });
+    });
+
+    // Add event status changes as activities
+    if (event) {
+      items.push({
+        id: `event-created-${event.id}`,
+        type: 'event',
+        title: 'Event Created',
+        description: `Event "${event.name}" was created`,
+        timestamp: event.created_at,
+        status: 'completed',
+        user: { name: 'System' },
+      });
+
+      if (event.updated_at !== event.created_at) {
+        items.push({
+          id: `event-updated-${event.id}`,
+          type: 'status_change',
+          title: 'Event Updated',
+          description: `Event status changed to ${event.status}`,
+          timestamp: event.updated_at,
+          status: 'completed',
+          user: { name: 'System' },
+        });
+      }
+    }
+
+    return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [communications, event, client, clientId]);
+
   useEffect(() => {
     if (event) {
       setBreadcrumbs([
@@ -138,6 +262,9 @@ export const EventProfile: React.FC = () => {
         { label: event.name || `Event #${event.id}` },
       ]);
     }
+    // Trigger loading animation
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
   }, [event, setBreadcrumbs]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -158,7 +285,7 @@ export const EventProfile: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleEdit = (data: any) => {
+  const handleEdit = (data: UpdateEventData) => {
     updateEvent(
       { id: eventId, data },
       { 
@@ -233,300 +360,1015 @@ export const EventProfile: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-        <CircularProgress />
+      <Box sx={{ 
+        minHeight: '100vh',
+        position: 'relative',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        '&::before': {
+          content: '""',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `
+            radial-gradient(circle at 20% 20%, ${tokens.color.primary[500]}06 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, ${tokens.color.success[500]}06 0%, transparent 50%)
+          `,
+          pointerEvents: 'none',
+          zIndex: -1,
+        }
+      }}>
+        <CircularProgress size={40} sx={{ color: tokens.color.primary[600] }} />
       </Box>
     );
   }
 
   if (error || !event) {
     return (
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/events')}
-          sx={{ mb: 2 }}
-        >
-          Back to Events
-        </Button>
-        <Alert severity="error">
-          {error ? 'Failed to load event information' : 'Event not found'}
-        </Alert>
+      <Box sx={{ 
+        minHeight: '100vh',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `
+            radial-gradient(circle at 20% 20%, ${tokens.color.error[500]}06 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, ${tokens.color.neutral[500]}06 0%, transparent 50%)
+          `,
+          pointerEvents: 'none',
+          zIndex: -1,
+        }
+      }}>
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/events')}
+            sx={{
+              ...glassPresets.light,
+              borderRadius: tokens.spacing.radius.xl,
+              border: `1px solid ${tokens.color.neutral[500]}30`,
+              color: tokens.color.neutral[700],
+              fontWeight: 600,
+              mb: 3,
+              transition: createTransition(['transform', 'background'], 'fast'),
+              
+              '&:hover': {
+                ...glassPresets.medium,
+                transform: 'translateY(-1px)',
+              }
+            }}
+          >
+            Back to Events
+          </Button>
+          <Alert 
+            severity="error"
+            sx={{
+              ...glassPresets.medium,
+              borderRadius: tokens.spacing.radius.xxl,
+              border: `1px solid ${tokens.color.error[500]}30`,
+              background: `linear-gradient(135deg, ${tokens.color.error[500]}08 0%, transparent 100%)`,
+            }}
+          >
+            {error ? 'Failed to load event information' : 'Event not found'}
+          </Alert>
+        </Container>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box display="flex" alignItems="center" gap={2}>
-          <IconButton onClick={() => navigate('/events')}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Box>
-            <Typography variant="h4" fontWeight="bold">
-              {event.name || 'Untitled Event'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {event.event_type_name || 'No event type'}
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box display="flex" alignItems="center" gap={1}>
-          {/* Status Chip */}
-          <Chip
-            label={EVENT_STATUSES.find(s => s.value === event.status)?.label || event.status}
-            color={getStatusColor(event.status)}
-            variant="filled"
-          />
-
-          {/* More Actions Menu */}
-          <IconButton onClick={handleMenuClick}>
-            <MoreVertIcon />
-          </IconButton>
-          
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
-            <MenuItem onClick={handleEditEvent}>
-              <ListItemIcon>
-                <EditIcon />
-              </ListItemIcon>
-              <ListItemText>Edit Event</ListItemText>
-            </MenuItem>
-            
-            <Divider />
-            
-            <MenuItem onClick={handleDeleteEvent} sx={{ color: 'error.main' }}>
-              <ListItemIcon>
-                <DeleteIcon color="error" />
-              </ListItemIcon>
-              <ListItemText>Delete Event</ListItemText>
-            </MenuItem>
-          </Menu>
-        </Box>
-      </Box>
-
-      {/* Event Overview Cards */}
-      <Box 
-        sx={{ 
-          display: 'flex',
-          flexDirection: { xs: 'column', lg: 'row' },
-          gap: 3,
-          mb: 3
-        }}
-      >
-        {/* Client Info */}
-        <Box sx={{ flex: 1 }}>
-          <Card>
-            <CardContent>
-              <Stack spacing={2}>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <PersonIcon color="primary" />
-                  <Typography variant="h6">Client Information</Typography>
-                </Box>
+    <Box sx={{ 
+      minHeight: '100vh',
+      position: 'relative',
+      '&::before': {
+        content: '""',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: `
+          radial-gradient(circle at 20% 20%, ${tokens.color.primary[500]}06 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, ${tokens.color.success[500]}06 0%, transparent 50%),
+          radial-gradient(circle at 40% 60%, ${tokens.color.secondary[500]}04 0%, transparent 50%)
+        `,
+        pointerEvents: 'none',
+        zIndex: -1,
+      }
+    }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+        {/* Modern Header */}
+        <Fade in={isLoaded} timeout={500}>
+          <Box sx={{ mb: { xs: 3, md: 4 } }}>
+            <Box 
+              display="flex" 
+              justifyContent="space-between" 
+              alignItems="center" 
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xxl,
+                p: { xs: 3, md: 4 },
+                border: `1px solid ${tokens.color.borders.glass}`,
+                position: 'relative',
+                overflow: 'visible',
                 
-                <Stack spacing={1}>
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Client Name
-                    </Typography>
-                    <Typography variant="body1">
-                      {event.client_name || 'Unknown Client'}
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, ${tokens.color.success[500]}08 100%)`,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  pointerEvents: 'none',
+                }
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={3} sx={{ position: 'relative', zIndex: 1 }}>
+                <Tooltip title="Back to Events">
+                  <IconButton 
+                    onClick={() => navigate('/events')}
+                    sx={{
+                      ...glassPresets.light,
+                      borderRadius: tokens.spacing.radius.full,
+                      width: 48,
+                      height: 48,
+                      color: tokens.color.primary[600],
+                      transition: createTransition(['transform', 'background'], 'fast'),
+                      
+                      '&:hover': {
+                        ...glassPresets.medium,
+                        transform: 'translateX(-2px)',
+                      }
+                    }}
+                  >
+                    <ArrowBackIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                <Box>
+                  <Typography 
+                    variant="h3" 
+                    component="h1" 
+                    sx={{ 
+                      fontWeight: 700,
+                      background: tokens.color.backgrounds.primaryGradient,
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      color: 'transparent',
+                      mb: 0.5,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {event.name || 'Untitled Event'}
+                  </Typography>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      color: tokens.color.neutral[600],
+                      fontWeight: 400,
+                    }}
+                  >
+                    {event.event_type_name || 'No event type'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box display="flex" alignItems="center" gap={2} sx={{ position: 'relative', zIndex: 1 }}>
+                {/* Enhanced Status Chip */}
+                <Chip
+                  label={EVENT_STATUSES.find(s => s.value === event.status)?.label || event.status}
+                  sx={{
+                    ...glassPresets.light,
+                    background: `linear-gradient(135deg, ${tokens.color[getStatusColor(event.status) === 'success' ? 'success' : getStatusColor(event.status) === 'error' ? 'error' : getStatusColor(event.status) === 'warning' ? 'warning' : 'primary'][500]}20 0%, ${tokens.color[getStatusColor(event.status) === 'success' ? 'success' : getStatusColor(event.status) === 'error' ? 'error' : getStatusColor(event.status) === 'warning' ? 'warning' : 'primary'][600]}15 100%)`,
+                    color: tokens.color[getStatusColor(event.status) === 'success' ? 'success' : getStatusColor(event.status) === 'error' ? 'error' : getStatusColor(event.status) === 'warning' ? 'warning' : 'primary'][700],
+                    border: `1px solid ${tokens.color[getStatusColor(event.status) === 'success' ? 'success' : getStatusColor(event.status) === 'error' ? 'error' : getStatusColor(event.status) === 'warning' ? 'warning' : 'primary'][500]}30`,
+                    fontWeight: 600,
+                  }}
+                />
+
+                {/* Enhanced More Actions Menu */}
+                <Tooltip title="More actions">
+                  <IconButton 
+                    onClick={handleMenuClick}
+                    sx={{
+                      ...glassPresets.light,
+                      borderRadius: tokens.spacing.radius.full,
+                      width: 48,
+                      height: 48,
+                      color: tokens.color.neutral[600],
+                      transition: createTransition(['transform', 'background'], 'fast'),
+                      
+                      '&:hover': {
+                        ...glassPresets.medium,
+                        transform: 'rotate(90deg)',
+                      }
+                    }}
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                  PaperProps={{
+                    sx: {
+                      ...glassPresets.medium,
+                      borderRadius: tokens.spacing.radius.xl,
+                      border: `1px solid ${tokens.color.borders.glass}`,
+                      mt: 1,
+                    }
+                  }}
+                >
+                  <MenuItem 
+                    onClick={handleEditEvent}
+                    sx={{
+                      borderRadius: tokens.spacing.radius.lg,
+                      mx: 1,
+                      transition: createTransition('background', 'fast'),
+                      '&:hover': {
+                        background: `${tokens.color.primary[500]}10`,
+                      }
+                    }}
+                  >
+                    <ListItemIcon>
+                      <EditIcon sx={{ color: tokens.color.primary[600] }} />
+                    </ListItemIcon>
+                    <ListItemText>Edit Event</ListItemText>
+                  </MenuItem>
+                  
+                  <Divider sx={{ mx: 1, borderColor: `${tokens.color.borders.glass}` }} />
+                  
+                  <MenuItem 
+                    onClick={handleDeleteEvent} 
+                    sx={{ 
+                      color: tokens.color.error[600],
+                      borderRadius: tokens.spacing.radius.lg,
+                      mx: 1,
+                      transition: createTransition('background', 'fast'),
+                      '&:hover': {
+                        background: `${tokens.color.error[500]}10`,
+                      }
+                    }}
+                  >
+                    <ListItemIcon>
+                      <DeleteIcon sx={{ color: tokens.color.error[600] }} />
+                    </ListItemIcon>
+                    <ListItemText>Delete Event</ListItemText>
+                  </MenuItem>
+                </Menu>
+              </Box>
+            </Box>
+          </Box>
+        </Fade>
+
+        {/* Enhanced Event Overview Cards */}
+        <Fade in={isLoaded} timeout={700}>
+          <Box 
+            sx={{ 
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, 1fr)' },
+              gap: 3,
+              mb: 4,
+              
+              // Staggered animation for cards
+              '& > div': {
+                '&:nth-of-type(1)': { animationDelay: '100ms' },
+                '&:nth-of-type(2)': { animationDelay: '200ms' },
+                '&:nth-of-type(3)': { animationDelay: '300ms' },
+              }
+            }}
+          >
+            {/* Enhanced Client Info */}
+            <Card
+              elevation={0}
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xxl,
+                border: `1px solid ${tokens.color.borders.glass}`,
+                position: 'relative',
+                overflow: 'visible',
+                transition: createTransition(['transform', 'box-shadow'], 'fast'),
+                
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.info[500]}04 100%)`,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  pointerEvents: 'none',
+                },
+                
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: tokens.shadow.glass.light,
+                }
+              }}
+            >
+              <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                <Stack spacing={3}>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Box
+                      sx={{
+                        ...glassPresets.medium,
+                        borderRadius: tokens.spacing.radius.full,
+                        p: 1.5,
+                        background: `linear-gradient(135deg, ${tokens.color.primary[500]}15 0%, ${tokens.color.primary[600]}10 100%)`,
+                        border: `1px solid ${tokens.color.primary[500]}30`,
+                      }}
+                    >
+                      <PersonIcon sx={{ fontSize: 20, color: tokens.color.primary[600] }} />
+                    </Box>
+                    <Typography 
+                      variant="h6" 
+                      fontWeight="bold"
+                      sx={{ color: tokens.color.neutral[800] }}
+                    >
+                      Client Information
                     </Typography>
                   </Box>
                   
-                  {client?.email && (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Email
+                  <Stack spacing={2}>
+                    <Box
+                      sx={{
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.xl,
+                        p: 2.5,
+                        border: `1px solid ${tokens.color.neutral[500]}20`,
+                      }}
+                    >
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          color: tokens.color.neutral[500],
+                          fontWeight: 600,
+                          mb: 0.5,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        Client Name
                       </Typography>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <EmailIcon color="action" fontSize="small" />
-                        <Typography variant="body2">{client.email}</Typography>
+                      <Typography 
+                        variant="body1" 
+                        sx={{ 
+                          color: tokens.color.neutral[800],
+                          fontWeight: 600
+                        }}
+                      >
+                        {event.client_name || 'Unknown Client'}
+                      </Typography>
+                    </Box>
+                  
+                  {client?.email && (
+                    <Box
+                      sx={{
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.xl,
+                        p: 2.5,
+                        border: `1px solid ${tokens.color.info[500]}20`,
+                        background: `linear-gradient(135deg, ${tokens.color.info[500]}05 0%, transparent 100%)`,
+                      }}
+                    >
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          color: tokens.color.neutral[500],
+                          fontWeight: 600,
+                          mb: 1,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        Email Address
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                          sx={{
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.full,
+                            p: 1,
+                            background: `${tokens.color.info[500]}15`,
+                          }}
+                        >
+                          <EmailIcon sx={{ fontSize: 16, color: tokens.color.info[600] }} />
+                        </Box>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: tokens.color.neutral[800],
+                            fontWeight: 500
+                          }}
+                        >
+                          {client.email}
+                        </Typography>
                       </Box>
                     </Box>
                   )}
                   
                   {client?.profile?.phone && (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Phone
+                    <Box
+                      sx={{
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.xl,
+                        p: 2.5,
+                        border: `1px solid ${tokens.color.success[500]}20`,
+                        background: `linear-gradient(135deg, ${tokens.color.success[500]}05 0%, transparent 100%)`,
+                      }}
+                    >
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          color: tokens.color.neutral[500],
+                          fontWeight: 600,
+                          mb: 1,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        Phone Number
                       </Typography>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <PhoneIcon color="action" fontSize="small" />
-                        <Typography variant="body2">{client.profile.phone}</Typography>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                          sx={{
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.full,
+                            p: 1,
+                            background: `${tokens.color.success[500]}15`,
+                          }}
+                        >
+                          <PhoneIcon sx={{ fontSize: 16, color: tokens.color.success[600] }} />
+                        </Box>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: tokens.color.neutral[800],
+                            fontWeight: 500
+                          }}
+                        >
+                          {client.profile.phone}
+                        </Typography>
                       </Box>
                     </Box>
                   )}
                   
                   {client?.profile?.company && (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
+                    <Box
+                      sx={{
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.xl,
+                        p: 2.5,
+                        border: `1px solid ${tokens.color.warning[500]}20`,
+                        background: `linear-gradient(135deg, ${tokens.color.warning[500]}05 0%, transparent 100%)`,
+                      }}
+                    >
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          color: tokens.color.neutral[500],
+                          fontWeight: 600,
+                          mb: 1,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          fontSize: '0.75rem'
+                        }}
+                      >
                         Company
                       </Typography>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <BusinessIcon color="action" fontSize="small" />
-                        <Typography variant="body2">{client.profile.company}</Typography>
-                      </Box>
-                    </Box>
-                  )}
-                </Stack>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Event Info */}
-        <Box sx={{ flex: 1 }}>
-          <Card>
-            <CardContent>
-              <Stack spacing={2}>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <EventNoteIcon color="primary" />
-                  <Typography variant="h6">Event Details</Typography>
-                </Box>
-                
-                <Stack spacing={1}>
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Date & Time
-                    </Typography>
-                    <Typography variant="body2">
-                      {formatDateRange(event.start_date, event.end_date)}
-                    </Typography>
-                  </Box>
-                  
-                  {event.total_price && (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Total Price
-                      </Typography>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <MoneyIcon color="action" fontSize="small" />
-                        <Typography variant="body2" fontWeight="medium">
-                          ${parseFloat(event.total_price).toLocaleString()}
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                          sx={{
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.full,
+                            p: 1,
+                            background: `${tokens.color.warning[500]}15`,
+                          }}
+                        >
+                          <BusinessIcon sx={{ fontSize: 16, color: tokens.color.warning[600] }} />
+                        </Box>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: tokens.color.neutral[800],
+                            fontWeight: 500
+                          }}
+                        >
+                          {client.profile.company}
                         </Typography>
                       </Box>
                     </Box>
                   )}
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
 
-                  {event.lead_source && (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Lead Source
+            {/* Enhanced Event Details */}
+            <Card
+              elevation={0}
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xxl,
+                border: `1px solid ${tokens.color.borders.glass}`,
+                position: 'relative',
+                overflow: 'visible',
+                transition: createTransition(['transform', 'box-shadow'], 'fast'),
+                
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: `linear-gradient(135deg, ${tokens.color.secondary[500]}04 0%, ${tokens.color.warning[500]}04 100%)`,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  pointerEvents: 'none',
+                },
+                
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: tokens.shadow.glass.light,
+                }
+              }}
+            >
+              <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                <Stack spacing={3}>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Box
+                      sx={{
+                        ...glassPresets.medium,
+                        borderRadius: tokens.spacing.radius.full,
+                        p: 1.5,
+                        background: `linear-gradient(135deg, ${tokens.color.secondary[500]}15 0%, ${tokens.color.secondary[600]}10 100%)`,
+                        border: `1px solid ${tokens.color.secondary[500]}30`,
+                      }}
+                    >
+                      <EventNoteIcon sx={{ fontSize: 20, color: tokens.color.secondary[600] }} />
+                    </Box>
+                    <Typography 
+                      variant="h6" 
+                      fontWeight="bold"
+                      sx={{ color: tokens.color.neutral[800] }}
+                    >
+                      Event Details
+                    </Typography>
+                  </Box>
+                  
+                  <Stack spacing={2}>
+                    <Box
+                      sx={{
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.xl,
+                        p: 2.5,
+                        border: `1px solid ${tokens.color.info[500]}20`,
+                        background: `linear-gradient(135deg, ${tokens.color.info[500]}05 0%, transparent 100%)`,
+                      }}
+                    >
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          color: tokens.color.neutral[500],
+                          fontWeight: 600,
+                          mb: 1,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        Date & Time
                       </Typography>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <TrendingUpIcon color="action" fontSize="small" />
-                        <Typography variant="body2">{event.lead_source}</Typography>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                          sx={{
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.full,
+                            p: 1,
+                            background: `${tokens.color.info[500]}15`,
+                          }}
+                        >
+                          <ScheduleIcon sx={{ fontSize: 16, color: tokens.color.info[600] }} />
+                        </Box>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: tokens.color.neutral[800],
+                            fontWeight: 500,
+                            flex: 1
+                          }}
+                        >
+                          {formatDateRange(event.start_date, event.end_date)}
+                        </Typography>
                       </Box>
                     </Box>
-                  )}
+                    
+                    {event.total_price && (
+                      <Box
+                        sx={{
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.xl,
+                          p: 2.5,
+                          border: `1px solid ${tokens.color.success[500]}20`,
+                          background: `linear-gradient(135deg, ${tokens.color.success[500]}08 0%, transparent 100%)`,
+                        }}
+                      >
+                        <Typography 
+                          variant="subtitle2" 
+                          sx={{ 
+                            color: tokens.color.neutral[500],
+                            fontWeight: 600,
+                            mb: 1,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Total Investment
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Box
+                            sx={{
+                              ...glassPresets.light,
+                              borderRadius: tokens.spacing.radius.full,
+                              p: 1,
+                              background: `${tokens.color.success[500]}20`,
+                            }}
+                          >
+                            <CashIcon sx={{ fontSize: 16, color: tokens.color.success[700] }} />
+                          </Box>
+                          <Typography 
+                            variant="h6" 
+                            sx={{ 
+                              color: tokens.color.success[700],
+                              fontWeight: 700
+                            }}
+                          >
+                            {formatEventPrice(event.total_price)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )}
 
-                  {event.payment_status && (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Payment Status
-                      </Typography>
-                      <Chip 
-                        label={event.payment_status.replace('_', ' ')} 
-                        size="small" 
-                        variant="outlined"
-                        color={event.payment_status === 'PAID' ? 'success' : 'default'}
-                      />
-                    </Box>
-                  )}
-                </Stack>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
+                    {event.lead_source && (
+                      <Box
+                        sx={{
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.xl,
+                          p: 2.5,
+                          border: `1px solid ${tokens.color.warning[500]}20`,
+                          background: `linear-gradient(135deg, ${tokens.color.warning[500]}05 0%, transparent 100%)`,
+                        }}
+                      >
+                        <Typography 
+                          variant="subtitle2" 
+                          sx={{ 
+                            color: tokens.color.neutral[500],
+                            fontWeight: 600,
+                            mb: 1,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Lead Source
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Box
+                            sx={{
+                              ...glassPresets.light,
+                              borderRadius: tokens.spacing.radius.full,
+                              p: 1,
+                              background: `${tokens.color.warning[500]}15`,
+                            }}
+                          >
+                            <TrendingUpIcon sx={{ fontSize: 16, color: tokens.color.warning[600] }} />
+                          </Box>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: tokens.color.neutral[800],
+                              fontWeight: 500
+                            }}
+                          >
+                            {event.lead_source}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )}
 
-        {/* Workflow Progress */}
-        <Box sx={{ flex: 1 }}>
-          <Card>
-            <CardContent>
-              {typeof event.workflow_progress === 'number' && event.workflow_progress > 0 ? (
-                <Stack spacing={2}>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <WorkflowIcon color="primary" />
-                    <Typography variant="h6">Workflow Progress</Typography>
-                  </Box>
-                  <Box>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                      <Typography variant="body2" color="text.secondary">
-                        Current Stage: {event.current_stage_name || 'Unknown'}
-                      </Typography>
-                      <Typography variant="body2" fontWeight="medium">
-                        {Math.round(event.workflow_progress)}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={event.workflow_progress}
-                      sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: 'grey.200',
-                        '& .MuiLinearProgress-bar': {
-                          borderRadius: 4,
-                        },
-                      }}
-                    />
-                  </Box>
+                    {event.payment_status && (
+                      <Box
+                        sx={{
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.xl,
+                          p: 2.5,
+                          border: `1px solid ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}20`,
+                          background: `linear-gradient(135deg, ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}05 0%, transparent 100%)`,
+                        }}
+                      >
+                        <Typography 
+                          variant="subtitle2" 
+                          sx={{ 
+                            color: tokens.color.neutral[500],
+                            fontWeight: 600,
+                            mb: 1.5,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Payment Status
+                        </Typography>
+                        <Chip 
+                          label={event.payment_status.replace('_', ' ')} 
+                          sx={{
+                            ...glassPresets.light,
+                            background: `linear-gradient(135deg, ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}20 0%, ${event.payment_status === 'PAID' ? tokens.color.success[600] : tokens.color.warning[600]}15 100%)`,
+                            color: event.payment_status === 'PAID' ? tokens.color.success[700] : tokens.color.warning[700],
+                            border: `1px solid ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}30`,
+                            fontWeight: 600,
+                          }}
+                        />
+                      </Box>
+                    )}
+                  </Stack>
                 </Stack>
-              ) : event.workflow_template_name ? (
-                <Stack spacing={2}>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <WorkflowIcon color="primary" />
-                    <Typography variant="h6">Workflow Template</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight="medium">
-                      {event.workflow_template_name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Workflow assigned but not yet started
-                    </Typography>
-                  </Box>
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                      This event has a workflow template assigned but the workflow hasn't been initiated yet.
-                    </Typography>
-                  </Alert>
-                </Stack>
-              ) : (
-                <Stack spacing={2} alignItems="center" justifyContent="center" sx={{ py: 4 }}>
-                  <WorkflowIcon sx={{ fontSize: 48, color: 'grey.400' }} />
-                  <Typography variant="h6" color="text.secondary">
-                    No Workflow Assigned
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" textAlign="center">
-                    This event doesn't have a workflow template assigned yet.
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<EditIcon />}
-                    onClick={handleEditEvent}
-                    size="small"
-                  >
-                    Assign Workflow
-                  </Button>
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-      </Box>
+              </CardContent>
+            </Card>
 
-      {/* Tabs */}
-      <Card>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
+            {/* Enhanced Quick Actions */}
+            <Card
+              elevation={0}
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xxl,
+                border: `1px solid ${tokens.color.borders.glass}`,
+                position: 'relative',
+                overflow: 'visible',
+                transition: createTransition(['transform', 'box-shadow'], 'fast'),
+                
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.primary[500]}04 100%)`,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  pointerEvents: 'none',
+                },
+                
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: tokens.shadow.glass.light,
+                }
+              }}
+            >
+              <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                <QuickActions 
+                  actions={quickActions}
+                  compactMode={true}
+                />
+              </CardContent>
+            </Card>
+          </Box>
+        </Fade>
+
+        {/* Enhanced Sections */}
+        <Grow in={isLoaded} timeout={1000}>
+          <Stack spacing={4} mb={4}>
+            {/* Enhanced Financial Summary */}
+            <Box
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xxl,
+                border: `1px solid ${tokens.color.borders.glass}`,
+                position: 'relative',
+                overflow: 'visible',
+                
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.info[500]}04 100%)`,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  pointerEvents: 'none',
+                }
+              }}
+            >
+              <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                <FinancialSummary
+                  title="Event Financials"
+                  metrics={financialMetrics}
+                  compactMode={false}
+                />
+              </Box>
+            </Box>
+
+            {/* Enhanced Related Entities & Workflow */}
+            <Box 
+              sx={{ 
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' },
+                gap: 3,
+              }}
+            >
+              {/* Enhanced Related Entities */}
+              <Box
+                sx={{
+                  ...glassPresets.light,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  border: `1px solid ${tokens.color.borders.glass}`,
+                  position: 'relative',
+                  overflow: 'visible',
+                  
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.secondary[500]}04 100%)`,
+                    borderRadius: tokens.spacing.radius.xxl,
+                    pointerEvents: 'none',
+                  }
+                }}
+              >
+                <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                  <EntityNavigation
+                    title="Related"
+                    entities={relatedEntities}
+                    layout="compact"
+                    maxVisible={5}
+                  />
+                </Box>
+              </Box>
+
+              {/* Enhanced Workflow Visualization */}
+              <Box
+                sx={{
+                  ...glassPresets.light,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  border: `1px solid ${tokens.color.borders.glass}`,
+                  position: 'relative',
+                  overflow: 'visible',
+                  
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.info[500]}04 100%)`,
+                    borderRadius: tokens.spacing.radius.xxl,
+                    pointerEvents: 'none',
+                  }
+                }}
+              >
+                <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                  <WorkflowVisualization
+                    workflowName={event.workflow_template_name}
+                    stages={[]} // This would come from actual workflow data
+                    currentStage={event.current_stage || undefined}
+                    overallProgress={event.workflow_progress}
+                    layout="horizontal"
+                    showTasks={false}
+                    showProgress={true}
+                  />
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Enhanced Activity Timeline */}
+            <Box
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xxl,
+                border: `1px solid ${tokens.color.borders.glass}`,
+                position: 'relative',
+                overflow: 'visible',
+                
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: `linear-gradient(135deg, ${tokens.color.info[500]}04 0%, ${tokens.color.success[500]}04 100%)`,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  pointerEvents: 'none',
+                }
+              }}
+            >
+              <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                <ActivityTimeline
+                  activities={activityItems}
+                  maxHeight="400px"
+                  showFilters={true}
+                  onRefresh={() => {
+                    // Refresh all data
+                    refetch();
+                  }}
+                />
+              </Box>
+            </Box>
+          </Stack>
+        </Grow>
+
+        {/* Enhanced Modern Tabs */}
+        <Fade in={isLoaded} timeout={1200}>
+          <Card
+            elevation={0}
+            sx={{
+              ...glassPresets.light,
+              borderRadius: tokens.spacing.radius.xxl,
+              border: `1px solid ${tokens.color.borders.glass}`,
+              position: 'relative',
+              overflow: 'visible',
+              
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: `linear-gradient(135deg, ${tokens.color.neutral[500]}02 0%, ${tokens.color.primary[500]}02 100%)`,
+                borderRadius: tokens.spacing.radius.xxl,
+                pointerEvents: 'none',
+              }
+            }}
+          >
+            <Box 
+              sx={{ 
+                borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                position: 'relative',
+                zIndex: 1,
+                background: glassPresets.light.background,
+                borderRadius: `${tokens.spacing.radius.xxl} ${tokens.spacing.radius.xxl} 0 0`,
+              }}
+            >
+              <Tabs 
+                value={tabValue} 
+                onChange={(_, newValue) => setTabValue(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+                sx={{
+                  '& .MuiTabs-indicator': {
+                    background: tokens.color.backgrounds.primaryGradient,
+                    height: 3,
+                    borderRadius: tokens.spacing.radius.full,
+                  },
+                  '& .MuiTab-root': {
+                    color: tokens.color.neutral[600],
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    minHeight: 60,
+                    transition: createTransition(['color', 'background'], 'fast'),
+                    borderRadius: tokens.spacing.radius.lg,
+                    margin: '8px 4px',
+                    
+                    '&:hover': {
+                      color: tokens.color.primary[700],
+                      background: `${tokens.color.primary[500]}08`,
+                    },
+                    
+                    '&.Mui-selected': {
+                      color: tokens.color.primary[700],
+                      background: `${tokens.color.primary[500]}12`,
+                    }
+                  }
+                }}
+              >
+            <Tab 
+              label={`Activity (${activityItems.length})`}
+              icon={<ScheduleIcon />} 
+              iconPosition="start"
+            />
             <Tab 
               label={`Communications (${communicationsCount})`} 
               icon={<MessageIcon />} 
@@ -563,11 +1405,23 @@ export const EventProfile: React.FC = () => {
               iconPosition="start"
             />
           </Tabs>
-        </Box>
+            </Box>
 
-        <CardContent>
-          {/* Communications Tab */}
+            <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+          {/* Activity Tab */}
           <TabPanel value={tabValue} index={0}>
+            <ActivityTimeline
+              activities={activityItems}
+              maxHeight="600px"
+              showFilters={true}
+              onRefresh={() => {
+                refetch();
+              }}
+            />
+          </TabPanel>
+
+          {/* Communications Tab */}
+          <TabPanel value={tabValue} index={1}>
             <EventCommunications
               event={event}
               clientId={clientId}
@@ -577,32 +1431,32 @@ export const EventProfile: React.FC = () => {
           </TabPanel>
 
           {/* Quotes Tab */}
-          <TabPanel value={tabValue} index={1}>
+          <TabPanel value={tabValue} index={2}>
             <EventQuotes event={event} />
           </TabPanel>
 
           {/* Contracts Tab */}
-          <TabPanel value={tabValue} index={2}>
+          <TabPanel value={tabValue} index={3}>
             <EventContracts event={event} />
           </TabPanel>
 
           {/* Invoices Tab */}
-          <TabPanel value={tabValue} index={3}>
+          <TabPanel value={tabValue} index={4}>
             <EventInvoices event={event} />
           </TabPanel>
 
           {/* Questionnaires Tab */}
-          <TabPanel value={tabValue} index={4}>
+          <TabPanel value={tabValue} index={5}>
             <EventQuestionnaires event={event} />
           </TabPanel>
 
           {/* Files Tab */}
-          <TabPanel value={tabValue} index={5}>
+          <TabPanel value={tabValue} index={6}>
             <EventFiles event={event} />
           </TabPanel>
 
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={6}>
+          <TabPanel value={tabValue} index={7}>
             <NotesList
               contentType="event"
               objectId={eventId}
@@ -612,43 +1466,124 @@ export const EventProfile: React.FC = () => {
               allowDelete={true}
             />
           </TabPanel>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </Fade>
 
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Edit Event</DialogTitle>
-        <DialogContent>
-          <EventForm
-            event={event}
-            onSubmit={handleEdit}
-            onCancel={() => setEditDialogOpen(false)}
-            isLoading={isUpdatingEvent}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Event</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete "{event.name || 'this event'}"? 
-            This action cannot be undone and will remove all associated data.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleDelete}
-            color="error" 
-            variant="contained"
-            disabled={isDeletingEvent}
+        {/* Enhanced Edit Dialog */}
+        <Dialog 
+          open={editDialogOpen} 
+          onClose={() => setEditDialogOpen(false)} 
+          maxWidth="md" 
+          fullWidth
+          PaperProps={{
+            sx: {
+              ...glassPresets.strong,
+              borderRadius: tokens.spacing.radius.xxxl,
+              border: `1px solid ${tokens.color.borders.glass}`,
+              boxShadow: tokens.shadow.component.modal,
+            }
+          }}
+          BackdropProps={{
+            sx: {
+              backdropFilter: 'blur(20px)',
+              background: 'rgba(0, 0, 0, 0.3)',
+            }
+          }}
+        >
+          <DialogTitle 
+            sx={{
+              background: glassPresets.light.background,
+              borderRadius: `${tokens.spacing.radius.xxxl} ${tokens.spacing.radius.xxxl} 0 0`,
+              borderBottom: `1px solid ${tokens.color.borders.glass}`,
+              color: tokens.color.neutral[800],
+              fontWeight: 700,
+            }}
           >
-            {isDeletingEvent ? <CircularProgress size={20} /> : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            Edit Event
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <EventForm
+              event={event}
+              onSubmit={handleEdit}
+              onCancel={() => setEditDialogOpen(false)}
+              isLoading={isUpdatingEvent}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Enhanced Delete Confirmation Dialog */}
+        <Dialog 
+          open={deleteDialogOpen} 
+          onClose={() => setDeleteDialogOpen(false)}
+          PaperProps={{
+            sx: {
+              ...glassPresets.strong,
+              borderRadius: tokens.spacing.radius.xxxl,
+              border: `1px solid ${tokens.color.error[500]}30`,
+              boxShadow: tokens.shadow.component.modal,
+            }
+          }}
+          BackdropProps={{
+            sx: {
+              backdropFilter: 'blur(20px)',
+              background: 'rgba(239, 68, 68, 0.1)',
+            }
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.error[500]}08 0%, transparent 100%)`,
+              borderRadius: `${tokens.spacing.radius.xxxl} ${tokens.spacing.radius.xxxl} 0 0`,
+              borderBottom: `1px solid ${tokens.color.error[500]}20`,
+              color: tokens.color.error[700],
+              fontWeight: 700,
+            }}
+          >
+            Delete Event
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <DialogContentText sx={{ color: tokens.color.neutral[700] }}>
+              Are you sure you want to delete "{event.name || 'this event'}"? 
+              This action cannot be undone and will remove all associated data.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, gap: 2 }}>
+            <Button 
+              onClick={() => setDeleteDialogOpen(false)}
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xl,
+                color: tokens.color.neutral[700],
+                fontWeight: 600,
+                px: 3,
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleDelete}
+              variant="contained"
+              disabled={isDeletingEvent}
+              sx={{
+                background: tokens.color.backgrounds.errorGradient,
+                borderRadius: tokens.spacing.radius.xl,
+                fontWeight: 600,
+                px: 3,
+                boxShadow: `0 4px 12px ${tokens.color.error[500]}25`,
+                
+                '&:hover': {
+                  background: tokens.color.backgrounds.errorGradient,
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 6px 16px ${tokens.color.error[500]}35`,
+                }
+              }}
+            >
+              {isDeletingEvent ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
     </Box>
   );
 };

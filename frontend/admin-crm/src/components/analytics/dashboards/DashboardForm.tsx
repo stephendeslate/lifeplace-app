@@ -190,7 +190,7 @@ export const DashboardForm: React.FC<DashboardFormProps> = ({
     onClose();
   };
 
-  const handleFieldChange = (field: keyof FormData, value: any) => {
+  const handleFieldChange = (field: keyof FormData, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear error when user starts typing

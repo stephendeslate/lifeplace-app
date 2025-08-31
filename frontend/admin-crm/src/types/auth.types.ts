@@ -44,3 +44,8 @@ export interface AuthTokens {
   access: string;
   refresh: string;
 }
+
+export interface ChangePasswordData {
+  current_password: string;
+  new_password: string;
+}

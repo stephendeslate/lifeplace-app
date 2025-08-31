@@ -6,6 +6,7 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import { AppProviders } from './providers/AppProviders';
 import { useAuth } from './contexts/AuthContext';
 import { useToastActions } from './contexts/ToastContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { PublicLayout, ClientLayout } from './components/layout';
 import { Home } from './pages/home';
 import { Login, Register } from './pages/auth';
@@ -387,6 +388,7 @@ const AppRouter: React.FC = () => {
         } 
       />
 
+
       {/* Catch all route - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -397,9 +399,11 @@ const AppRouter: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AppProviders>
-      <Router>
-        <AppRouter />
-      </Router>
+      <ErrorBoundary>
+        <Router>
+          <AppRouter />
+        </Router>
+      </ErrorBoundary>
     </AppProviders>
   );
 };

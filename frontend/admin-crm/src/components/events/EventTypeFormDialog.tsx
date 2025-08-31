@@ -2,26 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
   FormControlLabel,
   Switch,
   Box,
   Typography,
-  CircularProgress,
   Stack,
 } from '@mui/material';
-import { Save as SaveIcon } from '@mui/icons-material';
+import { ModernDialog, createDialogActions } from '../common';
 import { 
   type EventTypeFormDialogProps,
   type EventTypeFormData,
   type CreateEventTypeData,
   type UpdateEventTypeData,
 } from '../../types/events.types';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 const defaultFormData: EventTypeFormData = {
   name: '',
@@ -110,22 +106,33 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
     }
   };
 
+  const actions = createDialogActions(
+    handleClose,
+    handleSubmit,
+    {
+      cancelLabel: 'Cancel',
+      confirmLabel: isLoading 
+        ? 'Saving...' 
+        : editingEventType 
+          ? 'Update Event Type' 
+          : 'Create Event Type',
+      isLoading,
+      confirmDisabled: isLoading,
+    }
+  );
+
   return (
-    <Dialog 
-      open={open} 
+    <ModernDialog
+      open={open}
       onClose={handleClose}
+      title={editingEventType ? 'Edit Event Type' : 'Create New Event Type'}
+      actions={actions}
       maxWidth="sm"
       fullWidth
     >
       {open && (
-        <>
-          <DialogTitle>
-            {editingEventType ? 'Edit Event Type' : 'Create New Event Type'}
-          </DialogTitle>
-      
-          <DialogContent>
-            <Box component="form" noValidate sx={{ mt: 1 }}>
-              <Stack spacing={3}>
+            <Box component="form" noValidate>
+              <Stack spacing={4}>
                 <TextField
                   fullWidth
                   label="Event Type Name"
@@ -135,6 +142,24 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
                   helperText={errors.name}
                   required
                   placeholder="e.g., Wedding, Corporate Event, Birthday Party"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      ...glassPresets.light,
+                      borderRadius: tokens.spacing.radius.lg,
+                      border: `1px solid ${tokens.color.borders.glass}`,
+                      '&:hover': {
+                        border: `1px solid ${tokens.color.primary[300]}`,
+                      },
+                      '&.Mui-focused': {
+                        border: `1px solid ${tokens.color.primary[500]}`,
+                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                      },
+                      '&.Mui-error': {
+                        border: `1px solid ${tokens.color.error[500]}`,
+                        boxShadow: `0 0 0 3px ${tokens.color.error[500]}15`,
+                      },
+                    },
+                  }}
                 />
                 
                 <TextField
@@ -145,50 +170,63 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
                   error={!!errors.description}
                   helperText={errors.description || 'Optional description of this event type'}
                   multiline
-                  rows={3}
-                  placeholder="Describe this event type..."
+                  rows={4}
+                  placeholder="Describe this event type and what makes it unique..."
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      ...glassPresets.light,
+                      borderRadius: tokens.spacing.radius.lg,
+                      border: `1px solid ${tokens.color.borders.glass}`,
+                      '&:hover': {
+                        border: `1px solid ${tokens.color.primary[300]}`,
+                      },
+                      '&.Mui-focused': {
+                        border: `1px solid ${tokens.color.primary[500]}`,
+                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                      },
+                    },
+                  }}
                 />
 
-                <Box>
+                <Box
+                  sx={{
+                    p: 3,
+                    borderRadius: tokens.spacing.radius.lg,
+                    ...glassPresets.light,
+                    border: `1px solid ${tokens.color.borders.glass}`,
+                  }}
+                >
                   <FormControlLabel
                     control={
                       <Switch
                         checked={formData.is_active}
                         onChange={handleSwitchChange('is_active')}
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': {
+                            color: tokens.color.success[500],
+                          },
+                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                            backgroundColor: tokens.color.success[500],
+                          },
+                        }}
                       />
                     }
-                    label="Active"
+                    label={
+                      <Typography variant="subtitle2" fontWeight="600">
+                        {formData.is_active ? 'Active Event Type' : 'Inactive Event Type'}
+                      </Typography>
+                    }
                   />
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, ml: 4 }}>
                     {formData.is_active 
-                      ? 'This event type is available for new events'
-                      : 'This event type is hidden from new event creation'
+                      ? 'This event type is available for creating new events and will appear in booking forms'
+                      : 'This event type is hidden from event creation and booking forms'
                     }
                   </Typography>
                 </Box>
               </Stack>
             </Box>
-          </DialogContent>
-          
-          <DialogActions sx={{ p: 3 }}>
-            <Button 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSubmit}
-              variant="contained"
-              disabled={isLoading}
-              startIcon={isLoading ? <CircularProgress size={20} /> : <SaveIcon />}
-              sx={{ minWidth: 120 }}
-            >
-              {isLoading ? 'Saving...' : editingEventType ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
-        </>
       )}
-    </Dialog>
+    </ModernDialog>
   );
 };

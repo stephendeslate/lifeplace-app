@@ -74,6 +74,7 @@ class SendCommunicationSerializer(serializers.Serializer):
     recipient = serializers.CharField()  # Email or phone
     client_id = serializers.IntegerField(required=False, allow_null=True)
     context_data = serializers.JSONField(required=False, default=dict)
+    use_async = serializers.BooleanField(required=False, default=False)
     
     # Fields for manual message customization
     custom_subject = serializers.CharField(required=False, allow_blank=True)
@@ -160,6 +161,7 @@ class BulkSendSerializer(serializers.Serializer):
         child=serializers.DictField(),
         help_text="List of recipient objects with recipient and context_data"
     )
+    use_async = serializers.BooleanField(required=False, default=None)
     
     def validate_recipients(self, value):
         """Validate recipients format"""

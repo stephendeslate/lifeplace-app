@@ -1,16 +1,22 @@
-// frontend/admin-crm/src/components/analytics/dashboards/WidgetRenderer.tsx
+// Modern Glassmorphic Widget Renderer
+// Enhanced with professional glassmorphic design patterns
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Paper,
   Box,
   Typography,
   Alert,
   CircularProgress,
+  Fade,
+  Grow,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   Error as ErrorIcon,
   Widgets as WidgetIcon,
+  Refresh as RefreshIcon,
+  Fullscreen as FullscreenIcon,
 } from '@mui/icons-material';
 import { 
   MetricCardWidget,
@@ -22,12 +28,15 @@ import {
   FunnelWidget,
 } from '../widgets';
 import type { Widget } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
+import { createTransition } from '../../../design-system/utils/animations';
 
 interface WidgetRendererProps {
   widget: Widget;
   isLoading?: boolean;
   error?: string | null;
-  data?: any;
+  data?: Record<string, unknown>;
   compact?: boolean;
 }
 
@@ -38,6 +47,14 @@ interface WidgetWrapperProps {
 }
 
 const WidgetWrapper: React.FC<WidgetWrapperProps> = ({ widget, children, compact = false }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoaded(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
+
   const getWidgetHeight = (size: string) => {
     if (compact) return '200px';
     
@@ -50,63 +67,178 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({ widget, children, compact
     }
   };
 
+  const getWidgetColorScheme = (type: string) => {
+    switch (type) {
+      case 'METRIC_CARD':
+        return { primary: tokens.color.primary[500], gradient: tokens.color.backgrounds.primaryGradient };
+      case 'LINE_CHART':
+      case 'AREA_CHART':
+        return { primary: tokens.color.info[500], gradient: `linear-gradient(135deg, ${tokens.color.info[500]}08 0%, transparent 100%)` };
+      case 'BAR_CHART':
+        return { primary: tokens.color.success[500], gradient: `linear-gradient(135deg, ${tokens.color.success[500]}08 0%, transparent 100%)` };
+      case 'PIE_CHART':
+        return { primary: tokens.color.warning[500], gradient: `linear-gradient(135deg, ${tokens.color.warning[500]}08 0%, transparent 100%)` };
+      case 'GAUGE':
+        return { primary: tokens.color.secondary[500], gradient: `linear-gradient(135deg, ${tokens.color.secondary[500]}08 0%, transparent 100%)` };
+      default:
+        return { primary: tokens.color.neutral[500], gradient: `linear-gradient(135deg, ${tokens.color.neutral[500]}08 0%, transparent 100%)` };
+    }
+  };
+
+  const colors = getWidgetColorScheme(widget.widget_type);
+
   return (
-    <Paper
-      elevation={1}
-      sx={{
-        height: getWidgetHeight(widget.size),
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        opacity: widget.is_visible ? 1 : 0.6,
-        transition: 'all 0.2s ease',
-        '&:hover': {
-          elevation: 2,
-          transform: 'translateY(-1px)',
-        },
-      }}
-    >
-      {!compact && (
-        <Box
-          sx={{
-            p: 2,
-            pb: 1,
-            borderBottom: 1,
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-          }}
-        >
-          <Typography
-            variant="h6"
-            fontWeight="medium"
-            sx={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {widget.title}
-          </Typography>
-          {widget.metric_definition_name && (
-            <Typography variant="caption" color="text.secondary">
-              {widget.metric_definition_name}
-            </Typography>
-          )}
-        </Box>
-      )}
-      
+    <Grow in={isLoaded} timeout={600}>
       <Box
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         sx={{
-          flex: 1,
-          p: compact ? 1 : 2,
+          height: getWidgetHeight(widget.size),
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          position: 'relative',
+          borderRadius: tokens.spacing.radius.xxl,
+          
+          // Advanced glassmorphic styling
+          ...glassPresets.light,
+          opacity: widget.is_visible ? 1 : 0.6,
+          transition: createTransition(['transform', 'box-shadow', 'background'], 'fast'),
+          
+          '&:hover': {
+            ...glassPresets.medium,
+            transform: 'translateY(-4px) scale(1.01)',
+            boxShadow: tokens.shadow.glass.floating,
+          },
+          
+          // Subtle gradient overlay based on widget type
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: colors.gradient,
+            borderRadius: tokens.spacing.radius.xxl,
+            pointerEvents: 'none',
+            zIndex: 0,
+          },
         }}
       >
-        {children}
+        {/* Modern Header */}
+        {!compact && (
+          <Fade in={isLoaded} timeout={800}>
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                p: 3,
+                pb: 2,
+                borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+              }}
+            >
+              <Box flex={1} minWidth={0}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    color: tokens.color.neutral[800],
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    mb: 0.5,
+                  }}
+                >
+                  {widget.title}
+                </Typography>
+                {widget.metric_definition_name && (
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: tokens.color.neutral[600],
+                      fontWeight: 500,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    {widget.metric_definition_name}
+                  </Typography>
+                )}
+              </Box>
+              
+              {/* Modern Action Buttons */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 1,
+                  opacity: isHovered ? 1 : 0,
+                  transition: createTransition('opacity', 'fast'),
+                }}
+              >
+                <Tooltip title="Refresh Data" placement="top">
+                  <IconButton
+                    size="small"
+                    sx={{
+                      ...glassPresets.light,
+                      borderRadius: tokens.spacing.radius.full,
+                      width: 28,
+                      height: 28,
+                      color: colors.primary,
+                      
+                      '&:hover': {
+                        ...glassPresets.medium,
+                        transform: 'rotate(90deg)',
+                      }
+                    }}
+                  >
+                    <RefreshIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Tooltip>
+                
+                <Tooltip title="Expand Widget" placement="top">
+                  <IconButton
+                    size="small"
+                    sx={{
+                      ...glassPresets.light,
+                      borderRadius: tokens.spacing.radius.full,
+                      width: 28,
+                      height: 28,
+                      color: colors.primary,
+                      
+                      '&:hover': {
+                        ...glassPresets.medium,
+                        transform: 'scale(1.1)',
+                      }
+                    }}
+                  >
+                    <FullscreenIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+          </Fade>
+        )}
+        
+        {/* Content Area */}
+        <Box
+          sx={{
+            flex: 1,
+            p: compact ? 2 : 3,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          {children}
+        </Box>
       </Box>
-    </Paper>
+    </Grow>
   );
 };
 
@@ -225,7 +357,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <MetricCardWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { value: number; trend?: { value: number; direction: "up" | "down" | "neutral"; }; previousValue?: number; unit?: string; prefix?: string; suffix?: string; }}
             compact={compact}
           />
         );
@@ -234,7 +366,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <LineChartWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { timeSeries: { date: string; value: number; comparisonValue?: number; }[]; summary?: { total: number; average: number; peak: number; }; }}
             compact={compact}
           />
         );
@@ -243,7 +375,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <BarChartWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { categories: { name: string; value: number; comparisonValue?: number; }[]; summary?: { total: number; highest: { name: string; value: number; }; lowest: { name: string; value: number; }; }; }}
             compact={compact}
           />
         );
@@ -252,7 +384,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <PieChartWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { categories: { value: number; label: string; }[]; }}
             compact={compact}
           />
         );
@@ -261,7 +393,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <GaugeWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { value: number; target?: number; min?: number; max?: number; }}
             compact={compact}
           />
         );
@@ -279,7 +411,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <FunnelWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { categories?: { value: number; label: string; }[]; }}
             compact={compact}
           />
         );
@@ -289,7 +421,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         return (
           <LineChartWidget
             widget={widget}
-            data={widgetData}
+            data={widgetData as { timeSeries: { date: string; value: number; comparisonValue?: number; }[]; summary?: { total: number; average: number; peak: number; }; }}
             compact={compact}
             areaChart={true}
           />

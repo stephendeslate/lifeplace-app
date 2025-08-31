@@ -71,7 +71,7 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
         model = PaymentTransaction
         fields = [
             'id', 'payment', 'gateway', 'gateway_details', 'transaction_id',
-            'amount', 'status', 'status_display', 'response_data', 'error_message',
+            'amount', 'currency', 'status', 'status_display', 'response_data', 'error_message',
             'is_test', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -138,7 +138,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             'id', 'invoice_id', 'event', 'event_details', 'client', 'client_details',
-            'subtotal', 'tax_amount', 'total_amount', 'issue_date', 'due_date',
+            'subtotal', 'tax_amount', 'total_amount', 'currency', 'issue_date', 'due_date',
             'status', 'status_display', 'notes', 'payment_terms', 'quote',
             'quote_details', 'invoice_pdf', 'line_items', 'taxes',
             'related_payments', 'created_at', 'updated_at',
@@ -192,7 +192,7 @@ class PaymentPlanSerializer(serializers.ModelSerializer):
         model = PaymentPlan
         fields = [
             'id', 'event', 'event_details', 'total_amount', 'down_payment_amount',
-            'down_payment_due_date', 'number_of_installments', 'frequency',
+            'currency', 'down_payment_due_date', 'number_of_installments', 'frequency',
             'notes', 'quote', 'quote_details', 'installments', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -206,7 +206,7 @@ class RefundSerializer(serializers.ModelSerializer):
     class Meta:
         model = Refund
         fields = [
-            'id', 'payment', 'payment_details', 'amount', 'reason', 'status',
+            'id', 'payment', 'payment_details', 'amount', 'currency', 'reason', 'status',
             'status_display', 'refunded_by', 'refunded_by_details',
             'refund_transaction_id', 'gateway_response',
             'created_at', 'updated_at',
@@ -233,7 +233,7 @@ class BasicPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = [
-            'id', 'payment_number', 'event', 'amount', 'status', 'status_display',
+            'id', 'payment_number', 'event', 'amount', 'currency', 'status', 'status_display',
             'due_date', 'paid_on', 'description', 'reference_number', 
             'receipt_number', 'is_manual', 'created_at', 'updated_at',
         ]
@@ -255,7 +255,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = [
-            'id', 'payment_number', 'event', 'event_details', 'amount',
+            'id', 'payment_number', 'event', 'event_details', 'amount', 'currency',
             'status', 'status_display', 'due_date', 'paid_on',
             'payment_method', 'payment_method_details', 'description',
             'notes', 'reference_number', 'is_manual', 'processed_by',

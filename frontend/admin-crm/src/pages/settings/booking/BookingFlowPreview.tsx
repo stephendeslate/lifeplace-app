@@ -4,8 +4,6 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Typography,
   Alert,
   ToggleButton,
@@ -17,7 +15,6 @@ import {
   Chip,
   Stack,
   Fab,
-  Skeleton,
   Divider,
 } from '@mui/material';
 import {
@@ -38,6 +35,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useBookingFlows, useBookingFlowPaymentGateways } from '../../../hooks/useBookingFlows';
 import type { BookingFlowDetail } from '../../../types/bookingflows.types';
+
+// Modern Design System imports
+import { 
+  ModernCard,
+  ModernLoadingStates
+} from '../../../components/common';
+import { tokens } from '../../../design-system';
 
 type ViewMode = 'desktop' | 'mobile';
 
@@ -122,21 +126,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
 
   // Loading state
   if (isLoadingFlow) {
-    return (
-      <Box sx={{ minHeight: '100vh', backgroundColor: 'grey.50' }}>
-        <AppBar position="sticky" color="default" elevation={1}>
-          <Toolbar>
-            <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
-            <Skeleton variant="text" width={200} height={32} sx={{ flexGrow: 1 }} />
-            <Skeleton variant="rectangular" width={80} height={32} sx={{ mr: 1 }} />
-            <Skeleton variant="rectangular" width={100} height={36} />
-          </Toolbar>
-        </AppBar>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Skeleton variant="rectangular" height={400} />
-        </Container>
-      </Box>
-    );
+    return <ModernLoadingStates.ModernPageLoadingSkeleton />;
   }
 
   // Error state
@@ -250,8 +240,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
   );
 
   const FlowStepsPreview = ({ flow }: { flow: BookingFlowDetail }) => (
-    <Card sx={{ mt: 3 }}>
-      <CardContent>
+    <ModernCard sx={{ mt: 3 }}>
         <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
           <StepsIcon color="primary" />
           Flow Steps ({flow.steps?.length || 0})
@@ -315,7 +304,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
                     <Chip
                       label="Skippable"
                       size="small"
-                      color="info"
+                      color="primary"
                       variant="outlined"
                     />
                   )}
@@ -336,24 +325,18 @@ export const BookingFlowPreviewPage: React.FC = () => {
             No steps configured for this booking flow. Add steps to provide a complete booking experience.
           </Alert>
         )}
-      </CardContent>
-    </Card>
+    </ModernCard>
   );
 
   const PaymentGatewaysInfo = () => (
-    <Card sx={{ mt: 3 }}>
-      <CardContent>
+    <ModernCard sx={{ mt: 3 }}>
         <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
           <PaymentIcon color="primary" />
           Payment Configuration
         </Typography>
         
         {isLoadingPaymentGateways ? (
-          <Stack spacing={1}>
-            <Skeleton variant="text" height={24} />
-            <Skeleton variant="text" height={24} />
-            <Skeleton variant="text" height={24} />
-          </Stack>
+          <ModernLoadingStates.ModernListSkeleton />
         ) : paymentGateways ? (
           <Stack spacing={2}>
             <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -408,13 +391,11 @@ export const BookingFlowPreviewPage: React.FC = () => {
             No payment gateway configuration available for this flow.
           </Alert>
         )}
-      </CardContent>
-    </Card>
+    </ModernCard>
   );
 
   const FlowConfigurationInfo = ({ flow }: { flow: BookingFlowDetail }) => (
-    <Card sx={{ mt: 3 }}>
-      <CardContent>
+    <ModernCard sx={{ mt: 3 }}>
         <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
           <SecurityIcon color="primary" />
           Flow Configuration
@@ -508,8 +489,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
             </Box>
           )}
         </Stack>
-      </CardContent>
-    </Card>
+    </ModernCard>
   );
 
   const PreviewSimulationNote = () => (
@@ -609,35 +589,67 @@ export const BookingFlowPreviewPage: React.FC = () => {
         <FlowStatusWarnings flow={flow} />
 
         {/* Main Preview Card - Placeholder for actual preview component */}
-        <Card
+        <ModernCard
+          variant="glass"
+          size="large"
+          color="primary"
+          animation="none"
+          title="Booking Flow Preview"
           sx={{
             ...(viewMode === 'mobile' && {
               maxWidth: 375,
               mx: 'auto',
-              boxShadow: 3,
-              borderRadius: 3,
-            })
+            }),
+            '&::before': {
+              background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, ${tokens.color.primary[600]}06 100%)`,
+            },
           }}
         >
-          <CardContent sx={{ p: 4, textAlign: 'center' }}>
-            <Typography variant="h4" gutterBottom color="text.secondary">
-              📋 Booking Flow Preview
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="h4" gutterBottom sx={{ color: tokens.color.neutral[600] }}>
+              📋
             </Typography>
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom sx={{ color: tokens.color.neutral[800] }}>
               {flow.name}
             </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
+            <Typography variant="body1" sx={{ color: tokens.color.neutral[600] }} paragraph>
               {flow.description || 'No description provided'}
             </Typography>
             
-            <Alert severity="info" sx={{ mt: 3 }}>
-              <Typography variant="body2">
-                Interactive booking flow preview will be implemented here. 
-                This would show the actual step-by-step client experience.
-              </Typography>
-            </Alert>
-          </CardContent>
-        </Card>
+            <ModernCard
+              variant="glass"
+              color="primary"
+              size="small"
+              animation="none"
+              sx={{
+                mt: 3,
+                '&::before': {
+                  background: `linear-gradient(135deg, ${tokens.color.info[500]}06 0%, ${tokens.color.info[600]}04 100%)`,
+                },
+              }}
+            >
+              <Alert 
+                severity="info"
+                sx={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  '& .MuiAlert-message': {
+                    color: tokens.color.info[700],
+                  },
+                  '& .MuiAlert-icon': {
+                    color: tokens.color.info[600],
+                  },
+                }}
+              >
+                <Typography variant="body2">
+                  Interactive booking flow preview will be implemented here. 
+                  This would show the actual step-by-step client experience.
+                </Typography>
+              </Alert>
+            </ModernCard>
+          </Box>
+        </ModernCard>
 
         {/* Flow Steps Information */}
         <FlowStepsPreview flow={flow} />

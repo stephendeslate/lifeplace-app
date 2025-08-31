@@ -129,12 +129,13 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
     }
 
     switch (value.frequency) {
-      case 'DAILY':
+      case 'DAILY': {
         if (nextExecution <= now) {
           nextExecution.setDate(nextExecution.getDate() + 1);
         }
         break;
-      case 'WEEKLY':
+      }
+      case 'WEEKLY': {
         // Find next occurrence of the specified day
         const targetDay = value.dayOfWeek || 0;
         const currentDay = nextExecution.getDay();
@@ -145,7 +146,8 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
           nextExecution.setDate(nextExecution.getDate() + daysUntilTarget);
         }
         break;
-      case 'MONTHLY':
+      }
+      case 'MONTHLY': {
         if (value.dayOfMonth) {
           nextExecution.setDate(value.dayOfMonth);
           if (nextExecution <= now) {
@@ -153,12 +155,14 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
           }
         }
         break;
-      case 'QUARTERLY':
+      }
+      case 'QUARTERLY': {
         // Simplified quarterly calculation
         const currentQuarter = Math.floor(now.getMonth() / 3);
         const nextQuarterStart = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 1);
         nextExecution = nextQuarterStart;
         break;
+      }
     }
 
     return nextExecution.toLocaleString();

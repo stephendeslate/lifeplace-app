@@ -28,7 +28,7 @@ export interface WorkflowStage {
   task_description: string;
   progression_condition: string;
   required_tasks_completed: boolean;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -82,7 +82,7 @@ export interface CreateWorkflowTemplateData {
   stages?: CreateWorkflowStageData[];
 }
 
-export interface UpdateWorkflowTemplateData extends Partial<CreateWorkflowTemplateData> {}
+export type UpdateWorkflowTemplateData = Partial<CreateWorkflowTemplateData>;
 
 export interface CreateWorkflowStageData {
   template?: number;
@@ -96,10 +96,10 @@ export interface CreateWorkflowStageData {
   task_description?: string;
   progression_condition?: string;
   required_tasks_completed?: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
-export interface UpdateWorkflowStageData extends Partial<CreateWorkflowStageData> {}
+export type UpdateWorkflowStageData = Partial<CreateWorkflowStageData>;
 
 // Filter types
 export interface WorkflowTemplateFilters {
@@ -133,7 +133,7 @@ export interface WorkflowStageFormData {
   task_description: string;
   progression_condition: string;
   required_tasks_completed: boolean;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 // Action types

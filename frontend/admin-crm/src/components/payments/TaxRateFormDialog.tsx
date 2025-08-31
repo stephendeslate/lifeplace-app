@@ -2,23 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
   FormControlLabel,
   Switch,
   Box,
-  CircularProgress,
   InputAdornment,
   Alert,
   Stack,
 } from '@mui/material';
+import { ModernDialog, createDialogActions } from '../common';
 import { Percent as PercentIcon } from '@mui/icons-material';
 import { useCreateTaxRate, useUpdateTaxRate } from '../../hooks/usePayments';
 import type { TaxRate, TaxRateFormData } from '../../types/payments.types';
+import { tokens } from '../../design-system/tokens';
 
 interface TaxRateFormDialogProps {
   open: boolean;
@@ -135,21 +131,38 @@ export const TaxRateFormDialog: React.FC<TaxRateFormDialogProps> = ({
     return '';
   };
 
+  const actions = createDialogActions(
+    onClose,
+    handleSubmit,
+    {
+      cancelLabel: 'Cancel',
+      confirmLabel: isEditing ? 'Update Tax Rate' : 'Create Tax Rate',
+      isLoading: isSubmitting,
+      confirmDisabled: isSubmitting,
+    }
+  );
+
   return (
-    <Dialog
+    <ModernDialog
       open={open}
       onClose={onClose}
+      title={isEditing ? 'Edit Tax Rate' : 'Add Tax Rate'}
+      actions={actions}
       maxWidth="sm"
       fullWidth
     >
-      <DialogTitle>
-        {isEditing ? 'Edit Tax Rate' : 'Add Tax Rate'}
-      </DialogTitle>
-      
-      <DialogContent>
         <Box sx={{ mt: 2 }}>
           {formData.is_default && (
-            <Alert severity="info" sx={{ mb: 3 }}>
+            <Alert 
+              severity="info" 
+              sx={{ 
+                mb: 3,
+                backdropFilter: 'blur(10px)',
+                background: 'rgba(255, 255, 255, 0.95)',
+                borderRadius: tokens.spacing.radius.lg,
+                border: `1px solid ${tokens.color.borders.glass}`,
+              }}
+            >
               This will become the default tax rate applied to new invoices and quotes.
             </Alert>
           )}
@@ -208,24 +221,6 @@ export const TaxRateFormDialog: React.FC<TaxRateFormDialogProps> = ({
             />
           </Stack>
         </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} disabled={isSubmitting}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <CircularProgress size={20} />
-          ) : (
-            isEditing ? 'Update Tax Rate' : 'Create Tax Rate'
-          )}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </ModernDialog>
   );
 };

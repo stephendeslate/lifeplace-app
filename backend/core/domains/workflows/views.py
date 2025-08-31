@@ -117,7 +117,11 @@ class WorkflowStageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     
     def get_queryset(self):
-        return WorkflowStage.objects.all().order_by('template', 'stage', 'order')
+        return WorkflowStage.objects.select_related(
+            'template',
+            'template__event_type',
+            'email_template'
+        ).order_by('template', 'stage', 'order')
     
     def get_serializer_class(self):
         if self.action == 'retrieve':

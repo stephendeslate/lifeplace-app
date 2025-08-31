@@ -5,22 +5,22 @@ import type { Widget } from '../../../types/analytics.types';
 
 interface FunnelWidgetProps {
   widget: Widget;
-  data: any;
+  data: { categories?: Array<{ value: number; label: string; }> };
   compact?: boolean;
 }
 
-export const FunnelWidget: React.FC<FunnelWidgetProps> = ({ widget: _, data, compact }) => {
+export const FunnelWidget: React.FC<FunnelWidgetProps> = ({ data, compact }) => {
   const funnelData = data.categories || [];
-  const maxValue = Math.max(...funnelData.map((d: any) => d.value));
+  const maxValue = Math.max(...funnelData.map((d) => d.value));
   
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-      {funnelData.map((step: any, index: number) => {
+      {funnelData.map((step, index: number) => {
         const width = (step.value / maxValue) * 100;
         return (
           <Box key={index} sx={{ mb: 1 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-              <Typography variant={compact ? "caption" : "body2"}>{step.name}</Typography>
+              <Typography variant={compact ? "caption" : "body2"}>{(step as { name?: string }).name || step.label}</Typography>
               <Typography variant={compact ? "caption" : "body2"} fontWeight="medium">
                 {step.value.toLocaleString()}
               </Typography>

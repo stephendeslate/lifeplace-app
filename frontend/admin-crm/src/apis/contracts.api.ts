@@ -221,7 +221,7 @@ export const contractsApi = {
     return response.data;
   },
 
-  createAmendmentContract: async (id: number, contextData?: Record<string, any>): Promise<EventContract> => {
+  createAmendmentContract: async (id: number, contextData?: Record<string, unknown>): Promise<EventContract> => {
     const response = await api.post<EventContract>(`/contracts/amendments/${id}/create_contract/`, {
       context_data: contextData,
     });

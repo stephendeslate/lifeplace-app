@@ -35,6 +35,7 @@ const getInitialFormData = (payment?: Payment | null): PaymentFormData => {
     return {
       event: '',
       amount: '',
+      currency: 'PHP',
       status: 'PENDING',
       due_date: '',
       payment_method: '',
@@ -48,6 +49,7 @@ const getInitialFormData = (payment?: Payment | null): PaymentFormData => {
   return {
     event: payment.event.toString(),
     amount: payment.amount,
+    currency: payment.currency || 'PHP',
     status: payment.status,
     due_date: payment.due_date,
     payment_method: payment.payment_method?.toString() || '',
@@ -122,6 +124,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
     const submitData: CreatePaymentData | UpdatePaymentData = {
       event: parseInt(formData.event),
       amount: parseFloat(formData.amount).toString(),
+      currency: formData.currency,
       status: formData.status,
       due_date: formData.due_date,
       payment_method: formData.payment_method ? parseInt(formData.payment_method) : undefined,
@@ -169,8 +172,20 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
           />
         </FormControl>
 
-        {/* Amount and Status Row */}
+        {/* Currency, Amount and Status Row */}
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+          <FormControl sx={{ minWidth: 120 }}>
+            <InputLabel>Currency</InputLabel>
+            <Select
+              value={formData.currency}
+              label="Currency"
+              onChange={(e) => handleChange('currency', e.target.value)}
+            >
+              <MenuItem value="PHP">PHP</MenuItem>
+              <MenuItem value="USD">USD</MenuItem>
+            </Select>
+          </FormControl>
+          
           <TextField
             fullWidth
             label="Amount *"
@@ -180,7 +195,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
             error={!!errors.amount}
             helperText={errors.amount}
             InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              startAdornment: <InputAdornment position="start">{formData.currency === 'PHP' ? '₱' : '$'}</InputAdornment>,
               inputProps: { min: 0, step: '0.01' }
             }}
           />

@@ -190,7 +190,7 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
                       key={priority}
                       label={`${priority}: ${count}`}
                       size="small"
-                      color={getPriorityColor(priority) as any}
+                      color={getPriorityColor(priority) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                       variant="outlined"
                       sx={{ fontSize: '0.75rem' }}
                     />

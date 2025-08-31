@@ -10,7 +10,6 @@ import {
   MenuItem,
   Stack,
   LinearProgress,
-  Card,
   CardContent,
   CardActions,
   Button,
@@ -28,6 +27,9 @@ import {
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import type { ConversionFunnel } from '../../../types/analytics.types';
+import { ModernLoadingStates, ModernEmptyState, ModernCard } from '../../common';
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
 interface FunnelCardActionsProps {
   funnel: ConversionFunnel;
@@ -77,8 +79,22 @@ const FunnelCardActions: React.FC<FunnelCardActionsProps> = ({
 
   return (
     <>
-      <IconButton size="small" onClick={handleClick}>
-        <MoreVertIcon />
+      <IconButton 
+        size="small" 
+        onClick={handleClick}
+        sx={{
+          ...glassPresets.light,
+          border: `1px solid ${tokens.color.borders.glass}`,
+          borderRadius: tokens.spacing.radius.full,
+          transition: 'all 0.2s ease-in-out',
+          '&:hover': {
+            ...glassPresets.medium,
+            transform: 'scale(1.05)',
+            border: `1px solid ${tokens.color.primary[300]}`,
+          },
+        }}
+      >
+        <MoreVertIcon sx={{ color: tokens.color.neutral[600] }} />
       </IconButton>
       <Menu
         anchorEl={anchorEl}
@@ -86,23 +102,97 @@ const FunnelCardActions: React.FC<FunnelCardActionsProps> = ({
         onClose={handleClose}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            borderRadius: tokens.spacing.radius.xl,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            minWidth: 200,
+            mt: 1,
+            overflow: 'visible',
+            boxShadow: `0 20px 60px ${tokens.color.neutral[900]}15`,
+            '&::before': {
+              content: '""',
+              display: 'block',
+              position: 'absolute',
+              top: -8,
+              right: 14,
+              width: 16,
+              height: 16,
+              background: 'inherit',
+              border: 'inherit',
+              borderRight: 0,
+              borderBottom: 0,
+              transform: 'rotate(45deg)',
+              zIndex: -1,
+            },
+          },
+        }}
       >
-        <MenuItem onClick={handleView}>
-          <ViewIcon sx={{ mr: 1 }} fontSize="small" />
+        <MenuItem 
+          onClick={handleView}
+          sx={{
+            borderRadius: tokens.spacing.radius.md,
+            mx: 1,
+            my: 0.5,
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              background: `linear-gradient(135deg, ${tokens.color.info[50]} 0%, ${tokens.color.info[100]} 100%)`,
+              transform: 'translateX(4px)',
+            },
+          }}
+        >
+          <ViewIcon sx={{ mr: 1, color: tokens.color.info[600] }} fontSize="small" />
           View Analytics
         </MenuItem>
-        <MenuItem onClick={handleEdit}>
-          <EditIcon sx={{ mr: 1 }} fontSize="small" />
+        <MenuItem 
+          onClick={handleEdit}
+          sx={{
+            borderRadius: tokens.spacing.radius.md,
+            mx: 1,
+            my: 0.5,
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
+              transform: 'translateX(4px)',
+            },
+          }}
+        >
+          <EditIcon sx={{ mr: 1, color: tokens.color.primary[600] }} fontSize="small" />
           Edit
         </MenuItem>
         {onDuplicate && (
-          <MenuItem onClick={handleDuplicate}>
-            <DuplicateIcon sx={{ mr: 1 }} fontSize="small" />
+          <MenuItem 
+            onClick={handleDuplicate}
+            sx={{
+              borderRadius: tokens.spacing.radius.md,
+              mx: 1,
+              my: 0.5,
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                background: `linear-gradient(135deg, ${tokens.color.secondary[50]} 0%, ${tokens.color.secondary[100]} 100%)`,
+                transform: 'translateX(4px)',
+              },
+            }}
+          >
+            <DuplicateIcon sx={{ mr: 1, color: tokens.color.secondary[600] }} fontSize="small" />
             Duplicate
           </MenuItem>
         )}
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
+        <MenuItem 
+          onClick={handleDelete} 
+          sx={{ 
+            borderRadius: tokens.spacing.radius.md,
+            mx: 1,
+            my: 0.5,
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              background: `linear-gradient(135deg, ${tokens.color.error[50]} 0%, ${tokens.color.error[100]} 100%)`,
+              transform: 'translateX(4px)',
+            },
+          }}
+        >
+          <DeleteIcon sx={{ mr: 1, color: tokens.color.error[600] }} fontSize="small" />
           Delete
         </MenuItem>
       </Menu>
@@ -185,7 +275,12 @@ const FunnelCard: React.FC<FunnelCardProps> = ({
   const mockTotalCompleted = showMockAnalytics ? Math.floor((mockTotalStarted * mockConversionRate) / 100) : 0;
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <ModernCard 
+      variant="glass" 
+      size="medium" 
+      animation="grow"
+      sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+    >
       <CardContent sx={{ flex: 1 }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box flex={1}>
@@ -277,7 +372,7 @@ const FunnelCard: React.FC<FunnelCardProps> = ({
           Edit
         </Button>
       </CardActions>
-    </Card>
+    </ModernCard>
   );
 };
 
@@ -304,38 +399,9 @@ export const FunnelTable: React.FC<FunnelTableProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          flexDirection: { xs: 'column', sm: 'row' }, 
-          flexWrap: { sm: 'wrap' },
-          gap: 3 
-        }}
-      >
-        {Array.from({ length: 6 }, (_, index) => (
-          <Box 
-            key={index}
-            sx={{ 
-              flex: { 
-                xs: '1 1 100%', 
-                sm: '1 1 calc(50% - 12px)', 
-                md: '1 1 calc(33.333% - 16px)',
-                lg: '1 1 calc(25% - 18px)'
-              },
-              minWidth: 320
-            }}
-          >
-            <Card>
-              <CardContent>
-                <Box sx={{ height: 200 }}>
-                  {/* Loading skeleton would go here */}
-                  <Typography variant="body2" color="text.secondary">
-                    Loading...
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
+      <Box display="grid" gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))" gap={3}>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <ModernLoadingStates.ModernCardSkeleton key={index} hasHeader />
         ))}
       </Box>
     );
@@ -343,21 +409,12 @@ export const FunnelTable: React.FC<FunnelTableProps> = ({
 
   if (funnels.length === 0) {
     return (
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          py: 8,
-          textAlign: 'center'
-        }}
-      >
-        <FunnelIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-        <Typography variant="h6" color="text.secondary">
-          {emptyMessage}
-        </Typography>
-      </Box>
+      <ModernEmptyState
+        icon={FunnelIcon}
+        title={emptyMessage}
+        description="Create conversion funnels to track user journeys and identify optimization opportunities in your business processes"
+        tip={{ text: "Funnels help you understand where users drop off in your process", type: "info" }}
+      />
     );
   }
 

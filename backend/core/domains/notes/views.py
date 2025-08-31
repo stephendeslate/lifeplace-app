@@ -18,7 +18,10 @@ class NoteViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # Default to all notes, but honor the ordering
-        return Note.objects.all().order_by('-created_at')
+        return Note.objects.select_related(
+            'created_by',
+            'content_type'
+        ).order_by('-created_at')
     
     def get_serializer_class(self):
         if self.action == 'create':

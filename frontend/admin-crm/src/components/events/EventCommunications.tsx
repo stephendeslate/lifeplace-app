@@ -72,7 +72,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
   } = useRecords({
     client_id: clientId,
     channel: channelFilter === 'ALL' ? undefined : channelFilter,
-    status: statusFilter === 'ALL' ? undefined : statusFilter as any
+    status: statusFilter === 'ALL' ? undefined : statusFilter as 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED'
   });
 
   // Filter communications by search term
@@ -177,7 +177,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
             <InputLabel>Channel</InputLabel>
             <Select
               value={channelFilter}
-              onChange={(e) => setChannelFilter(e.target.value as any)}
+              onChange={(e) => setChannelFilter(e.target.value as 'ALL' | 'EMAIL' | 'SMS')}
               label="Channel"
             >
               <MenuItem value="ALL">All</MenuItem>

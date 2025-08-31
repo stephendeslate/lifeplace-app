@@ -10,11 +10,12 @@ import {
   Stack,
   Alert,
   Button,
-  Card,
-  CardContent,
   Skeleton,
   Divider,
 } from '@mui/material';
+
+// Modern Design System imports
+import { ModernCard } from '../../common/ModernCard';
 import {
   Upload as UploadIcon,
   Preview as PreviewIcon,
@@ -278,16 +279,16 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
       </Alert>
 
       {/* Show update errors */}
-      {updateConfigurationError && (
+      {updateConfigurationError ? (
         <Alert severity="error" sx={{ mb: 3 }}>
           Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
         </Alert>
-      )}
+      ) : null}
 
       <Stack spacing={3}>
         {/* Basic Content */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Welcome Message
             </Typography>
@@ -317,12 +318,12 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                 disabled={isUpdatingConfiguration}
               />
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Display Options */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Display Options
             </Typography>
@@ -360,12 +361,12 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                 </Typography>
               </Box>
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Customization */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Customization
             </Typography>
@@ -419,12 +420,12 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                 disabled={isUpdatingConfiguration}
               />
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Preview */}
-        <Card variant="outlined">
-          <CardContent>
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <PreviewIcon color="primary" />
               <Typography variant="subtitle1">
@@ -502,8 +503,8 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                 </Box>
               </Box>
             )}
-          </CardContent>
-        </Card>
+          </Box>
+        </ModernCard>
 
         {/* Actions */}
         <Box display="flex" gap={2} justifyContent="flex-end">
@@ -527,16 +528,16 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
 
         {/* Configuration Debug Info (Development only) */}
         {process.env.NODE_ENV === 'development' && config && (
-          <Card variant="outlined" sx={{ backgroundColor: 'grey.50' }}>
-            <CardContent>
+          <ModernCard variant="glass" size="small" animation="none" sx={{ backgroundColor: 'grey.50' }}>
+            <Box sx={{ p: 3 }}>
               <Typography variant="caption" gutterBottom>
                 Debug: Current Configuration
               </Typography>
               <pre style={{ fontSize: '0.75rem', overflow: 'auto' }}>
                 {JSON.stringify(config, null, 2)}
               </pre>
-            </CardContent>
-          </Card>
+            </Box>
+          </ModernCard>
         )}
       </Stack>
     </Box>

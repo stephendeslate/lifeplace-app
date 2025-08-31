@@ -33,6 +33,8 @@ import { useNavigate } from 'react-router-dom';
 import { useContractsForClient } from '../../hooks/useContracts';
 import type { EventContract } from '../../types/contracts.types';
 import type { Client } from '../../types/clients.types';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface ClientContractsProps {
   client: Client;
@@ -42,6 +44,7 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedContract, setSelectedContract] = useState<EventContract | null>(null);
+  const { settings: currencySettings } = useCurrencySettings();
 
   const { data: contracts = [], isLoading } = useContractsForClient(client.id);
 
@@ -67,15 +70,17 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
     navigate(`/contracts/new?client=${client.id}`);
   };
 
-  const formatCurrency = (amount: string | number | null) => {
+  const formatContractAmount = (amount: string | number | null, contractCurrency?: string) => {
     if (amount === null || amount === undefined) {
       return '-';
     }
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(numAmount);
+    const currency = contractCurrency || currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
   };
 
   const getStatusColor = (status: string): "default" | "primary" | "success" | "warning" | "error" => {
@@ -161,7 +166,7 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" fontWeight="medium">
-                    {formatCurrency(contract.contract_value)}
+                    {formatContractAmount(contract.contract_value, contract.currency)}
                   </Typography>
                 </TableCell>
                 <TableCell>
