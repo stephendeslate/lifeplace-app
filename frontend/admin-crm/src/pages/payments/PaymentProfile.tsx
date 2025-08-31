@@ -122,7 +122,7 @@ export const PaymentProfile: React.FC = () => {
   } = usePaymentManagement(paymentId);
 
   // Currency formatting function that uses payment currency or system default
-  const formatPaymentAmount = (amount: string | number, currency?: string) => {
+  const formatPaymentAmount = useCallback((amount: string | number, currency?: string) => {
     const paymentCurrency = currency || payment?.currency || currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(amount, paymentCurrency, {
       showSymbol: currencySettings?.displayFormat !== 'code',
@@ -130,7 +130,7 @@ export const PaymentProfile: React.FC = () => {
       minimumFractionDigits: currencySettings?.decimalPlaces ?? (paymentCurrency === 'PHP' ? 0 : 2),
       maximumFractionDigits: currencySettings?.decimalPlaces ?? (paymentCurrency === 'PHP' ? 0 : 2),
     });
-  };
+  }, [payment?.currency, currencySettings]);
 
   // Menu close handler
   const handleMenuClose = useCallback(() => {
@@ -234,7 +234,7 @@ export const PaymentProfile: React.FC = () => {
     }
 
     return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [payment]);
+  }, [payment, formatPaymentAmount]);
   
 
   useEffect(() => {

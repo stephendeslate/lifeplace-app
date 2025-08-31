@@ -71,7 +71,7 @@ export const MetricValueDisplay: React.FC<MetricValueDisplayProps> = ({
     }
 
     switch (format) {
-      case 'currency':
+      case 'currency': {
         const currency = currencySettings?.defaultCurrency || 'PHP';
         return formatCurrency(numValue, currency, {
           showSymbol: currencySettings?.displayFormat !== 'code',
@@ -79,6 +79,7 @@ export const MetricValueDisplay: React.FC<MetricValueDisplayProps> = ({
           minimumFractionDigits: decimals ?? currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
           maximumFractionDigits: decimals ?? currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
         });
+      }
       
       case 'percentage':
         return `${numValue.toFixed(decimals)}%`;
