@@ -35,6 +35,7 @@ import {
   Security as SecurityIcon,
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import type { 
   BookingFlowStep, 
@@ -113,6 +114,9 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
   const [paymentOptions, setPaymentOptions] = useState<PaymentOptions | null>(null);
 
   const { usePaymentOptions } = useBookingFlowStepConfiguration();
+  
+  // Get user's currency settings
+  const { settings: currencySettings } = useCurrencySettings();
   
   // Fetch payment options for this step
   const {
@@ -619,7 +623,7 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 <strong>Payment Options:</strong>{' '}
                 {[
                   formData.accept_full_payment && 'Full Payment',
-                  formData.accept_deposit && `Deposit (${formData.deposit_amount}${formData.deposit_type === 'PERCENTAGE' ? '%' : ' USD'})`
+                  formData.accept_deposit && `Deposit (${formData.deposit_amount}${formData.deposit_type === 'PERCENTAGE' ? '%' : ` ${currencySettings?.defaultCurrency || 'PHP'}`})`
                 ].filter(Boolean).join(', ') || 'None configured'}
               </Typography>
               

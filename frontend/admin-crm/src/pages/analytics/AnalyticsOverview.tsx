@@ -42,6 +42,8 @@ import {
   useDashboards, 
   useAlertRules,
 } from '../../hooks/useAnalytics';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface MetricCardProps {
   title: string;
@@ -178,6 +180,7 @@ const QuickActionCard: React.FC<QuickActionCardProps> = ({
 
 export const AnalyticsOverview: React.FC = () => {
   const navigate = useNavigate();
+  const { settings: currencySettings } = useCurrencySettings();
   const { setBreadcrumbs } = useLayout();
   const [dateRange, setDateRange] = useState<{
     start_date?: string;
@@ -235,12 +238,14 @@ export const AnalyticsOverview: React.FC = () => {
     });
   };
 
-  const formatCurrency = (value: string | number) => {
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(numValue);
+  const formatAnalyticsCurrency = (value: string | number) => {
+    const currency = currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(value, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
   };
 
   const formatPercentage = (value: string | number) => {
@@ -352,7 +357,7 @@ export const AnalyticsOverview: React.FC = () => {
             <Box sx={{ flex: 1 }}>
               <MetricCard
                 title="Total Revenue"
-                value={formatCurrency(businessMetrics.total_revenue)}
+                value={formatAnalyticsCurrency(businessMetrics.total_revenue)}
                 icon={<PaymentIcon />}
                 color="secondary"
               />
@@ -396,7 +401,7 @@ export const AnalyticsOverview: React.FC = () => {
           <Box sx={{ flex: 1 }}>
             <MetricCard
               title="Average Payment Value"
-              value={formatCurrency(businessMetrics.average_payment_value)}
+              value={formatAnalyticsCurrency(businessMetrics.average_payment_value)}
               icon={<PaymentIcon />}
               color="success"
             />

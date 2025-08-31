@@ -41,6 +41,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents, useEventTypes } from '../../hooks/useEvents';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import { formatCurrency } from '../../utils/currency';
 import { EventForm } from '../../components/events/EventForm';
 import { eventsApi } from '../../apis/events.api';
 import type { Event, EventFilters, CreateEventData, EventStatus } from '../../types/events.types';
@@ -86,6 +88,25 @@ export const EventsOverview: React.FC = () => {
     page: page + 1,
     page_size: rowsPerPage,
   });
+
+  // Get user's currency settings for proper formatting
+  const { settings: currencySettings } = useCurrencySettings();
+
+  // Format event price based on user's currency settings
+  const formatEventPrice = (event: Event) => {
+    if (!event.total_price) return null;
+    
+    // Events might have different currencies, but for now assume default currency
+    // In the future, this should check event.currency field if it exists
+    const currency = currencySettings?.defaultCurrency || 'PHP';
+    
+    return formatCurrency(event.total_price, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
+  };
 
   useEffect(() => {
     setBreadcrumbs([
@@ -490,7 +511,7 @@ export const EventsOverview: React.FC = () => {
                           </Typography>
                           {event.total_price && (
                             <Typography variant="caption" color="text.secondary">
-                              ${parseFloat(event.total_price).toLocaleString()}
+                              {formatEventPrice(event)}
                             </Typography>
                           )}
                         </Box>

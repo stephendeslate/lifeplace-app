@@ -42,6 +42,7 @@ import {
 // Modern Design System imports
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
+import { formatCurrency } from '../../../utils/currency';
 import type { 
   BookingFlowDetail, 
   BookingFlowStep,
@@ -337,17 +338,17 @@ const StepPreview: React.FC<StepPreviewProps> = ({
               <Stack spacing={1}>
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2">Premium Package</Typography>
-                  <Typography variant="body2">$1,000.00</Typography>
+                  <Typography variant="body2">{formatCurrency(1000, 'PHP')}</Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2">Photography Add-on</Typography>
-                  <Typography variant="body2">$250.00</Typography>
+                  <Typography variant="body2">{formatCurrency(250, 'PHP')}</Typography>
                 </Box>
                 <Divider />
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="subtitle2" fontWeight="bold">Total</Typography>
                   <Typography variant="subtitle2" fontWeight="bold" color="primary">
-                    $1,250.00
+                    {formatCurrency(1250, 'PHP')}
                   </Typography>
                 </Box>
               </Stack>
@@ -417,7 +418,7 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             </Typography>
             <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2, mb: 2 }}>
               <Typography variant="body2" color="text.secondary">Total Amount</Typography>
-              <Typography variant="h6" color="primary">$1,250.00</Typography>
+              <Typography variant="h6" color="primary">{formatCurrency(1250, 'PHP')}</Typography>
             </Box>
             
             {paymentConfig && (
@@ -479,7 +480,7 @@ const StepPreview: React.FC<StepPreviewProps> = ({
                 <Divider />
                 <Box>
                   <Typography variant="body2" color="text.secondary">Total Amount</Typography>
-                  <Typography variant="h6" color="primary">$1,250.00</Typography>
+                  <Typography variant="h6" color="primary">{formatCurrency(1250, 'PHP')}</Typography>
                 </Box>
               </Stack>
             </Box>

@@ -41,6 +41,8 @@ import { useNavigate } from 'react-router-dom';
 import { useInvoices } from '../../hooks/usePayments';
 import type { Event } from '../../types/events.types';
 import type { Invoice, InvoiceStatus } from '../../types/payments.types';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface EventInvoicesProps {
   event: Event;
@@ -71,6 +73,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const { settings: currencySettings } = useCurrencySettings();
 
   const {
     invoices,
@@ -112,12 +115,14 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
     }
   };
 
-  const formatCurrency = (amount: string | number) => {
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(numAmount);
+  const formatInvoiceAmount = (amount: string | number, invoiceCurrency?: string) => {
+    const currency = invoiceCurrency || currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
   };
 
   // Calculate payment progress based on related payments
@@ -229,11 +234,11 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" fontWeight="bold">
-                      {formatCurrency(invoice.total_amount)}
+                      {formatInvoiceAmount(invoice.total_amount, invoice.currency)}
                     </Typography>
                     {invoice.tax_amount && parseFloat(invoice.tax_amount) > 0 && (
                       <Typography variant="caption" color="text.secondary">
-                        Tax: {formatCurrency(invoice.tax_amount)}
+                        Tax: {formatInvoiceAmount(invoice.tax_amount, invoice.currency)}
                       </Typography>
                     )}
                   </TableCell>
@@ -253,7 +258,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                         </Typography>
                       </Box>
                       <Typography variant="caption" color="text.secondary">
-                        {formatCurrency(paidAmount)} paid
+                        {formatInvoiceAmount(paidAmount, invoice.currency)} paid
                       </Typography>
                     </Box>
                   </TableCell>
@@ -362,8 +367,9 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                   Total Billed
                 </Typography>
                 <Typography variant="h6">
-                  {formatCurrency(
-                    invoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || '0'), 0)
+                  {formatInvoiceAmount(
+                    invoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || '0'), 0),
+                    invoices[0]?.currency
                   )}
                 </Typography>
               </Box>
@@ -372,8 +378,9 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                   Total Paid
                 </Typography>
                 <Typography variant="h6" color="success.main">
-                  {formatCurrency(
-                    invoices.reduce((sum, inv) => sum + calculatePaidAmount(inv), 0)
+                  {formatInvoiceAmount(
+                    invoices.reduce((sum, inv) => sum + calculatePaidAmount(inv), 0),
+                    invoices[0]?.currency
                   )}
                 </Typography>
               </Box>
@@ -382,12 +389,13 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                   Outstanding
                 </Typography>
                 <Typography variant="h6" color="warning.main">
-                  {formatCurrency(
+                  {formatInvoiceAmount(
                     invoices.reduce(
                       (sum, inv) =>
                         sum + (parseFloat(inv.total_amount || '0') - calculatePaidAmount(inv)),
                       0
-                    )
+                    ),
+                    invoices[0]?.currency
                   )}
                 </Typography>
               </Box>

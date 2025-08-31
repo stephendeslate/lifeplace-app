@@ -17,6 +17,8 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
+import { formatCurrency } from '../../../utils/currency';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 
 interface TrendData {
   value: number;
@@ -55,6 +57,8 @@ export const MetricValueDisplay: React.FC<MetricValueDisplayProps> = ({
   showTrend = true,
   color = 'primary',
 }) => {
+  const { settings: currencySettings } = useCurrencySettings();
+  
   const formatValue = (val: string | number, format: string, decimals: number): string => {
     if (val === null || val === undefined || val === '') {
       return '--';
@@ -68,12 +72,13 @@ export const MetricValueDisplay: React.FC<MetricValueDisplayProps> = ({
 
     switch (format) {
       case 'currency':
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: decimals,
-          maximumFractionDigits: decimals,
-        }).format(numValue);
+        const currency = currencySettings?.defaultCurrency || 'PHP';
+        return formatCurrency(numValue, currency, {
+          showSymbol: currencySettings?.displayFormat !== 'code',
+          showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+          minimumFractionDigits: decimals ?? currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+          maximumFractionDigits: decimals ?? currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+        });
       
       case 'percentage':
         return `${numValue.toFixed(decimals)}%`;

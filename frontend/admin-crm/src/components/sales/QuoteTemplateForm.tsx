@@ -29,6 +29,7 @@ import {
 import { useEventTypes } from '../../hooks/useEvents';
 import { useProducts } from '../../hooks/useProducts';
 import { useCreateQuoteTemplate, useUpdateQuoteTemplate } from '../../hooks/useSales';
+import { formatCurrency } from '../../utils/currency';
 import { sanitizeHTML } from '../../utils/security';
 import type { 
   QuoteTemplate, 
@@ -105,7 +106,7 @@ const quoteTemplateStarters = {
 
 <h3>Cancellation Policy</h3>
 <ul>
-  <li>30+ days notice: Full refund minus $500 processing fee</li>
+  <li>30+ days notice: Full refund minus ${formatCurrency(500, 'PHP')} processing fee</li>
   <li>15-29 days notice: 50% refund</li>
   <li>Less than 15 days: No refund</li>
 </ul>
@@ -260,10 +261,10 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
       event_date: 'March 15, 2024',
       event_venue: 'Grand Ballroom Hotel',
       event_guest_count: '150',
-      total_amount: '$15,000.00',
+      total_amount: formatCurrency(15000, 'PHP'),
       deposit_percentage: '50',
       final_payment_due: '7 days before event date',
-      late_fee: '$100',
+      late_fee: formatCurrency(100, 'PHP'),
       cancellation_policy: 'Cancellation must be made 30 days in advance for full refund.',
       service_hours: '8'
     };

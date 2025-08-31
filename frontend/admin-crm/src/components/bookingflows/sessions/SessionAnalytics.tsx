@@ -40,6 +40,8 @@ import type {
   BookingFlowAnalytics,
 } from '../../../types/bookingflows.types';
 import { useBookingFlowAnalytics, useBookingSessions } from '../../../hooks/useBookingFlows';
+import { formatCurrency } from '../../../utils/currency';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 
 interface SessionAnalyticsProps {
   flow: BookingFlowDetail;
@@ -70,6 +72,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<'sessions' | 'conversions' | 'revenue'>('sessions');
+  const { settings: currencySettings } = useCurrencySettings();
 
   const { 
     useFlowAnalytics,
@@ -266,11 +269,14 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
     return `${Math.round(seconds / 3600)}h`;
   };
 
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+  const formatAnalyticsCurrency = (amount: number): string => {
+    const currency = currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
   };
 
   // Parse duration string from backend (e.g., "00:15:30" -> seconds)
@@ -399,7 +405,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     </Typography>
                   </Box>
                   <Typography variant="h4" fontWeight="bold">
-                    {formatCurrency(metrics.totalRevenue)}
+                    {formatAnalyticsCurrency(metrics.totalRevenue)}
                   </Typography>
                   <Box display="flex" alignItems="center" gap={0.5} mt={1}>
                     <TrendingUpIcon fontSize="small" color="success" />
@@ -629,7 +635,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body2">Average Booking Value</Typography>
                       <Typography variant="body2" fontWeight="medium">
-                        {formatCurrency(metrics.averageBookingValue)}
+                        {formatAnalyticsCurrency(metrics.averageBookingValue)}
                       </Typography>
                     </Box>
                     
