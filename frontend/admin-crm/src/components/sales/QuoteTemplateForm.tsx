@@ -32,7 +32,8 @@ import { useCreateQuoteTemplate, useUpdateQuoteTemplate } from '../../hooks/useS
 import { sanitizeHTML } from '../../utils/security';
 import type { 
   QuoteTemplate, 
-  CreateQuoteTemplateData, 
+  CreateQuoteTemplateData,
+  CreateQuoteTemplateProductData,
 } from '../../types/sales.types';
 import type { ProductOption } from '../../types/products.types';
 import RichTextEditor from '../shared/RichTextEditor';
@@ -209,7 +210,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
     }
   }, [template, products]);
 
-  const handleInputChange = (field: keyof CreateQuoteTemplateData, value: string | boolean | number | null) => {
+  const handleInputChange = (field: keyof CreateQuoteTemplateData, value: string | boolean | number | null | CreateQuoteTemplateProductData[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -305,26 +306,26 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
     
     // Update form data with selected products
     const productFormData = newValue.map(product => ({
-      product: (product as any).id,
+      product: (product as ProductOption).id,
       quantity: 1,
       is_required: false,
     }));
     
-    handleInputChange('products', productFormData as any);
+    handleInputChange('products', productFormData);
   };
 
   const handleProductQuantityChange = (index: number, quantity: number) => {
     const updatedProducts = (formData.products ?? []).map((product, i) => 
       i === index ? { ...product, quantity } : product
     );
-    handleInputChange('products', updatedProducts as any);
+    handleInputChange('products', updatedProducts);
   };
 
   const handleProductRequiredChange = (index: number, is_required: boolean) => {
     const updatedProducts = (formData.products ?? []).map((product, i) => 
       i === index ? { ...product, is_required } : product
     );
-    handleInputChange('products', updatedProducts as any);
+    handleInputChange('products', updatedProducts);
   };
 
   return (
@@ -455,7 +456,7 @@ export const QuoteTemplateForm: React.FC<QuoteTemplateFormProps> = ({
               <Autocomplete
                 multiple
                 options={products}
-                getOptionLabel={(option) => (option as any).name}
+                getOptionLabel={(option) => (option as ProductOption).name}
                 value={selectedProducts as unknown as ProductOption[]}
                 onChange={handleProductsChange}
                 renderInput={(params) => (

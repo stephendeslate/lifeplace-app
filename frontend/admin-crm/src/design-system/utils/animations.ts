@@ -407,7 +407,7 @@ export const staggerUtilities = {
     animation: string,
     config: AnimationConfig = {}
   ) => {
-    const styles: Record<string, any> = {};
+    const styles: Record<string, Record<string, unknown>> = {};
     
     for (let i = 1; i <= totalItems; i++) {
       const delay = (i - 1) * baseDelay;

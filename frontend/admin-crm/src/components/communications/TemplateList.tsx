@@ -175,7 +175,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
     {
       key: 'channel',
       label: 'Channel',
-      render: (value, _row) => (
+      render: (value, _) => (
         <Chip
           label={String(value)}
           size="small"
@@ -191,7 +191,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
     {
       key: 'category',
       label: 'Category',
-      render: (value, _row) => (
+      render: (value, _) => (
         <Chip
           label={String(value)}
           size="small"
@@ -207,7 +207,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
     {
       key: 'subject_template',
       label: 'Subject/Content',
-      render: (value, _row) => (
+      render: (value, _) => (
         <Box>
           {value ? (
             <Tooltip title={String(value)} arrow>
@@ -237,7 +237,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       key: 'updated_at',
       label: 'Last Updated',
       sortable: true,
-      render: (value, _row) => (
+      render: (value, _) => (
         <Box>
           <Typography variant="body2" color="text.secondary" fontWeight="500">
             {new Date(String(value)).toLocaleDateString()}

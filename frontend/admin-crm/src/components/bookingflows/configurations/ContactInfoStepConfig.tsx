@@ -116,7 +116,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
         require_phone: config.require_phone ?? true,
         require_address: config.require_address ?? false,
         require_company: config.require_company ?? false,
-        custom_fields: (config.custom_fields || []).map((field: any) => ({ ...field, id: field.id || Date.now().toString() + Math.random() })),
+        custom_fields: (config.custom_fields || []).map((field: { name: string; type: string; required: boolean; placeholder?: string } & { id?: string }) => ({ ...field, id: field.id || Date.now().toString() + Math.random() })),
         offer_account_creation: config.offer_account_creation ?? true,
         require_account_creation: config.require_account_creation ?? false,
       });
