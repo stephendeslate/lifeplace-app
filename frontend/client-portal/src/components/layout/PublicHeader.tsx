@@ -20,8 +20,6 @@ import {
 import {
   Menu as MenuIcon,
   Close as CloseIcon,
-  Phone,
-  Email,
 } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,15 +27,24 @@ import type { NavigationItem } from '../../types/layout.types';
 
 const navigationItems: NavigationItem[] = [
   { id: 'home', label: 'Home', path: '/' },
-  { id: 'venues', label: 'Venues', path: '/venues' },
+  { id: 'about', label: 'About Us', path: '/about' },
   { id: 'services', label: 'Services', path: '/services' },
-  { id: 'gallery', label: 'Gallery', path: '/gallery' },
-  { id: 'packages', label: 'Packages', path: '/packages' },
-  { id: 'about', label: 'About', path: '/about' },
+  { id: 'rates', label: 'Rates', path: '/rates' },
+  { id: 'facilities', label: 'Facilities', path: '/facilities' },
+  { id: 'partner', label: 'Partner With Us', path: '/partner' },
+  { id: 'reviews', label: 'Reviews', path: '/reviews' },
   { id: 'contact', label: 'Contact', path: '/contact' },
 ];
 
-export const PublicHeader: React.FC = () => {
+interface PublicHeaderProps {
+  onNavigateToLogin?: () => void;
+  onNavigateToRegister?: () => void;
+}
+
+export const PublicHeader: React.FC<PublicHeaderProps> = ({
+  onNavigateToLogin,
+  onNavigateToRegister,
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
@@ -181,24 +188,6 @@ export const PublicHeader: React.FC = () => {
 
           {/* Right Section: Actions */}
           <Box display="flex" alignItems="center" gap={2}>
-            {/* Contact Info (Desktop) */}
-            {!isMobile && (
-              <Box display="flex" alignItems="center" gap={3} mr={2}>
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <Phone sx={{ fontSize: 16, opacity: 0.7 }} />
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    (02) 123-4567
-                  </Typography>
-                </Box>
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <Email sx={{ fontSize: 16, opacity: 0.7 }} />
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    info@lifeplacealfonso.com
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-
             {/* User Actions */}
             <Box display="flex" alignItems="center" gap={1}>
               {/* Show dashboard link for authenticated users */}
@@ -224,7 +213,7 @@ export const PublicHeader: React.FC = () => {
               {!isAuthenticated && !isMobile && (
                 <Button
                   variant="text"
-                  onClick={() => navigate('/login')}
+                  onClick={onNavigateToLogin}
                   sx={{
                     color: 'inherit',
                     '&:hover': {
@@ -388,7 +377,7 @@ export const PublicHeader: React.FC = () => {
                 <Button
                   variant="text"
                   fullWidth
-                  onClick={() => handleNavigation('/register')}
+                  onClick={onNavigateToRegister}
                   sx={{ color: 'text.secondary' }}
                 >
                   Create Account

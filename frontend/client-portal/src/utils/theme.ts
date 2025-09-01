@@ -2,19 +2,20 @@
 
 import { createTheme } from '@mui/material/styles';
 import type { ThemeOptions } from '@mui/material/styles';
+import { tokens } from '../design-system/tokens';
 
-// Nature-inspired color palette for LifePlace Alfonso
+// Enhanced nature-inspired color palette using design system tokens
 const palette = {
   primary: {
-    main: '#2d5016', // Deep forest green
-    light: '#5a7c47',
-    dark: '#1a3009',
+    main: tokens.color.base.forest[600], // Deep forest green
+    light: tokens.color.base.forest[400],
+    dark: tokens.color.base.forest[800],
     contrastText: '#ffffff',
   },
   secondary: {
-    main: '#8b4513', // Earthy brown
-    light: '#a0673d',
-    dark: '#5d2f0c',
+    main: tokens.color.base.earth[500], // Earthy brown
+    light: tokens.color.base.earth[300],
+    dark: tokens.color.base.earth[700],
     contrastText: '#ffffff',
   },
   error: {

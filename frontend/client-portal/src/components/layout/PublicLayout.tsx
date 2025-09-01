@@ -1,4 +1,4 @@
-// frontend/client-portal/src/components/layout/PublicLayout.tsx
+// components/layout/PublicLayout.tsx
 
 import React from 'react';
 import { Box } from '@mui/material';
@@ -7,19 +7,32 @@ import { PublicFooter } from './PublicFooter';
 
 interface PublicLayoutProps {
   children: React.ReactNode;
-  fullHeight?: boolean; // For pages like home that need full viewport height
+  fullHeight?: boolean;
+  onNavigateToLogin?: () => void;
+  onNavigateToRegister?: () => void;
 }
 
 export const PublicLayout: React.FC<PublicLayoutProps> = ({ 
   children, 
-  fullHeight = false 
+  fullHeight = false,
+  onNavigateToLogin,
+  onNavigateToRegister,
 }) => {
-  const headerHeight = 80; // Header height
-
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw' }}>
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        minHeight: '100vh', 
+        width: '100vw',
+        overflow: 'hidden',
+      }}
+    >
       {/* Header */}
-      <PublicHeader />
+      <PublicHeader 
+        onNavigateToLogin={onNavigateToLogin}
+        onNavigateToRegister={onNavigateToRegister}
+      />
 
       {/* Main Content */}
       <Box
@@ -27,12 +40,12 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         sx={{
           flex: 1,
           width: '100vw',
+          display: 'flex',
+          flexDirection: 'column',
           ...(fullHeight && {
             minHeight: '100vh',
           }),
-          ...(!fullHeight && {
-            paddingTop: `${headerHeight}px`,
-          }),
+          position: 'relative',
         }}
       >
         {children}

@@ -1,12 +1,14 @@
-// frontend/client-portal/src/components/layout/PublicFooter.tsx
+// components/layout/PublicFooter.tsx
 
 import React from 'react';
 import {
   Box,
+  Container,
   Typography,
-  Button,
-  Stack,
+  Link,
+  IconButton,
   Divider,
+  useTheme,
   alpha,
 } from '@mui/material';
 import {
@@ -15,315 +17,258 @@ import {
   Email,
   Facebook,
   Instagram,
-  AccessTime,
+  Twitter,
+  YouTube,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 
 export const PublicFooter: React.FC = () => {
-  const navigate = useNavigate();
+  const theme = useTheme();
+
+  const contactInfo = [
+    {
+      icon: <LocationOn />,
+      label: 'Address',
+      value: 'Alfonso, Cavite, Philippines',
+    },
+    {
+      icon: <Phone />,
+      label: 'Phone',
+      value: '+63 (02) 123-4567',
+      href: 'tel:+630212345567',
+    },
+    {
+      icon: <Email />,
+      label: 'Email',
+      value: 'info@lifeplacealfonso.com',
+      href: 'mailto:info@lifeplacealfonso.com',
+    },
+  ];
 
   const quickLinks = [
-    { label: 'Venues', path: '/venues' },
-    { label: 'Services', path: '/services' },
-    { label: 'Packages', path: '/packages' },
-    { label: 'Gallery', path: '/gallery' },
+    { label: 'About Us', href: '/about' },
+    { label: 'Services', href: '/#services' },
+    { label: 'Gallery', href: '/gallery' },
+    { label: 'Testimonials', href: '/testimonials' },
+    { label: 'Contact', href: '/contact' },
   ];
 
   const services = [
-    { label: 'Weddings', path: '/services/weddings' },
-    { label: 'Team Building', path: '/services/team-building' },
-    { label: 'Retreats', path: '/services/retreats' },
-    { label: 'Camping', path: '/services/camping' },
+    { label: 'Weddings', href: '/services/weddings' },
+    { label: 'Corporate Events', href: '/services/corporate' },
+    { label: 'Retreats', href: '/services/retreats' },
+    { label: 'Team Building', href: '/services/team-building' },
+    { label: 'Camping', href: '/services/camping' },
+  ];
+
+  const socialLinks = [
+    { icon: <Facebook />, href: 'https://facebook.com/lifeplacealfonso', label: 'Facebook' },
+    { icon: <Instagram />, href: 'https://instagram.com/lifeplacealfonso', label: 'Instagram' },
+    { icon: <Twitter />, href: 'https://twitter.com/lifeplacealfonso', label: 'Twitter' },
+    { icon: <YouTube />, href: 'https://youtube.com/lifeplacealfonso', label: 'YouTube' },
   ];
 
   return (
     <Box
       component="footer"
       sx={{
-        backgroundColor: 'primary.main',
-        color: 'primary.contrastText',
+        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+        color: 'white',
         pt: { xs: 6, md: 8 },
         pb: 3,
-        width: '100vw',
       }}
     >
-      <Box
-        sx={{
-          width: '100%',
-          px: { xs: 2, sm: 3, md: 4 },
-        }}
-      >
-        {/* Main Footer Content */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            gap: { xs: 4, md: 6 },
-            mb: 4,
-          }}
-        >
-          {/* Brand Section */}
-          <Box sx={{ flex: { md: 2 } }}>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                mb: 2,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              LifePlace Alfonso
-            </Typography>
-            
-            <Typography
-              variant="body1"
-              sx={{
-                mb: 3,
-                lineHeight: 1.7,
-                opacity: 0.9,
-                maxWidth: 400,
-              }}
-            >
-              Experience the cozy ambience and peaceful environment at LifePlace. 
-              Celebrate life's most precious moments in our breathtaking venue that 
-              offers the perfect blend of beauty and luxury.
-            </Typography>
+      <Container maxWidth="lg">
+        <AnimatedElement animation="fadeIn" delay={100}>
+          <Box sx={{ 
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
+            gap: 4,
+          }}>
+            {/* Company Info */}
+            <Box sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+                  LifePlace Alfonso
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9, lineHeight: 1.7, mb: 3 }}>
+                  Creating unforgettable moments in the heart of nature. Experience the perfect 
+                  blend of tranquility and celebration at our beautiful venue in Alfonso, Cavite.
+                </Typography>
+                
+                {/* Social Media */}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {socialLinks.map((social) => (
+                    <IconButton
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        color: 'white',
+                        backgroundColor: alpha('#fff', 0.1),
+                        '&:hover': {
+                          backgroundColor: alpha('#fff', 0.2),
+                          transform: 'translateY(-2px)',
+                        },
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {social.icon}
+                    </IconButton>
+                  ))}
+                </Box>
+              </Box>
+            </Box>
 
-            <Typography
-              variant="body2"
-              sx={{
-                fontStyle: 'italic',
-                opacity: 0.8,
-                mb: 3,
-              }}
-            >
-              "I have come that they may have life, and have it to the full." - John 10:10b
-            </Typography>
+            {/* Quick Links */}
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Quick Links
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {quickLinks.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    sx={{
+                      color: 'white',
+                      textDecoration: 'none',
+                      opacity: 0.8,
+                      transition: 'opacity 0.2s',
+                      '&:hover': {
+                        opacity: 1,
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </Box>
+            </Box>
 
-            {/* Social Media */}
-            <Box display="flex" gap={1}>
-              <Button
-                size="small"
-                sx={{
-                  minWidth: 40,
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  backgroundColor: alpha('#fff', 0.1),
-                  color: 'inherit',
-                  '&:hover': {
-                    backgroundColor: alpha('#fff', 0.2),
-                    transform: 'translateY(-2px)',
-                  },
-                }}
-                onClick={() => window.open('https://www.facebook.com/lifeplacealfonso/', '_blank')}
-              >
-                <Facebook />
-              </Button>
-              <Button
-                size="small"
-                sx={{
-                  minWidth: 40,
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  backgroundColor: alpha('#fff', 0.1),
-                  color: 'inherit',
-                  '&:hover': {
-                    backgroundColor: alpha('#fff', 0.2),
-                    transform: 'translateY(-2px)',
-                  },
-                }}
-                onClick={() => window.open('https://www.instagram.com/lifeplacealfonso/', '_blank')}
-              >
-                <Instagram />
-              </Button>
+            {/* Services */}
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Our Services
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {services.map((service) => (
+                  <Link
+                    key={service.label}
+                    href={service.href}
+                    sx={{
+                      color: 'white',
+                      textDecoration: 'none',
+                      opacity: 0.8,
+                      transition: 'opacity 0.2s',
+                      '&:hover': {
+                        opacity: 1,
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
+                    {service.label}
+                  </Link>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Contact Info */}
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Contact Us
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {contactInfo.map((contact) => (
+                  <Box key={contact.label} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                    <Box sx={{ color: alpha('#fff', 0.7), mt: 0.5 }}>
+                      {contact.icon}
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" sx={{ display: 'block', opacity: 0.7 }}>
+                        {contact.label}
+                      </Typography>
+                      {contact.href ? (
+                        <Link
+                          href={contact.href}
+                          sx={{
+                            color: 'white',
+                            textDecoration: 'none',
+                            opacity: 0.9,
+                            '&:hover': {
+                              opacity: 1,
+                              textDecoration: 'underline',
+                            },
+                          }}
+                        >
+                          {contact.value}
+                        </Link>
+                      ) : (
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                          {contact.value}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
             </Box>
           </Box>
+        </AnimatedElement>
 
-          {/* Quick Links */}
-          <Box sx={{ flex: 1 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                mb: 2,
-              }}
-            >
-              Quick Links
-            </Typography>
-            <Stack spacing={1}>
-              {quickLinks.map((link) => (
-                <Button
-                  key={link.path}
-                  onClick={() => navigate(link.path)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'inherit',
-                    opacity: 0.8,
-                    px: 0,
-                    py: 0.5,
-                    '&:hover': {
-                      opacity: 1,
-                      backgroundColor: 'transparent',
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
-                  {link.label}
-                </Button>
-              ))}
-            </Stack>
-          </Box>
+        <Divider sx={{ my: 4, borderColor: alpha('#fff', 0.1) }} />
 
-          {/* Services */}
-          <Box sx={{ flex: 1 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                mb: 2,
-              }}
-            >
-              Our Services
-            </Typography>
-            <Stack spacing={1}>
-              {services.map((service) => (
-                <Button
-                  key={service.path}
-                  onClick={() => navigate(service.path)}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: 'inherit',
-                    opacity: 0.8,
-                    px: 0,
-                    py: 0.5,
-                    '&:hover': {
-                      opacity: 1,
-                      backgroundColor: 'transparent',
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
-                  {service.label}
-                </Button>
-              ))}
-            </Stack>
-          </Box>
-
-          {/* Contact Info */}
-          <Box sx={{ flex: 1 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                mb: 2,
-              }}
-            >
-              Contact Us
-            </Typography>
-            
-            <Stack spacing={2}>
-              <Box display="flex" alignItems="flex-start" gap={1}>
-                <LocationOn sx={{ fontSize: 20, mt: 0.2, opacity: 0.8 }} />
-                <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Alfonso, Cavite<br />
-                    Near Tagaytay City
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box display="flex" alignItems="center" gap={1}>
-                <Phone sx={{ fontSize: 20, opacity: 0.8 }} />
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  (02) 123-4567
-                </Typography>
-              </Box>
-
-              <Box display="flex" alignItems="center" gap={1}>
-                <Email sx={{ fontSize: 20, opacity: 0.8 }} />
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  info@lifeplacealfonso.com
-                </Typography>
-              </Box>
-
-              <Box display="flex" alignItems="flex-start" gap={1}>
-                <AccessTime sx={{ fontSize: 20, mt: 0.2, opacity: 0.8 }} />
-                <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Open Daily<br />
-                    8:00 AM - 10:00 PM
-                  </Typography>
-                </Box>
-              </Box>
-            </Stack>
-          </Box>
-        </Box>
-
-        <Divider sx={{ borderColor: alpha('#fff', 0.2), mb: 3 }} />
-
-        {/* Bottom Footer */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Typography
-            variant="body2"
+        {/* Bottom Section */}
+        <AnimatedElement animation="fadeIn" delay={200}>
+          <Box
             sx={{
-              opacity: 0.7,
-              textAlign: { xs: 'center', sm: 'left' },
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 2,
             }}
           >
-            © 2025 LifePlace Alfonso. All rights reserved. Celebrating life's precious moments.
-          </Typography>
-          
-          <Box
-            display="flex"
-            flexDirection={{ xs: 'column', sm: 'row' }}
-            gap={{ xs: 1, sm: 3 }}
-            alignItems="center"
-          >
-            <Button
-              size="small"
-              onClick={() => navigate('/privacy')}
-              sx={{
-                color: 'inherit',
-                opacity: 0.7,
-                fontSize: '0.75rem',
-                '&:hover': {
-                  opacity: 1,
-                  backgroundColor: 'transparent',
-                  textDecoration: 'underline',
-                },
-              }}
-            >
-              Privacy Policy
-            </Button>
-            <Button
-              size="small"
-              onClick={() => navigate('/terms')}
-              sx={{
-                color: 'inherit',
-                opacity: 0.7,
-                fontSize: '0.75rem',
-                '&:hover': {
-                  opacity: 1,
-                  backgroundColor: 'transparent',
-                  textDecoration: 'underline',
-                },
-              }}
-            >
-              Terms of Service
-            </Button>
+            <Typography variant="body2" sx={{ opacity: 0.7 }}>
+              © {new Date().getFullYear()} LifePlace Alfonso. All rights reserved.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 3 }}>
+              <Link
+                href="/privacy"
+                sx={{
+                  color: 'white',
+                  textDecoration: 'none',
+                  opacity: 0.7,
+                  fontSize: '0.875rem',
+                  '&:hover': {
+                    opacity: 1,
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                href="/terms"
+                sx={{
+                  color: 'white',
+                  textDecoration: 'none',
+                  opacity: 0.7,
+                  fontSize: '0.875rem',
+                  '&:hover': {
+                    opacity: 1,
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                Terms of Service
+              </Link>
+            </Box>
           </Box>
-        </Box>
-      </Box>
+        </AnimatedElement>
+      </Container>
     </Box>
   );
 };

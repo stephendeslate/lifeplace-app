@@ -132,7 +132,11 @@ const AppRouter: React.FC = () => {
       <Route 
         path="/" 
         element={
-          <PublicLayout fullHeight>
+          <PublicLayout 
+            fullHeight
+            onNavigateToLogin={handleNavigateToLogin}
+            onNavigateToRegister={handleNavigateToRegister}
+          >
             <Home
               onNavigateToLogin={handleNavigateToLogin}
               onNavigateToRegister={handleNavigateToRegister}
@@ -163,12 +167,12 @@ const AppRouter: React.FC = () => {
       
       {/* Public placeholder pages */}
       <Route 
-        path="/venues" 
+        path="/about" 
         element={
           <PublicLayout>
             <PlaceholderPage 
-              title="Our Venues" 
-              description="Discover our beautiful ceremony and event spaces"
+              title="About Us" 
+              description="Learn about our mission to celebrate life's precious moments"
             />
           </PublicLayout>
         } 
@@ -187,36 +191,48 @@ const AppRouter: React.FC = () => {
       />
       
       <Route 
-        path="/gallery" 
+        path="/rates" 
         element={
           <PublicLayout>
             <PlaceholderPage 
-              title="Gallery" 
-              description="See our stunning venues and past events"
+              title="Rates" 
+              description="Transparent pricing for all our services"
             />
           </PublicLayout>
         } 
       />
       
       <Route 
-        path="/packages" 
+        path="/facilities" 
         element={
           <PublicLayout>
             <PlaceholderPage 
-              title="Event Packages" 
-              description="Choose from our carefully curated event packages"
+              title="Facilities" 
+              description="Discover our beautiful venues and amenities"
             />
           </PublicLayout>
         } 
       />
       
       <Route 
-        path="/about" 
+        path="/partner" 
         element={
           <PublicLayout>
             <PlaceholderPage 
-              title="About LifePlace" 
-              description="Learn about our mission to celebrate life's precious moments"
+              title="Partner With Us" 
+              description="Join our network of trusted event professionals"
+            />
+          </PublicLayout>
+        } 
+      />
+      
+      <Route 
+        path="/reviews" 
+        element={
+          <PublicLayout>
+            <PlaceholderPage 
+              title="Reviews" 
+              description="See what our clients say about their experiences"
             />
           </PublicLayout>
         } 
