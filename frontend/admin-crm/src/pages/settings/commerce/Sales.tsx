@@ -12,14 +12,22 @@ import {
   DialogContentText,
   DialogActions,
   CircularProgress,
-  Fade,
   InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
+  Typography,
+  Chip,
 } from '@mui/material';
 import {
   Add as AddIcon,
   ArrowBack as ArrowBackIcon,
   Search as SearchIcon,
   Receipt as SalesIcon,
+  FilterList as FilterIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { QuoteTemplatesTable } from '../../../components/sales/QuoteTemplatesTable';
@@ -50,8 +58,7 @@ type ViewMode = 'list' | 'create' | 'edit';
 export const Sales: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters] = useState<QuoteTemplateFilters>({});
+  const [filters, setFilters] = useState<QuoteTemplateFilters>({});
   const [editingTemplate, setEditingTemplate] = useState<QuoteTemplate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<QuoteTemplate | null>(null);
@@ -74,19 +81,25 @@ export const Sales: React.FC = () => {
   }, [setBreadcrumbs, viewMode, editingTemplate]);
 
   // Queries and mutations
-  const { data: templates = [], isLoading, error, refetch } = useQuoteTemplates({
-    ...filters,
-    search: searchQuery || undefined,
-  });
+  const { data: templates = [], isLoading, error, refetch } = useQuoteTemplates(filters);
 
   const createTemplateMutation = useCreateQuoteTemplate();
   const updateTemplateMutation = useUpdateQuoteTemplate();
   const deleteTemplateMutation = useDeleteQuoteTemplate();
 
   // Handlers
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
+  const handleFilterChange = (key: keyof QuoteTemplateFilters, value: string | boolean) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value === 'all' ? undefined : value
+    }));
   };
+
+  const handleClearFilters = () => {
+    setFilters({});
+  };
+
+  const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
 
   const handleCreateNew = () => {
     setEditingTemplate(null);
@@ -186,48 +199,44 @@ export const Sales: React.FC = () => {
   if (viewMode === 'create' || viewMode === 'edit') {
     return (
       <ModernSettingsLayout>
-        <Fade in>
-          <Box>
-            {/* Modern Back button */}
-            <Box mb={4}>
-              <Button
-                startIcon={<ArrowBackIcon />}
-                onClick={handleBackToList}
-                disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
-                sx={{
-                  ...glassPresets.light,
-                  border: `1px solid ${tokens.color.neutral[300]}`,
-                  borderRadius: tokens.spacing.radius.full,
-                  px: 3,
-                  py: 1.25,
-                  fontWeight: 600,
-                  color: tokens.color.neutral[700],
-                  transition: createTransition(['transform', 'background'], 'fast'),
-                  
-                  '&:hover': {
-                    ...glassPresets.medium,
-                    transform: 'translateY(-1px)',
-                  },
-                }}
-              >
-                Back to Quote Templates
-              </Button>
-            </Box>
+        {/* Modern Back button */}
+        <Box mb={4}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBackToList}
+            disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
+            sx={{
+              ...glassPresets.light,
+              border: `1px solid ${tokens.color.neutral[300]}`,
+              borderRadius: tokens.spacing.radius.full,
+              px: 3,
+              py: 1.25,
+              fontWeight: 600,
+              color: tokens.color.neutral[700],
+              transition: createTransition(['transform', 'background'], 'fast'),
+              
+              '&:hover': {
+                ...glassPresets.medium,
+                transform: 'translateY(-1px)',
+              },
+            }}
+          >
+            Back to Quote Templates
+          </Button>
+        </Box>
 
-            {/* Form */}
-            <ModernCard
-              variant="glass"
-              size="large"
-              animation="fade"
-            >
-              <QuoteTemplateForm
-                template={editingTemplate || undefined}
-                onSave={handleFormSave}
-                onCancel={handleBackToList}
-              />
-            </ModernCard>
-          </Box>
-        </Fade>
+        {/* Form */}
+        <ModernCard
+          variant="glass"
+          size="large"
+          animation="fade"
+        >
+          <QuoteTemplateForm
+            template={editingTemplate || undefined}
+            onSave={handleFormSave}
+            onCancel={handleBackToList}
+          />
+        </ModernCard>
       </ModernSettingsLayout>
     );
   }
@@ -245,177 +254,273 @@ export const Sales: React.FC = () => {
   // List view - Always show table structure
   return (
     <ModernSettingsLayout>
-      <Fade in>
-        <Box>
-          {/* Modern Header */}
-          <ModernPageHeader
-            title="Sales & Quote Templates"
-            subtitle="Manage quote templates for client proposals"
-            icon={<SalesIcon />}
-            breadcrumbs={[
-              { label: 'Settings' },
-              { label: 'Commerce' },
-              { label: 'Sales' },
-            ]}
-            primaryAction={primaryAction}
-            secondaryActions={headerActions}
-            stats={[
-              { label: 'Total Templates', value: templates.length },
-              { label: 'Active Templates', value: activeTemplates },
-              { label: 'Inactive Templates', value: templates.length - activeTemplates },
-            ]}
-            size="medium"
-            gradient
-            glass
-          />
+      {/* Modern Header */}
+      <ModernPageHeader
+        title="Sales & Quote Templates"
+        subtitle="Manage quote templates for client proposals"
+        icon={<SalesIcon />}
+        breadcrumbs={[
+          { label: 'Settings' },
+          { label: 'Commerce' },
+          { label: 'Sales' },
+        ]}
+        primaryAction={primaryAction}
+        secondaryActions={headerActions}
+        stats={[
+          { label: 'Total Templates', value: templates.length },
+          { label: 'Active Templates', value: activeTemplates },
+          { label: 'Inactive Templates', value: templates.length - activeTemplates },
+        ]}
+        size="medium"
+        gradient
+        glass
+      />
 
-          {/* Search and Filters */}
-          <ModernCard
-            variant="glass"
+      {/* Filters */}
+      <ModernCard
+        variant="glass"
+        size="medium"
+        animation="none"
+        sx={{ mb: 4 }}
+      >
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+          <TextField
             size="small"
-            animation="none"
-            sx={{ mb: 4 }}
-          >
-            <Box display="flex" gap={2} alignItems="center">
-              <TextField
-                placeholder="Search quote templates..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                variant="outlined"
-                size="small"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ 
-                  minWidth: 300,
-                  '& .MuiOutlinedInput-root': {
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.lg,
-                    border: `1px solid ${tokens.color.borders.glass}`,
-                    '&:hover': {
-                      border: `1px solid ${tokens.color.primary[300]}`,
-                    },
-                    '&.Mui-focused': {
-                      border: `1px solid ${tokens.color.primary[500]}`,
-                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                    },
-                  },
-                }}
-              />
-            </Box>
-          </ModernCard>
-
-          {/* Templates Table */}
-          <ModernCard
-            variant="glass"
-            size="large"
-            animation="none"
+            placeholder="Search quote templates..."
+            value={filters.search || ''}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
             sx={{
-              overflow: 'visible',
-              position: 'relative',
-            }}
-          >
-            {templates.length === 0 && !isLoading ? (
-              <ModernEmptyState
-                icon={SalesIcon}
-                title="No Quote Templates Yet"
-                description="Create your first quote template to streamline your sales process and generate professional proposals for clients."
-                primaryAction={{
-                  label: "Create Template",
-                  onClick: handleCreateNew,
-                  icon: <AddIcon />,
-                  color: "primary",
-                }}
-                tip={{
-                  text: "Templates help maintain consistency and save time when creating quotes for clients",
-                  type: "info",
-                }}
-                size="medium"
-                illustration="gradient"
-              />
-            ) : (
-              <QuoteTemplatesTable
-                templates={templates}
-                isLoading={isLoading}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onDuplicate={handleDuplicate}
-                isDeleting={deleteTemplateMutation.isPending}
-              />
-            )}
-          </ModernCard>
-
-          {/* Delete Confirmation Dialog */}
-          <Dialog
-            open={deleteDialogOpen}
-            onClose={handleDeleteCancel}
-            PaperProps={{
-              sx: {
+              flex: 1,
+              minWidth: 250,
+              '& .MuiOutlinedInput-root': {
                 ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.xxl,
+                borderRadius: tokens.spacing.radius.lg,
                 border: `1px solid ${tokens.color.borders.glass}`,
-                background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+                '&:hover': {
+                  border: `1px solid ${tokens.color.primary[300]}`,
+                },
+                '&.Mui-focused': {
+                  border: `1px solid ${tokens.color.primary[500]}`,
+                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                },
               },
             }}
-          >
-            <DialogTitle
-              sx={{ 
-                background: `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[500]} 100%)`,
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                color: 'transparent',
-                fontWeight: 700,
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+          
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={filters.is_active === undefined ? 'all' : filters.is_active.toString()}
+              label="Status"
+              onChange={(e) => handleFilterChange('is_active', e.target.value === 'true')}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  ...glassPresets.light,
+                  borderRadius: tokens.spacing.radius.lg,
+                },
               }}
             >
-              Delete Quote Template
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText sx={{ color: tokens.color.neutral[700] }}>
-                Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions sx={{ p: 3, gap: 2 }}>
-              <Button 
-                onClick={handleDeleteCancel} 
-                disabled={deleteTemplateMutation.isPending}
+              <MenuItem value="all">All Status</MenuItem>
+              <MenuItem value="true">Active</MenuItem>
+              <MenuItem value="false">Inactive</MenuItem>
+            </Select>
+          </FormControl>
+          
+          <Box display="flex" gap={1}>
+            {hasActiveFilters && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleClearFilters}
+                startIcon={<FilterIcon />}
                 sx={{
                   ...glassPresets.light,
                   border: `1px solid ${tokens.color.neutral[300]}`,
                   borderRadius: tokens.spacing.radius.full,
-                  px: 3,
                   '&:hover': {
                     ...glassPresets.medium,
                   },
                 }}
               >
-                Cancel
+                Clear
               </Button>
-              <Button 
-                onClick={handleDeleteConfirm} 
-                color="error" 
-                variant="contained"
-                disabled={deleteTemplateMutation.isPending}
-                sx={{
-                  background: `linear-gradient(135deg, ${tokens.color.error[500]} 0%, ${tokens.color.error[600]} 100%)`,
-                  borderRadius: tokens.spacing.radius.full,
-                  px: 4,
-                  boxShadow: `0 8px 32px ${tokens.color.error[500]}25`,
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[700]} 100())`,
-                    boxShadow: `0 12px 40px ${tokens.color.error[500]}35`,
-                  },
-                }}
-              >
-                {deleteTemplateMutation.isPending ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </Box>
-      </Fade>
+            )}
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => refetch()}
+              startIcon={isLoading ? <CircularProgress size={16} /> : <RefreshIcon />}
+              disabled={isLoading}
+              sx={{
+                ...glassPresets.light,
+                border: `1px solid ${tokens.color.neutral[300]}`,
+                borderRadius: tokens.spacing.radius.full,
+                '&:hover': {
+                  ...glassPresets.medium,
+                },
+              }}
+            >
+              Refresh
+            </Button>
+          </Box>
+        </Stack>
+        
+        {hasActiveFilters && (
+          <Box mt={3}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Active filters:
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {filters.search && (
+                <Chip 
+                  label={`Search: "${filters.search}"`} 
+                  size="small" 
+                  onDelete={() => handleFilterChange('search', '')} 
+                  sx={{
+                    ...glassPresets.light,
+                    border: `1px solid ${tokens.color.primary[300]}`,
+                    color: tokens.color.primary[700],
+                    '& .MuiChip-deleteIcon': {
+                      color: tokens.color.primary[600],
+                    },
+                  }}
+                />
+              )}
+              {filters.is_active !== undefined && (
+                <Chip 
+                  label={`Status: ${filters.is_active ? 'Active' : 'Inactive'}`} 
+                  size="small" 
+                  onDelete={() => handleFilterChange('is_active', 'all')} 
+                  sx={{
+                    ...glassPresets.light,
+                    border: `1px solid ${tokens.color.secondary[300]}`,
+                    color: tokens.color.secondary[700],
+                    '& .MuiChip-deleteIcon': {
+                      color: tokens.color.secondary[600],
+                    },
+                  }}
+                />
+              )}
+            </Stack>
+          </Box>
+        )}
+      </ModernCard>
+
+      {/* Templates Table */}
+      <ModernCard
+        variant="glass"
+        size="large"
+        animation="none"
+        sx={{
+          overflow: 'visible',
+          position: 'relative',
+        }}
+      >
+        {templates.length === 0 ? (
+          <ModernEmptyState
+            icon={SalesIcon}
+            title={hasActiveFilters ? 'No templates match your filters' : 'No Quote Templates Yet'}
+            description={hasActiveFilters 
+              ? 'Try adjusting your search criteria or clear the filters'
+              : 'Create your first quote template to streamline your sales process and generate professional proposals for clients.'
+            }
+            primaryAction={{
+              label: hasActiveFilters ? 'Clear Filters' : 'Create Template',
+              onClick: hasActiveFilters ? handleClearFilters : handleCreateNew,
+              icon: hasActiveFilters ? <FilterIcon /> : <AddIcon />,
+              color: 'primary',
+            }}
+            tip={{
+              text: "Templates help maintain consistency and save time when creating quotes for clients",
+              type: "info",
+            }}
+            size="medium"
+            illustration="gradient"
+          />
+        ) : (
+          <QuoteTemplatesTable
+            templates={templates}
+            isLoading={isLoading}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onDuplicate={handleDuplicate}
+            isDeleting={deleteTemplateMutation.isPending}
+          />
+        )}
+      </ModernCard>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        PaperProps={{
+          sx: {
+            ...glassPresets.light,
+            borderRadius: tokens.spacing.radius.xxl,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{ 
+            background: `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[500]} 100%)`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+            fontWeight: 700,
+          }}
+        >
+          Delete Quote Template
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: tokens.color.neutral[700] }}>
+            Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, gap: 2 }}>
+          <Button 
+            onClick={handleDeleteCancel} 
+            disabled={deleteTemplateMutation.isPending}
+            sx={{
+              ...glassPresets.light,
+              border: `1px solid ${tokens.color.neutral[300]}`,
+              borderRadius: tokens.spacing.radius.full,
+              px: 3,
+              '&:hover': {
+                ...glassPresets.medium,
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={deleteTemplateMutation.isPending}
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.error[500]} 0%, ${tokens.color.error[600]} 100%)`,
+              borderRadius: tokens.spacing.radius.full,
+              px: 4,
+              boxShadow: `0 8px 32px ${tokens.color.error[500]}25`,
+              '&:hover': {
+                background: `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[700]} 100())`,
+                boxShadow: `0 12px 40px ${tokens.color.error[500]}35`,
+              },
+            }}
+          >
+            {deleteTemplateMutation.isPending ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ModernSettingsLayout>
   );
 };

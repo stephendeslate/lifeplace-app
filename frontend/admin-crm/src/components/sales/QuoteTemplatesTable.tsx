@@ -69,6 +69,7 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
       key: 'name',
       label: 'Template Name',
       sortable: true,
+      width: '25%',
       render: (_, row) => {
         const template = row as unknown as QuoteTemplate;
         return (
@@ -93,6 +94,7 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
     {
       key: 'event_type',
       label: 'Event Type',
+      width: '15%',
       render: (_, row) => {
         const template = row as unknown as QuoteTemplate;
         return getEventTypeChip(template.event_type_name);
@@ -102,6 +104,7 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
       key: 'products',
       label: 'Products',
       align: 'center',
+      width: '10%',
       render: (_, row) => {
         const template = row as unknown as QuoteTemplate;
         return (
@@ -120,6 +123,7 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
       key: 'validity',
       label: 'Validity',
       align: 'center',
+      width: '10%',
       render: (_, row) => {
         const template = row as unknown as QuoteTemplate;
         return getValidityChip(template.default_validity_days);
@@ -143,6 +147,7 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
     {
       key: 'is_active',
       label: 'Status',
+      width: '10%',
       render: (_, row) => {
         const template = row as unknown as QuoteTemplate;
         return getStatusChip(template.is_active);
@@ -151,6 +156,7 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
     {
       key: 'updated_at',
       label: 'Last Updated',
+      width: '20%',
       render: (_, row) => {
         const template = row as unknown as QuoteTemplate;
         return (

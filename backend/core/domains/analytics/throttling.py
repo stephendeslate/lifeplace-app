@@ -6,11 +6,25 @@ import hashlib
 class AnalyticsThrottle(AnonRateThrottle):
     """Custom throttle for analytics endpoints"""
     scope = 'analytics'
+    
+    def allow_request(self, request, view):
+        """Skip throttling in development mode"""
+        from django.conf import settings
+        if settings.DEBUG:
+            return True
+        return super().allow_request(request, view)
 
 
 class PublicTrackingThrottle(AnonRateThrottle):
     """Strict throttling for public tracking endpoint"""
     scope = 'public_tracking'
+    
+    def allow_request(self, request, view):
+        """Skip throttling in development mode"""
+        from django.conf import settings
+        if settings.DEBUG:
+            return True
+        return super().allow_request(request, view)
     
     def get_ident(self, request):
         """
@@ -37,8 +51,12 @@ class AdminAnalyticsThrottle(UserRateThrottle):
     
     def allow_request(self, request, view):
         """
-        Only apply throttling to non-admin users
+        Skip throttling in development mode, only apply throttling to non-admin users
         """
+        from django.conf import settings
+        if settings.DEBUG:
+            return True
+        
         if request.user.is_authenticated and getattr(request.user, 'role', None) == 'ADMIN':
             return True
         return super().allow_request(request, view)

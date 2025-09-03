@@ -13,6 +13,8 @@ import {
   DialogActions,
   CircularProgress,
   InputAdornment,
+  Stack,
+  Chip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -50,8 +52,7 @@ type ViewMode = 'list' | 'create' | 'edit';
 export const ContractTemplates: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters] = useState<ContractTemplateFilters>({});
+  const [filters, setFilters] = useState<ContractTemplateFilters>({});
   const [editingTemplate, setEditingTemplate] = useState<ContractTemplate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<ContractTemplate | null>(null);
@@ -74,18 +75,24 @@ export const ContractTemplates: React.FC = () => {
   }, [setBreadcrumbs, viewMode, editingTemplate]);
 
   // Queries and mutations
-  const { data: templates = [], isLoading, error } = useContractTemplates({
-    ...filters,
-    search: searchQuery || undefined,
-  });
+  const { data: templates = [], isLoading, error, refetch } = useContractTemplates(filters);
 
   const createTemplateMutation = useCreateContractTemplate();
   const deleteTemplateMutation = useDeleteContractTemplate();
 
   // Handlers
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
+  const handleFilterChange = (key: keyof ContractTemplateFilters, value: string | boolean) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value === 'all' ? undefined : value
+    }));
   };
+
+  const handleClearFilters = () => {
+    setFilters({});
+  };
+
+  const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
 
   const handleCreateNew = () => {
     setEditingTemplate(null);
@@ -158,7 +165,7 @@ export const ContractTemplates: React.FC = () => {
     
     if (viewMode === 'list') {
       actions.push(createAddAction('Create Template', handleCreateNew, 'primary'));
-      actions.push(createRefreshAction(() => window.location.reload()));
+      actions.push(createRefreshAction(() => refetch()));
     } else {
       actions.push({
         icon: <ListIcon />,
@@ -286,23 +293,22 @@ export const ContractTemplates: React.FC = () => {
         glass
       />
 
-      {/* Search and Filters */}
+      {/* Filters */}
       <ModernCard
         variant="glass"
         size="medium"
         animation="none"
         sx={{ mb: 4 }}
       >
-        <Box display="flex" gap={2} alignItems="center">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
           <TextField
-            placeholder="Search templates..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            variant="outlined"
             size="small"
+            placeholder="Search contract templates..."
+            value={filters.search || ''}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
             sx={{
               flex: 1,
-              minWidth: 300,
+              minWidth: 250,
               '& .MuiOutlinedInput-root': {
                 ...glassPresets.light,
                 borderRadius: tokens.spacing.radius.lg,
@@ -324,7 +330,70 @@ export const ContractTemplates: React.FC = () => {
               ),
             }}
           />
-        </Box>
+          
+          <Box display="flex" gap={1}>
+            {hasActiveFilters && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleClearFilters}
+                startIcon={<FilterIcon />}
+                sx={{
+                  ...glassPresets.light,
+                  border: `1px solid ${tokens.color.neutral[300]}`,
+                  borderRadius: tokens.spacing.radius.full,
+                  '&:hover': {
+                    ...glassPresets.medium,
+                  },
+                }}
+              >
+                Clear
+              </Button>
+            )}
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => refetch()}
+              startIcon={isLoading ? <CircularProgress size={16} /> : <RefreshIcon />}
+              disabled={isLoading}
+              sx={{
+                ...glassPresets.light,
+                border: `1px solid ${tokens.color.neutral[300]}`,
+                borderRadius: tokens.spacing.radius.full,
+                '&:hover': {
+                  ...glassPresets.medium,
+                },
+              }}
+            >
+              Refresh
+            </Button>
+          </Box>
+        </Stack>
+        
+        {hasActiveFilters && (
+          <Box mt={3}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Active filters:
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {filters.search && (
+                <Chip 
+                  label={`Search: "${filters.search}"`} 
+                  size="small" 
+                  onDelete={() => handleFilterChange('search', '')} 
+                  sx={{
+                    ...glassPresets.light,
+                    border: `1px solid ${tokens.color.primary[300]}`,
+                    color: tokens.color.primary[700],
+                    '& .MuiChip-deleteIcon': {
+                      color: tokens.color.primary[600],
+                    },
+                  }}
+                />
+              )}
+            </Stack>
+          </Box>
+        )}
       </ModernCard>
 
       {/* Templates Table */}
@@ -345,15 +414,15 @@ export const ContractTemplates: React.FC = () => {
         ) : templates.length === 0 ? (
           <ModernEmptyState
             icon={ContractIcon}
-            title={searchQuery ? 'No templates match your search' : 'No contract templates found'}
-            description={searchQuery 
-              ? 'Try adjusting your search criteria or create a new template'
+            title={hasActiveFilters ? 'No templates match your filters' : 'No contract templates found'}
+            description={hasActiveFilters 
+              ? 'Try adjusting your search criteria or clear the filters'
               : 'Create your first contract template to get started with automated contract generation'
             }
             primaryAction={{
-              label: searchQuery ? 'Clear Search' : 'Create Template',
-              onClick: searchQuery ? () => setSearchQuery('') : handleCreateNew,
-              icon: searchQuery ? <FilterIcon /> : <AddIcon />,
+              label: hasActiveFilters ? 'Clear Filters' : 'Create Template',
+              onClick: hasActiveFilters ? handleClearFilters : handleCreateNew,
+              icon: hasActiveFilters ? <FilterIcon /> : <AddIcon />,
               color: 'primary',
             }}
             tip={{

@@ -243,15 +243,15 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # This enables the browsable API
     ],
-    # Throttling rates
+    # Throttling rates - disabled in development
     'DEFAULT_THROTTLE_RATES': {
-        'analytics': '1000/hour',
-        'public_tracking': '100/hour', 
-        'admin_analytics': '2000/hour',
-        'anon': '100/hour',
-        'user': '1000/hour',
-        'notifications': '200/hour',
-        'notifications_admin': '500/hour',
+        'analytics': '999999/hour' if DEBUG else '1000/hour',
+        'public_tracking': '999999/hour' if DEBUG else '100/hour', 
+        'admin_analytics': '999999/hour' if DEBUG else '2000/hour',
+        'anon': '999999/hour' if DEBUG else '100/hour',
+        'user': '999999/hour' if DEBUG else '1000/hour',
+        'notifications': '999999/hour' if DEBUG else '200/hour',
+        'notifications_admin': '999999/hour' if DEBUG else '500/hour',
     },
 }
 
