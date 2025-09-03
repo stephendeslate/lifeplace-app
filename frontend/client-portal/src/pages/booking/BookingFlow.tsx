@@ -6,14 +6,14 @@ import { Box, Container, Alert, Typography, Paper, CircularProgress } from '@mui
 import { BookingProvider, useBooking } from '../../contexts/BookingContext';
 import { BookingContainer } from '../../components/booking/BookingContainer';
 import { StepRenderer } from '../../components/booking/StepRenderer';
-import { useEventTypes } from '../../hooks/booking/useBookingCore';
+import { EventTypeSelection } from '../../components/booking/EventTypeSelection';
 import type { EventType } from '../../types/booking';
 
 // Event Type Selection Component using the proper hook
-const EventTypeSelection: React.FC = () => {
+const EventTypeSelectionContainer: React.FC = () => {
   // @ts-ignore
   const { actions } = useBooking();
-  const { eventTypes, loading, error } = useEventTypes();
+  // EventTypeSelection now manages its own data loading
 
   const handleSelectEventType = async (eventType: EventType) => {
     try {
@@ -24,108 +24,10 @@ const EventTypeSelection: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <Container maxWidth="md" sx={{ py: 8, textAlign: 'center' }}>
-        <CircularProgress size={40} />
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          Loading event types...
-        </Typography>
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-        <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center' }}>
-          Please check back later or contact us directly at{' '}
-          <a href="mailto:info@lifeplacealfonso.com" style={{ color: 'blue' }}>
-            info@lifeplacealfonso.com
-          </a>
-        </Typography>
-      </Container>
-    );
-  }
-
-  if (eventTypes.length === 0) {
-    return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Alert severity="info">
-          No event types are currently available for booking. Please check back later or contact us directly.
-        </Alert>
-      </Container>
-    );
-  }
-
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: 'primary.main' }}>
-          Select Your Event Type
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          Choose the type of event you'd like to book at LifePlace Alfonso.
-        </Typography>
-      </Box>
-
-      <Box sx={{ 
-        display: 'grid', 
-        gap: 3, 
-        gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
-        maxWidth: 800,
-        mx: 'auto'
-      }}>
-        {eventTypes.map((eventType) => (
-          <Paper
-            key={eventType.id}
-            elevation={0}
-            onClick={() => handleSelectEventType(eventType)}
-            sx={{
-              p: 4,
-              border: 2,
-              borderColor: 'divider',
-              borderRadius: 3,
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              textAlign: 'center',
-              '&:hover': {
-                borderColor: 'primary.main',
-                transform: 'translateY(-4px)',
-                boxShadow: 4,
-                backgroundColor: 'primary.light',
-              },
-            }}
-          >
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-              {eventType.name}
-            </Typography>
-            {eventType.description && (
-              <Typography variant="body1" color="text.secondary">
-                {eventType.description}
-              </Typography>
-            )}
-          </Paper>
-        ))}
-      </Box>
-
-      {/* Contact Information */}
-      <Box sx={{ textAlign: 'center', mt: 6 }}>
-        <Typography variant="body2" color="text.secondary">
-          Need help choosing? Contact us at{' '}
-          <a href="tel:+63212345067" style={{ color: 'blue' }}>
-            (02) 123-4567
-          </a>{' '}
-          or{' '}
-          <a href="mailto:info@lifeplacealfonso.com" style={{ color: 'blue' }}>
-            info@lifeplacealfonso.com
-          </a>
-        </Typography>
-      </Box>
-    </Container>
+    <EventTypeSelection
+      onSelectEventType={handleSelectEventType}
+    />
   );
 };
 
@@ -147,7 +49,7 @@ const BookingFlowContent: React.FC = () => {
 
   // Show event type selection if no flow is selected
   if (!state.currentFlow) {
-    return <EventTypeSelection />;
+    return <EventTypeSelectionContainer />;
   }
 
   // Show the booking flow

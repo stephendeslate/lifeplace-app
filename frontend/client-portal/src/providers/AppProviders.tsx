@@ -12,6 +12,7 @@ import theme from '../utils/theme';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
+import { AccessibilityProvider } from '../components/accessibility/AccessibilityProvider';
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -47,11 +48,13 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <ToastProvider>
             <ConfirmDialogProvider>
-              <AuthProvider>
-                {children}
-                {/* Only show React Query devtools in development */}
-                {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-              </AuthProvider>
+              <AccessibilityProvider>
+                <AuthProvider>
+                  {children}
+                  {/* Only show React Query devtools in development */}
+                  {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+                </AuthProvider>
+              </AccessibilityProvider>
             </ConfirmDialogProvider>
           </ToastProvider>
         </LocalizationProvider>

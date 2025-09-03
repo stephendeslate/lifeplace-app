@@ -4,7 +4,6 @@ import React from 'react';
 import {
   Box,
   Container,
-  Paper,
   Typography,
   LinearProgress,
   Button,
@@ -18,7 +17,10 @@ import {
   useMediaQuery,
   Backdrop,
   CircularProgress,
+  alpha,
 } from '@mui/material';
+import { GlassCard } from '../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import {
   ArrowBack,
   ArrowForward,
@@ -101,7 +103,10 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
   }
 
   return (
-    <Box sx={{ backgroundColor: 'grey.50', minHeight: 'calc(100vh - 160px)' }}>
+    <Box sx={{ 
+      minHeight: '100vh',
+      position: 'relative',
+    }}>
       {/* Timezone Notice Banner */}
       <TimezoneNoticeBanner context="booking" />
       {/* Loading Backdrop */}
@@ -118,17 +123,22 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
       </Backdrop>
 
       {/* Booking Progress Header */}
-      <Box
-        sx={{
-          backgroundColor: 'white',
-          borderBottom: 1,
-          borderColor: 'divider',
-          py: 2,
-          position: 'sticky',
-          top: 80, // Account for PublicHeader height
-          zIndex: 100,
-        }}
-      >
+      <AnimatedElement animation="slideDown" delay={100}>
+        <GlassCard
+          variant="light"
+          intensity="medium"
+          sx={{
+            backgroundColor: alpha('#fff', 0.1),
+            backdropFilter: 'blur(20px)',
+            borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
+            py: 2,
+            position: 'sticky',
+            top: { xs: 120, md: 140 }, // Account for BookingLayout header height + generous spacing
+            zIndex: 100,
+            borderRadius: 0,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          }}
+        >
         <Container maxWidth="lg">
           <Box
             sx={{
@@ -199,12 +209,24 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
             />
           </Box>
         </Container>
-      </Box>
+        </GlassCard>
+      </AnimatedElement>
 
       {/* Step Navigation (Desktop) */}
       {!isMobile && state.currentFlow && (
-        <Box sx={{ backgroundColor: 'white', borderBottom: 1, borderColor: 'divider', py: 2 }}>
-          <Container maxWidth="lg">
+        <AnimatedElement animation="slideDown" delay={200}>
+          <GlassCard
+            variant="light"
+            intensity="subtle"
+            sx={{
+              backgroundColor: alpha('#fff', 0.08),
+              backdropFilter: 'blur(15px)',
+              borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
+              py: 2,
+              borderRadius: 0,
+            }}
+          >
+            <Container maxWidth="lg">
             <Stepper activeStep={stepIndex} alternativeLabel>
               {state.currentFlow.enabled_steps.map(
                 (step, index) => (
@@ -226,51 +248,75 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
                 )
               )}
             </Stepper>
-          </Container>
-        </Box>
+            </Container>
+          </GlassCard>
+        </AnimatedElement>
       )}
 
       {/* Main Content */}
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container maxWidth="md" sx={{ py: 4, position: 'relative', zIndex: 2 }}>
         {/* Error Display */}
         {state.ui.error && (
-          <Alert 
-            severity="error" 
-            sx={{ mb: 3 }}
-            action={
-              <Button color="inherit" size="small" onClick={actions.clearErrors}>
-                Dismiss
-              </Button>
-            }
-          >
-            {state.ui.error}
-          </Alert>
+          <AnimatedElement animation="slideDown" delay={100}>
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 3,
+                backgroundColor: alpha(theme.palette.error.main, 0.1),
+                backdropFilter: 'blur(10px)',
+                border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
+              }}
+              action={
+                <Button color="inherit" size="small" onClick={actions.clearErrors}>
+                  Dismiss
+                </Button>
+              }
+            >
+              {state.ui.error}
+            </Alert>
+          </AnimatedElement>
         )}
 
         {/* Expiring Soon Warning */}
         {isExpiringSoon && !expired && (
-          <Alert severity="warning" sx={{ mb: 3 }} icon={<Warning />}>
-            Your session will expire in {formatTimeRemaining()}. Please complete your booking soon.
-          </Alert>
+          <AnimatedElement animation="slideDown" delay={150}>
+            <Alert 
+              severity="warning" 
+              sx={{ 
+                mb: 3,
+                backgroundColor: alpha(theme.palette.warning.main, 0.1),
+                backdropFilter: 'blur(10px)',
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+              }} 
+              icon={<Warning />}
+            >
+              Your session will expire in {formatTimeRemaining()}. Please complete your booking soon.
+            </Alert>
+          </AnimatedElement>
         )}
 
         {/* Main Content Paper */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
-            border: 1,
-            borderColor: 'divider',
-            minHeight: 400,
-            backgroundColor: 'white',
-          }}
-        >
-          {children}
-        </Paper>
+        <AnimatedElement animation="slideUp" delay={300}>
+          <GlassCard
+            variant="light"
+            intensity="medium"
+            hover={false}
+            sx={{
+              p: { xs: 3, md: 4 },
+              border: `1px solid ${alpha('#fff', 0.1)}`,
+              minHeight: 400,
+              backgroundColor: alpha('#fff', 0.08),
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.1)',
+            }}
+          >
+            {children}
+          </GlassCard>
+        </AnimatedElement>
 
         {/* Navigation Buttons */}
-        <Box
+        <AnimatedElement animation="slideUp" delay={400}>
+          <Box
           sx={{
             mt: 4,
             display: 'flex',
@@ -298,7 +344,14 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
                 startIcon={<SkipNext />}
                 onClick={actions.skipStep}
                 disabled={state.ui.isSubmitting}
-                sx={{ color: 'text.secondary' }}
+                sx={{ 
+                  color: 'text.secondary',
+                  backgroundColor: alpha('#fff', 0.05),
+                  backdropFilter: 'blur(5px)',
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.1),
+                  },
+                }}
               >
                 Skip This Step
               </Button>
@@ -311,34 +364,47 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
             endIcon={<ArrowForward />}
             onClick={actions.nextStep}
             disabled={!state.progress.canGoNext || state.ui.isSubmitting || state.ui.isValidating}
-            sx={{ minWidth: 120 }}
+            sx={{ 
+              minWidth: 120,
+              backgroundColor: alpha(theme.palette.primary.main, 0.9),
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 1),
+                transform: 'translateY(-2px)',
+                boxShadow: '0 12px 35px rgba(0,0,0,0.2)',
+              },
+              transition: 'all 0.3s ease',
+            }}
           >
             {stepIndex === state.progress.totalSteps - 1 ? 'Complete' : 'Next'}
           </Button>
-        </Box>
+          </Box>
+        </AnimatedElement>
 
         {/* Pricing Summary (if available) */}
         {state.totalPrice !== '0.00' && (
-          <Paper
-            elevation={0}
-            sx={{
-              mt: 3,
-              p: 2,
-              backgroundColor: 'grey.50',
-              borderRadius: 2,
-              border: 1,
-              borderColor: 'divider',
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                Current Total:
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                ₱{state.totalPrice}
-              </Typography>
-            </Box>
-          </Paper>
+          <AnimatedElement animation="slideUp" delay={500}>
+            <GlassCard
+              variant="light"
+              intensity="subtle"
+              sx={{
+                mt: 3,
+                p: 2,
+                backgroundColor: alpha(theme.palette.success.main, 0.08),
+                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Current Total:
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                  ₱{state.totalPrice}
+                </Typography>
+              </Box>
+            </GlassCard>
+          </AnimatedElement>
         )}
       </Container>
     </Box>

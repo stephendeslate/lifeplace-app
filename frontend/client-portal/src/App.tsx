@@ -7,12 +7,15 @@ import { AppProviders } from './providers/AppProviders';
 import { useAuth } from './contexts/AuthContext';
 import { useToastActions } from './contexts/ToastContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
-import { PublicLayout, ClientLayout } from './components/layout';
+import { PublicLayout, BookingLayout, ClientLayout } from './components/layout';
+import { ProtectedRoute } from './components/auth';
 import { Home } from './pages/home';
 import { Login, Register } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { Messages } from './pages/messages';
 import { EventsList, EventDetail } from './pages/events';
+import { Profile } from './pages/profile';
+import { FinancialPortal } from './pages/payments';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
 
@@ -38,24 +41,8 @@ const LoadingSpinner: React.FC = () => (
   </Box>
 );
 
-// Protected Route component for client dashboard
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  const location = useLocation();
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!isAuthenticated) {
-    // Redirect to login with return URL
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
+// Layout wrapper for protected routes
+const ClientLayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <ClientLayout>
       {children}
@@ -82,13 +69,13 @@ const PlaceholderPage: React.FC<PlaceholderPageProps> = ({ title, description })
     }}
   >
     <Box sx={{ maxWidth: 600 }}>
-      <Typography variant="h3" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+      <Typography variant="h3" sx={{ fontWeight: 600, mb: 2, color: 'white', textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
         {title}
       </Typography>
-      <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+      <Typography variant="h6" sx={{ mb: 4, color: 'rgba(255, 255, 255, 0.9)', textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
         {description}
       </Typography>
-      <Typography variant="body1" color="text.disabled">
+      <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)', textShadow: '0 1px 5px rgba(0,0,0,0.2)' }}>
         This page is coming soon! We're working hard to bring you the best experience.
       </Typography>
     </Box>
@@ -104,7 +91,7 @@ const AppRouter: React.FC = () => {
 
   // Handle successful login/register
   const handleAuthSuccess = () => {
-    const from = (location.state as any)?.from?.pathname || '/dashboard';
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
     navigate(from, { replace: true });
     
     if (from !== '/dashboard') {
@@ -146,22 +133,28 @@ const AppRouter: React.FC = () => {
         } 
       />
       
-      {/* Booking Routes - Public with consistent layout */}
+      {/* Booking Routes - Using BookingLayout with original background */}
       <Route 
         path="/booking" 
         element={
-          <PublicLayout>
+          <BookingLayout
+            onNavigateToLogin={handleNavigateToLogin}
+            onNavigateToRegister={handleNavigateToRegister}
+          >
             <BookingPage />
-          </PublicLayout>
+          </BookingLayout>
         } 
       />
       
       <Route 
         path="/booking/complete" 
         element={
-          <PublicLayout>
+          <BookingLayout
+            onNavigateToLogin={handleNavigateToLogin}
+            onNavigateToRegister={handleNavigateToRegister}
+          >
             <BookingComplete />
-          </PublicLayout>
+          </BookingLayout>
         } 
       />
       
@@ -257,11 +250,16 @@ const AppRouter: React.FC = () => {
           isAuthenticated ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <Login
+            <PublicLayout
+              onNavigateToLogin={handleNavigateToLogin}
               onNavigateToRegister={handleNavigateToRegister}
-              onNavigateToHome={handleNavigateToHome}
-              onLoginSuccess={handleAuthSuccess}
-            />
+            >
+              <Login
+                onNavigateToRegister={handleNavigateToRegister}
+                onNavigateToHome={handleNavigateToHome}
+                onLoginSuccess={handleAuthSuccess}
+              />
+            </PublicLayout>
           )
         } 
       />
@@ -272,11 +270,16 @@ const AppRouter: React.FC = () => {
           isAuthenticated ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <Register
+            <PublicLayout
               onNavigateToLogin={handleNavigateToLogin}
-              onNavigateToHome={handleNavigateToHome}
-              onRegisterSuccess={handleAuthSuccess}
-            />
+              onNavigateToRegister={handleNavigateToRegister}
+            >
+              <Register
+                onNavigateToLogin={handleNavigateToLogin}
+                onNavigateToHome={handleNavigateToHome}
+                onRegisterSuccess={handleAuthSuccess}
+              />
+            </PublicLayout>
           )
         } 
       />
@@ -298,7 +301,9 @@ const AppRouter: React.FC = () => {
         path="/dashboard" 
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <ClientLayoutWrapper>
+              <Dashboard />
+            </ClientLayoutWrapper>
           </ProtectedRoute>
         } 
       />
@@ -307,7 +312,9 @@ const AppRouter: React.FC = () => {
         path="/messages" 
         element={
           <ProtectedRoute>
-            <Messages />
+            <ClientLayoutWrapper>
+              <Messages />
+            </ClientLayoutWrapper>
           </ProtectedRoute>
         } 
       />
@@ -316,31 +323,20 @@ const AppRouter: React.FC = () => {
         path="/profile" 
         element={
           <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                My Profile
-              </Typography>
-              <Typography color="text.secondary">
-                Profile management coming soon!
-              </Typography>
-            </Box>
+            <ClientLayoutWrapper>
+              <Profile />
+            </ClientLayoutWrapper>
           </ProtectedRoute>
         } 
       />
 
       <Route 
-        path="/bookings" 
+        path="/payments" 
         element={
           <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                My Bookings
-              </Typography>
-              <Typography color="text.secondary">
-                Booking management coming soon! In the meantime, you can{' '}
-                <a href="/booking" style={{ color: 'blue' }}>create a new booking</a>.
-              </Typography>
-            </Box>
+            <ClientLayoutWrapper>
+              <FinancialPortal />
+            </ClientLayoutWrapper>
           </ProtectedRoute>
         } 
       />
@@ -349,7 +345,9 @@ const AppRouter: React.FC = () => {
         path="/events" 
         element={
           <ProtectedRoute>
-            <EventsList />
+            <ClientLayoutWrapper>
+              <EventsList />
+            </ClientLayoutWrapper>
           </ProtectedRoute>
         } 
       />
@@ -358,23 +356,37 @@ const AppRouter: React.FC = () => {
         path="/events/:id" 
         element={
           <ProtectedRoute>
-            <EventDetail />
+            <ClientLayoutWrapper>
+              <EventDetail />
+            </ClientLayoutWrapper>
           </ProtectedRoute>
         } 
       />
 
       <Route 
-        path="/notifications" 
+        path="/settings" 
         element={
           <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                Notifications
-              </Typography>
-              <Typography color="text.secondary">
-                Notification center coming soon!
-              </Typography>
-            </Box>
+            <ClientLayoutWrapper>
+              <PlaceholderPage 
+                title="Settings" 
+                description="Account settings coming soon!"
+              />
+            </ClientLayoutWrapper>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/help" 
+        element={
+          <ProtectedRoute>
+            <ClientLayoutWrapper>
+              <PlaceholderPage 
+                title="Help & Support" 
+                description="Support center coming soon!"
+              />
+            </ClientLayoutWrapper>
           </ProtectedRoute>
         } 
       />

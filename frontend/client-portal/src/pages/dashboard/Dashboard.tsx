@@ -5,13 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Stack,
   Chip,
   Button,
-  IconButton,
-  Paper,
   Divider,
   CircularProgress,
   Tabs,
@@ -25,7 +21,6 @@ import {
   Email as EmailIcon,
   CalendarToday as CalendarIcon,
   Person as ProfileIcon,
-  Refresh as RefreshIcon,
   ArrowForward as ArrowForwardIcon,
   Message as MessageIcon,
   CheckCircle as CheckCircleIcon,
@@ -34,6 +29,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useCommunications } from '../../hooks/useCommunications';
 import { CommunicationHistory } from '../../components/communications';
+import { GlassCard } from '../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -91,41 +88,6 @@ const Dashboard: React.FC = () => {
     setActiveTab(newValue);
   };
 
-  const getDashboardStats = () => {
-    const recentCommsCount = recentCommunications.length;
-    const unreadCommsCount = recentCommunications.filter(comm => !comm.is_opened && comm.channel === 'EMAIL').length;
-    
-    return [
-      {
-        title: 'Recent Messages',
-        value: recentCommsCount,
-        icon: <EmailIcon sx={{ fontSize: 24 }} />,
-        color: theme.palette.info.main,
-        change: unreadCommsCount > 0 ? `${unreadCommsCount} unread` : 'All read',
-      },
-      {
-        title: 'Profile Status',
-        value: user?.profile ? 'Complete' : 'Incomplete',
-        icon: <ProfileIcon sx={{ fontSize: 24 }} />,
-        color: user?.profile ? theme.palette.success.main : theme.palette.warning.main,
-        change: user?.profile ? 'Up to date' : 'Update needed',
-      },
-      {
-        title: 'Account Status',
-        value: user?.is_active ? 'Active' : 'Inactive',
-        icon: <CheckCircleIcon sx={{ fontSize: 24 }} />,
-        color: user?.is_active ? theme.palette.success.main : theme.palette.error.main,
-        change: user?.is_active ? 'All systems go' : 'Contact support',
-      },
-      {
-        title: 'Member Since',
-        value: user?.date_joined ? new Date(user.date_joined).getFullYear() : 'N/A',
-        icon: <CalendarIcon sx={{ fontSize: 24 }} />,
-        color: theme.palette.primary.main,
-        change: user?.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'Unknown',
-      },
-    ];
-  };
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -139,97 +101,65 @@ const Dashboard: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Dashboard Stats */}
-      <Box 
-        sx={{ 
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          flexWrap: 'wrap',
-          gap: 3,
-          mb: 4
-        }}
-      >
-        {getDashboardStats().map((stat, index) => (
-          <Box key={index} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
-            <Card
-              elevation={2}
-              sx={{
-                height: '100%',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: theme.shadows[8],
+
+      {/* Main Content Tabs */}
+      <AnimatedElement animation="slideUp" delay={400}>
+        <GlassCard 
+          variant="light" 
+          intensity="subtle"
+          sx={{ 
+            border: `1px solid ${alpha('#fff', 0.1)}`,
+            overflow: 'hidden',
+          }}
+        >
+          <Box sx={{ 
+            borderBottom: 1, 
+            borderColor: alpha(theme.palette.divider, 0.3),
+            backgroundColor: alpha('#fff', 0.05),
+            backdropFilter: 'blur(10px)',
+          }}>
+            <Tabs 
+              value={activeTab} 
+              onChange={handleTabChange} 
+              aria-label="dashboard tabs"
+              sx={{ 
+                px: 2,
+                '& .MuiTab-root': {
+                  color: alpha(theme.palette.text.primary, 0.7),
+                  '&.Mui-selected': {
+                    color: theme.palette.primary.main,
+                  },
+                },
+                '& .MuiTabs-indicator': {
+                  backgroundColor: theme.palette.primary.main,
+                  height: 3,
+                  borderRadius: '3px 3px 0 0',
                 },
               }}
             >
-              <CardContent>
-                <Stack spacing={2}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Box
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 2,
-                        backgroundColor: alpha(stat.color, 0.1),
-                        color: stat.color,
-                      }}
-                    >
-                      {stat.icon}
-                    </Box>
-                    <IconButton size="small" sx={{ color: 'text.secondary' }}>
-                      <RefreshIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                  
-                  <Box>
-                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-                      {stat.value}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {stat.title}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: stat.color, fontWeight: 500 }}>
-                      {stat.change}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Tab 
+                label="Overview" 
+                icon={<CalendarIcon />} 
+                iconPosition="start"
+                id="dashboard-tab-0"
+                aria-controls="dashboard-tabpanel-0"
+              />
+              <Tab 
+                label="Messages" 
+                icon={<MessageIcon />} 
+                iconPosition="start"
+                id="dashboard-tab-1"
+                aria-controls="dashboard-tabpanel-1"
+              />
+              <Tab 
+                label="Events" 
+                icon={<EventIcon />} 
+                iconPosition="start"
+                id="dashboard-tab-2"
+                aria-controls="dashboard-tabpanel-2"
+              />
+            </Tabs>
           </Box>
-        ))}
-      </Box>
-
-      {/* Main Content Tabs */}
-      <Card elevation={2}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange} 
-            aria-label="dashboard tabs"
-            sx={{ px: 2 }}
-          >
-            <Tab 
-              label="Overview" 
-              icon={<CalendarIcon />} 
-              iconPosition="start"
-              id="dashboard-tab-0"
-              aria-controls="dashboard-tabpanel-0"
-            />
-            <Tab 
-              label="Messages" 
-              icon={<MessageIcon />} 
-              iconPosition="start"
-              id="dashboard-tab-1"
-              aria-controls="dashboard-tabpanel-1"
-            />
-            <Tab 
-              label="Events" 
-              icon={<EventIcon />} 
-              iconPosition="start"
-              id="dashboard-tab-2"
-              aria-controls="dashboard-tabpanel-2"
-            />
-          </Tabs>
-        </Box>
 
         {/* Overview Tab */}
         <TabPanel value={activeTab} index={0}>
@@ -278,7 +208,16 @@ const Dashboard: React.FC = () => {
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                 Welcome to LifePlace Alfonso
               </Typography>
-              <Paper elevation={0} sx={{ p: 3, bgcolor: 'primary.50', border: 1, borderColor: 'primary.200' }}>
+              <GlassCard 
+                variant="light" 
+                intensity="subtle"
+                sx={{ 
+                  p: 3, 
+                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                  borderRadius: 3,
+                }}
+              >
                 <Stack spacing={2}>
                   <Typography variant="body1" sx={{ fontWeight: 500 }}>
                     Hello {user?.first_name || 'Valued Client'}! 👋
@@ -305,7 +244,7 @@ const Dashboard: React.FC = () => {
                     </Button>
                   </Stack>
                 </Stack>
-              </Paper>
+              </GlassCard>
             </Box>
 
             {/* Recent Activity */}
@@ -318,7 +257,16 @@ const Dashboard: React.FC = () => {
                   <CircularProgress />
                 </Box>
               ) : recentCommunications.length === 0 ? (
-                <Paper elevation={0} sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
+                <GlassCard 
+                  variant="light" 
+                  intensity="subtle"
+                  sx={{ 
+                    p: 3, 
+                    textAlign: 'center', 
+                    backgroundColor: alpha(theme.palette.grey[500], 0.05),
+                    border: `1px solid ${alpha(theme.palette.grey[300], 0.3)}`,
+                  }}
+                >
                   <HistoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
                   <Typography variant="h6" gutterBottom>
                     No Recent Activity
@@ -326,66 +274,77 @@ const Dashboard: React.FC = () => {
                   <Typography variant="body2" color="text.secondary">
                     Your activity and communications will appear here.
                   </Typography>
-                </Paper>
+                </GlassCard>
               ) : (
                 <Stack spacing={2}>
                   {recentCommunications.slice(0, 3).map((comm) => (
-                    <Card 
+                    <GlassCard 
                       key={comm.id} 
-                      variant="outlined"
+                      variant="light"
+                      intensity="subtle"
+                      hover={true}
                       sx={{
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        backgroundColor: !comm.is_opened && comm.channel === 'EMAIL' ? alpha(theme.palette.primary.main, 0.02) : 'background.paper',
-                        borderColor: !comm.is_opened && comm.channel === 'EMAIL' ? 'primary.main' : 'divider',
+                        backgroundColor: !comm.is_opened && comm.channel === 'EMAIL' 
+                          ? alpha(theme.palette.primary.main, 0.08) 
+                          : alpha('#fff', 0.03),
+                        border: `1px solid ${!comm.is_opened && comm.channel === 'EMAIL' 
+                          ? alpha(theme.palette.primary.main, 0.3) 
+                          : alpha('#fff', 0.1)}`,
                         '&:hover': {
                           transform: 'translateY(-2px)',
-                          boxShadow: theme.shadows[4],
+                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                          backgroundColor: alpha('#fff', 0.08),
                         },
                       }}
                       onClick={() => handleMessageClick(comm)}
                     >
-                      <CardContent>
-                        <Box display="flex" alignItems="center" gap={2}>
-                          <Box
-                            sx={{
-                              p: 1,
-                              borderRadius: 1,
-                              backgroundColor: alpha(theme.palette.info.main, 0.1),
-                              color: theme.palette.info.main,
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                          sx={{
+                            p: 1,
+                            borderRadius: 1,
+                            backgroundColor: alpha(theme.palette.info.main, 0.15),
+                            backdropFilter: 'blur(10px)',
+                            color: theme.palette.info.main,
+                            border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                          }}
+                        >
+                          {comm.channel === 'EMAIL' ? <EmailIcon /> : <MessageIcon />}
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ 
+                              fontWeight: !comm.is_opened && comm.channel === 'EMAIL' ? 600 : 500,
                             }}
                           >
-                            {comm.channel === 'EMAIL' ? <EmailIcon /> : <MessageIcon />}
-                          </Box>
-                          <Box sx={{ flex: 1 }}>
-                            <Typography 
-                              variant="body1" 
-                              sx={{ 
-                                fontWeight: !comm.is_opened && comm.channel === 'EMAIL' ? 600 : 500,
-                              }}
-                            >
-                              {comm.subject || comm.template_name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {comm.sent_at ? new Date(comm.sent_at).toLocaleDateString() : 'Pending'}
-                            </Typography>
-                          </Box>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            {comm.is_opened ? (
-                              <CheckCircleIcon color="success" />
-                            ) : (
-                              <ScheduleIcon color="action" />
-                            )}
-                            <Chip 
-                              label={comm.is_opened ? 'Read' : 'Unread'}
-                              size="small"
-                              color={comm.is_opened ? 'success' : 'warning'}
-                              variant="outlined"
-                            />
-                          </Box>
+                            {comm.subject || comm.template_name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {comm.sent_at ? new Date(comm.sent_at).toLocaleDateString() : 'Pending'}
+                          </Typography>
                         </Box>
-                      </CardContent>
-                    </Card>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          {comm.is_opened ? (
+                            <CheckCircleIcon color="success" />
+                          ) : (
+                            <ScheduleIcon color="action" />
+                          )}
+                          <Chip 
+                            label={comm.is_opened ? 'Read' : 'Unread'}
+                            size="small"
+                            color={comm.is_opened ? 'success' : 'warning'}
+                            variant="outlined"
+                            sx={{
+                              backgroundColor: alpha('#fff', 0.1),
+                              backdropFilter: 'blur(5px)',
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </GlassCard>
                   ))}
                   {recentCommunications.length > 3 && (
                     <Button 
@@ -427,12 +386,20 @@ const Dashboard: React.FC = () => {
             </Stack>
           </Box>
         </TabPanel>
-      </Card>
+        </GlassCard>
+      </AnimatedElement>
 
       {/* Communication Analytics (if available) */}
       {commAnalytics && !isLoadingAnalytics && (
-        <Card elevation={2} sx={{ mt: 4 }}>
-          <CardContent>
+        <AnimatedElement animation="fadeIn" delay={500}>
+          <GlassCard 
+            variant="light" 
+            intensity="medium"
+            sx={{ 
+              mt: 4,
+              border: `1px solid ${alpha('#fff', 0.1)}`,
+            }}
+          >
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
               Communication Summary
             </Typography>
@@ -476,8 +443,8 @@ const Dashboard: React.FC = () => {
                 </Typography>
               </Box>
             </Box>
-          </CardContent>
-        </Card>
+          </GlassCard>
+        </AnimatedElement>
       )}
     </Box>
   );

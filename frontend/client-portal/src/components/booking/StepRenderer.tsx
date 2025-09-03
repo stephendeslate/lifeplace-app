@@ -6,15 +6,15 @@ import { useBooking } from '../../contexts/BookingContext';
 import { useBookingSession } from '../../hooks/booking/useBookingCore';
 
 // Import step components
-import { IntroductionStep } from './steps/IntroductionStep';
-// import { DateTimeStep } from './steps/DateTimeStep'; // Replaced with NewDateTimeStep
-import { NewDateTimeStep } from './steps/NewDateTimeStep';
-import { ContactInfoStep } from './steps/ContactInfoStep';
+import { EnhancedIntroductionStep } from './steps/EnhancedIntroductionStep';
+// import { DateTimeStep } from './steps/DateTimeStep'; // Replaced with EnhancedDateTimeStep
+import { EnhancedDateTimeStep } from './steps/EnhancedDateTimeStep';
+import { EnhancedContactInfoStep } from './steps/EnhancedContactInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
 import { QuestionnaireStep } from './steps/QuestionnaireStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { ConfirmationStep } from './steps/ConfirmationStep';
-import { PackageSelectionStep } from './steps/PackageSelectionStep';
+import { EnhancedPackageSelectionStep } from './steps/EnhancedPackageSelectionStep';
 import { AddonSelectionStep } from './steps/AddonSelectionStep';
 import { PricingSummaryStep } from './steps/PricingSummaryStep';
 import type { 
@@ -134,18 +134,19 @@ export const StepRenderer: React.FC = () => {
   switch (step_type) {
     case 'introduction':
       return (
-        <IntroductionStep
+        <EnhancedIntroductionStep
           stepData={state.stepData.introduction}
           config={configuration_data as IntroductionStepConfiguration | null}
           onDataChange={handleIntroductionChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
+          eventTypeName={state.selectedEventType?.name}
         />
       );
 
     case 'date_time':
       return (
-        <NewDateTimeStep
+        <EnhancedDateTimeStep
           stepData={state.stepData.date_time}
           config={configuration_data as DateTimeStepConfiguration | null}
           onDataChange={handleDateTimeChange}
@@ -169,7 +170,7 @@ export const StepRenderer: React.FC = () => {
 
     case 'package_selection':
       return (
-        <PackageSelectionStep
+        <EnhancedPackageSelectionStep
           stepData={state.stepData.package_selection}
           config={configuration_data as PackageSelectionStepConfiguration | null}
           onDataChange={handlePackageSelectionChange}
@@ -202,7 +203,7 @@ export const StepRenderer: React.FC = () => {
 
     case 'contact_info':
       return (
-        <ContactInfoStep
+        <EnhancedContactInfoStep
           stepData={state.stepData.contact_info}
           config={configuration_data as ContactInfoStepConfiguration | undefined}
           onDataChange={handleContactInfoChange}
