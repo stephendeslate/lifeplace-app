@@ -7,7 +7,6 @@ import { useBookingSession } from '../../hooks/booking/useBookingCore';
 
 // Import step components
 import { EnhancedIntroductionStep } from './steps/EnhancedIntroductionStep';
-// import { DateTimeStep } from './steps/DateTimeStep'; // Replaced with EnhancedDateTimeStep
 import { EnhancedDateTimeStep } from './steps/EnhancedDateTimeStep';
 import { EnhancedContactInfoStep } from './steps/EnhancedContactInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
