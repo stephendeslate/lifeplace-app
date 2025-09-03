@@ -138,10 +138,7 @@ export const TimezoneNoticeBanner: React.FC<{
       }}
     >
       <Typography variant="body2" fontWeight="medium">
-        Important: {getTimezoneNotice(context)}
-      </Typography>
-      <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
-        All booking times must be selected in Philippines time (PHT).
+        {getTimezoneNotice(context)}
       </Typography>
     </Alert>
   );

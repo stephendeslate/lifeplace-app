@@ -6,14 +6,14 @@ import { useBooking } from '../../contexts/BookingContext';
 import { useBookingSession } from '../../hooks/booking/useBookingCore';
 
 // Import step components
-import { EnhancedIntroductionStep } from './steps/EnhancedIntroductionStep';
-import { EnhancedDateTimeStep } from './steps/EnhancedDateTimeStep';
+import { CleanIntroductionStep } from './steps/CleanIntroductionStep';
+import { IntelligentDateTimeStep } from './steps/IntelligentDateTimeStep';
 import { EnhancedContactInfoStep } from './steps/EnhancedContactInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
 import { QuestionnaireStep } from './steps/QuestionnaireStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { ConfirmationStep } from './steps/ConfirmationStep';
-import { EnhancedPackageSelectionStep } from './steps/EnhancedPackageSelectionStep';
+import { CleanPackageSelectionStep } from './steps/CleanPackageSelectionStep';
 import { AddonSelectionStep } from './steps/AddonSelectionStep';
 import { PricingSummaryStep } from './steps/PricingSummaryStep';
 import type { 
@@ -133,7 +133,7 @@ export const StepRenderer: React.FC = () => {
   switch (step_type) {
     case 'introduction':
       return (
-        <EnhancedIntroductionStep
+        <CleanIntroductionStep
           stepData={state.stepData.introduction}
           config={configuration_data as IntroductionStepConfiguration | null}
           onDataChange={handleIntroductionChange}
@@ -145,7 +145,7 @@ export const StepRenderer: React.FC = () => {
 
     case 'date_time':
       return (
-        <EnhancedDateTimeStep
+        <IntelligentDateTimeStep
           stepData={state.stepData.date_time}
           config={configuration_data as DateTimeStepConfiguration | null}
           onDataChange={handleDateTimeChange}
@@ -169,7 +169,7 @@ export const StepRenderer: React.FC = () => {
 
     case 'package_selection':
       return (
-        <EnhancedPackageSelectionStep
+        <CleanPackageSelectionStep
           stepData={state.stepData.package_selection}
           config={configuration_data as PackageSelectionStepConfiguration | null}
           onDataChange={handlePackageSelectionChange}

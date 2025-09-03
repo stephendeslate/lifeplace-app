@@ -57,7 +57,7 @@ const navigationItems: NavigationItem[] = [
     label: 'My Events',
     path: '/events',
     icon: <EventIcon />,
-    badge: 2, // Active events count
+    // TODO: Replace with API-driven count
   },
   {
     id: 'booking',
@@ -70,14 +70,14 @@ const navigationItems: NavigationItem[] = [
     label: 'Messages',
     path: '/messages',
     icon: <MessageIcon />,
-    badge: 3, // Unread messages count
+    // TODO: Replace with API-driven unread count
   },
   {
     id: 'payments',
     label: 'Payments & Invoices',
     path: '/payments',
     icon: <PaymentIcon />,
-    badge: 1, // Outstanding payments
+    // TODO: Replace with API-driven outstanding payments count
   },
 ];
 
@@ -263,7 +263,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
               textAlign: 'center',
             }}
           >
-            LifePlace Alfonso
+            Client Portal
           </Typography>
           <Typography
             variant="caption"

@@ -29,7 +29,6 @@ import {
   Schedule,
   Warning,
 } from '@mui/icons-material';
-import { TimezoneNoticeBanner } from '../common/TimezoneDisplay';
 // import { useNavigate } from 'react-router-dom'; // Available for future use
 import { useBooking } from '../../contexts/BookingContext';
 import { useSessionTimer } from '../../hooks/booking/useBookingCore';
@@ -107,8 +106,6 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
       minHeight: '100vh',
       position: 'relative',
     }}>
-      {/* Timezone Notice Banner */}
-      <TimezoneNoticeBanner context="booking" />
       {/* Loading Backdrop */}
       <Backdrop
         sx={{ color: '#fff', zIndex: theme.zIndex.drawer + 1 }}
@@ -122,7 +119,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
         </Box>
       </Backdrop>
 
-      {/* Booking Progress Header */}
+      {/* Combined Booking Progress Header with Step Navigation */}
       <AnimatedElement animation="slideDown" delay={100}>
         <GlassCard
           variant="light"
@@ -194,7 +191,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
           </Box>
 
           {/* Progress Bar */}
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 2, mb: !isMobile && state.currentFlow ? 3 : 0 }}>
             <LinearProgress
               variant="determinate"
               value={state.currentSession?.progress_percentage || 0}
@@ -208,50 +205,36 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
               }}
             />
           </Box>
+
+          {/* Step Navigation (integrated) */}
+          {!isMobile && state.currentFlow && (
+            <Box sx={{ mt: 2 }}>
+              <Stepper activeStep={stepIndex} alternativeLabel>
+                {state.currentFlow.enabled_steps.map(
+                  (step, index) => (
+                    <Step 
+                      key={step.id}
+                      completed={state.progress.completedSteps.includes(step.id)}
+                    >
+                      <StepLabel
+                        sx={{
+                          '& .MuiStepLabel-label': {
+                            fontSize: '0.875rem',
+                            fontWeight: index === stepIndex ? 600 : 400,
+                          },
+                        }}
+                      >
+                        {step.name}
+                      </StepLabel>
+                    </Step>
+                  )
+                )}
+              </Stepper>
+            </Box>
+          )}
         </Container>
         </GlassCard>
       </AnimatedElement>
-
-      {/* Step Navigation (Desktop) */}
-      {!isMobile && state.currentFlow && (
-        <AnimatedElement animation="slideDown" delay={200}>
-          <GlassCard
-            variant="light"
-            intensity="subtle"
-            sx={{
-              backgroundColor: alpha('#fff', 0.08),
-              backdropFilter: 'blur(15px)',
-              borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
-              py: 2,
-              borderRadius: 0,
-            }}
-          >
-            <Container maxWidth="lg">
-            <Stepper activeStep={stepIndex} alternativeLabel>
-              {state.currentFlow.enabled_steps.map(
-                (step, index) => (
-                  <Step 
-                    key={step.id}
-                    completed={state.progress.completedSteps.includes(step.id)}
-                  >
-                    <StepLabel
-                      sx={{
-                        '& .MuiStepLabel-label': {
-                          fontSize: '0.875rem',
-                          fontWeight: index === stepIndex ? 600 : 400,
-                        },
-                      }}
-                    >
-                      {step.name}
-                    </StepLabel>
-                  </Step>
-                )
-              )}
-            </Stepper>
-            </Container>
-          </GlassCard>
-        </AnimatedElement>
-      )}
 
       {/* Main Content */}
       <Container maxWidth="md" sx={{ py: 4, position: 'relative', zIndex: 2 }}>

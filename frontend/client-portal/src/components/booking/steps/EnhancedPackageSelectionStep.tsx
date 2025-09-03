@@ -388,9 +388,12 @@ export const EnhancedPackageSelectionStep: React.FC<EnhancedPackageSelectionStep
     const loadPackages = async () => {
       try {
         const packages = await ProductsApi.getPackages();
-        setAvailablePackages(packages);
+        // Ensure packages is always an array
+        setAvailablePackages(Array.isArray(packages) ? packages : []);
       } catch (err) {
         console.error('Failed to load packages:', err);
+        // Set empty array on error to prevent crash
+        setAvailablePackages([]);
       }
     };
 
@@ -597,27 +600,43 @@ export const EnhancedPackageSelectionStep: React.FC<EnhancedPackageSelectionStep
           display: 'grid', 
           gridTemplateColumns: { 
             xs: '1fr', 
-            md: availablePackages.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(350px, 1fr))'
+            md: Array.isArray(availablePackages) && availablePackages.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(350px, 1fr))'
           }, 
           gap: 4,
           mb: 4 
         }}
       >
-        {availablePackages.map((pkg, index) => (
-          <EnhancedPackageCard
-            key={pkg.id}
-            package={pkg}
-            isSelected={selectedPackageIds.includes(pkg.id)}
-            selectedQuantity={
-              stepData.selected_packages?.find(p => p.product_id === pkg.id)?.quantity || 0
-            }
-            onSelect={handlePackageSelect}
-            onQuantityChange={handleQuantityChange}
-            canSelectMore={canSelectMore}
-            selectionType={selectionType}
-            animationDelay={400 + index * 150}
-          />
-        ))}
+        {Array.isArray(availablePackages) && availablePackages.length > 0 ? (
+          availablePackages.map((pkg, index) => (
+            <EnhancedPackageCard
+              key={pkg.id}
+              package={pkg}
+              isSelected={selectedPackageIds.includes(pkg.id)}
+              selectedQuantity={
+                stepData.selected_packages?.find(p => p.product_id === pkg.id)?.quantity || 0
+              }
+              onSelect={handlePackageSelect}
+              onQuantityChange={handleQuantityChange}
+              canSelectMore={canSelectMore}
+              selectionType={selectionType}
+              animationDelay={400 + index * 150}
+            />
+          ))
+        ) : (
+          <Box sx={{ 
+            gridColumn: '1 / -1',
+            textAlign: 'center', 
+            py: 8,
+            color: 'text.secondary' 
+          }}>
+            <Typography variant="h6" gutterBottom>
+              No packages available
+            </Typography>
+            <Typography variant="body2">
+              Package options will appear here once they are configured
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       {/* Validation Errors */}

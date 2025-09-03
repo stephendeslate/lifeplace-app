@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
           Welcome back, {user?.first_name || 'Client'}! 🌿
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Manage your events, view communications, and stay updated with LifePlace Alfonso.
+          Manage your events and view communications.
         </Typography>
       </Box>
 
@@ -203,11 +203,8 @@ const Dashboard: React.FC = () => {
 
             <Divider />
 
-            {/* Welcome Message */}
+            {/* Quick Actions */}
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                Welcome to LifePlace Alfonso
-              </Typography>
               <GlassCard 
                 variant="light" 
                 intensity="subtle"
@@ -220,12 +217,10 @@ const Dashboard: React.FC = () => {
               >
                 <Stack spacing={2}>
                   <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    Hello {user?.first_name || 'Valued Client'}! 👋
+                    Hello {user?.first_name || 'Client'}! 👋
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Welcome to your client portal. Here you can manage your events, view communications, 
-                    and stay connected with our team at LifePlace Alfonso. We're excited to help you 
-                    create unforgettable moments for your special occasions.
+                    Access your events and communications through the portal.
                   </Typography>
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
                     <Button 
@@ -374,7 +369,7 @@ const Dashboard: React.FC = () => {
               Events Management
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
-              Your event management system is coming soon! You'll be able to view, modify, and track all your bookings and events here.
+              Your events will appear here once available.
             </Typography>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
               <Button variant="contained" size="large" startIcon={<EventIcon />}>
