@@ -94,6 +94,11 @@ export const ModernPageLayout: React.FC<ModernPageLayoutProps> = ({
           disableGutters={disableGutters}
           sx={{ 
             py: paddingY || { xs: 2, sm: 3, md: 4 },
+            px: disableGutters ? 0 : {
+              xs: 'clamp(8px, 2vw, 16px)',  // Tighter: 8px to 16px
+              sm: 'clamp(12px, 3vw, 24px)', // Tighter: 12px to 24px  
+              md: 'clamp(16px, 4vw, 32px)', // Tighter: 16px to 32px
+            },
             position: 'relative',
             zIndex: 1,
           }}
@@ -111,7 +116,15 @@ export const ModernDashboardLayout: React.FC<Omit<ModernPageLayoutProps, 'backgr
 );
 
 export const ModernSettingsLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (props) => (
-  <ModernPageLayout {...props} backgroundPattern="minimal" paddingY={{ xs: 1, sm: 1.5, md: 2 }} />
+  <ModernPageLayout 
+    {...props} 
+    backgroundPattern="minimal" 
+    paddingY={{
+      xs: 'clamp(4px, 1vw, 8px)',    // Tighter: 4px to 8px  
+      sm: 'clamp(6px, 1.5vw, 12px)', // Tighter: 6px to 12px
+      md: 'clamp(8px, 2vw, 16px)',   // Tighter: 8px to 16px
+    }} 
+  />
 );
 
 export const ModernOverviewLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (props) => (

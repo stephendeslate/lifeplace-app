@@ -102,6 +102,7 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
       key: 'name',
       label: 'Template Name',
       sortable: true,
+      width: '25%',
       render: (_, template) => (
         <Box display="flex" alignItems="center" gap={1}>
           <ContractIcon color="primary" />
@@ -121,11 +122,13 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
     {
       key: 'event_type',
       label: 'Event Type',
+      width: '15%',
       render: (_, template) => getEventTypeChip(template.event_type_name),
     },
     {
       key: 'requirements',
       label: 'Requirements',
+      width: '15%',
       render: (_, template) => (
         <Box display="flex" flexWrap="wrap" gap={0.5}>
           {getRequirementChips(template)}
@@ -135,6 +138,7 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
     {
       key: 'variables',
       label: 'Variables',
+      width: '15%',
       render: (_, template) => (
         <Tooltip title={`${template.variables?.length || 0} variables available for this template`}>
           <Chip
@@ -149,6 +153,7 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
     {
       key: 'amendments',
       label: 'Amendments',
+      width: '10%',
       render: (_, template) => (
         <Chip
           label={template.allows_amendments ? 'Allowed' : 'Not Allowed'}
@@ -161,6 +166,7 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
     {
       key: 'updated_at',
       label: 'Last Updated',
+      width: '20%',
       sortable: true,
       render: (_, template) => (
         <Box>

@@ -273,6 +273,12 @@ class NotificationThrottle(UserRateThrottle):
     """Custom throttle for notification API endpoints"""
     scope = 'notifications'
     
+    def allow_request(self, request, view):
+        """Skip throttling in development mode"""
+        if settings.DEBUG:
+            return True
+        return super().allow_request(request, view)
+    
     def get_cache_key(self, request, view):
         """Custom cache key that includes the action"""
         if request.user and request.user.is_authenticated:
@@ -292,7 +298,10 @@ class NotificationAdminThrottle(UserRateThrottle):
     scope = 'notifications_admin'
     
     def allow_request(self, request, view):
-        """Allow higher limits for admin users"""
+        """Skip throttling in development mode, allow higher limits for admin users"""
+        if settings.DEBUG:
+            return True
+        
         if request.user and request.user.is_authenticated and request.user.is_staff:
             # Use admin-specific rate limit
             original_rate = self.rate

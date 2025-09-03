@@ -14,17 +14,38 @@ logger = logging.getLogger(__name__)
 
 class LoginRateThrottle(AnonRateThrottle):
     """Rate limiting for login attempts"""
-    rate = '10/hour'  # 10 login attempts per hour per IP
+    
+    def __init__(self):
+        super().__init__()
+        # Disable throttling in development
+        if settings.DEBUG:
+            self.rate = '999999/hour'
+        else:
+            self.rate = '10/hour'  # 10 login attempts per hour per IP
 
 
 class RegistrationRateThrottle(AnonRateThrottle):
     """Rate limiting for registration attempts"""
-    rate = '5/hour'  # 5 registrations per hour per IP
+    
+    def __init__(self):
+        super().__init__()
+        # Disable throttling in development
+        if settings.DEBUG:
+            self.rate = '999999/hour'
+        else:
+            self.rate = '5/hour'  # 5 registrations per hour per IP
 
 
 class AdminActionThrottle(UserRateThrottle):
     """Rate limiting for admin actions"""
-    rate = '200/hour'  # 200 admin actions per hour per user
+    
+    def __init__(self):
+        super().__init__()
+        # Disable throttling in development
+        if settings.DEBUG:
+            self.rate = '999999/hour'
+        else:
+            self.rate = '200/hour'  # 200 admin actions per hour per user
 
 
 def sanitize_input(value: Any, max_length: int = None, allow_html: bool = False) -> str:
