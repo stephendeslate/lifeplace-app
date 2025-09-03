@@ -1,23 +1,22 @@
-// components/layout/PublicLayout.tsx
+// components/layout/BookingLayout.tsx
 
 import React from 'react';
-import { Box } from '@mui/material';
+import { Box, useTheme, alpha } from '@mui/material';
 import { PublicHeader } from './PublicHeader';
 import { PublicFooter } from './PublicFooter';
 
-interface PublicLayoutProps {
+interface BookingLayoutProps {
   children: React.ReactNode;
-  fullHeight?: boolean;
   onNavigateToLogin?: () => void;
   onNavigateToRegister?: () => void;
 }
 
-export const PublicLayout: React.FC<PublicLayoutProps> = ({ 
+export const BookingLayout: React.FC<BookingLayoutProps> = ({ 
   children, 
-  fullHeight = false,
   onNavigateToLogin,
   onNavigateToRegister,
 }) => {
+  const theme = useTheme();
 
   return (
     <Box 
@@ -28,14 +27,10 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         width: '100vw',
         overflow: 'hidden',
         position: 'relative',
-        background: 'linear-gradient(135deg, #2d5016 0%, #5a7c47 100%)',
-        backgroundSize: '200% 200%',
-        animation: 'gradientShift 15s ease infinite',
-        '@keyframes gradientShift': {
-          '0%': { backgroundPosition: '0% 50%' },
-          '50%': { backgroundPosition: '100% 50%' },
-          '100%': { backgroundPosition: '0% 50%' },
-        },
+        // Original lighter background like PublicLayout had before
+        background: `
+          linear-gradient(135deg, ${alpha(theme.palette.background.default, 0.98)} 0%, ${alpha(theme.palette.background.paper, 0.95)} 100%)
+        `,
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -44,8 +39,8 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           right: 0,
           bottom: 0,
           background: `
-            radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%)
+            radial-gradient(circle at 10% 20%, ${alpha(theme.palette.primary.main, 0.03)} 0%, transparent 50%),
+            radial-gradient(circle at 90% 80%, ${alpha(theme.palette.secondary.main, 0.02)} 0%, transparent 50%)
           `,
           pointerEvents: 'none',
           zIndex: 0,
@@ -70,9 +65,6 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           flexDirection: 'column',
           pt: { xs: '120px', md: '140px' }, // Account for fixed header height + generous breathing room
           pb: { xs: '60px', md: '80px' }, // Add generous bottom spacing
-          ...(fullHeight && {
-            minHeight: '100vh',
-          }),
           position: 'relative',
           zIndex: 1,
           backdropFilter: 'blur(0.5px)',

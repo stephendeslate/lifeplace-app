@@ -8,7 +8,6 @@ import {
   Stack,
   Button,
   ButtonGroup,
-  Paper,
   Chip,
   IconButton,
   TextField,
@@ -16,10 +15,11 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Alert,
-  Fade,
   useTheme,
   alpha,
 } from '@mui/material';
+import { GlassCard } from '../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import {
   Event as EventIcon,
   Search as SearchIcon,
@@ -109,90 +109,121 @@ const EventsList: React.FC = () => {
 
   // Empty state
   const renderEmptyState = () => (
-    <Paper 
-      sx={{ 
-        p: 4, 
-        textAlign: 'center',
-        backgroundColor: alpha(theme.palette.primary.main, 0.02),
-        border: `1px dashed ${alpha(theme.palette.primary.main, 0.2)}`,
-      }}
-    >
-      <EventIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
-      <Typography variant="h5" gutterBottom color="text.secondary">
-        {searchTerm || statusFilter !== 'ALL' || upcomingOnly ? 
-          'No events match your filters' : 
-          'No events yet'
-        }
-      </Typography>
-      <Typography variant="body1" color="text.secondary" paragraph>
-        {searchTerm || statusFilter !== 'ALL' || upcomingOnly ? 
-          'Try adjusting your search criteria or filters.' :
-          'Your events will appear here once you start planning with us.'
-        }
-      </Typography>
-      {(searchTerm || statusFilter !== 'ALL' || upcomingOnly) && (
-        <Button
-          variant="outlined"
-          onClick={() => {
-            setSearchTerm('');
-            setStatusFilter('ALL');
-            setUpcomingOnly(false);
-          }}
-        >
-          Clear Filters
-        </Button>
-      )}
-    </Paper>
+    <AnimatedElement animation="fadeIn" delay={200}>
+      <GlassCard 
+        variant="light"
+        intensity="subtle"
+        sx={{ 
+          p: 4, 
+          textAlign: 'center',
+          backgroundColor: alpha(theme.palette.primary.main, 0.05),
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+        }}
+      >
+        <EventIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+        <Typography variant="h5" gutterBottom color="text.secondary">
+          {searchTerm || statusFilter !== 'ALL' || upcomingOnly ? 
+            'No events match your filters' : 
+            'No events yet'
+          }
+        </Typography>
+        <Typography variant="body1" color="text.secondary" paragraph>
+          {searchTerm || statusFilter !== 'ALL' || upcomingOnly ? 
+            'Try adjusting your search criteria or filters.' :
+            'Your events will appear here once you start planning with us.'
+          }
+        </Typography>
+        {(searchTerm || statusFilter !== 'ALL' || upcomingOnly) && (
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('ALL');
+              setUpcomingOnly(false);
+            }}
+          >
+            Clear Filters
+          </Button>
+        )}
+      </GlassCard>
+    </AnimatedElement>
   );
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+    <Box>
       {/* Header */}
-      <Stack 
-        direction="row" 
-        justifyContent="space-between" 
-        alignItems="center" 
-        mb={3}
-        flexWrap="wrap"
-        gap={2}
-      >
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            My Events
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            View and manage your events and celebrations
-          </Typography>
-        </Box>
-        
-        <Stack direction="row" spacing={1}>
-          <IconButton
-            onClick={handleRefresh}
-            disabled={isRefetching}
-            aria-label="Refresh events"
-          >
-            <RefreshIcon />
-          </IconButton>
+      <AnimatedElement animation="slideDown" delay={100}>
+        <Stack 
+          direction="row" 
+          justifyContent="space-between" 
+          alignItems="center" 
+          mb={4}
+          flexWrap="wrap"
+          gap={2}
+        >
+          <Box>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, color: 'primary.main' }}>
+              My Events
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              View and manage your events and celebrations
+            </Typography>
+          </Box>
           
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(_, value) => value && setViewMode(value)}
-            size="small"
-            aria-label="View mode"
-          >
-            <ToggleButton value="grid" aria-label="Grid view">
-              <GridIcon fontSize="small" />
-            </ToggleButton>
-            <ToggleButton value="list" aria-label="List view">
-              <ListIcon fontSize="small" />
-            </ToggleButton>
-          </ToggleButtonGroup>
+          <Stack direction="row" spacing={1}>
+            <IconButton
+              onClick={handleRefresh}
+              disabled={isRefetching}
+              aria-label="Refresh events"
+              sx={{
+                backgroundColor: alpha('#fff', 0.1),
+                backdropFilter: 'blur(10px)',
+                border: `1px solid ${alpha('#fff', 0.1)}`,
+                '&:hover': {
+                  backgroundColor: alpha('#fff', 0.2),
+                  transform: 'scale(1.05)',
+                },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <RefreshIcon />
+            </IconButton>
+            
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(_, value) => value && setViewMode(value)}
+              size="small"
+              aria-label="View mode"
+              sx={{
+                '& .MuiToggleButton-root': {
+                  backgroundColor: alpha('#fff', 0.1),
+                  backdropFilter: 'blur(10px)',
+                  border: `1px solid ${alpha('#fff', 0.1)}`,
+                  '&.Mui-selected': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                    color: theme.palette.primary.main,
+                  },
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.15),
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="grid" aria-label="Grid view">
+                <GridIcon fontSize="small" />
+              </ToggleButton>
+              <ToggleButton value="list" aria-label="List view">
+                <ListIcon fontSize="small" />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
         </Stack>
-      </Stack>
+      </AnimatedElement>
 
       {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
+      <AnimatedElement animation="slideUp" delay={200}>
+        <GlassCard variant="light" intensity="medium" sx={{ p: 3, mb: 4, border: `1px solid ${alpha('#fff', 0.1)}` }}>
         <Stack spacing={2}>
           {/* Search and upcoming toggle */}
           <Stack 
@@ -288,7 +319,8 @@ const EventsList: React.FC = () => {
             </Stack>
           )}
         </Stack>
-      </Paper>
+        </GlassCard>
+      </AnimatedElement>
 
       {/* Content */}
       {error ? (
@@ -300,11 +332,13 @@ const EventsList: React.FC = () => {
       ) : filteredEvents.length === 0 ? (
         renderEmptyState()
       ) : (
-        <Fade in>
+        <AnimatedElement animation="fadeIn" delay={300}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-            {filteredEvents.map((event) => (
-              <Box 
+            {filteredEvents.map((event, index) => (
+              <AnimatedElement 
                 key={event.id}
+                animation="slideUp" 
+                delay={300 + (index * 50)}
                 sx={{ 
                   flex: viewMode === 'grid' 
                     ? { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' } 
@@ -315,10 +349,10 @@ const EventsList: React.FC = () => {
                   event={event}
                   onClick={() => handleEventClick(event.id)}
                 />
-              </Box>
+              </AnimatedElement>
             ))}
           </Box>
-        </Fade>
+        </AnimatedElement>
       )}
 
       {/* Results summary */}
