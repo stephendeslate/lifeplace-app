@@ -132,7 +132,7 @@ const Profile: React.FC = () => {
             My Profile
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage your personal information and preferences
+            Manage your personal information
           </Typography>
         </Box>
       </AnimatedElement>

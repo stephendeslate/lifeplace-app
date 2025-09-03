@@ -14,7 +14,6 @@ import {
   ListItemText,
   Divider,
   Box,
-  Badge,
   useTheme,
   alpha,
   Tooltip,
@@ -157,9 +156,8 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                   transition: 'all 0.2s ease',
                 }}
               >
-                <Badge badgeContent={2} color="primary">
-                  <Message />
-                </Badge>
+                {/* TODO: Replace with API-driven unread message count */}
+                <Message />
               </IconButton>
             </Tooltip>
           </AnimatedElement>

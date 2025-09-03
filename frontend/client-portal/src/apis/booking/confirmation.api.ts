@@ -211,7 +211,7 @@ export class ConfirmationApi {
       },
       {
         title: 'Event Preparation',
-        description: "We'll work with you to ensure every detail is perfect for your special day.",
+        description: "We'll work with you to ensure every detail is perfect for your event.",
         icon: 'calendar'
       }
     ];

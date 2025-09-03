@@ -1,19 +1,16 @@
 // frontend/client-portal/src/components/booking/steps/EnhancedContactInfoStep.tsx
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   Typography,
   TextField,
-  Button,
   Avatar,
   Chip,
   InputAdornment,
   IconButton,
   FormControlLabel,
   Checkbox,
-  Alert,
-  Autocomplete,
   useTheme,
   alpha,
 } from '@mui/material';
@@ -21,14 +18,12 @@ import {
   Person as PersonIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  LocationOn as LocationIcon,
   CheckCircle as CheckCircleIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   AutoAwesome as AutoAwesomeIcon,
   Security as SecurityIcon,
   AccountCircle as AccountIcon,
-  Business as BusinessIcon,
   Star as StarIcon,
   Verified as VerifiedIcon,
 } from '@mui/icons-material';
@@ -59,12 +54,6 @@ interface ValidationState {
   full_name: 'idle' | 'validating' | 'valid' | 'invalid';
 }
 
-interface SmartSuggestion {
-  type: 'address' | 'phone' | 'email';
-  value: string;
-  confidence: number;
-  source: string;
-}
 
 // Philippines phone number formatting utility
 const formatPhoneNumber = (value: string) => {
@@ -100,12 +89,6 @@ const validatePhoneNumber = (phone: string): boolean => {
   );
 };
 
-// Get location suggestions - can be enhanced with API integration
-const getLocationSuggestions = (): string[] => {
-  // This would typically call a location API service
-  // For now, return empty array to avoid hardcoded data
-  return [];
-};
 
 export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = ({
   stepData,
@@ -147,8 +130,6 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     full_name: 'idle',
   });
 
-  // Smart suggestions
-  const [suggestions, setSuggestions] = useState<SmartSuggestion[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [emailStrength, setEmailStrength] = useState(0);
   const [phoneStrength, setPhoneStrength] = useState(0);
@@ -200,21 +181,6 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     }
   }, [formData, onDataChange, announceToScreenReader]);
 
-  // Smart suggestions based on user input
-  const generateSuggestions = useCallback((field: string, value: string) => {
-    if (field === 'address' && value.length > 2) {
-      const matches = getLocationSuggestions();
-      
-      const newSuggestions = matches.map(match => ({
-        type: 'address' as const,
-        value: match,
-        confidence: 0.9,
-        source: 'api_suggestions'
-      }));
-      
-      setSuggestions(newSuggestions);
-    }
-  }, []);
 
   const getFieldError = (fieldName: string) => externalValidationErrors[fieldName]?.[0];
   const hasFieldError = (fieldName: string) => !!(externalValidationErrors[fieldName]?.length > 0);
@@ -256,14 +222,6 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     );
   };
 
-  const isFormValid = useMemo(() => {
-    return formData.full_name && 
-           formData.email && 
-           formData.phone &&
-           validationState.email === 'valid' &&
-           validationState.phone === 'valid' &&
-           validationState.full_name === 'valid';
-  }, [formData, validationState]);
 
   return (
     <Box>
@@ -362,221 +320,100 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
         </AnimatedElement>
       )}
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 4 }}>
+      {/* Main Form */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 800, mx: 'auto' }}>
         
-        {/* Main Form */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          
-          {/* Personal Information */}
-          <AnimatedElement animation="slideRight" delay={300}>
-            <GlassCard
-              variant="light"
-              intensity="medium"
-              sx={{
-                backgroundColor: alpha('#fff', 0.08),
-                border: `1px solid ${alpha('#fff', 0.1)}`,
-              }}
-            >
-              <Box sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <AccountIcon color="primary" />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Personal Details
-                  </Typography>
-                </Box>
-                
-                <TextField
-                  label="Full Name"
-                  value={formData.full_name}
-                  onChange={(e) => updateFormData('full_name', e.target.value)}
-                  error={hasFieldError('full_name')}
-                  helperText={getFieldError('full_name') || 'Enter your first and last name'}
-                  required={fieldRequirements.full_name}
-                  fullWidth
-                  placeholder="John Doe"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonIcon color="primary" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: validationState.full_name === 'valid' && (
-                      <InputAdornment position="end">
-                        <CheckCircleIcon color="success" />
-                      </InputAdornment>
-                    ),
-                    sx: {
-                      backgroundColor: alpha('#fff', 0.1),
-                      backdropFilter: 'blur(10px)',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha('#fff', 0.2),
-                      },
+        {/* Personal Information */}
+        <AnimatedElement animation="slideRight" delay={300}>
+          <GlassCard
+            variant="light"
+            intensity="medium"
+            sx={{
+              backgroundColor: alpha('#fff', 0.08),
+              border: `1px solid ${alpha('#fff', 0.1)}`,
+            }}
+          >
+            <Box sx={{ p: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <AccountIcon color="primary" />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Personal Details
+                </Typography>
+              </Box>
+              
+              <TextField
+                label="Full Name"
+                value={formData.full_name}
+                onChange={(e) => updateFormData('full_name', e.target.value)}
+                error={hasFieldError('full_name')}
+                helperText={getFieldError('full_name') || 'Enter your first and last name'}
+                required={fieldRequirements.full_name}
+                fullWidth
+                placeholder="John Doe"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: validationState.full_name === 'valid' && (
+                    <InputAdornment position="end">
+                      <CheckCircleIcon color="success" />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    backgroundColor: alpha('#fff', 0.1),
+                    backdropFilter: 'blur(10px)',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: alpha('#fff', 0.2),
                     },
-                  }}
-                />
-              </Box>
-            </GlassCard>
-          </AnimatedElement>
+                  },
+                }}
+              />
+            </Box>
+          </GlassCard>
+        </AnimatedElement>
 
-          {/* Contact Information */}
-          <AnimatedElement animation="slideRight" delay={400}>
-            <GlassCard
-              variant="light"
-              intensity="medium"
-              sx={{
-                backgroundColor: alpha('#fff', 0.08),
-                border: hasFieldError('email') || hasFieldError('phone')
-                  ? `2px solid ${theme.palette.error.main}` 
-                  : `1px solid ${alpha('#fff', 0.1)}`,
-              }}
-            >
-              <Box sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <EmailIcon color="primary" />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Contact Details
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <Box>
-                    <TextField
-                      label="Email Address"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => updateFormData('email', e.target.value)}
-                      error={hasFieldError('email') || validationState.email === 'invalid'}
-                      helperText={getFieldError('email') || (validationState.email === 'invalid' ? 'Please enter a valid email address' : '')}
-                      required={fieldRequirements.email}
-                      fullWidth
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <EmailIcon color="primary" />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            {getValidationIcon('email')}
-                          </InputAdornment>
-                        ),
-                        sx: {
-                          backgroundColor: alpha('#fff', 0.1),
-                          backdropFilter: 'blur(10px)',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: alpha('#fff', 0.2),
-                          },
-                        },
-                      }}
-                    />
-                    {getFieldStrength('email')}
-                  </Box>
-                  
-                  <Box>
-                    <TextField
-                      label="Phone Number"
-                      value={formData.phone}
-                      onChange={(e) => updateFormData('phone', e.target.value)}
-                      error={hasFieldError('phone') || validationState.phone === 'invalid'}
-                      helperText={getFieldError('phone') || (validationState.phone === 'invalid' ? 'Please enter a valid Philippines phone number' : 'Format: +63 XXX XXX XXXX')}
-                      required={fieldRequirements.phone}
-                      placeholder="+63 XXX XXX XXXX"
-                      fullWidth
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <PhoneIcon color="primary" />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            {getValidationIcon('phone')}
-                          </InputAdornment>
-                        ),
-                        sx: {
-                          backgroundColor: alpha('#fff', 0.1),
-                          backdropFilter: 'blur(10px)',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: alpha('#fff', 0.2),
-                          },
-                        },
-                      }}
-                    />
-                    {getFieldStrength('phone')}
-                  </Box>
-                </Box>
+        {/* Contact Information */}
+        <AnimatedElement animation="slideRight" delay={400}>
+          <GlassCard
+            variant="light"
+            intensity="medium"
+            sx={{
+              backgroundColor: alpha('#fff', 0.08),
+              border: hasFieldError('email') || hasFieldError('phone')
+                ? `2px solid ${theme.palette.error.main}` 
+                : `1px solid ${alpha('#fff', 0.1)}`,
+            }}
+          >
+            <Box sx={{ p: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <EmailIcon color="primary" />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Contact Details
+                </Typography>
               </Box>
-            </GlassCard>
-          </AnimatedElement>
-
-          {/* Address Information */}
-          <AnimatedElement animation="slideRight" delay={500}>
-            <GlassCard
-              variant="light"
-              intensity="medium"
-              sx={{
-                backgroundColor: alpha('#fff', 0.08),
-                border: `1px solid ${alpha('#fff', 0.1)}`,
-              }}
-            >
-              <Box sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <LocationIcon color="primary" />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Address Details
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <Autocomplete
-                    options={suggestions.map(s => s.value)}
-                    value={formData.address || ''}
-                    onInputChange={(_, newValue) => {
-                      updateFormData('address', newValue);
-                      generateSuggestions('address', newValue);
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Address"
-                        error={hasFieldError('address')}
-                        helperText={getFieldError('address')}
-                        required={fieldRequirements.address}
-                        multiline
-                        rows={2}
-                        InputProps={{
-                          ...params.InputProps,
-                          startAdornment: (
-                            <>
-                              <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1 }}>
-                                <LocationIcon color="primary" />
-                              </InputAdornment>
-                              {params.InputProps.startAdornment}
-                            </>
-                          ),
-                          sx: {
-                            backgroundColor: alpha('#fff', 0.1),
-                            backdropFilter: 'blur(10px)',
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: alpha('#fff', 0.2),
-                            },
-                          },
-                        }}
-                      />
-                    )}
-                  />
-                  
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Box>
                   <TextField
-                    label="Company (Optional)"
-                    value={formData.company || ''}
-                    onChange={(e) => updateFormData('company', e.target.value)}
-                    error={hasFieldError('company')}
-                    helperText={getFieldError('company')}
-                    required={fieldRequirements.company}
+                    label="Email Address"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => updateFormData('email', e.target.value)}
+                    error={hasFieldError('email') || validationState.email === 'invalid'}
+                    helperText={getFieldError('email') || (validationState.email === 'invalid' ? 'Please enter a valid email address' : '')}
+                    required={fieldRequirements.email}
+                    fullWidth
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <BusinessIcon color="primary" />
+                          <EmailIcon color="primary" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          {getValidationIcon('email')}
                         </InputAdornment>
                       ),
                       sx: {
@@ -588,224 +425,119 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
                       },
                     }}
                   />
-                </Box>
-              </Box>
-            </GlassCard>
-          </AnimatedElement>
-
-          {/* Account Creation */}
-          {accountCreationOptions.canCreateAccount && !isAuthenticated && (
-            <AnimatedElement animation="slideRight" delay={600}>
-              <GlassCard
-                variant="light"
-                intensity="subtle"
-                sx={{
-                  backgroundColor: alpha(theme.palette.info.main, 0.05),
-                  border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-                }}
-              >
-                <Box sx={{ p: 4 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                    <SecurityIcon color="info" />
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Account Options
-                    </Typography>
-                  </Box>
-                  
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={formData.create_account || false}
-                        onChange={(e) => updateFormData('create_account', e.target.checked)}
-                      />
-                    }
-                    label={
-                      <Box>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          Create an account for faster future bookings
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Save your preferences and view booking history
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                  
-                  {formData.create_account && (
-                    <Box sx={{ mt: 3 }}>
-                      <TextField
-                        label="Password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={formData.password || ''}
-                        onChange={(e) => updateFormData('password', e.target.value)}
-                        required
-                        fullWidth
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <IconButton
-                                onClick={() => setShowPassword(!showPassword)}
-                                edge="end"
-                              >
-                                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                              </IconButton>
-                            </InputAdornment>
-                          ),
-                          sx: {
-                            backgroundColor: alpha('#fff', 0.1),
-                            backdropFilter: 'blur(10px)',
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: alpha('#fff', 0.2),
-                            },
-                          },
-                        }}
-                      />
-                    </Box>
-                  )}
-                </Box>
-              </GlassCard>
-            </AnimatedElement>
-          )}
-        </Box>
-
-        {/* Smart Sidebar */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          
-          {/* Completion Status */}
-          <AnimatedElement animation="slideLeft" delay={700}>
-            <GlassCard
-              variant="light"
-              intensity="medium"
-              sx={{
-                backgroundColor: isFormValid 
-                  ? alpha(theme.palette.success.main, 0.1)
-                  : alpha('#fff', 0.08),
-                border: `1px solid ${alpha(isFormValid ? theme.palette.success.main : '#fff', 0.2)}`,
-              }}
-            >
-              <Box sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  {isFormValid ? (
-                    <CheckCircleIcon color="success" />
-                  ) : (
-                    <AutoAwesomeIcon color="primary" />
-                  )}
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {isFormValid ? 'Ready to Continue' : 'Form Progress'}
-                  </Typography>
+                  {getFieldStrength('email')}
                 </Box>
                 
-                <Box sx={{ mb: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2">Completion</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {Math.round((Object.values(validationState).filter(state => state === 'valid').length / 3) * 100)}%
-                    </Typography>
-                  </Box>
-                  <Box sx={{ 
-                    height: 8, 
-                    backgroundColor: alpha('#fff', 0.2), 
-                    borderRadius: 4,
-                    overflow: 'hidden'
-                  }}>
-                    <Box sx={{ 
-                      height: '100%', 
-                      width: `${(Object.values(validationState).filter(state => state === 'valid').length / 3) * 100}%`,
-                      backgroundColor: theme.palette.success.main,
-                      transition: 'width 0.5s ease'
-                    }} />
-                  </Box>
-                </Box>
-                
-                {isFormValid && (
-                  <Alert severity="success" sx={{ mb: 2 }}>
-                    All required information provided!
-                  </Alert>
-                )}
-                
-                <Typography variant="body2" color="text.secondary">
-                  {isFormValid 
-                    ? 'Your contact information is complete and validated.'
-                    : 'Please fill in all required fields to continue.'
-                  }
-                </Typography>
-              </Box>
-            </GlassCard>
-          </AnimatedElement>
-
-          {/* Smart Suggestions */}
-          {suggestions.length > 0 && (
-            <AnimatedElement animation="slideLeft" delay={800}>
-              <GlassCard
-                variant="light"
-                intensity="subtle"
-                sx={{
-                  backgroundColor: alpha(theme.palette.warning.main, 0.05),
-                  border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
-                }}
-              >
-                <Box sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <AutoAwesomeIcon color="warning" />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      Smart Suggestions
-                    </Typography>
-                  </Box>
-                  
-                  {suggestions.map((suggestion, index) => (
-                    <Button
-                      key={index}
-                      variant="outlined"
-                      size="small"
-                      onClick={() => updateFormData('address', suggestion.value)}
-                      sx={{
-                        mb: 1,
-                        mr: 1,
+                <Box>
+                  <TextField
+                    label="Phone Number"
+                    value={formData.phone}
+                    onChange={(e) => updateFormData('phone', e.target.value)}
+                    error={hasFieldError('phone') || validationState.phone === 'invalid'}
+                    helperText={getFieldError('phone') || (validationState.phone === 'invalid' ? 'Please enter a valid Philippines phone number' : 'Format: +63 XXX XXX XXXX')}
+                    required={fieldRequirements.phone}
+                    placeholder="+63 XXX XXX XXXX"
+                    fullWidth
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneIcon color="primary" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          {getValidationIcon('phone')}
+                        </InputAdornment>
+                      ),
+                      sx: {
                         backgroundColor: alpha('#fff', 0.1),
-                        border: `1px solid ${alpha('#fff', 0.2)}`,
-                        '&:hover': {
-                          backgroundColor: alpha('#fff', 0.2),
+                        backdropFilter: 'blur(10px)',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha('#fff', 0.2),
                         },
-                      }}
-                    >
-                      {suggestion.value}
-                    </Button>
-                  ))}
+                      },
+                    }}
+                  />
+                  {getFieldStrength('phone')}
                 </Box>
-              </GlassCard>
-            </AnimatedElement>
-          )}
+              </Box>
+            </Box>
+          </GlassCard>
+        </AnimatedElement>
 
-          {/* Help & Tips */}
-          <AnimatedElement animation="slideLeft" delay={900}>
+        {/* Account Creation */}
+        {accountCreationOptions.canCreateAccount && !isAuthenticated && (
+          <AnimatedElement animation="slideRight" delay={600}>
             <GlassCard
               variant="light"
               intensity="subtle"
               sx={{
-                backgroundColor: alpha('#fff', 0.05),
-                border: `1px solid ${alpha('#fff', 0.1)}`,
+                backgroundColor: alpha(theme.palette.info.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
               }}
             >
-              <Box sx={{ p: 3 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                  💡 Quick Tips
-                </Typography>
-                
-                <Box component="ul" sx={{ pl: 2, m: 0 }}>
-                  <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                    Use a valid email - we'll send confirmation details
-                  </Typography>
-                  <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                    Phone format: +63 XXX XXX XXXX for Philippines
-                  </Typography>
-                  <Typography component="li" variant="body2">
-                    Creating an account saves time for future bookings
+              <Box sx={{ p: 4 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                  <SecurityIcon color="info" />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Account Options
                   </Typography>
                 </Box>
+                
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.create_account || false}
+                      onChange={(e) => updateFormData('create_account', e.target.checked)}
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        Create an account for faster future bookings
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Save your preferences and view booking history
+                      </Typography>
+                    </Box>
+                  }
+                />
+                
+                {formData.create_account && (
+                  <Box sx={{ mt: 3 }}>
+                    <TextField
+                      label="Password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password || ''}
+                      onChange={(e) => updateFormData('password', e.target.value)}
+                      required
+                      fullWidth
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                            >
+                              {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                        sx: {
+                          backgroundColor: alpha('#fff', 0.1),
+                          backdropFilter: 'blur(10px)',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: alpha('#fff', 0.2),
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
               </Box>
             </GlassCard>
           </AnimatedElement>
-        </Box>
+        )}
       </Box>
     </Box>
   );

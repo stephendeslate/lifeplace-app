@@ -50,58 +50,8 @@ export const NotificationCenter: React.FC = () => {
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   
-  // Mock notifications - in a real app, this would come from API/WebSocket
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: 1,
-      type: 'event',
-      priority: 'high',
-      title: 'Event Confirmed',
-      message: 'Your wedding ceremony has been confirmed for March 15, 2024',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-      read: false,
-      metadata: { eventName: 'Smith-Johnson Wedding' },
-    },
-    {
-      id: 2,
-      type: 'payment',
-      priority: 'urgent',
-      title: 'Payment Due Soon',
-      message: 'Final payment of $1,500 is due in 3 days',
-      timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
-      read: false,
-      metadata: { amount: '$1,500' },
-    },
-    {
-      id: 3,
-      type: 'message',
-      priority: 'medium',
-      title: 'New Message',
-      message: 'Sarah from LifePlace sent you a message about catering options',
-      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-      read: true,
-      metadata: { senderName: 'Sarah from LifePlace' },
-    },
-    {
-      id: 4,
-      type: 'system',
-      priority: 'low',
-      title: 'Profile Updated',
-      message: 'Your profile information has been successfully updated',
-      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-      read: true,
-    },
-    {
-      id: 5,
-      type: 'event',
-      priority: 'medium',
-      title: 'Schedule Change',
-      message: 'Your venue walkthrough has been rescheduled to 2:00 PM',
-      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-      read: true,
-      metadata: { eventName: 'Venue Walkthrough' },
-    },
-  ]);
+  // TODO: Replace with API/WebSocket calls to fetch real notifications
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const open = Boolean(anchorEl);
   const unreadCount = notifications.filter(n => !n.read).length;

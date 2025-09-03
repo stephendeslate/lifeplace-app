@@ -63,8 +63,8 @@ export const BookingLayout: React.FC<BookingLayoutProps> = ({
           width: '100vw',
           display: 'flex',
           flexDirection: 'column',
-          pt: { xs: '120px', md: '140px' }, // Account for fixed header height + generous breathing room
-          pb: { xs: '60px', md: '80px' }, // Add generous bottom spacing
+          pt: { xs: '60px', md: '64px' }, // Zero gap below fixed header
+          pb: { xs: '40px', md: '60px' }, // Add reasonable bottom spacing
           position: 'relative',
           zIndex: 1,
           backdropFilter: 'blur(0.5px)',
