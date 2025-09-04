@@ -131,7 +131,7 @@ class ClientEventFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventFile
         fields = [
-            'id', 'name', 'file_type', 'size', 'created_at', 'download_url'
+            'id', 'name', 'category', 'size', 'created_at', 'download_url'
         ]
     
     def get_download_url(self, obj):

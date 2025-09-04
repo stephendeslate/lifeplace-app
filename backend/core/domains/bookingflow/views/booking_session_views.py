@@ -275,17 +275,21 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             step_data = request.data.get('step_data', {})
             mark_completed = request.data.get('mark_completed', False)
             
+            print(f"API DEBUG: step_id={step_id}, mark_completed={mark_completed}, session_uuid={session_uuid}")
+            
             if not step_id:
                 return Response(
                     {"detail": "step_id is required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
+            print(f"API DEBUG: About to call service method")
             session = BookingSessionService.update_session_data(
                 session_id=session_uuid,
                 step_data=step_data,
                 mark_completed=mark_completed
             )
+            print(f"API DEBUG: Service method completed")
             
             # Return minimal session data
             return Response({

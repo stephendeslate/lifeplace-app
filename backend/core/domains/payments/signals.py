@@ -167,8 +167,7 @@ def invalidate_transaction_caches(sender, instance, **kwargs):
             payments_cache_service.invalidate_payment_caches(
                 payment_id=instance.payment.id,
                 event_id=getattr(instance.payment.event, 'id', None) if instance.payment.event else None,
-                client_id=getattr(instance.payment.client, 'id', None) if instance.payment.client else None,
-                status=instance.payment.status
+                client_id=getattr(instance.payment.event.client, 'id', None) if instance.payment.event and hasattr(instance.payment.event, 'client') else None
             )
         logger.info(f"Invalidated transaction caches for: Transaction {instance.id}")
     except Exception as e:
@@ -189,8 +188,7 @@ def invalidate_refund_caches(sender, instance, **kwargs):
             payments_cache_service.invalidate_payment_caches(
                 payment_id=instance.payment.id,
                 event_id=getattr(instance.payment.event, 'id', None) if instance.payment.event else None,
-                client_id=getattr(instance.payment.client, 'id', None) if instance.payment.client else None,
-                status=instance.payment.status
+                client_id=getattr(instance.payment.event.client, 'id', None) if instance.payment.event and hasattr(instance.payment.event, 'client') else None
             )
         logger.info(f"Invalidated refund caches for: Refund {instance.id}")
     except Exception as e:

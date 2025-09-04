@@ -129,6 +129,7 @@ class BookingSessionService:
     def update_session_data(session_id, step_data, mark_completed=False):
         """Update booking session data for a step"""
         session = BookingSessionService.get_session_by_id(session_id)
+        print(f"SERVICE DEBUG: current_step={session.current_step.name if session.current_step else 'None'}")
         
         # Validate step data against current step
         if session.current_step:
@@ -136,11 +137,14 @@ class BookingSessionService:
                 session.current_step, step_data, session
             )
             if validation_errors:
+                print(f"SERVICE DEBUG: Validation errors found: {validation_errors}")
                 # Store validation errors but don't raise exception
                 session.validation_errors = validation_errors
                 session.save()
                 # Still return the session with errors
                 return session
+            else:
+                print(f"SERVICE DEBUG: No validation errors")
         
         with transaction.atomic():
             # Update booking data
@@ -174,18 +178,91 @@ class BookingSessionService:
             session.validation_errors = {}
             
             # Handle step progression
+            print(f"DEBUG: mark_completed={mark_completed}, session.booking_flow={bool(session.booking_flow)}")
             if mark_completed and session.booking_flow:
+                # Add current step to completed steps
+                if session.current_step and session.current_step not in session.completed_steps.all():
+                    session.completed_steps.add(session.current_step)
+                    print(f"DEBUG: Added step {session.current_step.name} to completed_steps")
+                
+                # Check if this is a contact_info step - create/associate client user
+                if (session.current_step and 
+                    session.current_step.step_type == 'contact_info' and 
+                    'email' in step_data and step_data['email']):
+                    
+                    print(f"DEBUG: Contact info step completed - creating/associating client user")
+                    try:
+                        from core.domains.users.services import UserService
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                        
+                        # Check if user already exists
+                        existing_user = User.objects.filter(
+                            email=step_data['email'],
+                            role='CLIENT'
+                        ).first()
+                        
+                        if existing_user:
+                            # Use existing client user
+                            user = existing_user
+                            session.client = user
+                            print(f"DEBUG: Associated existing client user: {user.email}")
+                        else:
+                            # Create new user record
+                            user_data = {
+                                'email': step_data['email'],
+                                'first_name': step_data.get('first_name', ''),
+                                'last_name': step_data.get('last_name', ''),
+                                'role': 'CLIENT',
+                                'is_active': True,
+                                # Don't set password - UserService will set unusable password
+                            }
+                            
+                            user = UserService.create_user(user_data)
+                            
+                            # Update session with new user
+                            session.client = user
+                            print(f"DEBUG: Created new client user: {user.email}")
+                        
+                    except Exception as e:
+                        print(f"DEBUG: Failed to create/associate client user: {str(e)}")
+                        logger.error(f"Failed to create/associate client user for session {session.session_id}: {str(e)}")
+                
+                # Check if this is a confirmation step with create_event_immediately=True
+                if (session.current_step and 
+                    session.current_step.step_type == 'confirmation' and 
+                    hasattr(session.current_step, 'confirmation_config') and 
+                    session.current_step.confirmation_config and
+                    session.current_step.confirmation_config.create_event_immediately):
+                    
+                    print(f"DEBUG: Confirmation step completed with create_event_immediately=True - creating event")
+                    try:
+                        # Ensure we have a client before creating event
+                        if not session.client:
+                            raise Exception("No client associated with session")
+                        
+                        # Create event immediately
+                        event = BookingSessionService._create_event_from_session(session)
+                        session.created_event = event
+                        print(f"DEBUG: Event created immediately: {event.id}")
+                    except Exception as e:
+                        print(f"DEBUG: Failed to create event immediately: {str(e)}")
+                        logger.error(f"Failed to create event immediately for session {session.session_id}: {str(e)}")
+                
                 # Pass booking_data to check display conditions
                 next_step = session.booking_flow.get_next_step(
                     session.current_step.id,
                     session.booking_data  # ADD THIS
                 )
+                print(f"DEBUG: Current step: {session.current_step.name if session.current_step else 'None'}, Next step: {next_step.name if next_step else 'None'}")
+                
                 if next_step:
                     session.current_step = next_step
                 else:
                     # No more steps - booking flow is complete
                     session.is_completed = True
                     session.completed_at = timezone.now()
+                    logger.info(f"No more steps - marking session as completed")
             
             session.save()
             
