@@ -1,590 +1,233 @@
-// frontend/admin-crm/src/pages/settings/templates/WorkflowTemplates.tsx
+// Workflow Templates Settings Page - Standardized Version
+// Migrated to use the unified settings system
 
-import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Alert,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  InputAdornment,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  FilterList as FilterIcon,
-  Refresh as RefreshIcon,
-  AccountTree as WorkflowIcon,
-  Search as SearchIcon,
-  List as ListIcon,
-  Edit as EditIcon,
-} from '@mui/icons-material';
-import { useLayout } from '../../../contexts/LayoutContext';
+import React from 'react';
+import { AccountTree as WorkflowIcon } from '@mui/icons-material';
+import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
 import { useEventTypes } from '../../../hooks/useEvents';
-import { WorkflowTemplatesTable } from '../../../components/workflows/WorkflowTemplatesTable';
-import { WorkflowTemplateForm } from '../../../components/workflows/WorkflowTemplateForm';
-import { WorkflowVisualization } from '../../../components/workflows/WorkflowVisualization';
-import type { 
-  WorkflowTemplate, 
-  WorkflowTemplateFilters,
-  CreateWorkflowTemplateData,
-  UpdateWorkflowTemplateData 
-} from '../../../types/workflows.types';
+import type { WorkflowTemplate, CreateWorkflowTemplateData, UpdateWorkflowTemplateData } from '../../../types/workflows.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 
-// Modern Design System imports
-import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
-import { ModernCard } from '../../../components/common/ModernCard';
-import { ModernPageHeader, createAddAction, createRefreshAction } from '../../../components/common/ModernPageHeader';
-import { ModernEmptyState } from '../../../components/common/ModernEmptyState';
-import ModernLoadingStates from '../../../components/common/ModernLoadingStates';
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
+// Table columns configuration
+const columns: SettingsTableColumn<WorkflowTemplate>[] = [
+  {
+    key: 'name',
+    label: 'Workflow Name',
+    sortable: true,
+    searchable: true,
+  },
+  {
+    key: 'event_type_name',
+    label: 'Event Type',
+    render: (value) => {
+      const eventTypeName = value as WorkflowTemplate['event_type_name'];
+      return eventTypeName || 'Any Event Type';
+    },
+  },
+  {
+    key: 'stages_count',
+    label: 'Stages',
+    align: 'center',
+    render: (value) => String(value || 0),
+  },
+  {
+    key: 'is_active',
+    label: 'Status',
+    align: 'center',
+    render: (value) => value ? 'Active' : 'Inactive',
+  },
+  {
+    key: 'updated_at',
+    label: 'Last Modified',
+    sortable: true,
+    render: (value) => value ? new Date(String(value)).toLocaleDateString() : '-',
+  },
+];
 
-type ViewMode = 'list' | 'create' | 'edit' | 'view';
+// Create form sections dynamically with event types
+const createFormSections = (eventTypes: Array<{ id: number; name: string }>): ModernFormSection[] => [
+  {
+    title: 'Basic Information',
+    fields: [
+      {
+        name: 'name',
+        label: 'Workflow Name',
+        type: 'text',
+        required: true,
+        placeholder: 'e.g., Wedding Photography Workflow',
+        helperText: 'A descriptive name for this workflow template',
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
+        multiline: true,
+        rows: 3,
+        placeholder: 'Describe the purpose and scope of this workflow...',
+        helperText: 'Optional description for internal reference',
+      },
+      {
+        name: 'event_type',
+        label: 'Event Type',
+        type: 'select',
+        helperText: 'Leave empty to use for any event type',
+        options: [
+          { value: '', label: 'Any Event Type' },
+          ...eventTypes.map(et => ({ value: et.id, label: et.name })),
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Settings',
+    fields: [
+      {
+        name: 'is_active',
+        label: 'Active',
+        type: 'switch',
+        helperText: 'Active workflows are available for selection when creating events',
+      },
+    ],
+  },
+];
 
-export const WorkflowTemplates: React.FC = () => {
-  const { setBreadcrumbs } = useLayout();
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [filters, setFilters] = useState<WorkflowTemplateFilters>({});
-  const [editingTemplate, setEditingTemplate] = useState<WorkflowTemplate | null>(null);
-  const [viewingTemplate, setViewingTemplate] = useState<WorkflowTemplate | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [templateToDelete, setTemplateToDelete] = useState<WorkflowTemplate | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearchField, setShowSearchField] = useState(false);
+// Default values for new workflow templates
+const defaultWorkflowTemplate: WorkflowTemplate = {
+  id: 0,
+  name: '',
+  description: '',
+  event_type: null,
+  event_type_name: '',
+  is_active: true,
+  stages_count: 0,
+  stages: [],
+  created_at: '',
+  updated_at: '',
+};
 
+export const WorkflowTemplates = () => {
+  // Get workflows
   const {
-    templates,
+    templates = [],
     isLoadingTemplates,
+    templatesError,
     createTemplate,
     updateTemplate,
     deleteTemplate,
-    isDeletingTemplate,
     refetchTemplates,
-    useWorkflowTemplate,
-  } = useWorkflowTemplates(filters);
+    isCreatingTemplate,
+    isUpdatingTemplate,
+    isDeletingTemplate,
+  } = useWorkflowTemplates();
 
-  const { useActiveEventTypes } = useEventTypes();
-  const { data: _eventTypes = [] } = useActiveEventTypes();
+  // Get event types for the form dropdown
+  const { eventTypes = [] } = useEventTypes();
 
-  // Hook to fetch detailed template data when editing/viewing
-  const { 
-    data: detailedTemplate, 
-    isLoading: isLoadingDetails 
-  } = useWorkflowTemplate(editingTemplate?.id || viewingTemplate?.id || 0);
+  // Settings page configuration
+  const config: SettingsPageConfig<WorkflowTemplate> = {
+    page: {
+      title: 'Workflow Templates',
+      subtitle: 'Manage workflow templates to standardize your event processes',
+      icon: React.createElement(WorkflowIcon),
+      breadcrumbs: [
+        { label: 'Settings', href: '/settings' },
+        { label: 'Templates', href: '/settings/templates' },
+        { label: 'Workflow Templates' },
+      ],
+    },
 
-  useEffect(() => {
-    const baseBreadcrumbs = [
-      { label: 'Settings' },
-      { label: 'Templates' },
-      { label: 'Workflow Templates' },
-    ];
+    table: {
+      columns,
+      searchFields: ['name', 'description'],
+      defaultSort: { key: 'name', order: 'asc' },
+      emptyState: {
+        icon: React.createElement(WorkflowIcon),
+        title: 'No Workflow Templates Found',
+        description: 'Create your first workflow template to standardize your event processes.',
+      },
+    },
 
-    if (viewMode === 'create') {
-      setBreadcrumbs([...baseBreadcrumbs, { label: 'Create Template' }]);
-    } else if (viewMode === 'edit' && editingTemplate) {
-      setBreadcrumbs([...baseBreadcrumbs, { label: editingTemplate.name }]);
-    } else if (viewMode === 'view' && viewingTemplate) {
-      setBreadcrumbs([...baseBreadcrumbs, { label: viewingTemplate.name }]);
-    } else {
-      setBreadcrumbs(baseBreadcrumbs);
-    }
-  }, [setBreadcrumbs, viewMode, editingTemplate, viewingTemplate]);
+    form: {
+      title: 'Workflow Template',
+      subtitle: 'Configure workflow settings. Stages can be managed after creation.',
+      sections: createFormSections(eventTypes),
+      maxWidth: 'lg',
+    },
 
-
-  const handleClearFilters = () => {
-    setFilters({});
-    setSearchQuery('');
+    features: {
+      create: true,
+      edit: true,
+      delete: true,
+      duplicate: true,
+      search: true,
+      refresh: true,
+    },
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    // Update filters to include search
-    setFilters(prev => ({
-      ...prev,
-      search: query || undefined
-    }));
-  };
+  // Action handlers
+  const handleRefresh = () => refetchTemplates();
 
-  const handleToggleSearch = () => {
-    setShowSearchField(!showSearchField);
-    if (!showSearchField) {
-      setSearchQuery('');
-      setFilters(prev => ({ ...prev, search: undefined }));
-    }
-  };
-
-  const handleCreateNew = () => {
-    setEditingTemplate(null);
-    setViewMode('create');
-  };
-
-  const handleEdit = (template: WorkflowTemplate) => {
-    setEditingTemplate(template);
-    setViewMode('edit');
-  };
-
-  const handleView = (template: WorkflowTemplate) => {
-    setViewingTemplate(template);
-    setViewMode('view');
-  };
-
-  const handleDelete = (id: number) => {
-    const template = templates.find(t => t.id === id);
-    if (template) {
-      setTemplateToDelete(template);
-      setDeleteDialogOpen(true);
-    }
-  };
-
-  const handleDeleteConfirm = () => {
-    if (templateToDelete) {
-      deleteTemplate(templateToDelete.id, {
-        onSuccess: () => {
-          setDeleteDialogOpen(false);
-          setTemplateToDelete(null);
-        }
-      });
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setTemplateToDelete(null);
-  };
-
-  const handleBackToList = () => {
-    setViewMode('list');
-    setEditingTemplate(null);
-    setViewingTemplate(null);
-  };
-
-  const handleFormSave = (data: CreateWorkflowTemplateData | UpdateWorkflowTemplateData) => {
-    if (editingTemplate) {
-      updateTemplate({ 
-        id: editingTemplate.id, 
-        data: data as UpdateWorkflowTemplateData 
-      }, {
-        onSuccess: () => {
-          handleBackToList();
-        }
-      });
-    } else {
-      createTemplate(data as CreateWorkflowTemplateData, {
-        onSuccess: () => {
-          handleBackToList();
-        }
-      });
-    }
-  };
-
-  const handleDuplicate = (template: WorkflowTemplate) => {
-    const duplicateData: CreateWorkflowTemplateData = {
-      name: `${template.name} (Copy)`,
-      description: template.description,
-      event_type: template.event_type,
-      is_active: template.is_active,
+  const handleCreate = async (data: WorkflowTemplate) => {
+    const createData: CreateWorkflowTemplateData = {
+      name: data.name,
+      description: data.description,
+      event_type: data.event_type,
+      is_active: data.is_active,
     };
 
-    createTemplate(duplicateData);
-  };
-
-  const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
-
-  // Modern header actions for different view modes
-  const getHeaderActions = () => {
-    const actions = [];
-    
-    if (viewMode === 'list') {
-      actions.push(createAddAction('New Template', handleCreateNew, 'primary'));
-      actions.push({
-        icon: <SearchIcon />,
-        label: showSearchField ? 'Hide Search' : 'Search',
-        onClick: handleToggleSearch,
-        variant: 'icon' as const,
-        tooltip: showSearchField ? 'Hide search field' : 'Search workflow templates',
+    return new Promise<void>((resolve, reject) => {
+      createTemplate(createData, {
+        onSuccess: () => resolve(),
+        onError: reject,
       });
-      actions.push(createRefreshAction(() => refetchTemplates()));
-      if (hasActiveFilters) {
-        actions.push({
-          icon: <FilterIcon />,
-          label: 'Clear Filters',
-          variant: 'outlined' as const,
-          onClick: handleClearFilters,
-          tooltip: 'Clear all active filters',
-        });
-      }
-    } else {
-      actions.push({
-        icon: <ListIcon />,
-        label: 'Back to List',
-        variant: 'outlined' as const,
-        onClick: handleBackToList,
-        tooltip: 'Return to template list',
+    });
+  };
+
+  const handleUpdate = async (id: string | number, data: WorkflowTemplate) => {
+    const updateData: UpdateWorkflowTemplateData = {
+      name: data.name,
+      description: data.description,
+      event_type: data.event_type,
+      is_active: data.is_active,
+    };
+
+    return new Promise<void>((resolve, reject) => {
+      updateTemplate({
+        id: Number(id),
+        data: updateData
+      }, {
+        onSuccess: () => resolve(),
+        onError: reject,
       });
-      if (viewMode === 'view' && viewingTemplate) {
-        actions.push({
-          icon: <EditIcon />,
-          label: 'Edit Template',
-          variant: 'contained' as const,
-          onClick: () => handleEdit(viewingTemplate),
-          color: 'primary' as const,
-        });
-      }
-    }
-    
-    return actions;
+    });
   };
 
-  const getHeaderTitle = () => {
-    switch (viewMode) {
-      case 'create':
-        return 'Create Workflow Template';
-      case 'edit':
-        return `Edit Template: ${editingTemplate?.name || ''}`;
-      case 'view':
-        return `View Template: ${viewingTemplate?.name || ''}`;
-      default:
-        return 'Workflow Templates';
-    }
+  const handleDelete = async (id: string | number) => {
+    return new Promise<void>((resolve, reject) => {
+      deleteTemplate(Number(id), {
+        onSuccess: () => resolve(),
+        onError: reject,
+      });
+    });
   };
 
-  const getHeaderSubtitle = () => {
-    switch (viewMode) {
-      case 'create':
-        return 'Create a new workflow template to automate event processes';
-      case 'edit':
-        return 'Modify the workflow template stages and automation rules';
-      case 'view':
-        return 'Review the workflow template structure and stages';
-      default:
-        return 'Create and manage workflow templates to automate event processes';
-    }
-  };
-
-  // Form view (create or edit)
-  if (viewMode === 'create' || viewMode === 'edit') {
-    return (
-      <ModernSettingsLayout>
-        <ModernPageHeader
-          title={getHeaderTitle()}
-          subtitle={getHeaderSubtitle()}
-          icon={<WorkflowIcon />}
-          breadcrumbs={[
-            { label: 'Settings' },
-            { label: 'Templates' },
-            { label: 'Workflow Templates' },
-            { label: viewMode === 'create' ? 'Create Template' : editingTemplate?.name || 'Edit' },
-          ]}
-          secondaryActions={getHeaderActions()}
-          size="medium"
-          gradient
-          glass
-        />
-
-        <ModernCard
-          variant="glass"
-          size="large"
-          animation="none"
-          sx={{ overflow: 'visible' }}
-        >
-          <WorkflowTemplateForm
-            template={detailedTemplate || editingTemplate || undefined}
-            onSave={handleFormSave}
-            onCancel={handleBackToList}
-          />
-        </ModernCard>
-      </ModernSettingsLayout>
-    );
-  }
-
-  // View mode
-  if (viewMode === 'view') {
-    return (
-      <ModernSettingsLayout>
-        <ModernPageHeader
-          title={getHeaderTitle()}
-          subtitle={getHeaderSubtitle()}
-          icon={<WorkflowIcon />}
-          breadcrumbs={[
-            { label: 'Settings' },
-            { label: 'Templates' },
-            { label: 'Workflow Templates' },
-            { label: viewingTemplate?.name || 'View' },
-          ]}
-          secondaryActions={getHeaderActions()}
-          size="medium"
-          gradient
-          glass
-        />
-
-        <ModernCard
-          variant="glass"
-          size="large"
-          animation="none"
-          sx={{ overflow: 'visible' }}
-        >
-          {isLoadingDetails ? (
-            <ModernLoadingStates.ModernLoadingSpinner
-              size={40}
-              message="Loading template details..."
-              variant="circular"
-              glass
-            />
-          ) : detailedTemplate ? (
-            <WorkflowVisualization template={detailedTemplate} />
-          ) : (
-            <ModernEmptyState
-              icon={WorkflowIcon}
-              title="Failed to Load Template"
-              description="Unable to load template details. Please try refreshing the page."
-              variant="error"
-              primaryAction={{
-                label: "Refresh",
-                onClick: () => window.location.reload(),
-                icon: <RefreshIcon />,
-                color: "error",
-              }}
-              size="medium"
-            />
-          )}
-        </ModernCard>
-      </ModernSettingsLayout>
-    );
-  }
-
-  // List view
   return (
-    <ModernSettingsLayout>
-      <ModernPageHeader
-        title={getHeaderTitle()}
-        subtitle={getHeaderSubtitle()}
-        icon={<WorkflowIcon />}
-        breadcrumbs={[
-          { label: 'Settings' },
-          { label: 'Templates' },
-          { label: 'Workflow Templates' },
-        ]}
-        primaryAction={getHeaderActions().find(a => a.label === 'New Template')}
-        secondaryActions={getHeaderActions().filter(a => a.label !== 'New Template')}
-        stats={[
-          { label: 'Total Templates', value: templates.length },
-          { label: 'Active', value: templates.filter(t => t.is_active).length },
-        ]}
-        size="medium"
-        gradient
-        glass
-      />
-
-      <Box sx={{ mb: 4 }}>
-        <ModernCard
-          variant="glass"
-          color="primary"
-          size="small"
-          animation="none"
-        >
-          <Alert 
-            severity="info"
-            sx={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              '& .MuiAlert-message': {
-                color: tokens.color.primary[700],
-              },
-            }}
-          >
-            Workflow templates define the stages and automated actions that events progress through from lead to completion.
-          </Alert>
-        </ModernCard>
-      </Box>
-
-      {/* Search Field - Conditionally Shown */}
-      {showSearchField && (
-        <Box sx={{ mb: 4 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="fade"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-              },
-            }}
-          >
-            <Box sx={{ position: 'relative' }}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: tokens.color.neutral[800],
-                  fontWeight: 600,
-                  mb: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                Search Workflow Templates
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: tokens.color.neutral[600],
-                  mb: 3,
-                }}
-              >
-                Find templates by name, description, event type, or workflow stages
-              </Typography>
-
-              <TextField
-                fullWidth
-                placeholder="Search by name, description, event type..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                autoFocus
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.lg,
-                    border: `1px solid ${tokens.color.borders.glass}`,
-                    '&:hover': {
-                      border: `1px solid ${tokens.color.primary[300]}`,
-                    },
-                    '&.Mui-focused': {
-                      border: `1px solid ${tokens.color.primary[500]}`,
-                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                    },
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-          </ModernCard>
-        </Box>
-      )}
-
-      <ModernCard
-        variant="glass"
-        size="large"
-        animation="none"
-        sx={{ overflow: 'visible', mb: 4 }}
-      >
-        {isLoadingTemplates ? (
-          <ModernLoadingStates.ModernTableSkeleton
-            rows={5}
-            columns={6}
-          />
-        ) : templates.length === 0 ? (
-          <ModernEmptyState
-            icon={WorkflowIcon}
-            title={hasActiveFilters ? 'No templates match your filters' : 'No workflow templates found'}
-            description={hasActiveFilters 
-              ? 'Try adjusting your search criteria or clear the filters'
-              : 'Create your first workflow template to automate event processes'
-            }
-            primaryAction={{
-              label: hasActiveFilters ? 'Clear Filters' : 'Create Template',
-              onClick: hasActiveFilters ? handleClearFilters : handleCreateNew,
-              icon: hasActiveFilters ? <FilterIcon /> : <AddIcon />,
-              color: 'primary',
-            }}
-            tip={{
-              text: 'Workflow templates help streamline event management and ensure consistent processes',
-              type: 'info',
-            }}
-            size="medium"
-            illustration="gradient"
-          />
-        ) : (
-          <WorkflowTemplatesTable
-            templates={templates}
-            isLoading={isLoadingTemplates}
-            onEdit={handleEdit}
-            onView={handleView}
-            onDelete={handleDelete}
-            onDuplicate={handleDuplicate}
-            isDeleting={isDeletingTemplate}
-          />
-        )}
-      </ModernCard>
-
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleDeleteCancel}
-        PaperProps={{
-          sx: {
-            ...glassPresets.light,
-            borderRadius: tokens.spacing.radius.xxl,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
-          },
-        }}
-      >
-        <DialogTitle 
-          sx={{ 
-            background: `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[500]} 100%)`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            color: 'transparent',
-            fontWeight: 700,
-          }}
-        >
-          Delete Workflow Template
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ color: tokens.color.neutral[700] }}>
-            Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ p: 3, gap: 2 }}>
-          <Button 
-            onClick={handleDeleteCancel} 
-            disabled={isDeletingTemplate}
-            sx={{
-              ...glassPresets.light,
-              border: `1px solid ${tokens.color.neutral[300]}`,
-              borderRadius: tokens.spacing.radius.full,
-              px: 3,
-              '&:hover': {
-                ...glassPresets.medium,
-              },
-            }}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
-            color="error" 
-            variant="contained"
-            disabled={isDeletingTemplate}
-            sx={{
-              background: `linear-gradient(135deg, ${tokens.color.error[500]} 0%, ${tokens.color.error[600]} 100%)`,
-              borderRadius: tokens.spacing.radius.full,
-              px: 4,
-              boxShadow: `0 8px 32px ${tokens.color.error[500]}25`,
-              '&:hover': {
-                background: `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[700]} 100%)`,
-                boxShadow: `0 12px 40px ${tokens.color.error[500]}35`,
-              },
-            }}
-          >
-            {isDeletingTemplate ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </ModernSettingsLayout>
+    <SettingsPage
+      config={config}
+      data={templates}
+      defaultValues={defaultWorkflowTemplate}
+      isLoading={isLoadingTemplates}
+      error={templatesError?.message}
+      onRefresh={handleRefresh}
+      onCreate={handleCreate}
+      onUpdate={handleUpdate}
+      onDelete={handleDelete}
+      isCreating={isCreatingTemplate}
+      isUpdating={isUpdatingTemplate}
+      isDeleting={isDeletingTemplate}
+    />
   );
 };
+
+export default WorkflowTemplates;
