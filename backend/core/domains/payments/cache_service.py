@@ -51,6 +51,7 @@ class PaymentsCacheService:
     PAYMENT_METHOD_DETAIL_KEY = "payments:method:detail:{method_id}"
     PAYMENT_GATEWAY_LIST_KEY = "payments:gateways:list"
     PAYMENT_GATEWAY_ACTIVE_KEY = "payments:gateways:active"
+    PAYMENT_GATEWAY_DETAIL_KEY = "payments:gateway:detail:{gateway_id}"
     
     REFUND_LIST_KEY = "payments:refunds:list:{query_hash}"
     REFUND_DETAIL_KEY = "payments:refund:detail:{refund_id}"
@@ -531,12 +532,9 @@ class PaymentsCacheService:
         """Invalidate payment gateway caches"""
         keys_to_delete = [
             self.PAYMENT_GATEWAY_DETAIL_KEY.format(gateway_id=gateway_id),
-            self.PAYMENT_GATEWAYS_LIST_KEY,
+            self.PAYMENT_GATEWAY_LIST_KEY,
+            self.PAYMENT_GATEWAY_ACTIVE_KEY,
         ]
-        
-        # Clear all payment method caches that use this gateway
-        pattern = self.PAYMENT_METHODS_BY_GATEWAY_KEY.format(gateway_id=gateway_id)
-        self.cache.delete(pattern)
         
         self.cache.delete_many(keys_to_delete)
         logger.info(f"Invalidated payment gateway caches for gateway_id: {gateway_id}")
@@ -630,7 +628,40 @@ class PaymentsCacheService:
         self._invalidate_cache_patterns(patterns_to_invalidate)
         logger.info(f"Invalidated payment plan caches for plan_id: {plan_id}")
     
-    def invalidate_payment_method_caches(self, method_id: int = None, user_id: int = None):
+    def invalidate_transaction_caches(self, transaction_id: int = None, payment_id: int = None, gateway_id: int = None):
+        """Invalidate transaction-related caches"""
+        patterns_to_invalidate = [
+            f"payments:transactions:list:*"
+        ]
+        
+        if payment_id:
+            patterns_to_invalidate.append(
+                self.TRANSACTION_BY_PAYMENT_KEY.format(payment_id=payment_id)
+            )
+        
+        self._invalidate_cache_patterns(patterns_to_invalidate)
+        logger.info(f"Invalidated transaction caches for transaction_id: {transaction_id}, payment_id: {payment_id}")
+    
+    def invalidate_refund_caches(self, refund_id: int = None, payment_id: int = None):
+        """Invalidate refund-related caches"""
+        patterns_to_invalidate = [
+            f"payments:refunds:list:*"
+        ]
+        
+        if refund_id:
+            patterns_to_invalidate.append(
+                self.REFUND_DETAIL_KEY.format(refund_id=refund_id)
+            )
+        
+        if payment_id:
+            patterns_to_invalidate.append(
+                self.REFUND_BY_PAYMENT_KEY.format(payment_id=payment_id)
+            )
+        
+        self._invalidate_cache_patterns(patterns_to_invalidate)
+        logger.info(f"Invalidated refund caches for refund_id: {refund_id}, payment_id: {payment_id}")
+
+    def invalidate_payment_method_caches(self, method_id: int = None, user_id: int = None, gateway_id: int = None):
         """Invalidate payment method caches"""
         patterns_to_invalidate = []
         
@@ -674,6 +705,10 @@ class PaymentsCacheService:
         ]
         self._invalidate_cache_patterns(patterns_to_invalidate)
         logger.info("Invalidated financial analytics caches")
+    
+    def invalidate_all_financial_analytics_caches(self):
+        """Invalidate all financial analytics caches (alias for backward compatibility)"""
+        self.invalidate_financial_analytics_caches()
     
     def invalidate_all_payment_caches(self):
         """Invalidate all payment-related caches"""

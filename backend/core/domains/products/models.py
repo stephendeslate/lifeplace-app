@@ -2,6 +2,7 @@
 from core.utils.models import BaseModel
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils.text import slugify
 
 
 class ProductCategory(BaseModel):
@@ -39,6 +40,22 @@ class ProductCategory(BaseModel):
         if self.parent:
             return self.parent.level + 1
         return 0
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            # Generate slug from name
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+            
+            # Ensure slug uniqueness
+            while ProductCategory.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            
+            self.slug = slug
+        
+        super().save(*args, **kwargs)
 
 
 class ProductOption(BaseModel):
