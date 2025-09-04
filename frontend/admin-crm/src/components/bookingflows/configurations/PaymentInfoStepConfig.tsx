@@ -36,6 +36,7 @@ import {
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
+import { getCurrencySymbol } from '../../../utils/currency';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import type { 
   BookingFlowStep, 
@@ -74,25 +75,41 @@ interface PaymentInfoConfigFormData {
   accept_deposit: boolean;
   deposit_type: 'PERCENTAGE' | 'FIXED';
   deposit_amount: string;
+  balance_due_days: string;
+  allow_refunds: boolean;
+  refund_deadline_days: string;
+  refund_percentage: string;
+  refund_policy_text: string;
   available_payment_methods: string[];
   require_immediate_payment: boolean;
   allowed_gateways: number[];
   default_gateway: number | null;
   allow_payment_plans: boolean;
   payment_terms: string;
+  allow_quote_request: boolean;
+  quote_request_button_text: string;
+  quote_request_description: string;
 }
 
 const defaultFormData: PaymentInfoConfigFormData = {
   accept_full_payment: true,
   accept_deposit: true,
   deposit_type: 'PERCENTAGE',
-  deposit_amount: '25',
+  deposit_amount: '30', // Better default for conversion
+  balance_due_days: '30',
+  allow_refunds: true,
+  refund_deadline_days: '48',
+  refund_percentage: '100',
+  refund_policy_text: '',
   available_payment_methods: ['CREDIT_CARD', 'BANK_TRANSFER'],
   require_immediate_payment: false,
   allowed_gateways: [],
   default_gateway: null,
   allow_payment_plans: false,
   payment_terms: '',
+  allow_quote_request: true,
+  quote_request_button_text: 'Get Custom Quote',
+  quote_request_description: 'Perfect for unique celebrations with custom requirements',
 };
 
 const PAYMENT_METHODS = [
@@ -138,12 +155,20 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
         accept_deposit: config.accept_deposit ?? true,
         deposit_type: config.deposit_type || 'PERCENTAGE',
         deposit_amount: config.deposit_amount?.toString() || '25',
+        balance_due_days: config.balance_due_days?.toString() || '30',
+        allow_refunds: config.allow_refunds ?? true,
+        refund_deadline_days: config.refund_deadline_days?.toString() || '48',
+        refund_percentage: config.refund_percentage?.toString() || '100',
+        refund_policy_text: config.refund_policy_text || '',
         available_payment_methods: config.available_payment_methods || ['CREDIT_CARD', 'BANK_TRANSFER'],
         require_immediate_payment: config.require_immediate_payment ?? false,
         allowed_gateways: config.allowed_gateways || [],
         default_gateway: config.default_gateway || null,
         allow_payment_plans: config.allow_payment_plans ?? false,
         payment_terms: config.payment_terms || '',
+        allow_quote_request: config.allow_quote_request ?? true,
+        quote_request_button_text: config.quote_request_button_text || 'Request Quote',
+        quote_request_description: config.quote_request_description || 'Get a customized quote for your event',
       });
     }
   }, [config]);
@@ -254,12 +279,20 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
       accept_deposit: formData.accept_deposit,
       deposit_type: formData.deposit_type,
       deposit_amount: formData.deposit_amount,
+      balance_due_days: parseInt(formData.balance_due_days) || 30,
+      allow_refunds: formData.allow_refunds,
+      refund_deadline_days: parseInt(formData.refund_deadline_days) || 48,
+      refund_percentage: parseInt(formData.refund_percentage) || 100,
+      refund_policy_text: formData.refund_policy_text.trim() || '',
       available_payment_methods: formData.available_payment_methods,
       require_immediate_payment: formData.require_immediate_payment,
       allowed_gateways: formData.allowed_gateways,
       default_gateway: formData.default_gateway,
       allow_payment_plans: formData.allow_payment_plans,
       payment_terms: formData.payment_terms.trim() || '',
+      allow_quote_request: formData.allow_quote_request,
+      quote_request_button_text: formData.quote_request_button_text.trim() || 'Request Quote',
+      quote_request_description: formData.quote_request_description.trim() || '',
     };
 
     onUpdate(updateData);
@@ -353,7 +386,7 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
               <Typography variant="subtitle1" gutterBottom>
                 Deposit Settings
               </Typography>
-              
+        
               <Stack spacing={2}>
                 <FormControl>
                   <Typography variant="body2" gutterBottom>
@@ -366,7 +399,7 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                     <FormControlLabel
                       value="PERCENTAGE"
                       control={<Radio />}
-                      label="Percentage of Total"
+                      label="Percentage of Total (Recommended)"
                     />
                     <FormControlLabel
                       value="FIXED"
@@ -381,7 +414,13 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                   value={formData.deposit_amount}
                   onChange={handleInputChange('deposit_amount')}
                   error={!!errors.deposit_amount}
-                  helperText={errors.deposit_amount || `Enter the ${formData.deposit_type === 'PERCENTAGE' ? 'percentage' : 'fixed amount'} for the deposit`}
+                  helperText={
+                    errors.deposit_amount || 
+                    `${formData.deposit_type === 'PERCENTAGE' 
+                      ? 'Sweet spot: 25-35% for most event types' 
+                      : 'Consider your typical booking value'
+                    }`
+                  }
                   type="number"
                   inputProps={{ 
                     min: 0,
@@ -391,9 +430,22 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
-                        {formData.deposit_type === 'PERCENTAGE' ? '%' : '$'}
+                        {formData.deposit_type === 'PERCENTAGE' ? '%' : getCurrencySymbol(currencySettings?.defaultCurrency)}
                       </InputAdornment>
                     ),
+                  }}
+                  sx={{ maxWidth: 300 }}
+                />
+
+                <TextField
+                  label="Balance Due (Days Before Event)"
+                  value={formData.balance_due_days}
+                  onChange={handleInputChange('balance_due_days')}
+                  helperText="How many days before the event is the balance due?"
+                  type="number"
+                  inputProps={{ min: 1, max: 365 }}
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">days</InputAdornment>
                   }}
                   sx={{ maxWidth: 300 }}
                 />
@@ -401,6 +453,68 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
             </Box>
           </ModernCard>
         )}
+
+        {/* Refund Configuration */}
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Refund Policy
+            </Typography>
+            
+            <Stack spacing={3}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.allow_refunds}
+                    onChange={handleInputChange('allow_refunds')}
+                  />
+                }
+                label="Allow Refunds"
+                sx={{ mb: 2 }}
+              />
+
+              {formData.allow_refunds && (
+                <Stack spacing={3}>
+                  <TextField
+                    label="Refund Deadline (Hours Before Event)"
+                    value={formData.refund_deadline_days}
+                    onChange={handleInputChange('refund_deadline_days')}
+                    helperText="How many hours before the event are refunds allowed?"
+                    type="number"
+                    inputProps={{ min: 1, max: 8760 }}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">hours</InputAdornment>
+                    }}
+                    sx={{ maxWidth: 300 }}
+                  />
+
+                  <TextField
+                    label="Refund Percentage"
+                    value={formData.refund_percentage}
+                    onChange={handleInputChange('refund_percentage')}
+                    helperText="What percentage of the payment can be refunded?"
+                    type="number"
+                    inputProps={{ min: 0, max: 100 }}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">%</InputAdornment>
+                    }}
+                    sx={{ maxWidth: 300 }}
+                  />
+
+                  <TextField
+                    label="Custom Refund Policy Text"
+                    value={formData.refund_policy_text}
+                    onChange={handleInputChange('refund_policy_text')}
+                    helperText="Optional custom refund policy text to display to clients"
+                    multiline
+                    rows={3}
+                    placeholder="e.g., Full refund available up to 48 hours before your event..."
+                  />
+                </Stack>
+              )}
+            </Stack>
+          </Box>
+        </ModernCard>
 
         {/* Payment Methods */}
         <ModernCard variant="glass" size="medium" animation="none">
@@ -591,6 +705,66 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
           </Box>
         </ModernCard>
 
+        {/* Quote Request Options */}
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <CheckIcon color="primary" />
+              <Typography variant="subtitle1">
+                Quote Request Options
+              </Typography>
+            </Box>
+            
+            <Stack spacing={2}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.allow_quote_request}
+                      onChange={handleSwitchChange('allow_quote_request')}
+                    />
+                  }
+                  label="Allow Quote Requests"
+                />
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                Allow clients to request quotes for custom requirements. The primary option will always be "Secure Your Date" with deposit payment.
+              </Typography>
+
+              {formData.allow_quote_request && (
+                <>
+                  <Alert severity="info" sx={{ my: 2 }}>
+                    <Typography variant="body2">
+                      <strong>Deposit-First Strategy:</strong> Quote requests appear as a secondary option below the prominent "Secure Your Date" button. This maximizes conversions while providing flexibility for custom bookings.
+                    </Typography>
+                  </Alert>
+
+                  <TextField
+                    label="Quote Request Button Text"
+                    value={formData.quote_request_button_text}
+                    onChange={handleInputChange('quote_request_button_text')}
+                    fullWidth
+                    helperText="Keep it focused on custom needs (e.g., 'Get Custom Quote', 'Need Something Unique?')"
+                    placeholder="Get Custom Quote"
+                    sx={{ maxWidth: 400 }}
+                  />
+
+                  <TextField
+                    label="Quote Request Description"
+                    value={formData.quote_request_description}
+                    onChange={handleInputChange('quote_request_description')}
+                    fullWidth
+                    multiline
+                    rows={2}
+                    helperText="Explain when quotes are needed - focus on unique/custom requirements"
+                    placeholder="Perfect for unique celebrations with custom requirements"
+                  />
+                </>
+              )}
+            </Stack>
+          </Box>
+        </ModernCard>
+
         {/* Payment Terms */}
         <ModernCard variant="glass" size="medium" animation="none">
           <Box sx={{ p: 3 }}>
@@ -648,6 +822,14 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 <strong>Processing:</strong>{' '}
                 {formData.require_immediate_payment ? 'Immediate' : 'Deferred'}
                 {formData.allow_payment_plans && ', Payment plans allowed'}
+              </Typography>
+              
+              <Typography variant="body2">
+                <strong>Quote Requests:</strong>{' '}
+                {formData.allow_quote_request ? 'Enabled' : 'Disabled'}
+                {formData.allow_quote_request && formData.quote_request_button_text && (
+                  <span> ("{formData.quote_request_button_text}")</span>
+                )}
               </Typography>
               
               {formData.payment_terms && (

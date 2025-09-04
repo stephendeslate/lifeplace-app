@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/PaymentStep.tsx
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Box,
   Typography,
@@ -11,13 +11,17 @@ import {
   Alert,
   Divider,
   CircularProgress,
+  Button,
+  Card,
+  CardContent,
+  CardActions,
 } from '@mui/material';
-import { CreditCard } from '@mui/icons-material';
+import { CreditCard, Security, Schedule, CheckCircle } from '@mui/icons-material';
 import { 
   useFlowPaymentGateways,
-  usePaymentCalculations,
   useGatewaySelection
 } from '../../../hooks/booking/usePayment';
+import { useCurrentCurrency } from '../../../hooks/useCurrency';
 import { StripePaymentForm } from '../payment/StripePaymentForm';
 import type { 
   PaymentStepData, 
@@ -36,6 +40,8 @@ interface PaymentStepProps {
   onValidate?: (data: any) => Promise<StepValidationResult>;
 }
 
+type CompletionChoice = 'payment' | 'quote' | null;
+
 export const PaymentStep: React.FC<PaymentStepProps> = ({
   stepData = { payment_method: '', payment_type: 'FULL' },
   config,
@@ -46,6 +52,9 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   flowId,
   onValidate,
 }) => {
+  // State for tracking completion choice
+  const [completionChoice, setCompletionChoice] = useState<CompletionChoice>(null);
+  
   // Payment hooks
   const { 
     gateways: flowGateways, 
@@ -53,7 +62,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     error: gatewaysError 
   } = useFlowPaymentGateways(flowId);
 
-  const { formatAmount } = usePaymentCalculations();
+  const { currentCurrency, formatAmount: currencyFormatAmount } = useCurrentCurrency();
 
   // Gateway selection hook
   const {
@@ -65,24 +74,26 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   // Use props stepData as single source of truth
   const paymentData: PaymentStepData = useMemo(() => ({
     payment_method: stepData.payment_method || '',
-    payment_type: stepData.payment_type || 'FULL',
+    // Default to DEPOSIT if deposits are accepted and no explicit choice made
+    payment_type: stepData.payment_type || (config?.accept_deposit ? 'DEPOSIT' : 'FULL'),
     payment_gateway_id: stepData.payment_gateway_id,
     payment_method_id: stepData.payment_method_id,
     payment_method_token: stepData.payment_method_token,
     billing_address: stepData.billing_address,
     save_payment_method: stepData.save_payment_method || false,
-  }), [stepData]);
+  }), [stepData, config]);
 
   // Calculate amounts based on payment type
   const amounts = useMemo(() => {
     const total = parseFloat(totalAmount || '0');
     
+    // Always calculate deposit amount if deposits are accepted (for display purposes)
     let depositAmount = 0;
-    if (config?.accept_deposit && paymentData.payment_type === 'DEPOSIT') {
+    if (config?.accept_deposit) {
       if (config.deposit_type === 'PERCENTAGE') {
-        depositAmount = (total * parseFloat(config.deposit_amount)) / 100;
+        depositAmount = (total * parseFloat(config.deposit_amount || '0')) / 100;
       } else {
-        depositAmount = parseFloat(config.deposit_amount);
+        depositAmount = parseFloat(config.deposit_amount || '0');
       }
     }
 
@@ -94,12 +105,12 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
       deposit: depositAmount,
       dueNow,
       remaining,
-      formattedTotal: formatAmount(total),
-      formattedDeposit: formatAmount(depositAmount),
-      formattedDueNow: formatAmount(dueNow),
-      formattedRemaining: formatAmount(remaining),
+      formattedTotal: currencyFormatAmount(total),
+      formattedDeposit: currencyFormatAmount(depositAmount),
+      formattedDueNow: currencyFormatAmount(dueNow),
+      formattedRemaining: currencyFormatAmount(remaining),
     };
-  }, [totalAmount, paymentData.payment_type, config, formatAmount]);
+  }, [totalAmount, paymentData.payment_type, config, currencyFormatAmount]);
 
   // Update data helper
   const updateData = useCallback((updates: Partial<PaymentStepData>) => {
@@ -171,17 +182,236 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     );
   }
 
+  // Show completion choice if quote requests are enabled and no choice is made yet
+  if (config?.allow_quote_request && completionChoice === null) {
+    return (
+      <Box>
+        <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
+          Secure Your Booking
+        </Typography>
+        
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
+          Your date is popular - reserve it before someone else does!
+        </Typography>
+
+        {/* Primary Option - Secure with Deposit */}
+        <Card 
+          sx={{ 
+            mb: 3, 
+            border: 2, 
+            borderColor: 'primary.main', 
+            boxShadow: 3
+          }}
+        >
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Security color="primary" sx={{ fontSize: 40 }} />
+              <Box>
+                <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold' }}>
+                  Secure Your Date
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Reserve with {config?.accept_deposit ? amounts.formattedDeposit : amounts.formattedTotal}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                {config?.accept_deposit 
+                  ? `Pay a ${config.deposit_type === 'PERCENTAGE' ? config.deposit_amount + '%' : amounts.formattedDeposit} deposit now, balance due later`
+                  : 'Complete payment now for instant confirmation'
+                }
+              </Typography>
+              
+              {/* Trust Signals */}
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckCircle color="success" sx={{ fontSize: 16 }} />
+                  <Typography variant="body2" color="success.main">
+                    Price Locked In
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Schedule color="success" sx={{ fontSize: 16 }} />
+                  <Typography variant="body2" color="success.main">
+                    Date Reserved
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Security color="success" sx={{ fontSize: 16 }} />
+                  <Typography variant="body2" color="success.main">
+                    Secure Payment
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ 
+                backgroundColor: 'primary.50', 
+                p: 2, 
+                borderRadius: 1,
+                border: 1,
+                borderColor: 'primary.200'
+              }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  <strong>What happens next:</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  • Your date is immediately reserved<br/>
+                  • Receive instant booking confirmation<br/>
+                  {config?.accept_deposit && (
+                    <>• Balance of {amounts.formattedRemaining} due {config?.balance_due_days || 30} days before event<br/></>
+                  )}
+                  {config?.allow_refunds && (
+                    <>• {config.refund_percentage}% refund if cancelled within {config.refund_deadline_days} hours</>
+                  )}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Typography variant="h4" color="primary" sx={{ textAlign: 'center', fontWeight: 'bold', mb: 2 }}>
+              {config?.accept_deposit ? amounts.formattedDeposit : amounts.formattedTotal}
+              {config?.accept_deposit && (
+                <Typography variant="body1" component="span" color="text.secondary" sx={{ ml: 1 }}>
+                  deposit
+                </Typography>
+              )}
+            </Typography>
+          </CardContent>
+          
+          <CardActions sx={{ p: 3, pt: 0 }}>
+            <Button 
+              variant="contained" 
+              size="large"
+              fullWidth
+              onClick={() => {
+                if (config?.accept_deposit) {
+                  updateData({ payment_type: 'DEPOSIT' });
+                }
+                setCompletionChoice('payment');
+              }}
+              sx={{ py: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
+            >
+              🔒 Secure My Booking
+            </Button>
+          </CardActions>
+        </Card>
+
+        {/* Secondary Option - Custom Quote */}
+        <Box sx={{ textAlign: 'center', mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Need something unique or have special requirements?
+          </Typography>
+          
+          <Button 
+            variant="outlined" 
+            size="medium"
+            onClick={() => {
+              setCompletionChoice('quote');
+              updateData({ completion_type: 'quote' });
+            }}
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              py: 1,
+              textTransform: 'none',
+              fontWeight: 'normal'
+            }}
+          >
+            {config.quote_request_button_text || 'Get Custom Quote'} →
+          </Button>
+          
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+            {config.quote_request_description || 'Perfect for unique celebrations with custom requirements'}
+          </Typography>
+        </Box>
+
+        {/* Additional Trust Signals */}
+        <Paper sx={{ p: 2, backgroundColor: 'grey.50', textAlign: 'center' }}>
+          <Typography variant="caption" color="text.secondary">
+            🛡️ Secure SSL Payment • 💯 Satisfaction Guaranteed • ⭐ 500+ Happy Couples
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // If quote was selected, show confirmation
+  if (completionChoice === 'quote') {
+    return (
+      <Box>
+        <Typography variant="h5" gutterBottom>
+          Quote Request Submitted
+        </Typography>
+        
+        <Alert severity="info" sx={{ mb: 3 }}>
+          You have chosen to request a quote for your event. We'll prepare a customized quote and send it to you for review.
+        </Alert>
+
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Event Summary
+          </Typography>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography>Estimated Total:</Typography>
+            <Typography sx={{ fontWeight: 600 }}>
+              {amounts.formattedTotal}
+            </Typography>
+          </Box>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            This amount is an estimate. Your final quote may include additional customizations or adjustments based on your specific requirements.
+          </Typography>
+        </Paper>
+
+        <Button 
+          variant="outlined" 
+          onClick={() => setCompletionChoice(null)}
+          sx={{ mb: 2 }}
+        >
+          Back to Options
+        </Button>
+      </Box>
+    );
+  }
+
+  // Show payment flow (either immediate payment required or payment was chosen)
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
-        Payment Information
+      <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
+        {config?.allow_quote_request ? 'Complete Payment' : 'Secure Your Booking'}
       </Typography>
+      
+      {config?.allow_quote_request && (
+        <Button 
+          variant="text" 
+          onClick={() => setCompletionChoice(null)}
+          sx={{ mb: 2 }}
+        >
+          ← Back to Options
+        </Button>
+      )}
+
+      {!config?.allow_quote_request && (
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
+          Your date is popular - secure it now!
+        </Typography>
+      )}
 
       {/* Payment Summary */}
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Payment Summary
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <Security color="primary" sx={{ fontSize: 32 }} />
+          <Box>
+            <Typography variant="h6" color="primary">
+              Booking Summary
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Your reservation details
+            </Typography>
+          </Box>
+        </Box>
         
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
           <Typography>Event Total:</Typography>
@@ -191,20 +421,41 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         </Box>
 
         {config?.accept_deposit && (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2, p: 2, backgroundColor: 'primary.50', borderRadius: 1 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 }}>
+              Payment Options:
+            </Typography>
             <RadioGroup
               value={paymentData.payment_type}
               onChange={(e) => updateData({ payment_type: e.target.value as 'FULL' | 'DEPOSIT' })}
             >
               <FormControlLabel
-                value="FULL"
-                control={<Radio />}
-                label={`Pay Full Amount (${amounts.formattedTotal})`}
-              />
-              <FormControlLabel
                 value="DEPOSIT"
                 control={<Radio />}
-                label={`Pay Deposit (${amounts.formattedDeposit})`}
+                label={
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      💰 Pay Deposit ({amounts.formattedDeposit}) - Recommended
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Balance of {amounts.formattedRemaining} due {config?.balance_due_days || 30} days before event
+                    </Typography>
+                  </Box>
+                }
+              />
+              <FormControlLabel
+                value="FULL"
+                control={<Radio />}
+                label={
+                  <Box>
+                    <Typography variant="body2">
+                      Pay Full Amount ({amounts.formattedTotal})
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Complete payment now
+                    </Typography>
+                  </Box>
+                }
               />
             </RadioGroup>
           </Box>
@@ -212,18 +463,40 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
         <Divider sx={{ my: 2 }} />
         
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Total Due Now:</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6">Due Now:</Typography>
           <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
             {amounts.formattedDueNow}
           </Typography>
         </Box>
 
         {paymentData.payment_type === 'DEPOSIT' && amounts.remaining > 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Remaining balance: {amounts.formattedRemaining}
-          </Typography>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Remaining balance of {amounts.formattedRemaining} will be due {config?.balance_due_days || 30} days before your event.
+          </Alert>
         )}
+
+        {/* Trust Signals */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CheckCircle color="success" sx={{ fontSize: 16 }} />
+            <Typography variant="body2" color="success.main">
+              Price Guaranteed
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Security color="success" sx={{ fontSize: 16 }} />
+            <Typography variant="body2" color="success.main">
+              Secure Payment
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Schedule color="success" sx={{ fontSize: 16 }} />
+            <Typography variant="body2" color="success.main">
+              Instant Confirmation
+            </Typography>
+          </Box>
+        </Box>
       </Paper>
 
       {/* Payment Gateway Selection */}
@@ -265,7 +538,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         <StripePaymentForm
           publishableKey={selectedGateway.public_config?.publishable_key || ''}
           amount={Math.round(amounts.dueNow * 100)} // Convert to cents
-          currency="php"
+          currency={currentCurrency.toLowerCase()}
           onPaymentSuccess={handleStripePaymentSuccess}
           onPaymentError={handleStripePaymentError}
           isProcessing={isValidating}

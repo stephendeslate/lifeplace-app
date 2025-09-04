@@ -274,8 +274,13 @@ class BookingSessionService:
     
     
     @staticmethod
-    def complete_booking(session_id):
-        """Complete the booking and create event with payment processing"""
+    def complete_booking(session_id, completion_type='payment'):
+        """Complete the booking and create event with payment processing or quote generation
+        
+        Args:
+            session_id: The booking session ID
+            completion_type: 'payment' for immediate payment, 'quote' for quote request
+        """
         session = BookingSessionService.get_session_by_id(session_id)
         
         if session.is_completed:
@@ -289,21 +294,51 @@ class BookingSessionService:
             if step.id not in completed_step_ids:
                 raise StepValidationError(f"Required step '{step.name}' is not completed")
         
+        # Validate completion type against payment step configuration
+        payment_step = session.booking_flow.steps.filter(step_type='payment_info').first()
+        if payment_step and hasattr(payment_step, 'payment_config'):
+            payment_config = payment_step.payment_config
+            if completion_type == 'quote' and not payment_config.allow_quote_request:
+                raise StepValidationError("Quote requests are not allowed for this booking flow")
+            if completion_type == 'payment' and payment_config.require_immediate_payment:
+                payment_data = BookingSessionService._extract_payment_data(session)
+                if not payment_data:
+                    raise StepValidationError("Payment is required but no payment data provided")
+        
         with transaction.atomic():
             try:
                 # Create event from booking data
                 event = BookingSessionService._create_event_from_session(session)
                 
-                # Process payment if required and payment data exists
-                if session.booking_flow.require_immediate_payment:
+                if completion_type == 'payment':
+                    # Handle payment completion
                     payment_data = BookingSessionService._extract_payment_data(session)
                     if payment_data:
                         payment = BookingSessionService._process_booking_payment(
                             session, event, payment_data
                         )
                         
-                        if payment.status != 'COMPLETED':
+                        if payment.status == 'COMPLETED':
+                            # Payment successful - confirm the event
+                            event.status = 'CONFIRMED'
+                            event.save()
+                        else:
                             raise EventCreationFailed("Payment processing failed")
+                    
+                    # Handle case where no immediate payment is required
+                    elif session.booking_flow.require_immediate_payment:
+                        raise StepValidationError("Payment is required but no payment data provided")
+                    
+                elif completion_type == 'quote':
+                    # Handle quote request completion
+                    quote = BookingSessionService._generate_quote_from_session(session, event)
+                    
+                    # Event stays as LEAD status for quote requests
+                    # Send quote notification
+                    try:
+                        BookingSessionService._send_quote_notification(session, quote)
+                    except Exception as e:
+                        logger.warning(f"Failed to send quote notification: {e}")
                 
                 # Mark session as completed
                 session.is_completed = True
@@ -311,12 +346,41 @@ class BookingSessionService:
                 session.created_event = event
                 session.save()
                 
-                logger.info(f"Completed booking session: {session.session_id}, created event: {event.id}")
+                logger.info(f"Completed booking session: {session.session_id} with {completion_type}, created event: {event.id}")
                 return event
                 
             except Exception as e:
                 logger.error(f"Failed to create event from session {session.session_id}: {str(e)}")
                 raise EventCreationFailed(f"Failed to create event: {str(e)}")
+    
+    @staticmethod
+    def _send_quote_notification(session, quote):
+        """Send quote notification to client"""
+        from core.domains.communications.services import CommunicationService
+        
+        # Create notification for quote generation
+        try:
+            # Send email notification about quote
+            template_data = {
+                'client_name': session.client.get_full_name(),
+                'quote_amount': quote.total_amount,
+                'quote_valid_until': quote.valid_until,
+                'quote_id': quote.id
+            }
+            
+            # Use a generic email template for now - this should be configurable
+            CommunicationService.send_system_email(
+                recipient=session.client.email,
+                template_name='quote_request_confirmation',
+                context_data=template_data,
+                subject='Your Quote Request - LifePlace'
+            )
+            
+            logger.info(f"Sent quote notification to {session.client.email} for quote {quote.id}")
+            
+        except Exception as e:
+            logger.error(f"Failed to send quote notification: {e}")
+            # Don't raise exception as quote was created successfully
     
     @staticmethod
     def abandon_session(session_id, reason=None):
@@ -393,6 +457,85 @@ class BookingSessionService:
         )
         
         return payment
+    
+    @staticmethod
+    def _generate_quote_from_session(session, event):
+        """Generate a quote from booking session data"""
+        from core.domains.sales.services import QuoteService
+        from datetime import date, timedelta
+        from decimal import Decimal
+        
+        # Calculate pricing from session
+        total_amount = session.calculate_total_price()
+        
+        # Create quote data
+        quote_data = {
+            'event': event,
+            'status': 'DRAFT',
+            'total_amount': total_amount,
+            'subtotal': total_amount,  # Base calculation - will be recalculated by quote service
+            'valid_until': (date.today() + timedelta(days=30)),  # Valid for 30 days
+            'notes': f'Quote generated from booking session {session.session_id}',
+            'terms_and_conditions': 'Standard terms and conditions apply.',
+            'created_by': None  # System generated
+        }
+        
+        # Create the quote
+        from core.domains.sales.models import EventQuote
+        quote = EventQuote.objects.create(**quote_data)
+        
+        # Add line items from session booking data
+        BookingSessionService._add_line_items_to_quote(quote, session)
+        
+        # Recalculate totals after line items are added
+        quote.calculate_totals()
+        
+        return quote
+    
+    @staticmethod
+    def _add_line_items_to_quote(quote, session):
+        """Add line items to quote from session booking data"""
+        from core.domains.sales.models import QuoteLineItem
+        from core.domains.products.models import ProductOption
+        
+        # Extract selected products/packages from booking data
+        for step_key, step_data in session.booking_data.items():
+            if isinstance(step_data, dict):
+                # Handle package selections
+                if 'selected_packages' in step_data:
+                    packages = step_data['selected_packages']
+                    if isinstance(packages, list):
+                        for package_id in packages:
+                            try:
+                                package = ProductOption.objects.get(id=package_id)
+                                QuoteLineItem.objects.create(
+                                    quote=quote,
+                                    product=package,
+                                    quantity=1,
+                                    unit_price=package.base_price,
+                                    total=package.base_price,
+                                    description=f'Package: {package.name}'
+                                )
+                            except ProductOption.DoesNotExist:
+                                continue
+                
+                # Handle addon selections
+                if 'selected_addons' in step_data:
+                    addons = step_data['selected_addons']
+                    if isinstance(addons, list):
+                        for addon_id in addons:
+                            try:
+                                addon = ProductOption.objects.get(id=addon_id)
+                                QuoteLineItem.objects.create(
+                                    quote=quote,
+                                    product=addon,
+                                    quantity=1,
+                                    unit_price=addon.base_price,
+                                    total=addon.base_price,
+                                    description=f'Add-on: {addon.name}'
+                                )
+                            except ProductOption.DoesNotExist:
+                                continue
     
     @staticmethod
     def _create_event_from_session(session):

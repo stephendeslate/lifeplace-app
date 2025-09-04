@@ -642,6 +642,28 @@ class PaymentInfoStepConfiguration(BaseModel):
         default='PERCENTAGE'
     )
     deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('50.00'))
+    balance_due_days = models.PositiveIntegerField(
+        default=30,
+        help_text="Number of days before the event when the balance is due"
+    )
+    
+    # Refund configuration
+    allow_refunds = models.BooleanField(
+        default=True,
+        help_text="Allow refunds for this booking flow"
+    )
+    refund_deadline_days = models.PositiveIntegerField(
+        default=48,
+        help_text="Number of hours before the event when refunds are no longer allowed"
+    )
+    refund_percentage = models.PositiveIntegerField(
+        default=100,
+        help_text="Percentage of payment that can be refunded (0-100)"
+    )
+    refund_policy_text = models.TextField(
+        blank=True,
+        help_text="Custom refund policy text to display to clients"
+    )
     
     # Payment methods
     available_payment_methods = models.JSONField(
@@ -674,6 +696,22 @@ class PaymentInfoStepConfiguration(BaseModel):
     
     allow_payment_plans = models.BooleanField(default=False)
     payment_terms = models.TextField(blank=True)
+    
+    # Quote request options
+    allow_quote_request = models.BooleanField(
+        default=True,
+        help_text="Allow users to request a quote instead of paying immediately"
+    )
+    quote_request_button_text = models.CharField(
+        max_length=100,
+        default="Request Quote",
+        blank=True,
+        help_text="Text displayed on the quote request button"
+    )
+    quote_request_description = models.TextField(
+        blank=True,
+        help_text="Description shown for the quote request option"
+    )
 
     def __str__(self):
         return f"Payment config for {self.step}"
