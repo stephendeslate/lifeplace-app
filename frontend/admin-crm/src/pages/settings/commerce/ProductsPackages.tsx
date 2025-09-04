@@ -6,24 +6,16 @@ import {
   Typography,
   Tabs,
   Tab,
-  Button,
-  TextField,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Chip,
-  Stack,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Search as SearchIcon,
   Category as CategoryIcon,
   Inventory as ProductIcon,
   LocalOffer as DiscountIcon,
-  FilterList as FilterIcon,
 } from '@mui/icons-material';
 import { useProductCategories, useProducts, useDiscounts } from '../../../hooks/useProducts';
 import { 
@@ -33,6 +25,7 @@ import {
   createDeleteActions,
   ModernSettingsLayout
 } from '../../../components/common';
+import { type HeaderAction, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
 import { CategoriesTable } from '../../../components/products/CategoriesTable';
 import { ProductsTable } from '../../../components/products/ProductsTable';
 import { DiscountsTable } from '../../../components/products/DiscountsTable';
@@ -50,6 +43,8 @@ import type {
   CreateDiscountData,
   UpdateDiscountData,
 } from '../../../types/products.types';
+import { tokens } from '../../../design-system';
+import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -76,13 +71,17 @@ export const ProductsPackages: React.FC = () => {
   
   // Search and filter states
   const [categorySearch, setCategorySearch] = useState('');
-  const [categoryActiveFilter, setCategoryActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [categoryActiveFilter, _setCategoryActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [productSearch, setProductSearch] = useState('');
-  const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'PRODUCT' | 'PACKAGE'>('all');
-  const [productActiveFilter, setProductActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [productTypeFilter, _setProductTypeFilter] = useState<'all' | 'PRODUCT' | 'PACKAGE'>('all');
+  const [productActiveFilter, _setProductActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [discountSearch, setDiscountSearch] = useState('');
-  const [discountTypeFilter, setDiscountTypeFilter] = useState<'all' | 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS'>('all');
-  const [discountValidFilter, setDiscountValidFilter] = useState<'all' | 'valid' | 'invalid'>('all');
+  const [discountTypeFilter, _setDiscountTypeFilter] = useState<'all' | 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS'>('all');
+  const [discountValidFilter, _setDiscountValidFilter] = useState<'all' | 'valid' | 'invalid'>('all');
+  
+  // Header search functionality
+  const [showSearchField, setShowSearchField] = useState(false);
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   
   // Dialog states
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
@@ -271,6 +270,50 @@ export const ProductsPackages: React.FC = () => {
     setItemToDelete(null);
   };
 
+  const handleHeaderSearch = (query: string) => {
+    setHeaderSearchQuery(query);
+    // Apply to current tab's search
+    switch (activeTab) {
+      case 0:
+        setCategorySearch(query);
+        break;
+      case 1:
+        setProductSearch(query);
+        break;
+      case 2:
+        setDiscountSearch(query);
+        break;
+    }
+  };
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
+  const handleToggleSearch = () => {
+    setShowSearchField(!showSearchField);
+    if (!showSearchField) {
+      setHeaderSearchQuery('');
+      setCategorySearch('');
+      setProductSearch('');
+      setDiscountSearch('');
+    }
+  };
+
+  const handleCreateNew = () => {
+    switch (activeTab) {
+      case 0:
+        handleCreateCategory();
+        break;
+      case 1:
+        handleCreateProduct();
+        break;
+      case 2:
+        handleCreateDiscount();
+        break;
+    }
+  };
+
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setItemToDelete(null);
@@ -291,37 +334,129 @@ export const ProductsPackages: React.FC = () => {
     }[type];
   };
 
-  // Clear filters
-  const clearCategoryFilters = () => {
-    setCategorySearch('');
-    setCategoryActiveFilter('all');
-  };
-
-  const clearProductFilters = () => {
-    setProductSearch('');
-    setProductTypeFilter('all');
-    setProductActiveFilter('all');
-  };
-
-  const clearDiscountFilters = () => {
-    setDiscountSearch('');
-    setDiscountTypeFilter('all');
-    setDiscountValidFilter('all');
-  };
 
   return (
     <ModernSettingsLayout>
       {/* Modern Header */}
-      <ModernPageHeader
-        title="Products & Packages"
-        subtitle="Manage your service offerings, pricing, and promotional discounts"
-        icon={<ProductIcon />}
-        stats={[
-          { label: 'Products', value: products.length },
-          { label: 'Categories', value: categories.length },
-          { label: 'Active Discounts', value: discounts.filter(d => d.is_active).length },
-        ]}
-      />
+      {(() => {
+        // Header actions
+        const headerActions: HeaderAction[] = [
+          {
+            icon: <SearchIcon />,
+            label: showSearchField ? 'Hide Search' : 'Search',
+            onClick: handleToggleSearch,
+            variant: 'icon',
+            tooltip: showSearchField ? 'Hide search field' : 'Search products, categories, and discounts',
+          },
+          createRefreshAction(handleRefresh),
+        ];
+
+        const getTabLabel = () => {
+          switch (activeTab) {
+            case 0: return 'Product';
+            case 1: return 'Category';
+            case 2: return 'Discount';
+            default: return 'Item';
+          }
+        };
+
+        const primaryAction = createAddAction(`Add ${getTabLabel()}`, handleCreateNew, 'primary');
+
+        return (
+          <ModernPageHeader
+            title="Products & Packages"
+            subtitle="Manage your service offerings, pricing, and promotional discounts"
+            icon={<ProductIcon />}
+            breadcrumbs={[
+              { label: 'Settings' },
+              { label: 'Commerce' },
+              { label: 'Products & Packages' },
+            ]}
+            primaryAction={primaryAction}
+            secondaryActions={headerActions}
+            stats={[
+              { label: 'Products', value: products.length },
+              { label: 'Categories', value: categories.length },
+              { label: 'Active Discounts', value: discounts.filter(d => d.is_active).length },
+            ]}
+            size="medium"
+            gradient
+            glass
+          />
+        );
+      })()}
+
+      {/* Search Field - Conditionally Shown */}
+      {showSearchField && (
+        <Box sx={{ mb: 4 }}>
+          <ModernCard
+            variant="glass"
+            size="large"
+            color="primary"
+            animation="fade"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
+              },
+            }}
+          >
+            <Box sx={{ position: 'relative' }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: tokens.color.neutral[800],
+                  fontWeight: 600,
+                  mb: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                }}
+              >
+                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                Search Products & Packages
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: tokens.color.neutral[600],
+                  mb: 3,
+                }}
+              >
+                Find products, categories, and discounts by name or description
+              </Typography>
+
+              <TextField
+                fullWidth
+                placeholder="Search by name, description, or type..."
+                value={headerSearchQuery}
+                onChange={(e) => handleHeaderSearch(e.target.value)}
+                autoFocus
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    ...glassPresets.light,
+                    borderRadius: tokens.spacing.radius.lg,
+                    border: `1px solid ${tokens.color.borders.glass}`,
+                    '&:hover': {
+                      border: `1px solid ${tokens.color.primary[300]}`,
+                    },
+                    '&.Mui-focused': {
+                      border: `1px solid ${tokens.color.primary[500]}`,
+                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                    },
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+          </ModernCard>
+        </Box>
+      )}
 
       {/* Tabs */}
       <ModernCard sx={{ mb: 3 }}>
@@ -362,73 +497,6 @@ export const ProductsPackages: React.FC = () => {
         {/* Products Tab */}
         <TabPanel value={activeTab} index={0}>
           <Box p={3}>
-            {/* Products Filters */}
-            <Box mb={3}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-end">
-                <Box flex={1}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Search products"
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-                
-                <Box sx={{ minWidth: 120 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Type</InputLabel>
-                    <Select
-                      value={productTypeFilter}
-                      onChange={(e) => setProductTypeFilter(e.target.value as 'all' | 'PRODUCT' | 'PACKAGE')}
-                      label="Type"
-                    >
-                      <MenuItem value="all">All</MenuItem>
-                      <MenuItem value="PRODUCT">Products</MenuItem>
-                      <MenuItem value="PACKAGE">Packages</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-                
-                <Box sx={{ minWidth: 120 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Status</InputLabel>
-                    <Select
-                      value={productActiveFilter}
-                      onChange={(e) => setProductActiveFilter(e.target.value as 'all' | 'active' | 'inactive')}
-                      label="Status"
-                    >
-                      <MenuItem value="all">All</MenuItem>
-                      <MenuItem value="active">Active</MenuItem>
-                      <MenuItem value="inactive">Inactive</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-                
-                <Button
-                  variant="outlined"
-                  onClick={clearProductFilters}
-                  startIcon={<FilterIcon />}
-                >
-                  Clear
-                </Button>
-                
-                <Button
-                  variant="contained"
-                  onClick={handleCreateProduct}
-                  startIcon={<AddIcon />}
-                >
-                  Add Product
-                </Button>
-              </Stack>
-            </Box>
 
             {/* Products Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
@@ -450,58 +518,6 @@ export const ProductsPackages: React.FC = () => {
         {/* Categories Tab */}
         <TabPanel value={activeTab} index={1}>
           <Box p={3}>
-            {/* Categories Filters */}
-            <Box mb={3}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-end">
-                <Box flex={1}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Search categories"
-                    value={categorySearch}
-                    onChange={(e) => setCategorySearch(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-                
-                <Box sx={{ minWidth: 120 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Status</InputLabel>
-                    <Select
-                      value={categoryActiveFilter}
-                      onChange={(e) => setCategoryActiveFilter(e.target.value as 'all' | 'active' | 'inactive')}
-                      label="Status"
-                    >
-                      <MenuItem value="all">All</MenuItem>
-                      <MenuItem value="active">Active</MenuItem>
-                      <MenuItem value="inactive">Inactive</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-                
-                <Button
-                  variant="outlined"
-                  onClick={clearCategoryFilters}
-                  startIcon={<FilterIcon />}
-                >
-                  Clear
-                </Button>
-                
-                <Button
-                  variant="contained"
-                  onClick={handleCreateCategory}
-                  startIcon={<AddIcon />}
-                >
-                  Add Category
-                </Button>
-              </Stack>
-            </Box>
 
             {/* Categories Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
@@ -523,74 +539,6 @@ export const ProductsPackages: React.FC = () => {
         {/* Discounts Tab */}
         <TabPanel value={activeTab} index={2}>
           <Box p={3}>
-            {/* Discounts Filters */}
-            <Box mb={3}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-end">
-                <Box flex={1}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Search discounts"
-                    value={discountSearch}
-                    onChange={(e) => setDiscountSearch(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-                
-                <Box sx={{ minWidth: 120 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Type</InputLabel>
-                    <Select
-                      value={discountTypeFilter}
-                      onChange={(e) => setDiscountTypeFilter(e.target.value as 'all' | 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS')}
-                      label="Type"
-                    >
-                      <MenuItem value="all">All</MenuItem>
-                      <MenuItem value="PERCENTAGE">Percentage</MenuItem>
-                      <MenuItem value="FIXED">Fixed Amount</MenuItem>
-                      <MenuItem value="FREE_HOURS">Free Hours</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-                
-                <Box sx={{ minWidth: 120 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Validity</InputLabel>
-                    <Select
-                      value={discountValidFilter}
-                      onChange={(e) => setDiscountValidFilter(e.target.value as 'all' | 'valid' | 'invalid')}
-                      label="Validity"
-                    >
-                      <MenuItem value="all">All</MenuItem>
-                      <MenuItem value="valid">Valid</MenuItem>
-                      <MenuItem value="invalid">Invalid</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-                
-                <Button
-                  variant="outlined"
-                  onClick={clearDiscountFilters}
-                  startIcon={<FilterIcon />}
-                >
-                  Clear
-                </Button>
-                
-                <Button
-                  variant="contained"
-                  onClick={handleCreateDiscount}
-                  startIcon={<AddIcon />}
-                >
-                  Add Discount
-                </Button>
-              </Stack>
-            </Box>
 
             {/* Discounts Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>

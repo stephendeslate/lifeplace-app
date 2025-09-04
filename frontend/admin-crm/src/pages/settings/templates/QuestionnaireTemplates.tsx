@@ -4,15 +4,9 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  Stack,
   TextField,
   Typography,
   Alert,
-  Chip,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -20,14 +14,11 @@ import {
   DialogContentText,
   DialogActions,
   InputAdornment,
-  IconButton,
 } from '@mui/material';
 import {
   Add as AddIcon,
   FilterList as FilterIcon,
-  Refresh as RefreshIcon,
   Close as CloseIcon,
-  SwapVert as ReorderIcon,
   Quiz as QuizIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
@@ -63,6 +54,8 @@ export const QuestionnaireTemplates: React.FC = () => {
   const [editingQuestionnaire, setEditingQuestionnaire] = useState<Questionnaire | null>(null);
   const [previewingQuestionnaire, setPreviewingQuestionnaire] = useState<Questionnaire | null>(null);
   const [questionnaireToDelete, setQuestionnaireToDelete] = useState<Questionnaire | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchField, setShowSearchField] = useState(false);
 
   const {
     questionnaires,
@@ -90,15 +83,27 @@ export const QuestionnaireTemplates: React.FC = () => {
     ]);
   }, [setBreadcrumbs]);
 
-  const handleFilterChange = (key: keyof QuestionnaireFilters, value: string | boolean) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value === 'all' ? undefined : value
-    }));
-  };
 
   const handleClearFilters = () => {
     setFilters({});
+    setSearchQuery('');
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Update filters to include search
+    setFilters(prev => ({
+      ...prev,
+      search: query || undefined
+    }));
+  };
+
+  const handleToggleSearch = () => {
+    setShowSearchField(!showSearchField);
+    if (!showSearchField) {
+      setSearchQuery('');
+      setFilters(prev => ({ ...prev, search: undefined }));
+    }
   };
 
   const handleCreateNew = () => {
@@ -167,15 +172,14 @@ export const QuestionnaireTemplates: React.FC = () => {
 
   // Modern header actions
   const headerActions = [
-    createRefreshAction(() => refetchQuestionnaires()),
     {
-      icon: <ReorderIcon />,
-      label: 'Reorder',
-      variant: 'outlined' as const,
-      onClick: () => setReorderDialogOpen(true),
-      disabled: questionnaires.length === 0,
-      tooltip: 'Reorder questionnaires',
+      icon: <SearchIcon />,
+      label: showSearchField ? 'Hide Search' : 'Search',
+      onClick: handleToggleSearch,
+      variant: 'icon' as const,
+      tooltip: showSearchField ? 'Hide search field' : 'Search questionnaire templates',
     },
+    createRefreshAction(() => refetchQuestionnaires()),
     ...(hasActiveFilters ? [{
       icon: <FilterIcon />,
       label: 'Clear Filters',
@@ -234,160 +238,77 @@ export const QuestionnaireTemplates: React.FC = () => {
         </ModernCard>
       </Box>
 
-      {/* Filters */}
-      <ModernCard
-        variant="glass"
-        size="medium"
-        animation="none"
-        sx={{ mb: 4 }}
-      >
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-          <TextField
-            size="small"
-            placeholder="Search questionnaires..."
-            value={filters.search || ''}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
+      {/* Search Field - Conditionally Shown */}
+      {showSearchField && (
+        <Box sx={{ mb: 4 }}>
+          <ModernCard
+            variant="glass"
+            size="large"
+            color="primary"
+            animation="fade"
             sx={{
-              flex: 1,
-              minWidth: 250,
-              '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                '&:hover': {
-                  border: `1px solid ${tokens.color.primary[300]}`,
-                },
-                '&.Mui-focused': {
-                  border: `1px solid ${tokens.color.primary[500]}`,
-                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                },
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-            
-          <FormControl 
-            size="small" 
-            sx={{ 
-              minWidth: 140,
-              '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                '&:hover': {
-                  border: `1px solid ${tokens.color.primary[300]}`,
-                },
-                '&.Mui-focused': {
-                  border: `1px solid ${tokens.color.primary[500]}`,
-                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                },
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
               },
             }}
           >
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={filters.is_active === undefined ? 'all' : filters.is_active.toString()}
-              label="Status"
-              onChange={(e) => handleFilterChange('is_active', e.target.value === 'true')}
-            >
-              <MenuItem value="all">All Status</MenuItem>
-              <MenuItem value="true">Active</MenuItem>
-              <MenuItem value="false">Inactive</MenuItem>
-            </Select>
-          </FormControl>
-          
-          <Box display="flex" gap={1}>
-            {hasActiveFilters && (
-              <IconButton
-                onClick={handleClearFilters}
-                sx={{
-                  ...glassPresets.light,
-                  border: `1px solid ${tokens.color.neutral[400]}30`,
-                  color: tokens.color.neutral[600],
-                  '&:hover': {
-                    ...glassPresets.medium,
-                    color: tokens.color.neutral[700],
-                  },
+            <Box sx={{ position: 'relative' }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: tokens.color.neutral[800],
+                  fontWeight: 600,
+                  mb: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
                 }}
               >
-                <FilterIcon />
-              </IconButton>
-            )}
-            <IconButton
-              onClick={() => refetchQuestionnaires()}
-              sx={{
-                ...glassPresets.light,
-                border: `1px solid ${tokens.color.neutral[400]}30`,
-                color: tokens.color.neutral[600],
-                '&:hover': {
-                  ...glassPresets.medium,
-                  color: tokens.color.neutral[700],
-                },
-              }}
-            >
-              <RefreshIcon />
-            </IconButton>
-          </Box>
-        </Stack>
-        
-        {hasActiveFilters && (
-          <Box mt={3} pt={3} sx={{ borderTop: `1px solid ${tokens.color.borders.glass}` }}>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: tokens.color.neutral[600],
-                fontWeight: 600,
-                mb: 1.5,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                fontSize: '0.75rem',
-              }}
-            >
-              Active filters:
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              {filters.search && (
-                <Chip 
-                  label={`Search: "${filters.search}"`} 
-                  size="small" 
-                  onDelete={() => handleFilterChange('search', '')} 
-                  sx={{
+                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                Search Questionnaire Templates
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: tokens.color.neutral[600],
+                  mb: 3,
+                }}
+              >
+                Find templates by name, description, or event type
+              </Typography>
+
+              <TextField
+                fullWidth
+                placeholder="Search by name, description, event type..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                autoFocus
+                sx={{
+                  '& .MuiOutlinedInput-root': {
                     ...glassPresets.light,
-                    backgroundColor: `${tokens.color.primary[500]}15`,
-                    border: `1px solid ${tokens.color.primary[500]}30`,
-                    color: tokens.color.primary[700],
-                    '& .MuiChip-deleteIcon': {
-                      color: tokens.color.primary[600],
+                    borderRadius: tokens.spacing.radius.lg,
+                    border: `1px solid ${tokens.color.borders.glass}`,
+                    '&:hover': {
+                      border: `1px solid ${tokens.color.primary[300]}`,
                     },
-                  }}
-                />
-              )}
-              {filters.is_active !== undefined && (
-                <Chip 
-                  label={`Status: ${filters.is_active ? 'Active' : 'Inactive'}`} 
-                  size="small" 
-                  onDelete={() => handleFilterChange('is_active', 'all')} 
-                  sx={{
-                    ...glassPresets.light,
-                    backgroundColor: `${tokens.color.success[500]}15`,
-                    border: `1px solid ${tokens.color.success[500]}30`,
-                    color: tokens.color.success[700],
-                    '& .MuiChip-deleteIcon': {
-                      color: tokens.color.success[600],
+                    '&.Mui-focused': {
+                      border: `1px solid ${tokens.color.primary[500]}`,
+                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
                     },
-                  }}
-                />
-              )}
-            </Stack>
-          </Box>
-        )}
-      </ModernCard>
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+          </ModernCard>
+        </Box>
+      )}
 
       {/* Questionnaires Table */}
       <ModernCard

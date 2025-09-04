@@ -4,15 +4,9 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  Stack,
   TextField,
   Typography,
   Alert,
-  Chip,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -62,6 +56,8 @@ export const WorkflowTemplates: React.FC = () => {
   const [viewingTemplate, setViewingTemplate] = useState<WorkflowTemplate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<WorkflowTemplate | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchField, setShowSearchField] = useState(false);
 
   const {
     templates,
@@ -75,7 +71,7 @@ export const WorkflowTemplates: React.FC = () => {
   } = useWorkflowTemplates(filters);
 
   const { useActiveEventTypes } = useEventTypes();
-  const { data: eventTypes = [] } = useActiveEventTypes();
+  const { data: _eventTypes = [] } = useActiveEventTypes();
 
   // Hook to fetch detailed template data when editing/viewing
   const { 
@@ -101,15 +97,27 @@ export const WorkflowTemplates: React.FC = () => {
     }
   }, [setBreadcrumbs, viewMode, editingTemplate, viewingTemplate]);
 
-  const handleFilterChange = (key: keyof WorkflowTemplateFilters, value: string | number | boolean | undefined) => {
-      setFilters(prev => ({
-        ...prev,
-        [key]: value === 'all' ? undefined : value
-      }));
-    };
 
   const handleClearFilters = () => {
     setFilters({});
+    setSearchQuery('');
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Update filters to include search
+    setFilters(prev => ({
+      ...prev,
+      search: query || undefined
+    }));
+  };
+
+  const handleToggleSearch = () => {
+    setShowSearchField(!showSearchField);
+    if (!showSearchField) {
+      setSearchQuery('');
+      setFilters(prev => ({ ...prev, search: undefined }));
+    }
   };
 
   const handleCreateNew = () => {
@@ -195,6 +203,13 @@ export const WorkflowTemplates: React.FC = () => {
     
     if (viewMode === 'list') {
       actions.push(createAddAction('New Template', handleCreateNew, 'primary'));
+      actions.push({
+        icon: <SearchIcon />,
+        label: showSearchField ? 'Hide Search' : 'Search',
+        onClick: handleToggleSearch,
+        variant: 'icon' as const,
+        tooltip: showSearchField ? 'Hide search field' : 'Search workflow templates',
+      });
       actions.push(createRefreshAction(() => refetchTemplates()));
       if (hasActiveFilters) {
         actions.push({
@@ -389,130 +404,77 @@ export const WorkflowTemplates: React.FC = () => {
         </ModernCard>
       </Box>
 
-      <ModernCard
-        variant="glass"
-        size="medium"
-        animation="none"
-        sx={{ mb: 4 }}
-      >
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-          <TextField
-            size="small"
-            placeholder="Search templates..."
-            value={filters.search || ''}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
+      {/* Search Field - Conditionally Shown */}
+      {showSearchField && (
+        <Box sx={{ mb: 4 }}>
+          <ModernCard
+            variant="glass"
+            size="large"
+            color="primary"
+            animation="fade"
             sx={{
-              flex: 1,
-              minWidth: 250,
-              '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                '&:hover': {
-                  border: `1px solid ${tokens.color.primary[300]}`,
-                },
-                '&.Mui-focused': {
-                  border: `1px solid ${tokens.color.primary[500]}`,
-                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                },
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
               },
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-              
-              <FormControl size="small" sx={{ minWidth: 140 }}>
-                <InputLabel>Event Type</InputLabel>
-                <Select
-                  value={filters.event_type !== undefined ? String(filters.event_type) : 'all'}
-                  label="Event Type"
-                  onChange={(e) =>
-                    handleFilterChange(
-                      'event_type',
-                      e.target.value === 'all' ? undefined : parseInt(e.target.value as string)
-                    )
-                  }
-                >
-                  <MenuItem value="all">All Types</MenuItem>
-                  {eventTypes.map((eventType) => (
-                    <MenuItem key={eventType.id} value={String(eventType.id)}>
-                      {eventType.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              
-              <FormControl size="small" sx={{ minWidth: 140 }}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={filters.is_active === undefined ? 'all' : filters.is_active.toString()}
-                  label="Status"
-                  onChange={(e) => handleFilterChange('is_active', e.target.value === 'true')}
-                >
-                  <MenuItem value="all">All Status</MenuItem>
-                  <MenuItem value="true">Active</MenuItem>
-                  <MenuItem value="false">Inactive</MenuItem>
-                </Select>
-              </FormControl>
-              
-              <Box display="flex" gap={1}>
-                {hasActiveFilters && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={handleClearFilters}
-                    startIcon={<FilterIcon />}
-                  >
-                    Clear
-                  </Button>
-                )}
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => refetchTemplates()}
-                  startIcon={<RefreshIcon />}
-                >
-                  Refresh
-                </Button>
-              </Box>
-            </Stack>
-            
-            {hasActiveFilters && (
-              <Box mt={2}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Active filters:
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap">
-                  {filters.search && (
-                    <Chip 
-                      label={`Search: "${filters.search}"`} 
-                      size="small" 
-                      onDelete={() => handleFilterChange('search', '')} 
-                    />
-                  )}
-                  {filters.event_type && (
-                    <Chip 
-                      label={`Event Type: ${eventTypes.find(et => et.id === filters.event_type)?.name}`} 
-                      size="small" 
-                      onDelete={() => handleFilterChange('event_type', 'all')} 
-                    />
-                  )}
-                  {filters.is_active !== undefined && (
-                    <Chip 
-                      label={`Status: ${filters.is_active ? 'Active' : 'Inactive'}`} 
-                      size="small" 
-                      onDelete={() => handleFilterChange('is_active', 'all')} 
-                    />
-                  )}
-                </Stack>
-              </Box>
-            )}
-        </ModernCard>
+          >
+            <Box sx={{ position: 'relative' }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: tokens.color.neutral[800],
+                  fontWeight: 600,
+                  mb: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                }}
+              >
+                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                Search Workflow Templates
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: tokens.color.neutral[600],
+                  mb: 3,
+                }}
+              >
+                Find templates by name, description, event type, or workflow stages
+              </Typography>
+
+              <TextField
+                fullWidth
+                placeholder="Search by name, description, event type..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                autoFocus
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    ...glassPresets.light,
+                    borderRadius: tokens.spacing.radius.lg,
+                    border: `1px solid ${tokens.color.borders.glass}`,
+                    '&:hover': {
+                      border: `1px solid ${tokens.color.primary[300]}`,
+                    },
+                    '&.Mui-focused': {
+                      border: `1px solid ${tokens.color.primary[500]}`,
+                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                    },
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+          </ModernCard>
+        </Box>
+      )}
 
       <ModernCard
         variant="glass"

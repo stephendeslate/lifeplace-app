@@ -5,7 +5,7 @@ import {
   Box,
   Button,
   TextField,
-  Typography,
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -13,16 +13,14 @@ import {
   DialogActions,
   CircularProgress,
   InputAdornment,
-  Stack,
-  Chip,
+  Typography,
 } from '@mui/material';
 import {
   Add as AddIcon,
+  ArrowBack as ArrowBackIcon,
   Search as SearchIcon,
   Description as ContractIcon,
-  List as ListIcon,
   FilterList as FilterIcon,
-  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { ContractTemplatesTable } from '../../../components/contracts/ContractTemplatesTable';
@@ -30,6 +28,7 @@ import { ContractTemplateForm } from '../../../components/contracts/ContractTemp
 import {
   useContractTemplates,
   useCreateContractTemplate,
+  useUpdateContractTemplate,
   useDeleteContractTemplate,
 } from '../../../hooks/useContracts';
 import type {
@@ -41,11 +40,11 @@ import type {
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
 import { ModernCard } from '../../../components/common/ModernCard';
-import { ModernPageHeader, createAddAction, createRefreshAction } from '../../../components/common/ModernPageHeader';
+import { ModernPageHeader, type HeaderAction, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
 import { ModernEmptyState } from '../../../components/common/ModernEmptyState';
-import ModernLoadingStates from '../../../components/common/ModernLoadingStates';
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
+import { createTransition } from '../../../design-system/utils/animations';
 
 type ViewMode = 'list' | 'create' | 'edit';
 
@@ -56,17 +55,19 @@ export const ContractTemplates: React.FC = () => {
   const [editingTemplate, setEditingTemplate] = useState<ContractTemplate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<ContractTemplate | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchField, setShowSearchField] = useState(false);
 
   // Set breadcrumbs
   useEffect(() => {
     const baseBreadcrumbs = [
-      { label: 'Settings' },
+      { label: 'Settings', path: '/settings' },
       { label: 'Templates' },
-      { label: 'Contracts' },
+      { label: 'Contract Templates', path: '/settings/templates/contract-templates' },
     ];
 
     if (viewMode === 'create') {
-      setBreadcrumbs([...baseBreadcrumbs, { label: 'Create Template' }]);
+      setBreadcrumbs([...baseBreadcrumbs, { label: 'Create Contract Template' }]);
     } else if (viewMode === 'edit' && editingTemplate) {
       setBreadcrumbs([...baseBreadcrumbs, { label: editingTemplate.name }]);
     } else {
@@ -78,18 +79,30 @@ export const ContractTemplates: React.FC = () => {
   const { data: templates = [], isLoading, error, refetch } = useContractTemplates(filters);
 
   const createTemplateMutation = useCreateContractTemplate();
+  const updateTemplateMutation = useUpdateContractTemplate();
   const deleteTemplateMutation = useDeleteContractTemplate();
 
   // Handlers
-  const handleFilterChange = (key: keyof ContractTemplateFilters, value: string | boolean) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value === 'all' ? undefined : value
-    }));
-  };
 
   const handleClearFilters = () => {
     setFilters({});
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Update filters to include search
+    setFilters(prev => ({
+      ...prev,
+      search: query || undefined
+    }));
+  };
+
+  const handleToggleSearch = () => {
+    setShowSearchField(!showSearchField);
+    if (!showSearchField) {
+      setSearchQuery('');
+      setFilters(prev => ({ ...prev, search: undefined }));
+    }
   };
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
@@ -139,7 +152,6 @@ export const ContractTemplates: React.FC = () => {
     handleBackToList();
   };
 
-
   const handleDuplicate = (template: ContractTemplate) => {
     const duplicateData: CreateContractTemplateData = {
       name: `${template.name} (Copy)`,
@@ -159,48 +171,6 @@ export const ContractTemplates: React.FC = () => {
     createTemplateMutation.mutate(duplicateData);
   };
 
-  // Modern header actions for different view modes
-  const getHeaderActions = () => {
-    const actions = [];
-    
-    if (viewMode === 'list') {
-      actions.push(createAddAction('Create Template', handleCreateNew, 'primary'));
-      actions.push(createRefreshAction(() => refetch()));
-    } else {
-      actions.push({
-        icon: <ListIcon />,
-        label: 'Back to List',
-        variant: 'outlined' as const,
-        onClick: handleBackToList,
-        tooltip: 'Return to template list',
-      });
-    }
-    
-    return actions;
-  };
-
-  const getHeaderTitle = () => {
-    switch (viewMode) {
-      case 'create':
-        return 'Create Contract Template';
-      case 'edit':
-        return `Edit Template: ${editingTemplate?.name || ''}`;
-      default:
-        return 'Contract Templates';
-    }
-  };
-
-  const getHeaderSubtitle = () => {
-    switch (viewMode) {
-      case 'create':
-        return 'Create a new contract template for events';
-      case 'edit':
-        return 'Modify the contract template content and settings';
-      default:
-        return 'Manage contract templates for different event types';
-    }
-  };
-
   // Error state
   if (error) {
     return (
@@ -209,21 +179,20 @@ export const ContractTemplates: React.FC = () => {
           variant="glass"
           color="error"
           size="medium"
-          animation="none"
+          animation="fade"
         >
-          <ModernEmptyState
-            icon={ContractIcon}
-            title="Failed to Load Templates"
-            description="Unable to load contract templates. Please check your connection and try again."
-            variant="error"
-            primaryAction={{
-              label: "Refresh Page",
-              onClick: () => window.location.reload(),
-              icon: <RefreshIcon />,
-              color: "error",
+          <Alert 
+            severity="error"
+            sx={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              '& .MuiAlert-message': {
+                color: tokens.color.error[700],
+              },
             }}
-            size="medium"
-          />
+          >
+            Failed to load contract templates. Please try refreshing the page.
+          </Alert>
         </ModernCard>
       </ModernSettingsLayout>
     );
@@ -233,32 +202,37 @@ export const ContractTemplates: React.FC = () => {
   if (viewMode === 'create' || viewMode === 'edit') {
     return (
       <ModernSettingsLayout>
-        {/* Modern Header */}
-        <ModernPageHeader
-          title={getHeaderTitle()}
-          subtitle={getHeaderSubtitle()}
-          icon={<ContractIcon />}
-          breadcrumbs={[
-            { label: 'Settings' },
-            { label: 'Templates' },
-            { label: 'Contracts' },
-            { label: viewMode === 'create' ? 'Create Template' : editingTemplate?.name || 'Edit' },
-          ]}
-          secondaryActions={getHeaderActions()}
-          size="medium"
-          gradient
-          glass
-        />
+        {/* Modern Back button */}
+        <Box mb={4}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBackToList}
+            disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
+            sx={{
+              ...glassPresets.light,
+              border: `1px solid ${tokens.color.neutral[300]}`,
+              borderRadius: tokens.spacing.radius.full,
+              px: 3,
+              py: 1.25,
+              fontWeight: 600,
+              color: tokens.color.neutral[700],
+              transition: createTransition(['transform', 'background'], 'fast'),
+              
+              '&:hover': {
+                ...glassPresets.medium,
+                transform: 'translateY(-1px)',
+              },
+            }}
+          >
+            Back to Contract Templates
+          </Button>
+        </Box>
 
         {/* Form */}
         <ModernCard
           variant="glass"
           size="large"
-          animation="none"
-          sx={{
-            overflow: 'visible',
-            position: 'relative',
-          }}
+          animation="fade"
         >
           <ContractTemplateForm
             template={editingTemplate || undefined}
@@ -270,131 +244,119 @@ export const ContractTemplates: React.FC = () => {
     );
   }
 
-  // List view
+  // Calculate stats
+  const signingTemplates = templates.filter(t => t.requires_signature).length;
+  
+  // Header actions
+  const headerActions: HeaderAction[] = [
+    {
+      icon: <SearchIcon />,
+      label: showSearchField ? 'Hide Search' : 'Search',
+      onClick: handleToggleSearch,
+      variant: 'icon',
+      tooltip: showSearchField ? 'Hide search field' : 'Search contract templates',
+    },
+    createRefreshAction(() => refetch()),
+  ];
+
+  const primaryAction = createAddAction('New Template', handleCreateNew, 'primary');
+
+  // List view - Always show table structure
   return (
     <ModernSettingsLayout>
       {/* Modern Header */}
       <ModernPageHeader
-        title={getHeaderTitle()}
-        subtitle={getHeaderSubtitle()}
+        title="Contract Templates"
+        subtitle="Manage contract templates for legal agreements"
         icon={<ContractIcon />}
         breadcrumbs={[
           { label: 'Settings' },
           { label: 'Templates' },
           { label: 'Contract Templates' },
         ]}
-        primaryAction={getHeaderActions().find(a => a.label === 'Create Template')}
-        secondaryActions={getHeaderActions().filter(a => a.label !== 'Create Template')}
+        primaryAction={primaryAction}
+        secondaryActions={headerActions}
         stats={[
           { label: 'Total Templates', value: templates.length },
+          { label: 'Signature Required', value: signingTemplates },
+          { label: 'Amendment Allowed', value: templates.filter(t => t.allows_amendments).length },
         ]}
         size="medium"
         gradient
         glass
       />
 
-      {/* Filters */}
-      <ModernCard
-        variant="glass"
-        size="medium"
-        animation="none"
-        sx={{ mb: 4 }}
-      >
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-          <TextField
-            size="small"
-            placeholder="Search contract templates..."
-            value={filters.search || ''}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
+      {/* Search Field - Conditionally Shown */}
+      {showSearchField && (
+        <Box sx={{ mb: 4 }}>
+          <ModernCard
+            variant="glass"
+            size="large"
+            color="primary"
+            animation="fade"
             sx={{
-              flex: 1,
-              minWidth: 250,
-              '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                '&:hover': {
-                  border: `1px solid ${tokens.color.primary[300]}`,
-                },
-                '&.Mui-focused': {
-                  border: `1px solid ${tokens.color.primary[500]}`,
-                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                },
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
               },
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-          
-          <Box display="flex" gap={1}>
-            {hasActiveFilters && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleClearFilters}
-                startIcon={<FilterIcon />}
-                sx={{
-                  ...glassPresets.light,
-                  border: `1px solid ${tokens.color.neutral[300]}`,
-                  borderRadius: tokens.spacing.radius.full,
-                  '&:hover': {
-                    ...glassPresets.medium,
-                  },
+          >
+            <Box sx={{ position: 'relative' }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: tokens.color.neutral[800],
+                  fontWeight: 600,
+                  mb: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
                 }}
               >
-                Clear
-              </Button>
-            )}
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => refetch()}
-              startIcon={isLoading ? <CircularProgress size={16} /> : <RefreshIcon />}
-              disabled={isLoading}
-              sx={{
-                ...glassPresets.light,
-                border: `1px solid ${tokens.color.neutral[300]}`,
-                borderRadius: tokens.spacing.radius.full,
-                '&:hover': {
-                  ...glassPresets.medium,
-                },
-              }}
-            >
-              Refresh
-            </Button>
-          </Box>
-        </Stack>
-        
-        {hasActiveFilters && (
-          <Box mt={3}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Active filters:
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              {filters.search && (
-                <Chip 
-                  label={`Search: "${filters.search}"`} 
-                  size="small" 
-                  onDelete={() => handleFilterChange('search', '')} 
-                  sx={{
+                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                Search Contract Templates
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: tokens.color.neutral[600],
+                  mb: 3,
+                }}
+              >
+                Find templates by name, description, event type, or content
+              </Typography>
+
+              <TextField
+                fullWidth
+                placeholder="Search by name, description, event type..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                autoFocus
+                sx={{
+                  '& .MuiOutlinedInput-root': {
                     ...glassPresets.light,
-                    border: `1px solid ${tokens.color.primary[300]}`,
-                    color: tokens.color.primary[700],
-                    '& .MuiChip-deleteIcon': {
-                      color: tokens.color.primary[600],
+                    borderRadius: tokens.spacing.radius.lg,
+                    border: `1px solid ${tokens.color.borders.glass}`,
+                    '&:hover': {
+                      border: `1px solid ${tokens.color.primary[300]}`,
                     },
-                  }}
-                />
-              )}
-            </Stack>
-          </Box>
-        )}
-      </ModernCard>
+                    '&.Mui-focused': {
+                      border: `1px solid ${tokens.color.primary[500]}`,
+                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                    },
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+          </ModernCard>
+        </Box>
+      )}
 
       {/* Templates Table */}
       <ModernCard
@@ -406,18 +368,13 @@ export const ContractTemplates: React.FC = () => {
           position: 'relative',
         }}
       >
-        {isLoading ? (
-          <ModernLoadingStates.ModernTableSkeleton
-            rows={5}
-            columns={6}
-          />
-        ) : templates.length === 0 ? (
+        {templates.length === 0 ? (
           <ModernEmptyState
             icon={ContractIcon}
-            title={hasActiveFilters ? 'No templates match your filters' : 'No contract templates found'}
+            title={hasActiveFilters ? 'No templates match your filters' : 'No Contract Templates Yet'}
             description={hasActiveFilters 
               ? 'Try adjusting your search criteria or clear the filters'
-              : 'Create your first contract template to get started with automated contract generation'
+              : 'Create your first contract template to standardize legal agreements and streamline contract generation for events.'
             }
             primaryAction={{
               label: hasActiveFilters ? 'Clear Filters' : 'Create Template',
@@ -426,8 +383,8 @@ export const ContractTemplates: React.FC = () => {
               color: 'primary',
             }}
             tip={{
-              text: 'Contract templates help standardize legal documents across your events',
-              type: 'info',
+              text: "Contract templates help maintain legal consistency and speed up the contract creation process",
+              type: "info",
             }}
             size="medium"
             illustration="gradient"
@@ -457,7 +414,7 @@ export const ContractTemplates: React.FC = () => {
           },
         }}
       >
-        <DialogTitle 
+        <DialogTitle
           sx={{ 
             background: `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[500]} 100%)`,
             backgroundClip: 'text',
@@ -469,28 +426,9 @@ export const ContractTemplates: React.FC = () => {
           Delete Contract Template
         </DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: tokens.color.neutral[700], mb: 2 }}>
-            Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone and will affect any contracts using this template.
+          <DialogContentText sx={{ color: tokens.color.neutral[700] }}>
+            Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
           </DialogContentText>
-          {templateToDelete && (
-            <ModernCard
-              variant="glass"
-              color="error"
-              size="small"
-              animation="none"
-              sx={{ mt: 2 }}
-            >
-              <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
-                <strong>Template:</strong> {templateToDelete.name}
-              </Typography>
-              <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
-                <strong>Event Type:</strong> {templateToDelete.event_type_name || 'All Types'}
-              </Typography>
-              <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
-                <strong>Created:</strong> {new Date(templateToDelete.created_at).toLocaleDateString()}
-              </Typography>
-            </ModernCard>
-          )}
         </DialogContent>
         <DialogActions sx={{ p: 3, gap: 2 }}>
           <Button 
@@ -519,7 +457,7 @@ export const ContractTemplates: React.FC = () => {
               px: 4,
               boxShadow: `0 8px 32px ${tokens.color.error[500]}25`,
               '&:hover': {
-                background: `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[700]} 100%)`,
+                background: `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[700]} 100())`,
                 boxShadow: `0 12px 40px ${tokens.color.error[500]}35`,
               },
             }}
