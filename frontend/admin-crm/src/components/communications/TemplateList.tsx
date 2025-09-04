@@ -3,20 +3,11 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Button,
   Chip,
-  TextField,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Stack,
-  InputAdornment,
   Tooltip,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Preview as PreviewIcon,
@@ -24,14 +15,10 @@ import {
   Sms as SmsIcon,
   Message as MessageIcon,
   SearchOff as SearchOffIcon,
-  Search as SearchIcon,
   FilterList as FilterIcon,
-  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import type { CommunicationTemplate, CommunicationFilters } from '../../types/communications.types';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { 
   ModernEmptyState,
   ModernLoadingStates,
@@ -40,15 +27,16 @@ import {
   createDeleteActions
 } from '../common';
 import type { ModernTableColumn, ModernTableAction } from '../common/ModernTable';
+import { tokens } from '../../design-system';
 
 interface TemplateListProps {
-  onCreateClick: () => void;
+  searchQuery?: string;
   onEditClick: (template: CommunicationTemplate) => void;
   onPreviewClick: (template: CommunicationTemplate) => void;
 }
 
 export const TemplateList: React.FC<TemplateListProps> = ({
-  onCreateClick,
+  searchQuery = '',
   onEditClick,
   onPreviewClick
 }) => {
@@ -60,8 +48,27 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const { useTemplates, useDeleteTemplate } = useCommunications();
-  const { data: templates, isLoading } = useTemplates(filters);
+  
+  // Apply search filter along with other filters
+  const searchFilters = {
+    ...filters,
+    ...(searchQuery && { search: searchQuery })
+  };
+  
+  const { data: allTemplates, isLoading } = useTemplates(searchFilters);
   const { mutate: deleteTemplate, isPending: isDeleting } = useDeleteTemplate();
+  
+  // Filter templates based on search query if API doesn't support it
+  const templates = allTemplates?.filter(template => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      template.name.toLowerCase().includes(query) ||
+      template.channel.toLowerCase().includes(query) ||
+      template.category.toLowerCase().includes(query) ||
+      (template.subject_template?.toLowerCase().includes(query) || false)
+    );
+  }) || [];
 
   const handleMenuClose = () => {
     // Menu close handler (kept for consistency)
@@ -100,12 +107,6 @@ export const TemplateList: React.FC<TemplateListProps> = ({
     setSelectedTemplate(null);
   };
 
-  const handleFilterChange = (key: keyof CommunicationFilters, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value || undefined
-    }));
-  };
 
   const handleClearFilters = () => {
     setFilters({});
@@ -284,13 +285,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
     <ModernEmptyState
       icon={MessageIcon}
       title="No Communication Templates Yet"
-      description="Communication templates help you send consistent, professional messages to your clients. Create your first template to get started with automated communications."
-      primaryAction={{
-        label: 'Create Your First Template',
-        onClick: onCreateClick,
-        icon: <AddIcon />,
-        color: 'primary'
-      }}
+      description="Communication templates help you send consistent, professional messages to your clients. Use the Create Template button above to get started with automated communications."
       tip={{
         text: "You can create templates for email communications, SMS messages, and automated workflows. System templates for admin invitations are created automatically.",
         type: 'info'
@@ -331,158 +326,25 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   if (!templates || templates.length === 0) {
     return (
       <Box>
-        {/* Header */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h5" fontWeight="bold">
-            Communication Templates
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={onCreateClick}
-          >
-            Create Template
-          </Button>
-        </Box>
-
-        {hasActiveFilters ? renderNoResultsState() : renderNoTemplatesState()}
+        {hasActiveFilters || searchQuery ? renderNoResultsState() : renderNoTemplatesState()}
       </Box>
     );
   }
 
   return (
     <Box>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h5" fontWeight="bold">
-            Communication Templates
-          </Typography>
+      {/* Results Summary */}
+      {(searchQuery || hasActiveFilters) && (
+        <Box sx={{ mb: 3 }}>
           <Typography variant="body2" color="text.secondary">
+            {searchQuery ? `Search results for "${searchQuery}" - ` : ''}
             {filteredTemplatesCount} template{filteredTemplatesCount !== 1 ? 's' : ''} found
+            {hasActiveFilters && ' with current filters'}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={onCreateClick}
-        >
-          Create Template
-        </Button>
-      </Box>
+      )}
 
-      {/* Modern Filters */}
-      <Box sx={{ mb: 4 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-          <TextField
-            size="small"
-            placeholder="Search templates..."
-            value={filters.search || ''}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            sx={{
-              flex: 1,
-              minWidth: 250,
-              '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                '&:hover': {
-                  border: `1px solid ${tokens.color.primary[300]}`,
-                },
-                '&.Mui-focused': {
-                  border: `1px solid ${tokens.color.primary[500]}`,
-                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                },
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-          
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Category</InputLabel>
-            <Select
-              value={filters.category || ''}
-              label="Category"
-              onChange={(e) => handleFilterChange('category', e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  ...glassPresets.light,
-                  borderRadius: tokens.spacing.radius.lg,
-                },
-              }}
-            >
-              <MenuItem value="">All Categories</MenuItem>
-              <MenuItem value="SYSTEM">System</MenuItem>
-              <MenuItem value="MANUAL">Manual</MenuItem>
-              <MenuItem value="AUTO">Auto</MenuItem>
-            </Select>
-          </FormControl>
-          
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Channel</InputLabel>
-            <Select
-              value={filters.channel || ''}
-              label="Channel"
-              onChange={(e) => handleFilterChange('channel', e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  ...glassPresets.light,
-                  borderRadius: tokens.spacing.radius.lg,
-                },
-              }}
-            >
-              <MenuItem value="">All Channels</MenuItem>
-              <MenuItem value="EMAIL">Email</MenuItem>
-              <MenuItem value="SMS">SMS</MenuItem>
-            </Select>
-          </FormControl>
-          
-          <Box display="flex" gap={1}>
-            {hasActiveFilters && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleClearFilters}
-                startIcon={<FilterIcon />}
-                sx={{
-                  ...glassPresets.light,
-                  border: `1px solid ${tokens.color.neutral[300]}`,
-                  borderRadius: tokens.spacing.radius.full,
-                  '&:hover': {
-                    ...glassPresets.medium,
-                  },
-                }}
-              >
-                Clear
-              </Button>
-            )}
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => window.location.reload()}
-              startIcon={<RefreshIcon />}
-              sx={{
-                ...glassPresets.light,
-                border: `1px solid ${tokens.color.neutral[300]}`,
-                borderRadius: tokens.spacing.radius.full,
-                '&:hover': {
-                  ...glassPresets.medium,
-                },
-              }}
-            >
-              Refresh
-            </Button>
-          </Box>
-        </Stack>
-      </Box>
-
-      {/* Modern Table */}
+      {/* Modern Table with Embedded Filters */}
       <ModernTable
         columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
         data={(templates || []) as unknown as Record<string, unknown>[]}
@@ -492,9 +354,8 @@ export const TemplateList: React.FC<TemplateListProps> = ({
         sortOrder={sortOrder}
         onSort={handleSort}
         loading={isLoading}
-        emptyState={hasActiveFilters ? renderNoResultsState() : renderNoTemplatesState()}
+        emptyState={hasActiveFilters || searchQuery ? renderNoResultsState() : renderNoTemplatesState()}
       />
-
 
       {/* Modern Delete Confirmation Dialog */}
       <ModernDialog

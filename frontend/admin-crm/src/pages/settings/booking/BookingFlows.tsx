@@ -4,33 +4,21 @@ import React, { useEffect, useState, useRef } from 'react';
 
 import {
   Box,
-  Button,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  Stack,
-  TextField,
   Typography,
   Alert,
-  Chip,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
-  ToggleButton,
-  ToggleButtonGroup,
-  IconButton,
+  Button,
+  CircularProgress,
+  Chip,
 } from '@mui/material';
 import {
   Add as AddIcon,
   FilterList as FilterIcon,
-  Refresh as RefreshIcon,
   EventNote as FlowIcon,
-  ViewList as ListIcon,
-  ViewModule as CardIcon,
   Preview as PreviewIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -66,7 +54,7 @@ export const BookingFlows: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
   const [filters, setFilters] = useState<BookingFlowFilters>({});
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [_viewMode, _setViewMode] = useState<ViewMode>('table');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -101,9 +89,9 @@ export const BookingFlows: React.FC = () => {
 
   // FIXED: Ensure this hook exists and is imported correctly
   const { 
-    eventTypes = [],
-    isLoadingEventTypes,
-    eventTypesError,
+    eventTypes: _eventTypes = [],
+    isLoadingEventTypes: _isLoadingEventTypes,
+    eventTypesError: _eventTypesError,
   } = useEventTypes();
 
   useEffect(() => {
@@ -114,28 +102,6 @@ export const BookingFlows: React.FC = () => {
     ]);
   }, [setBreadcrumbs]);
 
-  // FIXED: Updated filter handling to match evolved types
-  const handleFilterChange = (key: keyof BookingFlowFilters, value: string | boolean) => {
-    setFilters(prev => {
-      const newFilters = { ...prev };
-      
-      if (value === 'all' || value === '' || value === undefined) {
-        delete newFilters[key];
-      } else {
-        if (key === 'event_type') {
-          // Convert string to number for event_type
-          newFilters[key] = parseInt(value as string, 10);
-        } else if (key === 'is_active') {
-          // Convert string to boolean for is_active
-          newFilters[key] = value === 'true' || value === true;
-        } else {
-          (newFilters as Record<string, unknown>)[key] = value;
-        }
-      }
-      
-      return newFilters;
-    });
-  };
 
   const handleClearFilters = () => {
     setFilters({});
@@ -346,7 +312,7 @@ export const BookingFlows: React.FC = () => {
       <ErrorDisplay 
         errors={{
           ...(flowsError ? { flows: flowsError } : {}),
-          ...(eventTypesError ? { eventTypes: eventTypesError } : {}),
+          ...(_eventTypesError ? { eventTypes: _eventTypesError } : {}),
           ...(createError ? { create: createError } : {}),
           ...(updateError ? { update: updateError } : {}),
           ...(deleteError ? { delete: deleteError } : {}),
@@ -381,241 +347,6 @@ export const BookingFlows: React.FC = () => {
         </ModernCard>
       </Box>
 
-      {/* Filters and View Controls */}
-      <ModernCard
-        variant="glass"
-        size="medium"
-        animation="none"
-        sx={{ mb: 4 }}
-      >
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-          <TextField
-            size="small"
-            placeholder="Search booking flows..."
-            value={filters.search || ''}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            sx={{ 
-              flex: 1, 
-              minWidth: 250,
-              '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                '&:hover': {
-                  border: `1px solid ${tokens.color.primary[300]}`,
-                },
-                '&.Mui-focused': {
-                  border: `1px solid ${tokens.color.primary[500]}`,
-                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                },
-              },
-            }}
-            disabled={isLoading}
-          />
-            
-          <FormControl 
-            size="small" 
-            sx={{ 
-              minWidth: 140,
-              '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                '&:hover': {
-                  border: `1px solid ${tokens.color.primary[300]}`,
-                },
-                '&.Mui-focused': {
-                  border: `1px solid ${tokens.color.primary[500]}`,
-                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                },
-              },
-            }}
-          >
-            <InputLabel>Event Type</InputLabel>
-            <Select
-              value={filters.event_type?.toString() || 'all'}
-              label="Event Type"
-              onChange={(e) => handleFilterChange('event_type', e.target.value)}
-              disabled={isLoading || isLoadingEventTypes}
-            >
-              <MenuItem value="all">All Event Types</MenuItem>
-              {eventTypes.map((eventType) => (
-                <MenuItem key={eventType.id} value={eventType.id.toString()}>
-                  {eventType.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          
-          <FormControl 
-            size="small" 
-            sx={{ 
-              minWidth: 120,
-              '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                '&:hover': {
-                  border: `1px solid ${tokens.color.primary[300]}`,
-                },
-                '&.Mui-focused': {
-                  border: `1px solid ${tokens.color.primary[500]}`,
-                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                },
-              },
-            }}
-          >
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={filters.is_active === undefined ? 'all' : filters.is_active.toString()}
-              label="Status"
-              onChange={(e) => handleFilterChange('is_active', e.target.value)}
-              disabled={isLoading}
-            >
-              <MenuItem value="all">All Status</MenuItem>
-              <MenuItem value="true">Active</MenuItem>
-              <MenuItem value="false">Inactive</MenuItem>
-            </Select>
-          </FormControl>
-
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(_, newMode) => newMode && setViewMode(newMode)}
-            size="small"
-            sx={{
-              '& .MuiToggleButton-root': {
-                ...glassPresets.light,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                borderRadius: `${tokens.spacing.radius.lg} !important`,
-                '&:hover': {
-                  ...glassPresets.medium,
-                  border: `1px solid ${tokens.color.primary[300]}`,
-                },
-                '&.Mui-selected': {
-                  backgroundColor: tokens.color.primary[100],
-                  border: `1px solid ${tokens.color.primary[500]}`,
-                  color: tokens.color.primary[700],
-                },
-              },
-            }}
-          >
-            <ToggleButton value="table" aria-label="table view">
-              <ListIcon />
-            </ToggleButton>
-            <ToggleButton value="cards" aria-label="card view">
-              <CardIcon />
-            </ToggleButton>
-          </ToggleButtonGroup>
-          
-          <Box display="flex" gap={1}>
-            {hasActiveFilters && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleClearFilters}
-                startIcon={<FilterIcon />}
-                disabled={isLoading}
-                sx={{
-                  ...glassPresets.light,
-                  border: `1px solid ${tokens.color.neutral[400]}30`,
-                  color: tokens.color.neutral[600],
-                  borderRadius: tokens.spacing.radius.full,
-                  '&:hover': {
-                    ...glassPresets.medium,
-                    border: `1px solid ${tokens.color.neutral[400]}50`,
-                  },
-                }}
-              >
-                Clear
-              </Button>
-            )}
-            <IconButton
-              onClick={() => refetchFlows()}
-              disabled={isLoadingFlows || isLoading}
-              sx={{
-                ...glassPresets.light,
-                border: `1px solid ${tokens.color.neutral[400]}30`,
-                color: tokens.color.neutral[600],
-                '&:hover': {
-                  ...glassPresets.medium,
-                  color: tokens.color.neutral[700],
-                },
-              }}
-            >
-              {isLoadingFlows ? <CircularProgress size={16} /> : <RefreshIcon />}
-            </IconButton>
-          </Box>
-        </Stack>
-        
-        {hasActiveFilters && (
-          <Box mt={3} pt={3} sx={{ borderTop: `1px solid ${tokens.color.borders.glass}` }}>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: tokens.color.neutral[600],
-                fontWeight: 600,
-                mb: 1.5,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                fontSize: '0.75rem',
-              }}
-            >
-              Active filters:
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              {filters.search && (
-                <Chip 
-                  label={`Search: "${filters.search}"`} 
-                  size="small" 
-                  onDelete={() => handleFilterChange('search', '')} 
-                  sx={{
-                    ...glassPresets.light,
-                    backgroundColor: `${tokens.color.primary[500]}15`,
-                    border: `1px solid ${tokens.color.primary[500]}30`,
-                    color: tokens.color.primary[700],
-                    '& .MuiChip-deleteIcon': {
-                      color: tokens.color.primary[600],
-                    },
-                  }}
-                />
-              )}
-              {filters.event_type && (
-                <Chip 
-                  label={`Event Type: ${eventTypes.find(et => et.id === filters.event_type)?.name || filters.event_type}`} 
-                  size="small" 
-                  onDelete={() => handleFilterChange('event_type', 'all')} 
-                  sx={{
-                    ...glassPresets.light,
-                    backgroundColor: `${tokens.color.secondary[500]}15`,
-                    border: `1px solid ${tokens.color.secondary[500]}30`,
-                    color: tokens.color.secondary[700],
-                    '& .MuiChip-deleteIcon': {
-                      color: tokens.color.secondary[600],
-                    },
-                  }}
-                />
-              )}
-              {filters.is_active !== undefined && (
-                <Chip 
-                  label={`Status: ${filters.is_active ? 'Active' : 'Inactive'}`} 
-                  size="small" 
-                  onDelete={() => handleFilterChange('is_active', 'all')} 
-                  sx={{
-                    ...glassPresets.light,
-                    backgroundColor: `${tokens.color.success[500]}15`,
-                    border: `1px solid ${tokens.color.success[500]}30`,
-                    color: tokens.color.success[700],
-                    '& .MuiChip-deleteIcon': {
-                      color: tokens.color.success[600],
-                    },
-                  }}
-                />
-              )}
-            </Stack>
-          </Box>
-        )}
-      </ModernCard>
 
       {/* Booking Flows Display */}
       <ModernCard
@@ -627,7 +358,7 @@ export const BookingFlows: React.FC = () => {
           position: 'relative',
         }}
       >
-        {viewMode === 'table' ? (
+        {_viewMode === 'table' ? (
           <BookingFlowsTable
             bookingFlows={bookingFlows}
             isLoading={isLoadingFlows}

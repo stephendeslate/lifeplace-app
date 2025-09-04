@@ -95,9 +95,9 @@ export const ModernPageLayout: React.FC<ModernPageLayoutProps> = ({
           sx={{ 
             py: paddingY || { xs: 2, sm: 3, md: 4 },
             px: disableGutters ? 0 : {
-              xs: 'clamp(8px, 2vw, 16px)',  // Tighter: 8px to 16px
-              sm: 'clamp(12px, 3vw, 24px)', // Tighter: 12px to 24px  
-              md: 'clamp(16px, 4vw, 32px)', // Tighter: 16px to 32px
+              xs: 'clamp(4px, 1.5vw, 12px)',  // Much tighter: 4px to 12px
+              sm: 'clamp(6px, 2vw, 16px)',    // Much tighter: 6px to 16px  
+              md: 'clamp(8px, 2.5vw, 20px)',  // Much tighter: 8px to 20px
             },
             position: 'relative',
             zIndex: 1,
@@ -115,17 +115,59 @@ export const ModernDashboardLayout: React.FC<Omit<ModernPageLayoutProps, 'backgr
   <ModernPageLayout {...props} backgroundPattern="default" />
 );
 
-export const ModernSettingsLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (props) => (
-  <ModernPageLayout 
-    {...props} 
-    backgroundPattern="minimal" 
-    paddingY={{
-      xs: 'clamp(4px, 1vw, 8px)',    // Tighter: 4px to 8px  
-      sm: 'clamp(6px, 1.5vw, 12px)', // Tighter: 6px to 12px
-      md: 'clamp(8px, 2vw, 16px)',   // Tighter: 8px to 16px
-    }} 
-  />
-);
+export const ModernSettingsLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (props) => {
+  return (
+    <Box 
+      sx={{ 
+        minHeight: '100vh',
+        position: 'relative',
+        
+        // Glassmorphic background pattern - minimal
+        '&::before': {
+          content: '""',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `
+            radial-gradient(circle at 20% 20%, ${tokens.color.primary[500]}02 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, ${tokens.color.success[500]}02 0%, transparent 50%)
+          `,
+          pointerEvents: 'none',
+          zIndex: -1,
+        },
+      }}
+    >
+      <Container 
+        maxWidth={props.maxWidth || 'xl'} 
+        disableGutters={props.disableGutters || false}
+        sx={{ 
+          py: {
+            xs: 'clamp(4px, 1vw, 8px)',    // Tight vertical padding
+            sm: 'clamp(6px, 1.5vw, 12px)', 
+            md: 'clamp(8px, 2vw, 16px)',   
+          },
+          pl: {
+            xs: 'clamp(2px, 0.8vw, 8px)',   // Extra tight left padding: 2px to 8px
+            sm: 'clamp(4px, 1.2vw, 12px)',  // Extra tight left padding: 4px to 12px  
+            md: 'clamp(6px, 1.5vw, 16px)',  // Extra tight left padding: 6px to 16px
+          },
+          pr: {
+            xs: 'clamp(4px, 1.5vw, 12px)',  // Normal right padding for balance
+            sm: 'clamp(6px, 2vw, 16px)',    
+            md: 'clamp(8px, 2.5vw, 20px)',  
+          },
+          position: 'relative',
+          zIndex: 1,
+          ...props.sx,
+        }}
+      >
+        {props.children}
+      </Container>
+    </Box>
+  );
+};
 
 export const ModernOverviewLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (props) => (
   <ModernPageLayout {...props} backgroundPattern="vibrant" />

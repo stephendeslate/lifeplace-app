@@ -2,23 +2,32 @@
 
 import React from 'react';
 import {
-  Chip,
   Typography,
   Box,
+  Chip,
   Tooltip,
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Description as ContractIcon,
+  FileCopy as DuplicateIcon,
   EventNote as EventIcon,
   Gavel as SignatureIcon,
-  Business as CompanyIcon,
-  VisibilityOff as WitnessIcon,
-  FileCopy as DuplicateIcon,
+  EditNote as AmendmentIcon,
 } from '@mui/icons-material';
-import type { ContractTemplateTableProps, ContractTemplate } from '../../types/contracts.types';
-import { ModernTable, ModernEmptyState, type ModernTableColumn, type ModernTableAction } from '../common';
+import type { ContractTemplate } from '../../types/contracts.types';
+import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common';
+
+interface ContractTemplateTableProps {
+  templates: ContractTemplate[];
+  isLoading: boolean;
+  onEdit: (template: ContractTemplate) => void;
+  onDelete: (id: number) => void;
+  onDuplicate?: (template: ContractTemplate) => void;
+  isDeleting: boolean;
+}
 
 export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
   templates,
@@ -26,53 +35,8 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
   onEdit,
   onDelete,
   onDuplicate,
+  isDeleting,
 }) => {
-
-  const getRequirementChips = (template: ContractTemplate) => {
-    const chips: React.ReactElement[] = [];
-    
-    if (template.requires_signature) {
-      chips.push(
-        <Chip
-          key="signature"
-          icon={<SignatureIcon />}
-          label="Signature Required"
-          size="small"
-          color="primary"
-          variant="outlined"
-        />
-      );
-    }
-
-    if (template.requires_company_signature) {
-      chips.push(
-        <Chip
-          key="company"
-          icon={<CompanyIcon />}
-          label="Company Signature"
-          size="small"
-          color="secondary"
-          variant="outlined"
-        />
-      );
-    }
-
-    if (template.requires_witness) {
-      chips.push(
-        <Chip
-          key="witness"
-          icon={<WitnessIcon />}
-          label="Witness Required"
-          size="small"
-          color="warning"
-          variant="outlined"
-        />
-      );
-    }
-
-    return chips;
-  };
-
   const getEventTypeChip = (eventTypeName?: string) => {
     if (!eventTypeName) {
       return (
@@ -96,134 +60,154 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
     );
   };
 
-  // Table columns for ModernTable
-  const getTableColumns = (): ModernTableColumn<ContractTemplate>[] => [
+  const getSignatureChip = (requiresSignature: boolean) => (
+    <Chip
+      icon={<SignatureIcon />}
+      label={requiresSignature ? 'Required' : 'Not Required'}
+      size="small"
+      color={requiresSignature ? 'success' : 'default'}
+      variant={requiresSignature ? 'filled' : 'outlined'}
+    />
+  );
+
+  const getAmendmentChip = (allowsAmendments: boolean) => (
+    <Chip
+      icon={<AmendmentIcon />}
+      label={allowsAmendments ? 'Allowed' : 'Not Allowed'}
+      size="small"
+      color={allowsAmendments ? 'info' : 'default'}
+      variant={allowsAmendments ? 'filled' : 'outlined'}
+    />
+  );
+
+  const columns: ModernTableColumn[] = [
     {
       key: 'name',
       label: 'Template Name',
       sortable: true,
-      width: '25%',
-      render: (_, template) => (
-        <Box display="flex" alignItems="center" gap={1}>
-          <ContractIcon color="primary" />
-          <Box>
-            <Typography variant="subtitle2" fontWeight="medium">
-              {template.name}
-            </Typography>
-            {template.description && (
-              <Typography variant="caption" color="text.secondary">
-                {template.description}
+      render: (_, row) => {
+        const template = row as unknown as ContractTemplate;
+        return (
+          <Box display="flex" alignItems="center" gap={1}>
+            <ContractIcon color="primary" />
+            <Box>
+              <Typography variant="subtitle2" fontWeight="medium">
+                {template.name}
               </Typography>
-            )}
+              {template.description && (
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {template.description}
+                </Typography>
+              )}
+            </Box>
           </Box>
-        </Box>
-      ),
+        );
+      }
     },
     {
       key: 'event_type',
       label: 'Event Type',
-      width: '15%',
-      render: (_, template) => getEventTypeChip(template.event_type_name),
+      render: (_, row) => {
+        const template = row as unknown as ContractTemplate;
+        return getEventTypeChip(template.event_type_name);
+      },
     },
     {
-      key: 'requirements',
-      label: 'Requirements',
-      width: '15%',
-      render: (_, template) => (
-        <Box display="flex" flexWrap="wrap" gap={0.5}>
-          {getRequirementChips(template)}
-        </Box>
-      ),
-    },
-    {
-      key: 'variables',
-      label: 'Variables',
-      width: '15%',
-      render: (_, template) => (
-        <Tooltip title={`${template.variables?.length || 0} variables available for this template`}>
-          <Chip
-            label={`${template.variables?.length || 0} variables`}
-            size="small"
-            variant="outlined"
-            color="info"
-          />
-        </Tooltip>
-      ),
+      key: 'signature_requirements',
+      label: 'Signature',
+      align: 'center',
+      render: (_, row) => {
+        const template = row as unknown as ContractTemplate;
+        return getSignatureChip(template.requires_signature);
+      },
     },
     {
       key: 'amendments',
       label: 'Amendments',
-      width: '10%',
-      render: (_, template) => (
-        <Chip
-          label={template.allows_amendments ? 'Allowed' : 'Not Allowed'}
-          size="small"
-          color={template.allows_amendments ? 'success' : 'default'}
-          variant={template.allows_amendments ? 'filled' : 'outlined'}
-        />
-      ),
+      align: 'center',
+      render: (_, row) => {
+        const template = row as unknown as ContractTemplate;
+        return getAmendmentChip(template.allows_amendments);
+      },
     },
     {
-      key: 'updated_at',
-      label: 'Last Updated',
-      width: '20%',
+      key: 'variables',
+      label: 'Variables',
+      align: 'center',
+      render: (_, row) => {
+        const template = row as unknown as ContractTemplate;
+        const variableCount = template.variables?.length || 0;
+        return (
+          <Tooltip title={variableCount > 0 ? `Variables: ${template.variables?.join(', ')}` : 'No variables'}>
+            <Chip
+              label={`${variableCount} variables`}
+              size="small"
+              color={variableCount > 0 ? 'secondary' : 'default'}
+              variant={variableCount > 0 ? 'outlined' : 'filled'}
+            />
+          </Tooltip>
+        );
+      },
+    },
+    {
+      key: 'created_at',
+      label: 'Created',
       sortable: true,
-      render: (_, template) => (
-        <Box>
+      render: (_, row) => {
+        const template = row as unknown as ContractTemplate;
+        const date = new Date(template.created_at);
+        return (
           <Typography variant="body2" color="text.secondary">
-            {new Date(template.updated_at).toLocaleDateString()}
+            {date.toLocaleDateString()}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {new Date(template.updated_at).toLocaleTimeString()}
-          </Typography>
-        </Box>
-      ),
+        );
+      },
     },
   ];
 
-  // Table actions for ModernTable
-  const getTableActions = (): ModernTableAction<ContractTemplate>[] => [
+  const actions: ModernTableAction[] = [
     {
-      label: 'Edit Template',
+      label: 'Edit',
       icon: <EditIcon />,
-      onClick: (template) => onEdit(template),
+      onClick: (row: Record<string, unknown>) => onEdit(row as unknown as ContractTemplate),
       color: 'primary',
     },
-    ...(onDuplicate ? [{
-      label: 'Duplicate Template',
-      icon: <DuplicateIcon />,
-      onClick: (template: ContractTemplate) => onDuplicate(template),
-      color: 'default' as const,
-    }] : []),
     {
-      label: 'Delete Template',
+      label: 'Duplicate',
+      icon: <DuplicateIcon />,
+      onClick: (row: Record<string, unknown>) => onDuplicate && onDuplicate(row as unknown as ContractTemplate),
+      color: 'secondary',
+      show: () => !!onDuplicate,
+    },
+    {
+      label: 'Delete',
       icon: <DeleteIcon />,
-      onClick: (template) => onDelete(template.id),
+      onClick: (row) => onDelete((row as { id: number }).id),
       color: 'error',
     },
   ];
 
-  const emptyState = (
-    <ModernEmptyState
-      icon={ContractIcon}
-      title="No contract templates found"
-      description="Create your first contract template to streamline your contract process"
-      size="medium"
-      illustration="gradient"
-      tip={{
-        text: "Contract templates help standardize legal documents across your events",
-        type: "info"
-      }}
-    />
-  );
+  if (isLoading) {
+    return <ModernLoadingStates.ModernTableSkeleton />;
+  }
+
+  if (templates.length === 0) {
+    return (
+      <ModernEmptyState
+        icon={ContractIcon}
+        title="No Contract Templates"
+        description="No contract templates match your current filters."
+        size="small"
+      />
+    );
+  }
 
   return (
     <ModernTable
-      columns={getTableColumns() as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
       data={templates as unknown as Record<string, unknown>[]}
-      actions={getTableActions() as unknown as ModernTableAction<Record<string, unknown>>[]}
-      loading={isLoading}
-      emptyState={emptyState}
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      loading={isDeleting}
     />
   );
 };

@@ -16,9 +16,19 @@ import {
   EventNote as EventIcon,
   Timeline as TimelineIcon,
 } from '@mui/icons-material';
-import type { WorkflowTemplateTableProps, WorkflowTemplate } from '../../types/workflows.types';
+import type { WorkflowTemplate } from '../../types/workflows.types';
 import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
 import type { ModernTableColumn, ModernTableAction } from '../common';
+
+interface WorkflowTemplateTableProps {
+  templates: WorkflowTemplate[];
+  isLoading: boolean;
+  onEdit: (template: WorkflowTemplate) => void;
+  onView: (template: WorkflowTemplate) => void;
+  onDelete: (id: number) => void;
+  onDuplicate?: (template: WorkflowTemplate) => void;
+  isDeleting?: boolean;
+}
 
 export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
   templates,
@@ -27,6 +37,7 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
   onView,
   onDelete,
   onDuplicate,
+  isDeleting = false,
 }) => {
   const getStatusChip = (isActive: boolean) => (
     <Chip
@@ -194,6 +205,7 @@ export const WorkflowTemplatesTable: React.FC<WorkflowTemplateTableProps> = ({
       onRowClick={(row) => onView(row as unknown as WorkflowTemplate)}
       sortBy="name"
       sortOrder="asc"
+      loading={isDeleting}
     />
   );
 };
