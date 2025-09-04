@@ -1,226 +1,216 @@
-// frontend/admin-crm/src/pages/settings/booking/EventTypes.tsx
+// Event Types Settings Page - Standardized Version
+// Migrated to use the unified settings system
 
-import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Alert,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  FilterList as FilterIcon,
-  EventNote as EventIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
-import { useLayout } from '../../../contexts/LayoutContext';
+import React from 'react';
+import { Description as EventTypeIcon } from '@mui/icons-material';
+import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useEventTypes } from '../../../hooks/useEvents';
-import type { 
-  EventType, 
-  EventTypeFilters,
-  CreateEventTypeData,
-  UpdateEventTypeData 
-} from '../../../types/events.types';
+import type { CreateEventTypeData, UpdateEventTypeData } from '../../../types/events.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 
-// Modern Design System imports
-import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
-import { ModernCard } from '../../../components/common/ModernCard';
-import { ModernPageHeader, createAddAction, createRefreshAction } from '../../../components/common/ModernPageHeader';
-import { ModernEmptyState } from '../../../components/common/ModernEmptyState';
-// Note: Using EventTypesTable temporarily until ModernTable is fully implemented
-import { EventTypesTable, EventTypeFormDialog } from '../../../components/events';
-import ModernLoadingStates from '../../../components/common/ModernLoadingStates';
-import { tokens } from '../../../design-system';
+// Event Type interface (from the API)
+interface EventType {
+  id: number;
+  name: string;
+  description: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 
-export const EventTypes: React.FC = () => {
-  const { setBreadcrumbs } = useLayout();
-  const [filters, setFilters] = useState<EventTypeFilters>({});
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingEventType, setEditingEventType] = useState<EventType | null>(null);
+// Table columns configuration
+const columns: SettingsTableColumn<EventType>[] = [
+  {
+    key: 'name',
+    label: 'Event Type',
+    sortable: true,
+    searchable: true,
+  },
+  {
+    key: 'description',
+    label: 'Description',
+    searchable: true,
+    render: (value) => String(value) || '-',
+  },
+  {
+    key: 'is_active',
+    label: 'Status',
+    align: 'center',
+    render: (value) => value ? 'Active' : 'Inactive',
+  },
+  {
+    key: 'updated_at',
+    label: 'Last Modified',
+    sortable: true,
+    render: (value) => value ? new Date(String(value)).toLocaleDateString() : '-',
+  },
+];
 
+// Form sections configuration
+const formSections: ModernFormSection[] = [
+  {
+    title: 'Basic Information',
+    fields: [
+      {
+        name: 'name',
+        label: 'Event Type Name',
+        type: 'text',
+        required: true,
+        placeholder: 'e.g., Wedding, Corporate Event, Birthday Party',
+        helperText: 'A descriptive name for this type of event',
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
+        multiline: true,
+        rows: 3,
+        placeholder: 'Describe this event type and when it would be used...',
+        helperText: 'Optional description to help staff understand when to use this event type',
+      },
+    ],
+  },
+  {
+    title: 'Settings',
+    fields: [
+      {
+        name: 'is_active',
+        label: 'Active',
+        type: 'switch',
+        helperText: 'Active event types are available for selection when creating new events',
+      },
+    ],
+  },
+];
+
+// Default values for new event types
+const defaultEventType: EventType = {
+  id: 0,
+  name: '',
+  description: '',
+  is_active: true,
+};
+
+// Settings page configuration
+const config: SettingsPageConfig<EventType> = {
+  page: {
+    title: 'Event Types',
+    subtitle: 'Manage the types of events your business offers',
+    icon: React.createElement(EventTypeIcon),
+    breadcrumbs: [
+      { label: 'Settings', href: '/settings' },
+      { label: 'Booking', href: '/settings/booking' },
+      { label: 'Event Types' },
+    ],
+  },
+
+  table: {
+    columns,
+    searchFields: ['name', 'description'],
+    defaultSort: { key: 'name', order: 'asc' },
+    emptyState: {
+      icon: React.createElement(EventTypeIcon),
+      title: 'No Event Types Found',
+      description: 'Create your first event type to start organizing your events.',
+    },
+  },
+
+  form: {
+    title: 'Event Type',
+    subtitle: 'Configure the event type settings and availability.',
+    sections: formSections,
+    maxWidth: 'md',
+  },
+
+  features: {
+    create: true,
+    edit: true,
+    delete: true,
+    duplicate: false,
+    search: true,
+    refresh: true,
+  },
+};
+
+export const EventTypes = () => {
+  // Get the event types hook
+  const eventTypesHook = useEventTypes();
+  
+  // Extract data from the hook
   const {
-    eventTypes,
+    eventTypes = [],
     isLoadingEventTypes,
+    eventTypesError,
     createEventType,
     updateEventType,
     deleteEventType,
+    refetchEventTypes,
     isCreatingEventType,
     isUpdatingEventType,
-    refetchEventTypes,
-  } = useEventTypes(filters);
+    isDeletingEventType,
+  } = eventTypesHook;
 
-  // Event handlers
-  const handleCreateNew = () => {
-    setEditingEventType(null);
-    setDialogOpen(true);
-  };
+  // Action handlers
+  const handleRefresh = () => refetchEventTypes();
 
-  const handleEdit = (eventType: EventType) => {
-    setEditingEventType(eventType);
-    setDialogOpen(true);
-  };
+  const handleCreate = async (data: EventType) => {
+    const createData: CreateEventTypeData = {
+      name: data.name,
+      description: data.description,
+      is_active: data.is_active,
+    };
 
-  const handleDelete = (id: number) => {
-    deleteEventType(id);
-  };
-
-  const handleSubmit = (data: CreateEventTypeData | UpdateEventTypeData) => {
-    if (editingEventType) {
-      updateEventType({ id: editingEventType.id, data: data as UpdateEventTypeData });
-    } else {
-      createEventType(data as CreateEventTypeData);
-    }
-    setDialogOpen(false);
-  };
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setEditingEventType(null);
-  };
-
-  useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Settings' },
-      { label: 'Booking Configuration' },
-      { label: 'Event Types' },
-    ]);
-  }, [setBreadcrumbs]);
-
-
-  const handleClearFilters = () => {
-    setFilters({});
-  };
-
-  const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
-
-  if (isLoadingEventTypes && eventTypes.length === 0) {
-    return (
-      <ModernSettingsLayout>
-        <ModernLoadingStates.ModernLoadingSpinner
-          size={40}
-          message="Loading event types..."
-          variant="circular"
-          glass
-        />
-      </ModernSettingsLayout>
-    );
-  }
-
-  // Define header actions
-  const headerActions = [];
-  headerActions.push(createAddAction('New Event Type', handleCreateNew, 'primary'));
-  headerActions.push(createRefreshAction(() => refetchEventTypes()));
-  
-  if (hasActiveFilters) {
-    headerActions.push({
-      icon: <FilterIcon />,
-      label: 'Clear Filters',
-      variant: 'outlined' as const,
-      onClick: handleClearFilters,
-      tooltip: 'Clear all active filters',
+    return new Promise<void>((resolve, reject) => {
+      createEventType(createData, {
+        onSuccess: () => resolve(),
+        onError: reject,
+      });
     });
-  }
+  };
+
+  const handleUpdate = async (id: string | number, data: EventType) => {
+    const updateData: UpdateEventTypeData = {
+      name: data.name,
+      description: data.description,
+      is_active: data.is_active,
+    };
+
+    return new Promise<void>((resolve, reject) => {
+      updateEventType({
+        id: Number(id),
+        data: updateData
+      }, {
+        onSuccess: () => resolve(),
+        onError: reject,
+      });
+    });
+  };
+
+  const handleDelete = async (id: string | number) => {
+    return new Promise<void>((resolve, reject) => {
+      deleteEventType(Number(id), {
+        onSuccess: () => resolve(),
+        onError: reject,
+      });
+    });
+  };
 
   return (
-    <ModernSettingsLayout>
-      {/* Modern Header */}
-      <ModernPageHeader
-        title="Event Types"
-        subtitle="Manage the types of events your business offers and configure their settings"
-        icon={<EventIcon />}
-        breadcrumbs={[
-          { label: 'Settings' },
-          { label: 'Booking Configuration' },
-          { label: 'Event Types' },
-        ]}
-        primaryAction={headerActions.find(a => a.label === 'New Event Type')}
-        secondaryActions={headerActions.filter(a => a.label !== 'New Event Type')}
-        stats={[
-          { label: 'Total Types', value: eventTypes.length },
-          { label: 'Active', value: eventTypes.filter(et => et.is_active).length },
-        ]}
-        size="medium"
-        gradient
-        glass
-      />
-
-      {/* Info Alert */}
-      <Box sx={{ mb: 4 }}>
-        <ModernCard
-          variant="glass"
-          color="primary"
-          size="small"
-          animation="none"
-        >
-          <Alert 
-            severity="info" 
-            icon={<InfoIcon />}
-            sx={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              '& .MuiAlert-message': {
-                color: tokens.color.info[700],
-              },
-            }}
-          >
-            Event types help organize your events by category (e.g., Weddings, Corporate Events, Birthday Parties). 
-            They can be used in booking forms, questionnaires, and reporting.
-          </Alert>
-        </ModernCard>
-      </Box>
-
-
-      {/* Event Types Table */}
-      <ModernCard
-        variant="glass"
-        size="large"
-        animation="none"
-        sx={{ overflow: 'visible', mb: 4 }}
-      >
-        {isLoadingEventTypes && eventTypes.length === 0 ? (
-          <ModernLoadingStates.ModernTableSkeleton
-            rows={5}
-            columns={6}
-          />
-        ) : eventTypes.length === 0 ? (
-          <ModernEmptyState
-            icon={EventIcon}
-            title={hasActiveFilters ? 'No event types match your filters' : 'No event types found'}
-            description={hasActiveFilters 
-              ? 'Try adjusting your search criteria or clear the filters'
-              : 'Create your first event type to start organizing your events'
-            }
-            primaryAction={{
-              label: hasActiveFilters ? 'Clear Filters' : 'Create Event Type',
-              onClick: hasActiveFilters ? handleClearFilters : handleCreateNew,
-              icon: hasActiveFilters ? <FilterIcon /> : <AddIcon />,
-              color: 'primary',
-            }}
-            tip={{
-              text: 'Event types help categorize your events and streamline the booking process',
-              type: 'info',
-            }}
-            size="medium"
-            illustration="gradient"
-          />
-        ) : (
-          <EventTypesTable
-            eventTypes={eventTypes}
-            isLoading={isLoadingEventTypes}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isDeleting={false}
-          />
-        )}
-      </ModernCard>
-
-      {/* Form Dialog */}
-      <EventTypeFormDialog
-        open={dialogOpen}
-        onClose={handleDialogClose}
-        editingEventType={editingEventType}
-        onSubmit={handleSubmit}
-        isLoading={isCreatingEventType || isUpdatingEventType}
-      />
-
-    </ModernSettingsLayout>
+    <SettingsPage
+      config={config}
+      data={eventTypes}
+      defaultValues={defaultEventType}
+      isLoading={isLoadingEventTypes}
+      error={eventTypesError?.message}
+      onRefresh={handleRefresh}
+      onCreate={handleCreate}
+      onUpdate={handleUpdate}
+      onDelete={handleDelete}
+      isCreating={isCreatingEventType}
+      isUpdating={isUpdatingEventType}
+      isDeleting={isDeletingEventType}
+    />
   );
 };
+
+export default EventTypes;

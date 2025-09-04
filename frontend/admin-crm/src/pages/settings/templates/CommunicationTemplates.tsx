@@ -1,236 +1,243 @@
-// frontend/admin-crm/src/pages/settings/templates/CommunicationTemplates.tsx
+// Communication Templates Settings Page - Standardized Version
+// Migrated to use the unified settings system
 
-import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Typography,
-  TextField,
-  InputAdornment,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Message as MessageIcon,
-} from '@mui/icons-material';
-import { useLayout } from '../../../contexts/LayoutContext';
+import React from 'react';
+import { Email as CommunicationIcon } from '@mui/icons-material';
+import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useCommunications } from '../../../hooks/useCommunications';
-import { TemplateList } from '../../../components/communications/TemplateList';
-import { TemplateForm } from '../../../components/communications/TemplateForm';
-import type { CommunicationTemplate } from '../../../types/communications.types';
+import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../../types/communications.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 
-// Modern Design System imports
-import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
-import { ModernCard } from '../../../components/common/ModernCard';
-import { ModernPageHeader, createAddAction, createRefreshAction } from '../../../components/common/ModernPageHeader';
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
+// Table columns configuration
+const columns: SettingsTableColumn<CommunicationTemplate>[] = [
+  {
+    key: 'name',
+    label: 'Template Name',
+    sortable: true,
+    searchable: true,
+  },
+  {
+    key: 'channel',
+    label: 'Channel',
+    align: 'center',
+    render: (value) => String(value),
+  },
+  {
+    key: 'category',
+    label: 'Category',
+    align: 'center',
+    render: (value) => String(value),
+  },
+  {
+    key: 'is_system',
+    label: 'System Template',
+    align: 'center',
+    render: (value) => value ? 'Yes' : 'No',
+  },
+  {
+    key: 'updated_at',
+    label: 'Last Modified',
+    sortable: true,
+    render: (value) => value ? new Date(String(value)).toLocaleDateString() : '-',
+  },
+];
 
-type ViewMode = 'list' | 'create' | 'edit' | 'preview';
+// Form sections configuration
+const formSections: ModernFormSection[] = [
+  {
+    title: 'Basic Information',
+    fields: [
+      {
+        name: 'name',
+        label: 'Template Name',
+        type: 'text',
+        required: true,
+        placeholder: 'e.g., Booking Confirmation Email',
+      },
+      {
+        name: 'channel',
+        label: 'Channel',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'EMAIL', label: 'Email' },
+          { value: 'SMS', label: 'SMS' },
+        ],
+      },
+      {
+        name: 'category',
+        label: 'Category',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'SYSTEM', label: 'System' },
+          { value: 'MANUAL', label: 'Manual' },
+          { value: 'AUTO', label: 'Automated' },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Message Content',
+    fields: [
+      {
+        name: 'subject_template',
+        label: 'Subject Template',
+        type: 'text',
+        placeholder: 'e.g., Your booking is confirmed!',
+        helperText: 'Subject line for email (ignored for SMS)',
+      },
+      {
+        name: 'body_template',
+        label: 'Body Template',
+        type: 'textarea',
+        multiline: true,
+        rows: 8,
+        required: true,
+        placeholder: 'Enter the message content here. Use {{variable_name}} for dynamic content...',
+        helperText: 'Use {{variable_name}} syntax for dynamic variables',
+      },
+    ],
+  },
+];
 
-export const CommunicationTemplates: React.FC = () => {
-  const { setBreadcrumbs } = useLayout();
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [selectedTemplate, setSelectedTemplate] = useState<CommunicationTemplate | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearchField, setShowSearchField] = useState(false);
+// Default values for new communication templates
+const defaultCommunicationTemplate: CommunicationTemplate = {
+  id: 0,
+  name: '',
+  channel: 'EMAIL',
+  category: 'MANUAL',
+  subject_template: '',
+  body_template: '',
+  is_system: false,
+  variables_schema: {},
+  created_at: '',
+  updated_at: '',
+};
 
-  // Get templates data for stats
-  const { useTemplates } = useCommunications();
-  const { data: templates = [] } = useTemplates({});
-
-  useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Settings' },
-      { label: 'Templates' },
+// Settings page configuration
+const config: SettingsPageConfig<CommunicationTemplate> = {
+  page: {
+    title: 'Communication Templates',
+    subtitle: 'Manage email and SMS templates for automated communications',
+    icon: React.createElement(CommunicationIcon),
+    breadcrumbs: [
+      { label: 'Settings', href: '/settings' },
+      { label: 'Templates', href: '/settings/templates' },
       { label: 'Communication Templates' },
-    ]);
-  }, [setBreadcrumbs]);
+    ],
+  },
 
-  const handleCreateNew = () => {
-    setSelectedTemplate(null);
-    setViewMode('create');
-  };
-
-  const handleEditClick = (template: CommunicationTemplate) => {
-    setSelectedTemplate(template);
-    setViewMode('edit');
-  };
-
-  const handlePreviewClick = (template: CommunicationTemplate) => {
-    setSelectedTemplate(template);
-    setViewMode('preview');
-  };
-
-  const handleSave = () => {
-    setViewMode('list');
-    setSelectedTemplate(null);
-  };
-
-  const handleCancel = () => {
-    setViewMode('list');
-    setSelectedTemplate(null);
-  };
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
-
-  const handleToggleSearch = () => {
-    setShowSearchField(!showSearchField);
-    if (!showSearchField) {
-      setSearchQuery('');
-    }
-  };
-
-  // Form view (create or edit)
-  if (viewMode === 'create' || viewMode === 'edit') {
-    return (
-      <ModernSettingsLayout>
-        <ModernCard
-          variant="glass"
-          size="large"
-          animation="fade"
-        >
-          <TemplateForm
-            template={selectedTemplate || undefined}
-            onSave={handleSave}
-            onCancel={handleCancel}
-          />
-        </ModernCard>
-      </ModernSettingsLayout>
-    );
-  }
-
-  // Header actions
-  const headerActions = [
-    {
-      icon: <SearchIcon />,
-      label: showSearchField ? 'Hide Search' : 'Search',
-      onClick: handleToggleSearch,
-      variant: 'icon' as const,
-      tooltip: showSearchField ? 'Hide search field' : 'Search communication templates',
+  table: {
+    columns,
+    searchFields: ['name'],
+    defaultSort: { key: 'name', order: 'asc' },
+    emptyState: {
+      icon: React.createElement(CommunicationIcon),
+      title: 'No Communication Templates Found',
+      description: 'Create your first template to start sending automated messages to clients.',
     },
-    createRefreshAction(() => window.location.reload()),
-  ];
+  },
 
-  const primaryAction = createAddAction('New Template', handleCreateNew, 'primary');
+  form: {
+    title: 'Communication Template',
+    subtitle: 'Configure automated email and SMS messages.',
+    sections: formSections,
+    maxWidth: 'lg',
+  },
 
-  // Calculate stats
-  const emailTemplates = templates.filter(t => t.channel === 'EMAIL').length;
-  const smsTemplates = templates.filter(t => t.channel === 'SMS').length;
+  features: {
+    create: true,
+    edit: true,
+    delete: true,
+    duplicate: false,
+    search: true,
+    refresh: true,
+  },
+};
 
-  // List view
+export const CommunicationTemplates = () => {
+  // Get hooks from communications
+  const communications = useCommunications();
+  const {
+    useTemplates,
+    useCreateTemplate,
+    useUpdateTemplate,
+    useDeleteTemplate,
+  } = communications;
+
+  // Data hooks
+  const { data: communicationTemplates = [], isLoading, error, refetch } = useTemplates();
+
+  // Mutation hooks
+  const createMutation = useCreateTemplate();
+  const updateMutation = useUpdateTemplate();
+  const deleteMutation = useDeleteTemplate();
+
+  // Action handlers
+  const handleRefresh = () => refetch();
+
+  const handleCreate = async (data: CommunicationTemplate) => {
+    const createData: CreateTemplateData = {
+      name: data.name,
+      channel: data.channel,
+      category: data.category,
+      subject_template: data.subject_template,
+      body_template: data.body_template,
+      variables_schema: data.variables_schema,
+    };
+
+    return new Promise<void>((resolve, reject) => {
+      createMutation.mutate(createData, {
+        onSuccess: () => { refetch(); resolve(); },
+        onError: reject,
+      });
+    });
+  };
+
+  const handleUpdate = async (id: string | number, data: CommunicationTemplate) => {
+    const updateData: UpdateTemplateData = {
+      name: data.name,
+      channel: data.channel,
+      category: data.category,
+      subject_template: data.subject_template,
+      body_template: data.body_template,
+      variables_schema: data.variables_schema,
+    };
+
+    return new Promise<void>((resolve, reject) => {
+      updateMutation.mutate({ id: Number(id), data: updateData }, {
+        onSuccess: () => { refetch(); resolve(); },
+        onError: reject,
+      });
+    });
+  };
+
+  const handleDelete = async (id: string | number) => {
+    return new Promise<void>((resolve, reject) => {
+      deleteMutation.mutate(Number(id), {
+        onSuccess: () => { refetch(); resolve(); },
+        onError: reject,
+      });
+    });
+  };
+
   return (
-    <ModernSettingsLayout>
-      {/* Modern Header */}
-      <ModernPageHeader
-        title="Communication Templates"
-        subtitle="Manage email and SMS templates for consistent client communications"
-        icon={<MessageIcon />}
-        breadcrumbs={[
-          { label: 'Settings' },
-          { label: 'Templates' },
-          { label: 'Communication Templates' },
-        ]}
-        primaryAction={primaryAction}
-        secondaryActions={headerActions}
-        stats={[
-          { label: 'Total Templates', value: templates.length },
-          { label: 'Email Templates', value: emailTemplates },
-          { label: 'SMS Templates', value: smsTemplates },
-        ]}
-        size="medium"
-        gradient
-        glass
-      />
-
-      {/* Search Field - Conditionally Shown */}
-      {showSearchField && (
-        <Box sx={{ mb: 4 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="fade"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-              },
-            }}
-          >
-            <Box sx={{ position: 'relative' }}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: tokens.color.neutral[800],
-                  fontWeight: 600,
-                  mb: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                Search Communication Templates
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: tokens.color.neutral[600],
-                  mb: 3,
-                }}
-              >
-                Find templates by name, channel, category, or content
-              </Typography>
-
-              <TextField
-                fullWidth
-                placeholder="Search by name, channel, category, or content..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                autoFocus
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.lg,
-                    border: `1px solid ${tokens.color.borders.glass}`,
-                    '&:hover': {
-                      border: `1px solid ${tokens.color.primary[300]}`,
-                    },
-                    '&.Mui-focused': {
-                      border: `1px solid ${tokens.color.primary[500]}`,
-                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                    },
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-          </ModernCard>
-        </Box>
-      )}
-
-      {/* Templates Table */}
-      <ModernCard
-        variant="glass"
-        size="large"
-        animation="none"
-        sx={{
-          overflow: 'visible',
-          position: 'relative',
-        }}
-      >
-        <TemplateList
-          searchQuery={searchQuery}
-          onEditClick={handleEditClick}
-          onPreviewClick={handlePreviewClick}
-        />
-      </ModernCard>
-    </ModernSettingsLayout>
+    <SettingsPage
+      config={config}
+      data={communicationTemplates}
+      defaultValues={defaultCommunicationTemplate}
+      isLoading={isLoading}
+      error={error?.message}
+      onRefresh={handleRefresh}
+      onCreate={handleCreate}
+      onUpdate={handleUpdate}
+      onDelete={handleDelete}
+      isCreating={createMutation.isPending}
+      isUpdating={updateMutation.isPending}
+      isDeleting={deleteMutation.isPending}
+    />
   );
 };
+
+export default CommunicationTemplates;

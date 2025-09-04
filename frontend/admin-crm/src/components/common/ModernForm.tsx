@@ -59,6 +59,7 @@ export interface ModernFormProps {
   values: Record<string, unknown>;
   onChange: (name: string, value: unknown) => void;
   onSubmit?: (event: React.FormEvent) => void;
+  disabled?: boolean;
   className?: string;
   spacing?: number;
 }
@@ -68,6 +69,7 @@ export const ModernForm: React.FC<ModernFormProps> = ({
   values,
   onChange,
   onSubmit,
+  disabled = false,
   className,
   spacing = 3,
 }) => {
@@ -83,7 +85,7 @@ export const ModernForm: React.FC<ModernFormProps> = ({
       name: field.name,
       label: field.label,
       value: values[field.name] || '',
-      disabled: field.disabled,
+      disabled: disabled || field.disabled,
       required: field.required,
       error: !!field.error,
       helperText: field.error || field.helperText,
