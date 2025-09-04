@@ -48,6 +48,7 @@ export interface BookingCompletionResult {
   event: any; // Event from events domain
   session_id: string;
   user_created?: boolean;
+  completion_type?: 'payment' | 'quote';
 }
 
 export interface ValidationError {

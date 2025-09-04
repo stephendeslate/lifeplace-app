@@ -2,6 +2,7 @@
 // Migrated to use the unified settings system
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { RouteSharp as BookingFlowIcon } from '@mui/icons-material';
 import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useBookingFlows } from '../../../hooks/useBookingFlows';
@@ -160,6 +161,8 @@ const defaultBookingFlow: BookingFlow = {
 };
 
 export const BookingFlows = () => {
+  const navigate = useNavigate();
+  
   // Get booking flows
   const {
     bookingFlows = [],
@@ -273,6 +276,31 @@ export const BookingFlows = () => {
     });
   };
 
+  // Handle row click to navigate to booking flow details
+  const handleRowClick = (bookingFlow: BookingFlow) => {
+    navigate(`/settings/booking/booking-flow/${bookingFlow.id}`);
+  };
+
+  // Custom table actions for quick navigation
+  const customTableActions = [
+    {
+      label: 'Manage Steps',
+      icon: React.createElement(BookingFlowIcon),
+      onClick: (bookingFlow: BookingFlow) => {
+        navigate(`/settings/booking/booking-flow/${bookingFlow.id}`, { state: { activeTab: 1 } });
+      },
+      color: 'primary' as const,
+    },
+    {
+      label: 'Configure',
+      icon: React.createElement(BookingFlowIcon),
+      onClick: (bookingFlow: BookingFlow) => {
+        navigate(`/settings/booking/booking-flow/${bookingFlow.id}`);
+      },
+      color: 'default' as const,
+    },
+  ];
+
   return (
     <SettingsPage
       config={config}
@@ -287,6 +315,8 @@ export const BookingFlows = () => {
       isCreating={isCreatingFlow}
       isUpdating={isUpdatingFlow}
       isDeleting={isDeletingFlow}
+      onRowClick={handleRowClick}
+      customTableActions={customTableActions}
     />
   );
 };

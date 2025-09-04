@@ -124,14 +124,28 @@ class BookingSessionViewSet(viewsets.ModelViewSet):
         """Complete the booking and create event (Authenticated users only)"""
         try:
             session = self.get_object()
-            event = BookingSessionService.complete_booking(str(session.session_id))
+            completion_type = request.data.get('completion_type', 'payment')
+            
+            # Validate completion_type
+            if completion_type not in ['payment', 'quote']:
+                return Response(
+                    {"detail": "completion_type must be 'payment' or 'quote'"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            event = BookingSessionService.complete_booking(str(session.session_id), completion_type)
             
             from core.domains.events.serializers import EventSerializer
+            response_message = "Booking completed successfully"
+            if completion_type == 'quote':
+                response_message = "Quote request submitted successfully"
+            
             return Response(
                 {
-                    "detail": "Booking completed successfully",
+                    "detail": response_message,
                     "event": EventSerializer(event, context=self.get_serializer_context()).data,
-                    "session": BookingSessionSerializer(session, context=self.get_serializer_context()).data
+                    "session": BookingSessionSerializer(session, context=self.get_serializer_context()).data,
+                    "completion_type": completion_type
                 },
                 status=status.HTTP_200_OK
             )
@@ -431,15 +445,29 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            event = BookingSessionService.complete_booking(session_uuid)
+            completion_type = request.data.get('completion_type', 'payment')
+            
+            # Validate completion_type
+            if completion_type not in ['payment', 'quote']:
+                return Response(
+                    {"detail": "completion_type must be 'payment' or 'quote'"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            event = BookingSessionService.complete_booking(session_uuid, completion_type)
             
             from core.domains.events.serializers import EventSerializer
+            response_message = "Booking completed successfully"
+            if completion_type == 'quote':
+                response_message = "Quote request submitted successfully"
+            
             return Response(
                 {
-                    "detail": "Booking completed successfully",
+                    "detail": response_message,
                     "event": EventSerializer(event, context=self.get_serializer_context()).data,
                     "session_id": session_uuid,
                     "user_created": user_created,
+                    "completion_type": completion_type
                 },
                 status=status.HTTP_200_OK
             )

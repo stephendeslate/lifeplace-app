@@ -73,7 +73,7 @@ export interface BookingActions {
   skipStep: () => Promise<void>;
   
   // Completion
-  completeBooking: () => Promise<BookingCompletionResult>;
+  completeBooking: (completionType?: 'payment' | 'quote') => Promise<BookingCompletionResult>;
   
   // Payment
   fetchPaymentGateways: () => Promise<void>;

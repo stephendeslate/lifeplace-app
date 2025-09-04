@@ -13,9 +13,13 @@ export class ConfirmationApi {
   /**
    * Complete the booking
    */
-  static async completeBooking(sessionId: string): Promise<BookingCompletionResult> {
+  static async completeBooking(
+    sessionId: string, 
+    completionType: 'payment' | 'quote' = 'payment'
+  ): Promise<BookingCompletionResult> {
     const response = await api.post<BookingCompletionResult>(
-      `/bookingflow/public/flows/session/${sessionId}/complete/`
+      `/bookingflow/public/flows/session/${sessionId}/complete/`,
+      { completion_type: completionType }
     );
     return response.data;
   }

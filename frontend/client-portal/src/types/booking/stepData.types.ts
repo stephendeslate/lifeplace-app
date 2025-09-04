@@ -78,6 +78,7 @@ export interface PaymentStepData {
   payment_method_token?: string; // Alternative token field for other gateways
   billing_address?: any;
   save_payment_method?: boolean;
+  completion_type?: 'payment' | 'quote';
 }
 
 export type PaymentMethodType = 

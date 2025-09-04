@@ -339,6 +339,13 @@ export interface PaymentInfoStepConfiguration {
   accept_deposit: boolean;
   deposit_type: 'PERCENTAGE' | 'FIXED';
   deposit_amount: string;
+  balance_due_days: number;
+  
+  // Refund configuration
+  allow_refunds: boolean;
+  refund_deadline_days: number;
+  refund_percentage: number;
+  refund_policy_text: string;
   
   // Payment methods
   available_payment_methods: string[];
@@ -352,6 +359,11 @@ export interface PaymentInfoStepConfiguration {
   
   allow_payment_plans: boolean;
   payment_terms: string;
+  
+  // Quote request options - NEW
+  allow_quote_request: boolean;
+  quote_request_button_text: string;
+  quote_request_description: string;
   
   created_at: string;
   updated_at: string;

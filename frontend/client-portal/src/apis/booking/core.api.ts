@@ -112,8 +112,10 @@ export class BookingCoreApi {
   /**
    * Complete the booking and create event
    */
-  static async completeBooking(sessionId: string): Promise<BookingCompletionResult> {
-    const response = await api.post<BookingCompletionResult>(`/bookingflow/public/flows/session/${sessionId}/complete/`);
+  static async completeBooking(sessionId: string, completionType: 'payment' | 'quote' = 'payment'): Promise<BookingCompletionResult> {
+    const response = await api.post<BookingCompletionResult>(`/bookingflow/public/flows/session/${sessionId}/complete/`, {
+      completion_type: completionType
+    });
     return response.data;
   }
 

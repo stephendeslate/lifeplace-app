@@ -562,7 +562,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await actions.nextStep();
     }, [state.currentSession]),
 
-    completeBooking: useCallback(async (): Promise<BookingCompletionResult> => {
+    completeBooking: useCallback(async (completionType: 'payment' | 'quote' = 'payment'): Promise<BookingCompletionResult> => {
       if (!state.currentSession) {
         throw new Error('No active session');
       }
@@ -576,7 +576,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       dispatch({ type: 'CLEAR_ERRORS' });
       
       try {
-        const result = await BookingCoreApi.completeBooking(state.currentSession.session_id);
+        const result = await BookingCoreApi.completeBooking(state.currentSession.session_id, completionType);
         
         BookingCoreApi.clearSessionFromLocal(state.currentSession.session_id);
         

@@ -88,12 +88,20 @@ export interface PaymentInfoStepConfiguration extends StepConfiguration {
   accept_deposit: boolean;
   deposit_type: 'PERCENTAGE' | 'FIXED';
   deposit_amount: string;
+  balance_due_days: number;
+  allow_refunds: boolean;
+  refund_deadline_days: number;
+  refund_percentage: number;
+  refund_policy_text: string;
   available_payment_methods: string[];
   require_immediate_payment: boolean;
   allowed_gateways: number[];
   default_gateway: number | null;
   allow_payment_plans: boolean;
   payment_terms: string;
+  allow_quote_request: boolean;
+  quote_request_button_text: string;
+  quote_request_description: string;
 }
 
 export interface ConfirmationStepConfiguration extends StepConfiguration {

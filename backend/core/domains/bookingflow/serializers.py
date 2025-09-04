@@ -215,7 +215,8 @@ class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
             'require_immediate_payment', 'allow_payment_plans',
             'payment_terms', 
             'allowed_gateways',
-            'default_gateway',   
+            'default_gateway',
+            'allow_quote_request', 'quote_request_button_text', 'quote_request_description',   
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
