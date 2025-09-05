@@ -29,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import { useBooking } from '../../../contexts/BookingContext';
 import { usePricingSummaryStep } from '../../../hooks/booking/usePricingSummary';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 import type {
   PricingSummaryStepData,
   PricingSummaryStepConfiguration,
@@ -52,6 +53,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   isValidating,
 }) => {
   const { state, actions } = useBooking();
+  const { formatAmount } = useCurrencySettings();
   const [discountCodeInput, setDiscountCodeInput] = useState<string>('');
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
   
@@ -328,7 +330,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                       {isUpdatingPrices ? (
                         <Skeleton width={80} animation="wave" />
                       ) : (
-                        `₱${addon.total.toFixed(2)}`
+                        formatAmount(addon.total)
                       )}
                     </TableCell>
                   </TableRow>

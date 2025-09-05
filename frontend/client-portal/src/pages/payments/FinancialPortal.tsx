@@ -38,6 +38,7 @@ import {
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface Payment {
   id: number;
@@ -94,6 +95,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 const FinancialPortal: React.FC = () => {
   const theme = useTheme();
   // const { user } = useAuth(); // Available for future use
+  const { formatAmount, defaultCurrency } = useCurrencySettings();
   const [activeTab, setActiveTab] = useState(0);
 
   // TODO: Replace with API calls to fetch real payment and invoice data
@@ -133,11 +135,8 @@ const FinancialPortal: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount);
+  const formatCurrency = (amount: number, currency?: string) => {
+    return formatAmount(amount, currency || defaultCurrency);
   };
 
   const getTotalPaid = () => {

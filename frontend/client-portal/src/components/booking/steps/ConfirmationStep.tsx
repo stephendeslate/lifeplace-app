@@ -24,7 +24,8 @@ import {
   Email, 
   AccessTime,
   Group,
-  AttachMoney,
+  Receipt,
+  Payment,
   Info,
   NavigateNext,
   Home,
@@ -32,6 +33,8 @@ import {
 } from '@mui/icons-material';
 import { useBooking } from '../../../contexts/BookingContext';
 import { useConfirmation } from '../../../hooks/booking/useConfirmation';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
+import { usePricingSummary } from '../../../hooks/booking/usePricingSummary';
 import type { 
   ConfirmationStepConfiguration,
   ConfirmationStepData,
@@ -63,6 +66,74 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 }) => {
   const { state } = useBooking();
   const currentSession = session || state.currentSession;
+  const { formatAmount } = useCurrencySettings();
+  
+  // Get selected packages and addons from booking state
+  const selectedPackages = state.stepData.package_selection?.selected_packages || [];
+  const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
+  const eventDuration = state.stepData.date_time?.duration;
+  
+  // Get payment info from booking state
+  const paymentInfo = state.stepData.payment_info;
+  const paymentType = paymentInfo?.payment_type || 'FULL';
+  
+  // Calculate pricing using same logic as booking flow
+  const { breakdown, serverPricing } = usePricingSummary(
+    selectedPackages,
+    selectedAddons,
+    eventDuration
+  );
+
+  // Calculate what user pays today based on payment type
+  const paymentAmounts = useMemo(() => {
+    const totalAmount = breakdown.total;
+    
+    if (paymentType === 'DEPOSIT') {
+      // The actual deposit amount should be calculated on the server and stored in session
+      // For now, we'll check if there's stored payment calculation data
+      // TODO: Backend should store the calculated deposit amount in session after payment step
+      
+      // Try to get the calculated deposit amount from session total_price if it differs from our calculated total
+      const sessionTotal = parseFloat(currentSession?.total_price || '0');
+      
+      if (sessionTotal > 0 && sessionTotal !== totalAmount) {
+        // If session total is different, it might be the deposit amount
+        console.log('Using session calculated amount:', sessionTotal);
+        const depositAmount = sessionTotal;
+        const remainingAmount = totalAmount - depositAmount;
+        
+        return {
+          totalAmount,
+          paymentAmount: depositAmount,
+          remainingAmount,
+          isDeposit: true,
+          hasRemainingBalance: true,
+        };
+      }
+      
+      // Fallback: calculate based on payment step logic (30% typical)
+      // This should match the payment step configuration calculation
+      console.warn('Using client-side deposit calculation - should come from server');
+      const depositAmount = totalAmount * 0.30; // This should come from payment step config
+      const remainingAmount = totalAmount - depositAmount;
+      
+      return {
+        totalAmount,
+        paymentAmount: depositAmount,
+        remainingAmount,
+        isDeposit: true,
+        hasRemainingBalance: true,
+      };
+    }
+    
+    return {
+      totalAmount,
+      paymentAmount: totalAmount,
+      remainingAmount: 0,
+      isDeposit: false,
+      hasRemainingBalance: false,
+    };
+  }, [breakdown.total, paymentType, currentSession?.total_price]);
 
   // Use refs to track if operations have been done
   const completionProcessedRef = useRef(false);
@@ -260,18 +331,54 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
                 </Box>
               </Box>
             )}
-            {eventSummary?.totalPrice && (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <AttachMoney sx={{ mr: 2, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Price
-                  </Typography>
-                  <Typography variant="h6" color="primary">
-                    ${eventSummary.totalPrice}
-                  </Typography>
+            {breakdown.total > 0 && (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Receipt sx={{ mr: 2, color: 'text.secondary' }} />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Price
+                    </Typography>
+                    <Typography variant="h6" color="primary">
+                      {formatAmount(paymentAmounts.totalAmount)}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
+                
+                {paymentAmounts.isDeposit && (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Payment sx={{ mr: 2, color: 'success.main' }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        What You Pay Today
+                      </Typography>
+                      <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
+                        {formatAmount(paymentAmounts.paymentAmount)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Deposit payment
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                
+                {!paymentAmounts.isDeposit && paymentType === 'FULL' && (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Payment sx={{ mr: 2, color: 'success.main' }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        What You Pay Today
+                      </Typography>
+                      <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
+                        {formatAmount(paymentAmounts.paymentAmount)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Full payment
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </>
             )}
           </Stack>
         </CardContent>

@@ -22,6 +22,7 @@ import {
   AccessTime,
 } from '@mui/icons-material';
 import { ProductsApi } from '../../../apis/booking/products.api';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 import type { 
   PackageSelectionStepData, 
   PackageSelectionStepConfiguration,
@@ -44,6 +45,7 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
   validationErrors,
   isValidating,
 }) => {
+  const { formatAmount } = useCurrencySettings();
   const availablePackages = config?.available_packages_details || [];
   const selectionType = config?.selection_type || 'SINGLE';
   const minSelection = config?.min_selection || 1;
@@ -243,7 +245,7 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
                       )}
                       {packageOption.has_excess_hours && (
                         <Chip
-                          label={`+₱${packageOption.excess_hour_price}/hr extra`}
+                          label={`+${formatAmount(packageOption.excess_hour_price || 0)}/hr extra`}
                           size="small"
                           variant="outlined"
                           color="secondary"
