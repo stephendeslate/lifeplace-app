@@ -37,6 +37,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Person as PersonIcon,
+  Launch as LaunchIcon,
   EventNote as EventNoteIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
@@ -723,15 +724,56 @@ export const EventProfile: React.FC = () => {
                       >
                         Client Name
                       </Typography>
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          color: tokens.color.neutral[800],
-                          fontWeight: 600
-                        }}
+                      <Tooltip 
+                        title={clientId ? "Click to view client profile" : ""} 
+                        placement="top"
+                        arrow
                       >
-                        {event.client_name || 'Unknown Client'}
-                      </Typography>
+                        <Box
+                          onClick={() => clientId && navigate(`/clients/${clientId}`)}
+                          sx={{
+                            cursor: clientId ? 'pointer' : 'default',
+                            borderRadius: tokens.spacing.radius.lg,
+                            p: 1,
+                            mx: -1,
+                            transition: createTransition(['background', 'transform'], 'fast'),
+                            '&:hover': clientId ? {
+                              background: `${tokens.color.primary[500]}08`,
+                              transform: 'translateX(2px)',
+                            } : {}
+                          }}
+                        >
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ 
+                              color: clientId ? tokens.color.primary[600] : tokens.color.neutral[800],
+                              fontWeight: 600,
+                              textDecoration: clientId ? 'none' : 'none',
+                              '&:hover': clientId ? {
+                                textDecoration: 'underline',
+                              } : {}
+                            }}
+                          >
+                            {event.client_name || 'Unknown Client'}
+                          </Typography>
+                          {clientId && (
+                            <LaunchIcon 
+                              sx={{ 
+                                fontSize: '0.9rem', 
+                                color: tokens.color.primary[600],
+                                opacity: 0.7,
+                                transition: createTransition(['opacity', 'transform'], 'fast'),
+                                '.MuiBox-root:hover &': {
+                                  opacity: 1,
+                                  transform: 'scale(1.1)',
+                                }
+                              }} 
+                            />
+                          )}
+                        </Stack>
+                        </Box>
+                      </Tooltip>
                     </Box>
                   
                   {client?.email && (

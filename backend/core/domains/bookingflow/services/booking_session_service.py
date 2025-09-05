@@ -9,9 +9,11 @@ from django.db import transaction
 from django.utils import timezone
 from core.domains.events.models import Event, EventProductOption
 from core.domains.products.models import ProductOption
+from core.domains.sales.models import EventQuote, QuoteLineItem
 
 # FIX: Simplified import approach to avoid potential path issues
-from core.domains.payments.services import PaymentService, PaymentGatewayService
+from core.domains.payments.services import PaymentService
+from core.domains.payments.services.gateway_service import PaymentGatewayService
 from core.domains.payments.models import PaymentGateway
 from core.domains.payments.exceptions import PaymentGatewayException
 
@@ -310,16 +312,27 @@ class BookingSessionService:
                 # Create event from booking data
                 event = BookingSessionService._create_event_from_session(session)
                 
+                # NEW QUOTE-FIRST APPROACH: Always create quote first
+                logger.info(f"Creating quote from booking session for event {event.id}")
+                quote = BookingSessionService.create_quote_from_booking_session(session, event)
+                
+                # Create invoice from the accepted quote
+                logger.info(f"Creating invoice from quote {quote.id}")
+                from core.domains.payments.services.invoice_service import InvoiceService
+                invoice = InvoiceService.create_from_quote(quote)
+                logger.info(f"Created invoice {invoice.invoice_id} from quote")
+                
                 if completion_type == 'payment':
-                    # Handle payment completion
+                    # Handle payment completion - process payment against invoice
                     payment_data = BookingSessionService._extract_payment_data(session)
                     
                     # If no payment data found, create empty dict to trigger fallback to default gateway
                     if payment_data is None:
                         payment_data = {}
                     
-                    payment = BookingSessionService._process_booking_payment(
-                        session, event, payment_data
+                    # Process payment against the invoice
+                    payment = BookingSessionService._process_booking_payment_for_invoice(
+                        session, event, invoice, payment_data
                     )
                     
                     # Refresh payment from database to get updated status
@@ -333,17 +346,22 @@ class BookingSessionService:
                     )
                     
                     if payment_successful:
-                        # Payment successful - confirm the event
+                        # Payment successful - confirm the event and mark invoice as paid
                         event.status = 'CONFIRMED'
                         event.save()
-                        logger.info(f"Event {event.id} confirmed successfully")
+                        
+                        # Update invoice status
+                        invoice.status = 'PAID'
+                        invoice.save()
+                        
+                        logger.info(f"Event {event.id} confirmed and invoice {invoice.invoice_id} marked as paid")
                     else:
-                        logger.error(f"Payment processing failed - payment status: {payment.status}, transactions: {list(payment.transactions.values_list('status', flat=True))}")
+                        logger.error(f"Payment processing failed - payment status: {payment.status}")
                         raise EventCreationFailed("Payment processing failed")
                     
                 elif completion_type == 'quote':
-                    # Handle quote request completion
-                    quote = BookingSessionService._generate_quote_from_session(session, event)
+                    # For quote requests, issue the invoice but don't process payment
+                    invoice.issue()  # Changes status from DRAFT to ISSUED
                     
                     # Event stays as LEAD status for quote requests
                     # Send quote notification
@@ -351,6 +369,11 @@ class BookingSessionService:
                         BookingSessionService._send_quote_notification(session, quote)
                     except Exception as e:
                         logger.warning(f"Failed to send quote notification: {e}")
+                
+                else:
+                    # Default case: issue invoice but don't process payment immediately
+                    invoice.issue()  # Changes status from DRAFT to ISSUED
+                    logger.info(f"Invoice {invoice.invoice_id} issued for later payment")
                 
                 # Mark session as completed
                 session.is_completed = True
@@ -551,6 +574,141 @@ class BookingSessionService:
         return payment
     
     @staticmethod
+    def _process_booking_payment_for_invoice(session, event, invoice, payment_data):
+        """Process payment for completed booking against an invoice
+        
+        Args:
+            session: BookingSession instance
+            event: Event instance
+            invoice: Invoice instance
+            payment_data: Payment data from session
+            
+        Returns:
+            Payment: The created payment record
+        """
+        logger.info(f"Starting payment processing for invoice {invoice.invoice_id}")
+        logger.info(f"Payment data received: {payment_data}")
+        
+        gateway_id = payment_data.get('gateway_id') or payment_data.get('payment_gateway_id')
+        logger.info(f"Gateway ID from payment data: {gateway_id}")
+        
+        # If no gateway specified in payment data, use booking flow default
+        if not gateway_id:
+            if session.booking_flow.default_payment_gateway and session.booking_flow.default_payment_gateway.is_active:
+                gateway_id = session.booking_flow.default_payment_gateway.id
+                logger.info(f"Using default payment gateway: {gateway_id}")
+            elif session.booking_flow.allowed_payment_gateways.filter(is_active=True).exists():
+                # Use first available allowed gateway as fallback
+                gateway_id = session.booking_flow.allowed_payment_gateways.filter(is_active=True).first().id
+                logger.info(f"Using first allowed payment gateway: {gateway_id}")
+            else:
+                logger.error("No payment gateway specified and no default gateway configured")
+                raise ValueError("No payment gateway specified and no default gateway configured")
+        
+        if not gateway_id:
+            raise ValueError("No payment gateway specified")
+        
+        try:
+            gateway = PaymentGateway.objects.get(id=gateway_id, is_active=True)
+            logger.info(f"Found payment gateway: {gateway.name} (code: {gateway.code})")
+        except PaymentGateway.DoesNotExist:
+            logger.error(f"Payment gateway {gateway_id} not found or inactive")
+            raise ValueError(f"Payment gateway {gateway_id} not found or inactive")
+        
+        # Calculate amount to charge based on payment type
+        full_amount = invoice.total_amount
+        payment_type = payment_data.get('payment_type', 'FULL')
+        
+        if payment_type == 'DEPOSIT':
+            # Get deposit configuration from payment step
+            payment_step = session.booking_flow.steps.filter(step_type='payment_info').first()
+            payment_config = getattr(payment_step, 'payment_config', None) if payment_step else None
+            
+            if payment_config and payment_config.accept_deposit:
+                if payment_config.deposit_type == 'PERCENTAGE':
+                    deposit_percentage = Decimal(str(payment_config.deposit_amount or 30))  # Default 30%
+                    amount_to_charge = full_amount * (deposit_percentage / Decimal('100'))
+                else:  # FIXED amount
+                    amount_to_charge = Decimal(str(payment_config.deposit_amount)) if payment_config.deposit_amount else (full_amount * Decimal('0.30'))
+            else:
+                # Fallback to 30% if no config found
+                amount_to_charge = full_amount * Decimal('0.30')
+            
+            logger.info(f"Payment type: DEPOSIT - Charging {amount_to_charge} out of total {full_amount}")
+        else:
+            amount_to_charge = full_amount
+            logger.info(f"Payment type: FULL - Charging full amount {amount_to_charge}")
+        
+        logger.info(f"Final amount to charge: {amount_to_charge}")
+        
+        # Create payment record linked to invoice
+        from datetime import timedelta
+        from core.domains.payments.models import Payment
+        
+        # Get due date from payment step configuration
+        payment_step = session.booking_flow.steps.filter(step_type='payment_info').first()
+        payment_config = getattr(payment_step, 'payment_config', None) if payment_step else None
+        
+        # Calculate due date from configuration or use default
+        if payment_config and hasattr(payment_config, 'balance_due_days'):
+            due_days = payment_config.balance_due_days or 30
+        else:
+            due_days = 30  # Default to 30 days
+        
+        logger.info(f"Payment due in {due_days} days")
+        
+        # Create appropriate description based on payment type
+        if payment_type == 'DEPOSIT':
+            description = f'Deposit payment for invoice {invoice.invoice_id}'
+        else:
+            description = f'Full payment for invoice {invoice.invoice_id}'
+        
+        payment = Payment.objects.create(
+            event=event,
+            amount=amount_to_charge,
+            currency=invoice.currency or 'PHP',
+            status='PENDING',
+            due_date=timezone.now().date() + timedelta(days=due_days),
+            payment_method=None,  # Will be determined by gateway
+            description=description,
+            invoice=invoice,  # Link to invoice
+            quote=invoice.quote,  # Link to quote if available
+            is_manual=False
+        )
+        
+        logger.info(f"Created payment record: {payment.payment_number}")
+        
+        # Process the payment through the gateway
+        try:
+            # Prepare gateway data
+            gateway_data = {
+                'amount': float(amount_to_charge),
+                'currency': payment.currency,
+                'description': description,
+                'payment_method_token': payment_data.get('payment_method_token'),
+                'payment_method_id': payment_data.get('payment_method_id'),
+                'client_email': session.client.email,
+                'client_name': session.client.get_full_name(),
+                'invoice_id': invoice.invoice_id,
+                'event_id': event.id
+            }
+            
+            # Process payment via gateway service
+            transaction_result = PaymentGatewayService.process_gateway_payment(
+                payment.id,
+                gateway.code,
+                gateway_data,
+                session.client
+            )
+            logger.info(f"Payment gateway processing result: {transaction_result}")
+        except Exception as e:
+            logger.error(f"Payment gateway processing failed: {e}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            raise
+        
+        return payment
+    
+    @staticmethod
     def _generate_quote_from_session(session, event):
         """Generate a quote from booking session data"""
         from core.domains.sales.services import QuoteService
@@ -671,12 +829,29 @@ class BookingSessionService:
             'start_date': timezone.now(),  # Default start date - will be overridden if provided
         }
         
-        # Extract basic event info from various steps
+        # Extract basic event info from various steps (only whitelisted fields)
+        # CRITICAL FIX: Only extract specific event-related fields to prevent
+        # payment or other step data from contaminating event creation
+        allowed_event_fields = {
+            'event_name': 'name',
+            'start_date': 'start_date', 
+            'end_date': 'end_date',
+            'start_time': 'start_time',
+            'end_time': 'end_time', 
+            'guest_count': 'guest_count',
+            'description': 'description'
+        }
+        
         for step_key, step_data in booking_data.items():
             if isinstance(step_data, dict):
-                # Extract event name, dates, etc.
-                if 'event_name' in step_data:
-                    event_data['name'] = step_data['event_name']
+                # Only extract allowed fields for event creation
+                for field_name, event_field in allowed_event_fields.items():
+                    if field_name in step_data:
+                        if field_name == 'event_name':
+                            event_data['name'] = step_data['event_name']
+                        elif field_name in ['guest_count', 'description']:
+                            event_data[event_field] = step_data[field_name]
+                        # Date/time fields will be handled below
                 
                 # Handle date/time properly - combine date and time if both provided
                 if 'start_date' in step_data:
@@ -762,12 +937,6 @@ class BookingSessionService:
                             # Already a datetime or date object
                             event_data['end_date'] = end_date
                         # If invalid format or empty string, don't set end_date (optional field)
-                
-                # Extract other event info that might be in various steps
-                if 'guest_count' in step_data:
-                    event_data['guest_count'] = step_data['guest_count']
-                if 'description' in step_data:
-                    event_data['description'] = step_data['description']
         
         # Prepare event products with correct structure
         event_products = []
@@ -799,16 +968,25 @@ class BookingSessionService:
                 
                 # Calculate excess hours if applicable
                 excess_hours = None
+                excess_cost = Decimal('0')
                 event_duration = BookingSessionService._get_event_duration_from_booking_data(booking_data)
                 if product_option.has_excess_hours and product_option.included_hours and event_duration:
                     if event_duration > product_option.included_hours:
                         import math
                         excess_hours = math.ceil(event_duration - product_option.included_hours)
+                        
+                        # Calculate excess cost
+                        if product_option.excess_hour_price:
+                            excess_hour_price = Decimal(str(product_option.excess_hour_price))
+                            excess_cost = excess_hour_price * Decimal(str(excess_hours))
+                
+                # Calculate final price including excess hours
+                final_price = price + excess_cost
                 
                 event_product_data = {
                     'product_option': product_option.id,  # Pass ID, not object
                     'quantity': quantity,
-                    'final_price': price,
+                    'final_price': final_price,
                     'num_participants': event_data.get('guest_count'),
                 }
                 
@@ -817,7 +995,7 @@ class BookingSessionService:
                     event_product_data['excess_hours'] = excess_hours
                 
                 event_products.append(event_product_data)
-                total_price += price * Decimal(str(quantity))
+                total_price += final_price * Decimal(str(quantity))
             except (ProductOption.DoesNotExist, KeyError, ValueError) as e:
                 logger.warning(f"Error processing package {package_data}: {e}")
 
@@ -840,12 +1018,33 @@ class BookingSessionService:
         event_data['total_price'] = total_price
         event_data['event_products'] = event_products
         
+        # CRITICAL VALIDATION: Only allow known Event model fields
+        # NOTE: 'id' is explicitly excluded since Django auto-generates it
+        allowed_event_fields = {
+            'client', 'event_type', 'status', 'name', 'start_date', 'end_date',
+            'workflow_template', 'current_stage', 'lead_source', 'last_contacted',
+            'total_price', 'event_products', 'payment_status', 'total_amount_due',
+            'total_amount_paid', 'preferences', 'guest_count', 'description'
+        }
+        
+        # Filter out any fields that shouldn't be in event creation
+        filtered_event_data = {}
+        for key, value in event_data.items():
+            if key in allowed_event_fields:
+                filtered_event_data[key] = value
+            else:
+                logger.warning(f"Filtering out invalid field '{key}' with value '{value}' from event creation")
+        
+        event_data = filtered_event_data
+        
         
         # Create the event with detailed error logging
         try:
             logger.info(f"About to create event with data keys: {list(event_data.keys())}")
+            logger.info(f"Event data contents: {event_data}")
             logger.info(f"Event products data: {event_products}")
             logger.info(f"Total price: {total_price} (type: {type(total_price)})")
+            logger.info(f"Full booking data: {booking_data}")
             
             event = EventService.create_event(
                 event_data,
@@ -1151,3 +1350,181 @@ class BookingSessionService:
             pass
         
         return {'available': True, 'message': 'Time slot is available'}
+
+    @staticmethod
+    def create_quote_from_booking_session(session, event):
+        """Create a quote from booking session data
+        
+        Args:
+            session: BookingSession instance
+            event: Event instance
+            
+        Returns:
+            EventQuote: The created quote
+        """
+        logger.info(f"Creating quote from booking session {session.session_id} for event {event.id}")
+        
+        # Calculate total price from session
+        total_price = session.calculate_total_price()
+        logger.info(f"Total price calculated: {total_price}")
+        
+        # Create the quote - auto-accepted since client already confirmed booking
+        quote = EventQuote.objects.create(
+            event=event,
+            version=1,
+            status='ACCEPTED',  # Auto-accept since this is from confirmed booking
+            subtotal=total_price,  # Will be recalculated from line items
+            tax_amount=Decimal('0.00'),  # Will be calculated if tax rules exist
+            discount_amount=Decimal('0.00'),  # Will be calculated if discount applied
+            total_amount=total_price,
+            valid_until=timezone.now().date() + timedelta(days=30),
+            accepted_at=timezone.now(),
+            created_by=session.client,
+            notes=f"Quote generated from booking session {session.session_id}"
+        )
+        
+        logger.info(f"Created quote {quote.id} with status {quote.status}")
+        
+        # Create line items from booking data
+        BookingSessionService._create_quote_line_items_from_booking_data(quote, session)
+        
+        # Recalculate totals based on line items
+        quote.calculate_totals()
+        
+        logger.info(f"Quote {quote.id} total after line items: {quote.total_amount}")
+        
+        return quote
+    
+    @staticmethod
+    def _create_quote_line_items_from_booking_data(quote, session):
+        """Create quote line items from booking session data
+        
+        Args:
+            quote: EventQuote instance
+            session: BookingSession instance
+        """
+        booking_data = session.booking_data
+        logger.info(f"Creating line items from booking data keys: {list(booking_data.keys())}")
+        
+        # Get selected packages and addons from booking data
+        selected_packages = booking_data.get('selected_packages', [])
+        selected_addons = booking_data.get('selected_addons', [])
+        
+        # If not found at root level, search in step data
+        if not selected_packages:
+            for step_key, step_data in booking_data.items():
+                if isinstance(step_data, dict) and 'selected_packages' in step_data:
+                    selected_packages = step_data['selected_packages']
+                    break
+        
+        if not selected_addons:
+            for step_key, step_data in booking_data.items():
+                if isinstance(step_data, dict) and 'selected_addons' in step_data:
+                    selected_addons = step_data['selected_addons']
+                    break
+        
+        logger.info(f"Found {len(selected_packages)} packages and {len(selected_addons)} addons")
+        
+        # Get event duration for excess hours calculation
+        event_duration = BookingSessionService._get_event_duration_from_booking_data(session.booking_data)
+        logger.info(f"Event duration: {event_duration} hours")
+        
+        # Create line items for packages
+        for package_data in selected_packages:
+            try:
+                name = package_data.get('name', 'Package')
+                quantity = int(package_data.get('quantity', 1))
+                base_price = Decimal(str(package_data.get('price', 0)))
+                
+                # Calculate total price including excess hours
+                total_item_price = base_price * Decimal(str(quantity))
+                
+                # Handle excess hours if applicable
+                excess_hours = Decimal('0')
+                excess_cost = Decimal('0')
+                
+                if event_duration:
+                    package_hours = package_data.get('hours_included', 0)
+                    if package_hours and event_duration > package_hours:
+                        import math
+                        excess_hours = Decimal(str(math.ceil(event_duration - package_hours)))
+                        
+                        # Get excess hour price
+                        excess_hour_price = Decimal('0')
+                        if 'excess_hour_price' in package_data:
+                            excess_hour_price = Decimal(str(package_data['excess_hour_price']))
+                        elif package_hours > 0:
+                            # Fallback: 50% of base hourly rate
+                            base_hourly_rate = base_price / Decimal(str(package_hours))
+                            excess_hour_price = base_hourly_rate * Decimal('0.5')
+                        
+                        excess_cost = excess_hour_price * excess_hours * Decimal(str(quantity))
+                        total_item_price += excess_cost
+                
+                # Create line item for base package
+                description = name
+                if excess_hours > 0:
+                    description += f" (includes {excess_hours}h excess @ {excess_cost/excess_hours/Decimal(str(quantity)):.2f}/h)"
+                
+                QuoteLineItem.objects.create(
+                    quote=quote,
+                    description=description,
+                    quantity=quantity,
+                    unit_price=total_item_price / Decimal(str(quantity)),  # Unit price including excess
+                    tax_rate=Decimal('0.00'),  # Tax handling can be added later
+                    total=total_item_price,
+                    product_id=package_data.get('product_id'),
+                    notes=f"Package from booking session {session.session_id}"
+                )
+                
+                logger.info(f"Created line item: {name} x{quantity} = {total_item_price}")
+                
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error creating package line item: {e}")
+                continue
+        
+        # Create line items for addons
+        for addon_data in selected_addons:
+            try:
+                name = addon_data.get('name', 'Add-on')
+                quantity = int(addon_data.get('quantity', 1))
+                price = Decimal(str(addon_data.get('price', 0)))
+                total_price = price * Decimal(str(quantity))
+                
+                QuoteLineItem.objects.create(
+                    quote=quote,
+                    description=name,
+                    quantity=quantity,
+                    unit_price=price,
+                    tax_rate=Decimal('0.00'),  # Tax handling can be added later
+                    total=total_price,
+                    product_id=addon_data.get('product_id'),
+                    notes=f"Add-on from booking session {session.session_id}"
+                )
+                
+                logger.info(f"Created addon line item: {name} x{quantity} = {total_price}")
+                
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error creating addon line item: {e}")
+                continue
+        
+        # Apply discount if present in booking data
+        discount_code = None
+        for step_key, step_data in booking_data.items():
+            if isinstance(step_data, dict) and 'applied_discount_code' in step_data:
+                discount_code = step_data['applied_discount_code']
+                break
+        
+        if discount_code:
+            try:
+                from core.domains.products.models import Discount
+                discount = Discount.objects.get(code=discount_code, is_active=True)
+                quote.discount = discount
+                quote.save()
+                logger.info(f"Applied discount code: {discount_code}")
+            except Discount.DoesNotExist:
+                logger.warning(f"Discount code not found: {discount_code}")
+            except Exception as e:
+                logger.warning(f"Error applying discount: {e}")
+        
+        logger.info(f"Completed creating line items for quote {quote.id}")

@@ -7,3 +7,7 @@ class SalesConfig(AppConfig):
     name = 'core.domains.sales'
     label = 'sales'
     verbose_name = 'Sales'
+    
+    def ready(self):
+        """Connect signals when app is ready"""
+        import core.domains.sales.signals
