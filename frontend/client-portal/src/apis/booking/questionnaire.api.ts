@@ -72,7 +72,7 @@ export class QuestionnaireApi {
    */
   static validateResponses(
     fields: QuestionnaireField[], 
-    responses: Record<string, any>
+    responses: Record<string, unknown>
   ): { isValid: boolean; errors: Record<string, string[]> } {
     const errors: Record<string, string[]> = {};
 
@@ -89,13 +89,13 @@ export class QuestionnaireApi {
       if (response !== undefined && response !== null && response !== '') {
         switch (field.type) {
           case 'email':
-            if (!this.isValidEmail(response)) {
+            if (!this.isValidEmail(response as string)) {
               fieldErrors.push('Please enter a valid email address');
             }
             break;
 
           case 'phone':
-            if (!this.isValidPhone(response)) {
+            if (!this.isValidPhone(response as string)) {
               fieldErrors.push('Please enter a valid phone number');
             }
             break;
@@ -107,13 +107,13 @@ export class QuestionnaireApi {
             break;
 
           case 'date':
-            if (!this.isValidDate(response)) {
+            if (!this.isValidDate(response as string)) {
               fieldErrors.push('Please enter a valid date');
             }
             break;
 
           case 'time':
-            if (!this.isValidTime(response)) {
+            if (!this.isValidTime(response as string)) {
               fieldErrors.push('Please enter a valid time');
             }
             break;
@@ -149,9 +149,9 @@ export class QuestionnaireApi {
    */
   static formatResponses(
     fields: QuestionnaireField[],
-    responses: Record<string, any>
-  ): Record<string, any> {
-    const formatted: Record<string, any> = {};
+    responses: Record<string, unknown>
+  ): Record<string, unknown> {
+    const formatted: Record<string, unknown> = {};
 
     fields.forEach(field => {
       const response = responses[field.id.toString()];
@@ -189,7 +189,7 @@ export class QuestionnaireApi {
 
   // Validation helper methods
 
-  private static isEmptyResponse(response: any, fieldType: string): boolean {
+  private static isEmptyResponse(response: unknown, fieldType: string): boolean {
     if (response === undefined || response === null) {
       return true;
     }
@@ -235,7 +235,7 @@ export class QuestionnaireApi {
   }
 
   private static isValidOption(
-    response: any, 
+    response: unknown, 
     options: string[], 
     isMultiSelect: boolean
   ): boolean {
@@ -245,11 +245,11 @@ export class QuestionnaireApi {
       }
       return response.every(item => options.includes(item));
     } else {
-      return options.includes(response);
+      return options.includes(response as string);
     }
   }
 
-  private static isValidFile(file: any): boolean {
+  private static isValidFile(file: unknown): boolean {
     // Basic file validation
     if (file instanceof File) {
       return true;
@@ -309,7 +309,7 @@ export class QuestionnaireApi {
    */
   static getResponseDisplayValue(
     field: QuestionnaireField, 
-    response: any
+    response: unknown
   ): string {
     if (response === undefined || response === null) {
       return 'No response';
@@ -333,7 +333,7 @@ export class QuestionnaireApi {
 
       case 'date':
         try {
-          return new Date(response).toLocaleDateString();
+          return new Date(response as string).toLocaleDateString();
         } catch {
           return String(response);
         }
@@ -351,7 +351,7 @@ export class QuestionnaireApi {
    */
   static generateResponseSummary(
     questionnaires: QuestionnaireDetailResponse[],
-    responses: Record<string, any>
+    responses: Record<string, unknown>
   ): Array<{
     questionnaireName: string;
     responses: Array<{
@@ -375,21 +375,24 @@ export class QuestionnaireApi {
   /**
    * Handle questionnaire API errors
    */
-  static handleQuestionnaireError(error: any): string {
-    if (error.response?.data?.detail) {
-      return error.response.data.detail;
+  static handleQuestionnaireError(error: unknown): string {
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.detail) {
+      return errorObj.response.data.detail;
     }
 
-    if (error.response?.status === 404) {
+    if (errorObj.response?.status === 404) {
       return 'Questionnaire not found.';
     }
 
-    if (error.response?.status === 403) {
+    if (errorObj.response?.status === 403) {
       return 'You do not have permission to access this questionnaire.';
     }
 
-    if (error.message) {
-      return error.message;
+    if (errorObj.message) {
+      return errorObj.message;
     }
 
     return 'An error occurred while loading the questionnaire.';
@@ -398,18 +401,21 @@ export class QuestionnaireApi {
   /**
    * Extract field validation errors
    */
-  static extractFieldErrors(error: any): Record<string, string[]> {
+  static extractFieldErrors(error: unknown): Record<string, string[]> {
     const fieldErrors: Record<string, string[]> = {};
 
-    if (error.response?.data?.field_errors) {
-      return error.response.data.field_errors;
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.field_errors) {
+      return errorObj.response.data.field_errors;
     }
 
-    if (error.response?.data?.errors) {
-      const errors = error.response.data.errors;
+    if (errorObj.response?.data?.errors) {
+      const errors = errorObj.response.data.errors;
       
       Object.keys(errors).forEach(fieldId => {
-        const fieldError = errors[fieldId];
+        const fieldError = (errors as Record<string, unknown>)[fieldId];
         
         if (Array.isArray(fieldError)) {
           fieldErrors[fieldId] = fieldError;

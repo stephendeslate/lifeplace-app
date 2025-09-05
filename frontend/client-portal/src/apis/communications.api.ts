@@ -19,9 +19,9 @@ export const communicationsApi = {
     if (filters?.channel) params.append('channel', filters.channel);
     
     const response = await api.get(`/communications/templates/?${params.toString()}`);
-    const data = response.data as { results?: CommunicationRecord[] } | CommunicationRecord[];
-    // If data has a 'results' property, return it; otherwise, return data as CommunicationRecord[]
-    return (data as any).results || data;
+    const data = response.data as { results?: CommunicationTemplate[] } | CommunicationTemplate[];
+    // If data has a 'results' property, return it; otherwise, return data as CommunicationTemplate[]
+    return (data as { results?: CommunicationTemplate[] }).results || (data as CommunicationTemplate[]);
   },
 
   getTemplate: async (id: number): Promise<CommunicationTemplate> => {
@@ -42,7 +42,7 @@ export const communicationsApi = {
     
     const response = await api.get(`/communications/records/?${params.toString()}`);
     const data = response.data as { results?: CommunicationRecord[] } | CommunicationRecord[];
-    return (data as any).results || data;
+    return (data as { results?: CommunicationRecord[] }).results || (data as CommunicationRecord[]);
   },
 
   getRecord: async (id: string): Promise<CommunicationRecord> => {
@@ -75,8 +75,8 @@ export const communicationsApi = {
   },
 
   // Variable Schemas (for form building)
-  getVariableSchemas: async (): Promise<Record<string, any>> => {
-    const response = await api.get<Record<string, any>>('/communications/templates/variable_schemas/');
+  getVariableSchemas: async (): Promise<Record<string, unknown>> => {
+    const response = await api.get<Record<string, unknown>>('/communications/templates/variable_schemas/');
     return response.data;
   },
 

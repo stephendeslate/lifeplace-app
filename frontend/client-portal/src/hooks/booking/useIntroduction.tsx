@@ -67,8 +67,11 @@ export const useIntroduction = (
       
       return result.isValid;
     } catch (err) {
-      const errorMessage = IntroductionApi.handleApiError(err);
-      const apiErrors = IntroductionApi.extractValidationErrors(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = IntroductionApi.handleApiError(err as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const apiErrors = IntroductionApi.extractValidationErrors(err as any);
       
       setError(errorMessage);
       setValidationErrors(apiErrors);
@@ -100,14 +103,19 @@ export const useIntroduction = (
       
       // Handle any validation errors from the response
       if (result.validation_errors && Object.keys(result.validation_errors).length > 0) {
-        setValidationErrors(result.validation_errors);
+        // API validation errors have dynamic structure requiring any type
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setValidationErrors(result.validation_errors as any);
         return false;
       }
       
       return true;
     } catch (err) {
-      const errorMessage = IntroductionApi.handleApiError(err);
-      const apiErrors = IntroductionApi.extractValidationErrors(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = IntroductionApi.handleApiError(err as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const apiErrors = IntroductionApi.extractValidationErrors(err as any);
       
       setError(errorMessage);
       setValidationErrors(apiErrors);

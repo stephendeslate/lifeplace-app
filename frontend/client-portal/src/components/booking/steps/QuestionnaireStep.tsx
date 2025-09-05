@@ -40,12 +40,12 @@ import type {
 import QuestionnaireApi from '../../../apis/booking/questionnaire.api';
 
 interface QuestionnaireStepProps {
-  stepData?: Record<string, any>;
+  stepData?: Record<string, unknown>;
   config: QuestionnaireStepConfiguration | null;
-  onDataChange: (data: Record<string, any>) => void;
+  onDataChange: (data: Record<string, unknown>) => void;
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
-  onValidate?: (data: any) => Promise<StepValidationResult>;
+  onValidate?: (data: Record<string, unknown>) => Promise<StepValidationResult>;
 }
 
 export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
@@ -71,7 +71,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
   } = useQuestionnaireFileUpload();
 
   // Update response helper that directly calls parent's onDataChange
-  const updateResponse = useCallback((fieldId: string | number, value: any) => {
+  const updateResponse = useCallback((fieldId: string | number, value: unknown) => {
     const updatedData = {
       ...responses,
       [`field_${fieldId}`]: value,
@@ -191,7 +191,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
     responses
   );
 
-  const handleFieldChange = async (fieldId: string, value: any) => {
+  const handleFieldChange = async (fieldId: string, value: unknown) => {
     updateResponse(fieldId.replace('field_', ''), value);
   };
 
@@ -309,7 +309,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
               label={field.name}
-              value={value ? new Date(value) : null}
+              value={value ? new Date(value as string | number | Date) : null}
               onChange={(date) => handleFieldChange(fieldKey, date?.toISOString().split('T')[0] || '')}
               slotProps={{
                 textField: {
@@ -444,9 +444,10 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
           );
         }
 
-        const uploadError = getUploadError(field.id);
-        const uploading = isUploading(field.id);
-        const uploadedFiles = getUploadedFiles(field.id);
+        return (() => {
+          const uploadError = getUploadError(field.id);
+          const uploading = isUploading(field.id);
+          const uploadedFiles = getUploadedFiles(field.id);
 
         return (
           <FormControl fullWidth error={hasError}>
@@ -457,7 +458,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             <TextField
               type="file"
               fullWidth
-              onChange={(e: any) => {
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 const files = Array.from(e.target.files || []) as File[];
                 if (files.length > 0) {
                   // Validate file size
@@ -518,6 +519,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             )}
           </FormControl>
         );
+        })();
 
       case 'rating':
         return (

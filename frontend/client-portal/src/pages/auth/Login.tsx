@@ -93,16 +93,19 @@ const Login: React.FC<LoginProps> = ({
         'You have been successfully logged in.'
       );
       onLoginSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
       
       // Handle different types of errors
-      if (error?.response?.status === 400 || error?.response?.status === 401) {
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      if (errorObj?.response?.status === 400 || errorObj?.response?.status === 401) {
         setErrors({ 
           form: 'Invalid email or password. Please check your credentials and try again.' 
         });
-      } else if (error?.response?.data?.detail) {
-        setErrors({ form: error.response.data.detail });
+      } else if (errorObj?.response?.data?.detail) {
+        setErrors({ form: errorObj.response.data.detail });
       } else {
         showError(
           'Login Failed',

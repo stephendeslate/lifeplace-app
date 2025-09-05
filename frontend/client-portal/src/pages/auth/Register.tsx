@@ -155,12 +155,15 @@ const Register: React.FC<RegisterProps> = ({
         'Your account has been created successfully. You are now logged in.'
       );
       onRegisterSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
       
       // Handle different types of errors
-      if (error?.response?.data) {
-        const errorData = error.response.data;
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      if (errorObj?.response?.data) {
+        const errorData = errorObj.response.data;
         const newErrors: Record<string, string> = {};
 
         if (errorData.email) {

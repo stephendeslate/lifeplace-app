@@ -252,7 +252,7 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
 };
 
 // Hook to generate standard booking steps
-export const useBookingSteps = (flowConfig?: any) => {
+export const useBookingSteps = (flowConfig?: { steps?: Array<{ step_type: string }> }) => {
   const standardSteps: BookingStep[] = [
     {
       id: 'introduction',
@@ -333,7 +333,7 @@ export const useBookingSteps = (flowConfig?: any) => {
   // Filter steps based on flow configuration
   if (flowConfig?.steps) {
     return standardSteps.filter(step => 
-      flowConfig.steps.some((configStep: any) => configStep.step_type === step.id.toUpperCase())
+      flowConfig.steps?.some((configStep) => configStep.step_type === step.id.toUpperCase())
     );
   }
 

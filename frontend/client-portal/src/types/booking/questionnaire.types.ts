@@ -26,8 +26,8 @@ export interface QuestionnaireField {
   options: string[] | null;
   placeholder?: string;
   help_text?: string;
-  validation_rules?: Record<string, any>;
-  display_conditions?: Record<string, any>;
+  validation_rules?: Record<string, string | number | boolean>;
+  display_conditions?: Record<string, string | number | boolean>;
   created_at: string;
   updated_at: string;
 }
@@ -58,7 +58,7 @@ export interface QuestionnaireStepItem {
   questionnaire_details: Questionnaire;
   order: number;
   is_conditional: boolean;
-  show_conditions: Record<string, any>;
+  show_conditions: Record<string, string | number | boolean>;
   created_at: string;
   updated_at: string;
 }
@@ -89,7 +89,7 @@ export interface QuestionnaireResponse {
   field_id: number;
   field_name: string;
   field_type: QuestionnaireFieldType;
-  value: any;
+  value: string | number | boolean | string[] | number[];
   display_value?: string;
 }
 
@@ -152,7 +152,7 @@ export interface QuestionnaireListResponse {
 
 export interface QuestionnaireSubmissionRequest {
   questionnaire_id: number;
-  responses: Record<number, any>; // field_id -> value
+  responses: Record<number, string | number | boolean | string[] | File[]>; // field_id -> value
   files?: Record<number, File[]>; // field_id -> files
   partial_save?: boolean;
 }
@@ -169,8 +169,8 @@ export interface QuestionnaireSubmissionResponse {
 // Utility types for form rendering
 export interface QuestionnaireFieldProps {
   field: QuestionnaireField;
-  value: any;
-  onChange: (value: any) => void;
+  value: string | number | boolean | string[] | number[] | null;
+  onChange: (value: string | number | boolean | string[] | number[] | null) => void;
   onBlur?: () => void;
   error?: string;
   disabled?: boolean;
@@ -201,7 +201,7 @@ export interface QuestionnaireStepConfiguration {
 
 // Data storage types for questionnaire step
 export interface QuestionnaireStepData {
-  responses?: Record<string, any>; // questionnaire_id -> responses
+  responses?: Record<string, Record<string, string | number | boolean | string[]>>; // questionnaire_id -> responses
   uploaded_files?: Record<string, File[]>; // questionnaire_id -> field_id -> files
   validation_errors?: Record<string, Record<string, string[]>>; // questionnaire_id -> field_id -> errors
   completion_status?: Record<string, boolean>; // questionnaire_id -> is_complete
@@ -212,7 +212,7 @@ export interface QuestionnaireStepData {
 export interface ConditionalRule {
   field_id: number;
   operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty';
-  value: any;
+  value: string | number | boolean | string[] | number[];
   logic?: 'AND' | 'OR';
 }
 

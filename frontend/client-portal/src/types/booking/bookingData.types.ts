@@ -34,7 +34,7 @@ export interface BookingData {
   // Questionnaire responses (array of responses)
   questionnaire_responses?: Array<{
     questionnaire_id: number;
-    responses: Record<string, any>;
+    responses: Record<string, unknown>;
   }>;
   
   // Pricing information (calculated by backend)
@@ -76,7 +76,7 @@ export interface BookingSession {
   booking_flow: number;
   booking_flow_name?: string;
   current_step_id?: number;
-  current_step?: any; // BookingFlowStep
+  current_step?: Record<string, unknown>; // BookingFlowStep
   progress_percentage: number;
   expires_at: string;
   is_completed: boolean;

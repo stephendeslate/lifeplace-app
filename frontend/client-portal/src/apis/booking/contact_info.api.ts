@@ -37,7 +37,7 @@ export class ContactInfoApi {
     stepId: number,
     stepData: ContactInfoStepData,
     markCompleted: boolean = false
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const response = await api.patch(
       `/bookingflow/public/flows/session/${sessionId}/update/`,
       {
@@ -46,7 +46,7 @@ export class ContactInfoApi {
         mark_completed: markCompleted
       }
     );
-    return response.data;
+    return response.data as Record<string, unknown>;
   }
 
   /**
@@ -70,7 +70,7 @@ export class ContactInfoApi {
    */
   static validateData(
     data: ContactInfoStepData,
-    config: any
+    config: Record<string, unknown>
   ): { isValid: boolean; errors: Record<string, string[]> } {
     const errors: Record<string, string[]> = {};
 
@@ -142,19 +142,19 @@ export class ContactInfoApi {
   /**
    * Get default contact info data from current user if authenticated
    */
-  static getDefaultDataFromUser(user: any): ContactInfoStepData {
+  static getDefaultDataFromUser(user: Record<string, unknown> | null): ContactInfoStepData {
     if (!user) {
       return this.getDefaultData();
     }
 
     return {
-      full_name: user.first_name && user.last_name 
+      full_name: (user.first_name as string) && (user.last_name as string) 
         ? `${user.first_name} ${user.last_name}` 
-        : user.first_name || '',
-      email: user.email || '',
-      phone: user.profile?.phone || '',
+        : (user.first_name as string) || '',
+      email: (user.email as string) || '',
+      phone: ((user.profile as Record<string, unknown>)?.phone as string) || '',
       address: '',
-      company: user.profile?.company || '',
+      company: ((user.profile as Record<string, unknown>)?.company as string) || '',
       create_account: false, // Already has account
       password: '',
       custom_fields: {},
@@ -180,25 +180,28 @@ export class ContactInfoApi {
   /**
    * Handle API errors
    */
-  static handleApiError(error: any): string {
-    if (error.response?.data?.detail) {
-      return error.response.data.detail;
+  static handleApiError(error: unknown): string {
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.detail) {
+      return errorObj.response.data.detail;
     }
 
-    if (error.response?.data?.message) {
-      return error.response.data.message;
+    if (errorObj.response?.data?.message) {
+      return errorObj.response.data.message;
     }
 
-    if (error.response?.status === 400) {
+    if (errorObj.response?.status === 400) {
       return 'Invalid contact information provided.';
     }
 
-    if (error.response?.status === 409) {
+    if (errorObj.response?.status === 409) {
       return 'Email address is already in use.';
     }
 
-    if (error.message) {
-      return error.message;
+    if (errorObj.message) {
+      return errorObj.message;
     }
 
     return 'An error occurred while processing contact information.';
@@ -207,19 +210,22 @@ export class ContactInfoApi {
   /**
    * Extract validation errors from API response
    */
-  static extractValidationErrors(error: any): Record<string, string[]> {
+  static extractValidationErrors(error: unknown): Record<string, string[]> {
     const validationErrors: Record<string, string[]> = {};
 
-    if (error.response?.data?.validation_errors) {
-      return error.response.data.validation_errors;
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.validation_errors) {
+      return errorObj.response.data.validation_errors;
     }
 
-    if (error.response?.data?.errors) {
-      const errors = error.response.data.errors;
+    if (errorObj.response?.data?.errors) {
+      const errors = errorObj.response.data.errors;
       
       if (typeof errors === 'object') {
         Object.keys(errors).forEach(field => {
-          const fieldErrors = errors[field];
+          const fieldErrors = (errors as Record<string, unknown>)[field];
           
           if (Array.isArray(fieldErrors)) {
             validationErrors[field] = fieldErrors;

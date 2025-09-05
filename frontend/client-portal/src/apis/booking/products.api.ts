@@ -349,25 +349,28 @@ export class ProductsApi {
   /**
    * Handle products API errors
    */
-  static handleProductsError(error: any): string {
-    if (error.response?.data?.detail) {
-      return error.response.data.detail;
+  static handleProductsError(error: unknown): string {
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.detail) {
+      return errorObj.response.data.detail;
     }
 
-    if (error.response?.data?.message) {
-      return error.response.data.message;
+    if (errorObj.response?.data?.message) {
+      return errorObj.response.data.message;
     }
 
-    if (error.response?.status === 404) {
+    if (errorObj.response?.status === 404) {
       return 'Product not found.';
     }
 
-    if (error.response?.status === 403) {
+    if (errorObj.response?.status === 403) {
       return 'You do not have permission to access this product.';
     }
 
-    if (error.message) {
-      return error.message;
+    if (errorObj.message) {
+      return errorObj.message;
     }
 
     return 'An error occurred while loading products.';

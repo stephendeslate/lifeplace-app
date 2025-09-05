@@ -22,10 +22,13 @@ export const useAuth = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Login error:', error);
       
-      const message = error.response?.data?.detail || error.message || 'Login failed';
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      const message = errorObj.response?.data?.detail || errorObj.message || 'Login failed';
       showError('Login Failed', message);
     },
   });
@@ -42,10 +45,13 @@ export const useAuth = () => {
       // Invalidate user-related queries
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Registration error:', error);
       
-      const message = error.response?.data?.detail || error.message || 'Registration failed';
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      const message = errorObj.response?.data?.detail || errorObj.message || 'Registration failed';
       showError('Registration Failed', message);
     },
   });
@@ -60,10 +66,13 @@ export const useAuth = () => {
     onSuccess: () => {
       showSuccess('Password Changed', 'Your password has been updated successfully.');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Change password error:', error);
       
-      const message = error.response?.data?.detail || 'Failed to change password';
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      const message = errorObj.response?.data?.detail || 'Failed to change password';
       showError('Password Change Failed', message);
     },
   });
@@ -82,10 +91,13 @@ export const useAuth = () => {
       // Invalidate user query
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Update profile error:', error);
       
-      const message = error.response?.data?.detail || 'Failed to update profile';
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      const message = errorObj.response?.data?.detail || 'Failed to update profile';
       showError('Update Failed', message);
     },
   });
@@ -103,10 +115,13 @@ export const useAuth = () => {
       
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Upload avatar error:', error);
       
-      const message = error.response?.data?.detail || 'Failed to upload avatar';
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      const message = errorObj.response?.data?.detail || 'Failed to upload avatar';
       showError('Upload Failed', message);
     },
   });
@@ -117,9 +132,12 @@ export const useAuth = () => {
     queryFn: () => authApi.getCurrentUser(),
     enabled: !!authContext.isAuthenticated,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: unknown) => {
       // Don't retry on auth errors
-      if (error?.response?.status === 401 || error?.response?.status === 403) {
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      if (errorObj?.response?.status === 401 || errorObj?.response?.status === 403) {
         return false;
       }
       return failureCount < 2;

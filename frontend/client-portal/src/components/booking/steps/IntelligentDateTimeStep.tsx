@@ -114,8 +114,8 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
     // Auto-suggest a time if none selected and slot is available
     if (!selectedTime && slot.isAvailable && config?.available_time_slots?.length) {
       const firstSlot = config.available_time_slots[0];
-      if (firstSlot.start) {
-        setSelectedTime(parseISO(`2000-01-01T${firstSlot.start}:00`));
+      if (firstSlot.start_time) {
+        setSelectedTime(parseISO(`2000-01-01T${firstSlot.start_time}:00`));
       }
     }
   }, [selectedTime, config]);

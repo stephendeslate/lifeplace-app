@@ -7,7 +7,7 @@ export interface PaymentGateway {
   code: string;
   description: string;
   is_active: boolean;
-  public_config: Record<string, any>;
+  public_config: Record<string, string | number | boolean>;
 }
 
 export interface PaymentGatewayResponse {

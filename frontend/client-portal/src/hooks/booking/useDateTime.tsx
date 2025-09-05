@@ -95,8 +95,11 @@ export const useDateTime = (
       
       return result.isValid;
     } catch (err) {
-      const errorMessage = DateTimeApi.handleApiError(err);
-      const apiErrors = DateTimeApi.extractValidationErrors(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = DateTimeApi.handleApiError(err as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const apiErrors = DateTimeApi.extractValidationErrors(err as any);
       
       setError(errorMessage);
       setValidationErrors(apiErrors);
@@ -119,7 +122,9 @@ export const useDateTime = (
       setAvailabilityStatus(result);
       return result.available;
     } catch (err) {
-      const errorMessage = DateTimeApi.handleApiError(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = DateTimeApi.handleApiError(err as any);
       setAvailabilityStatus({
         available: false,
         message: errorMessage
@@ -152,14 +157,19 @@ export const useDateTime = (
       
       // Handle any validation errors from the response
       if (result.validation_errors && Object.keys(result.validation_errors).length > 0) {
-        setValidationErrors(result.validation_errors);
+        // API validation errors have dynamic structure requiring any type
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setValidationErrors(result.validation_errors as any);
         return false;
       }
       
       return true;
     } catch (err) {
-      const errorMessage = DateTimeApi.handleApiError(err);
-      const apiErrors = DateTimeApi.extractValidationErrors(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = DateTimeApi.handleApiError(err as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const apiErrors = DateTimeApi.extractValidationErrors(err as any);
       
       setError(errorMessage);
       setValidationErrors(apiErrors);

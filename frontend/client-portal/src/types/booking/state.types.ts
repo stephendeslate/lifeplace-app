@@ -48,7 +48,13 @@ export interface BookingState {
   
   // Pricing
   totalPrice: string;
-  breakdown: any[];
+  breakdown: {
+    item_name: string;
+    quantity: number;
+    unit_price: string;
+    total_price: string;
+    type: 'PACKAGE' | 'ADDON' | 'TAX' | 'DISCOUNT' | 'FEE';
+  }[];
 }
 
 // Action types
@@ -63,8 +69,8 @@ export interface BookingActions {
   
   // Session management
   startSession: (flowId: number) => Promise<void>;
-  updateStepData: (stepType: string, data: any) => Promise<void>;
-  validateStep: (stepId: number, data: any) => Promise<StepValidationResult>;
+  updateStepData: (stepType: string, data: Record<string, unknown>) => Promise<void>;
+  validateStep: (stepId: number, data: Record<string, unknown>) => Promise<StepValidationResult>;
   
   // Navigation
   goToStep: (stepIndex: number) => void;

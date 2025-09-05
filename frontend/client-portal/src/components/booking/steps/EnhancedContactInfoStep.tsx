@@ -45,7 +45,7 @@ interface EnhancedContactInfoStepProps {
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
   flowConfig: BookingFlow | null;
-  onValidate?: (data: any) => Promise<StepValidationResult>;
+  onValidate?: (data: Record<string, unknown>) => Promise<StepValidationResult>;
 }
 
 interface ValidationState {
@@ -135,7 +135,7 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
   const [phoneStrength, setPhoneStrength] = useState(0);
 
   // Update form data with real-time validation
-  const updateFormData = useCallback((field: keyof ContactInfoStepData, value: any) => {
+  const updateFormData = useCallback((field: keyof ContactInfoStepData, value: unknown) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
     onDataChange(newData);
@@ -144,9 +144,9 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     if (field === 'email') {
       setValidationState(prev => ({ ...prev, email: 'validating' }));
       setTimeout(() => {
-        const isValid = validateEmail(value);
+        const isValid = validateEmail(value as string);
         setValidationState(prev => ({ ...prev, email: isValid ? 'valid' : 'invalid' }));
-        setEmailStrength(isValid ? (value.includes('.com') ? 100 : 80) : 0);
+        setEmailStrength(isValid ? ((value as string).includes('.com') ? 100 : 80) : 0);
         if (isValid) {
           announceToScreenReader('Email address is valid');
         }
@@ -155,7 +155,7 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
 
     if (field === 'phone') {
       setValidationState(prev => ({ ...prev, phone: 'validating' }));
-      const formatted = formatPhoneNumber(value);
+      const formatted = formatPhoneNumber(value as string);
       if (formatted !== value) {
         const updatedData = { ...newData, phone: formatted };
         setFormData(updatedData);
@@ -175,7 +175,7 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     if (field === 'full_name') {
       setValidationState(prev => ({ ...prev, full_name: 'validating' }));
       setTimeout(() => {
-        const hasFullName = value && value.trim().length > 0 && value.includes(' ');
+        const hasFullName = value && (value as string).trim().length > 0 && (value as string).includes(' ');
         setValidationState(prev => ({ ...prev, full_name: hasFullName ? 'valid' : 'invalid' }));
       }, 300);
     }

@@ -54,16 +54,16 @@ const isBookingPage = (): boolean => {
 
 // Add request interceptor to add authorization header and CSRF token
 api.interceptors.request.use(
-  (config: any) => {
+  (config) => {
     // Add Authorization header if token exists (but not required for public endpoints)
     const tokens = storage.getTokens();
-    if (tokens?.access) {
+    if (tokens?.access && config.headers) {
       config.headers.Authorization = `Bearer ${tokens.access}`;
     }
 
     // Add CSRF token for unsafe methods
     const unsafeMethods = ["post", "put", "patch", "delete"];
-    if (config.method && unsafeMethods.includes(config.method.toLowerCase())) {
+    if (config.method && unsafeMethods.includes(config.method.toLowerCase()) && config.headers) {
       const csrfToken = getCsrfToken();
       if (csrfToken) {
         config.headers["X-CSRFToken"] = csrfToken;

@@ -46,8 +46,8 @@ interface ConfirmationStepProps {
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
   session?: BookingSession | null;
-  completedBooking?: any;
-  onValidate?: (data: any) => Promise<StepValidationResult>;
+  completedBooking?: Record<string, unknown>;
+  onValidate?: (data: Record<string, unknown>) => Promise<StepValidationResult>;
 }
 
 export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
@@ -179,7 +179,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       onDataChange({
         ...stepData,
         booking_reference: completionResult.session_id || bookingReference,
-        booking_completion_result: completionResult,
+        booking_completion_result: completionResult as unknown as Record<string, unknown>,
       });
     }
   }, [completionResult?.session_id, stepData.completion_status]); // Only depend on stable values
@@ -448,7 +448,9 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-        {completionResult?.event?.id && (
+        {/* Complex completion result type requires any for safe property access */}
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {(completionResult as any)?.event?.id && (
           <Button 
             variant="contained" 
             onClick={navigateToDashboard}

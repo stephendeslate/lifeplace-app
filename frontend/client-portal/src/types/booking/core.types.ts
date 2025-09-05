@@ -36,9 +36,9 @@ export interface BookingFlowStep {
   is_enabled: boolean;
   is_required: boolean;
   is_skippable: boolean;
-  display_conditions: Record<string, any>;
-  configuration: Record<string, any>;
-  validation_rules: Record<string, any>;
+  display_conditions: Record<string, unknown>;
+  configuration: Record<string, unknown>;
+  validation_rules: Record<string, unknown>;
   configuration_data: StepConfiguration | null;
   created_at: string;
   updated_at: string;

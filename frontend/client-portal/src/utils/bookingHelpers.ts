@@ -15,7 +15,7 @@ export class BookingValidationHelpers {
    * Validate required fields for a step
    */
   static validateRequiredFields(
-    data: Record<string, any>, 
+    data: Record<string, unknown>, 
     requiredFields: string[]
   ): ValidationError[] {
     const errors: ValidationError[] = [];
@@ -64,7 +64,7 @@ export class BookingValidationHelpers {
   /**
    * Validate step-specific data
    */
-  static validateStepData(step: BookingFlowStep, data: any): ValidationError[] {
+  static validateStepData(step: BookingFlowStep, data: Record<string, unknown>): ValidationError[] {
     const errors: ValidationError[] = [];
     
     switch (step.step_type) {
@@ -83,7 +83,7 @@ export class BookingValidationHelpers {
             field: 'start_date',
             message: 'Event date is required'
           });
-        } else if (!this.validateFutureDate(data.start_date)) {
+        } else if (!this.validateFutureDate(data.start_date as string)) {
           errors.push({
             field: 'start_date',
             message: 'Event date must be in the future'
@@ -91,7 +91,7 @@ export class BookingValidationHelpers {
         }
         
         // Use type assertion to access allow_time_selection if it exists
-        if ((step.configuration_data as any)?.allow_time_selection && !data.start_time) {
+        if ((step.configuration_data as { allow_time_selection?: boolean })?.allow_time_selection && !data.start_time) {
           errors.push({
             field: 'start_time',
             message: 'Event time is required'
@@ -124,19 +124,19 @@ export class BookingValidationHelpers {
             field: 'email',
             message: 'Email is required'
           });
-        } else if (!this.validateEmail(data.email)) {
+        } else if (!this.validateEmail(data.email as string)) {
           errors.push({
             field: 'email',
             message: 'Please enter a valid email address'
           });
         }
         
-        if ((step.configuration_data as any)?.require_phone && !data.phone) {
+        if ((step.configuration_data as { require_phone?: boolean })?.require_phone && !data.phone) {
           errors.push({
             field: 'phone',
             message: 'Phone number is required'
           });
-        } else if (data.phone && !this.validatePhone(data.phone)) {
+        } else if (data.phone && !this.validatePhone(data.phone as string)) {
           errors.push({
             field: 'phone',
             message: 'Please enter a valid phone number'
@@ -176,9 +176,9 @@ export class BookingValidationHelpers {
         }
         break;
         
-      case 'package_selection':
-        const packages = data.selected_packages || [];
-        const config = step.configuration_data as any;
+      case 'package_selection': {
+        const packages = (data.selected_packages as unknown[]) || [];
+        const config = step.configuration_data as { min_selection?: number; max_selection?: number };
         
         if (config?.min_selection && packages.length < config.min_selection) {
           errors.push({
@@ -194,10 +194,11 @@ export class BookingValidationHelpers {
           });
         }
         break;
+      }
         
-      case 'addon_selection':
-        const addons = data.selected_addons || [];
-        const addonConfig = step.configuration_data as any;
+      case 'addon_selection': {
+        const addons = (data.selected_addons as unknown[]) || [];
+        const addonConfig = step.configuration_data as { min_selection?: number; max_selection?: number };
         
         if (addonConfig?.min_selection && addons.length < addonConfig.min_selection) {
           errors.push({
@@ -213,6 +214,7 @@ export class BookingValidationHelpers {
           });
         }
         break;
+      }
     }
     
     return errors;
@@ -240,7 +242,7 @@ export class BookingValidationHelpers {
   static canSkipStep(step: BookingFlowStep, stepData: StepData): boolean {
     // Can't skip required steps unless they have valid data
     if (step.is_required && !step.is_skippable) {
-      const errors = this.validateStepData(step, stepData[step.step_type] || {});
+      const errors = this.validateStepData(step, (stepData as Record<string, unknown>)[step.step_type] as Record<string, unknown> || {});
       return errors.length === 0;
     }
     
