@@ -581,12 +581,23 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                     
                     # Handle excess hours if applicable
                     duration_hours = package_item.get('duration_hours', 0)
+                    
+                    # If no duration in package item, get from session booking data
+                    if not duration_hours:
+                        duration_hours = self._get_session_duration(booking_data)
+                    
+                    logger.info(f"PRICING API - Product: {product.name}, Duration: {duration_hours}h, Included: {product.included_hours}h")
+                    
                     if product.has_excess_hours and product.included_hours and duration_hours:
                         if duration_hours > product.included_hours:
-                            excess_hours = duration_hours - product.included_hours
+                            import math
+                            # Round up excess hours to next whole number
+                            excess_hours_raw = duration_hours - product.included_hours
+                            excess_hours = Decimal(str(math.ceil(excess_hours_raw)))
                             excess_hour_price = Decimal(str(product.excess_hour_price or '0'))
                             excess_cost = excess_hours * excess_hour_price
-                            item_total += excess_cost * quantity
+                            item_total += excess_cost * Decimal(str(quantity))
+                            logger.info(f"PRICING API - Added excess: {excess_hours}h × ₱{excess_hour_price} = ₱{excess_cost * Decimal(str(quantity))}")
                     
                     subtotal += item_total
                     
@@ -945,3 +956,36 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
     
     # NOTE: Step validation is now handled by BookingSessionService._validate_step_data()
     # This provides enhanced validation including authenticated user context
+    
+    def _get_session_duration(self, booking_data):
+        """Extract event duration from booking session data"""
+        # Look for duration in various places in booking data
+        duration = None
+        
+        # Check root level first
+        if 'duration' in booking_data:
+            duration = booking_data.get('duration')
+        
+        # Check in step data
+        if not duration:
+            for step_key, step_data in booking_data.items():
+                if isinstance(step_data, dict):
+                    if 'duration' in step_data:
+                        duration = step_data['duration']
+                        break
+                    # Also check for end_time and start_time to calculate duration
+                    elif 'start_time' in step_data and 'end_time' in step_data:
+                        try:
+                            from datetime import datetime
+                            start_time = datetime.strptime(step_data['start_time'], '%H:%M')
+                            end_time = datetime.strptime(step_data['end_time'], '%H:%M')
+                            duration_hours = (end_time - start_time).seconds / 3600
+                            duration = int(duration_hours)
+                            break
+                        except (ValueError, TypeError):
+                            continue
+        
+        try:
+            return int(duration) if duration else None
+        except (ValueError, TypeError):
+            return None
