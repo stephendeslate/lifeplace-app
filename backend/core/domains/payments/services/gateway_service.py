@@ -108,44 +108,78 @@ class PaymentGatewayService:
         """Process payment through Stripe gateway"""
         import stripe
         
+        logger.info(f"Starting Stripe payment processing for payment_id={payment_id}")
+        logger.info(f"Stripe payment data: {payment_data}")
+        logger.info(f"User: {user}")
+        
         try:
             payment = Payment.objects.get(pk=payment_id)
+            logger.info(f"Found payment record: {payment} (amount: {payment.amount} {payment.currency})")
         except Payment.DoesNotExist:
+            logger.error(f"Payment with ID {payment_id} not found")
             raise PaymentNotFoundException(f"Payment with ID {payment_id} not found")
         
         # Get Stripe gateway config
         gateway_id = payment_data.get('gateway_id')
+        logger.info(f"Getting Stripe gateway with ID: {gateway_id}")
+        
         if gateway_id:
-            gateway = PaymentGateway.objects.get(id=gateway_id, code='stripe')
+            try:
+                gateway = PaymentGateway.objects.get(id=gateway_id, code='stripe')
+                logger.info(f"Found gateway by ID: {gateway.name}")
+            except PaymentGateway.DoesNotExist:
+                logger.error(f"Gateway with ID {gateway_id} not found")
+                raise PaymentGatewayException(f"Gateway with ID {gateway_id} not found")
         elif payment.payment_method and payment.payment_method.gateway:
             gateway = payment.payment_method.gateway
+            logger.info(f"Using gateway from payment method: {gateway.name}")
         else:
             # Fallback to first active Stripe gateway
             gateway = PaymentGateway.objects.filter(code='stripe', is_active=True).first()
             if not gateway:
+                logger.error("No active Stripe gateway found")
                 raise PaymentGatewayException("No active Stripe gateway found")
+            logger.info(f"Using fallback gateway: {gateway.name}")
+        
+        # Check if gateway config exists
+        if not gateway.config or 'secret_key' not in gateway.config:
+            logger.error(f"Gateway {gateway.name} missing secret_key in config")
+            raise PaymentGatewayException(f"Gateway {gateway.name} not properly configured")
         
         stripe.api_key = gateway.config['secret_key']
+        logger.info(f"Set Stripe API key from gateway: {gateway.name}")
         
         with transaction.atomic():
             try:
                 # Determine currency for payment
                 payment_currency = PaymentGatewayService._get_payment_currency(payment)
+                logger.info(f"Payment currency: {payment_currency}")
                 
                 # Create payment intent with Stripe
                 intent_data = {
                     'amount': int(payment.amount * 100),  # Convert to cents
                     'currency': payment_currency.lower(),
-                    'confirmation_method': 'manual',
                     'confirm': True,
+                    'return_url': 'https://lifeplacealfonso.com/booking/complete',  # Required for redirect methods
+                    'automatic_payment_methods': {
+                        'enabled': True,
+                        'allow_redirects': 'never'  # Disable redirect methods to avoid return_url requirement
+                    }
                 }
+                
+                logger.info(f"Base intent data: amount={intent_data['amount']}, currency={intent_data['currency']}")
                 
                 # Add payment method
                 if payment_data.get('payment_method_token'):
                     intent_data['payment_method'] = payment_data['payment_method_token']
+                    logger.info(f"Using payment method token: {payment_data['payment_method_token']}")
                 elif payment_data.get('payment_method_id'):
                     # Use existing payment method
                     intent_data['payment_method'] = payment_data['payment_method_id']
+                    logger.info(f"Using payment method ID: {payment_data['payment_method_id']}")
+                else:
+                    logger.error("No payment method provided in payment data")
+                    raise PaymentGatewayException("No payment method provided")
                 
                 # Add metadata
                 intent_data['metadata'] = {
@@ -154,7 +188,14 @@ class PaymentGatewayService:
                     'client_email': payment.event.client.email if payment.event.client else '',
                 }
                 
-                intent = stripe.PaymentIntent.create(**intent_data)
+                logger.info(f"Creating Stripe PaymentIntent with data: {intent_data}")
+                
+                try:
+                    intent = stripe.PaymentIntent.create(**intent_data)
+                    logger.info(f"PaymentIntent created successfully: {intent.id} (status: {intent.status})")
+                except stripe.error.StripeError as stripe_error:
+                    logger.error(f"Stripe API error: {stripe_error}")
+                    raise
                 
                 # Record transaction
                 transaction_record = PaymentTransaction.objects.create(

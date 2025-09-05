@@ -109,11 +109,12 @@ class Event(BaseModel):
 
     def update_payment_status(self):
         """Update payment status based on completed payments"""
+        from decimal import Decimal
         payments = self.payments.filter(status='COMPLETED')
-        self.total_amount_paid = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+        self.total_amount_paid = payments.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
         
         # Handle case where total_amount_due is None
-        total_due = self.total_amount_due or 0
+        total_due = self.total_amount_due or Decimal('0')
         
         if self.total_amount_paid >= total_due and total_due > 0:
             self.payment_status = 'PAID'

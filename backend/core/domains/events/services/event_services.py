@@ -211,14 +211,24 @@ class EventService:
                         continue
                 
                 # Create EventProductOption with proper data
+                from decimal import Decimal
+                final_price = product_data.get('final_price', product_option.base_price)
+                quantity = product_data.get('quantity', 1)
+                num_participants = product_data.get('num_participants')
+                num_nights = product_data.get('num_nights')
+                excess_hours = product_data.get('excess_hours')
+                
+                # Log all values and their types for debugging
+                logger.info(f"EventProductOption values: final_price={final_price} (type: {type(final_price)}), quantity={quantity} (type: {type(quantity)}), num_participants={num_participants} (type: {type(num_participants)}), num_nights={num_nights} (type: {type(num_nights)}), excess_hours={excess_hours} (type: {type(excess_hours)})")
+                
                 EventProductOption.objects.create(
                     event=event,
                     product_option=product_option,
-                    quantity=product_data.get('quantity', 1),
-                    final_price=product_data.get('final_price', product_option.base_price),
-                    num_participants=product_data.get('num_participants'),
-                    num_nights=product_data.get('num_nights'),
-                    excess_hours=product_data.get('excess_hours')
+                    quantity=quantity,
+                    final_price=Decimal(str(final_price)) if final_price is not None else product_option.base_price,
+                    num_participants=num_participants,
+                    num_nights=num_nights,
+                    excess_hours=excess_hours
                 )
             
             # Create timeline entry

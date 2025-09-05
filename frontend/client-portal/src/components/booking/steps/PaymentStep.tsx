@@ -54,6 +54,8 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 }) => {
   // State for tracking completion choice
   const [completionChoice, setCompletionChoice] = useState<CompletionChoice>(null);
+  // State for tracking payment method success
+  const [paymentMethodCreated, setPaymentMethodCreated] = useState<boolean>(false);
   
   // Payment hooks
   const { 
@@ -160,6 +162,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
       payment_method_id: paymentMethodId,
       payment_method: 'CREDIT_CARD' 
     });
+    setPaymentMethodCreated(true);
   }, [updateData]);
 
   // Handle Stripe payment error
@@ -167,6 +170,13 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     console.error('Stripe payment error:', error);
     // You might want to show this error to the user
   }, []);
+
+  // Track if payment method is already available (from session restore)
+  React.useEffect(() => {
+    if (stepData.payment_method_id) {
+      setPaymentMethodCreated(true);
+    }
+  }, [stepData.payment_method_id]);
 
   if (gatewaysLoading) {
     return (
@@ -538,7 +548,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
       </Paper>
 
       {/* Stripe Payment Form */}
-      {selectedGateway?.code === 'stripe' && amounts.dueNow > 0 && (
+      {selectedGateway?.code === 'stripe' && amounts.dueNow > 0 && !paymentMethodCreated && (
         <StripePaymentForm
           publishableKey={String(selectedGateway.public_config?.publishable_key || '')}
           amount={Math.round(amounts.dueNow * 100)} // Convert to cents
@@ -547,6 +557,56 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
           onPaymentError={handleStripePaymentError}
           isProcessing={isValidating}
         />
+      )}
+
+      {/* Payment Method Success Feedback */}
+      {paymentMethodCreated && selectedGateway?.code === 'stripe' && (
+        <Paper sx={{ p: 3, mb: 3, backgroundColor: 'success.50', border: 1, borderColor: 'success.200' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <CheckCircle color="success" sx={{ fontSize: 32 }} />
+            <Box>
+              <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
+                Payment Method Secured! 🎉
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Your card has been validated and saved securely
+              </Typography>
+            </Box>
+          </Box>
+
+          <Alert severity="success" sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+              ✅ Ready to Complete Your Booking
+            </Typography>
+            <Typography variant="body2">
+              Your payment method is secured. Continue to the next step to finalize your booking.
+              You'll only be charged <strong>{amounts.formattedDueNow}</strong> after final confirmation.
+            </Typography>
+          </Alert>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1, mb: 2 }}>
+            <Security color="success" sx={{ fontSize: 20 }} />
+            <Typography variant="body2" color="text.secondary">
+              <strong>Secure Payment:</strong> Your card details are safely stored with Stripe. 
+              No payment will be processed until you complete your booking.
+            </Typography>
+          </Box>
+
+          {/* Option to change payment method */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Button 
+              variant="outlined" 
+              size="small"
+              onClick={() => {
+                setPaymentMethodCreated(false);
+                updateData({ payment_method_id: '', payment_method_token: '' });
+              }}
+              sx={{ textTransform: 'none' }}
+            >
+              Use Different Payment Method
+            </Button>
+          </Box>
+        </Paper>
       )}
 
       {/* Debug Info - Remove in production */}

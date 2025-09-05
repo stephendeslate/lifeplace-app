@@ -313,21 +313,33 @@ class BookingSessionService:
                 if completion_type == 'payment':
                     # Handle payment completion
                     payment_data = BookingSessionService._extract_payment_data(session)
-                    if payment_data:
-                        payment = BookingSessionService._process_booking_payment(
-                            session, event, payment_data
-                        )
-                        
-                        if payment.status == 'COMPLETED':
-                            # Payment successful - confirm the event
-                            event.status = 'CONFIRMED'
-                            event.save()
-                        else:
-                            raise EventCreationFailed("Payment processing failed")
                     
-                    # Handle case where no immediate payment is required
-                    elif session.booking_flow.require_immediate_payment:
-                        raise StepValidationError("Payment is required but no payment data provided")
+                    # If no payment data found, create empty dict to trigger fallback to default gateway
+                    if payment_data is None:
+                        payment_data = {}
+                    
+                    payment = BookingSessionService._process_booking_payment(
+                        session, event, payment_data
+                    )
+                    
+                    # Refresh payment from database to get updated status
+                    payment.refresh_from_db()
+                    logger.info(f"Payment status after processing: {payment.status}")
+                    
+                    # Check if payment completed or if we have a successful transaction
+                    payment_successful = (
+                        payment.status == 'COMPLETED' or 
+                        payment.transactions.filter(status='COMPLETED').exists()
+                    )
+                    
+                    if payment_successful:
+                        # Payment successful - confirm the event
+                        event.status = 'CONFIRMED'
+                        event.save()
+                        logger.info(f"Event {event.id} confirmed successfully")
+                    else:
+                        logger.error(f"Payment processing failed - payment status: {payment.status}, transactions: {list(payment.transactions.values_list('status', flat=True))}")
+                        raise EventCreationFailed("Payment processing failed")
                     
                 elif completion_type == 'quote':
                     # Handle quote request completion
@@ -402,37 +414,108 @@ class BookingSessionService:
         for step_key, step_data in session.booking_data.items():
             if isinstance(step_data, dict):
                 # Check if this step has payment-related data
-                if any(key in step_data for key in ['gateway_id', 'payment_method_token', 'payment_method_id']):
+                if any(key in step_data for key in ['gateway_id', 'payment_gateway_id', 'payment_method_token', 'payment_method_id']):
                     return step_data
         return None
     
     @staticmethod
     def _process_booking_payment(session, event, payment_data):
         """Process payment for completed booking"""
-        gateway_id = payment_data.get('gateway_id')
+        logger.info(f"Starting payment processing for session {session.session_id}")
+        logger.info(f"Payment data received: {payment_data}")
+        
+        gateway_id = payment_data.get('gateway_id') or payment_data.get('payment_gateway_id')
+        logger.info(f"Gateway ID from payment data: {gateway_id}")
+        
+        # If no gateway specified in payment data, use booking flow default
+        if not gateway_id:
+            if session.booking_flow.default_payment_gateway and session.booking_flow.default_payment_gateway.is_active:
+                gateway_id = session.booking_flow.default_payment_gateway.id
+                logger.info(f"Using default payment gateway: {gateway_id}")
+            elif session.booking_flow.allowed_payment_gateways.filter(is_active=True).exists():
+                # Use first available allowed gateway as fallback
+                gateway_id = session.booking_flow.allowed_payment_gateways.filter(is_active=True).first().id
+                logger.info(f"Using first allowed payment gateway: {gateway_id}")
+            else:
+                logger.error("No payment gateway specified and no default gateway configured")
+                raise ValueError("No payment gateway specified and no default gateway configured")
+        
         if not gateway_id:
             raise ValueError("No payment gateway specified")
         
         try:
             gateway = PaymentGateway.objects.get(id=gateway_id, is_active=True)
+            logger.info(f"Found payment gateway: {gateway.name} (code: {gateway.code})")
         except PaymentGateway.DoesNotExist:
+            logger.error(f"Payment gateway {gateway_id} not found or inactive")
             raise ValueError(f"Payment gateway {gateway_id} not found or inactive")
         
-        # Calculate total amount from session
-        total_amount = session.calculate_total_price()
+        # Calculate amount to charge based on payment type
+        full_amount = session.calculate_total_price()
+        payment_type = payment_data.get('payment_type', 'FULL')
+        
+        if payment_type == 'DEPOSIT':
+            # Get deposit configuration from payment step
+            payment_step = session.booking_flow.steps.filter(step_type='payment_info').first()
+            payment_config = getattr(payment_step, 'paymentinfo_config', None) if payment_step else None
+            
+            if payment_config and payment_config.accept_deposit:
+                if payment_config.deposit_type == 'PERCENTAGE':
+                    deposit_percentage = Decimal(str(payment_config.deposit_amount or 30))  # Default 30%
+                    amount_to_charge = full_amount * (deposit_percentage / Decimal('100'))
+                else:  # FIXED amount
+                    amount_to_charge = Decimal(str(payment_config.deposit_amount)) if payment_config.deposit_amount else (full_amount * Decimal('0.30'))
+            else:
+                # Fallback to 30% if no config found
+                amount_to_charge = full_amount * Decimal('0.30')
+            
+            logger.info(f"Payment type: DEPOSIT - Charging {amount_to_charge} out of total {full_amount}")
+        else:
+            amount_to_charge = full_amount
+            logger.info(f"Payment type: FULL - Charging full amount {amount_to_charge}")
+        
+        logger.info(f"Final amount to charge: {amount_to_charge}")
         
         # FIX: Create payment record with proper data structure
+        from datetime import timedelta
+        
+        # Get due date from payment step configuration
+        payment_step = session.booking_flow.steps.filter(step_type='payment_info').first()
+        payment_config = getattr(payment_step, 'paymentinfo_config', None) if payment_step else None
+        
+        # Calculate due date from configuration or use default
+        if payment_config and hasattr(payment_config, 'balance_due_days'):
+            due_days = payment_config.balance_due_days or 30
+        else:
+            due_days = 30  # Default to 30 days
+        
+        logger.info(f"Payment due in {due_days} days")
+        
+        # Create appropriate description based on payment type
+        if payment_type == 'DEPOSIT':
+            description = f'Deposit payment for booking session {session.session_id}'
+        else:
+            description = f'Full payment for booking session {session.session_id}'
+        
         payment_record_data = {
             'event': event.id,  # Pass ID, not object
-            'amount': total_amount,
+            'amount': amount_to_charge,  # Use calculated amount, not full total
             'status': 'PENDING',
-            'due_date': timezone.now().date(),
-            'description': f'Booking payment for session {session.session_id}',
+            'due_date': timezone.now().date() + timedelta(days=due_days),
+            'description': description,
             'is_manual': False,
+            'currency': 'PHP',  # Ensure currency is set
         }
         
+        logger.info(f"Creating payment record with data: {payment_record_data}")
+        
         # Create initial payment record
-        payment = PaymentService.create_payment(payment_record_data, session.client)
+        try:
+            payment = PaymentService.create_payment(payment_record_data, session.client)
+            logger.info(f"Payment record created successfully: {payment.id}")
+        except Exception as e:
+            logger.error(f"Failed to create payment record: {e}")
+            raise
         
         # Process payment through appropriate gateway
         gateway_data = {
@@ -448,13 +531,22 @@ class BookingSessionService:
         if payment_data.get('billing_address'):
             gateway_data['billing_address'] = payment_data['billing_address']
         
+        logger.info(f"Gateway data for processing: {gateway_data}")
+        
         # FIX: Use correct service method
-        transaction_result = PaymentGatewayService.process_gateway_payment(
-            payment.id,
-            gateway.code,
-            gateway_data,
-            session.client
-        )
+        try:
+            logger.info(f"Calling PaymentGatewayService.process_gateway_payment with payment_id={payment.id}, gateway_code={gateway.code}")
+            transaction_result = PaymentGatewayService.process_gateway_payment(
+                payment.id,
+                gateway.code,
+                gateway_data,
+                session.client
+            )
+            logger.info(f"Payment gateway processing result: {transaction_result}")
+        except Exception as e:
+            logger.error(f"Payment gateway processing failed: {e}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            raise
         
         return payment
     
@@ -536,6 +628,30 @@ class BookingSessionService:
                                 )
                             except ProductOption.DoesNotExist:
                                 continue
+    
+    @staticmethod
+    def _get_event_duration_from_booking_data(booking_data):
+        """Extract event duration from booking data"""
+        # Check root level first
+        if 'duration' in booking_data:
+            return booking_data.get('duration')
+        
+        # Check in step data
+        for step_key, step_data in booking_data.items():
+            if isinstance(step_data, dict):
+                if 'duration' in step_data:
+                    return step_data['duration']
+                # Also check for end_time and start_time to calculate duration
+                elif 'start_time' in step_data and 'end_time' in step_data:
+                    try:
+                        from datetime import datetime
+                        start_time = datetime.strptime(step_data['start_time'], '%H:%M')
+                        end_time = datetime.strptime(step_data['end_time'], '%H:%M')
+                        duration_seconds = (end_time - start_time).seconds
+                        return int(duration_seconds // 3600)  # Return hours
+                    except (ValueError, TypeError):
+                        continue
+        return None
     
     @staticmethod
     def _create_event_from_session(session):
@@ -681,13 +797,27 @@ class BookingSessionService:
                 quantity = package_data.get('quantity', 1)
                 price = Decimal(str(package_data.get('price', product_option.base_price)))
                 
-                event_products.append({
+                # Calculate excess hours if applicable
+                excess_hours = None
+                event_duration = BookingSessionService._get_event_duration_from_booking_data(booking_data)
+                if product_option.has_excess_hours and product_option.included_hours and event_duration:
+                    if event_duration > product_option.included_hours:
+                        import math
+                        excess_hours = math.ceil(event_duration - product_option.included_hours)
+                
+                event_product_data = {
                     'product_option': product_option.id,  # Pass ID, not object
                     'quantity': quantity,
                     'final_price': price,
                     'num_participants': event_data.get('guest_count'),
-                })
-                total_price += price * quantity
+                }
+                
+                # Only add excess_hours if there are any
+                if excess_hours:
+                    event_product_data['excess_hours'] = excess_hours
+                
+                event_products.append(event_product_data)
+                total_price += price * Decimal(str(quantity))
             except (ProductOption.DoesNotExist, KeyError, ValueError) as e:
                 logger.warning(f"Error processing package {package_data}: {e}")
 
@@ -703,7 +833,7 @@ class BookingSessionService:
                     'quantity': quantity,
                     'final_price': price,
                 })
-                total_price += price * quantity
+                total_price += price * Decimal(str(quantity))
             except (ProductOption.DoesNotExist, KeyError, ValueError) as e:
                 logger.warning(f"Error processing addon {addon_data}: {e}")
         
@@ -711,12 +841,24 @@ class BookingSessionService:
         event_data['event_products'] = event_products
         
         
-        # Create the event
-        event = EventService.create_event(
-            event_data,
-            user=session.client,
-            booking_flow_id=session.booking_flow.id
-        )
+        # Create the event with detailed error logging
+        try:
+            logger.info(f"About to create event with data keys: {list(event_data.keys())}")
+            logger.info(f"Event products data: {event_products}")
+            logger.info(f"Total price: {total_price} (type: {type(total_price)})")
+            
+            event = EventService.create_event(
+                event_data,
+                user=session.client,
+                booking_flow_id=session.booking_flow.id
+            )
+            logger.info(f"Successfully created event: {event.id}")
+        except Exception as e:
+            logger.error(f"Detailed error during event creation: {e}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
         
         # ADD: Create a note for the event after it's created
         # This is the proper way to add notes to an event
