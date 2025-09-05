@@ -32,6 +32,7 @@ import {
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useNavigate } from 'react-router-dom';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface SearchResult {
   id: string;
@@ -59,6 +60,7 @@ interface SearchCategory {
 export const GlobalSearch: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { formatAmount } = useCurrencySettings();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -94,7 +96,7 @@ export const GlobalSearch: React.FC = () => {
       description: 'Outstanding balance for wedding ceremony services',
       url: '/payments',
       metadata: {
-        amount: '$1,500',
+        amount: formatAmount(1500),
         date: '2024-02-20',
         status: 'pending',
         priority: 'high',
@@ -108,7 +110,7 @@ export const GlobalSearch: React.FC = () => {
       description: 'Invoice for venue rental and catering services',
       url: '/payments',
       metadata: {
-        amount: '$5,000',
+        amount: formatAmount(5000),
         date: '2024-01-15',
         status: 'paid',
       },

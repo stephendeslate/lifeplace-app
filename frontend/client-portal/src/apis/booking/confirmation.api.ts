@@ -144,6 +144,7 @@ export class ConfirmationApi {
         price: this.formatPrice((addon.price as string | number) || '0'),
         quantity: (addon.quantity as number) || 1,
       })),
+      // API returns total_price at root level, not nested in session
       totalPrice: this.formatPrice((session.total_price as string | number) || '0'),
     };
   }

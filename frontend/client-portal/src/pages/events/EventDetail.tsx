@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 import {
   Box,
   Typography,
@@ -73,6 +74,7 @@ const EventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { formatAmount } = useCurrencySettings();
   
   // State management
   const [activeTab, setActiveTab] = useState(0);
@@ -266,7 +268,7 @@ const EventDetail: React.FC = () => {
                   flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
                 })}>
                   <Typography variant="body1">
-                    <strong>Total Price:</strong> ${event.total_price.toLocaleString()}
+                    <strong>Total Price:</strong> {formatAmount(event.total_price)}
                   </Typography>
                 </Box>
               )}
