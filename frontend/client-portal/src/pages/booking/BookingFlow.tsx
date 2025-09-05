@@ -39,7 +39,6 @@ import type { EventType } from '../../types/booking';
 
 // Event Type Selection Component using the proper hook
 const EventTypeSelectionContainer: React.FC = () => {
-  // @ts-ignore
   const { actions } = useBooking();
   // EventTypeSelection now manages its own data loading
 

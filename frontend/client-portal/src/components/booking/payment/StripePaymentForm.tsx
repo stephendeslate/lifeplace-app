@@ -144,7 +144,7 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   onPaymentError,
   isProcessing,
 }) => {
-  const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
 
   useEffect(() => {
     if (publishableKey) {

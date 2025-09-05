@@ -20,7 +20,7 @@ import type {
 interface ReviewStepProps {
   stepData?: ReviewStepData;
   allStepData: StepData;
-  config: any;
+  config: Record<string, unknown>;
   onDataChange: (data: ReviewStepData) => void;
   validationErrors: Record<string, string[]>;
   isValidating: boolean;

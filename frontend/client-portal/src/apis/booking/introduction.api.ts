@@ -37,7 +37,7 @@ export class IntroductionApi {
     stepId: number,
     stepData: IntroductionStepData,
     markCompleted: boolean = false
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const response = await api.patch(
       `/bookingflow/public/flows/session/${sessionId}/update/`,
       {
@@ -46,7 +46,7 @@ export class IntroductionApi {
         mark_completed: markCompleted
       }
     );
-    return response.data;
+    return response.data as Record<string, unknown>;
   }
 
   /**
@@ -87,25 +87,28 @@ export class IntroductionApi {
   /**
    * Handle API errors
    */
-  static handleApiError(error: any): string {
-    if (error.response?.data?.detail) {
-      return error.response.data.detail;
+  static handleApiError(error: unknown): string {
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.detail) {
+      return errorObj.response.data.detail;
     }
 
-    if (error.response?.data?.message) {
-      return error.response.data.message;
+    if (errorObj.response?.data?.message) {
+      return errorObj.response.data.message;
     }
 
-    if (error.response?.status === 400) {
+    if (errorObj.response?.status === 400) {
       return 'Invalid introduction data provided.';
     }
 
-    if (error.response?.status === 404) {
+    if (errorObj.response?.status === 404) {
       return 'Step not found.';
     }
 
-    if (error.message) {
-      return error.message;
+    if (errorObj.message) {
+      return errorObj.message;
     }
 
     return 'An error occurred while processing the introduction step.';
@@ -114,19 +117,22 @@ export class IntroductionApi {
   /**
    * Extract validation errors from API response
    */
-  static extractValidationErrors(error: any): Record<string, string[]> {
+  static extractValidationErrors(error: unknown): Record<string, string[]> {
     const validationErrors: Record<string, string[]> = {};
 
-    if (error.response?.data?.validation_errors) {
-      return error.response.data.validation_errors;
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.validation_errors) {
+      return errorObj.response.data.validation_errors;
     }
 
-    if (error.response?.data?.errors) {
-      const errors = error.response.data.errors;
+    if (errorObj.response?.data?.errors) {
+      const errors = errorObj.response.data.errors;
       
       if (typeof errors === 'object') {
         Object.keys(errors).forEach(field => {
-          const fieldErrors = errors[field];
+          const fieldErrors = (errors as Record<string, unknown>)[field];
           
           if (Array.isArray(fieldErrors)) {
             validationErrors[field] = fieldErrors;

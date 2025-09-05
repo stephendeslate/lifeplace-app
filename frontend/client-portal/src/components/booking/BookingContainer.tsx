@@ -63,7 +63,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
     );
     
     return {
-      stepName: currentStep.name,
+      stepName: currentStep.name as string,
       stepIndex: Math.max(0, stepIndex),
     };
   };

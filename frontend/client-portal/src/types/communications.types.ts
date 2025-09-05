@@ -8,7 +8,7 @@ export interface CommunicationTemplate {
   subject_template?: string;
   body_template: string;
   is_system: boolean;
-  variables_schema: Record<string, any>;
+  variables_schema: Record<string, { type: string; required: boolean; description?: string; }>;
   created_at: string;
   updated_at: string;
 }
@@ -32,7 +32,7 @@ export interface CommunicationRecord {
   delivered_at?: string;
   opened_at?: string;
   is_opened: boolean;
-  context_data: Record<string, any>;
+  context_data: Record<string, string | number | boolean>;
   created_at: string;
 }
 
@@ -50,7 +50,7 @@ export interface SendCommunicationData {
   template_id: number;
   recipient: string;
   client_id?: number;
-  context_data?: Record<string, any>;
+  context_data?: Record<string, string | number | boolean>;
 }
 
 export interface BulkSendData {
@@ -58,13 +58,13 @@ export interface BulkSendData {
   recipients: Array<{
     recipient: string;
     client_id?: number;
-    context_data?: Record<string, any>;
+    context_data?: Record<string, string | number | boolean>;
   }>;
 }
 
 export interface PreviewCommunicationData {
   template_id: number;
-  context_data?: Record<string, any>;
+  context_data?: Record<string, string | number | boolean>;
 }
 
 export interface PreviewResponse {

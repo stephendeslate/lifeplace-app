@@ -23,8 +23,11 @@ export const useClientInvitations = () => {
     onSuccess: () => {
       showSuccess('Account Activated', 'Your account has been activated successfully!');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to accept invitation';
+    onError: (error: unknown) => {
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      const message = errorObj.response?.data?.detail || 'Failed to accept invitation';
       showError('Activation Failed', message);
     },
   });

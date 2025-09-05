@@ -375,7 +375,7 @@ export const CommunicationHistory: React.FC = () => {
                       <Chip
                         label={record.category === 'SYSTEM' ? 'System' : record.category === 'AUTO' ? 'Auto' : 'Manual'}
                         size="small"
-                        color={getCategoryColor(record.category) as any}
+                        color={getCategoryColor(record.category) as 'primary' | 'secondary' | 'default'}
                         variant="outlined"
                         sx={{
                           backgroundColor: alpha('#fff', 0.1),
@@ -403,7 +403,7 @@ export const CommunicationHistory: React.FC = () => {
                         <Chip
                           label={record.is_opened ? 'Read' : record.delivery_status}
                           size="small"
-                          color={getStatusColor(record.delivery_status) as any}
+                          color={getStatusColor(record.delivery_status) as 'success' | 'info' | 'warning' | 'error' | 'default'}
                           variant="outlined"
                           sx={{
                             backgroundColor: alpha('#fff', 0.1),
@@ -529,7 +529,7 @@ export const CommunicationHistory: React.FC = () => {
                     <Chip 
                       label={selectedRecord.category === 'SYSTEM' ? 'System' : selectedRecord.category === 'AUTO' ? 'Automated' : 'Manual'} 
                       size="small" 
-                      color={getCategoryColor(selectedRecord.category) as any}
+                      color={getCategoryColor(selectedRecord.category) as 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                       sx={{
                         backgroundColor: alpha('#fff', 0.1),
                         backdropFilter: 'blur(5px)',
@@ -553,7 +553,7 @@ export const CommunicationHistory: React.FC = () => {
                       <Chip 
                         label={selectedRecord.is_opened ? 'Read' : selectedRecord.delivery_status}
                         size="small" 
-                        color={getStatusColor(selectedRecord.delivery_status) as any}
+                        color={getStatusColor(selectedRecord.delivery_status) as 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                         sx={{
                           backgroundColor: alpha('#fff', 0.1),
                           backdropFilter: 'blur(5px)',

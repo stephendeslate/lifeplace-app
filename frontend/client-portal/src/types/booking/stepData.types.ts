@@ -17,7 +17,7 @@ export interface DateTimeStepData {
 }
 
 export interface QuestionnaireStepData {
-  responses?: Record<string, any>; // field_id -> response value
+  responses?: Record<string, string | number | boolean | string[]>; // field_id -> response value
   uploaded_files?: Record<string, File[]>; // field_id -> uploaded files
 }
 
@@ -67,7 +67,7 @@ export interface ContactInfoStepData {
   company?: string;
   create_account?: boolean;
   password?: string;
-  custom_fields?: Record<string, any>;
+  custom_fields?: Record<string, string | number | boolean>;
 }
 
 export interface PaymentStepData {
@@ -76,7 +76,15 @@ export interface PaymentStepData {
   payment_gateway_id?: number;
   payment_method_id?: string; // Stripe payment method ID
   payment_method_token?: string; // Alternative token field for other gateways
-  billing_address?: any;
+  billing_address?: {
+    name?: string;
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+  };
   save_payment_method?: boolean;
   completion_type?: 'payment' | 'quote';
 }
@@ -138,7 +146,7 @@ export interface ConfirmationStepData {
   confirmation_email_sent: boolean;
   completed_at?: string;
   event_id?: number;
-  booking_completion_result?: any; // BookingCompletionResult from api.types
+  booking_completion_result?: Record<string, unknown>; // BookingCompletionResult from api.types
 }
 
 // Combined step data type
@@ -153,7 +161,7 @@ export interface StepData {
   payment_info?: PaymentStepData;
   review_booking?: ReviewStepData;
   confirmation?: ConfirmationStepData;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Product option from backend

@@ -40,8 +40,8 @@ export class PaymentApi {
   /**
    * Get payment gateway public configuration (safe for client-side)
    */
-  static async getGatewayPublicConfig(gatewayCode: string): Promise<Record<string, any>> {
-    const response = await api.get<Record<string, any>>(`/payments/gateways/${gatewayCode}/public-config/`);
+  static async getGatewayPublicConfig(gatewayCode: string): Promise<Record<string, unknown>> {
+    const response = await api.get<Record<string, unknown>>(`/payments/gateways/${gatewayCode}/public-config/`);
     return response.data;
   }
 
@@ -106,7 +106,7 @@ export class PaymentApi {
    */
   static validatePaymentMethod(
     gateway: PaymentGateway,
-    paymentData: Record<string, any>
+    paymentData: Record<string, unknown>
   ): { isValid: boolean; errors: Record<string, string[]> } {
     const errors: Record<string, string[]> = {};
 
@@ -237,9 +237,9 @@ export class PaymentApi {
     gateway: PaymentGateway,
     paymentMethod: string,
     paymentType: 'FULL' | 'DEPOSIT',
-    additionalData: Record<string, any> = {}
-  ): Record<string, any> {
-    const formatted: Record<string, any> = {
+    additionalData: Record<string, unknown> = {}
+  ): Record<string, unknown> {
+    const formatted: Record<string, unknown> = {
       payment_method: paymentMethod,
       payment_type: paymentType,
       gateway_id: gateway.id,
@@ -287,18 +287,18 @@ export class PaymentApi {
     const config = gateway.public_config || {};
 
     // Check minimum amount
-    if (config.min_amount && amount < config.min_amount) {
+    if (config.min_amount && amount < Number(config.min_amount)) {
       return {
         isValid: false,
-        error: `Minimum amount is ${this.formatAmount(config.min_amount)}`
+        error: `Minimum amount is ${this.formatAmount(Number(config.min_amount))}`
       };
     }
 
     // Check maximum amount
-    if (config.max_amount && amount > config.max_amount) {
+    if (config.max_amount && amount > Number(config.max_amount)) {
       return {
         isValid: false,
-        error: `Maximum amount is ${this.formatAmount(config.max_amount)}`
+        error: `Maximum amount is ${this.formatAmount(Number(config.max_amount))}`
       };
     }
 
@@ -330,33 +330,36 @@ export class PaymentApi {
   /**
    * Handle payment API errors
    */
-  static handlePaymentError(error: any): string {
-    if (error.response?.data?.detail) {
-      return error.response.data.detail;
+  static handlePaymentError(error: unknown): string {
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.detail) {
+      return errorObj.response.data.detail;
     }
 
-    if (error.response?.data?.message) {
-      return error.response.data.message;
+    if (errorObj.response?.data?.message) {
+      return errorObj.response.data.message;
     }
 
-    if (error.response?.status === 402) {
+    if (errorObj.response?.status === 402) {
       return 'Payment required. Please check your payment information.';
     }
 
-    if (error.response?.status === 409) {
+    if (errorObj.response?.status === 409) {
       return 'Payment conflict. This payment may have already been processed.';
     }
 
-    if (error.response?.status === 422) {
+    if (errorObj.response?.status === 422) {
       return 'Invalid payment data. Please check your information and try again.';
     }
 
-    if (error.response?.status === 503) {
+    if (errorObj.response?.status === 503) {
       return 'Payment service is temporarily unavailable. Please try again later.';
     }
 
-    if (error.message) {
-      return error.message;
+    if (errorObj.message) {
+      return errorObj.message;
     }
 
     return 'An error occurred while processing payment. Please try again.';
@@ -365,22 +368,25 @@ export class PaymentApi {
   /**
    * Extract payment validation errors
    */
-  static extractPaymentErrors(error: any): Record<string, string[]> {
+  static extractPaymentErrors(error: unknown): Record<string, string[]> {
     const validationErrors: Record<string, string[]> = {};
 
-    if (error.response?.data?.payment_errors) {
-      return error.response.data.payment_errors;
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.payment_errors) {
+      return errorObj.response.data.payment_errors;
     }
 
-    if (error.response?.data?.gateway_errors) {
-      return error.response.data.gateway_errors;
+    if (errorObj.response?.data?.gateway_errors) {
+      return errorObj.response.data.gateway_errors;
     }
 
-    if (error.response?.data?.errors) {
-      const errors = error.response.data.errors;
+    if (errorObj.response?.data?.errors) {
+      const errors = errorObj.response.data.errors;
       
       Object.keys(errors).forEach(field => {
-        const fieldErrors = errors[field];
+        const fieldErrors = (errors as Record<string, unknown>)[field];
         
         if (Array.isArray(fieldErrors)) {
           validationErrors[field] = fieldErrors;

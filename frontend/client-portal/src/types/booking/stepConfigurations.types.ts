@@ -3,6 +3,25 @@
 import type { StepConfiguration } from './core.types';
 import type { QuestionnaireStepItem } from './questionnaire.types';
 
+// Additional interfaces for step configurations
+export interface TimeSlot {
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
+  capacity?: number;
+  price_modifier?: number;
+}
+
+export interface CustomField {
+  id: string;
+  name: string;
+  type: 'text' | 'textarea' | 'select' | 'multiselect' | 'checkbox' | 'radio' | 'date' | 'number' | 'email' | 'phone' | 'file';
+  required: boolean;
+  options?: string[];
+  placeholder?: string;
+  validation?: Record<string, string | number | boolean>;
+}
+
 // Step configuration types from backend models
 export interface IntroductionStepConfiguration extends StepConfiguration {
   title: string;
@@ -25,7 +44,7 @@ export interface DateTimeStepConfiguration extends StepConfiguration {
   auto_check_conflicts: boolean;
   blocked_dates: string[];
   available_days_of_week: number[];
-  available_time_slots: any[];
+  available_time_slots: TimeSlot[];
   buffer_before_hours: number;
   buffer_after_hours: number;
   check_resource_availability: boolean;
@@ -57,7 +76,7 @@ export interface PackageSelectionStepConfiguration extends StepConfiguration {
   show_images: boolean;
   enable_comparison: boolean;
   enable_dynamic_pricing: boolean;
-  pricing_factors: Record<string, any>;
+  pricing_factors: Record<string, string | number | boolean>;
 }
 
 export interface AddonSelectionStepConfiguration extends StepConfiguration {
@@ -69,7 +88,7 @@ export interface AddonSelectionStepConfiguration extends StepConfiguration {
   max_selection: number;
   group_by_category: boolean;
   show_recommendations: boolean;
-  recommendation_logic: Record<string, any>;
+  recommendation_logic: Record<string, string | number | boolean>;
 }
 
 export interface ContactInfoStepConfiguration extends StepConfiguration {
@@ -78,7 +97,7 @@ export interface ContactInfoStepConfiguration extends StepConfiguration {
   require_phone: boolean;
   require_address: boolean;
   require_company: boolean;
-  custom_fields: any[];
+  custom_fields: CustomField[];
   offer_account_creation: boolean;
   require_account_creation: boolean;
 }

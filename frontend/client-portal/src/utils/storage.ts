@@ -46,14 +46,14 @@ export interface FavoriteItem {
   type: 'event' | 'venue' | 'organizer';
   title: string;
   addedAt: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean>;
 }
 
 // Search history interface
 export interface SearchHistoryItem {
   id: string;
   query: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, string | number | boolean | string[]>;
   searchedAt: string;
   resultCount?: number;
 }
@@ -221,7 +221,7 @@ class Storage {
     return this.safeJsonParse(history, []);
   }
 
-  addSearchHistory(query: string, filters?: Record<string, any>, resultCount?: number): void {
+  addSearchHistory(query: string, filters?: Record<string, string | number | boolean | string[]>, resultCount?: number): void {
     const history = this.getSearchHistory();
     
     // Remove existing entry for same query
@@ -323,12 +323,12 @@ class Storage {
   }
 
   // Booking history cache (for offline access)
-  getBookingHistory(): any[] {
+  getBookingHistory(): Record<string, unknown>[] {
     const history = localStorage.getItem(STORAGE_KEYS.BOOKING_HISTORY);
     return this.safeJsonParse(history, []);
   }
 
-  setBookingHistory(bookings: any[]): void {
+  setBookingHistory(bookings: Record<string, unknown>[]): void {
     this.safeJsonStringify(STORAGE_KEYS.BOOKING_HISTORY, bookings);
   }
 
@@ -355,8 +355,8 @@ class Storage {
   }
 
   // Export data for backup
-  exportData(): Record<string, any> {
-    const data: Record<string, any> = {};
+  exportData(): Record<string, unknown> {
+    const data: Record<string, unknown> = {};
     
     Object.entries(STORAGE_KEYS).forEach(([key, storageKey]) => {
       const value = localStorage.getItem(storageKey);
@@ -369,7 +369,7 @@ class Storage {
   }
 
   // Import data from backup (excluding sensitive auth data)
-  importData(data: Record<string, any>): void {
+  importData(data: Record<string, unknown>): void {
     // Don't import tokens for security reasons
     const allowedKeys = [
       'PREFERENCES', 
@@ -408,7 +408,7 @@ class Storage {
 
     let used = 0;
     for (const key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
         used += localStorage[key].length + key.length;
       }
     }

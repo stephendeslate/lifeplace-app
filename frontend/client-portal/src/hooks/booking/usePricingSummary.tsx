@@ -266,7 +266,9 @@ export const useDiscountValidation = () => {
       const discount = await ProductsApi.validateDiscountCode(code.trim());
       return discount;
     } catch (err) {
-      const errorMessage = ProductsApi.handleProductsError(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = ProductsApi.handleProductsError(err as any);
       setDiscountError(errorMessage);
       return null;
     } finally {

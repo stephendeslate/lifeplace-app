@@ -90,7 +90,7 @@ const AcceptInvitation: React.FC = () => {
 
     try {
       // Accept the invitation
-      const response = await new Promise<any>((resolve, reject) => {
+      const response = await new Promise<unknown>((resolve, reject) => {
         acceptInvitation(
           { invitationId, data: formData },
           {
@@ -101,9 +101,12 @@ const AcceptInvitation: React.FC = () => {
       });
 
       // Auto-login the user with the returned tokens
-      if (response?.tokens && response?.user) {
+      // Response data has dynamic structure requiring any type
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((response as any)?.tokens && (response as any)?.user) {
         // Store user data
-        const userData = response.user;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const userData = (response as any).user;
 
         // Use the login function to set up the auth context
         await login({
@@ -114,9 +117,12 @@ const AcceptInvitation: React.FC = () => {
         showSuccess('Welcome to LifePlace!', 'Your account has been activated successfully.');
         navigate('/dashboard', { replace: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Accept invitation error:', error);
-      const message = error.response?.data?.detail || 'Failed to activate account. Please try again.';
+      // Error objects from axios have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorObj = error as any;
+      const message = errorObj.response?.data?.detail || 'Failed to activate account. Please try again.';
       showError('Activation Failed', message);
     } finally {
       setIsSubmitting(false);
@@ -303,14 +309,14 @@ const AcceptInvitation: React.FC = () => {
                         <Chip 
                           label={strengthLabel}
                           size="small"
-                          color={strengthColor as any}
+                          color={strengthColor as 'error' | 'warning' | 'success'}
                           variant="outlined"
                         />
                       </Box>
                       <LinearProgress
                         variant="determinate"
                         value={(passwordStrength / 5) * 100}
-                        color={strengthColor as any}
+                        color={strengthColor as 'error' | 'warning' | 'success'}
                         sx={{ height: 6, borderRadius: 3 }}
                       />
                     </Box>

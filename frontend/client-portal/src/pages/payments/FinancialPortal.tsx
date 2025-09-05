@@ -467,7 +467,7 @@ const FinancialPortal: React.FC = () => {
                                 icon={getPaymentStatusIcon(payment.status)}
                                 label={payment.status}
                                 size="small"
-                                color={getPaymentStatusColor(payment.status) as any}
+                                color={getPaymentStatusColor(payment.status) as 'default' | 'success' | 'warning' | 'error'}
                                 variant="outlined"
                                 sx={{
                                   backgroundColor: alpha('#fff', 0.1),
@@ -599,7 +599,7 @@ const FinancialPortal: React.FC = () => {
                             <Chip
                               label={invoice.status}
                               size="small"
-                              color={getPaymentStatusColor(invoice.status) as any}
+                              color={getPaymentStatusColor(invoice.status) as 'default' | 'success' | 'warning' | 'error'}
                               variant="outlined"
                               sx={{
                                 mt: 1,

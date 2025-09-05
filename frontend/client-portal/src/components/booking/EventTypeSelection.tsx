@@ -379,7 +379,7 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                     </Box>
 
                     {/* Price Range */}
-                    {true && (
+                    {(
                       <Box sx={{ 
                         p: 2, 
                         backgroundColor: alpha(eventColor, 0.05),
@@ -643,7 +643,7 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                     </Box>
 
                     {/* Pricing */}
-                    {true && (
+                    {(
                       <Box sx={{ 
                         p: 3, 
                         backgroundColor: alpha(getEventTypeColor(selectedEventType), 0.05),

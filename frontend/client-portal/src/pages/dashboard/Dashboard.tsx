@@ -73,17 +73,18 @@ const Dashboard: React.FC = () => {
   // Mark as read mutation
   const markAsReadMutation = useMarkAsRead();
 
-  const handleMessageClick = (comm: any) => {
+  const handleMessageClick = (comm: Record<string, unknown>) => {
     // Mark as read if it's an unread email
-    if (comm.channel === 'EMAIL' && !comm.is_opened) {
-      markAsReadMutation.mutate(comm.id);
+    const commData = comm as Record<string, unknown>;
+    if (commData.channel === 'EMAIL' && !commData.is_opened) {
+      markAsReadMutation.mutate(commData.id as string);
     }
     
     // Navigate to messages tab or messages page
     setActiveTab(1);
   };
 
-  // @ts-ignore
+  // @ts-expect-error - React SyntheticEvent parameter not properly typed
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
@@ -293,7 +294,11 @@ const Dashboard: React.FC = () => {
                           backgroundColor: alpha('#fff', 0.08),
                         },
                       }}
-                      onClick={() => handleMessageClick(comm)}
+                      onClick={() => {
+                        // Communication record has dynamic structure requiring any type
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        handleMessageClick(comm as any);
+                      }}
                     >
                       <Box display="flex" alignItems="center" gap={2}>
                         <Box

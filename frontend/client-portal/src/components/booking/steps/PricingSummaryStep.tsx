@@ -115,7 +115,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       onDataChange(newStepData);
       
       // Only update backend with the discount code
-      await actions.updateStepData('pricing_summary', newStepData);
+      await actions.updateStepData('pricing_summary', newStepData as Record<string, unknown>);
       
       // Update global total price if different
       const totalString = breakdown.total.toFixed(2);
