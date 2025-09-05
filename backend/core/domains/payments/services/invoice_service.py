@@ -1,4 +1,5 @@
 # backend/core/domains/payments/services/invoice_service.py
+import logging
 from datetime import timedelta
 from decimal import Decimal
 
@@ -9,6 +10,8 @@ from django.utils import timezone
 
 from ..exceptions import InvoiceNotFoundException
 from ..models import Invoice, InvoiceLineItem, PaymentNotification
+
+logger = logging.getLogger(__name__)
 
 
 class InvoiceService:
@@ -186,9 +189,25 @@ class InvoiceService:
         if not quote or not quote.event:
             return None
         
+        # Check if invoice already exists for this quote
+        existing_invoice = Invoice.objects.filter(quote=quote).first()
+        if existing_invoice:
+            logger.info(f"Invoice {existing_invoice.invoice_id} already exists for quote {quote.id}")
+            return existing_invoice
+        
+        # Generate unique invoice ID
+        base_invoice_id = f"INV-{timezone.now().strftime('%Y%m%d')}-{quote.event.id}-{quote.id}"
+        invoice_id = base_invoice_id
+        counter = 1
+        
+        # Ensure uniqueness by adding a counter if needed
+        while Invoice.objects.filter(invoice_id=invoice_id).exists():
+            invoice_id = f"{base_invoice_id}-{counter}"
+            counter += 1
+        
         # Create invoice
         invoice = Invoice.objects.create(
-            invoice_id=f"INV-{timezone.now().strftime('%Y%m%d')}-{quote.event.id}-{quote.id}",
+            invoice_id=invoice_id,
             event=quote.event,
             client=quote.event.client,
             subtotal=quote.subtotal,

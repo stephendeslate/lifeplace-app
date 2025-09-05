@@ -78,7 +78,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   const paymentType = paymentInfo?.payment_type || 'FULL';
   
   // Calculate pricing using same logic as booking flow
-  const { breakdown, serverPricing } = usePricingSummary(
+  const { breakdown } = usePricingSummary(
     selectedPackages,
     selectedAddons,
     eventDuration

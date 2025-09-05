@@ -21,6 +21,60 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
+# === EVENT FINANCIAL UPDATES ===
+
+def update_event_financial_totals(event):
+    """Update event's total_amount_paid and total_amount_due based on invoices and payments"""
+    if not event:
+        return
+    
+    try:
+        # Calculate total from invoices
+        total_invoiced = 0
+        total_paid = 0
+        
+        # Get all invoices for this event
+        invoices = Invoice.objects.filter(event=event)
+        for invoice in invoices:
+            if invoice.total_amount:
+                total_invoiced += float(invoice.total_amount)
+                
+                # Calculate paid amount from related payments
+                paid_for_this_invoice = 0
+                if hasattr(invoice, 'related_payments'):
+                    for payment in invoice.related_payments.filter(status='COMPLETED'):
+                        if payment.amount:
+                            paid_for_this_invoice += float(payment.amount)
+                
+                total_paid += paid_for_this_invoice
+        
+        # Also add direct event payments (not linked to invoices)
+        direct_payments = Payment.objects.filter(event=event, invoice__isnull=True, status='COMPLETED')
+        for payment in direct_payments:
+            if payment.amount:
+                total_paid += float(payment.amount)
+        
+        # Update event fields
+        event.total_amount_paid = total_paid
+        event.total_amount_due = max(0, total_invoiced - total_paid)  # Can't be negative
+        
+        # Update payment status based on amounts
+        if total_invoiced == 0:
+            event.payment_status = 'UNPAID'
+        elif total_paid >= total_invoiced:
+            event.payment_status = 'PAID'  
+        elif total_paid > 0:
+            event.payment_status = 'PARTIALLY_PAID'
+        else:
+            event.payment_status = 'UNPAID'
+            
+        event.save(update_fields=['total_amount_paid', 'total_amount_due', 'payment_status'])
+        logger.info(f"Updated event {event.id} financials: paid={total_paid}, due={event.total_amount_due}, status={event.payment_status}")
+        
+    except Exception as e:
+        logger.error(f"Failed to update event {event.id} financial totals: {e}")
+
+
 # === PAYMENT CACHE INVALIDATION SIGNALS ===
 
 @receiver([post_save, post_delete], sender=Payment)
@@ -39,6 +93,11 @@ def invalidate_payment_caches(sender, instance, **kwargs):
             event_id=getattr(instance.event, 'id', None) if instance.event else None,
             client_id=client_id
         )
+        
+        # Update event financial totals
+        if instance.event:
+            update_event_financial_totals(instance.event)
+        
         logger.info(f"Invalidated payment caches for: Payment {instance.id}")
     except Exception as e:
         logger.error(f"Failed to invalidate payment caches: {e}")
@@ -54,6 +113,11 @@ def invalidate_invoice_caches(sender, instance, **kwargs):
             event_id=getattr(instance.event, 'id', None) if instance.event else None,
             client_id=getattr(instance.client, 'id', None) if instance.client else None
         )
+        
+        # Update event financial totals
+        if instance.event:
+            update_event_financial_totals(instance.event)
+        
         logger.info(f"Invalidated invoice caches for: Invoice {instance.id}")
     except Exception as e:
         logger.error(f"Failed to invalidate invoice caches: {e}")

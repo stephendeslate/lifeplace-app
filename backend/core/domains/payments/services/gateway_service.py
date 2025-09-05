@@ -87,11 +87,27 @@ class PaymentGatewayService:
         else:
             # Get gateway directly from payment data
             gateway_id = payment_data.get('gateway_id')
+            logger.info(f"process_payment: gateway_id={gateway_id} (type: {type(gateway_id)})")
             if not gateway_id:
                 raise PaymentGatewayException("No payment gateway or method specified")
             
             try:
-                gateway = PaymentGateway.objects.get(id=gateway_id, is_active=True)
+                # CRITICAL FIX: Ensure gateway_id is integer for database lookup
+                if isinstance(gateway_id, str) and gateway_id.isdigit():
+                    gateway_id = int(gateway_id)
+                elif isinstance(gateway_id, str) and not gateway_id.isdigit():
+                    logger.warning(f"Invalid gateway_id format: '{gateway_id}', trying to find gateway by code")
+                    # Try to find gateway by code if it's a string like 'stripe'
+                    gateway = PaymentGateway.objects.filter(code=gateway_id, is_active=True).first()
+                    if not gateway:
+                        raise PaymentGatewayException(f"No active gateway found with code: {gateway_id}")
+                    logger.info(f"Found gateway by code: {gateway.name}")
+                else:
+                    # gateway_id should be integer at this point
+                    pass
+                
+                if not isinstance(gateway_id, str) or gateway_id.isdigit():
+                    gateway = PaymentGateway.objects.get(id=int(gateway_id), is_active=True)
             except PaymentGateway.DoesNotExist:
                 raise PaymentGatewayException(f"Payment gateway with ID {gateway_id} not found or inactive")
         
@@ -121,19 +137,27 @@ class PaymentGatewayService:
         
         # Get Stripe gateway config
         gateway_id = payment_data.get('gateway_id')
-        logger.info(f"Getting Stripe gateway with ID: {gateway_id}")
+        logger.info(f"Getting Stripe gateway with ID: {gateway_id} (type: {type(gateway_id)})")
         
-        if gateway_id:
+        gateway = None
+        if gateway_id and isinstance(gateway_id, (int, str)) and str(gateway_id).isdigit():
             try:
-                gateway = PaymentGateway.objects.get(id=gateway_id, code='stripe')
+                # Ensure gateway_id is integer for database lookup
+                gateway_id_int = int(gateway_id)
+                gateway = PaymentGateway.objects.get(id=gateway_id_int, code='stripe')
                 logger.info(f"Found gateway by ID: {gateway.name}")
             except PaymentGateway.DoesNotExist:
                 logger.error(f"Gateway with ID {gateway_id} not found")
                 raise PaymentGatewayException(f"Gateway with ID {gateway_id} not found")
-        elif payment.payment_method and payment.payment_method.gateway:
+            except ValueError:
+                logger.warning(f"Invalid gateway_id format: {gateway_id}, falling back to default")
+                gateway = None
+        
+        if not gateway and payment.payment_method and payment.payment_method.gateway:
             gateway = payment.payment_method.gateway
             logger.info(f"Using gateway from payment method: {gateway.name}")
-        else:
+        
+        if not gateway:
             # Fallback to first active Stripe gateway
             gateway = PaymentGateway.objects.filter(code='stripe', is_active=True).first()
             if not gateway:

@@ -545,8 +545,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset().order_by('-created_at')
         
         # Apply filters
-        event_id = self.request.query_params.get('event', None)
-        client_id = self.request.query_params.get('client', None)
+        event_id = self.request.query_params.get('event_id', None)
+        client_id = self.request.query_params.get('client_id', None)
         status_filter = self.request.query_params.get('status', None)
         search = self.request.query_params.get('search', None)
         
