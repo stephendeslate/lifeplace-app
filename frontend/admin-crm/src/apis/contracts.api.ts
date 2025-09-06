@@ -20,7 +20,6 @@ import type {
   EventContractFilters,
   ContractSignatureFilters,
   ContractAmendmentFilters,
-  ContractSigningData,
 } from '../types/contracts.types';
 import type { PaginatedResponse } from '../types/common.types';
 
@@ -138,10 +137,6 @@ export const contractsApi = {
     return Array.isArray(data) ? data : data.results || [];
   },
 
-  signContract: async (id: number, data: ContractSigningData): Promise<EventContract> => {
-    const response = await api.post<EventContract>(`/contracts/contracts/${id}/sign/`, data);
-    return response.data;
-  },
 
   addSignature: async (id: number, data: CreateContractSignatureData): Promise<ContractSignature> => {
     const response = await api.post<ContractSignature>(`/contracts/contracts/${id}/add_signature/`, data);

@@ -219,26 +219,6 @@ class EventContractViewSet(viewsets.ModelViewSet):
         
         return Response(EventContractDetailSerializer(contract).data)
     
-    @action(detail=True, methods=['post'])
-    def sign(self, request, pk=None):
-        """Legacy sign endpoint for backward compatibility"""
-        contract = self.get_object()
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        # Use legacy service for backward compatibility
-        signed_contract = LegacyContractService.sign_contract(
-            contract_id=contract.id,
-            user_id=request.user.id,
-            signature_data=serializer.validated_data['signature_data'],
-            witness_name=serializer.validated_data.get('witness_name'),
-            witness_signature=serializer.validated_data.get('witness_signature')
-        )
-        
-        return Response(
-            EventContractDetailSerializer(signed_contract).data, 
-            status=status.HTTP_200_OK
-        )
     
     @action(detail=True, methods=['post'])
     def add_signature(self, request, pk=None):

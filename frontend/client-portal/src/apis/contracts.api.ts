@@ -34,14 +34,22 @@ export interface DetailedContractStatus {
 
 // Transform API response to frontend Contract format
 const transformContractResponse = (apiResponse: ContractApiResponse): Contract => {
+  // Handle event data - can be either an ID or a full object
+  const eventData = typeof apiResponse.event === 'object' ? {
+    id: apiResponse.event.id.toString(),
+    title: apiResponse.event.name || `Event #${apiResponse.event.id}`,
+    date: apiResponse.event.start_date || '',
+    status: apiResponse.event.status || '',
+  } : {
+    id: apiResponse.event.toString(),
+    title: `Event #${apiResponse.event}`, // Fallback when only ID is provided
+    date: '', 
+    status: '',
+  };
+
   return {
     id: apiResponse.id.toString(),
-    event: {
-      id: apiResponse.event.toString(),
-      title: `Event #${apiResponse.event}`, // Fallback, should be replaced with actual event data
-      date: '', // Would need to fetch from event details
-      status: '', // Would need to fetch from event details
-    },
+    event: eventData,
     template: {
       id: apiResponse.template.toString(),
       name: apiResponse.template_name,

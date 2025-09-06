@@ -99,7 +99,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                 whiteSpace: 'nowrap',
               }}
             >
-              {contract.event?.title || `Event #${contract.event}`}
+              {contract.event?.title || `Event #${contract.event?.id || 'Unknown'}`}
             </Typography>
             
             <Typography 
