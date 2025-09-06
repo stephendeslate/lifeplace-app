@@ -245,6 +245,37 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
               '& li': { mb: 0.5 },
               lineHeight: 1.6,
               fontSize: '0.95rem',
+              // Signature styling
+              '& .contract-signature': {
+                maxWidth: '200px',
+                height: '60px',
+                borderBottom: '1px solid #000',
+                display: 'inline-block',
+                verticalAlign: 'bottom',
+                margin: '0 4px',
+              },
+              '& .signature-pending': {
+                fontStyle: 'italic',
+                color: theme.palette.text.secondary,
+                backgroundColor: theme.palette.grey[100],
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '0.875rem',
+              },
+              // Print styles for signatures
+              '@media print': {
+                '& .contract-signature': {
+                  maxWidth: '180px',
+                  height: '50px',
+                  '-webkit-print-color-adjust': 'exact',
+                  colorAdjust: 'exact',
+                },
+                '& .signature-pending': {
+                  backgroundColor: '#f5f5f5 !important',
+                  '-webkit-print-color-adjust': 'exact',
+                  colorAdjust: 'exact',
+                },
+              },
             }}
             dangerouslySetInnerHTML={{ __html: contract.content }}
           />

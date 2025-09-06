@@ -175,12 +175,19 @@ class EventContractViewSet(viewsets.ModelViewSet):
         return EventContractSerializer
     
     def retrieve(self, request, *args, **kwargs):
-        """Enhanced retrieve with calculated fields"""
+        """Enhanced retrieve with calculated fields and signature rendering"""
         instance = self.get_object()
         
         # Add calculated fields
         instance.is_fully_signed = instance.is_fully_signed()
         instance.missing_signatures = instance.get_missing_signatures()
+        
+        # Re-render contract content with signatures if any exist
+        if instance.signatures.exists():
+            from .services import ContractTemplateService
+            ContractTemplateService.render_contract_with_signatures(instance.id)
+            # Refresh the instance to get updated content
+            instance.refresh_from_db(fields=['content'])
         
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
