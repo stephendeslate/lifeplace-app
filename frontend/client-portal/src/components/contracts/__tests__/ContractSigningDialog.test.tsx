@@ -7,6 +7,7 @@ import ContractSigningDialog from '../ContractSigningDialog';
 import type { Contract } from '../../../types/contracts.types';
 
 import { vi } from 'vitest';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock dependencies
 vi.mock('../EnhancedSignaturePad', () => ({

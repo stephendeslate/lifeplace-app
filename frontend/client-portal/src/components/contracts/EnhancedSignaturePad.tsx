@@ -167,7 +167,7 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
   }, [width, height]);
 
   // Event handlers
-  const handleBeginStroke = useCallback((_event: any) => {
+  const handleBeginStroke = useCallback((_event: Event) => {
     console.log('✏️ BEGIN STROKE triggered', { 
       timestamp: Date.now(), 
       isEmpty: padRef.current?.isEmpty(),

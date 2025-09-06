@@ -6,6 +6,7 @@ import { createTheme } from '@mui/material/styles';
 import EnhancedSignaturePad from '../EnhancedSignaturePad';
 
 import { vi } from 'vitest';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock signature_pad module
 vi.mock('signature_pad', () => ({

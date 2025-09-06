@@ -156,6 +156,7 @@ class EventContractDetailSerializer(EventContractSerializer):
     is_fully_signed = serializers.BooleanField(read_only=True)
     missing_signatures = serializers.ListField(read_only=True)
     signature_progress = serializers.SerializerMethodField()
+    can_client_sign = serializers.BooleanField(read_only=True)
     
     # Legacy compatibility
     signed_by = UserSerializer(read_only=True)
@@ -166,7 +167,7 @@ class EventContractDetailSerializer(EventContractSerializer):
             'is_amendment', 'original_contract', 'amendment_number',
             'signatures', 'amendment_requests', 'documents', 'notes',
             'is_fully_signed', 'missing_signatures', 'signature_progress',
-            'signed_by', 'signature_data', 'witness_name', 'witness_signature'
+            'can_client_sign', 'signed_by', 'signature_data', 'witness_name', 'witness_signature'
         ]
     
     def get_signature_progress(self, obj):

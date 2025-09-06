@@ -132,7 +132,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       onDataChange(newStepData);
       setDiscountCodeInput('');
       recalculate();
-    } catch (error) {
+    } catch (_error) {
       setDiscountError('Invalid discount code');
     } finally {
       setValidatingDiscount(false);

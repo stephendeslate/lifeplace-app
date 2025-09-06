@@ -79,6 +79,26 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         # accurate signature progress data is available to client
         return EventContractDetailSerializer
     
+    def list(self, request, *args, **kwargs):
+        """Enhanced list with calculated signature fields for all contracts"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        
+        contracts = page if page is not None else queryset
+        
+        # Add calculated fields for each contract
+        for contract in contracts:
+            contract.is_fully_signed = contract.is_fully_signed()
+            contract.missing_signatures = contract.get_missing_signatures()
+            contract.can_client_sign = self._can_client_sign(contract, request.user)
+        
+        serializer = self.get_serializer(contracts, many=True)
+        
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        
+        return Response(serializer.data)
+    
     def retrieve(self, request, *args, **kwargs):
         """Enhanced retrieve with calculated signature fields"""
         instance = self.get_object()
@@ -158,6 +178,10 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
                 ip_address=signature_metadata['ip_address'],
                 user_agent=signature_metadata['user_agent']
             )
+            
+            # Re-render contract content with the new signature
+            from .services import ContractTemplateService
+            ContractTemplateService.render_contract_with_signatures(contract.id)
             
             # Return updated contract with signature
             contract.refresh_from_db()

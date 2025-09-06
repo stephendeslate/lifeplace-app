@@ -62,7 +62,7 @@ export const ContractsPage: React.FC = () => {
     contracts,
     pendingSignatures,
     isLoading: contractsLoading,
-    refreshContracts,
+    refreshContracts: _refreshContracts,
   } = useContracts();
 
   // For error handling, we'll assume context handles it
@@ -111,6 +111,11 @@ export const ContractsPage: React.FC = () => {
     // ContractsContext automatically updates the cache when using signContract()
     setSigningDialogOpen(false);
     setSelectedContract(null);
+    
+    // If user is currently viewing this contract, update it with the signed version
+    if (viewingContract && viewingContract.id === signedContract.id) {
+      setViewingContract(signedContract);
+    }
     
     // Simulate real-time event for demonstration
     simulateSignatureEvent(signedContract.id, 'signature_added');
