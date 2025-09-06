@@ -19,6 +19,8 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Stack,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -36,6 +38,7 @@ import type { Invoice } from '../../types/payments.types';
 import type { Client } from '../../types/clients.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { InvoiceDetailsDialog } from '../payments/InvoiceDetailsDialog';
 
 interface ClientInvoicesProps {
   client: Client;
@@ -45,6 +48,7 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
   const { data: invoices = [], isLoading } = useInvoicesForClient(client.id);
@@ -60,7 +64,8 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
-    navigate(`/invoices/${invoice.id}`);
+    setSelectedInvoice(invoice);
+    setDetailDialogOpen(true);
   };
 
   const handleEditInvoice = (invoice: Invoice) => {
@@ -199,12 +204,22 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, invoice)}
-                  >
-                    <MoreVertIcon fontSize="small" />
-                  </IconButton>
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Tooltip title="View">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleViewInvoice(invoice)}
+                      >
+                        <ViewIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, invoice)}
+                    >
+                      <MoreVertIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))}
@@ -217,12 +232,6 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={() => selectedInvoice && handleViewInvoice(selectedInvoice)}>
-          <ListItemIcon>
-            <ViewIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>View</ListItemText>
-        </MenuItem>
         {selectedInvoice?.status === 'DRAFT' && (
           <MenuItem onClick={() => selectedInvoice && handleEditInvoice(selectedInvoice)}>
             <ListItemIcon>
@@ -254,6 +263,13 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
           <ListItemText>Download PDF</ListItemText>
         </MenuItem>
       </Menu>
+
+      {/* Invoice Details Dialog */}
+      <InvoiceDetailsDialog
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        invoice={selectedInvoice}
+      />
     </Box>
   );
 };

@@ -338,19 +338,31 @@ interface EventFinancialData {
   total_price?: string | number | null;
   total_amount_paid?: string | number | null;
   total_amount_due?: string | number | null;
+  current_total_amount?: string | number | null; // New single source of truth field
+  current_quote?: {
+    id: number;
+    total_amount: string;
+    status: string;
+  } | null;
+  current_invoice?: {
+    id: number;
+    total_amount: string;
+    status: string;
+  } | null;
 }
 
 export const calculateEventFinancials = (event: EventFinancialData): FinancialMetric[] => {
-  const totalPrice = parseFloat(String(event.total_price || '0'));
+  // Use single source of truth pricing
+  const currentTotal = parseFloat(String(event.current_total_amount || event.total_price || '0'));
   const totalPaid = parseFloat(String(event.total_amount_paid || '0'));
   const totalDue = parseFloat(String(event.total_amount_due || '0'));
   
   return [
     {
       label: 'Event Value',
-      value: totalPrice,
+      value: currentTotal,
       icon: <InvoiceIcon />,
-      status: totalPrice > 0 ? 'positive' : 'neutral',
+      status: currentTotal > 0 ? 'positive' : 'neutral',
     },
     {
       label: 'Amount Paid',
@@ -368,7 +380,11 @@ export const calculateEventFinancials = (event: EventFinancialData): FinancialMe
 };
 
 export const calculateClientFinancials = (events: EventFinancialData[]): FinancialMetric[] => {
-  const totalRevenue = events.reduce((sum, event) => sum + parseFloat(String(event.total_price || '0')), 0);
+  // Use current_total_amount (single source of truth) for revenue calculations
+  const totalRevenue = events.reduce((sum, event) => {
+    const eventValue = parseFloat(String(event.current_total_amount || event.total_price || '0'));
+    return sum + eventValue;
+  }, 0);
   const totalPaid = events.reduce((sum, event) => sum + parseFloat(String(event.total_amount_paid || '0')), 0);
   const averageEventValue = events.length > 0 ? totalRevenue / events.length : 0;
   

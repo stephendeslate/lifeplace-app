@@ -848,123 +848,73 @@ class BookingSession(BaseModel):
         self.save()
     
     def calculate_total_price(self):
-        """Calculate total price from booking data"""
+        """Calculate total price using centralized pricing service"""
+        logger.info("=== BOOKING SESSION PRICE CALCULATION (Centralized) ===")
+        
+        try:
+            from core.domains.sales.pricing_service import PricingCalculationService
+            
+            # Get event duration
+            event_duration = self._get_event_duration()
+            
+            # Use centralized pricing service
+            pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
+                self.booking_data, 
+                event_duration
+            )
+            
+            logger.info(f"Centralized pricing service result: ₱{pricing_breakdown.total_amount}")
+            return pricing_breakdown.total_amount
+            
+        except Exception as e:
+            logger.error(f"Error in centralized pricing calculation: {e}")
+            # Fallback to basic calculation if centralized service fails
+            logger.warning("Falling back to basic calculation")
+            return self._calculate_total_price_fallback()
+    
+    def _calculate_total_price_fallback(self):
+        """Fallback calculation method in case centralized service fails"""
+        logger.warning("Using fallback pricing calculation")
+        
+        # Simple fallback - just sum up base prices without excess hours
         total = Decimal('0.00')
         
-        # FIXED: Get packages and addons from root level first (single source of truth)
+        # Get packages and addons with single source of truth logic
         selected_packages = self.booking_data.get('selected_packages', [])
         selected_addons = self.booking_data.get('selected_addons', [])
         
-        # If not found at root, look in step data (but only take the first occurrence)
+        # Fallback to step data if not found at root
         if not selected_packages:
             for step_key, step_data in self.booking_data.items():
                 if isinstance(step_data, dict) and 'selected_packages' in step_data:
                     selected_packages = step_data['selected_packages']
-                    break  # CRITICAL: Only take the first occurrence to avoid duplication
+                    break
         
         if not selected_addons:
             for step_key, step_data in self.booking_data.items():
                 if isinstance(step_data, dict) and 'selected_addons' in step_data:
                     selected_addons = step_data['selected_addons']
-                    break  # CRITICAL: Only take the first occurrence to avoid duplication
+                    break
         
-        # Debug logging 
-        logger.info(f"=== PRICE CALCULATION DEBUG ===")
-        logger.info(f"All booking data keys: {list(self.booking_data.keys())}")
-        logger.info(f"Selected packages: {selected_packages}")
-        logger.info(f"Selected addons: {selected_addons}")
-        
-        # Get duration from booking data to calculate excess hours
-        event_duration = self._get_event_duration()
-        logger.info(f"Event duration: {event_duration}")
-        
-        # Calculate packages total
+        # Sum package prices
         for package_data in selected_packages:
             try:
                 price = Decimal(str(package_data.get('price', 0)))
                 quantity = int(package_data.get('quantity', 1))
-                base_cost = price * Decimal(str(quantity))
-                total += base_cost
-                
-                logger.info(f"Package: {package_data.get('name', 'Unknown')} - Base: ₱{price} x {quantity} = ₱{base_cost}")
-                
-                # Handle excess hours for packages
-                excess_hours = Decimal('0')
-                excess_hour_price = Decimal('0')
-                product_excess_price = Decimal('0')  # Store ProductOption price separately
-                
-                # First check if frontend already calculated excess hours
-                if 'excess_hours' in package_data and 'excess_hour_price' in package_data:
-                    excess_hours = Decimal(str(package_data['excess_hours']))
-                    excess_hour_price = Decimal(str(package_data['excess_hour_price']))
-                    logger.info(f"Frontend provided excess: {excess_hours}h at ₱{excess_hour_price}/h")
-                else:
-                    # Calculate excess hours from event duration and package hours
-                    package_hours = package_data.get('hours_included', 0)
-                    
-                    # If package_hours is 0, try to get it from the Product model
-                    if package_hours == 0 and 'product_id' in package_data:
-                        try:
-                            from core.domains.products.models import ProductOption
-                            product = ProductOption.objects.get(id=package_data['product_id'])
-                            package_hours = product.included_hours or 0
-                            # Store excess hour price from product
-                            if product.excess_hour_price:
-                                product_excess_price = Decimal(str(product.excess_hour_price))
-                            logger.info(f"Fetched from product: {package_hours} included hours, ₱{product.excess_hour_price or 0}/excess hour")
-                        except Exception as e:
-                            logger.warning(f"Could not fetch product data: {e}")
-                    
-                    logger.info(f"Package includes {package_hours} hours, event duration: {event_duration}")
-                    
-                    if event_duration and package_hours and event_duration > package_hours:
-                        import math
-                        # Round up excess hours to next whole number
-                        excess_hours_raw = event_duration - package_hours
-                        excess_hours = Decimal(str(math.ceil(excess_hours_raw)))
-                        
-                        # Priority order for excess hour price:
-                        # 1. Package data (frontend calculated)
-                        # 2. ProductOption database value  
-                        # 3. Calculated fallback (50% of hourly rate)
-                        excess_hour_price = Decimal(str(package_data.get('excess_hour_price', 0)))
-                        
-                        if excess_hour_price == 0 and product_excess_price > 0:
-                            excess_hour_price = product_excess_price
-                            logger.info(f"Using ProductOption excess price: ₱{excess_hour_price}/h")
-                        elif excess_hour_price == 0 and package_hours > 0:
-                            base_hourly_rate = price / Decimal(str(package_hours))  # Convert to Decimal
-                            excess_hour_price = base_hourly_rate * Decimal('0.5')  # 50% of base hourly rate
-                            logger.info(f"Using calculated excess price: ₱{excess_hour_price}/h (50% of ₱{base_hourly_rate}/h)")
-                        
-                        logger.info(f"Final excess calculation: {excess_hours}h at ₱{excess_hour_price}/h")
-                
-                # Add excess cost if applicable
-                if excess_hours > 0 and excess_hour_price > 0:
-                    excess_cost = excess_hour_price * excess_hours * Decimal(str(quantity))
-                    total += excess_cost
-                    logger.info(f"Added excess hours cost: {excess_hours}h × ₱{excess_hour_price} × {quantity} = ₱{excess_cost}")
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Error calculating package price: {e}")
+                total += price * Decimal(str(quantity))
+            except (ValueError, TypeError):
                 continue
         
-        # Calculate addons total
-        addons_total = Decimal('0')
+        # Sum addon prices
         for addon_data in selected_addons:
             try:
                 price = Decimal(str(addon_data.get('price', 0)))
                 quantity = int(addon_data.get('quantity', 1))
-                addon_cost = price * Decimal(str(quantity))
-                addons_total += addon_cost
-                logger.info(f"Addon: {addon_data.get('name', 'Unknown')} - ₱{price} x {quantity} = ₱{addon_cost}")
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Error calculating addon price: {e}")
+                total += price * Decimal(str(quantity))
+            except (ValueError, TypeError):
                 continue
         
-        total += addons_total
-        logger.info(f"Addons total: ₱{addons_total}")
-        logger.info(f"FINAL TOTAL: ₱{total}")
-        
+        logger.info(f"Fallback calculation result: ₱{total}")
         return total
     
     def _get_event_duration(self):

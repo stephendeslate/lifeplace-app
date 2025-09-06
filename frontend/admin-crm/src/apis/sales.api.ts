@@ -240,7 +240,7 @@ export const salesApi = {
   },
 
   getQuotesForClient: async (clientId: number) : Promise<EventQuote[]> =>  {
-    const response = await api.get<EventQuote[]>(`/sales/quotes/?client_id=${clientId}`);
-    return response.data;
+    const response = await api.get<PaginatedResponse<EventQuote>>(`/sales/quotes/?client_id=${clientId}`);
+    return response.data.results;
   },
 };

@@ -562,13 +562,13 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             cached_invoices = payments_cache_service.get_cached_invoices_by_client(int(client_id))
             if cached_invoices is not None:
                 logger.debug(f"Invoices for client {client_id} served from cache")
-                return queryset.filter(client_id=client_id)
+                return queryset.filter(client=client_id)
         
         if event_id:
             queryset = queryset.filter(event_id=event_id)
         
         if client_id:
-            queryset = queryset.filter(client_id=client_id)
+            queryset = queryset.filter(client=client_id)
         
         if status_filter:
             queryset = queryset.filter(status=status_filter)

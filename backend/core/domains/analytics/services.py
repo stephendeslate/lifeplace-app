@@ -1298,16 +1298,28 @@ class DataAggregationService:
                     logger.warning("Payment model not found, skipping payments metrics")
             
             if Payment:
+                # For revenue metrics, use paid_on date for completed payments
+                # This shows actual revenue received during the period
                 payments_qs = Payment.objects.filter(
                     created_at__gte=start_date,
                     created_at__lte=end_date
                 )
                 
+                # Count all payments created in the period
                 metrics['total_payments'] = payments_qs.count()
-                metrics['completed_payments'] = payments_qs.filter(status='COMPLETED').count()
                 
-                # Calculate total revenue
-                total_revenue = payments_qs.filter(status='COMPLETED').aggregate(
+                # For completed payments and revenue, use paid_on date
+                # This reflects actual money received during the period
+                completed_payments_qs = Payment.objects.filter(
+                    status='COMPLETED',
+                    paid_on__gte=start_date.date() if hasattr(start_date, 'date') else start_date,
+                    paid_on__lte=end_date.date() if hasattr(end_date, 'date') else end_date
+                )
+                
+                metrics['completed_payments'] = completed_payments_qs.count()
+                
+                # Calculate total revenue from payments actually paid during the period
+                total_revenue = completed_payments_qs.aggregate(
                     total=Sum('amount')
                 )['total'] or Decimal('0.00')
                 metrics['total_revenue'] = total_revenue

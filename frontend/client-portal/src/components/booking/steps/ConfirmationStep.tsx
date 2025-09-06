@@ -34,7 +34,7 @@ import {
 import { useBooking } from '../../../contexts/BookingContext';
 import { useConfirmation } from '../../../hooks/booking/useConfirmation';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
-import { usePricingSummary } from '../../../hooks/booking/usePricingSummary';
+import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
 import type { 
   ConfirmationStepConfiguration,
   ConfirmationStepData,
@@ -71,50 +71,26 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   // Get selected packages and addons from booking state
   const selectedPackages = state.stepData.package_selection?.selected_packages || [];
   const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
-  const eventDuration = state.stepData.date_time?.duration;
   
   // Get payment info from booking state
   const paymentInfo = state.stepData.payment_info;
   const paymentType = paymentInfo?.payment_type || 'FULL';
   
-  // Calculate pricing using same logic as booking flow
-  const { breakdown } = usePricingSummary(
+  // Calculate pricing using simplified pricing hook
+  const { pricing } = useSimplePricing(
     selectedPackages,
     selectedAddons,
-    eventDuration
+    state.stepData.pricing_summary?.applied_discount_code
   );
 
   // Calculate what user pays today based on payment type
   const paymentAmounts = useMemo(() => {
-    const totalAmount = breakdown.total;
+    const totalAmount = pricing.total;
     
     if (paymentType === 'DEPOSIT') {
-      // The actual deposit amount should be calculated on the server and stored in session
-      // For now, we'll check if there's stored payment calculation data
-      // TODO: Backend should store the calculated deposit amount in session after payment step
-      
-      // Try to get the calculated deposit amount from session total_price if it differs from our calculated total
-      const sessionTotal = parseFloat(currentSession?.total_price || '0');
-      
-      if (sessionTotal > 0 && sessionTotal !== totalAmount) {
-        // If session total is different, it might be the deposit amount
-        console.log('Using session calculated amount:', sessionTotal);
-        const depositAmount = sessionTotal;
-        const remainingAmount = totalAmount - depositAmount;
-        
-        return {
-          totalAmount,
-          paymentAmount: depositAmount,
-          remainingAmount,
-          isDeposit: true,
-          hasRemainingBalance: true,
-        };
-      }
-      
-      // Fallback: calculate based on payment step logic (30% typical)
-      // This should match the payment step configuration calculation
-      console.warn('Using client-side deposit calculation - should come from server');
-      const depositAmount = totalAmount * 0.30; // This should come from payment step config
+      // Calculate deposit based on payment step configuration (typically 30%)
+      // This should ideally come from the backend payment configuration
+      const depositAmount = totalAmount * 0.30;
       const remainingAmount = totalAmount - depositAmount;
       
       return {
@@ -133,7 +109,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       isDeposit: false,
       hasRemainingBalance: false,
     };
-  }, [breakdown.total, paymentType, currentSession?.total_price]);
+  }, [pricing.total, paymentType]);
 
   // Use refs to track if operations have been done
   const completionProcessedRef = useRef(false);
@@ -331,7 +307,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
                 </Box>
               </Box>
             )}
-            {breakdown.total > 0 && (
+            {pricing.total > 0 && (
               <>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <Receipt sx={{ mr: 2, color: 'text.secondary' }} />

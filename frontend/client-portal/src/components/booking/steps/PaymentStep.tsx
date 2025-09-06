@@ -272,7 +272,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
                   • Your date is immediately reserved<br/>
                   • Receive instant booking confirmation<br/>
                   {config?.accept_deposit && (
-                    <>• Balance of {amounts.formattedRemaining} due {config?.balance_due_days || 30} days before event<br/></>
+                    <>• Balance of {currencyFormatAmount(amounts.total - amounts.deposit)} due {config?.balance_due_days || 30} days before event<br/></>
                   )}
                   {config?.allow_refunds && (
                     <>• {config.refund_percentage}% refund if cancelled within {config.refund_deadline_days} hours</>

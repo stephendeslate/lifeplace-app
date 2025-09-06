@@ -543,11 +543,35 @@ class Invoice(BaseModel):
         return f"Invoice {self.invoice_id}"
     
     def calculate_totals(self):
-        """Calculate invoice totals from line items"""
-        line_items = self.line_items.all()
-        self.subtotal = sum(item.total for item in line_items)
-        self.tax_amount = sum(item.total * (item.tax_rate / 100) for item in line_items)
-        self.total_amount = self.subtotal + self.tax_amount
+        """Calculate invoice totals using centralized pricing service"""
+        from core.domains.sales.pricing_service import PricingCalculationService, PricingLineItem
+        from decimal import Decimal
+        
+        # Convert line items to pricing format
+        pricing_line_items = []
+        for item in self.line_items.all():
+            pricing_line_items.append(PricingLineItem(
+                product_id=item.id,  # Use line item ID as identifier
+                name=item.description,
+                description=item.description,
+                base_unit_price=item.unit_price,
+                quantity=item.quantity,
+                tax_rate=item.tax_rate if item.tax_rate else Decimal('12.0')  # Use line item tax rate or default 12% VAT
+            ))
+        
+        # Calculate pricing breakdown using centralized service
+        if pricing_line_items:
+            breakdown = PricingCalculationService.calculate_pricing_breakdown(pricing_line_items)
+            
+            self.subtotal = breakdown.subtotal
+            self.tax_amount = breakdown.tax_amount
+            self.total_amount = breakdown.total_amount
+        else:
+            # No line items, reset to zero
+            self.subtotal = Decimal('0.00')
+            self.tax_amount = Decimal('0.00')
+            self.total_amount = Decimal('0.00')
+        
         self.save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
     
     def mark_as_paid(self):

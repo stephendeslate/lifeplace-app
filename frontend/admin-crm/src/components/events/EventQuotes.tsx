@@ -46,6 +46,7 @@ import type { Event } from '../../types/events.types';
 import type { EventQuote } from '../../types/sales.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { QuoteDetailsDialog } from '../sales/QuoteDetailsDialog';
 
 interface EventQuotesProps {
   event: Event;
@@ -89,6 +90,7 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<EventQuote | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
   const {
@@ -111,7 +113,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   };
 
   const handleViewQuote = (quote: EventQuote) => {
-    navigate(`/sales/quotes/${quote.id}`);
+    setSelectedQuote(quote);
+    setDetailDialogOpen(true);
   };
 
   const handleEditQuote = (quote: EventQuote) => {
@@ -348,6 +351,13 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Quote Details Dialog */}
+      <QuoteDetailsDialog
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        quote={selectedQuote}
+      />
     </Box>
   );
 };
