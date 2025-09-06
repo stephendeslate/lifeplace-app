@@ -397,7 +397,14 @@ class EventContractViewSet(viewsets.ModelViewSet):
                 )
         
         contracts = EventContractService.get_contracts_for_event(event_id)
-        serializer = EventContractSerializer(contracts, many=True)
+        
+        # Add calculated fields for each contract
+        for contract in contracts:
+            contract.is_fully_signed = contract.is_fully_signed()
+            contract.missing_signatures = contract.get_missing_signatures()
+        
+        # Use detailed serializer to include content field needed for signing
+        serializer = EventContractDetailSerializer(contracts, many=True)
         return Response(serializer.data)
     
     @action(detail=True, methods=['post'])

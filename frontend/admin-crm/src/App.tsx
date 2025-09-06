@@ -12,7 +12,7 @@ import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
 import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
-import { ContractEdit, ContractView } from './pages/contracts';
+import { ContractEdit, ContractView, ContractSign } from './pages/contracts';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
@@ -295,6 +295,14 @@ const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <ContractEdit />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/contracts/:contractId/sign"
+        element={
+          <ProtectedRoute>
+            <ContractSign />
           </ProtectedRoute>
         }
       />

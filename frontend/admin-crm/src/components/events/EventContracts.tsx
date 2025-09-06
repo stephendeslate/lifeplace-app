@@ -52,6 +52,7 @@ import type { Event } from '../../types/events.types';
 import type { EventContract } from '../../types/contracts.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import AdminContractSigningDialog from '../contracts/AdminContractSigningDialog';
 
 interface EventContractsProps {
   event: Event;
@@ -84,6 +85,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedContract, setSelectedContract] = useState<EventContract | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [signingDialogOpen, setSigningDialogOpen] = useState(false);
   const [templateId, setTemplateId] = useState<string>('');
   const [validUntil, setValidUntil] = useState<string>('');
   const { settings: currencySettings } = useCurrencySettings();
@@ -101,6 +103,24 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedContract(null);
+  };
+
+  const handleSignContract = (contract: EventContract) => {
+    setSelectedContract(contract);
+    setSigningDialogOpen(true);
+    // Only close the menu (anchorEl), keep selectedContract for the dialog
+    setAnchorEl(null);
+  };
+
+  const handleSignComplete = () => {
+    setSigningDialogOpen(false);
+    setSelectedContract(null);
+    // Contract list will automatically refresh via React Query
+  };
+
+  const handleSignError = (error: string) => {
+    console.error('Contract signing error:', error);
+    // Toast notification already handled by the hook
   };
 
   const handleCreateContract = () => {
@@ -420,8 +440,8 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
             <ListItemText>Send to Client</ListItemText>
           </MenuItem>
         )}
-        {selectedContract?.status === 'SENT' && (
-          <MenuItem onClick={() => navigate(`/contracts/${selectedContract?.id}/sign`)}>
+        {selectedContract && ['SENT', 'PARTIALLY_SIGNED'].includes(selectedContract.status) && (
+          <MenuItem onClick={() => handleSignContract(selectedContract)}>
             <ListItemIcon>
               <SignIcon fontSize="small" />
             </ListItemIcon>
@@ -496,6 +516,18 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Admin Contract Signing Dialog */}
+      <AdminContractSigningDialog
+        open={signingDialogOpen}
+        onClose={() => {
+          setSigningDialogOpen(false);
+          setSelectedContract(null);
+        }}
+        contract={selectedContract}
+        onSignComplete={handleSignComplete}
+        onError={handleSignError}
+      />
     </Box>
   );
 };
