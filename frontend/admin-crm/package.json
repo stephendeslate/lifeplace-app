@@ -19,6 +19,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.1",
     "@mui/icons-material": "^7.1.1",
+    "@mui/lab": "^7.0.0-beta.17",
     "@mui/material": "^7.1.1",
     "@mui/styles": "^6.4.12",
     "@mui/x-date-pickers": "^8.5.0",
@@ -46,6 +47,7 @@
     "react-hot-toast": "^2.5.2",
     "react-router-dom": "^7.6.2",
     "recharts": "^3.0.0",
+    "signature_pad": "^5.1.0",
     "zod": "^4.1.3"
   },
   "devDependencies": {
