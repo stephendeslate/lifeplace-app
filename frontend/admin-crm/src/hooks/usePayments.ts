@@ -95,7 +95,6 @@ export const useInvoicesForClient = (clientId: number) => {
     queryKey: ['invoices', 'forClient', clientId],
     queryFn: () => paymentsApi.getInvoicesForClient(clientId),
     enabled: !!clientId,
-    select: (data) => Array.isArray(data) ? data : [],
   });
 };
 

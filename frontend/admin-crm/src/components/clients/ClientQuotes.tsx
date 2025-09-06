@@ -19,6 +19,8 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Stack,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,6 +37,7 @@ import type { EventQuote } from '../../types/sales.types';
 import type { Client } from '../../types/clients.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { QuoteDetailsDialog } from '../sales/QuoteDetailsDialog';
 
 interface ClientQuotesProps {
   client: Client;
@@ -44,6 +47,7 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<EventQuote | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
   const { data: quotes = [], isLoading } = useQuotesForClient(client.id);
@@ -59,7 +63,8 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
   };
 
   const handleViewQuote = (quote: EventQuote) => {
-    navigate(`/quotes/${quote.id}`);
+    setSelectedQuote(quote);
+    setDetailDialogOpen(true);
   };
 
   const handleEditQuote = (quote: EventQuote) => {
@@ -187,12 +192,22 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, quote)}
-                  >
-                    <MoreVertIcon fontSize="small" />
-                  </IconButton>
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Tooltip title="View">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleViewQuote(quote)}
+                      >
+                        <ViewIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, quote)}
+                    >
+                      <MoreVertIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))}
@@ -205,12 +220,6 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={() => selectedQuote && handleViewQuote(selectedQuote)}>
-          <ListItemIcon>
-            <ViewIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>View</ListItemText>
-        </MenuItem>
         {selectedQuote?.status === 'DRAFT' && (
           <MenuItem onClick={() => selectedQuote && handleEditQuote(selectedQuote)}>
             <ListItemIcon>
@@ -234,6 +243,13 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
           <ListItemText>Duplicate</ListItemText>
         </MenuItem>
       </Menu>
+
+      {/* Quote Details Dialog */}
+      <QuoteDetailsDialog
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        quote={selectedQuote}
+      />
     </Box>
   );
 };

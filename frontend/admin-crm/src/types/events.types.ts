@@ -41,6 +41,24 @@ export interface Event {
   total_amount_due: string | null;
   total_amount_paid: string;
   workflow_progress?: number;
+  // New single source of truth pricing fields
+  current_total_amount?: string | null;
+  current_quote?: {
+    id: number;
+    version: number;
+    status: string;
+    total_amount: string;
+    created_at: string | null;
+    accepted_at: string | null;
+  } | null;
+  current_invoice?: {
+    id: number;
+    invoice_number: string;
+    status: string;
+    total_amount: string;
+    created_at: string | null;
+    due_date: string | null;
+  } | null;
   created_at: string;
   updated_at: string;
 }

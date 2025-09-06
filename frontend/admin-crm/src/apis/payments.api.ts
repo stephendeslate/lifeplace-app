@@ -305,7 +305,7 @@ export const paymentsApi = {
   },
 
   getInvoicesForClient: async (clientId: number) : Promise<Invoice[]> =>  {
-    const response = await api.get<Invoice[]>(`/payments/invoices/?client_id=${clientId}`);
-    return response.data;
+    const response = await api.get<PaginatedResponse<Invoice>>(`/payments/invoices/?client_id=${clientId}`);
+    return response.data.results;
   },
 };

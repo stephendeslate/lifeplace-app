@@ -43,27 +43,46 @@ class EventQuote(BaseModel):
         return f"Quote {self.version} for Event {self.event.id}"
     
     def calculate_totals(self):
-        """Calculate quote totals from line items and options"""
-        # Calculate from line items
-        line_items = self.line_items.all()
-        self.subtotal = sum(item.total for item in line_items)
+        """Calculate quote totals using centralized pricing service"""
+        from core.domains.sales.pricing_service import PricingCalculationService, PricingLineItem
         
-        # Apply discount if present
-        if self.discount:
-            if self.discount.discount_type == 'PERCENTAGE':
-                self.discount_amount = self.subtotal * (self.discount.value / 100)
-            else:  # FIXED
-                self.discount_amount = min(self.discount.value, self.subtotal)
+        # Convert line items to pricing format
+        pricing_line_items = []
+        for item in self.line_items.all():
+            pricing_line_items.append(PricingLineItem(
+                product_id=item.id,  # Use line item ID as identifier
+                name=item.description,
+                description=item.description,
+                base_unit_price=item.unit_price,
+                quantity=item.quantity,
+                tax_rate=Decimal('12.0')  # Default to 12% VAT
+            ))
         
-        # Calculate taxes
-        tax_rate = Decimal('0.1')  # Default tax rate
-        if hasattr(self, 'template') and self.template and self.template.default_tax_rate:
-            tax_rate = self.template.default_tax_rate.rate / 100
+        # Calculate pricing breakdown using centralized service
+        if pricing_line_items:
+            breakdown = PricingCalculationService.calculate_pricing_breakdown(pricing_line_items)
+            
+            self.subtotal = breakdown.subtotal
+            self.tax_amount = breakdown.tax_amount
+            
+            # Apply discount if present
+            if self.discount:
+                if self.discount.discount_type == 'PERCENTAGE':
+                    self.discount_amount = self.subtotal * (self.discount.value / 100)
+                else:  # FIXED
+                    self.discount_amount = min(self.discount.value, self.subtotal)
+            else:
+                self.discount_amount = Decimal('0.00')
+            
+            # Calculate final total
+            self.total_amount = self.subtotal - self.discount_amount + self.tax_amount
+        else:
+            # No line items, reset to zero
+            self.subtotal = Decimal('0.00')
+            self.tax_amount = Decimal('0.00') 
+            self.discount_amount = Decimal('0.00')
+            self.total_amount = Decimal('0.00')
         
-        self.tax_amount = (self.subtotal - self.discount_amount) * tax_rate
-        
-        # Calculate total
-        self.total_amount = self.subtotal - self.discount_amount + self.tax_amount
         self.save(update_fields=['subtotal', 'discount_amount', 'tax_amount', 'total_amount'])
     
     def accept(self, signature_data=None):

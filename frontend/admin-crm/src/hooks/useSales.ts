@@ -220,7 +220,6 @@ export const useQuotesForClient = (clientId: number) => {
     queryKey: ['eventQuotes', 'forClient', clientId],
     queryFn: () => salesApi.getQuotesForClient(clientId),
     enabled: !!clientId,
-    select: (data) => Array.isArray(data) ? data : [],
   });
 };
 

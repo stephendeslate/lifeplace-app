@@ -32,6 +32,7 @@ import {
 // import { useNavigate } from 'react-router-dom'; // Available for future use
 import { useBooking } from '../../contexts/BookingContext';
 import { useSessionTimer } from '../../hooks/booking/useBookingCore';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface BookingContainerProps {
   children: React.ReactNode;
@@ -43,6 +44,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
   // Navigation available for future use if needed
   // const navigate = useNavigate();
   const { state, actions } = useBooking();
+  const { formatAmount } = useCurrencySettings();
 
   // Use session timer hook for expiry tracking
   const { 
@@ -383,7 +385,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
                   Current Total:
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                  ₱{state.totalPrice}
+                  {formatAmount(state.totalPrice || '0')}
                 </Typography>
               </Box>
             </GlassCard>

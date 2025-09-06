@@ -52,6 +52,8 @@ import {
   Folder as FilesIcon,
   Note as NoteIcon,
   Schedule as ScheduleIcon,
+  ContentCopy as ContentCopyIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
@@ -73,15 +75,12 @@ import { EventFiles } from '../../components/events/EventFiles';
 import { NotesList } from '../../components/notes';
 import { 
   ActivityTimeline,
-  QuickActions,
   FinancialSummary,
   EntityNavigation,
   WorkflowVisualization,
-  createEventActions,
   createClientReference,
   calculateEventFinancials,
   type ActivityItem,
-  type QuickAction,
 } from '../../components/common';
 import { EVENT_STATUSES, type UpdateEventData } from '../../types/events.types';
 
@@ -173,31 +172,6 @@ export const EventProfile: React.FC = () => {
     return event ? calculateEventFinancials(event) : [];
   }, [event]);
 
-  const quickActions: QuickAction[] = useMemo(() => {
-    if (!event) return [];
-    return createEventActions(event.id, (actionType: string, eventId: number) => {
-      // Handle quick actions
-      console.log('Quick action:', actionType, 'for event:', eventId);
-      // In a real implementation, these would trigger actual actions
-      switch (actionType) {
-        case 'send-contract':
-          // Open contract sending dialog
-          break;
-        case 'generate-invoice':
-          // Open invoice generation dialog
-          break;
-        case 'send-message':
-          // Open message dialog
-          break;
-        case 'create-quote':
-          // Navigate to quote creation
-          break;
-        case 'add-note':
-          setTabValue(7); // Switch to notes tab
-          break;
-      }
-    });
-  }, [event]);
 
   const relatedEntities = useMemo(() => {
     const entities = [];
@@ -556,15 +530,117 @@ export const EventProfile: React.FC = () => {
                   }}
                 />
 
-                {/* Enhanced More Actions Menu */}
+                {/* Direct Action Buttons */}
+                <Button
+                  variant="outlined"
+                  startIcon={<EditIcon />}
+                  onClick={handleEditEvent}
+                  sx={{
+                    borderColor: tokens.color.primary[500],
+                    color: tokens.color.primary[600],
+                    borderRadius: tokens.spacing.radius.lg,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 2,
+                    py: 1,
+                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+                    '&:hover': {
+                      borderColor: tokens.color.primary[600],
+                      background: `${tokens.color.primary[500]}10`,
+                      transform: 'translateY(-1px)',
+                    }
+                  }}
+                >
+                  Edit
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  startIcon={<ContractIcon />}
+                  onClick={() => {
+                    console.log('Send contract:', event.id);
+                    // Open contract sending dialog
+                  }}
+                  sx={{
+                    borderColor: tokens.color.neutral[300],
+                    color: tokens.color.neutral[700],
+                    borderRadius: tokens.spacing.radius.lg,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    px: 2,
+                    py: 1,
+                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+                    '&:hover': {
+                      borderColor: tokens.color.primary[500],
+                      background: `${tokens.color.primary[500]}05`,
+                      transform: 'translateY(-1px)',
+                    }
+                  }}
+                >
+                  Contract
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  startIcon={<InvoiceIcon />}
+                  onClick={() => {
+                    console.log('Generate invoice:', event.id);
+                    // Open invoice generation dialog
+                  }}
+                  sx={{
+                    borderColor: tokens.color.neutral[300],
+                    color: tokens.color.neutral[700],
+                    borderRadius: tokens.spacing.radius.lg,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    px: 2,
+                    py: 1,
+                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+                    '&:hover': {
+                      borderColor: tokens.color.success[500],
+                      background: `${tokens.color.success[500]}05`,
+                      transform: 'translateY(-1px)',
+                    }
+                  }}
+                >
+                  Invoice
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  startIcon={<EmailIcon />}
+                  onClick={() => {
+                    console.log('Send message:', event.id);
+                    // Open message dialog
+                  }}
+                  sx={{
+                    borderColor: tokens.color.neutral[300],
+                    color: tokens.color.neutral[700],
+                    borderRadius: tokens.spacing.radius.lg,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    px: 2,
+                    py: 1,
+                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+                    '&:hover': {
+                      borderColor: tokens.color.info[500],
+                      background: `${tokens.color.info[500]}05`,
+                      transform: 'translateY(-1px)',
+                    }
+                  }}
+                >
+                  Message
+                </Button>
+
+                {/* More Actions Menu for additional options */}
                 <Tooltip title="More actions">
                   <IconButton 
                     onClick={handleMenuClick}
                     sx={{
                       ...glassPresets.light,
                       borderRadius: tokens.spacing.radius.full,
-                      width: 48,
-                      height: 48,
+                      width: 40,
+                      height: 40,
                       color: tokens.color.neutral[600],
                       transition: createTransition(['transform', 'background'], 'fast'),
                       
@@ -592,25 +668,6 @@ export const EventProfile: React.FC = () => {
                   }}
                 >
                   <MenuItem 
-                    onClick={handleEditEvent}
-                    sx={{
-                      borderRadius: tokens.spacing.radius.lg,
-                      mx: 1,
-                      transition: createTransition('background', 'fast'),
-                      '&:hover': {
-                        background: `${tokens.color.primary[500]}10`,
-                      }
-                    }}
-                  >
-                    <ListItemIcon>
-                      <EditIcon sx={{ color: tokens.color.primary[600] }} />
-                    </ListItemIcon>
-                    <ListItemText>Edit Event</ListItemText>
-                  </MenuItem>
-                  
-                  <Divider sx={{ mx: 1, borderColor: `${tokens.color.borders.glass}` }} />
-                  
-                  <MenuItem 
                     onClick={handleDeleteEvent} 
                     sx={{ 
                       color: tokens.color.error[600],
@@ -626,6 +683,42 @@ export const EventProfile: React.FC = () => {
                       <DeleteIcon sx={{ color: tokens.color.error[600] }} />
                     </ListItemIcon>
                     <ListItemText>Delete Event</ListItemText>
+                  </MenuItem>
+                  
+                  <Divider sx={{ mx: 1, borderColor: `${tokens.color.borders.glass}` }} />
+                  
+                  <MenuItem 
+                    onClick={() => navigate(`/events/${event.id}/duplicate`)}
+                    sx={{
+                      borderRadius: tokens.spacing.radius.lg,
+                      mx: 1,
+                      transition: createTransition('background', 'fast'),
+                      '&:hover': {
+                        background: `${tokens.color.primary[500]}10`,
+                      }
+                    }}
+                  >
+                    <ListItemIcon>
+                      <ContentCopyIcon sx={{ color: tokens.color.primary[600] }} />
+                    </ListItemIcon>
+                    <ListItemText>Duplicate Event</ListItemText>
+                  </MenuItem>
+
+                  <MenuItem 
+                    onClick={() => navigate(`/events/${event.id}/export`)}
+                    sx={{
+                      borderRadius: tokens.spacing.radius.lg,
+                      mx: 1,
+                      transition: createTransition('background', 'fast'),
+                      '&:hover': {
+                        background: `${tokens.color.primary[500]}10`,
+                      }
+                    }}
+                  >
+                    <ListItemIcon>
+                      <DownloadIcon sx={{ color: tokens.color.primary[600] }} />
+                    </ListItemIcon>
+                    <ListItemText>Export Details</ListItemText>
                   </MenuItem>
                 </Menu>
               </Box>
@@ -1061,7 +1154,7 @@ export const EventProfile: React.FC = () => {
                               fontWeight: 700
                             }}
                           >
-                            {formatEventPrice(event.total_price)}
+                            {formatEventPrice(event.current_total_amount || event.total_price)}
                           </Typography>
                         </Box>
                       </Box>
@@ -1154,42 +1247,6 @@ export const EventProfile: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Enhanced Quick Actions */}
-            <Card
-              elevation={0}
-              sx={{
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.xxl,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                position: 'relative',
-                overflow: 'visible',
-                transition: createTransition(['transform', 'box-shadow'], 'fast'),
-                
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.primary[500]}04 100%)`,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  pointerEvents: 'none',
-                },
-                
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: tokens.shadow.glass.light,
-                }
-              }}
-            >
-              <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-                <QuickActions 
-                  actions={quickActions}
-                  compactMode={true}
-                />
-              </CardContent>
-            </Card>
           </Box>
         </Fade>
 

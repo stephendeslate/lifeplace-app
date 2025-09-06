@@ -36,7 +36,6 @@ import {
   ArrowBack as ArrowBackIcon,
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
-  Send as SendIcon,
   Block as BlockIcon,
   PersonAdd as PersonAddIcon,
   Email as EmailIcon,
@@ -51,6 +50,7 @@ import {
   Message as MessageIcon,
   Schedule as ScheduleIcon,
   Star as StarIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useClients } from '../../hooks/useClients';
@@ -69,17 +69,15 @@ import { ClientInvoices } from '../../components/clients/ClientInvoices';
 import { NotesList } from '../../components/notes';
 import { 
   ActivityTimeline,
-  QuickActions,
   FinancialSummary,
   EntityNavigation,
-  createClientActions,
   createEventReference,
   calculateClientFinancials,
   type ActivityItem,
-  type QuickAction,
 } from '../../components/common';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { createTransition } from '../../design-system/utils/animations';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -135,32 +133,6 @@ export const ClientProfile: React.FC = () => {
     return calculateClientFinancials(events);
   }, [events]);
 
-  const quickActions: QuickAction[] = useMemo(() => {
-    if (!client) return [];
-    return createClientActions(client.id, (actionType: string, clientId: number) => {
-      console.log('Quick action:', actionType, 'for client:', clientId);
-      switch (actionType) {
-        case 'create-event':
-          // Navigate to event creation with client pre-selected
-          break;
-        case 'send-message':
-          setSendMessageOpen(true);
-          break;
-        case 'call-client':
-          // Initiate call functionality
-          break;
-        case 'video-meeting':
-          // Start video meeting
-          break;
-        case 'send-invoice':
-          // Open invoice creation
-          break;
-        case 'add-note':
-          setTabValue(6); // Switch to notes tab
-          break;
-      }
-    });
-  }, [client]);
 
   const relatedEvents = useMemo(() => {
     return events.map(event => createEventReference(event));
@@ -504,15 +476,96 @@ export const ClientProfile: React.FC = () => {
                 </Box>
               </Box>
         
-        <Box display="flex" gap={1}>
+        <Box display="flex" alignItems="center" gap={2} sx={{ position: 'relative', zIndex: 1 }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => {
+              console.log('Create event for client:', client.id);
+              // Navigate to event creation with client pre-selected
+            }}
+            sx={{
+              borderRadius: tokens.spacing.radius.lg,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 2,
+              py: 1,
+              background: tokens.color.backgrounds.primaryGradient,
+              transition: createTransition(['transform', 'box-shadow'], 'fast'),
+              '&:hover': {
+                transform: 'translateY(-1px)',
+                boxShadow: `0 8px 24px ${tokens.color.primary[500]}30`,
+              }
+            }}
+          >
+            Create Event
+          </Button>
+
           <Button
             variant="outlined"
-            startIcon={<SendIcon />}
+            startIcon={<EmailIcon />}
             onClick={handleSendMessage}
+            sx={{
+              borderColor: tokens.color.neutral[300],
+              color: tokens.color.neutral[700],
+              borderRadius: tokens.spacing.radius.lg,
+              textTransform: 'none',
+              fontWeight: 500,
+              px: 2,
+              py: 1,
+              transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+              '&:hover': {
+                borderColor: tokens.color.info[500],
+                background: `${tokens.color.info[500]}05`,
+                transform: 'translateY(-1px)',
+              }
+            }}
           >
-            Send Message
+            Message
           </Button>
-          <IconButton onClick={handleMenuClick}>
+
+          <Button
+            variant="outlined"
+            startIcon={<PhoneIcon />}
+            onClick={() => {
+              console.log('Call client:', client.id);
+              // Initiate phone call
+            }}
+            sx={{
+              borderColor: tokens.color.neutral[300],
+              color: tokens.color.neutral[700],
+              borderRadius: tokens.spacing.radius.lg,
+              textTransform: 'none',
+              fontWeight: 500,
+              px: 2,
+              py: 1,
+              transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+              '&:hover': {
+                borderColor: tokens.color.success[500],
+                background: `${tokens.color.success[500]}05`,
+                transform: 'translateY(-1px)',
+              }
+            }}
+          >
+            Call
+          </Button>
+
+          <IconButton 
+            onClick={handleMenuClick}
+            sx={{
+              ...glassPresets.light,
+              borderRadius: tokens.spacing.radius.full,
+              width: 40,
+              height: 40,
+              color: tokens.color.neutral[600],
+              transition: createTransition(['transform', 'background'], 'fast'),
+              
+              '&:hover': {
+                ...glassPresets.medium,
+                transform: 'rotate(90deg)',
+              }
+            }}
+          >
             <MoreVertIcon />
           </IconButton>
         </Box>
@@ -549,73 +602,62 @@ export const ClientProfile: React.FC = () => {
         </MenuItem>
       </Menu>
 
-      {/* Info Cards */}
-      <Box sx={{ display: 'flex', gap: 3, mb: 3, flexDirection: { xs: 'column', md: 'row' } }}>
-        {/* Contact Info */}
-        <Box sx={{ flex: 2 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Contact Information
-              </Typography>
-              <Stack spacing={2}>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <EmailIcon color="action" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Email
-                    </Typography>
-                    <Typography variant="body1">{client.email}</Typography>
-                  </Box>
+      {/* Contact Info Card */}
+      <Box sx={{ mb: 3 }}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Contact Information
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 3 }}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <EmailIcon color="action" />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Email
+                  </Typography>
+                  <Typography variant="body1">{client.email}</Typography>
                 </Box>
-                
-                <Box display="flex" alignItems="center" gap={1}>
-                  <PhoneIcon color="action" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Phone
-                    </Typography>
-                    <Typography variant="body1">
-                      {client.profile?.phone || 'Not provided'}
-                    </Typography>
-                  </Box>
+              </Box>
+              
+              <Box display="flex" alignItems="center" gap={1}>
+                <PhoneIcon color="action" />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Phone
+                  </Typography>
+                  <Typography variant="body1">
+                    {client.profile?.phone || 'Not provided'}
+                  </Typography>
                 </Box>
-                
-                <Box display="flex" alignItems="center" gap={1}>
-                  <BusinessIcon color="action" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Company
-                    </Typography>
-                    <Typography variant="body1">
-                      {client.profile?.company || 'Not provided'}
-                    </Typography>
-                  </Box>
+              </Box>
+              
+              <Box display="flex" alignItems="center" gap={1}>
+                <BusinessIcon color="action" />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Company
+                  </Typography>
+                  <Typography variant="body1">
+                    {client.profile?.company || 'Not provided'}
+                  </Typography>
                 </Box>
-                
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CalendarIcon color="action" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Member Since
-                    </Typography>
-                    <Typography variant="body1">
-                      {new Date(client.date_joined).toLocaleDateString()}
-                    </Typography>
-                  </Box>
+              </Box>
+              
+              <Box display="flex" alignItems="center" gap={1}>
+                <CalendarIcon color="action" />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Member Since
+                  </Typography>
+                  <Typography variant="body1">
+                    {new Date(client.date_joined).toLocaleDateString()}
+                  </Typography>
                 </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Quick Actions */}
-        <Box sx={{ flex: 1 }}>
-          <QuickActions 
-            actions={quickActions}
-            compactMode={true}
-          />
-        </Box>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
       </Box>
 
       {/* Enhanced Sections */}

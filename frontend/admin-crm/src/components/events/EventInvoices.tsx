@@ -43,6 +43,7 @@ import type { Event } from '../../types/events.types';
 import type { Invoice, InvoiceStatus } from '../../types/payments.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { InvoiceDetailsDialog } from '../payments/InvoiceDetailsDialog';
 
 interface EventInvoicesProps {
   event: Event;
@@ -73,6 +74,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
   const {
@@ -97,7 +99,8 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
-    navigate(`/payments/invoices/${invoice.id}`);
+    setSelectedInvoice(invoice);
+    setDetailDialogOpen(true);
   };
 
   const handleEditInvoice = (invoice: Invoice) => {
@@ -403,6 +406,13 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Invoice Details Dialog */}
+      <InvoiceDetailsDialog
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        invoice={selectedInvoice}
+      />
     </Box>
   );
 };

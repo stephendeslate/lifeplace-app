@@ -1,5 +1,4 @@
 # backend/core/domains/events/serializers/event_serializers.py
-# This is your existing serializers.py content, unchanged
 from core.domains.products.serializers import ProductOptionSerializer
 from core.domains.users.serializers import UserSerializer
 from core.domains.workflows.basic_serializers import (
@@ -152,6 +151,11 @@ class EventSerializer(serializers.ModelSerializer):
     current_stage_name = serializers.CharField(source='current_stage.name', read_only=True)
     workflow_template_name = serializers.CharField(source='workflow_template.name', read_only=True)
     
+    # Add pricing fields from quotes/invoices (single source of truth)
+    current_total_amount = serializers.SerializerMethodField()
+    current_quote = serializers.SerializerMethodField()
+    current_invoice = serializers.SerializerMethodField()
+    
     class Meta:
         model = Event
         fields = [
@@ -159,9 +163,11 @@ class EventSerializer(serializers.ModelSerializer):
             'status', 'start_date', 'end_date', 'workflow_template', 'workflow_template_name',
             'current_stage', 'current_stage_name', 'lead_source', 'last_contacted', 
             'total_price', 'payment_status', 'total_amount_due', 'total_amount_paid', 
-            'workflow_progress', 'next_task', 'preferences', 'created_at', 'updated_at'
+            'workflow_progress', 'next_task', 'preferences', 'created_at', 'updated_at',
+            'current_total_amount', 'current_quote', 'current_invoice'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task', 
+                           'current_total_amount', 'current_quote', 'current_invoice']
     
     def get_client_name(self, obj):
         if obj.client:
@@ -180,6 +186,63 @@ class EventSerializer(serializers.ModelSerializer):
                 'priority': next_task.priority
             }
         return None
+    
+    def get_current_total_amount(self, obj):
+        """Get current total amount from invoice or quote (single source of truth)
+        
+        Returns the final total amount including tax that the client should pay.
+        Priority: Invoice total → Quote total → Legacy event.total_price
+        """
+        try:
+            # Priority 1: Most recent invoice (includes tax)
+            latest_invoice = obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at').first()
+            if latest_invoice:
+                return str(latest_invoice.total_amount)  # This should include tax
+            
+            # Priority 2: Most recent accepted quote (includes tax)
+            latest_quote = obj.quotes.filter(status='ACCEPTED').order_by('-created_at').first()
+            if latest_quote:
+                return str(latest_quote.total_amount)  # This should include tax
+            
+            # Fallback: event.total_price (legacy)
+            return str(obj.total_price) if obj.total_price else None
+            
+        except Exception:
+            return str(obj.total_price) if obj.total_price else None
+    
+    def get_current_quote(self, obj):
+        """Get current quote summary"""
+        try:
+            latest_quote = obj.quotes.filter(status='ACCEPTED').order_by('-created_at').first()
+            if latest_quote:
+                return {
+                    'id': latest_quote.id,
+                    'version': latest_quote.version,
+                    'status': latest_quote.status,
+                    'total_amount': str(latest_quote.total_amount),
+                    'created_at': latest_quote.created_at.isoformat() if latest_quote.created_at else None,
+                    'accepted_at': latest_quote.accepted_at.isoformat() if latest_quote.accepted_at else None,
+                }
+            return None
+        except Exception:
+            return None
+    
+    def get_current_invoice(self, obj):
+        """Get current invoice summary"""
+        try:
+            latest_invoice = obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at').first()
+            if latest_invoice:
+                return {
+                    'id': latest_invoice.id,
+                    'invoice_number': latest_invoice.invoice_number,
+                    'status': latest_invoice.status,
+                    'total_amount': str(latest_invoice.total_amount),
+                    'created_at': latest_invoice.created_at.isoformat() if latest_invoice.created_at else None,
+                    'due_date': latest_invoice.due_date.isoformat() if latest_invoice.due_date else None,
+                }
+            return None
+        except Exception:
+            return None
     
     def validate(self, data):
         """Validate event data"""

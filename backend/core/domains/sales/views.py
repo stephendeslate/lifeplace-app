@@ -187,10 +187,14 @@ class EventQuoteViewSet(viewsets.ModelViewSet):
         
         # Apply filters
         event_id = self.request.query_params.get('event_id', None)
+        client_id = self.request.query_params.get('client_id', None)
         status = self.request.query_params.get('status', None)
         
         if event_id:
             queryset = queryset.filter(event_id=event_id)
+        
+        if client_id:
+            queryset = queryset.filter(event__client=client_id)
         
         if status:
             queryset = queryset.filter(status=status)

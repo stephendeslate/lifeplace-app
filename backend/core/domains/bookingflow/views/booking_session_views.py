@@ -522,180 +522,52 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
         
     @action(detail=False, methods=['post'], url_path='session/(?P<session_uuid>[^/.]+)/calculate-pricing')
     def calculate_pricing(self, request, session_uuid=None):
-        """Calculate pricing for current session state"""
+        """Calculate pricing for current session state using centralized pricing service"""
         try:
             session = BookingSessionService.get_session_by_id(session_uuid)
             
-            # Get selected products from session with consistent structure
+            # Get booking data
             booking_data = session.booking_data or {}
             
-            # FIXED: Look for packages in both places - direct and under step keys
-            selected_packages = booking_data.get('selected_packages', [])
-            selected_addons = booking_data.get('selected_addons', [])
-            
-            # If not found directly, check under step keys (but only take first occurrence)
-            if not selected_packages:
-                for step_key, step_data in booking_data.items():
-                    if isinstance(step_data, dict) and 'selected_packages' in step_data:
-                        selected_packages = step_data['selected_packages']
-                        break
-                        
-            if not selected_addons:
-                for step_key, step_data in booking_data.items():
-                    if isinstance(step_data, dict) and 'selected_addons' in step_data:
-                        selected_addons = step_data['selected_addons']
-                        break
-            
+            # Add discount code to booking data if provided
             discount_code = request.data.get('discount_code', '')
+            if discount_code:
+                booking_data['applied_discount_code'] = discount_code
+            
+            # Get event duration from booking data
+            event_duration = self._get_session_duration(booking_data)
             
             # Log for debugging
-            logger.info(f"Pricing calculation for session {session_uuid}: "
-                    f"packages={len(selected_packages)}, addons={len(selected_addons)}, "
-                    f"discount_code='{discount_code}'")
+            logger.info(f"=== PRICING API USING CENTRALIZED SERVICE ===")
+            logger.info(f"Session: {session_uuid}, Duration: {event_duration}h, Discount: '{discount_code}'")
             
-            # Initialize totals
-            subtotal = Decimal('0.00')
-            tax_total = Decimal('0.00')
-            discount_amount = Decimal('0.00')
+            # Use centralized pricing service for consistent calculations
+            from core.domains.sales.pricing_service import PricingCalculationService
+            pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
+                booking_data, 
+                event_duration
+            )
+            
+            # Prepare discount details if discount was applied
             discount_details = None
+            if pricing_breakdown.applied_discount:
+                discount_details = {
+                    'code': pricing_breakdown.applied_discount.code,
+                    'type': pricing_breakdown.applied_discount.discount_type,
+                    'value': str(pricing_breakdown.applied_discount.value),
+                    'amount_applied': str(pricing_breakdown.discount_amount.quantize(Decimal('0.01')))
+                }
             
-            # Process packages (products with type='PACKAGE')
-            for package_item in selected_packages:
-                try:
-                    product_id = package_item.get('product_id')
-                    quantity = int(package_item.get('quantity', 1))
-                    
-                    if not product_id:
-                        logger.warning(f"Package item missing product_id: {package_item}")
-                        continue
-                        
-                    product = ProductOption.objects.get(
-                        id=product_id,
-                        type='PACKAGE',
-                        is_active=True
-                    )
-                    
-                    # Calculate base price
-                    base_price = Decimal(str(product.base_price))
-                    item_total = base_price * quantity
-                    
-                    # Handle excess hours if applicable
-                    duration_hours = package_item.get('duration_hours', 0)
-                    
-                    # If no duration in package item, get from session booking data
-                    if not duration_hours:
-                        duration_hours = self._get_session_duration(booking_data)
-                    
-                    logger.info(f"PRICING API - Product: {product.name}, Duration: {duration_hours}h, Included: {product.included_hours}h")
-                    
-                    if product.has_excess_hours and product.included_hours and duration_hours:
-                        if duration_hours > product.included_hours:
-                            import math
-                            # Round up excess hours to next whole number
-                            excess_hours_raw = duration_hours - product.included_hours
-                            excess_hours = Decimal(str(math.ceil(excess_hours_raw)))
-                            excess_hour_price = Decimal(str(product.excess_hour_price or '0'))
-                            excess_cost = excess_hours * excess_hour_price
-                            item_total += excess_cost * Decimal(str(quantity))
-                            logger.info(f"PRICING API - Added excess: {excess_hours}h × ₱{excess_hour_price} = ₱{excess_cost * Decimal(str(quantity))}")
-                    
-                    subtotal += item_total
-                    
-                    # Calculate tax for this item
-                    if product.tax_rate:
-                        item_tax = item_total * (Decimal(str(product.tax_rate)) / 100)
-                        tax_total += item_tax
-                        
-                except ProductOption.DoesNotExist:
-                    logger.warning(f"Package product {product_id} not found")
-                    continue
-                except Exception as e:
-                    logger.error(f"Error processing package {package_item}: {str(e)}")
-                    continue
-            
-            # Process addons (products with type='ADDON')
-            for addon_item in selected_addons:
-                try:
-                    product_id = addon_item.get('product_id')
-                    quantity = int(addon_item.get('quantity', 1))
-                    
-                    if not product_id:
-                        logger.warning(f"Addon item missing product_id: {addon_item}")
-                        continue
-                        
-                    product = ProductOption.objects.get(
-                        id=product_id,
-                        type='PRODUCT',
-                        is_active=True
-                    )
-                    
-                    # Calculate price
-                    base_price = Decimal(str(product.base_price))
-                    item_total = base_price * quantity
-                    
-                    subtotal += item_total
-                    
-                    # Calculate tax for this item
-                    if product.tax_rate:
-                        item_tax = item_total * (Decimal(str(product.tax_rate)) / 100)
-                        tax_total += item_tax
-                        
-                except ProductOption.DoesNotExist:
-                    logger.warning(f"Addon product {product_id} not found")
-                    continue
-                except Exception as e:
-                    logger.error(f"Error processing addon {addon_item}: {str(e)}")
-                    continue
-            
-            # Apply discount if provided
-            if discount_code:
-                try:
-                    from core.domains.products.services import DiscountService
-                    discount = DiscountService.validate_discount_code(discount_code)
-                    
-                    if discount and discount.is_active:
-                        # Check if discount is applicable to the total
-                        if discount.minimum_amount and subtotal < Decimal(str(discount.minimum_amount)):
-                            logger.info(f"Discount {discount_code} not applied: minimum amount not met")
-                        else:
-                            # Calculate discount amount
-                            if discount.discount_type == 'PERCENTAGE':
-                                discount_value = Decimal(str(discount.value))
-                                discount_amount = subtotal * (discount_value / 100)
-                                # Cap percentage discount at subtotal if needed
-                                discount_amount = min(discount_amount, subtotal)
-                            elif discount.discount_type == 'FIXED':
-                                discount_amount = Decimal(str(discount.value))
-                                # Ensure discount doesn't exceed subtotal
-                                discount_amount = min(discount_amount, subtotal)
-                            
-                            # Set discount details for response
-                            discount_details = {
-                                'code': discount.code,
-                                'type': discount.discount_type,
-                                'value': str(discount.value),
-                                'amount_applied': str(discount_amount)
-                            }
-                            
-                except Exception as e:
-                    logger.warning(f"Error applying discount code {discount_code}: {str(e)}")
-            
-            # Calculate final total
-            total = subtotal + tax_total - discount_amount
-            
-            # Ensure non-negative total
-            if total < 0:
-                total = Decimal('0.00')
-            
-            # Log calculation details for debugging
-            logger.info(f"Pricing calculation for session {session_uuid}: "
-                    f"subtotal={subtotal}, tax={tax_total}, discount={discount_amount}, total={total}")
+            # Log final results
+            logger.info(f"CENTRALIZED PRICING RESULT: subtotal=₱{pricing_breakdown.subtotal}, "
+                       f"tax=₱{pricing_breakdown.tax_amount}, discount=₱{pricing_breakdown.discount_amount}, "
+                       f"total=₱{pricing_breakdown.total_amount}")
             
             return Response({
-                'subtotal': str(subtotal.quantize(Decimal('0.01'))),
-                'tax': str(tax_total.quantize(Decimal('0.01'))),
-                'discount': str(discount_amount.quantize(Decimal('0.01'))),
-                'total': str(total.quantize(Decimal('0.01'))),
+                'subtotal': str(pricing_breakdown.subtotal.quantize(Decimal('0.01'))),
+                'tax': str(pricing_breakdown.tax_amount.quantize(Decimal('0.01'))),
+                'discount': str(pricing_breakdown.discount_amount.quantize(Decimal('0.01'))),
+                'total': str(pricing_breakdown.total_amount.quantize(Decimal('0.01'))),
                 'discount_details': discount_details
             })
             

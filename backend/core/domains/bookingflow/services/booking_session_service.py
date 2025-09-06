@@ -1353,7 +1353,7 @@ class BookingSessionService:
 
     @staticmethod
     def create_quote_from_booking_session(session, event):
-        """Create a quote from booking session data
+        """Create a quote from booking session data using centralized pricing service
         
         Args:
             session: BookingSession instance
@@ -1364,40 +1364,87 @@ class BookingSessionService:
         """
         logger.info(f"Creating quote from booking session {session.session_id} for event {event.id}")
         
-        # Calculate total price from session
-        total_price = session.calculate_total_price()
-        logger.info(f"Total price calculated: {total_price}")
+        # Use centralized pricing service for consistent calculations
+        from core.domains.sales.pricing_service import PricingCalculationService
+        
+        # Get event duration for pricing calculations
+        event_duration = BookingSessionService._get_event_duration_from_booking_data(session.booking_data)
+        
+        # Calculate pricing using centralized service
+        pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
+            session.booking_data, 
+            event_duration
+        )
+        
+        logger.info(f"Centralized pricing calculated: ₱{pricing_breakdown.total_amount}")
         
         # Create the quote - auto-accepted since client already confirmed booking
+        # Initialize with basic values, will be recalculated after line items are added
         quote = EventQuote.objects.create(
             event=event,
             version=1,
             status='ACCEPTED',  # Auto-accept since this is from confirmed booking
-            subtotal=total_price,  # Will be recalculated from line items
-            tax_amount=Decimal('0.00'),  # Will be calculated if tax rules exist
-            discount_amount=Decimal('0.00'),  # Will be calculated if discount applied
-            total_amount=total_price,
+            subtotal=Decimal('0.00'),  # Will be recalculated
+            tax_amount=Decimal('0.00'),  # Will be recalculated
+            discount_amount=pricing_breakdown.discount_amount,
+            total_amount=Decimal('0.00'),  # Will be recalculated
             valid_until=timezone.now().date() + timedelta(days=30),
             accepted_at=timezone.now(),
             created_by=session.client,
-            notes=f"Quote generated from booking session {session.session_id}"
+            notes=f"Quote generated from booking session {session.session_id}",
+            discount=pricing_breakdown.applied_discount
         )
         
         logger.info(f"Created quote {quote.id} with status {quote.status}")
         
-        # Create line items from booking data
-        BookingSessionService._create_quote_line_items_from_booking_data(quote, session)
+        # Create line items from pricing breakdown
+        BookingSessionService._create_quote_line_items_from_pricing_breakdown(quote, pricing_breakdown, session)
         
-        # Recalculate totals based on line items
+        # IMPORTANT: Recalculate totals after line items are created (includes tax calculation)
         quote.calculate_totals()
         
-        logger.info(f"Quote {quote.id} total after line items: {quote.total_amount}")
+        logger.info(f"Quote {quote.id} final total after recalculation: ₱{quote.total_amount}")
         
         return quote
     
     @staticmethod
+    def _create_quote_line_items_from_pricing_breakdown(quote, pricing_breakdown, session):
+        """Create quote line items from centralized pricing breakdown
+        
+        Args:
+            quote: EventQuote instance
+            pricing_breakdown: PricingBreakdown from PricingCalculationService
+            session: BookingSession instance (for reference notes)
+        """
+        from core.domains.sales.models import QuoteLineItem
+        
+        logger.info(f"Creating {len(pricing_breakdown.line_items)} line items from pricing breakdown")
+        
+        for pricing_item in pricing_breakdown.line_items:
+            QuoteLineItem.objects.create(
+                quote=quote,
+                description=pricing_item.description,
+                quantity=pricing_item.quantity,
+                unit_price=pricing_item.total_unit_price,  # Already includes excess hours
+                tax_rate=pricing_item.tax_rate,
+                total=pricing_item.line_total,
+                product_id=pricing_item.product_id,
+                notes=f"Generated from booking session {session.session_id}"
+            )
+            
+            logger.info(
+                f"Created line item: {pricing_item.name} "
+                f"x{pricing_item.quantity} @ ₱{pricing_item.total_unit_price} = ₱{pricing_item.line_total}"
+            )
+        
+        logger.info(f"Completed creating line items for quote {quote.id}")
+    
+    @staticmethod
     def _create_quote_line_items_from_booking_data(quote, session):
-        """Create quote line items from booking session data
+        """DEPRECATED: Create quote line items from booking session data
+        
+        This method is deprecated in favor of the centralized PricingCalculationService.
+        Use _create_quote_line_items_from_pricing_breakdown() instead.
         
         Args:
             quote: EventQuote instance
