@@ -117,12 +117,47 @@ class ContractTemplateService:
         template = ContractTemplateService.get_template_by_id(template_id)
         content = template.content
         
-        # Simple variable substitution
+        # Simple variable substitution - handle both formats with and without spaces
         for var_name, var_value in context_data.items():
-            placeholder = f"{{{{{var_name}}}}}"
-            content = content.replace(placeholder, str(var_value))
+            # Handle format: {{ variable_name }}
+            placeholder_with_spaces = f"{{{{ {var_name} }}}}"
+            content = content.replace(placeholder_with_spaces, str(var_value))
+            
+            # Handle format: {{variable_name}} (for backward compatibility)
+            placeholder_no_spaces = f"{{{{{var_name}}}}}"
+            content = content.replace(placeholder_no_spaces, str(var_value))
         
         return content
+    
+    @staticmethod
+    def preview_template(template_id, context_data=None):
+        """
+        Preview a contract template with context data
+        
+        Args:
+            template_id: ID of the contract template
+            context_data: Dictionary of variable values to insert into the template
+            
+        Returns:
+            Dictionary with rendered content and template metadata
+        """
+        template = ContractTemplateService.get_template_by_id(template_id)
+        
+        if context_data is None:
+            context_data = {}
+        
+        # Render the contract content
+        rendered_content = ContractTemplateService.render_contract(template_id, context_data)
+        
+        return {
+            'template_id': template.id,
+            'template_name': template.name,
+            'rendered_content': rendered_content,
+            'variables': template.variables,
+            'sections': template.sections,
+            'event_type': template.event_type.name if template.event_type else None,
+            'context_used': context_data
+        }
 
 
 class EventContractService:

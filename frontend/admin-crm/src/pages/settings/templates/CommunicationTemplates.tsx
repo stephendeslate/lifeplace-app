@@ -1,10 +1,12 @@
 // Communication Templates Settings Page - Standardized Version
 // Migrated to use the unified settings system
 
-import React from 'react';
-import { Email as CommunicationIcon } from '@mui/icons-material';
+import React, { useState } from 'react';
+import { Email as CommunicationIcon, Preview as PreviewIcon } from '@mui/icons-material';
 import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { TemplatePreviewDialog } from '../../../components/common';
 import { useCommunications } from '../../../hooks/useCommunications';
+import { communicationsApi } from '../../../apis/communications.api';
 import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../../types/communications.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 
@@ -157,6 +159,10 @@ const config: SettingsPageConfig<CommunicationTemplate> = {
 };
 
 export const CommunicationTemplates = () => {
+  // Preview dialog state
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<CommunicationTemplate | null>(null);
+
   // Get hooks from communications
   const communications = useCommunications();
   const {
@@ -222,21 +228,65 @@ export const CommunicationTemplates = () => {
     });
   };
 
+  // Preview handlers
+  const handlePreview = (template: CommunicationTemplate) => {
+    setSelectedTemplate(template);
+    setPreviewDialogOpen(true);
+  };
+
+  const handlePreviewTemplate = async (contextData: Record<string, unknown>) => {
+    if (!selectedTemplate) {
+      throw new Error('No template selected');
+    }
+
+    const result = await communicationsApi.previewTemplate(selectedTemplate.id, contextData);
+    return {
+      rendered_content: result.rendered_content || result.body || '',
+      template_name: result.template_name || selectedTemplate.name,
+      variables: result.variables || [],
+    };
+  };
+
+  // Custom table actions
+  const customTableActions = [
+    {
+      label: 'Preview',
+      icon: React.createElement(PreviewIcon),
+      onClick: (template: CommunicationTemplate) => handlePreview(template),
+      color: 'info' as const,
+    },
+  ];
+
   return (
-    <SettingsPage
-      config={config}
-      data={communicationTemplates}
-      defaultValues={defaultCommunicationTemplate}
-      isLoading={isLoading}
-      error={error?.message}
-      onRefresh={handleRefresh}
-      onCreate={handleCreate}
-      onUpdate={handleUpdate}
-      onDelete={handleDelete}
-      isCreating={createMutation.isPending}
-      isUpdating={updateMutation.isPending}
-      isDeleting={deleteMutation.isPending}
-    />
+    <>
+      <SettingsPage
+        config={config}
+        data={communicationTemplates}
+        defaultValues={defaultCommunicationTemplate}
+        isLoading={isLoading}
+        error={error?.message}
+        onRefresh={handleRefresh}
+        onCreate={handleCreate}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+        isCreating={createMutation.isPending}
+        isUpdating={updateMutation.isPending}
+        isDeleting={deleteMutation.isPending}
+        customTableActions={customTableActions}
+      />
+
+      {/* Preview Dialog */}
+      {selectedTemplate && (
+        <TemplatePreviewDialog
+          open={previewDialogOpen}
+          onClose={() => setPreviewDialogOpen(false)}
+          templateName={selectedTemplate.name}
+          templateType="communication"
+          variables={selectedTemplate.variables_schema ? Object.keys(selectedTemplate.variables_schema) : []}
+          onPreview={handlePreviewTemplate}
+        />
+      )}
+    </>
   );
 };
 

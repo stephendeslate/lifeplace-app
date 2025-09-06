@@ -1,7 +1,12 @@
 # backend/core/domains/workflows/models.py
+import logging
+from datetime import timedelta
 from core.utils.models import BaseModel
 from django.db import models
 from django.db.models import UniqueConstraint
+from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 class WorkflowTemplate(BaseModel):
@@ -130,24 +135,93 @@ class WorkflowStage(BaseModel):
             # Send email using template
             from core.domains.communications.services import CommunicationService
             try:
-                CommunicationService.send_templated_email(
-                    recipient=event.client.email,
+                context_data = {
+                    'client_name': event.client.get_full_name(),
+                    'event_date': event.start_date.strftime('%B %d, %Y'),
+                    'event_time': event.start_date.strftime('%I:%M %p'),
+                    'venue_name': 'LifePlace Retreat & Events Center',
+                    'total_amount': str(event.total_amount_due) if event.total_amount_due else '0',
+                    'deposit_amount': str(float(event.total_amount_due) * 0.30) if event.total_amount_due else '0',
+                    'booking_reference': f'LP{event.id:05d}',
+                    'valid_until': (timezone.now() + timedelta(days=30)).strftime('%B %d, %Y'),
+                    'event': event,
+                    'stage': self
+                }
+                
+                CommunicationService.send_communication_by_template(
                     template=self.email_template,
-                    context={'event': event, 'stage': self}
+                    recipient=event.client.email,
+                    context_data=context_data
                 )
+                logger.info(f"Sent workflow email '{self.email_template.name}' for event {event.id}")
             except Exception as e:
                 logger.error(f"Failed to send workflow email: {e}")
         
         elif self.automation_type == 'TASK' and self.task_description:
             # Create task
             from core.domains.events.models import EventTask
-            EventTask.objects.create(
-                event=event,
-                title=f"Workflow: {self.name}",
-                description=self.task_description,
-                workflow_stage=self,
-                status='PENDING'
-            )
+            try:
+                task_due_date = event.start_date if 'event_start_date' in self.metadata.get('task_due_date', '') else timezone.now() + timedelta(days=1)
+                
+                EventTask.objects.create(
+                    event=event,
+                    title=f"Workflow: {self.name}",
+                    description=self.task_description,
+                    due_date=task_due_date,
+                    priority=self.metadata.get('task_priority', 'MEDIUM'),
+                    workflow_stage=self,
+                    status='PENDING'
+                )
+                logger.info(f"Created workflow task '{self.name}' for event {event.id}")
+            except Exception as e:
+                logger.error(f"Failed to create workflow task: {e}")
+        
+        elif self.automation_type == 'CONTRACT':
+            # Generate and send contract
+            try:
+                from core.domains.contracts.models import EventContract, ContractTemplate
+                
+                contract_template_id = self.metadata.get('contract_template_id')
+                if contract_template_id:
+                    contract_template = ContractTemplate.objects.get(id=contract_template_id)
+                    
+                    # Create contract
+                    contract = EventContract.objects.create(
+                        event=event,
+                        template=contract_template,
+                        status='DRAFT',
+                        contract_value=event.total_amount_due or 0
+                    )
+                    
+                    # Send email with contract link (if email template is also configured)
+                    if self.email_template:
+                        from core.domains.communications.services import CommunicationService
+                        
+                        signature_deadline_hours = self.metadata.get('signature_deadline_hours', 48)
+                        signature_deadline = timezone.now() + timedelta(hours=signature_deadline_hours)
+                        
+                        context_data = {
+                            'client_name': event.client.get_full_name(),
+                            'event_date': event.start_date.strftime('%B %d, %Y'),
+                            'venue_name': 'LifePlace Retreat & Events Center',
+                            'total_amount': str(event.total_amount_due) if event.total_amount_due else '0',
+                            'contract_link': f'/contracts/{contract.id}/sign',
+                            'signature_deadline': signature_deadline.strftime('%B %d, %Y at %I:%M %p'),
+                            'event': event,
+                            'stage': self,
+                            'contract': contract
+                        }
+                        
+                        CommunicationService.send_communication_by_template(
+                            template=self.email_template,
+                            recipient=event.client.email,
+                            context_data=context_data
+                        )
+                    
+                    logger.info(f"Generated contract {contract.id} for event {event.id}")
+                    
+            except Exception as e:
+                logger.error(f"Failed to generate/send contract: {e}")
         
         elif self.automation_type == 'NOTIFICATION':
             # Send notification
