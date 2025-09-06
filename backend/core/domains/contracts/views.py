@@ -252,6 +252,10 @@ class EventContractViewSet(viewsets.ModelViewSet):
             **signature_details
         )
         
+        # Re-render contract content with the new signature
+        from .services import ContractTemplateService
+        ContractTemplateService.render_contract_with_signatures(contract.id)
+        
         return Response(
             ContractSignatureSerializer(signature).data,
             status=status.HTTP_201_CREATED
@@ -497,6 +501,10 @@ class ContractSignatureViewSet(viewsets.ModelViewSet):
             role=serializer.validated_data['role'],
             **signature_details
         )
+        
+        # Re-render contract content with the new signature
+        from .services import ContractTemplateService
+        ContractTemplateService.render_contract_with_signatures(serializer.validated_data['contract'].id)
         
         return Response(
             ContractSignatureSerializer(signature).data,
