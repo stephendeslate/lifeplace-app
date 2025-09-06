@@ -62,7 +62,11 @@ export const contractsApi = {
     return Array.isArray(data) ? data : data.results || [];
   },
 
-  previewTemplate: async (id: number, contextData: Record<string, unknown> = {}): Promise<{
+  previewTemplate: async (
+    id: number, 
+    contextData: Record<string, unknown> = {}, 
+    eventId?: number
+  ): Promise<{
     template_id: number;
     template_name: string;
     rendered_content: string;
@@ -70,7 +74,19 @@ export const contractsApi = {
     sections: string[];
     event_type: string | null;
     context_used: Record<string, unknown>;
+    available_variables?: Record<string, string>;
   }> => {
+    const requestData: {
+      context_data: Record<string, unknown>;
+      event_id?: number;
+    } = {
+      context_data: contextData
+    };
+    
+    if (eventId) {
+      requestData.event_id = eventId;
+    }
+    
     const response = await api.post<{
       template_id: number;
       template_name: string;
@@ -79,9 +95,8 @@ export const contractsApi = {
       sections: string[];
       event_type: string | null;
       context_used: Record<string, unknown>;
-    }>(`/contracts/templates/${id}/preview/`, {
-      context_data: contextData
-    });
+      available_variables?: Record<string, string>;
+    }>(`/contracts/templates/${id}/preview/`, requestData);
     return response.data;
   },
 

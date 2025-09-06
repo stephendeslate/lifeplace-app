@@ -125,9 +125,14 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         
         context_data = serializer.validated_data.get('context_data', {})
+        event_id = serializer.validated_data.get('event_id', None)
         
-        # Generate preview using the service
-        preview_data = ContractTemplateService.preview_template(template.id, context_data)
+        # Generate preview using the service with optional event context
+        preview_data = ContractTemplateService.preview_template(
+            template.id, 
+            context_data, 
+            event_id=event_id
+        )
         
         return Response(preview_data)
 
