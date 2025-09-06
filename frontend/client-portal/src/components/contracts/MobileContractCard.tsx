@@ -303,7 +303,10 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                         <SignedIcon color="success" sx={{ fontSize: 16 }} />
                         <Box sx={{ flex: 1 }}>
                           <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                            {signature.role_display}
+                            {signature.role === 'CLIENT' ? 'Client Signature' : 
+                             signature.role === 'COMPANY_REP' ? 'LifePlace Representative' :
+                             signature.role === 'WITNESS' ? 'Witness Signature' :
+                             signature.role_display || signature.role.replace('_', ' ')}
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                             {signature.signer_name} • {formatDate(signature.signed_at)}

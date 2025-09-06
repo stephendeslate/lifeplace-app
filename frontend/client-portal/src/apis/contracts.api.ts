@@ -55,7 +55,7 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
       name: apiResponse.template_name,
       description: '',
       requires_signature: true, // Default assumption
-      signature_requirements: ['CLIENT'], // Default
+      signature_requirements: Array.from(new Set((apiResponse as ContractApiResponse & { signatures?: ContractSignature[] }).signatures?.map(s => s.role) || ['CLIENT'])), // Extract actual roles from signatures
     },
     status: apiResponse.status,
     content: (apiResponse as ContractApiResponse & { content?: string }).content || '', // Content may be missing in list endpoints
