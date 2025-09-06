@@ -26,8 +26,9 @@ import {
 } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 
-import type { Contract, SigningStep } from '../../types/contracts.types';
+import type { Contract, SigningStep, SignatureSubmission } from '../../types/contracts.types';
 import { contractUtils } from '../../apis/contracts.api';
+import { useContracts } from '../../contexts/ContractsContext';
 import ContractViewer from './ContractViewer';
 import EnhancedSignaturePad from './EnhancedSignaturePad';
 
@@ -106,6 +107,7 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { signContract } = useContracts();
 
   const [currentStep, setCurrentStep] = useState<SigningStep>('review_contract');
   const [signatureData, setSignatureData] = useState<string | null>(null);
@@ -174,38 +176,21 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
       }
 
       // Prepare signature submission with enhanced metadata
-
-
-      // Submit signature to API (uncomment when ready to connect to real API)
-      // const signedContract = await contractsApi.signContract(contract.id, submission);
-      
-      // For now, simulate the response with updated contract
-      const signedContract = { 
-        ...contract,
-        status: 'SIGNED' as const,
-        fully_signed_at: new Date().toISOString(),
-        signatures: [
-          ...contract.signatures,
-          {
-            id: Date.now().toString(),
-            contract: contract.id,
-            signer: { id: 'current-user', email: signerEmail, first_name: signerName.split(' ')[0], last_name: signerName.split(' ')[1] || '' },
-            role: 'CLIENT' as const,
-            role_display: 'Client',
-            signature_data: signatureData,
-            signed_at: new Date().toISOString(),
-            signer_name: signerName,
-            signer_title: signerTitle,
-            signer_email: signerEmail,
-            is_verified: false,
-            verification_method: 'electronic_signature',
-            legal_disclosure_accepted: legalDisclosureAccepted,
-            signature_intent_confirmed: signatureIntentConfirmed,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }
-        ]
+      const submission: SignatureSubmission = {
+        signature_data: signatureData,
+        signer_name: signerName,
+        signer_title: signerTitle,
+        signer_email: signerEmail,
+        verification_method: 'electronic_signature',
+        device_fingerprint: contractUtils.generateDeviceFingerprint(),
+        signature_timestamp: new Date().toISOString(),
+        screen_resolution: `${screen.width}x${screen.height}`,
+        legal_disclosure_accepted: legalDisclosureAccepted,
+        signature_intent_confirmed: signatureIntentConfirmed,
       };
+
+      // Submit signature to API using ContractsContext
+      const signedContract = await signContract(contract.id, submission);
 
       onSignComplete(signedContract);
       onClose();

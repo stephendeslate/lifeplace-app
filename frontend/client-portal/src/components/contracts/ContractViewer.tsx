@@ -197,7 +197,10 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
                     {getSignatureStatusIcon(role)}
                     <Box>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {role.replace('_', ' ')}
+                        {role === 'CLIENT' ? 'Client Signature' : 
+                         role === 'COMPANY_REP' ? 'LifePlace Representative' :
+                         role === 'WITNESS' ? 'Witness Signature' :
+                         role.replace('_', ' ')}
                       </Typography>
                       {signature && (
                         <Typography variant="caption" color="text.secondary">
