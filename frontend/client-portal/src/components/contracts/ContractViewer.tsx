@@ -236,7 +236,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
                 fontWeight: 600, 
                 mb: 1, 
                 mt: 2,
-                '&:first-child': { mt: 0 }
+                '&:first-of-type': { mt: 0 }
               },
               '& ul, & ol': { pl: 3, mb: 2 },
               '& li': { mb: 0.5 },

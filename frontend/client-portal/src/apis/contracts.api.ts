@@ -2,15 +2,17 @@
 import api from '../utils/api';
 import type {
   Contract,
+  ContractApiResponse,
   ContractSignature,
   SignatureSubmission,
   PendingContractsResponse,
+  ContractStatus,
 } from '../types/contracts.types';
 
-// Interface for detailed contract status
+// Interface for detailed contract status  
 export interface DetailedContractStatus {
   contract_id: string;
-  status: string;
+  status: ContractStatus;
   is_fully_signed: boolean;
   signature_progress: {
     total_required: number;
@@ -30,19 +32,64 @@ export interface DetailedContractStatus {
   expires_at: string | null;
 }
 
+// Transform API response to frontend Contract format
+const transformContractResponse = (apiResponse: ContractApiResponse): Contract => {
+  return {
+    id: apiResponse.id.toString(),
+    event: {
+      id: apiResponse.event.toString(),
+      title: `Event #${apiResponse.event}`, // Fallback, should be replaced with actual event data
+      date: '', // Would need to fetch from event details
+      status: '', // Would need to fetch from event details
+    },
+    template: {
+      id: apiResponse.template.toString(),
+      name: apiResponse.template_name,
+      description: '',
+      requires_signature: true, // Default assumption
+      signature_requirements: ['CLIENT'], // Default
+    },
+    status: apiResponse.status,
+    content: (apiResponse as ContractApiResponse & { content?: string }).content || '', // Content may be missing in list endpoints
+    sent_at: apiResponse.sent_at,
+    fully_signed_at: apiResponse.fully_signed_at,
+    valid_until: apiResponse.valid_until,
+    contract_value: apiResponse.contract_value,
+    payment_schedule_reference: apiResponse.payment_schedule_reference || '',
+    currency: apiResponse.currency,
+    is_amendment: apiResponse.is_amendment,
+    original_contract: apiResponse.original_contract?.toString() || null,
+    amendment_number: apiResponse.amendment_number,
+    signatures: (apiResponse as ContractApiResponse & { signatures?: ContractSignature[] }).signatures || [], // May be missing in list endpoints
+    is_fully_signed: apiResponse.is_fully_signed,
+    signature_progress: apiResponse.signature_count > 0 ? {
+      total_required: 1, // Default assumption
+      signed_count: apiResponse.signature_count,
+      percentage: apiResponse.is_fully_signed ? 100 : 0,
+      required_roles: ['CLIENT'],
+      signed_roles: apiResponse.is_fully_signed ? ['CLIENT'] : [],
+      missing_roles: apiResponse.is_fully_signed ? [] : ['CLIENT'],
+    } : undefined,
+    can_client_sign: apiResponse.status === 'SENT' && !apiResponse.is_fully_signed,
+    created_at: apiResponse.created_at,
+    updated_at: apiResponse.updated_at,
+  };
+};
+
 // Contract API functions
 export const contractsApi = {
   // Get all contracts for the current client
   getContracts: async (): Promise<Contract[]> => {
     const response = await api.get('/contracts/client/contracts/');
-    const data = response.data as { results?: Contract[] } | Contract[];
-    return Array.isArray(data) ? data : (data.results || []);
+    const data = response.data as { results?: ContractApiResponse[] } | ContractApiResponse[];
+    const apiContracts = Array.isArray(data) ? data : (data.results || []);
+    return apiContracts.map(transformContractResponse);
   },
 
   // Get a specific contract by ID
   getContract: async (contractId: string): Promise<Contract> => {
     const response = await api.get(`/contracts/client/contracts/${contractId}/`);
-    return response.data as Contract;
+    return transformContractResponse(response.data as ContractApiResponse);
   },
 
   // Get contract status
@@ -54,16 +101,20 @@ export const contractsApi = {
   // Get contracts that require client signature
   getPendingSignatures: async (): Promise<PendingContractsResponse> => {
     const response = await api.get('/contracts/client/contracts/pending_signatures/');
-    return response.data as PendingContractsResponse;
+    const data = response.data as { count: number; contracts: ContractApiResponse[] };
+    return {
+      count: data.count,
+      contracts: data.contracts.map(transformContractResponse),
+    };
   },
 
   // Submit a signature for a contract
   signContract: async (contractId: string, signatureData: SignatureSubmission): Promise<Contract> => {
     const response = await api.post(`/contracts/client/contracts/${contractId}/sign/`, signatureData);
-    return response.data as Contract;
+    return transformContractResponse(response.data as ContractApiResponse);
   },
 
-  // Download signed contract PDF (placeholder)
+  // Download signed contract PDF
   downloadContractPdf: async (contractId: string): Promise<Blob> => {
     const response = await api.get(`/contracts/client/contracts/${contractId}/download_pdf/`, {
       responseType: 'blob',
@@ -182,23 +233,52 @@ export const contractUtils = {
 
   // Validate signature data
   validateSignature: (signatureData: string): boolean => {
+    console.log('🔍 VALIDATE SIGNATURE called', {
+      hasData: !!signatureData,
+      dataType: typeof signatureData,
+      dataLength: signatureData?.length || 0,
+      timestamp: Date.now()
+    });
+    
     // Basic validation - signature should be a non-empty string
     if (!signatureData || signatureData.trim().length === 0) {
+      console.log('🔍 VALIDATE SIGNATURE: FAILED - No data or empty string');
       return false;
     }
     
     // Check if it's a valid base64 data URL
     if (signatureData.startsWith('data:image/')) {
+      console.log('🔍 VALIDATE SIGNATURE: Checking base64 data URL');
       const base64Data = signatureData.split(',')[1];
+      
+      if (!base64Data) {
+        console.log('🔍 VALIDATE SIGNATURE: FAILED - No base64 data after comma');
+        return false;
+      }
+      
       try {
         atob(base64Data);
-        return base64Data.length > 100; // Minimum complexity check
-      } catch {
+        const isValid = base64Data.length > 100; // Minimum complexity check
+        console.log('🔍 VALIDATE SIGNATURE: Base64 validation', {
+          base64Length: base64Data.length,
+          isValid,
+          minLength: 100
+        });
+        return isValid;
+      } catch (error) {
+        console.log('🔍 VALIDATE SIGNATURE: FAILED - Invalid base64 data', error);
         return false;
       }
     }
     
-    return signatureData.length > 50; // Minimum length for other formats
+    const isValid = signatureData.length > 50; // Minimum length for other formats
+    console.log('🔍 VALIDATE SIGNATURE: Non-image data validation', {
+      dataLength: signatureData.length,
+      isValid,
+      minLength: 50
+    });
+    
+    return isValid;
   },
 
   // Compress signature data for transmission

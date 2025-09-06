@@ -3,3 +3,4 @@
 export { ContractTemplates } from './ContractTemplates';
 export { QuestionnaireTemplates } from './QuestionnaireTemplates';
 export { WorkflowTemplates } from './WorkflowTemplates';
+export { WorkflowTemplateDetails } from './WorkflowTemplateDetails';

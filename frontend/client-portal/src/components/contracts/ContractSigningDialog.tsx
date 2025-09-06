@@ -72,29 +72,30 @@ const calculateSignatureConfidence = (signatureData: string): number => {
   }
 };
 
-const getSignatureComplexity = (signatureData: string): number => {
-  // Analyze signature complexity based on data size and patterns
-  const base64Part = signatureData.split(',')[1] || '';
-  return Math.min(base64Part.length / 5000, 1.0);
-};
+// Utility functions for signature analysis (currently unused but kept for future enhancement)
+// const getSignatureComplexity = (signatureData: string): number => {
+//   // Analyze signature complexity based on data size and patterns
+//   const base64Part = signatureData.split(',')[1] || '';
+//   return Math.min(base64Part.length / 5000, 1.0);
+// };
 
-const getSignatureDuration = (): number => {
-  // In a real implementation, this would track actual signing time
-  // For now, return a reasonable default
-  return Math.random() * 10 + 2; // 2-12 seconds
-};
+// const getSignatureDuration = (): number => {
+//   // In a real implementation, this would track actual signing time
+//   // For now, return a reasonable default
+//   return Math.random() * 10 + 2; // 2-12 seconds
+// };
 
-const getEnhancedDeviceInfo = () => {
-  return {
-    touchSupport: 'ontouchstart' in window,
-    maxTouchPoints: navigator.maxTouchPoints || 0,
-    pointerEvents: !!window.PointerEvent,
-    deviceMemory: (navigator as any).deviceMemory || 'unknown',
-    hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
-    connectionType: (navigator as any).connection?.effectiveType || 'unknown',
-    pixelRatio: window.devicePixelRatio || 1,
-  };
-};
+// const getEnhancedDeviceInfo = () => {
+//   return {
+//     touchSupport: 'ontouchstart' in window,
+//     maxTouchPoints: navigator.maxTouchPoints || 0,
+//     pointerEvents: !!window.PointerEvent,
+//     deviceMemory: (navigator as any).deviceMemory || 'unknown',
+//     hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+//     connectionType: (navigator as any).connection?.effectiveType || 'unknown',
+//     pixelRatio: window.devicePixelRatio || 1,
+//   };
+// };
 
 export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
   open,
@@ -152,38 +153,6 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
     }
   }, [currentStepIndex]);
 
-  const validateCurrentStep = useCallback(() => {
-    const newErrors: string[] = [];
-
-    switch (currentStep) {
-      case 'legal_disclosure':
-        if (!legalDisclosureAccepted) {
-          newErrors.push('You must accept the electronic signature disclosure');
-        }
-        break;
-
-      case 'signature_capture':
-        if (!signatureData || !contractUtils.validateSignature(signatureData)) {
-          newErrors.push('Please provide a valid signature');
-        }
-        if (!signerName.trim()) {
-          newErrors.push('Signer name is required');
-        }
-        if (!signerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail)) {
-          newErrors.push('Valid email address is required');
-        }
-        break;
-
-      case 'confirmation':
-        if (!signatureIntentConfirmed) {
-          newErrors.push('You must confirm your intent to sign');
-        }
-        break;
-    }
-
-    setErrors(newErrors);
-    return newErrors.length === 0;
-  }, [currentStep, legalDisclosureAccepted, signatureData, signerName, signerEmail, signatureIntentConfirmed]);
 
   const handleSubmitSignature = useCallback(async () => {
     if (!contract || !signatureData) return;
@@ -261,8 +230,42 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
   ]);
 
   const canProceed = useCallback(() => {
-    return validateCurrentStep();
-  }, [validateCurrentStep]);
+    switch (currentStep) {
+      case 'review_contract':
+        console.log('✅ canProceed: review_contract - always true');
+        return true; // Always can proceed from review
+      case 'legal_disclosure':
+        console.log('✅ canProceed: legal_disclosure', { legalDisclosureAccepted });
+        return legalDisclosureAccepted;
+      case 'signature_capture':
+        const hasSignatureData = !!signatureData;
+        const isSignatureValid = signatureData ? contractUtils.validateSignature(signatureData) : false;
+        const hasName = !!signerName.trim();
+        const hasEmail = !!signerEmail.trim();
+        const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail);
+        const canProceedFromSignature = hasSignatureData && isSignatureValid && hasName && hasEmail && isEmailValid;
+        
+        console.log('✅ canProceed: signature_capture validation', {
+          hasSignatureData,
+          isSignatureValid,
+          hasName,
+          hasEmail,
+          isEmailValid,
+          canProceedFromSignature,
+          signatureDataLength: signatureData?.length || 0,
+          signerName: signerName.trim(),
+          signerEmail: signerEmail.trim()
+        });
+        
+        return canProceedFromSignature;
+      case 'confirmation':
+        console.log('✅ canProceed: confirmation', { signatureIntentConfirmed });
+        return signatureIntentConfirmed;
+      default:
+        console.log('✅ canProceed: default case - false');
+        return false;
+    }
+  }, [currentStep, legalDisclosureAccepted, signatureData, signerName, signerEmail, signatureIntentConfirmed]);
 
   const renderStepContent = () => {
     if (!contract) return null;
@@ -377,10 +380,27 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
 
             <EnhancedSignaturePad
               onSignatureChange={(data, analysis) => {
+                console.log('🖊️ SIGNATURE CHANGE HANDLER CALLED', {
+                  hasData: !!data,
+                  dataLength: data?.length || 0,
+                  isValidData: data ? contractUtils.validateSignature(data) : false,
+                  timestamp: Date.now(),
+                  analysis: analysis ? 'Analysis provided' : 'No analysis'
+                });
+                
                 setSignatureData(data);
+                
+                // Clear any signature-related errors when signature is provided
+                if (data) {
+                  console.log('🖊️ Clearing signature-related errors');
+                  setErrors(prev => prev.filter(error => !error.includes('signature')));
+                } else {
+                  console.log('🖊️ No signature data provided - keeping errors');
+                }
+                
                 // Store analysis for later use
                 if (analysis) {
-                  console.log('Signature analysis:', analysis);
+                  console.log('🖊️ Signature analysis:', analysis);
                 }
               }}
               width={isMobile ? 300 : 500}
@@ -388,8 +408,6 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
               required
               label="Electronic Signature"
               helperText="Draw your signature in the box above. We'll analyze it for security."
-              error={errors.some(error => error.includes('signature'))}
-              errorText={errors.find(error => error.includes('signature'))}
               enableBiometricAnalysis={true}
               showAnalytics={true}
             />
@@ -479,15 +497,54 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
       }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="h6">
-          Sign Contract - {contract.event.title}
-        </Typography>
+        Sign Contract - {contract.event.title}
         <Button onClick={handleClose} disabled={isSubmitting}>
           <CloseIcon />
         </Button>
       </DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent 
+        dividers
+        onClick={(e) => {
+          const target = e.target as HTMLElement;
+          console.log('📋 Dialog content clicked', { 
+            target: target.tagName, 
+            className: target.className,
+            isSignatureCanvas: target.tagName === 'CANVAS',
+            canvasId: target.id,
+            timestamp: Date.now()
+          });
+          // Check if click is inside signature canvas area
+          if (target.tagName === 'CANVAS' || target.closest('.signature-pad')) {
+            console.log('🎯 Click detected inside signature area - NOT stopping propagation');
+          } else {
+            console.log('🎯 Click outside signature area');
+          }
+        }}
+        onMouseDown={(e) => {
+          const target = e.target as HTMLElement;
+          console.log('📋 Dialog content mouse down', { 
+            target: target.tagName,
+            isSignatureCanvas: target.tagName === 'CANVAS',
+            timestamp: Date.now()
+          });
+          // Don't prevent default for canvas interactions
+          if (target.tagName === 'CANVAS') {
+            console.log('🎯 Mouse down on canvas - allowing event');
+          }
+        }}
+        onPointerDown={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.tagName === 'CANVAS') {
+            console.log('🎯 Pointer down on canvas', {
+              pointerId: e.pointerId,
+              pointerType: e.pointerType,
+              pressure: e.pressure,
+              timestamp: Date.now()
+            });
+          }
+        }}
+      >
         {/* Progress Stepper */}
         <Stepper 
           activeStep={currentStepIndex} 

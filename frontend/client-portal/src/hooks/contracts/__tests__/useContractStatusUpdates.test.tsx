@@ -8,7 +8,7 @@ import {
   useGlobalSignatureEvents,
 } from '../useContractStatusUpdates';
 import { contractsApi } from '../../../apis/contracts.api';
-import type { Contract } from '../../../types/contracts.types';
+// import type { Contract } from '../../../types/contracts.types';
 
 // Mock the contracts API
 vi.mock('../../../apis/contracts.api', () => ({
@@ -17,46 +17,47 @@ vi.mock('../../../apis/contracts.api', () => ({
   },
 }));
 
-const _mockContract: Contract = {
-  id: 'contract-1',
-  event: {
-    id: 'event-1',
-    title: 'Test Event',
-    date: '2024-06-01',
-    status: 'confirmed',
-  },
-  template: {
-    id: 'template-1',
-    name: 'Test Template',
-    description: 'Test contract template',
-    signature_requirements: ['CLIENT'],
-  },
-  status: 'SENT',
-  content: '<p>Contract content</p>',
-  sent_at: '2024-05-01T10:00:00Z',
-  fully_signed_at: null,
-  valid_until: '2024-07-01T10:00:00Z',
-  contract_value: '1000.00',
-  payment_schedule_reference: 'PS-001',
-  currency: 'USD',
-  is_amendment: false,
-  original_contract: null,
-  amendment_number: 0,
-  signatures: [],
-  is_fully_signed: false,
-  missing_signatures: ['CLIENT'],
-  signature_progress: {
-    total_required: 1,
-    signed_count: 0,
-    percentage: 0,
-    required_roles: ['CLIENT'],
-    signed_roles: [],
-    missing_roles: ['CLIENT'],
-  },
-  can_client_sign: true,
-  created_at: '2024-05-01T10:00:00Z',
-  updated_at: '2024-05-01T10:00:00Z',
-};
+// Mock contract data (currently unused but kept for future test development)
+// const _mockContract: Contract = {
+//   id: 'contract-1',
+//   event: {
+//     id: 'event-1',
+//     title: 'Test Event',
+//     date: '2024-06-01',
+//     status: 'confirmed',
+//   },
+//   template: {
+//     id: 'template-1',
+//     name: 'Test Template',
+//     description: 'Test contract template',
+//     signature_requirements: ['CLIENT'],
+//   },
+//   status: 'SENT',
+//   content: '<p>Contract content</p>',
+//   sent_at: '2024-05-01T10:00:00Z',
+//   fully_signed_at: null,
+//   valid_until: '2024-07-01T10:00:00Z',
+//   contract_value: '1000.00',
+//   payment_schedule_reference: 'PS-001',
+//   currency: 'USD',
+//   is_amendment: false,
+//   original_contract: null,
+//   amendment_number: 0,
+//   signatures: [],
+//   is_fully_signed: false,
+//   missing_signatures: ['CLIENT'],
+//   signature_progress: {
+//     total_required: 1,
+//     signed_count: 0,
+//     percentage: 0,
+//     required_roles: ['CLIENT'],
+//     signed_roles: [],
+//     missing_roles: ['CLIENT'],
+//   },
+//   can_client_sign: true,
+//   created_at: '2024-05-01T10:00:00Z',
+//   updated_at: '2024-05-01T10:00:00Z',
+// };
 
 const createTestQueryClient = () => {
   return new QueryClient({

@@ -1,5 +1,6 @@
 # backend/core/domains/contracts/client_views.py
 from django.db.models import Q
+from django.http import HttpResponse
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -12,6 +13,7 @@ from .serializers import (
     ContractSignatureSerializer,
 )
 from .services import ContractSignatureService, EventContractService
+from .pdf_service import ContractPDFService
 
 
 class ClientContractPermission(IsAuthenticated):
@@ -229,7 +231,7 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['get'])
     def download_pdf(self, request, pk=None):
         """
-        Download signed contract as PDF (placeholder for future implementation)
+        Download signed contract as PDF
         """
         contract = self.get_object()
         
@@ -239,11 +241,24 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # TODO: Implement PDF generation
-        return Response(
-            {'message': 'PDF generation not yet implemented'},
-            status=status.HTTP_501_NOT_IMPLEMENTED
-        )
+        try:
+            # Generate PDF
+            pdf_buffer = ContractPDFService.generate_contract_pdf(contract)
+            
+            # Create HTTP response with PDF
+            response = HttpResponse(pdf_buffer, content_type='application/pdf')
+            filename = f"Contract_{contract.id}_{contract.event.name if hasattr(contract.event, 'name') else f'Event_{contract.event.id}'}.pdf"
+            # Clean filename to remove unsafe characters
+            filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_', '.')).rstrip()
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to generate PDF: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class ClientSignatureViewSet(viewsets.ReadOnlyModelViewSet):

@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import type { Event } from '../../types/events.types';
 import EventStatusBadge from './EventStatusBadge';
 import EventCountdown from './EventCountdown';
+import ContractStatusChip from './ContractStatusChip';
 
 interface EventCardProps {
   event: Event;
@@ -122,6 +123,14 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
                 }}
               />
             )}
+            <ContractStatusChip
+              status={event.contract_status}
+              hasContracts={event.has_contracts}
+              contractsCount={event.contracts_count}
+              pendingSignatureRequired={event.pending_signature_required}
+              contractExpiryDays={event.contract_expiry_days}
+              size="small"
+            />
           </Stack>
 
           <Box>

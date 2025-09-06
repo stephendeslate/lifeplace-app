@@ -1,6 +1,7 @@
 # backend/core/domains/contracts/views.py
 from core.utils.permissions import IsAdmin, IsOwnerOrAdmin
 from django.db.models import Prefetch
+from django.http import HttpResponse
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -39,6 +40,7 @@ from .services import (
     ContractNoteService,
     LegacyContractService
 )
+from .pdf_service import ContractPDFService
 
 
 class ContractTemplateViewSet(viewsets.ModelViewSet):
@@ -392,6 +394,63 @@ class EventContractViewSet(viewsets.ModelViewSet):
         contracts = EventContractService.get_contracts_for_event(event_id)
         serializer = EventContractSerializer(contracts, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def send_contract(self, request, pk=None):
+        """
+        Send contract to client (change status from DRAFT to SENT)
+        """
+        contract = self.get_object()
+        
+        if contract.status != 'DRAFT':
+            return Response(
+                {'error': f'Contract is in {contract.status} status and cannot be sent. Only DRAFT contracts can be sent.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Update contract status to SENT
+            updated_contract = EventContractService.update_contract(
+                contract.id, 
+                {'status': 'SENT'}
+            )
+            
+            return Response(
+                EventContractDetailSerializer(updated_contract).data,
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to send contract: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        """
+        Download contract as PDF (admin version)
+        """
+        contract = self.get_object()
+        
+        try:
+            # Generate PDF
+            pdf_buffer = ContractPDFService.generate_contract_pdf(contract)
+            
+            # Create HTTP response with PDF
+            response = HttpResponse(pdf_buffer, content_type='application/pdf')
+            filename = f"Contract_{contract.id}_{contract.event.name if hasattr(contract.event, 'name') else f'Event_{contract.event.id}'}.pdf"
+            # Clean filename to remove unsafe characters
+            filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_', '.')).rstrip()
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to generate PDF: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class ContractSignatureViewSet(viewsets.ModelViewSet):

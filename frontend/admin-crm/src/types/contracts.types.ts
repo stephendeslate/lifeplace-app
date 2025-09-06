@@ -240,6 +240,8 @@ export interface CreateEventContractData {
   payment_schedule_reference?: string;
   currency?: string;
   context_data?: Record<string, unknown>;
+  requires_signature?: boolean;
+  signature_requirements?: string[];
 }
 
 export interface UpdateEventContractData {

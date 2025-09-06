@@ -27,6 +27,7 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
+import { useContractTemplates } from '../../hooks/useContracts';
 import type { 
   WorkflowStageFormDialogProps,
   CreateWorkflowStageData,
@@ -49,6 +50,7 @@ const defaultFormData: CreateWorkflowStageData = {
   automation_type: 'TASK',
   trigger_time: 'ON_CREATION',
   email_template: null,
+  contract_template: null,
   task_description: '',
   progression_condition: '',
   required_tasks_completed: false,
@@ -68,6 +70,8 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
 
   const { useTemplates } = useCommunications();
   const { data: emailTemplates = [] } = useTemplates({ channel: 'EMAIL' });
+  
+  const { data: contractTemplates = [] } = useContractTemplates();
 
   const isEditing = !!editingStage;
 
@@ -82,6 +86,7 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
           automation_type: editingStage.automation_type,
           trigger_time: editingStage.trigger_time,
           email_template: editingStage.email_template,
+          contract_template: editingStage.contract_template,
           task_description: editingStage.task_description || '',
           progression_condition: editingStage.progression_condition || '',
           required_tasks_completed: editingStage.required_tasks_completed,
@@ -123,6 +128,10 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
       newErrors.email_template = 'Email template is required for email automation';
     }
 
+    if (formData.is_automated && formData.automation_type === 'CONTRACT' && !formData.contract_template) {
+      newErrors.contract_template = 'Contract template is required for contract automation';
+    }
+
     if (formData.order && formData.order < 1) {
       newErrors.order = 'Order must be a positive number';
     }
@@ -149,6 +158,7 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
   };
 
   const requiresEmailTemplate = formData.is_automated && formData.automation_type === 'EMAIL';
+  const requiresContractTemplate = formData.is_automated && formData.automation_type === 'CONTRACT';
 
   return (
     <Dialog 
@@ -301,9 +311,40 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                             </FormControl>
                           )}
 
+                          {requiresContractTemplate && (
+                            <FormControl fullWidth error={!!errors.contract_template}>
+                              <InputLabel>Contract Template</InputLabel>
+                              <Select
+                                value={formData.contract_template || ''}
+                                label="Contract Template"
+                                onChange={(e) => handleInputChange('contract_template', e.target.value || null)}
+                              >
+                                <MenuItem value="">
+                                  <em>Select a contract template</em>
+                                </MenuItem>
+                                {contractTemplates.map((template) => (
+                                  <MenuItem key={template.id} value={template.id}>
+                                    {template.name}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                              {errors.contract_template && (
+                                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                                  {errors.contract_template}
+                                </Typography>
+                              )}
+                            </FormControl>
+                          )}
+
                           {formData.automation_type === 'EMAIL' && !emailTemplates.length && (
                             <Alert severity="warning">
                               No email templates found. Create email templates in Communication Settings first.
+                            </Alert>
+                          )}
+
+                          {formData.automation_type === 'CONTRACT' && !contractTemplates.length && (
+                            <Alert severity="warning">
+                              No contract templates found. Create contract templates in Template Settings first.
                             </Alert>
                           )}
                         </>

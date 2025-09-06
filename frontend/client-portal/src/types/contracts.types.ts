@@ -66,6 +66,31 @@ export interface ContractSignature {
   updated_at: string;
 }
 
+// API Response structure (flattened)
+export interface ContractApiResponse {
+  id: number;
+  event: number;
+  template: number;
+  template_name: string;
+  status: ContractStatus;
+  content?: string;
+  sent_at: string | null;
+  fully_signed_at: string | null;
+  valid_until: string | null;
+  contract_value: string | null;
+  payment_schedule_reference?: string;
+  currency: string;
+  is_amendment: boolean;
+  original_contract: number | null;
+  amendment_number: number;
+  signature_count: number;
+  is_fully_signed: boolean;
+  contract_type: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Frontend Contract interface (nested structure)
 export interface Contract {
   id: string;
   event: EventSummary;

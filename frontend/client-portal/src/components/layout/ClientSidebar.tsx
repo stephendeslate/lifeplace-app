@@ -29,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GlassCard } from '../../design-system/components/GlassCard';
+import { useContracts } from '../../contexts/ContractsContext';
 
 interface ClientSidebarProps {
   open: boolean;
@@ -119,6 +120,20 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const { pendingContracts } = useContracts();
+
+  // Enhanced navigation items with dynamic badges
+  const getEnhancedNavigationItems = (): NavigationItem[] => {
+    return navigationItems.map(item => {
+      if (item.id === 'contracts') {
+        return {
+          ...item,
+          badge: pendingContracts.length > 0 ? pendingContracts.length : undefined,
+        };
+      }
+      return item;
+    });
+  };
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -241,7 +256,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
       {/* Main Navigation */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <List sx={{ pt: 1 }}>
-          {navigationItems.map((item, index) => renderNavigationItem(item, index))}
+          {getEnhancedNavigationItems().map((item, index) => renderNavigationItem(item, index))}
         </List>
 
         <Divider 

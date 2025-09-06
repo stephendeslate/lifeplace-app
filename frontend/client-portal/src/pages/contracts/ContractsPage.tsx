@@ -24,10 +24,9 @@ import {
   Warning as ExpiredIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
-
 import type { Contract } from '../../types/contracts.types';
 import { contractsApi, contractUtils } from '../../apis/contracts.api';
+import { useContracts } from '../../contexts/ContractsContext';
 import { useGlobalSignatureEvents } from '../../hooks/contracts/useContractStatusUpdates';
 import ContractViewer from '../../components/contracts/ContractViewer';
 import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
@@ -53,28 +52,21 @@ export const ContractsPage: React.FC = () => {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [signingDialogOpen, setSigningDialogOpen] = useState(false);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
+  const [loadingContractDetails, setLoadingContractDetails] = useState(false);
 
   // Initialize global signature event listener
   const { simulateSignatureEvent } = useGlobalSignatureEvents();
 
-  // Fetch all contracts
+  // Use contracts from context (with authentication handling)
   const {
-    data: contracts = [],
+    contracts,
+    pendingSignatures,
     isLoading: contractsLoading,
-    error: contractsError,
-    refetch: refetchContracts,
-  } = useQuery({
-    queryKey: ['contracts'],
-    queryFn: contractsApi.getContracts,
-  });
+    refreshContracts,
+  } = useContracts();
 
-  // Fetch pending signatures
-  const {
-    data: pendingSignatures,
-  } = useQuery({
-    queryKey: ['contracts', 'pending'],
-    queryFn: contractsApi.getPendingSignatures,
-  });
+  // For error handling, we'll assume context handles it
+  const contractsError = null;
 
   // Filter contracts by status
   const allContracts = contracts || [];
@@ -85,18 +77,38 @@ export const ContractsPage: React.FC = () => {
     contract.status === 'SIGNED'
   );
 
-  const handleSignContract = (contract: Contract) => {
-    setSelectedContract(contract);
-    setSigningDialogOpen(true);
+  const handleSignContract = async (contract: Contract) => {
+    try {
+      // Fetch full contract details with content for signing
+      const fullContract = await contractsApi.getContract(contract.id);
+      setSelectedContract(fullContract);
+      setSigningDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching contract details for signing:', error);
+      // Fallback to showing contract without content
+      setSelectedContract(contract);
+      setSigningDialogOpen(true);
+    }
   };
 
-  const handleViewContract = (contract: Contract) => {
-    setViewingContract(contract);
+  const handleViewContract = async (contract: Contract) => {
+    setLoadingContractDetails(true);
+    try {
+      // Fetch full contract details with content
+      const fullContract = await contractsApi.getContract(contract.id);
+      setViewingContract(fullContract);
+    } catch (error) {
+      console.error('Error fetching contract details:', error);
+      // Fallback to showing contract without content
+      setViewingContract(contract);
+    } finally {
+      setLoadingContractDetails(false);
+    }
   };
 
   const handleSignComplete = (signedContract: Contract) => {
     // Contract signing completed successfully
-    refetchContracts();
+    refreshContracts();
     setSigningDialogOpen(false);
     setSelectedContract(null);
     
@@ -107,6 +119,25 @@ export const ContractsPage: React.FC = () => {
   const handleSignError = (error: string) => {
     console.error('Contract signing error:', error);
     // You could show a toast notification here
+  };
+
+  const handleDownloadContract = async (contract: Contract) => {
+    try {
+      const blob = await contractsApi.downloadContractPdf(contract.id);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Contract_${contract.id}_${contract.event.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading contract PDF:', error);
+      // You could show a toast notification here
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -265,10 +296,9 @@ export const ContractsPage: React.FC = () => {
                   variant="outlined"
                   size="small"
                   startIcon={<DownloadIcon />}
-                  onClick={() => contractsApi.downloadContractPdf(contract.id)}
-                  disabled // Placeholder - implement when backend supports PDF generation
+                  onClick={() => handleDownloadContract(contract)}
                 >
-                  Download
+                  Download PDF
                 </Button>
               )}
             </Stack>
@@ -364,7 +394,7 @@ export const ContractsPage: React.FC = () => {
                   contract={contract}
                   onSign={() => handleSignContract(contract)}
                   onView={() => handleViewContract(contract)}
-                  onDownload={() => contractsApi.downloadContractPdf(contract.id)}
+                  onDownload={() => handleDownloadContract(contract)}
                 />
               ) : (
                 <ContractCard key={contract.id} contract={contract} />
@@ -391,7 +421,7 @@ export const ContractsPage: React.FC = () => {
                   contract={contract}
                   onSign={() => handleSignContract(contract)}
                   onView={() => handleViewContract(contract)}
-                  onDownload={() => contractsApi.downloadContractPdf(contract.id)}
+                  onDownload={() => handleDownloadContract(contract)}
                 />
               ) : (
                 <ContractCard key={contract.id} contract={contract} />
@@ -415,7 +445,7 @@ export const ContractsPage: React.FC = () => {
                   contract={contract}
                   onSign={() => handleSignContract(contract)}
                   onView={() => handleViewContract(contract)}
-                  onDownload={() => contractsApi.downloadContractPdf(contract.id)}
+                  onDownload={() => handleDownloadContract(contract)}
                 />
               ) : (
                 <ContractCard key={contract.id} contract={contract} />
@@ -438,7 +468,7 @@ export const ContractsPage: React.FC = () => {
       />
 
       {/* Contract Viewer Dialog */}
-      {viewingContract && (
+      {(viewingContract || loadingContractDetails) && (
         <Box
           sx={{
             position: 'fixed',
@@ -453,7 +483,11 @@ export const ContractsPage: React.FC = () => {
             justifyContent: 'center',
             p: 2,
           }}
-          onClick={() => setViewingContract(null)}
+          onClick={() => {
+            if (!loadingContractDetails) {
+              setViewingContract(null);
+            }
+          }}
         >
           <Box
             sx={{
@@ -466,15 +500,54 @@ export const ContractsPage: React.FC = () => {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                Contract Details
-              </Typography>
-              <Button onClick={() => setViewingContract(null)}>
-                Close
-              </Button>
-            </Box>
-            <ContractViewer contract={viewingContract} />
+            {loadingContractDetails ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
+                <Stack spacing={2} alignItems="center">
+                  <CircularProgress />
+                  <Typography variant="body2" color="text.secondary">
+                    Loading contract details...
+                  </Typography>
+                </Stack>
+              </Box>
+            ) : viewingContract ? (
+              <>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                    Contract Details
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
+                    {viewingContract.can_client_sign && (
+                      <Button
+                        variant="contained"
+                        startIcon={<SignIcon />}
+                        onClick={() => {
+                          setViewingContract(null);
+                          handleSignContract(viewingContract);
+                        }}
+                        color="primary"
+                      >
+                        Sign Contract
+                      </Button>
+                    )}
+                    {viewingContract.status === 'SIGNED' && (
+                      <Button
+                        variant="outlined"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => {
+                          handleDownloadContract(viewingContract);
+                        }}
+                      >
+                        Download PDF
+                      </Button>
+                    )}
+                    <Button onClick={() => setViewingContract(null)}>
+                      Close
+                    </Button>
+                  </Stack>
+                </Box>
+                <ContractViewer contract={viewingContract} />
+              </>
+            ) : null}
           </Box>
         </Box>
       )}

@@ -31,6 +31,7 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -41,10 +42,12 @@ import {
   Description as ContractIcon,
   Draw as SignIcon,
   Cancel as VoidIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { useContractsForEvent, useContractTemplates, useCreateEventContract } from '../../hooks/useContracts';
+import { useContractsForEvent, useContractTemplates, useCreateEventContract, useSendContract } from '../../hooks/useContracts';
+import { contractsApi } from '../../apis/contracts.api';
 import type { Event } from '../../types/events.types';
 import type { EventContract } from '../../types/contracts.types';
 import { formatCurrency } from '../../utils/currency';
@@ -86,10 +89,9 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   const { settings: currencySettings } = useCurrencySettings();
 
   const { data: contracts = [], isLoading } = useContractsForEvent(event.id);
-  const { data: templates = [] } = useContractTemplates({ 
-    event_type: event.event_type !== null ? event.event_type : undefined
-  });
+  const { data: templates = [], isLoading: isLoadingTemplates, error: templatesError } = useContractTemplates();
   const { mutate: createContract, isPending: isCreating } = useCreateEventContract();
+  const { mutate: sendContract } = useSendContract();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, contract: EventContract) => {
     setAnchorEl(event.currentTarget);
@@ -109,22 +111,75 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
     setValidUntil(defaultDate.toISOString().split('T')[0]);
   };
 
-  const handleSubmitCreate = () => {
+  const handleSubmitCreate = async () => {
     if (templateId) {
-      createContract(
-        {
+      try {
+        // First, render the template with event context data
+        const contextData = {
+          // Event information
+          event_name: event.name,
+          event_title: event.name,
+          event_start_date: event.start_date,
+          event_end_date: event.end_date,
+          start_date: event.start_date,
+          end_date: event.end_date,
+          event_status: event.status,
+          
+          // Client information
+          client_name: event.client_name,
+          client: event.client_name,
+          
+          // Pricing information
+          total_price: event.total_price,
+          event_price: event.total_price,
+          total_amount: event.total_price,
+          contract_value: event.total_price,
+          
+          // Date formatting
+          contract_date: new Date().toLocaleDateString(),
+          today: new Date().toLocaleDateString(),
+          current_date: new Date().toISOString().split('T')[0],
+          
+          // Additional common variables
+          event_type: event.event_type_name || 'Event',
+          venue: 'To be determined',
+          payment_terms: '50% deposit, 50% on completion',
+        };
+        
+        const renderedTemplate = await contractsApi.previewTemplate(parseInt(templateId), contextData);
+        
+        // Get the selected template to access its signature requirements
+        const selectedTemplate = templates.find(t => t.id === parseInt(templateId));
+        
+        const contractData = {
           event: event.id,
           template: parseInt(templateId),
-          valid_until: validUntil,
-        },
-        {
-          onSuccess: () => {
-            setCreateDialogOpen(false);
-            setTemplateId('');
-            setValidUntil('');
-          },
-        }
-      );
+          content: renderedTemplate.rendered_content,
+          context_data: contextData,
+          // Ensure signature requirements are set if the template requires signatures
+          ...(selectedTemplate?.requires_signature && {
+            requires_signature: true,
+            signature_requirements: selectedTemplate.signature_requirements || ['CLIENT']
+          }),
+          ...(validUntil && { valid_until: validUntil }),
+        };
+        
+        createContract(
+          contractData,
+          {
+            onSuccess: () => {
+              setCreateDialogOpen(false);
+              setTemplateId('');
+              setValidUntil('');
+            },
+            onError: (error) => {
+              console.error('Error creating contract:', error);
+            },
+          }
+        );
+      } catch (error) {
+        console.error('Error rendering template:', error);
+      }
     }
   };
 
@@ -137,14 +192,33 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   };
 
   const handleSendContract = (contract: EventContract) => {
-    // Implementation for sending contract
-    console.log('Send contract:', contract.id);
+    sendContract(contract.id);
     handleMenuClose();
   };
 
   const handleVoidContract = (contract: EventContract) => {
     // Implementation for voiding contract
     console.log('Void contract:', contract.id);
+    handleMenuClose();
+  };
+
+  const handleDownloadContract = async (contract: EventContract) => {
+    try {
+      const blob = await contractsApi.downloadContractPdf(contract.id);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Contract_${contract.id}_${contract.template_name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading contract PDF:', error);
+      // You could show a toast notification here
+    }
     handleMenuClose();
   };
 
@@ -166,30 +240,99 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
     );
   }
 
+  // Render the Create Contract Dialog component
+  const renderCreateDialog = () => (
+    <Dialog 
+      open={createDialogOpen} 
+      onClose={() => setCreateDialogOpen(false)} 
+      maxWidth="sm" 
+      fullWidth
+    >
+      <DialogTitle>Create New Contract</DialogTitle>
+      <DialogContent>
+        <Stack spacing={3} sx={{ mt: 2 }}>
+          {isLoadingTemplates ? (
+            <Box display="flex" justifyContent="center" p={2}>
+              <CircularProgress size={24} />
+              <Typography variant="body2" sx={{ ml: 2 }}>Loading templates...</Typography>
+            </Box>
+          ) : templatesError ? (
+            <Alert severity="error">
+              Error loading contract templates. Please try again.
+            </Alert>
+          ) : templates.length === 0 ? (
+            <Alert severity="warning">
+              No contract templates are available for this event type. 
+              Please create contract templates in Settings → Templates → Contract Templates first.
+            </Alert>
+          ) : (
+            <>
+              <FormControl fullWidth>
+                <InputLabel>Contract Template</InputLabel>
+                <Select
+                  value={templateId}
+                  onChange={(e) => setTemplateId(e.target.value)}
+                  label="Contract Template"
+                >
+                  {templates.map((template) => (
+                    <MenuItem key={template.id} value={template.id}>
+                      {template.name}
+                      {template.description && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {template.description}
+                        </Typography>
+                      )}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                fullWidth
+                label="Valid Until (Optional)"
+                type="date"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                helperText="Leave empty for no expiration"
+              />
+            </>
+          )}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+        <Button
+          onClick={handleSubmitCreate}
+          variant="contained"
+          disabled={!templateId || isCreating || templates.length === 0}
+        >
+          {isCreating ? 'Creating...' : 'Create Contract'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
   if (contracts.length === 0) {
     return (
-      <Paper sx={{ p: 4, textAlign: 'center' }}>
-        <ContractIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          No Contracts Yet
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Create a contract from a template to get started.
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateContract}
-          disabled={templates.length === 0}
-        >
-          Create Contract
-        </Button>
-        {templates.length === 0 && (
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-            No contract templates available for this event type.
+      <>
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <ContractIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No Contracts Yet
           </Typography>
-        )}
-      </Paper>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Create a contract from a template to get started.
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateContract}
+          >
+            Create Contract
+          </Button>
+        </Paper>
+        {renderCreateDialog()}
+      </>
     );
   }
 
@@ -202,7 +345,6 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleCreateContract}
-          disabled={templates.length === 0}
         >
           Create Contract
         </Button>
@@ -232,7 +374,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  Custom Contract
+                  {contract.template_name}
                 </TableCell>
                 <TableCell>
                   <Chip
@@ -325,48 +467,18 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
             <ListItemText>Void Contract</ListItemText>
           </MenuItem>
         )}
+        {selectedContract && (
+          <MenuItem onClick={() => selectedContract && handleDownloadContract(selectedContract)}>
+            <ListItemIcon>
+              <DownloadIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Download PDF</ListItemText>
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Create Contract Dialog */}
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Contract</DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>Contract Template</InputLabel>
-              <Select
-                value={templateId}
-                onChange={(e) => setTemplateId(e.target.value)}
-                label="Contract Template"
-              >
-                {templates.map((template) => (
-                  <MenuItem key={template.id} value={template.id}>
-                    {template.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              fullWidth
-              label="Valid Until"
-              type="date"
-              value={validUntil}
-              onChange={(e) => setValidUntil(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleSubmitCreate}
-            variant="contained"
-            disabled={!templateId || isCreating}
-          >
-            {isCreating ? 'Creating...' : 'Create Contract'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {renderCreateDialog()}
 
       {/* Summary Card */}
       {contracts.length > 0 && (

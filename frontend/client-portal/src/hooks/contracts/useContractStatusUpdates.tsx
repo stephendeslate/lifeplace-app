@@ -2,7 +2,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { contractsApi } from '../../apis/contracts.api';
-import type { Contract, DetailedContractStatus } from '../../types/contracts.types';
+import type { Contract, DetailedContractStatus, ContractStatus } from '../../types/contracts.types';
 
 interface ContractStatusUpdate {
   contractId: string;
@@ -52,7 +52,7 @@ export const useContractStatusUpdates = ({
         contractId,
         status: {
           ...contractStatus,
-          status: contractStatus.status as Contract['status']
+          status: contractStatus.status as ContractStatus
         },
         timestamp: new Date().toISOString(),
       };
@@ -237,8 +237,7 @@ export const useRealTimeContractUpdates = ({
         stopListening();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoConnect, contractId]);
+  }, [autoConnect, contractId, isConnected]); // Add isConnected to dependencies
 
   return {
     isConnected,
@@ -284,7 +283,7 @@ export const useGlobalSignatureEvents = () => {
     return () => {
       console.log('Global signature event listener cleaned up');
     };
-  }, [queryClient]);
+  }, []); // Remove queryClient dependency - queryClient is stable in React Query
 
   // Manual trigger for testing
   const simulateSignatureEvent = (contractId: string, eventType: 'signature_added' | 'contract_completed') => {

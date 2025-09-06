@@ -300,4 +300,18 @@ export const contractsApi = {
     const response = await api.get<EventContract[]>(`/contracts/contracts/?client_id=${clientId}`);
     return response.data;
   },
+
+  // Download contract PDF
+  downloadContractPdf: async (contractId: number): Promise<Blob> => {
+    const response = await api.get(`/contracts/contracts/${contractId}/download_pdf/`, {
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  },
+
+  // Send contract to client (change status to SENT)
+  sendContract: async (contractId: number): Promise<EventContract> => {
+    const response = await api.post<EventContract>(`/contracts/contracts/${contractId}/send_contract/`);
+    return response.data;
+  },
 };

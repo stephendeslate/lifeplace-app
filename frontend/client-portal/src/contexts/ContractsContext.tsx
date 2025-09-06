@@ -3,6 +3,7 @@ import React, { createContext, useContext, useCallback, useEffect } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { contractsApi } from '../apis/contracts.api';
 import { useGlobalSignatureEvents } from '../hooks/contracts/useContractStatusUpdates';
+import { useAuth } from './AuthContext';
 import type { Contract, SignatureSubmission, PendingContractsResponse, SignatureRole } from '../types/contracts.types';
 
 interface ContractsContextValue {
@@ -44,26 +45,57 @@ interface ContractsProviderProps {
 
 export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }) => {
   const queryClient = useQueryClient();
+  const { user, isLoading: authLoading } = useAuth();
   
-  // Initialize global signature events
+  // Initialize global signature events only when authenticated
   const { simulateSignatureEvent } = useGlobalSignatureEvents();
+
+  // Only run queries when user is authenticated
+  const isAuthenticated = !!user && !authLoading;
+
+  // Debug logging
+  useEffect(() => {
+    console.log('ContractsProvider auth state:', { user: !!user, authLoading, isAuthenticated });
+  }, [user, authLoading, isAuthenticated]);
 
   // Query for all contracts
   const contractsQuery = useQuery({
     queryKey: ['contracts'],
     queryFn: contractsApi.getContracts,
+    enabled: isAuthenticated,
     staleTime: 30000, // Consider data stale after 30 seconds
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: isAuthenticated ? 60000 : false, // Only refetch when authenticated
     refetchIntervalInBackground: true,
+    retry: (failureCount, error) => {
+      // Don't retry on 401 errors (authentication issues)
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = error.response as { status?: number };
+        if (response.status === 401) {
+          return false;
+        }
+      }
+      return failureCount < 3;
+    },
   });
 
   // Query for pending signatures
   const pendingQuery = useQuery({
     queryKey: ['contracts', 'pending'],
     queryFn: contractsApi.getPendingSignatures,
+    enabled: isAuthenticated,
     staleTime: 15000, // More frequent updates for pending signatures
-    refetchInterval: 30000,
+    refetchInterval: isAuthenticated ? 30000 : false, // Only refetch when authenticated
     refetchIntervalInBackground: true,
+    retry: (failureCount, error) => {
+      // Don't retry on 401 errors (authentication issues)
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = error.response as { status?: number };
+        if (response.status === 401) {
+          return false;
+        }
+      }
+      return failureCount < 3;
+    },
   });
 
   // Mutation for signing contracts

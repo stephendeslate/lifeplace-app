@@ -19,6 +19,15 @@ vi.mock('../../apis/contracts.api', () => ({
   },
 }));
 
+// Cast the mocked API for type safety
+const mockContractsApi = contractsApi as typeof contractsApi & {
+  getContracts: ReturnType<typeof vi.fn>;
+  getPendingSignatures: ReturnType<typeof vi.fn>;
+  signContract: ReturnType<typeof vi.fn>;
+  getContract: ReturnType<typeof vi.fn>;
+  downloadContractPdf: ReturnType<typeof vi.fn>;
+};
+
 // Mock the contract status updates hook
 vi.mock('../../hooks/contracts/useContractStatusUpdates', () => ({
   useGlobalSignatureEvents: () => ({
@@ -140,14 +149,12 @@ const TestComponent = () => {
       <button
         onClick={() =>
           signContract('contract-1', {
-            signature_data: 'test-signature',
+            signature_data: 'test-signature-data',
             signer_name: 'Test User',
             signer_email: 'test@example.com',
             signer_title: '',
             verification_method: 'electronic_signature',
             device_fingerprint: 'test-fingerprint',
-            signature_data: 'test-signature-data',
-            signature_confidence_score: 0.85,
           })
         }
         data-testid="sign"
@@ -202,7 +209,6 @@ const OptimisticTestComponent = () => {
 
 describe('ContractsContext', () => {
   let queryClient: QueryClient;
-  const mockContractsApi = contractsApi;
 
   beforeEach(() => {
     queryClient = createTestQueryClient();
@@ -274,14 +280,12 @@ describe('ContractsContext', () => {
 
       await waitFor(() => {
         expect(mockContractsApi.signContract).toHaveBeenCalledWith('contract-1', {
-          signature_data: 'test-signature',
+          signature_data: 'test-signature-data',
           signer_name: 'Test User',
           signer_email: 'test@example.com',
           signer_title: '',
           verification_method: 'electronic_signature',
           device_fingerprint: 'test-fingerprint',
-          signature_data: 'test-signature-data',
-          signature_confidence_score: 0.85,
         });
       });
     });
