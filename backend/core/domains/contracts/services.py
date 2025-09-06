@@ -104,16 +104,17 @@ class ContractTemplateService:
             return True
             
     @staticmethod
-    def render_contract(template_id, context_data):
+    def render_contract(template_id, context_data, contract_signatures=None):
         """
-        Render a contract template with context data
+        Render a contract template with context data and signature placeholders
         
         Args:
             template_id: ID of the contract template
             context_data: Dictionary of variable values to insert into the template
+            contract_signatures: QuerySet or list of ContractSignature objects
             
         Returns:
-            Rendered contract content
+            Rendered contract content with embedded signatures
         """
         template = ContractTemplateService.get_template_by_id(template_id)
         content = template.content
@@ -131,11 +132,93 @@ class ContractTemplateService:
             placeholder_no_spaces = f"{{{{{var_name}}}}}"
             content = content.replace(placeholder_no_spaces, str_value)
         
+        # Handle signature placeholders
+        if contract_signatures:
+            content = ContractTemplateService._replace_signature_placeholders(content, contract_signatures)
+        
         # Log any unreplaced variables for debugging
         import re
         unreplaced_vars = re.findall(r'\{\{\s*([^}]+)\s*\}\}', content)
         if unreplaced_vars:
             logger.warning(f"Template {template_id} has unreplaced variables: {unreplaced_vars}")
+        
+        return content
+    
+    @staticmethod
+    def _replace_signature_placeholders(content, contract_signatures):
+        """
+        Replace signature placeholders with HTML img tags or pending text
+        
+        Args:
+            content: The contract content with placeholders
+            contract_signatures: QuerySet or list of ContractSignature objects
+            
+        Returns:
+            Content with signature placeholders replaced
+        """
+        # Convert to dict for easy lookup by role
+        signatures_by_role = {}
+        if contract_signatures:
+            for signature in contract_signatures:
+                signatures_by_role[signature.role] = signature
+        
+        # Define signature roles and their display names
+        signature_roles = {
+            'CLIENT': 'Client',
+            'COMPANY_REP': 'Company Representative', 
+            'WITNESS': 'Witness',
+            'GUARDIAN': 'Legal Guardian',
+            'PARTNER': 'Business Partner',
+            'OTHER': 'Other'
+        }
+        
+        for role, role_display in signature_roles.items():
+            # Handle signature image placeholder
+            signature_placeholder = f"{{{{ SIGNATURE_{role} }}}}"
+            if signature_placeholder in content:
+                if role in signatures_by_role:
+                    # Replace with signature image
+                    signature = signatures_by_role[role]
+                    signature_html = f'''<img src="{signature.signature_data}" 
+                        class="contract-signature" 
+                        alt="Signature by {signature.signer_name}" 
+                        style="max-width: 200px; height: 60px; border-bottom: 1px solid #000; display: inline-block; vertical-align: bottom;" />'''
+                    content = content.replace(signature_placeholder, signature_html)
+                else:
+                    # Replace with pending text
+                    pending_text = f'<span class="signature-pending">[ {role_display.upper()} SIGNATURE PENDING ]</span>'
+                    content = content.replace(signature_placeholder, pending_text)
+            
+            # Handle signature date placeholder
+            date_placeholder = f"{{{{ {role.lower()}_signature_date }}}}"
+            if date_placeholder in content:
+                if role in signatures_by_role:
+                    # Format the signature date
+                    signature = signatures_by_role[role]
+                    formatted_date = signature.signed_at.strftime('%B %d, %Y')
+                    content = content.replace(date_placeholder, formatted_date)
+                else:
+                    # Replace with pending text
+                    content = content.replace(date_placeholder, '[ DATE PENDING ]')
+            
+            # Handle signer name placeholder
+            name_placeholder = f"{{{{ {role.lower()}_signer_name }}}}"
+            if name_placeholder in content:
+                if role in signatures_by_role:
+                    signature = signatures_by_role[role]
+                    content = content.replace(name_placeholder, signature.signer_name)
+                else:
+                    content = content.replace(name_placeholder, '[ NAME PENDING ]')
+            
+            # Handle signer title placeholder
+            title_placeholder = f"{{{{ {role.lower()}_signer_title }}}}"
+            if title_placeholder in content:
+                if role in signatures_by_role:
+                    signature = signatures_by_role[role]
+                    signer_title = signature.signer_title or ''
+                    content = content.replace(title_placeholder, signer_title)
+                else:
+                    content = content.replace(title_placeholder, '[ TITLE PENDING ]')
         
         return content
     
@@ -167,7 +250,7 @@ class ContractTemplateService:
         else:
             standardized_context = context_data or {}
         
-        # Render the contract content
+        # Render the contract content (preview doesn't include signatures)
         rendered_content = ContractTemplateService.render_contract(template_id, standardized_context)
         
         return {
@@ -180,6 +263,45 @@ class ContractTemplateService:
             'context_used': standardized_context,
             'available_variables': ContractContextService.get_available_variables()
         }
+    
+    @staticmethod
+    def render_contract_with_signatures(contract_id):
+        """
+        Re-render a contract's content including signature placeholders
+        
+        Args:
+            contract_id: ID of the EventContract
+            
+        Returns:
+            Updated contract content with signatures embedded
+        """
+        from core.domains.events.models import Event
+        
+        try:
+            contract = EventContract.objects.select_related(
+                'event', 'template'
+            ).prefetch_related(
+                'signatures', 'event__client'
+            ).get(id=contract_id)
+        except EventContract.DoesNotExist:
+            raise EventContractNotFound()
+        
+        # Generate context from event
+        context_data = ContractContextService.generate_event_context(contract.event)
+        
+        # Re-render with signatures
+        updated_content = ContractTemplateService.render_contract(
+            contract.template.id, 
+            context_data, 
+            contract.signatures.all()
+        )
+        
+        # Update the contract content
+        contract.content = updated_content
+        contract.save(update_fields=['content'])
+        
+        logger.info(f"Updated contract {contract_id} content with signatures")
+        return updated_content
 
 
 class EventContractService:

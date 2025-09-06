@@ -410,4 +410,36 @@ class ContractContextService:
             'days_until_event': 'Number of days until event',
             'event_duration_hours': 'Event duration in hours',
             'is_upcoming': 'Whether event is in the future',
+            
+            # Signature Placeholders
+            'SIGNATURE_CLIENT': 'Client signature image (displays when signed)',
+            'SIGNATURE_COMPANY_REP': 'Company representative signature image (displays when signed)',
+            'SIGNATURE_WITNESS': 'Witness signature image (displays when signed)',
+            'SIGNATURE_GUARDIAN': 'Legal guardian signature image (displays when signed)',
+            'SIGNATURE_PARTNER': 'Business partner signature image (displays when signed)',
+            'SIGNATURE_OTHER': 'Other signature image (displays when signed)',
+            
+            # Signature Date Placeholders
+            'client_signature_date': 'Date when client signed (displays when signed)',
+            'company_rep_signature_date': 'Date when company rep signed (displays when signed)',
+            'witness_signature_date': 'Date when witness signed (displays when signed)',
+            'guardian_signature_date': 'Date when guardian signed (displays when signed)',
+            'partner_signature_date': 'Date when partner signed (displays when signed)',
+            'other_signature_date': 'Date when other party signed (displays when signed)',
+            
+            # Signature Name Placeholders
+            'client_signer_name': 'Name of client signer (displays when signed)',
+            'company_rep_signer_name': 'Name of company representative signer (displays when signed)',
+            'witness_signer_name': 'Name of witness signer (displays when signed)',
+            'guardian_signer_name': 'Name of guardian signer (displays when signed)',
+            'partner_signer_name': 'Name of partner signer (displays when signed)',
+            'other_signer_name': 'Name of other signer (displays when signed)',
+            
+            # Signature Title Placeholders
+            'client_signer_title': 'Title of client signer (displays when signed)',
+            'company_rep_signer_title': 'Title of company representative signer (displays when signed)',
+            'witness_signer_title': 'Title of witness signer (displays when signed)',
+            'guardian_signer_title': 'Title of guardian signer (displays when signed)',
+            'partner_signer_title': 'Title of partner signer (displays when signed)',
+            'other_signer_title': 'Title of other signer (displays when signed)',
         }

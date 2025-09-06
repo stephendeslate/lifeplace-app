@@ -21,7 +21,6 @@ import {
   Send as SendIcon,
   Download as DownloadIcon,
   CheckCircle as SignedIcon,
-  Schedule as PendingIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useEventContract, useSendContract } from '../../hooks/useContracts';
@@ -303,6 +302,37 @@ export const ContractView: React.FC = () => {
               backgroundColor: 'background.paper',
               maxHeight: '600px',
               overflow: 'auto',
+              // Signature styling
+              '& .contract-signature': {
+                maxWidth: '200px',
+                height: '60px',
+                borderBottom: '1px solid #000',
+                display: 'inline-block',
+                verticalAlign: 'bottom',
+                margin: '0 4px',
+              },
+              '& .signature-pending': {
+                fontStyle: 'italic',
+                color: '#666',
+                backgroundColor: '#f5f5f5',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+              },
+              // Print styles for signatures
+              '@media print': {
+                '& .contract-signature': {
+                  maxWidth: '180px',
+                  height: '50px',
+                  '-webkit-print-color-adjust': 'exact',
+                  colorAdjust: 'exact',
+                },
+                '& .signature-pending': {
+                  backgroundColor: '#f5f5f5 !important',
+                  '-webkit-print-color-adjust': 'exact',
+                  colorAdjust: 'exact',
+                },
+              },
             }}
           >
             <div
