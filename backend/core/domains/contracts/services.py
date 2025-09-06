@@ -29,6 +29,7 @@ from .models import (
     ContractDocument,
     ContractNote
 )
+from .context_service import ContractContextService
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -117,37 +118,57 @@ class ContractTemplateService:
         template = ContractTemplateService.get_template_by_id(template_id)
         content = template.content
         
-        # Simple variable substitution - handle both formats with and without spaces
+        # Enhanced variable substitution with better handling
         for var_name, var_value in context_data.items():
-            # Handle format: {{ variable_name }}
-            placeholder_with_spaces = f"{{{{ {var_name} }}}}"
-            content = content.replace(placeholder_with_spaces, str(var_value))
+            # Convert value to string, handling None values
+            str_value = str(var_value) if var_value is not None else ''
             
-            # Handle format: {{variable_name}} (for backward compatibility)
+            # Handle format: {{ variable_name }} (with spaces)
+            placeholder_with_spaces = f"{{{{ {var_name} }}}}"
+            content = content.replace(placeholder_with_spaces, str_value)
+            
+            # Handle format: {{variable_name}} (without spaces - for backward compatibility)
             placeholder_no_spaces = f"{{{{{var_name}}}}}"
-            content = content.replace(placeholder_no_spaces, str(var_value))
+            content = content.replace(placeholder_no_spaces, str_value)
+        
+        # Log any unreplaced variables for debugging
+        import re
+        unreplaced_vars = re.findall(r'\{\{\s*([^}]+)\s*\}\}', content)
+        if unreplaced_vars:
+            logger.warning(f"Template {template_id} has unreplaced variables: {unreplaced_vars}")
         
         return content
     
     @staticmethod
-    def preview_template(template_id, context_data=None):
+    def preview_template(template_id, context_data=None, event_id=None):
         """
         Preview a contract template with context data
         
         Args:
             template_id: ID of the contract template
             context_data: Dictionary of variable values to insert into the template
+            event_id: Optional event ID to generate context from
             
         Returns:
             Dictionary with rendered content and template metadata
         """
         template = ContractTemplateService.get_template_by_id(template_id)
         
-        if context_data is None:
-            context_data = {}
+        # If event_id is provided, generate standardized context
+        if event_id:
+            try:
+                from core.domains.events.models import Event
+                event = Event.objects.select_related('client', 'event_type').get(id=event_id)
+                # Generate standardized context and merge with provided context
+                standardized_context = ContractContextService.generate_event_context(event, context_data)
+            except Event.DoesNotExist:
+                logger.warning(f"Event {event_id} not found for template preview, using provided context only")
+                standardized_context = context_data or {}
+        else:
+            standardized_context = context_data or {}
         
         # Render the contract content
-        rendered_content = ContractTemplateService.render_contract(template_id, context_data)
+        rendered_content = ContractTemplateService.render_contract(template_id, standardized_context)
         
         return {
             'template_id': template.id,
@@ -156,7 +177,8 @@ class ContractTemplateService:
             'variables': template.variables,
             'sections': template.sections,
             'event_type': template.event_type.name if template.event_type else None,
-            'context_used': context_data
+            'context_used': standardized_context,
+            'available_variables': ContractContextService.get_available_variables()
         }
 
 
@@ -192,13 +214,23 @@ class EventContractService:
             The created EventContract instance
         """
         try:
+            from core.domains.events.models import Event
             template = ContractTemplate.objects.get(id=template_id)
+            event = Event.objects.select_related('client', 'event_type').get(id=event_id)
         except ContractTemplate.DoesNotExist:
             raise ContractTemplateNotFound()
+        except Event.DoesNotExist:
+            raise EventNotFound()
         
-        # Get rendered content
-        context_data = context_data or {}
-        rendered_content = ContractTemplateService.render_contract(template_id, context_data)
+        # Generate standardized context from event
+        standardized_context = ContractContextService.generate_event_context(event, context_data)
+        
+        # Get rendered content using standardized context
+        rendered_content = ContractTemplateService.render_contract(template_id, standardized_context)
+        
+        # Use contract value from context if not provided
+        if contract_value is None:
+            contract_value = event.total_price
         
         with transaction.atomic():
             contract = EventContract.objects.create(

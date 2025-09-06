@@ -114,39 +114,8 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   const handleSubmitCreate = async () => {
     if (templateId) {
       try {
-        // First, render the template with event context data
-        const contextData = {
-          // Event information
-          event_name: event.name,
-          event_title: event.name,
-          event_start_date: event.start_date,
-          event_end_date: event.end_date,
-          start_date: event.start_date,
-          end_date: event.end_date,
-          event_status: event.status,
-          
-          // Client information
-          client_name: event.client_name,
-          client: event.client_name,
-          
-          // Pricing information
-          total_price: event.total_price,
-          event_price: event.total_price,
-          total_amount: event.total_price,
-          contract_value: event.total_price,
-          
-          // Date formatting
-          contract_date: new Date().toLocaleDateString(),
-          today: new Date().toLocaleDateString(),
-          current_date: new Date().toISOString().split('T')[0],
-          
-          // Additional common variables
-          event_type: event.event_type_name || 'Event',
-          venue: 'To be determined',
-          payment_terms: '50% deposit, 50% on completion',
-        };
-        
-        const renderedTemplate = await contractsApi.previewTemplate(parseInt(templateId), contextData);
+        // Use the backend's standardized context generation by passing the event ID
+        const renderedTemplate = await contractsApi.previewTemplate(parseInt(templateId), {}, event.id);
         
         // Get the selected template to access its signature requirements
         const selectedTemplate = templates.find(t => t.id === parseInt(templateId));
@@ -155,7 +124,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
           event: event.id,
           template: parseInt(templateId),
           content: renderedTemplate.rendered_content,
-          context_data: contextData,
+          // No need to pass context_data - backend generates it from event
           // Ensure signature requirements are set if the template requires signatures
           ...(selectedTemplate?.requires_signature && {
             requires_signature: true,

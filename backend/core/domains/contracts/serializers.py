@@ -294,6 +294,7 @@ class EventContractUpdateSerializer(serializers.ModelSerializer):
 class PreviewContractSerializer(serializers.Serializer):
     """Serializer for previewing contract templates"""
     context_data = serializers.JSONField(required=False, default=dict)
+    event_id = serializers.IntegerField(required=False, allow_null=True)
     
     def validate_context_data(self, value):
         """Validate context data is a dictionary"""
