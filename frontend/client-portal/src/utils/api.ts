@@ -44,6 +44,11 @@ const isPublicEndpoint = (url: string): boolean => {
     '/bookingflow/public/flows/questionnaires/',
   ];
   
+  // Contracts endpoints should NOT be public - they require authentication
+  if (url.includes('/contracts/')) {
+    return false;
+  }
+  
   return publicPaths.some(path => url.includes(path));
 };
 

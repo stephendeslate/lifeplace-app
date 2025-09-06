@@ -10,6 +10,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import theme from '../utils/theme';
 import { AuthProvider } from '../contexts/AuthContext';
+import { ContractsProvider } from '../contexts/ContractsContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
 import { AccessibilityProvider } from '../components/accessibility/AccessibilityProvider';
@@ -53,9 +54,11 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
             <ConfirmDialogProvider>
               <AccessibilityProvider>
                 <AuthProvider>
-                  {children}
-                  {/* Only show React Query devtools in development */}
-                  {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+                  <ContractsProvider>
+                    {children}
+                    {/* Only show React Query devtools in development */}
+                    {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+                  </ContractsProvider>
                 </AuthProvider>
               </AccessibilityProvider>
             </ConfirmDialogProvider>

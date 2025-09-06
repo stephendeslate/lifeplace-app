@@ -2,6 +2,7 @@
 // Migrated to use the unified settings system
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AccountTree as WorkflowIcon } from '@mui/icons-material';
 import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
@@ -107,6 +108,8 @@ const defaultWorkflowTemplate: WorkflowTemplate = {
 };
 
 export const WorkflowTemplates = () => {
+  const navigate = useNavigate();
+  
   // Get workflows
   const {
     templates = [],
@@ -212,6 +215,10 @@ export const WorkflowTemplates = () => {
     });
   };
 
+  const handleRowClick = (template: WorkflowTemplate) => {
+    navigate(`/settings/templates/workflow-templates/${template.id}`);
+  };
+
   return (
     <SettingsPage
       config={config}
@@ -223,6 +230,7 @@ export const WorkflowTemplates = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onRowClick={handleRowClick}
       isCreating={isCreatingTemplate}
       isUpdating={isUpdatingTemplate}
       isDeleting={isDeletingTemplate}

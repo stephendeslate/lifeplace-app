@@ -28,7 +28,7 @@ import {
   ViewList as ListIcon,
   ViewModule as GridIcon,
 } from '@mui/icons-material';
-import { useEvents } from '../../hooks/useEvents';
+import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
 import { EventCard } from '../../components/events';
 import type { Event, EventStatus } from '../../types/events.types';
 
@@ -42,15 +42,15 @@ const EventsList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Data fetching
-  const { useEventsList } = useEvents();
+  // Data fetching with contract integration
+  const { useEventsListWithContracts } = useEventsWithContracts();
   const { 
     data: events = [], 
     isLoading, 
     error, 
     refetch,
     isRefetching 
-  } = useEventsList({
+  } = useEventsListWithContracts({
     status: statusFilter === 'ALL' ? undefined : statusFilter,
     upcoming_only: upcomingOnly,
   });

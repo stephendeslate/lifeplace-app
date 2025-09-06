@@ -55,6 +55,12 @@ export interface Event {
   current_stage_name: string;
   payment_status: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE';
   days_until_event?: number | null;
+  // Contract information (optional for backward compatibility)
+  contract_status?: 'DRAFT' | 'SENT' | 'PARTIALLY_SIGNED' | 'SIGNED' | 'EXPIRED' | 'VOID' | 'AMENDED';
+  has_contracts?: boolean;
+  contracts_count?: number;
+  pending_signature_required?: boolean;
+  contract_expiry_days?: number | null;
 }
 
 // Detailed Event interface matching backend ClientEventDetailSerializer
@@ -66,6 +72,28 @@ export interface EventDetail extends Event {
   recent_updates: RecentUpdate[];
   accessible_documents_count: number;
   has_notes: boolean;
+  // Detailed contract information
+  contracts?: EventContractSummary[];
+  contract_signature_progress?: {
+    total_required: number;
+    signed_count: number;
+    percentage: number;
+  };
+}
+
+// Contract summary for events
+export interface EventContractSummary {
+  id: string;
+  status: 'DRAFT' | 'SENT' | 'PARTIALLY_SIGNED' | 'SIGNED' | 'EXPIRED' | 'VOID' | 'AMENDED';
+  template_name: string;
+  can_client_sign: boolean;
+  expires_at: string | null;
+  signature_progress: {
+    total_required: number;
+    signed_count: number;
+    percentage: number;
+  };
+  is_urgent?: boolean;
 }
 
 // Event filters for list queries

@@ -6,3 +6,4 @@ export { default as EventCountdown } from './EventCountdown';
 export { default as EventTimeline } from './EventTimeline';
 export { default as EventDocuments } from './EventDocuments';
 export { default as EventTasks } from './EventTasks';
+export { default as ContractStatusChip } from './ContractStatusChip';

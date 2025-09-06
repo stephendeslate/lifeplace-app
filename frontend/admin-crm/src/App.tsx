@@ -12,6 +12,7 @@ import { AcceptInvitation } from './pages/auth/AcceptInvitation';
 import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
 import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
+import { ContractEdit, ContractView } from './pages/contracts';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
@@ -36,7 +37,7 @@ import { EnhancedSettings } from './pages/settings/EnhancedSettings';
 import { AccountSettings, AdminUsers } from './pages/settings/account';
 import { Notifications } from './pages/settings/account/Notifications';
 import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
-import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates } from './pages/settings/templates';
+import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates, WorkflowTemplateDetails } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
@@ -280,6 +281,24 @@ const AppRouter: React.FC = () => {
         }
       />
 
+      {/* Contract Management Routes */}
+      <Route
+        path="/contracts/:contractId"
+        element={
+          <ProtectedRoute>
+            <ContractView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/contracts/:contractId/edit"
+        element={
+          <ProtectedRoute>
+            <ContractEdit />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Client Management Routes */}
       <Route
         path="/clients"
@@ -428,6 +447,14 @@ const AppRouter: React.FC = () => {
         element={
           <SettingsRoute>
             <WorkflowTemplates />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/templates/workflow-templates/:id"
+        element={
+          <SettingsRoute>
+            <WorkflowTemplateDetails />
           </SettingsRoute>
         }
       />

@@ -25,6 +25,8 @@ export interface WorkflowStage {
   trigger_time: string;
   email_template: number | null;
   email_template_name?: string;
+  contract_template: number | null;
+  contract_template_name?: string;
   task_description: string;
   progression_condition: string;
   required_tasks_completed: boolean;
@@ -93,6 +95,7 @@ export interface CreateWorkflowStageData {
   automation_type?: AutomationType;
   trigger_time?: string;
   email_template?: number | null;
+  contract_template?: number | null;
   task_description?: string;
   progression_condition?: string;
   required_tasks_completed?: boolean;
@@ -130,6 +133,7 @@ export interface WorkflowStageFormData {
   automation_type: AutomationType;
   trigger_time: string;
   email_template: string;
+  contract_template: string;
   task_description: string;
   progression_condition: string;
   required_tasks_completed: boolean;

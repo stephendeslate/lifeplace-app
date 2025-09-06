@@ -35,15 +35,17 @@ import {
   Note as NotesIcon,
   CalendarToday as CalendarIcon,
   Payment as PaymentIcon,
+  Assignment as ContractIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { useEvents } from '../../hooks/useEvents';
+import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
 import { 
   EventStatusBadge, 
   EventCountdown, 
   EventTimeline, 
   EventDocuments, 
-  EventTasks 
+  EventTasks,
+  ContractStatusChip 
 } from '../../components/events';
 
 interface TabPanelProps {
@@ -81,20 +83,28 @@ const EventDetail: React.FC = () => {
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false);
   const [preferencesData, setPreferencesData] = useState<Record<string, unknown>>({});
 
-  // Data fetching
+  // Data fetching with contract integration
   const eventId = parseInt(id || '0');
-  const { useEvent, useEventNotes, useUpdatePreferences } = useEvents();
+  const { useEventWithContracts, useEventNotes, useUpdatePreferences, useEventContracts } = useEventsWithContracts();
   
   const { 
     data: event, 
     isLoading: isLoadingEvent, 
     error: eventError 
-  } = useEvent(eventId);
+  } = useEventWithContracts(eventId);
   
   const { 
     data: notes = [], 
     isLoading: isLoadingNotes 
   } = useEventNotes(eventId);
+  
+  // Get contracts for this event
+  const {
+    contracts: eventContracts,
+    isLoading: isLoadingContracts,
+    hasContracts,
+    needsSignature
+  } = useEventContracts(eventId);
 
   // Mutations
   const updatePreferencesMutation = useUpdatePreferences();
@@ -231,6 +241,15 @@ const EventDetail: React.FC = () => {
                   variant="outlined"
                 />
               )}
+              <ContractStatusChip
+                status={event.contract_status}
+                hasContracts={event.has_contracts}
+                contractsCount={event.contracts_count}
+                pendingSignatureRequired={event.pending_signature_required}
+                contractExpiryDays={event.contract_expiry_days}
+                size="medium"
+                showCount={true}
+              />
             </Stack>
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -384,13 +403,22 @@ const EventDetail: React.FC = () => {
             id="event-tab-2"
             aria-controls="event-tabpanel-2"
           />
+          {hasContracts && (
+            <Tab 
+              label={`Contracts (${eventContracts.length})`}
+              icon={<ContractIcon />} 
+              iconPosition="start"
+              id="event-tab-3"
+              aria-controls="event-tabpanel-3"
+            />
+          )}
           {event.has_notes && (
             <Tab 
               label={`Notes (${notes.length})`}
               icon={<NotesIcon />} 
               iconPosition="start"
-              id="event-tab-3"
-              aria-controls="event-tabpanel-3"
+              id={hasContracts ? "event-tab-4" : "event-tab-3"}
+              aria-controls={hasContracts ? "event-tabpanel-4" : "event-tabpanel-3"}
             />
           )}
         </Tabs>
@@ -407,8 +435,97 @@ const EventDetail: React.FC = () => {
           <EventTasks tasks={event.upcoming_tasks} />
         </TabPanel>
 
-        {event.has_notes && (
+        {hasContracts && (
           <TabPanel value={activeTab} index={3}>
+            {isLoadingContracts ? (
+              <Box>
+                {[1, 2].map((item) => (
+                  <Skeleton key={item} variant="rectangular" height={120} sx={{ mb: 2 }} />
+                ))}
+              </Box>
+            ) : (
+              <Stack spacing={3}>
+                {needsSignature && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      Action Required: Contract Signature Needed
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      You have contracts that require your signature to proceed with your event.
+                    </Typography>
+                  </Alert>
+                )}
+                
+                {eventContracts.map((contract) => (
+                  <Paper key={contract.id} sx={{ p: 3 }}>
+                    <Stack spacing={2}>
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                        <Box>
+                          <Typography variant="h6" gutterBottom>
+                            {contract.template.name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Event: {contract.event.title}
+                          </Typography>
+                        </Box>
+                        <Stack direction="row" spacing={1}>
+                          <ContractStatusChip
+                            status={contract.status}
+                            hasContracts={true}
+                            contractsCount={1}
+                            pendingSignatureRequired={contract.can_client_sign}
+                            size="small"
+                          />
+                        </Stack>
+                      </Box>
+                      
+                      {contract.signature_progress && (
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Signature Progress: {contract.signature_progress.signed_count} of {contract.signature_progress.total_required} signatures
+                          </Typography>
+                          <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, overflow: 'hidden' }}>
+                            <Box
+                              sx={{
+                                width: `${contract.signature_progress.percentage}%`,
+                                bgcolor: contract.signature_progress.percentage === 100 ? 'success.main' : 'warning.main',
+                                height: 8,
+                                transition: 'width 0.3s ease',
+                              }}
+                            />
+                          </Box>
+                        </Box>
+                      )}
+                      
+                      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => navigate(`/contracts/${contract.id}`)}
+                        >
+                          View Details
+                        </Button>
+                        {contract.can_client_sign && (
+                          <Button
+                            variant="contained"
+                            size="small"
+                            color="warning"
+                            onClick={() => navigate(`/contracts/${contract.id}/sign`)}
+                          >
+                            Sign Now
+                          </Button>
+                        )}
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            )}
+          </TabPanel>
+        )}
+
+        {event.has_notes && (
+          <TabPanel value={activeTab} index={hasContracts ? 4 : 3}>
             {isLoadingNotes ? (
               <Box>
                 {[1, 2, 3].map((item) => (

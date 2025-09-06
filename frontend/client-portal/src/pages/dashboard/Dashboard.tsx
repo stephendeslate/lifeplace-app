@@ -25,12 +25,15 @@ import {
   Message as MessageIcon,
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
+  Assignment as ContractIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCommunications } from '../../hooks/useCommunications';
+import { useContracts } from '../../contexts/ContractsContext';
 import { CommunicationHistory } from '../../components/communications';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { ContractStatusChip } from '../../components/events';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -63,6 +66,7 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
 
   const { useRecords, useAnalytics, useMarkAsRead } = useCommunications();
+  const { pendingContracts } = useContracts();
   
   // Get recent communications
   const { data: recentCommunications = [], isLoading: isLoadingComms } = useRecords({});
@@ -242,6 +246,93 @@ const Dashboard: React.FC = () => {
                 </Stack>
               </GlassCard>
             </Box>
+
+            {/* Contract Alerts */}
+            {pendingContracts.length > 0 && (
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                  Contract Alerts
+                </Typography>
+                <Stack spacing={2}>
+                  {pendingContracts.slice(0, 3).map((contract) => (
+                    <GlassCard 
+                      key={contract.id}
+                      variant="light"
+                      intensity="subtle"
+                      hover={true}
+                      sx={{
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        backgroundColor: contract.can_client_sign
+                          ? alpha(theme.palette.warning.main, 0.08) 
+                          : alpha('#fff', 0.03),
+                        border: `1px solid ${contract.can_client_sign
+                          ? alpha(theme.palette.warning.main, 0.3) 
+                          : alpha('#fff', 0.1)}`,
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                          backgroundColor: alpha('#fff', 0.08),
+                        },
+                      }}
+                      onClick={() => navigate('/contracts')}
+                    >
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                          sx={{
+                            p: 1,
+                            borderRadius: 1,
+                            backgroundColor: contract.can_client_sign 
+                              ? alpha(theme.palette.warning.main, 0.15)
+                              : alpha(theme.palette.info.main, 0.15),
+                            backdropFilter: 'blur(10px)',
+                            color: contract.can_client_sign 
+                              ? theme.palette.warning.main
+                              : theme.palette.info.main,
+                            border: `1px solid ${contract.can_client_sign 
+                              ? alpha(theme.palette.warning.main, 0.2)
+                              : alpha(theme.palette.info.main, 0.2)}`,
+                          }}
+                        >
+                          <ContractIcon />
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ 
+                              fontWeight: contract.can_client_sign ? 600 : 500,
+                            }}
+                          >
+                            {contract.template.name} - {contract.event.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {contract.can_client_sign ? 'Signature required' : `Status: ${contract.status.replace('_', ' ')}`}
+                          </Typography>
+                        </Box>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <ContractStatusChip
+                            status={contract.status}
+                            hasContracts={true}
+                            contractsCount={1}
+                            pendingSignatureRequired={contract.can_client_sign}
+                            size="small"
+                          />
+                        </Box>
+                      </Box>
+                    </GlassCard>
+                  ))}
+                  {pendingContracts.length > 3 && (
+                    <Button 
+                      variant="outlined" 
+                      onClick={() => navigate('/contracts')}
+                      sx={{ alignSelf: 'center' }}
+                    >
+                      View All Contract Alerts ({pendingContracts.length})
+                    </Button>
+                  )}
+                </Stack>
+              </Box>
+            )}
 
             {/* Recent Activity */}
             <Box>

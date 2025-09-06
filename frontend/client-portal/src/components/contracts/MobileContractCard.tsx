@@ -99,7 +99,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                 whiteSpace: 'nowrap',
               }}
             >
-              {contract.event.title}
+              {contract.event?.title || `Event #${contract.event}`}
             </Typography>
             
             <Typography 
@@ -112,7 +112,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                 whiteSpace: 'nowrap',
               }}
             >
-              {contract.template.name}
+              {contract.template?.name || 'Unknown Template'}
             </Typography>
           </Box>
 
@@ -282,7 +282,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
               )}
 
               {/* Signature Details */}
-              {contract.signatures.length > 0 && (
+              {contract.signatures && contract.signatures.length > 0 && (
                 <Box>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                     Signatures

@@ -91,78 +91,6 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
   // Merge default config with provided config
   const finalConfig = { ...DEFAULT_SIGNATURE_CONFIG, ...config };
 
-  // Initialize signature pad with biometric tracking
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const signaturePad = new SignaturePad(canvas, {
-      backgroundColor: finalConfig.backgroundColor,
-      penColor: finalConfig.penColor,
-      minWidth: finalConfig.minWidth,
-      maxWidth: finalConfig.maxWidth,
-      throttle: finalConfig.throttle,
-      minDistance: finalConfig.minPointDistance,
-    });
-
-    padRef.current = signaturePad;
-
-    let strokeStartTime = 0;
-
-    const handleBeginStroke = (event: any) => {
-      setHasBeenTouched(true);
-      strokeStartTime = Date.now();
-      
-      if (strokeData.startTime === 0) {
-        setStrokeData(prev => ({ ...prev, startTime: strokeStartTime }));
-      }
-      
-      setStrokeData(prev => ({ ...prev, strokes: prev.strokes + 1 }));
-    };
-
-
-    const handleEndStroke = async () => {
-      const currentIsEmpty = signaturePad.isEmpty();
-      setIsEmpty(currentIsEmpty);
-      
-      if (!currentIsEmpty) {
-        const signatureData = signaturePad.toDataURL('image/png');
-        
-        if (enableBiometricAnalysis) {
-          setIsAnalyzing(true);
-          const analysis = await analyzeSignature(signatureData, strokeData);
-          setSignatureAnalysis(analysis);
-          onSignatureChange(signatureData, analysis);
-          setIsAnalyzing(false);
-        } else {
-          onSignatureChange(signatureData);
-        }
-      } else {
-        onSignatureChange(null);
-        setSignatureAnalysis(null);
-      }
-    };
-
-    // Event listeners
-    signaturePad.addEventListener('beginStroke', handleBeginStroke);
-    signaturePad.addEventListener('endStroke', handleEndStroke);
-    
-    // Biometric analysis is handled through standard events
-
-    // Handle resize
-    const handleResize = () => {
-      resizeCanvas();
-    };
-
-    window.addEventListener('resize', handleResize);
-    resizeCanvas();
-
-    return () => {
-      signaturePad.off();
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [finalConfig, enableBiometricAnalysis, strokeData, onSignatureChange]);
-
   // Analyze signature for authenticity and quality
   const analyzeSignature = useCallback(async (
     signatureData: string, 
@@ -218,21 +146,208 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
     const data = pad.toData();
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
     
+    // Set canvas internal dimensions
     canvas.width = width * ratio;
     canvas.height = height * ratio;
+    
+    // Set canvas display dimensions
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     
+    // Scale context for high DPI displays
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.scale(ratio, ratio);
     }
 
-    pad.clear();
+    // Restore signature data if any
     if (data && data.length > 0) {
       pad.fromData(data);
     }
   }, [width, height]);
+
+  // Event handlers
+  const handleBeginStroke = useCallback((_event: any) => {
+    console.log('✏️ BEGIN STROKE triggered', { 
+      timestamp: Date.now(), 
+      isEmpty: padRef.current?.isEmpty(),
+      canvasReady: !!canvasRef.current,
+      hasBeenTouched: hasBeenTouched
+    });
+    
+    setHasBeenTouched(true);
+    const strokeStartTime = Date.now();
+    
+    setStrokeData(prev => ({
+      ...prev,
+      startTime: prev.startTime === 0 ? strokeStartTime : prev.startTime,
+      strokes: prev.strokes + 1
+    }));
+  }, [hasBeenTouched]);
+
+  const handleEndStroke = useCallback(async () => {
+    console.log('🏁 END STROKE triggered', {
+      timestamp: Date.now(),
+      padExists: !!padRef.current,
+      canvasExists: !!canvasRef.current
+    });
+
+    if (!padRef.current) {
+      console.error('❌ SignaturePad instance not found in handleEndStroke');
+      return;
+    }
+    
+    try {
+      const signaturePad = padRef.current;
+      const currentIsEmpty = signaturePad.isEmpty();
+      
+      console.log('📊 Stroke processing:', { 
+        isEmpty: currentIsEmpty,
+        canConvertToDataURL: typeof signaturePad.toDataURL === 'function',
+        strokeData: strokeData
+      });
+      
+      setIsEmpty(currentIsEmpty);
+      
+      if (!currentIsEmpty) {
+        const signatureData = signaturePad.toDataURL('image/png');
+        
+        console.log('🎨 Signature captured:', {
+          dataLength: signatureData.length,
+          isValidDataURL: signatureData.startsWith('data:image/'),
+          preview: signatureData.substring(0, 50) + '...'
+        });
+        
+        if (enableBiometricAnalysis) {
+          setIsAnalyzing(true);
+          // Use current strokeData directly
+          setStrokeData(currentStrokeData => {
+            analyzeSignature(signatureData, currentStrokeData).then(analysis => {
+              console.log('🔬 Signature analysis complete:', analysis);
+              setSignatureAnalysis(analysis);
+              onSignatureChange(signatureData, analysis);
+              setIsAnalyzing(false);
+            }).catch(error => {
+              console.error('💥 Analysis error:', error);
+              setIsAnalyzing(false);
+            });
+            return currentStrokeData;
+          });
+        } else {
+          onSignatureChange(signatureData);
+        }
+      } else {
+        console.log('⭕ Signature pad is empty, calling onSignatureChange(null)');
+        onSignatureChange(null);
+        setSignatureAnalysis(null);
+      }
+    } catch (error) {
+      console.error('💥 Error in handleEndStroke:', error);
+    }
+  }, [enableBiometricAnalysis, analyzeSignature, onSignatureChange, strokeData]);
+
+  // Initialize signature pad
+  useEffect(() => {
+    console.log('🚀 Initializing SignaturePad...');
+    
+    if (!canvasRef.current) {
+      console.error('❌ Canvas ref not found during initialization');
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    
+    console.log('🎨 SignaturePad initialization:', {
+      canvasExists: !!canvas,
+      canvasDimensions: { width: canvas.width, height: canvas.height },
+      canvasStyle: { width: canvas.style.width, height: canvas.style.height },
+      config: finalConfig
+    });
+
+    const signaturePad = new SignaturePad(canvas, {
+      backgroundColor: finalConfig.backgroundColor,
+      penColor: finalConfig.penColor,
+      minWidth: finalConfig.minWidth,
+      maxWidth: finalConfig.maxWidth,
+      throttle: finalConfig.throttle,
+      minDistance: finalConfig.minPointDistance,
+    });
+
+    console.log('📝 SignaturePad instance created:', {
+      created: !!signaturePad,
+      isEmpty: signaturePad.isEmpty(),
+      hasCanvas: !!canvas,
+      canvasContext: !!canvas.getContext('2d')
+    });
+
+    padRef.current = signaturePad;
+
+    // Test if library events are working
+    signaturePad.addEventListener('beginStroke', () => {
+      console.log('📚 Library beginStroke event fired');
+    });
+    signaturePad.addEventListener('endStroke', () => {
+      console.log('📚 Library endStroke event fired');
+    });
+
+    console.log('🎯 SignaturePad created, storing reference for event binding');
+
+    // Handle resize
+    const handleResize = () => {
+      console.log('📏 Window resize triggered');
+      resizeCanvas();
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Don't call resizeCanvas() immediately as canvas dimensions are already set
+
+    return () => {
+      console.log('🧹 Cleaning up SignaturePad');
+      signaturePad.off();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [width, height]); // Only re-initialize when canvas size changes
+
+  // Bind event handlers separately to avoid re-initialization
+  React.useEffect(() => {
+    if (!padRef.current) {
+      console.log('⚠️ No SignaturePad instance available for event binding');
+      return;
+    }
+
+    console.log('🎯 Binding event handlers to existing SignaturePad instance');
+    
+    const signaturePad = padRef.current;
+    
+    // Remove existing handlers first
+    signaturePad.removeEventListener('beginStroke', handleBeginStroke);
+    signaturePad.removeEventListener('endStroke', handleEndStroke);
+    
+    // Add new handlers
+    signaturePad.addEventListener('beginStroke', handleBeginStroke);
+    signaturePad.addEventListener('endStroke', handleEndStroke);
+
+    console.log('✅ Event handlers bound successfully');
+
+    return () => {
+      console.log('🧹 Cleaning up event handlers');
+      if (padRef.current) {
+        padRef.current.removeEventListener('beginStroke', handleBeginStroke);
+        padRef.current.removeEventListener('endStroke', handleEndStroke);
+      }
+    };
+  }, [handleBeginStroke, handleEndStroke]);
+
+  // Track critical state changes
+  React.useEffect(() => {
+    console.log('📊 Signature pad state update:', { 
+      isEmpty, 
+      hasBeenTouched, 
+      signatureAnalysis: !!signatureAnalysis,
+      isAnalyzing,
+      strokeCount: strokeData.strokes
+    });
+  }, [isEmpty, hasBeenTouched, signatureAnalysis, isAnalyzing, strokeData.strokes]);
 
   // Clear signature and reset analysis
   const handleClear = useCallback(() => {
@@ -285,6 +400,21 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
   const showError = error || (required && hasBeenTouched && isEmpty);
   const displayErrorText = errorText || (required && hasBeenTouched && isEmpty ? 'Signature is required' : '');
 
+  // Log validation state
+  React.useEffect(() => {
+    if (showError || displayErrorText) {
+      console.log('❗ Signature pad validation error:', {
+        showError,
+        displayErrorText,
+        error,
+        required,
+        hasBeenTouched,
+        isEmpty,
+        errorSource: error ? 'external' : 'internal'
+      });
+    }
+  }, [showError, displayErrorText, error, required, hasBeenTouched, isEmpty]);
+
   return (
     <Box className={className}>
       {/* Label */}
@@ -330,14 +460,48 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
           {/* Canvas */}
           <canvas
             ref={canvasRef}
+            width={width}
+            height={height}
             style={{
               border: `1px solid ${theme.palette.divider}`,
               borderRadius: theme.spacing(1),
               cursor: disabled ? 'not-allowed' : 'crosshair',
               touchAction: 'none',
               opacity: disabled ? 0.5 : 1,
+              width: `${width}px`,
+              height: `${height}px`,
             }}
             onContextMenu={(e) => e.preventDefault()}
+            onMouseDown={(e) => {
+              console.log('🖱️ Canvas mouse down', {
+                button: e.button,
+                clientX: e.clientX,
+                clientY: e.clientY,
+                target: e.target === canvasRef.current
+              });
+            }}
+            onTouchStart={(e) => {
+              console.log('👆 Canvas touch start', {
+                touches: e.touches.length,
+                target: e.target === canvasRef.current
+              });
+            }}
+            onPointerDown={(e) => {
+              console.log('👉 Canvas pointer down', {
+                pointerType: e.pointerType,
+                isPrimary: e.isPrimary,
+                target: e.target === canvasRef.current
+              });
+            }}
+            onMouseMove={(e) => {
+              // Only log if mouse is down
+              if (e.buttons > 0) {
+                console.log('🖱️ Canvas mouse move while down');
+              }
+            }}
+            onMouseUp={() => {
+              console.log('🖱️ Canvas mouse up');
+            }}
           />
 
           {/* Empty state overlay */}
