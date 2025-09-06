@@ -222,7 +222,7 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
       case 'legal_disclosure':
         console.log('✅ canProceed: legal_disclosure', { legalDisclosureAccepted });
         return legalDisclosureAccepted;
-      case 'signature_capture':
+      case 'signature_capture': {
         const hasSignatureData = !!signatureData;
         const isSignatureValid = signatureData ? contractUtils.validateSignature(signatureData) : false;
         const hasName = !!signerName.trim();
@@ -243,6 +243,7 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
         });
         
         return canProceedFromSignature;
+      }
       case 'confirmation':
         console.log('✅ canProceed: confirmation', { signatureIntentConfirmed });
         return signatureIntentConfirmed;
