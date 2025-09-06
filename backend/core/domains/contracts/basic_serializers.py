@@ -16,9 +16,10 @@ class ContractTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractTemplate
         fields = [
-            'id', 'name', 'description', 'event_type', 'requires_signature',
+            'id', 'name', 'description', 'event_type', 'content', 'variables', 
+            'sections', 'signature_requirements', 'requires_signature',
             'requires_witness', 'requires_company_signature', 'allows_amendments',
-            'created_at', 'updated_at'
+            'amendment_requires_signature', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 

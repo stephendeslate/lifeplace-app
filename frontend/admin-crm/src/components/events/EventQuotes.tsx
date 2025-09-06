@@ -47,6 +47,7 @@ import type { EventQuote } from '../../types/sales.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { QuoteDetailsDialog } from '../sales/QuoteDetailsDialog';
+import { QuoteCreateDialog } from './QuoteCreateDialog';
 
 interface EventQuotesProps {
   event: Event;
@@ -72,7 +73,7 @@ const getStatusIcon = (status: string) => {
 const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
   switch (status) {
     case 'DRAFT':
-      return 'default';
+      return 'secondary';
     case 'SENT':
       return 'info';
     case 'ACCEPTED':
@@ -82,7 +83,48 @@ const getStatusColor = (status: string): "default" | "primary" | "secondary" | "
     case 'EXPIRED':
       return 'warning';
     default:
-      return 'default';
+      return 'secondary';
+  }
+};
+
+const getStatusStyles = (status: string) => {
+  switch (status) {
+    case 'DRAFT':
+      return {
+        backgroundColor: '#e3f2fd',
+        color: '#1976d2',
+        '& .MuiChip-icon': { color: '#1976d2' }
+      };
+    case 'SENT':
+      return {
+        backgroundColor: '#e1f5fe',
+        color: '#0277bd',
+        '& .MuiChip-icon': { color: '#0277bd' }
+      };
+    case 'ACCEPTED':
+      return {
+        backgroundColor: '#e8f5e8',
+        color: '#2e7d32',
+        '& .MuiChip-icon': { color: '#2e7d32' }
+      };
+    case 'REJECTED':
+      return {
+        backgroundColor: '#ffebee',
+        color: '#c62828',
+        '& .MuiChip-icon': { color: '#c62828' }
+      };
+    case 'EXPIRED':
+      return {
+        backgroundColor: '#fff3e0',
+        color: '#f57c00',
+        '& .MuiChip-icon': { color: '#f57c00' }
+      };
+    default:
+      return {
+        backgroundColor: '#f3e5f5',
+        color: '#7b1fa2',
+        '& .MuiChip-icon': { color: '#7b1fa2' }
+      };
   }
 };
 
@@ -91,11 +133,13 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<EventQuote | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
   const {
     data: quotes = [],
     isLoading,
+    refetch,
   } = useQuotesForEvent(event.id);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, quote: EventQuote) => {
@@ -109,7 +153,7 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   };
 
   const handleCreateQuote = () => {
-    navigate(`/sales/quotes/new?eventId=${event.id}`);
+    setCreateDialogOpen(true);
   };
 
   const handleViewQuote = (quote: EventQuote) => {
@@ -224,8 +268,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
                   <Chip
                     icon={getStatusIcon(quote.status)}
                     label={quote.status_display || quote.status}
-                    color={getStatusColor(quote.status)}
                     size="small"
+                    sx={getStatusStyles(quote.status)}
                   />
                 </TableCell>
                 <TableCell>
@@ -357,6 +401,16 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
         open={detailDialogOpen}
         onClose={() => setDetailDialogOpen(false)}
         quote={selectedQuote}
+      />
+
+      {/* Quote Create Dialog */}
+      <QuoteCreateDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        event={event}
+        onSuccess={() => {
+          refetch();
+        }}
       />
     </Box>
   );

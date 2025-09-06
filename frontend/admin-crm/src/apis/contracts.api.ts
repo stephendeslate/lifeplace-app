@@ -62,6 +62,21 @@ export const contractsApi = {
     return Array.isArray(data) ? data : data.results || [];
   },
 
+  previewTemplate: async (id: number, contextData: Record<string, unknown> = {}): Promise<{
+    template_id: number;
+    template_name: string;
+    rendered_content: string;
+    variables: string[];
+    sections: string[];
+    event_type: string | null;
+    context_used: Record<string, unknown>;
+  }> => {
+    const response = await api.post(`/contracts/templates/${id}/preview/`, {
+      context_data: contextData
+    });
+    return response.data;
+  },
+
   // Event Contracts
   getEventContracts: async (filters?: EventContractFilters): Promise<EventContract[]> => {
     const params = new URLSearchParams();

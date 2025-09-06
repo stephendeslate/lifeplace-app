@@ -28,6 +28,7 @@ from .serializers import (
     ContractAmendmentCreateSerializer,
     ContractDocumentSerializer,
     ContractNoteSerializer,
+    PreviewContractSerializer,
 )
 from .services import (
     ContractTemplateService, 
@@ -113,6 +114,20 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(templates, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def preview(self, request, pk=None):
+        """Preview a contract template with sample data"""
+        template = self.get_object()
+        serializer = PreviewContractSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        context_data = serializer.validated_data.get('context_data', {})
+        
+        # Generate preview using the service
+        preview_data = ContractTemplateService.preview_template(template.id, context_data)
+        
+        return Response(preview_data)
 
 
 class EventContractViewSet(viewsets.ModelViewSet):

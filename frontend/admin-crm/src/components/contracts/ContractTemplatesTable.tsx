@@ -15,6 +15,7 @@ import {
   EventNote as EventIcon,
   Gavel as SignatureIcon,
   EditNote as AmendmentIcon,
+  Preview as PreviewIcon,
 } from '@mui/icons-material';
 import type { ContractTemplate } from '../../types/contracts.types';
 import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
@@ -26,6 +27,7 @@ interface ContractTemplateTableProps {
   onEdit: (template: ContractTemplate) => void;
   onDelete: (id: number) => void;
   onDuplicate?: (template: ContractTemplate) => void;
+  onPreview?: (template: ContractTemplate) => void;
   isDeleting: boolean;
 }
 
@@ -35,6 +37,7 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
   onEdit,
   onDelete,
   onDuplicate,
+  onPreview,
   isDeleting,
 }) => {
   const getEventTypeChip = (eventTypeName?: string) => {
@@ -166,6 +169,13 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
   ];
 
   const actions: ModernTableAction[] = [
+    {
+      label: 'Preview',
+      icon: <PreviewIcon />,
+      onClick: (row: Record<string, unknown>) => onPreview && onPreview(row as unknown as ContractTemplate),
+      color: 'info',
+      show: () => !!onPreview,
+    },
     {
       label: 'Edit',
       icon: <EditIcon />,

@@ -1,10 +1,12 @@
 // Contract Templates Settings Page - Standardized Version
 // Migrated to use the unified settings system with minimal configuration
 
-import React from 'react';
-import { Description as ContractIcon } from '@mui/icons-material';
+import React, { useState } from 'react';
+import { Description as ContractIcon, Preview as PreviewIcon } from '@mui/icons-material';
 import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { TemplatePreviewDialog } from '../../../components/common';
 import { useContractTemplates, useCreateContractTemplate, useUpdateContractTemplate, useDeleteContractTemplate } from '../../../hooks/useContracts';
+import { contractsApi } from '../../../apis/contracts.api';
 import type { ContractTemplate, CreateContractTemplateData, UpdateContractTemplateData } from '../../../types/contracts.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 
@@ -169,6 +171,10 @@ const config: SettingsPageConfig<ContractTemplate> = {
 };
 
 export const ContractTemplates = () => {
+  // Preview dialog state
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate | null>(null);
+
   // Data hooks
   const { data: contractTemplates = [], isLoading, error, refetch } = useContractTemplates();
 
@@ -237,21 +243,65 @@ export const ContractTemplates = () => {
     });
   };
 
+  // Preview handlers
+  const handlePreview = (template: ContractTemplate) => {
+    setSelectedTemplate(template);
+    setPreviewDialogOpen(true);
+  };
+
+  const handlePreviewTemplate = async (contextData: Record<string, unknown>) => {
+    if (!selectedTemplate) {
+      throw new Error('No template selected');
+    }
+
+    const result = await contractsApi.previewTemplate(selectedTemplate.id, contextData);
+    return {
+      rendered_content: result.rendered_content,
+      template_name: result.template_name,
+      variables: result.variables || [],
+    };
+  };
+
+  // Custom table actions
+  const customTableActions = [
+    {
+      label: 'Preview',
+      icon: React.createElement(PreviewIcon),
+      onClick: (template: ContractTemplate) => handlePreview(template),
+      color: 'info' as const,
+    },
+  ];
+
   return (
-    <SettingsPage
-      config={config}
-      data={contractTemplates}
-      defaultValues={defaultContractTemplate}
-      isLoading={isLoading}
-      error={error?.message}
-      onRefresh={handleRefresh}
-      onCreate={handleCreate}
-      onUpdate={handleUpdate}
-      onDelete={handleDelete}
-      isCreating={createMutation.isPending}
-      isUpdating={updateMutation.isPending}
-      isDeleting={deleteMutation.isPending}
-    />
+    <>
+      <SettingsPage
+        config={config}
+        data={contractTemplates}
+        defaultValues={defaultContractTemplate}
+        isLoading={isLoading}
+        error={error?.message}
+        onRefresh={handleRefresh}
+        onCreate={handleCreate}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+        isCreating={createMutation.isPending}
+        isUpdating={updateMutation.isPending}
+        isDeleting={deleteMutation.isPending}
+        customTableActions={customTableActions}
+      />
+
+      {/* Preview Dialog */}
+      {selectedTemplate && (
+        <TemplatePreviewDialog
+          open={previewDialogOpen}
+          onClose={() => setPreviewDialogOpen(false)}
+          templateName={selectedTemplate.name}
+          templateType="contract"
+          variables={selectedTemplate.variables || []}
+          onPreview={handlePreviewTemplate}
+        />
+      )}
+    </>
   );
 };
 

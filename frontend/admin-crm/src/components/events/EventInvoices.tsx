@@ -44,6 +44,7 @@ import type { Invoice, InvoiceStatus } from '../../types/payments.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { InvoiceDetailsDialog } from '../payments/InvoiceDetailsDialog';
+import { InvoiceCreateDialog } from './InvoiceCreateDialog';
 
 interface EventInvoicesProps {
   event: Event;
@@ -53,14 +54,62 @@ interface EventInvoicesProps {
 const getStatusColor = (status: InvoiceStatus, dueDate?: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
   if (status === 'PAID') return 'success';
   if (status === 'VOID' || status === 'CANCELLED') return 'error';
-  if (status === 'DRAFT') return 'default';
+  if (status === 'DRAFT') return 'secondary';
   
   // Check if overdue
   if (status === 'ISSUED' && dueDate && isPast(new Date(dueDate))) {
     return 'error';
   }
   
-  return 'info';
+  // Add more specific colors for different statuses
+  if (status === 'ISSUED') return 'info';
+  if (status === 'OVERDUE') return 'warning';
+  
+  return 'primary';
+};
+
+const getInvoiceStatusStyles = (status: InvoiceStatus, dueDate?: string) => {
+  // Check if overdue first
+  if (status === 'ISSUED' && dueDate && isPast(new Date(dueDate))) {
+    return {
+      backgroundColor: '#ffebee',
+      color: '#c62828'
+    };
+  }
+
+  switch (status) {
+    case 'DRAFT':
+      return {
+        backgroundColor: '#e3f2fd',
+        color: '#1976d2'
+      };
+    case 'ISSUED':
+      return {
+        backgroundColor: '#e1f5fe',
+        color: '#0277bd'
+      };
+    case 'PAID':
+      return {
+        backgroundColor: '#e8f5e8',
+        color: '#2e7d32'
+      };
+    case 'OVERDUE':
+      return {
+        backgroundColor: '#fff3e0',
+        color: '#f57c00'
+      };
+    case 'VOID':
+    case 'CANCELLED':
+      return {
+        backgroundColor: '#ffebee',
+        color: '#c62828'
+      };
+    default:
+      return {
+        backgroundColor: '#e3f2fd',
+        color: '#1976d2'
+      };
+  }
 };
 
 const getStatusLabel = (status: InvoiceStatus, dueDate?: string): string => {
@@ -75,6 +124,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
   const {
@@ -82,6 +132,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
     isLoadingInvoices,
     deleteInvoice,
     isDeletingInvoice,
+    refetchInvoices,
   } = useInvoices({ event_id: event.id });
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, invoice: Invoice) => {
@@ -95,7 +146,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
   };
 
   const handleCreateInvoice = () => {
-    navigate(`/payments/invoices/new?eventId=${event.id}`);
+    setCreateDialogOpen(true);
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -226,8 +277,8 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                   <TableCell>
                     <Chip
                       label={statusLabel}
-                      color={getStatusColor(invoice.status, invoice.due_date)}
                       size="small"
+                      sx={getInvoiceStatusStyles(invoice.status, invoice.due_date)}
                     />
                     {statusLabel === 'OVERDUE' && (
                       <Typography variant="caption" color="error" display="block">
@@ -412,6 +463,16 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
         open={detailDialogOpen}
         onClose={() => setDetailDialogOpen(false)}
         invoice={selectedInvoice}
+      />
+
+      {/* Invoice Create Dialog */}
+      <InvoiceCreateDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        event={event}
+        onSuccess={() => {
+          refetchInvoices();
+        }}
       />
     </Box>
   );

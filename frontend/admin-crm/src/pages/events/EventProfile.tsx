@@ -288,11 +288,52 @@ export const EventProfile: React.FC = () => {
       case 'CONFIRMED':
         return 'success';
       case 'COMPLETED':
-        return 'default';
+        return 'primary';
       case 'CANCELLED':
         return 'error';
       default:
-        return 'default';
+        return 'secondary';
+    }
+  };
+
+  const getPaymentStatusColor = (paymentStatus: string) => {
+    switch (paymentStatus) {
+      case 'PAID':
+        return {
+          colorScheme: 'success',
+          background: tokens.color.success[500],
+          textColor: tokens.color.success[700]
+        };
+      case 'PARTIAL':
+        return {
+          colorScheme: 'warning', 
+          background: tokens.color.warning[500],
+          textColor: tokens.color.warning[700]
+        };
+      case 'PENDING':
+        return {
+          colorScheme: 'info',
+          background: tokens.color.info[500], 
+          textColor: tokens.color.info[700]
+        };
+      case 'OVERDUE':
+        return {
+          colorScheme: 'error',
+          background: tokens.color.error[500],
+          textColor: tokens.color.error[700]
+        };
+      case 'REFUNDED':
+        return {
+          colorScheme: 'secondary',
+          background: tokens.color.secondary[500],
+          textColor: tokens.color.secondary[700]
+        };
+      default:
+        return {
+          colorScheme: 'primary',
+          background: tokens.color.primary[500],
+          textColor: tokens.color.primary[700]
+        };
     }
   };
 
@@ -1207,42 +1248,112 @@ export const EventProfile: React.FC = () => {
                       </Box>
                     )}
 
-                    {event.payment_status && (
-                      <Box
-                        sx={{
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.xl,
-                          p: 2.5,
-                          border: `1px solid ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}20`,
-                          background: `linear-gradient(135deg, ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}05 0%, transparent 100%)`,
-                        }}
-                      >
-                        <Typography 
-                          variant="subtitle2" 
-                          sx={{ 
-                            color: tokens.color.neutral[500],
-                            fontWeight: 600,
-                            mb: 1.5,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            fontSize: '0.75rem'
-                          }}
-                        >
-                          Payment Status
-                        </Typography>
-                        <Chip 
-                          label={event.payment_status.replace('_', ' ')} 
+                    {event.payment_status && (() => {
+                      const paymentColors = getPaymentStatusColor(event.payment_status);
+                      return (
+                        <Box
                           sx={{
                             ...glassPresets.light,
-                            background: `linear-gradient(135deg, ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}20 0%, ${event.payment_status === 'PAID' ? tokens.color.success[600] : tokens.color.warning[600]}15 100%)`,
-                            color: event.payment_status === 'PAID' ? tokens.color.success[700] : tokens.color.warning[700],
-                            border: `1px solid ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}30`,
-                            fontWeight: 600,
+                            borderRadius: tokens.spacing.radius.xl,
+                            p: 2.5,
+                            border: `1px solid ${paymentColors.background}20`,
+                            background: `linear-gradient(135deg, ${paymentColors.background}05 0%, transparent 100%)`,
                           }}
-                        />
-                      </Box>
-                    )}
+                        >
+                          <Typography 
+                            variant="subtitle2" 
+                            sx={{ 
+                              color: tokens.color.neutral[500],
+                              fontWeight: 600,
+                              mb: 1.5,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            Payment Status
+                          </Typography>
+                          <Chip 
+                            label={event.payment_status.replace('_', ' ')} 
+                            sx={{
+                              ...glassPresets.light,
+                              background: `linear-gradient(135deg, ${paymentColors.background}20 0%, ${paymentColors.background}15 100%)`,
+                              color: paymentColors.textColor,
+                              border: `1px solid ${paymentColors.background}30`,
+                              fontWeight: 600,
+                            }}
+                          />
+                        </Box>
+                      );
+                    })()}
                   </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* Enhanced Workflow Visualization */}
+            <Card
+              elevation={0}
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xxl,
+                border: `1px solid ${tokens.color.borders.glass}`,
+                position: 'relative',
+                overflow: 'visible',
+                transition: createTransition(['transform', 'box-shadow'], 'fast'),
+                
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.info[500]}04 100%)`,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  pointerEvents: 'none',
+                },
+                
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: tokens.shadow.glass.light,
+                }
+              }}
+            >
+              <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                <Stack spacing={3}>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Box
+                      sx={{
+                        ...glassPresets.medium,
+                        borderRadius: tokens.spacing.radius.full,
+                        p: 1.5,
+                        background: `linear-gradient(135deg, ${tokens.color.warning[500]}15 0%, ${tokens.color.warning[600]}10 100%)`,
+                        border: `1px solid ${tokens.color.warning[500]}30`,
+                      }}
+                    >
+                      <ScheduleIcon sx={{ fontSize: 20, color: tokens.color.warning[600] }} />
+                    </Box>
+                    <Typography 
+                      variant="h6" 
+                      fontWeight="bold"
+                      sx={{ color: tokens.color.neutral[800] }}
+                    >
+                      Workflow Progress
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mt: 2 }}>
+                    <WorkflowVisualization
+                      workflowName={event.workflow_template_name}
+                      stages={[]} // This would come from actual workflow data
+                      currentStage={event.current_stage || undefined}
+                      overallProgress={event.workflow_progress}
+                      layout="vertical"
+                      showTasks={false}
+                      showProgress={true}
+                    />
+                  </Box>
                 </Stack>
               </CardContent>
             </Card>
@@ -1284,81 +1395,6 @@ export const EventProfile: React.FC = () => {
               </Box>
             </Box>
 
-            {/* Enhanced Related Entities & Workflow */}
-            <Box 
-              sx={{ 
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' },
-                gap: 3,
-              }}
-            >
-              {/* Enhanced Related Entities */}
-              <Box
-                sx={{
-                  ...glassPresets.light,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  border: `1px solid ${tokens.color.borders.glass}`,
-                  position: 'relative',
-                  overflow: 'visible',
-                  
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.secondary[500]}04 100%)`,
-                    borderRadius: tokens.spacing.radius.xxl,
-                    pointerEvents: 'none',
-                  }
-                }}
-              >
-                <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-                  <EntityNavigation
-                    title="Related"
-                    entities={relatedEntities}
-                    layout="compact"
-                    maxVisible={5}
-                  />
-                </Box>
-              </Box>
-
-              {/* Enhanced Workflow Visualization */}
-              <Box
-                sx={{
-                  ...glassPresets.light,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  border: `1px solid ${tokens.color.borders.glass}`,
-                  position: 'relative',
-                  overflow: 'visible',
-                  
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.info[500]}04 100%)`,
-                    borderRadius: tokens.spacing.radius.xxl,
-                    pointerEvents: 'none',
-                  }
-                }}
-              >
-                <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-                  <WorkflowVisualization
-                    workflowName={event.workflow_template_name}
-                    stages={[]} // This would come from actual workflow data
-                    currentStage={event.current_stage || undefined}
-                    overallProgress={event.workflow_progress}
-                    layout="horizontal"
-                    showTasks={false}
-                    showProgress={true}
-                  />
-                </Box>
-              </Box>
-            </Box>
 
             {/* Enhanced Activity Timeline */}
             <Box

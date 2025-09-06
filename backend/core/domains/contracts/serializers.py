@@ -289,3 +289,14 @@ class EventContractUpdateSerializer(serializers.ModelSerializer):
         if value is not None and value < 0:
             raise serializers.ValidationError("Contract value cannot be negative")
         return value
+
+
+class PreviewContractSerializer(serializers.Serializer):
+    """Serializer for previewing contract templates"""
+    context_data = serializers.JSONField(required=False, default=dict)
+    
+    def validate_context_data(self, value):
+        """Validate context data is a dictionary"""
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Context data must be a dictionary")
+        return value

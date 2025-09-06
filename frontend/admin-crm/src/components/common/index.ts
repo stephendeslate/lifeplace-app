@@ -92,6 +92,9 @@ export {
 export { default as ModernLoadingStates } from './ModernLoadingStates';
 export { ModernEmptyState } from './ModernEmptyState';
 
+// Template Preview
+export { TemplatePreviewDialog } from './TemplatePreviewDialog';
+
 // Settings Components System
 export {
   SettingsTable,
