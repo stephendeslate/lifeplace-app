@@ -97,7 +97,9 @@ export const ContractView: React.FC = () => {
             Events
           </Link>
           <Link color="inherit" onClick={handleBack} sx={{ cursor: 'pointer' }}>
-            {contract.event_details?.name || 'Event'}
+            {contract.event_details?.name || 
+             (typeof contract.event === 'object' ? contract.event.name : null) ||
+             `Event #${typeof contract.event === 'number' ? contract.event : contract.event?.id || 'Unknown'}`}
           </Link>
           <Typography color="text.primary">Contract #{contract.id}</Typography>
         </Breadcrumbs>
@@ -173,7 +175,9 @@ export const ContractView: React.FC = () => {
                   Event
                 </Typography>
                 <Typography variant="body1">
-                  {contract.event_details?.name || 'Unknown Event'}
+                  {contract.event_details?.name || 
+                   (typeof contract.event === 'object' ? contract.event.name : null) ||
+                   `Event #${typeof contract.event === 'number' ? contract.event : contract.event?.id || 'Unknown'}`}
                 </Typography>
               </Box>
               <Box>
@@ -181,7 +185,9 @@ export const ContractView: React.FC = () => {
                   Client
                 </Typography>
                 <Typography variant="body1">
-                  {contract.event_details?.client_name || 'Unknown Client'}
+                  {contract.event_details?.client_name || 
+                   (typeof contract.event === 'object' ? contract.event.client_name : null) ||
+                   'Not specified'}
                 </Typography>
               </Box>
               <Box>
