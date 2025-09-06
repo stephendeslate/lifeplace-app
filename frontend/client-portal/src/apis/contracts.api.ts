@@ -62,14 +62,7 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
     amendment_number: apiResponse.amendment_number,
     signatures: (apiResponse as ContractApiResponse & { signatures?: ContractSignature[] }).signatures || [], // May be missing in list endpoints
     is_fully_signed: apiResponse.is_fully_signed,
-    signature_progress: apiResponse.signature_count > 0 ? {
-      total_required: 1, // Default assumption
-      signed_count: apiResponse.signature_count,
-      percentage: apiResponse.is_fully_signed ? 100 : 0,
-      required_roles: ['CLIENT'],
-      signed_roles: apiResponse.is_fully_signed ? ['CLIENT'] : [],
-      missing_roles: apiResponse.is_fully_signed ? [] : ['CLIENT'],
-    } : undefined,
+    signature_progress: (apiResponse as any).signature_progress,
     can_client_sign: apiResponse.status === 'SENT' && !apiResponse.is_fully_signed,
     created_at: apiResponse.created_at,
     updated_at: apiResponse.updated_at,

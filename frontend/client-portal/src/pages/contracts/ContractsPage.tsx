@@ -108,7 +108,7 @@ export const ContractsPage: React.FC = () => {
 
   const handleSignComplete = (signedContract: Contract) => {
     // Contract signing completed successfully
-    refreshContracts();
+    // ContractsContext automatically updates the cache when using signContract()
     setSigningDialogOpen(false);
     setSelectedContract(null);
     

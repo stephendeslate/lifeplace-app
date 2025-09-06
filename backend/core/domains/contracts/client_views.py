@@ -75,9 +75,9 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         ).order_by('-created_at')
     
     def get_serializer_class(self):
-        if self.action == 'retrieve':
-            return EventContractDetailSerializer
-        return EventContractSerializer
+        # Use detailed serializer for both list and retrieve to ensure 
+        # accurate signature progress data is available to client
+        return EventContractDetailSerializer
     
     def retrieve(self, request, *args, **kwargs):
         """Enhanced retrieve with calculated signature fields"""
