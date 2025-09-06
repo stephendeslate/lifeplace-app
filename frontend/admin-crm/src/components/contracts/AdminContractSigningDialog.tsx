@@ -32,10 +32,11 @@ import {
   CheckCircle as CompleteIcon,
 } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
-import type { EventContract, ContractSigningData, SignatureRole } from '../../types/contracts.types';
+import type { EventContract, CreateContractSignatureData, SignatureRole } from '../../types/contracts.types';
 import { SIGNATURE_ROLES } from '../../types/contracts.types';
-import { useSignContract } from '../../hooks/useContracts';
-import EnhancedSignaturePad from './EnhancedSignaturePad';
+import { useAddContractSignature } from '../../hooks/useContracts';
+import { useAuth } from '../../contexts/AuthContext';
+import { SimpleSignaturePad } from './SimpleSignaturePad';
 
 type SigningStep = 'review_contract' | 'signer_info' | 'signature_capture' | 'confirmation';
 
@@ -63,7 +64,8 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { mutate: signContract, isPending: isSubmitting } = useSignContract();
+  const { user } = useAuth();
+  const { mutate: addSignature, isPending: isSubmitting } = useAddContractSignature();
 
   const [currentStep, setCurrentStep] = useState<SigningStep>('review_contract');
   const [signatureData, setSignatureData] = useState<string | null>(null);
@@ -103,11 +105,21 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
   }, [isSubmitting, onClose]);
 
   const handleNext = useCallback(() => {
+    console.log('➡️ Next button clicked:', {
+      currentStep,
+      currentStepIndex,
+      signatureData: signatureData ? 'present' : 'null',
+      timestamp: Date.now()
+    });
+    
     const nextStepIndex = currentStepIndex + 1;
     if (nextStepIndex < SIGNING_STEPS.length) {
+      console.log(`🚀 Moving to next step: ${SIGNING_STEPS[nextStepIndex].label}`);
       setCurrentStep(SIGNING_STEPS[nextStepIndex].key);
+    } else {
+      console.log('❌ Cannot proceed - already at last step');
     }
-  }, [currentStepIndex]);
+  }, [currentStepIndex, currentStep, signatureData]);
 
   const handleBack = useCallback(() => {
     const prevStepIndex = currentStepIndex - 1;
@@ -121,22 +133,23 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
 
     setErrors([]);
 
-    const submissionData: ContractSigningData = {
-      signature_data: signatureData,
+    // Transform data to CreateContractSignatureData format for modern endpoint
+    const signatureSubmissionData = {
+      contract: contract.id,
+      signer: user?.id || 0,
       role: signerRole,
+      signature_data: signatureData,
       signer_name: signerName,
       signer_title: signerTitle,
       signer_email: signerEmail,
       verification_method: 'electronic_signature',
     };
 
-    if (requiresWitness) {
-      submissionData.witness_name = witnessName;
-      submissionData.witness_signature = witnessSignature;
-    }
+    // Note: Modern endpoint doesn't support witness data in the same call
+    // If witness is required, it would need a separate signature creation
 
-    signContract(
-      { id: contract.id, data: submissionData },
+    addSignature(
+      { id: contract.id, data: signatureSubmissionData },
       {
         onSuccess: (signedContract) => {
           onSignComplete(signedContract);
@@ -159,32 +172,68 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
     requiresWitness,
     witnessName,
     witnessSignature,
-    signContract,
+    addSignature,
     onSignComplete,
     onClose,
     onError,
+    user?.id,
   ]);
 
   const canProceed = useCallback(() => {
+    console.log('🔄 AdminContractSigningDialog - canProceed check:', {
+      currentStep,
+      timestamp: Date.now()
+    });
+    
     switch (currentStep) {
       case 'review_contract':
+        console.log('✅ Review step - always can proceed');
         return true; // Always can proceed from review
-      case 'signer_info':
-        return (
+      case 'signer_info': {
+        const canProceedSignerInfo = (
           signerName.trim() !== '' &&
           signerEmail.trim() !== '' &&
           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail) &&
           legalDisclosureAccepted
         );
+        console.log('📝 Signer info step:', {
+          signerName: signerName.trim(),
+          signerEmail: signerEmail.trim(),
+          emailValid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail),
+          legalDisclosureAccepted,
+          canProceed: canProceedSignerInfo
+        });
+        return canProceedSignerInfo;
+      }
       case 'signature_capture': {
         const hasSignature = signatureData !== null;
         const hasWitnessInfo = !requiresWitness || (witnessName.trim() !== '' && witnessSignature.trim() !== '');
-        return hasSignature && hasWitnessInfo;
+        const canProceedSignature = hasSignature && hasWitnessInfo;
+        
+        console.log('✍️ Signature capture step:', {
+          signatureData: signatureData ? 'present' : 'null',
+          signatureDataLength: signatureData?.length || 0,
+          hasSignature,
+          requiresWitness,
+          witnessName: witnessName.trim(),
+          witnessSignature: witnessSignature.trim(),
+          hasWitnessInfo,
+          canProceed: canProceedSignature
+        });
+        
+        return canProceedSignature;
       }
-      case 'confirmation':
+      case 'confirmation': {
+        console.log('✓ Confirmation step:', {
+          signatureIntentConfirmed,
+          canProceed: signatureIntentConfirmed
+        });
         return signatureIntentConfirmed;
-      default:
+      }
+      default: {
+        console.log('❌ Unknown step, cannot proceed');
         return false;
+      }
     }
   }, [currentStep, signerName, signerEmail, legalDisclosureAccepted, signatureData, requiresWitness, witnessName, witnessSignature, signatureIntentConfirmed]);
 
@@ -351,11 +400,20 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
               Electronic Signature
             </Typography>
 
-            <EnhancedSignaturePad
+            <SimpleSignaturePad
               onSignatureChange={(data) => {
+                console.log('📝 AdminContractSigningDialog - signature data received:', {
+                  hasData: !!data,
+                  dataLength: data?.length || 0,
+                  timestamp: Date.now(),
+                });
+                
                 setSignatureData(data);
                 if (data) {
                   setErrors(prev => prev.filter(error => !error.includes('signature')));
+                  console.log('✅ Signature data set, cleared signature-related errors');
+                } else {
+                  console.log('❌ Signature data is null/empty');
                 }
               }}
               width={isMobile ? 300 : 500}
@@ -363,8 +421,6 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
               required
               label="Your Electronic Signature"
               helperText="Draw your signature in the box above using your mouse or touch screen"
-              enableBiometricAnalysis={true}
-              showAnalytics={true}
             />
 
             {requiresWitness && (

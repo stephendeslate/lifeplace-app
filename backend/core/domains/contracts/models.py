@@ -1,5 +1,5 @@
 # backend/core/domains/contracts/models.py
-from datetime import timezone
+from django.utils import timezone
 from core.utils.models import BaseModel
 from django.db import models
 from django.core.exceptions import ValidationError

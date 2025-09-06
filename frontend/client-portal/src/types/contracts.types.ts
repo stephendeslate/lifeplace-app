@@ -69,7 +69,14 @@ export interface ContractSignature {
 // API Response structure (flattened)
 export interface ContractApiResponse {
   id: number;
-  event: number;
+  event: number | {
+    id: number;
+    name: string;
+    client_name?: string;
+    status: string;
+    start_date?: string;
+    end_date?: string;
+  };
   template: number;
   template_name: string;
   status: ContractStatus;
