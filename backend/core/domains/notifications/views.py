@@ -26,7 +26,6 @@ from .serializers import (
 from .services import (
     NotificationService,
     NotificationStatsService,
-    NotificationTypeService,
 )
 from .security import (
     NotificationThrottle,

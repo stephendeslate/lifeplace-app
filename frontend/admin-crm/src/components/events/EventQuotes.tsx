@@ -70,22 +70,6 @@ const getStatusIcon = (status: string) => {
   }
 };
 
-const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
-  switch (status) {
-    case 'DRAFT':
-      return 'secondary';
-    case 'SENT':
-      return 'info';
-    case 'ACCEPTED':
-      return 'success';
-    case 'REJECTED':
-      return 'error';
-    case 'EXPIRED':
-      return 'warning';
-    default:
-      return 'secondary';
-  }
-};
 
 const getStatusStyles = (status: string) => {
   switch (status) {

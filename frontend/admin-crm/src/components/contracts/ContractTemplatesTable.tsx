@@ -173,7 +173,7 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
       label: 'Preview',
       icon: <PreviewIcon />,
       onClick: (row: Record<string, unknown>) => onPreview && onPreview(row as unknown as ContractTemplate),
-      color: 'info',
+      color: 'primary',
       show: () => !!onPreview,
     },
     {

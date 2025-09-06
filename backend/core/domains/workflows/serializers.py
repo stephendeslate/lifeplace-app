@@ -5,7 +5,6 @@ from django.db import transaction
 from rest_framework import serializers
 
 from .basic_serializers import WorkflowStageSerializer, WorkflowTemplateSerializer
-from .exceptions import EmailTemplateRequired
 from .models import WorkflowStage, WorkflowTemplate
 
 

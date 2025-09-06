@@ -76,9 +76,7 @@ import { NotesList } from '../../components/notes';
 import { 
   ActivityTimeline,
   FinancialSummary,
-  EntityNavigation,
   WorkflowVisualization,
-  createClientReference,
   calculateEventFinancials,
   type ActivityItem,
 } from '../../components/common';
@@ -173,13 +171,6 @@ export const EventProfile: React.FC = () => {
   }, [event]);
 
 
-  const relatedEntities = useMemo(() => {
-    const entities = [];
-    if (client) {
-      entities.push(createClientReference(client));
-    }
-    return entities;
-  }, [client]);
 
   const activityItems: ActivityItem[] = useMemo(() => {
     const items: ActivityItem[] = [];

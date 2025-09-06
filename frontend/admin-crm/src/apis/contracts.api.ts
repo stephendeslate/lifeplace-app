@@ -71,7 +71,15 @@ export const contractsApi = {
     event_type: string | null;
     context_used: Record<string, unknown>;
   }> => {
-    const response = await api.post(`/contracts/templates/${id}/preview/`, {
+    const response = await api.post<{
+      template_id: number;
+      template_name: string;
+      rendered_content: string;
+      variables: string[];
+      sections: string[];
+      event_type: string | null;
+      context_used: Record<string, unknown>;
+    }>(`/contracts/templates/${id}/preview/`, {
       context_data: contextData
     });
     return response.data;

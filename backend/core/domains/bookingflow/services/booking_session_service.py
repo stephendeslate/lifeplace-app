@@ -23,7 +23,6 @@ from ..exceptions import (
     BookingSessionExpired,
     StepValidationError,
     EventCreationFailed,
-    ValidationFailed,  # Added import for ValidationFailed
 )
 from ..models import BookingFlow, BookingSession
 

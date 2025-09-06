@@ -6,7 +6,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import AppSettings, CurrencySettings
 from .serializers import (
-    AppSettingsSerializer,
     CurrencySettingsSerializer,
     CurrencySettingsCreateSerializer,
     CurrencySettingsUpdateSerializer,

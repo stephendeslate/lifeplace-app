@@ -59,7 +59,6 @@ const INVOICE_STATUSES: { value: InvoiceStatus; label: string }[] = [
   { value: 'DRAFT', label: 'Draft' },
   { value: 'ISSUED', label: 'Issued' },
   { value: 'PAID', label: 'Paid' },
-  { value: 'OVERDUE', label: 'Overdue' },
   { value: 'VOID', label: 'Void' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
