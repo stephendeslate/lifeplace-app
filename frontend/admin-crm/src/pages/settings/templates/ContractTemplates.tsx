@@ -268,7 +268,7 @@ export const ContractTemplates = () => {
       label: 'Preview',
       icon: React.createElement(PreviewIcon),
       onClick: (template: ContractTemplate) => handlePreview(template),
-      color: 'info' as const,
+      color: 'primary' as const,
     },
   ];
 

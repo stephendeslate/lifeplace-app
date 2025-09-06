@@ -27,7 +27,6 @@ from .models import AdminInvitation, User
 from .serializers import (
     AdminInvitationSerializer,
     UserCreateSerializer,
-    UserLoginSerializer,
     UserSerializer,
 )
 from .services import AdminInvitationService, UserService

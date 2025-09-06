@@ -11,7 +11,7 @@ from django.db.models import Q
 
 from .exceptions import (
     TemplateNotFound, TemplateNameExists, InvalidTemplateFormat,
-    CommunicationProviderError, SendingFailed
+    CommunicationProviderError
 )
 from .models import CommunicationTemplate, CommunicationRecord
 from .config import communication_config

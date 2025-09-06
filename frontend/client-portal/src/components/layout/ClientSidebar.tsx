@@ -22,6 +22,7 @@ import {
   CalendarMonth as BookingIcon,
   Message as MessageIcon,
   Payment as PaymentIcon,
+  Description as ContractIcon,
   Person as ProfileIcon,
   HelpOutline as HelpIcon,
   Home as HomeIcon,
@@ -78,6 +79,13 @@ const navigationItems: NavigationItem[] = [
     path: '/payments',
     icon: <PaymentIcon />,
     // TODO: Replace with API-driven outstanding payments count
+  },
+  {
+    id: 'contracts',
+    label: 'Contracts',
+    path: '/contracts',
+    icon: <ContractIcon />,
+    // TODO: Replace with API-driven pending contracts count
   },
 ];
 

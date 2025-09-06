@@ -19,7 +19,6 @@ from .exceptions import (
     DuplicateMetricName,
     DuplicateReportName,
     InvalidMetricConfiguration,
-    InvalidTimeRange,
     MetricCalculationError,
     MetricDefinitionNotFound,
     ReportExecutionNotFound,

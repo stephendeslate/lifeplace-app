@@ -239,11 +239,15 @@ export const CommunicationTemplates = () => {
       throw new Error('No template selected');
     }
 
-    const result = await communicationsApi.previewTemplate(selectedTemplate.id, contextData);
+    const previewData = {
+      template_id: selectedTemplate.id,
+      context_data: contextData
+    };
+    const result = await communicationsApi.previewTemplate(selectedTemplate.id, previewData);
     return {
-      rendered_content: result.rendered_content || result.body || '',
-      template_name: result.template_name || selectedTemplate.name,
-      variables: result.variables || [],
+      rendered_content: result.body || '',
+      template_name: selectedTemplate.name,
+      variables: [],
     };
   };
 
@@ -253,7 +257,7 @@ export const CommunicationTemplates = () => {
       label: 'Preview',
       icon: React.createElement(PreviewIcon),
       onClick: (template: CommunicationTemplate) => handlePreview(template),
-      color: 'info' as const,
+      color: 'primary' as const,
     },
   ];
 

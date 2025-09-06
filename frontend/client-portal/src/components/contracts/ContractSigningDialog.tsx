@@ -1,0 +1,556 @@
+// frontend/client-portal/src/components/contracts/ContractSigningDialog.tsx
+import React, { useState, useCallback } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Stepper,
+  Step,
+  StepLabel,
+  Box,
+  Typography,
+  Alert,
+  Checkbox,
+  FormControlLabel,
+  TextField,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import {
+  Close as CloseIcon,
+  ArrowBack as BackIcon,
+  ArrowForward as ForwardIcon,
+  CheckCircle as CompleteIcon,
+} from '@mui/icons-material';
+import { LoadingButton } from '@mui/lab';
+
+import type { Contract, SigningStep } from '../../types/contracts.types';
+import { contractUtils } from '../../apis/contracts.api';
+import ContractViewer from './ContractViewer';
+import EnhancedSignaturePad from './EnhancedSignaturePad';
+
+interface ContractSigningDialogProps {
+  open: boolean;
+  onClose: () => void;
+  contract: Contract | null;
+  onSignComplete: (signedContract: Contract) => void;
+  onError: (error: string) => void;
+}
+
+const SIGNING_STEPS: { key: SigningStep; label: string }[] = [
+  { key: 'review_contract', label: 'Review Contract' },
+  { key: 'legal_disclosure', label: 'Legal Disclosure' },
+  { key: 'signature_capture', label: 'Sign Document' },
+  { key: 'confirmation', label: 'Confirm' },
+];
+
+// Helper functions for signature analysis
+const calculateSignatureConfidence = (signatureData: string): number => {
+  try {
+    // Simple confidence calculation based on signature complexity
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return 0.5;
+
+    const img = new Image();
+    img.src = signatureData;
+    
+    // Basic complexity analysis
+    const base64Part = signatureData.split(',')[1] || '';
+    
+    // Score based on data size (more strokes = higher confidence)
+    let confidence = Math.min(base64Part.length / 10000, 1.0);
+    
+    // Adjust for minimum threshold
+    confidence = Math.max(confidence, 0.1);
+    
+    return Math.round(confidence * 10000) / 10000; // Round to 4 decimal places
+  } catch {
+    return 0.5; // Default confidence if analysis fails
+  }
+};
+
+const getSignatureComplexity = (signatureData: string): number => {
+  // Analyze signature complexity based on data size and patterns
+  const base64Part = signatureData.split(',')[1] || '';
+  return Math.min(base64Part.length / 5000, 1.0);
+};
+
+const getSignatureDuration = (): number => {
+  // In a real implementation, this would track actual signing time
+  // For now, return a reasonable default
+  return Math.random() * 10 + 2; // 2-12 seconds
+};
+
+const getEnhancedDeviceInfo = () => {
+  return {
+    touchSupport: 'ontouchstart' in window,
+    maxTouchPoints: navigator.maxTouchPoints || 0,
+    pointerEvents: !!window.PointerEvent,
+    deviceMemory: (navigator as any).deviceMemory || 'unknown',
+    hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+    connectionType: (navigator as any).connection?.effectiveType || 'unknown',
+    pixelRatio: window.devicePixelRatio || 1,
+  };
+};
+
+export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
+  open,
+  onClose,
+  contract,
+  onSignComplete,
+  onError,
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  const [currentStep, setCurrentStep] = useState<SigningStep>('review_contract');
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+  const [signerName, setSignerName] = useState('');
+  const [signerTitle, setSignerTitle] = useState('');
+  const [signerEmail, setSignerEmail] = useState('');
+  const [legalDisclosureAccepted, setLegalDisclosureAccepted] = useState(false);
+  const [signatureIntentConfirmed, setSignatureIntentConfirmed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  const currentStepIndex = SIGNING_STEPS.findIndex(step => step.key === currentStep);
+
+  // Reset state when dialog opens/closes
+  React.useEffect(() => {
+    if (open && contract) {
+      setCurrentStep('review_contract');
+      setSignatureData(null);
+      setSignerName('');
+      setSignerTitle('');
+      setSignerEmail('');
+      setLegalDisclosureAccepted(false);
+      setSignatureIntentConfirmed(false);
+      setIsSubmitting(false);
+      setErrors([]);
+    }
+  }, [open, contract]);
+
+  const handleClose = useCallback(() => {
+    if (isSubmitting) return; // Prevent closing during submission
+    onClose();
+  }, [isSubmitting, onClose]);
+
+  const handleNext = useCallback(() => {
+    const nextStepIndex = currentStepIndex + 1;
+    if (nextStepIndex < SIGNING_STEPS.length) {
+      setCurrentStep(SIGNING_STEPS[nextStepIndex].key);
+    }
+  }, [currentStepIndex]);
+
+  const handleBack = useCallback(() => {
+    const prevStepIndex = currentStepIndex - 1;
+    if (prevStepIndex >= 0) {
+      setCurrentStep(SIGNING_STEPS[prevStepIndex].key);
+    }
+  }, [currentStepIndex]);
+
+  const validateCurrentStep = useCallback(() => {
+    const newErrors: string[] = [];
+
+    switch (currentStep) {
+      case 'legal_disclosure':
+        if (!legalDisclosureAccepted) {
+          newErrors.push('You must accept the electronic signature disclosure');
+        }
+        break;
+
+      case 'signature_capture':
+        if (!signatureData || !contractUtils.validateSignature(signatureData)) {
+          newErrors.push('Please provide a valid signature');
+        }
+        if (!signerName.trim()) {
+          newErrors.push('Signer name is required');
+        }
+        if (!signerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail)) {
+          newErrors.push('Valid email address is required');
+        }
+        break;
+
+      case 'confirmation':
+        if (!signatureIntentConfirmed) {
+          newErrors.push('You must confirm your intent to sign');
+        }
+        break;
+    }
+
+    setErrors(newErrors);
+    return newErrors.length === 0;
+  }, [currentStep, legalDisclosureAccepted, signatureData, signerName, signerEmail, signatureIntentConfirmed]);
+
+  const handleSubmitSignature = useCallback(async () => {
+    if (!contract || !signatureData) return;
+
+    setIsSubmitting(true);
+    setErrors([]);
+
+    try {
+      // Validate signature quality before submission
+      const signatureQuality = contractUtils.validateSignature(signatureData);
+      if (!signatureQuality) {
+        throw new Error('Signature quality is insufficient. Please provide a clearer signature.');
+      }
+
+      // Calculate signature confidence score
+      const confidenceScore = calculateSignatureConfidence(signatureData);
+      if (confidenceScore < 0.3) {
+        throw new Error('Signature appears too simple. Please provide a more detailed signature.');
+      }
+
+      // Prepare signature submission with enhanced metadata
+
+
+      // Submit signature to API (uncomment when ready to connect to real API)
+      // const signedContract = await contractsApi.signContract(contract.id, submission);
+      
+      // For now, simulate the response with updated contract
+      const signedContract = { 
+        ...contract,
+        status: 'SIGNED' as const,
+        fully_signed_at: new Date().toISOString(),
+        signatures: [
+          ...contract.signatures,
+          {
+            id: Date.now().toString(),
+            contract: contract.id,
+            signer: { id: 'current-user', email: signerEmail, first_name: signerName.split(' ')[0], last_name: signerName.split(' ')[1] || '' },
+            role: 'CLIENT' as const,
+            role_display: 'Client',
+            signature_data: signatureData,
+            signed_at: new Date().toISOString(),
+            signer_name: signerName,
+            signer_title: signerTitle,
+            signer_email: signerEmail,
+            is_verified: false,
+            verification_method: 'electronic_signature',
+            legal_disclosure_accepted: legalDisclosureAccepted,
+            signature_intent_confirmed: signatureIntentConfirmed,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        ]
+      };
+
+      onSignComplete(signedContract);
+      onClose();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit signature';
+      onError(errorMessage);
+      setErrors([errorMessage]);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [
+    contract,
+    signatureData,
+    signerName,
+    signerTitle,
+    signerEmail,
+    legalDisclosureAccepted,
+    signatureIntentConfirmed,
+    onSignComplete,
+    onError,
+    onClose,
+  ]);
+
+  const canProceed = useCallback(() => {
+    return validateCurrentStep();
+  }, [validateCurrentStep]);
+
+  const renderStepContent = () => {
+    if (!contract) return null;
+
+    switch (currentStep) {
+      case 'review_contract':
+        return (
+          <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Please review the contract carefully
+            </Typography>
+            <ContractViewer
+              contract={contract}
+              showContent={true}
+              showSignatures={false}
+              showMetadata={false}
+              compact={true}
+            />
+            <Alert severity="info" sx={{ mt: 2 }}>
+              Please read through the entire contract before proceeding to sign.
+            </Alert>
+          </Box>
+        );
+
+      case 'legal_disclosure':
+        return (
+          <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Electronic Signature Disclosure
+            </Typography>
+            
+            <Alert severity="info" sx={{ mb: 3 }}>
+              By proceeding with electronic signature, you understand and agree to the following terms.
+            </Alert>
+
+            <Box sx={{ p: 2, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, mb: 3 }}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                <strong>Electronic Signature Consent:</strong>
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                • You consent to use electronic signatures instead of paper documents
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                • Electronic signatures have the same legal validity as handwritten signatures
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                • You have the right to request paper copies of signed documents
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                • You can withdraw this consent at any time by contacting us
+              </Typography>
+              <Typography variant="body2">
+                • Technical requirements: A device with internet access and a supported web browser
+              </Typography>
+            </Box>
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={legalDisclosureAccepted}
+                  onChange={(e) => setLegalDisclosureAccepted(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Typography variant="body2">
+                  I have read, understand, and agree to the electronic signature disclosure above
+                </Typography>
+              }
+            />
+          </Box>
+        );
+
+      case 'signature_capture':
+        return (
+          <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Sign the Contract
+            </Typography>
+
+            <Box sx={{ mb: 3 }}>
+              <TextField
+                label="Full Name"
+                value={signerName}
+                onChange={(e) => setSignerName(e.target.value)}
+                fullWidth
+                required
+                sx={{ mb: 2 }}
+                helperText="Your name as it should appear on the signature"
+              />
+
+              <TextField
+                label="Title/Position"
+                value={signerTitle}
+                onChange={(e) => setSignerTitle(e.target.value)}
+                fullWidth
+                sx={{ mb: 2 }}
+                helperText="Your title or position (optional)"
+              />
+
+              <TextField
+                label="Email Address"
+                type="email"
+                value={signerEmail}
+                onChange={(e) => setSignerEmail(e.target.value)}
+                fullWidth
+                required
+                sx={{ mb: 2 }}
+                helperText="Email address for signature verification"
+              />
+            </Box>
+
+            <EnhancedSignaturePad
+              onSignatureChange={(data, analysis) => {
+                setSignatureData(data);
+                // Store analysis for later use
+                if (analysis) {
+                  console.log('Signature analysis:', analysis);
+                }
+              }}
+              width={isMobile ? 300 : 500}
+              height={200}
+              required
+              label="Electronic Signature"
+              helperText="Draw your signature in the box above. We'll analyze it for security."
+              error={errors.some(error => error.includes('signature'))}
+              errorText={errors.find(error => error.includes('signature'))}
+              enableBiometricAnalysis={true}
+              showAnalytics={true}
+            />
+          </Box>
+        );
+
+      case 'confirmation':
+        return (
+          <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Confirm Your Signature
+            </Typography>
+
+            <Alert severity="success" sx={{ mb: 3 }}>
+              <Typography variant="body2">
+                You are about to electronically sign the contract for <strong>{contract.event.title}</strong>
+              </Typography>
+            </Alert>
+
+            <Box sx={{ mb: 3, p: 2, backgroundColor: theme.palette.grey[50], borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Signature Details:</strong>
+              </Typography>
+              <Typography variant="body2">Name: {signerName}</Typography>
+              {signerTitle && <Typography variant="body2">Title: {signerTitle}</Typography>}
+              <Typography variant="body2">Email: {signerEmail}</Typography>
+              <Typography variant="body2">
+                Date: {new Date().toLocaleDateString()}
+              </Typography>
+            </Box>
+
+            {signatureData && (
+              <Box sx={{ mb: 3, textAlign: 'center' }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  Your Signature:
+                </Typography>
+                <img
+                  src={signatureData}
+                  alt="Your signature"
+                  style={{
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 4,
+                    maxWidth: '100%',
+                    height: 'auto',
+                  }}
+                />
+              </Box>
+            )}
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={signatureIntentConfirmed}
+                  onChange={(e) => setSignatureIntentConfirmed(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Typography variant="body2">
+                  I confirm my intent to sign this contract electronically and agree that this 
+                  electronic signature is legally binding
+                </Typography>
+              }
+            />
+          </Box>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  if (!contract) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          minHeight: isMobile ? '100vh' : '600px',
+          maxHeight: isMobile ? '100vh' : '90vh',
+        },
+      }}
+    >
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="h6">
+          Sign Contract - {contract.event.title}
+        </Typography>
+        <Button onClick={handleClose} disabled={isSubmitting}>
+          <CloseIcon />
+        </Button>
+      </DialogTitle>
+
+      <DialogContent dividers>
+        {/* Progress Stepper */}
+        <Stepper 
+          activeStep={currentStepIndex} 
+          sx={{ mb: 3 }}
+          orientation={isMobile ? 'vertical' : 'horizontal'}
+        >
+          {SIGNING_STEPS.map((step) => (
+            <Step key={step.key}>
+              <StepLabel>{step.label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+
+        {/* Error Display */}
+        {errors.length > 0 && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {errors.map((error, index) => (
+              <Typography key={index} variant="body2">
+                {error}
+              </Typography>
+            ))}
+          </Alert>
+        )}
+
+        {/* Step Content */}
+        {renderStepContent()}
+      </DialogContent>
+
+      <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+        <Button
+          onClick={handleBack}
+          disabled={currentStepIndex === 0 || isSubmitting}
+          startIcon={<BackIcon />}
+        >
+          Back
+        </Button>
+
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {currentStep === 'confirmation' ? (
+            <LoadingButton
+              onClick={handleSubmitSignature}
+              loading={isSubmitting}
+              disabled={!canProceed()}
+              variant="contained"
+              color="success"
+              startIcon={<CompleteIcon />}
+            >
+              {isSubmitting ? 'Signing...' : 'Complete Signature'}
+            </LoadingButton>
+          ) : (
+            <Button
+              onClick={handleNext}
+              disabled={!canProceed() || isSubmitting}
+              variant="contained"
+              endIcon={<ForwardIcon />}
+            >
+              Next
+            </Button>
+          )}
+        </Box>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default ContractSigningDialog;

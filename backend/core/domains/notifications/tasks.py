@@ -13,7 +13,6 @@ from django.utils import timezone
 
 from .exceptions import (
     InvalidNotificationDataException,
-    NotificationDeliveryException,
     NotificationTypeNotFoundException,
 )
 from .models import (

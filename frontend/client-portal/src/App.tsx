@@ -18,6 +18,7 @@ import { Profile } from './pages/profile';
 import { FinancialPortal } from './pages/payments';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
+import ContractsPage from './pages/contracts/ContractsPage';
 
 // Import booking components
 
@@ -358,6 +359,17 @@ const AppRouter: React.FC = () => {
           <ProtectedRoute>
             <ClientLayoutWrapper>
               <EventDetail />
+            </ClientLayoutWrapper>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/contracts" 
+        element={
+          <ProtectedRoute>
+            <ClientLayoutWrapper>
+              <ContractsPage />
             </ClientLayoutWrapper>
           </ProtectedRoute>
         } 

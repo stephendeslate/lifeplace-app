@@ -176,6 +176,38 @@ class ContractSignature(BaseModel):
         help_text="Method used to verify signer identity"
     )
     
+    # Enhanced security fields
+    device_fingerprint = models.TextField(
+        blank=True,
+        help_text="Device identification for security tracking"
+    )
+    signature_metadata = models.JSONField(
+        default=dict,
+        help_text="Additional metadata about the signing process"
+    )
+    signature_confidence_score = models.DecimalField(
+        max_digits=5, 
+        decimal_places=4, 
+        null=True, 
+        blank=True,
+        help_text="Confidence score for signature authenticity (0.0-1.0)"
+    )
+    
+    # Legal compliance fields
+    legal_disclosure_accepted = models.BooleanField(
+        default=False,
+        help_text="Whether signer accepted electronic signature disclosure"
+    )
+    electronic_consent_timestamp = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when electronic consent was given"
+    )
+    signature_intent_confirmed = models.BooleanField(
+        default=False,
+        help_text="Whether signer confirmed intent to sign electronically"
+    )
+    
     class Meta:
         ordering = ['signed_at']
         unique_together = ['contract', 'role']  # One signature per role per contract

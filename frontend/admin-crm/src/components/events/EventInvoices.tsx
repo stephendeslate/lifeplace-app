@@ -51,22 +51,6 @@ interface EventInvoicesProps {
 }
 
 
-const getStatusColor = (status: InvoiceStatus, dueDate?: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
-  if (status === 'PAID') return 'success';
-  if (status === 'VOID' || status === 'CANCELLED') return 'error';
-  if (status === 'DRAFT') return 'secondary';
-  
-  // Check if overdue
-  if (status === 'ISSUED' && dueDate && isPast(new Date(dueDate))) {
-    return 'error';
-  }
-  
-  // Add more specific colors for different statuses
-  if (status === 'ISSUED') return 'info';
-  if (status === 'OVERDUE') return 'warning';
-  
-  return 'primary';
-};
 
 const getInvoiceStatusStyles = (status: InvoiceStatus, dueDate?: string) => {
   // Check if overdue first
@@ -92,11 +76,6 @@ const getInvoiceStatusStyles = (status: InvoiceStatus, dueDate?: string) => {
       return {
         backgroundColor: '#e8f5e8',
         color: '#2e7d32'
-      };
-    case 'OVERDUE':
-      return {
-        backgroundColor: '#fff3e0',
-        color: '#f57c00'
       };
     case 'VOID':
     case 'CANCELLED':
