@@ -20,6 +20,8 @@ import {
   Edit as EditIcon,
   Send as SendIcon,
   Download as DownloadIcon,
+  CheckCircle as SignedIcon,
+  Schedule as PendingIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useEventContract, useSendContract } from '../../hooks/useContracts';
@@ -228,6 +230,58 @@ export const ContractView: React.FC = () => {
             </Box>
           </Stack>
         </Paper>
+
+        {/* Signatures Section */}
+        {contract.signatures && contract.signatures.length > 0 && (
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Signatures
+            </Typography>
+            <Stack spacing={2}>
+              {contract.signatures.map((signature) => (
+                <Box
+                  key={signature.id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    p: 2,
+                    borderRadius: 1,
+                    backgroundColor: 'grey.50',
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <SignedIcon color="success" />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {signature.role === 'CLIENT' ? 'Client Signature' : 
+                         signature.role === 'COMPANY_REP' ? 'LifePlace Representative' :
+                         signature.role === 'WITNESS' ? 'Witness Signature' :
+                         signature.role_display || signature.role.replace('_', ' ')}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Signed by {signature.signer_name} on {format(new Date(signature.signed_at), 'MMM dd, yyyy \'at\' h:mm a')}
+                      </Typography>
+                      {signature.signer_title && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Title: {signature.signer_title}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                  <Chip
+                    label="Signed"
+                    color="success"
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+              ))}
+            </Stack>
+          </Paper>
+        )}
 
         {/* Contract Content */}
         <Paper sx={{ p: 3 }}>
