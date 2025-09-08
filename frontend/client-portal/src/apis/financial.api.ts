@@ -72,10 +72,34 @@ export class FinancialApi {
    * Download payment receipt PDF
    */
   static async downloadPaymentReceipt(paymentId: number): Promise<Blob> {
-    const response = await api.get(`/payments/client/payments/${paymentId}/download_receipt/`, {
-      responseType: 'blob',
-    });
-    return response.data as Blob;
+    try {
+      const response = await api.get(`/payments/client/payments/${paymentId}/download_receipt/`, {
+        responseType: 'blob',
+      });
+      
+      // Check if the response is actually an error (JSON) instead of a PDF
+      if (response.data.type === 'application/json') {
+        // Parse the error from blob
+        const text = await response.data.text();
+        const errorData = JSON.parse(text);
+        throw new Error(errorData.detail || 'Failed to download receipt');
+      }
+      
+      return response.data as Blob;
+    } catch (error: any) {
+      // If it's an axios error with a blob response, try to parse it
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.detail || 'Failed to download receipt');
+        } catch (parseError) {
+          // If we can't parse it, throw the original error
+          throw error;
+        }
+      }
+      throw error;
+    }
   }
   
   // ==================== INVOICES ====================
@@ -117,10 +141,34 @@ export class FinancialApi {
    * Download invoice PDF
    */
   static async downloadInvoicePdf(invoiceId: number): Promise<Blob> {
-    const response = await api.get(`/payments/client/invoices/${invoiceId}/download_pdf/`, {
-      responseType: 'blob',
-    });
-    return response.data as Blob;
+    try {
+      const response = await api.get(`/payments/client/invoices/${invoiceId}/download_pdf/`, {
+        responseType: 'blob',
+      });
+      
+      // Check if the response is actually an error (JSON) instead of a PDF
+      if (response.data.type === 'application/json') {
+        // Parse the error from blob
+        const text = await response.data.text();
+        const errorData = JSON.parse(text);
+        throw new Error(errorData.detail || 'Failed to download invoice');
+      }
+      
+      return response.data as Blob;
+    } catch (error: any) {
+      // If it's an axios error with a blob response, try to parse it
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.detail || 'Failed to download invoice');
+        } catch (parseError) {
+          // If we can't parse it, throw the original error
+          throw error;
+        }
+      }
+      throw error;
+    }
   }
   
   // ==================== PAYMENT PLANS ====================

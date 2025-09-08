@@ -138,10 +138,10 @@ class PaymentReceiptPDFService:
         event_info_data = [
             ['Event ID:', f"#{payment.event.id}"],
             ['Event Type:', payment.event.event_type.name if payment.event.event_type else 'Not specified'],
-            ['Event Date:', payment.event.event_date.strftime("%B %d, %Y") if payment.event.event_date else 'Not scheduled'],
+            ['Event Date:', payment.event.start_date.strftime("%B %d, %Y") if payment.event.start_date else 'Not scheduled'],
         ]
         
-        if payment.event.venue:
+        if hasattr(payment.event, 'venue') and payment.event.venue:
             event_info_data.append(['Venue:', payment.event.venue])
             
         event_info_table = Table(event_info_data, colWidths=[2*inch, 3*inch])
@@ -163,9 +163,17 @@ class PaymentReceiptPDFService:
         story.append(Paragraph("PAYMENT DETAILS", subtitle_style))
         
         # Payment table
+        try:
+            formatted_amount = payment.format_amount_with_currency()
+        except Exception as e:
+            logger.warning(f"Failed to format amount for payment {payment.id}: {e}")
+            # Fallback formatting
+            currency_symbol = '₱' if payment.currency == 'PHP' else '$' if payment.currency == 'USD' else payment.currency + ' '
+            formatted_amount = f"{currency_symbol}{payment.amount}"
+        
         payment_data = [
             ['Description', 'Amount'],
-            [payment.description or 'Event Payment', payment.format_amount_with_currency()],
+            [payment.description or 'Event Payment', formatted_amount],
         ]
         
         # Add installment info if applicable
@@ -198,8 +206,16 @@ class PaymentReceiptPDFService:
         story.append(Spacer(1, 20))
         
         # Total section
+        try:
+            formatted_total = payment.format_amount_with_currency()
+        except Exception as e:
+            logger.warning(f"Failed to format total for payment {payment.id}: {e}")
+            # Fallback formatting
+            currency_symbol = '₱' if payment.currency == 'PHP' else '$' if payment.currency == 'USD' else payment.currency + ' '
+            formatted_total = f"{currency_symbol}{payment.amount}"
+        
         total_data = [
-            ['TOTAL PAID:', payment.format_amount_with_currency()],
+            ['TOTAL PAID:', formatted_total],
         ]
         
         total_table = Table(total_data, colWidths=[4*inch, 2*inch])
