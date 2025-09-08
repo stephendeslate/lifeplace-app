@@ -451,156 +451,135 @@ const FinancialPortal: React.FC = () => {
                 </Button>
               </Box>
 
-              <TableContainer sx={{ overflowX: 'auto' }}>
-                <Table sx={{ 
-                  backgroundColor: 'transparent',
-                  minWidth: 750,
-                  tableLayout: 'auto'
-                }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600, minWidth: 200 }}>Payment</TableCell>
-                      <TableCell sx={{ fontWeight: 600, minWidth: 120 }}>Amount</TableCell>
-                      <TableCell sx={{ fontWeight: 600, minWidth: 130 }}>Method</TableCell>
-                      <TableCell sx={{ fontWeight: 600, minWidth: 120 }}>Status</TableCell>
-                      <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>Date</TableCell>
-                      <TableCell sx={{ width: 80, minWidth: 80 }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {!Array.isArray(payments) || payments.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} sx={{ textAlign: 'center', py: 8 }}>
-                          <PaymentIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                          <Typography variant="h6" gutterBottom>
-                            No Payment History
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Your payment history will appear here once you make payments.
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      (Array.isArray(payments) ? payments : []).map((payment, index) => (
-                        <AnimatedElement
-                          key={payment.id}
-                          animation="slideUp"
-                          delay={400 + (index * 100)}
-                        >
-                          <TableRow 
-                            hover 
-                            sx={{
-                              '&:hover': {
-                                backgroundColor: alpha('#fff', 0.05),
-                              },
-                            }}
-                          >
-                            <TableCell>
-                              <Box>
-                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                  {payment.description || payment.payment_number}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {payment.payment_number}
-                                </Typography>
-                                {payment.event_details && (
-                                  <Typography variant="caption" display="block" sx={{ color: 'primary.main' }}>
-                                    Event #{payment.event_details.id}
-                                  </Typography>
-                                )}
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                {FinancialApi.formatAmount(payment.amount, payment.currency)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Box display="flex" alignItems="center" gap={1}>
-                                {payment.payment_method_details ? (
-                                  <>
-                                    {getPaymentMethodIcon(payment.payment_method_details.type)}
-                                    <Typography variant="body2">
-                                      {payment.payment_method_details.type_display}
+              {!Array.isArray(payments) || payments.length === 0 ? (
+                <GlassCard
+                  variant="light"
+                  intensity="subtle"
+                  sx={{
+                    p: 8,
+                    textAlign: 'center',
+                    border: `1px solid ${alpha('#fff', 0.1)}`,
+                  }}
+                >
+                  <PaymentIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                    No Payment History
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
+                    Your payment history will appear here once you make payments.
+                  </Typography>
+                </GlassCard>
+              ) : (
+                <AnimatedElement animation="slideUp" delay={400}>
+                  <GlassCard
+                    variant="light"
+                    intensity="subtle"
+                    sx={{ 
+                      border: `1px solid ${alpha('#fff', 0.1)}`,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <TableContainer sx={{ backgroundColor: 'transparent' }}>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Payment</TableCell>
+                            <TableCell>Amount</TableCell>
+                            <TableCell>Method</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Date</TableCell>
+                            <TableCell width="100">Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {(Array.isArray(payments) ? payments : []).map((payment) => (
+                            <TableRow key={payment.id} hover>
+                              <TableCell>
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <Box>
+                                    <Typography variant="body2" fontWeight="medium">
+                                      {payment.description || payment.payment_number}
                                     </Typography>
-                                  </>
-                                ) : (
-                                  <Typography variant="body2" color="text.secondary">
-                                    {payment.is_manual ? 'Manual Payment' : 'Not specified'}
-                                  </Typography>
-                                )}
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                icon={getPaymentStatusIcon(payment.status)}
-                                label={payment.status_display}
-                                size="small"
-                                color={getPaymentStatusColor(payment.status)}
-                                variant="outlined"
-                                sx={{
-                                  backgroundColor: alpha('#fff', 0.1),
-                                  backdropFilter: 'blur(5px)',
-                                  border: `1px solid ${alpha('#fff', 0.2)}`,
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" color="text.secondary">
-                                {payment.paid_on 
-                                  ? new Date(payment.paid_on).toLocaleDateString()
-                                  : new Date(payment.due_date).toLocaleDateString()
-                                }
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Stack direction="row" spacing={1}>
-                                <Tooltip title="View Details">
-                                  <IconButton 
-                                    size="small"
-                                    sx={{
-                                      backgroundColor: alpha('#fff', 0.1),
-                                      '&:hover': {
-                                        backgroundColor: alpha('#fff', 0.2),
-                                        transform: 'scale(1.05)',
-                                      },
-                                      transition: 'all 0.2s ease',
-                                    }}
-                                  >
-                                    <ViewIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                                {payment.receipt_number && (
-                                  <Tooltip title="Download Receipt">
-                                    <IconButton 
-                                      size="small"
-                                      onClick={() => handleDownloadReceipt(payment.id)}
-                                      disabled={downloadReceiptMutation.isPending}
-                                      sx={{
-                                        backgroundColor: alpha('#fff', 0.1),
-                                        '&:hover': {
-                                          backgroundColor: alpha('#fff', 0.2),
-                                          transform: 'scale(1.05)',
-                                        },
-                                        transition: 'all 0.2s ease',
-                                      }}
-                                    >
-                                      {downloadReceiptMutation.isPending ? 
-                                        <CircularProgress size={14} /> : 
-                                        <DownloadIcon fontSize="small" />
-                                      }
+                                    <Typography variant="caption" color="text.secondary">
+                                      {payment.payment_number}
+                                    </Typography>
+                                    {payment.event_details && (
+                                      <Typography variant="caption" display="block" sx={{ color: 'primary.main' }}>
+                                        Event #{payment.event_details.id}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                  {FinancialApi.formatAmount(payment.amount, payment.currency)}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  {payment.payment_method_details ? (
+                                    <>
+                                      {getPaymentMethodIcon(payment.payment_method_details.type)}
+                                      <Typography variant="body2">
+                                        {payment.payment_method_details.type_display}
+                                      </Typography>
+                                    </>
+                                  ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                      {payment.is_manual ? 'Manual Payment' : 'Not specified'}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  icon={getPaymentStatusIcon(payment.status)}
+                                  label={payment.status_display}
+                                  size="small"
+                                  color={getPaymentStatusColor(payment.status)}
+                                  variant="outlined"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" color="text.secondary">
+                                  {payment.paid_on 
+                                    ? new Date(payment.paid_on).toLocaleDateString()
+                                    : new Date(payment.due_date).toLocaleDateString()
+                                  }
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Stack direction="row" spacing={1}>
+                                  <Tooltip title="View Details">
+                                    <IconButton size="small">
+                                      <ViewIcon fontSize="small" />
                                     </IconButton>
                                   </Tooltip>
-                                )}
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        </AnimatedElement>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                                  {payment.receipt_number && (
+                                    <Tooltip title="Download Receipt">
+                                      <IconButton 
+                                        size="small"
+                                        onClick={() => handleDownloadReceipt(payment.id)}
+                                        disabled={downloadReceiptMutation.isPending}
+                                      >
+                                        {downloadReceiptMutation.isPending ? 
+                                          <CircularProgress size={14} /> : 
+                                          <DownloadIcon fontSize="small" />
+                                        }
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </GlassCard>
+                </AnimatedElement>
+              )}
             </Box>
           </TabPanel>
 
