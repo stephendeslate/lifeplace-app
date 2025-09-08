@@ -244,6 +244,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     """Full payment serializer with nested objects"""
     event_details = EventSerializer(source='event', read_only=True)
     payment_method_details = PaymentMethodSerializer(source='payment_method', read_only=True)
+    inferred_payment_method = serializers.SerializerMethodField(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     quote_details = EventQuoteSerializer(source='quote', read_only=True)
     invoice_details = InvoiceSerializer(source='invoice', read_only=True)
@@ -257,7 +258,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'payment_number', 'event', 'event_details', 'amount', 'currency',
             'status', 'status_display', 'due_date', 'paid_on',
-            'payment_method', 'payment_method_details', 'description',
+            'payment_method', 'payment_method_details', 'inferred_payment_method', 'description',
             'notes', 'reference_number', 'is_manual', 'processed_by',
             'processed_by_details', 'receipt_number', 'receipt_generated_on',
             'receipt_sent', 'receipt_sent_on', 'receipt_pdf', 'quote',
@@ -266,3 +267,52 @@ class PaymentSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'payment_number', 'receipt_number', 'created_at', 'updated_at']
+    
+    def get_inferred_payment_method(self, obj):
+        """Infer payment method information from transaction data when direct payment method is not available"""
+        # If we already have payment method details, use them
+        if obj.payment_method:
+            return None  # Frontend will use payment_method_details
+        
+        # Look for the most recent completed transaction to infer payment method
+        completed_transaction = obj.transactions.filter(status='COMPLETED').order_by('-created_at').first()
+        if not completed_transaction or not completed_transaction.gateway:
+            return None
+            
+        gateway_code = completed_transaction.gateway.code.lower()
+        gateway_name = completed_transaction.gateway.name
+        
+        # Map gateway codes to payment method types
+        gateway_to_method_map = {
+            'stripe': {
+                'type': 'CREDIT_CARD',
+                'type_display': 'Credit Card',
+                'gateway_name': gateway_name,
+                'gateway_code': gateway_code
+            },
+            'paypal': {
+                'type': 'DIGITAL_WALLET', 
+                'type_display': 'PayPal',
+                'gateway_name': gateway_name,
+                'gateway_code': gateway_code
+            },
+            'bank_transfer': {
+                'type': 'BANK_TRANSFER',
+                'type_display': 'Bank Transfer', 
+                'gateway_name': gateway_name,
+                'gateway_code': gateway_code
+            },
+            'gcash': {
+                'type': 'DIGITAL_WALLET',
+                'type_display': 'GCash',
+                'gateway_name': gateway_name,
+                'gateway_code': gateway_code
+            }
+        }
+        
+        return gateway_to_method_map.get(gateway_code, {
+            'type': 'CREDIT_CARD',  # Default fallback for unknown gateways
+            'type_display': f'{gateway_name} Payment',
+            'gateway_name': gateway_name,
+            'gateway_code': gateway_code
+        })

@@ -72,7 +72,7 @@ class ClientPaymentViewSet(viewsets.ReadOnlyModelViewSet):
             'installment',
             'installment__payment_plan'
         ).prefetch_related(
-            'transactions',
+            'transactions__gateway',  # Include gateway information for transaction-based inference
             'notifications',
             'refunds'
         )
