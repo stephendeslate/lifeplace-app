@@ -23,6 +23,7 @@ import {
   Schedule as PendingIcon,
   Warning as ExpiredIcon,
   Download as DownloadIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import type { Contract } from '../../types/contracts.types';
 import { contractsApi, contractUtils } from '../../apis/contracts.api';
@@ -30,6 +31,7 @@ import { useContracts } from '../../contexts/ContractsContext';
 import { useGlobalSignatureEvents } from '../../hooks/contracts/useContractStatusUpdates';
 import ContractViewer from '../../components/contracts/ContractViewer';
 import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
+import ContractHistoryDialog from '../../components/contracts/ContractHistoryDialog';
 import MobileContractCard from '../../components/contracts/MobileContractCard';
 
 interface TabPanelProps {
@@ -52,6 +54,8 @@ export const ContractsPage: React.FC = () => {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [signingDialogOpen, setSigningDialogOpen] = useState(false);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
+  const [historyContract, setHistoryContract] = useState<Contract | null>(null);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [loadingContractDetails, setLoadingContractDetails] = useState(false);
 
   // Initialize global signature event listener
@@ -142,6 +146,20 @@ export const ContractsPage: React.FC = () => {
     } catch (error) {
       console.error('Error downloading contract PDF:', error);
       // You could show a toast notification here
+    }
+  };
+
+  const handleViewHistory = async (contract: Contract) => {
+    try {
+      // Fetch full contract details for history view
+      const fullContract = await contractsApi.getContract(contract.id);
+      setHistoryContract(fullContract);
+      setHistoryDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching contract details for history:', error);
+      // Fallback to showing contract without full details
+      setHistoryContract(contract);
+      setHistoryDialogOpen(true);
     }
   };
 
@@ -275,13 +293,23 @@ export const ContractsPage: React.FC = () => {
 
           {/* Actions */}
           {showActions && (
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap">
               <Button
                 variant="outlined"
                 size="small"
                 onClick={() => handleViewContract(contract)}
               >
                 View Details
+              </Button>
+              
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<HistoryIcon />}
+                onClick={() => handleViewHistory(contract)}
+                color="info"
+              >
+                View History
               </Button>
               
               {canSign && (
@@ -399,6 +427,7 @@ export const ContractsPage: React.FC = () => {
                   contract={contract}
                   onSign={() => handleSignContract(contract)}
                   onView={() => handleViewContract(contract)}
+                  onViewHistory={() => handleViewHistory(contract)}
                   onDownload={() => handleDownloadContract(contract)}
                 />
               ) : (
@@ -426,6 +455,7 @@ export const ContractsPage: React.FC = () => {
                   contract={contract}
                   onSign={() => handleSignContract(contract)}
                   onView={() => handleViewContract(contract)}
+                  onViewHistory={() => handleViewHistory(contract)}
                   onDownload={() => handleDownloadContract(contract)}
                 />
               ) : (
@@ -450,6 +480,7 @@ export const ContractsPage: React.FC = () => {
                   contract={contract}
                   onSign={() => handleSignContract(contract)}
                   onView={() => handleViewContract(contract)}
+                  onViewHistory={() => handleViewHistory(contract)}
                   onDownload={() => handleDownloadContract(contract)}
                 />
               ) : (
@@ -470,6 +501,16 @@ export const ContractsPage: React.FC = () => {
         contract={selectedContract}
         onSignComplete={handleSignComplete}
         onError={handleSignError}
+      />
+
+      {/* Contract History Dialog */}
+      <ContractHistoryDialog
+        open={historyDialogOpen}
+        onClose={() => {
+          setHistoryDialogOpen(false);
+          setHistoryContract(null);
+        }}
+        contract={historyContract}
       />
 
       {/* Contract Viewer Dialog */}

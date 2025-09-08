@@ -29,10 +29,12 @@ import {
   Search as SearchIcon,
   Refresh as RefreshIcon,
   CheckCircle as ReadIcon,
+  Add as ComposeIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { CommunicationHistory } from '../../components/communications';
+import SendMessageDialog from '../../components/communications/SendMessageDialog';
 import { useCommunications } from '../../hooks/useCommunications';
 import type { CommunicationFilters } from '../../types/communications.types';
 
@@ -61,6 +63,7 @@ const Messages: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [messageType, setMessageType] = useState<'all' | 'email' | 'sms'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'DELIVERED' | 'SENT' | 'PENDING'>('all');
+  const [composeDialogOpen, setComposeDialogOpen] = useState(false);
   
   const { useRecords, useAnalytics } = useCommunications();
   
@@ -106,6 +109,20 @@ const Messages: React.FC = () => {
   
   const handleRefresh = () => {
     refetch();
+  };
+
+  const handleComposeMessage = () => {
+    setComposeDialogOpen(true);
+  };
+
+  const handleComposeComplete = (success: boolean, message?: string) => {
+    setComposeDialogOpen(false);
+    if (success) {
+      // Refresh messages to show the newly sent message
+      refetch();
+      // You could show a toast notification here
+      console.log('Message sent successfully:', message);
+    }
   };
   
   // Calculate stats
@@ -223,6 +240,29 @@ const Messages: React.FC = () => {
               </GlassCard>
             </AnimatedElement>
             
+            {/* Compose Message Button */}
+            <Tooltip title="Compose new message">
+              <Button
+                variant="contained"
+                startIcon={<ComposeIcon />}
+                onClick={handleComposeMessage}
+                sx={{
+                  backgroundColor: theme.palette.primary.main,
+                  backdropFilter: 'blur(10px)',
+                  border: `1px solid ${alpha('#fff', 0.1)}`,
+                  '&:hover': {
+                    backgroundColor: theme.palette.primary.dark,
+                    transform: 'translateY(-2px)',
+                  },
+                  transition: 'all 0.3s ease',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                Compose
+              </Button>
+            </Tooltip>
+
             {/* Refresh Button */}
             <Tooltip title="Refresh messages">
               <IconButton
@@ -606,6 +646,13 @@ const Messages: React.FC = () => {
           </GlassCard>
         </AnimatedElement>
       )}
+
+      {/* Send Message Dialog */}
+      <SendMessageDialog
+        open={composeDialogOpen}
+        onClose={() => setComposeDialogOpen(false)}
+        onSendComplete={handleComposeComplete}
+      />
     </Box>
   );
 };
