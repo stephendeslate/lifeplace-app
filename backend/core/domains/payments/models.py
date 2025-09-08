@@ -1,11 +1,14 @@
 # backend/core/domains/payments/models.py
 from datetime import timedelta
 from decimal import Decimal
+import logging
 
 from core.utils.models import BaseModel
 from core.utils.encryption import EncryptedJSONField
 from django.db import models
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 class Payment(BaseModel):
@@ -152,9 +155,10 @@ class Payment(BaseModel):
     def format_amount_with_currency(self, user=None):
         """
         Format the payment amount with appropriate currency symbol and formatting
-        Uses the user's currency settings if available, falls back to system settings
+        Uses the centralized currency settings from the settings domain
         """
         try:
+            # Import CurrencySettings from settings domain
             from core.domains.settings.models import CurrencySettings
             
             # Get currency settings (user-specific or system-wide)
@@ -163,48 +167,32 @@ class Payment(BaseModel):
             else:
                 settings = CurrencySettings.get_system_settings()
             
-            # Get the currency configuration for this payment's currency
-            currency_configs = {
-                'PHP': {'symbol': '₱', 'decimals': 0},
-                'USD': {'symbol': '$', 'decimals': 2}, 
-                'EUR': {'symbol': '€', 'decimals': 2},
-                'SGD': {'symbol': 'S$', 'decimals': 2},
-                'HKD': {'symbol': 'HK$', 'decimals': 2},
-            }
+            # Use the centralized format_amount method
+            return settings.format_amount(self.amount, self.currency)
             
-            currency_config = currency_configs.get(self.currency, currency_configs['PHP'])
-            symbol = currency_config['symbol']
-            decimals = currency_config['decimals']
-            
-            # Use the user's decimal places preference if they override it
-            if hasattr(settings, 'decimal_places'):
-                decimals = settings.decimal_places
-                
-            # Format the amount based on decimal places
-            if decimals == 0:
-                formatted_amount = f"{int(self.amount):,}"
-            else:
-                formatted_amount = f"{float(self.amount):,.{decimals}f}"
-            
-            # Apply thousands separator from settings if available
-            if hasattr(settings, 'thousands_separator') and settings.thousands_separator != ',':
-                formatted_amount = formatted_amount.replace(',', settings.thousands_separator)
-            
-            return f"{symbol}{formatted_amount}"
-            
+        except ImportError as e:
+            # CurrencySettings not available
+            logger.debug(f"CurrencySettings not available for payment {self.id}: {e}")
         except Exception as e:
-            # Fallback to simple formatting if anything goes wrong
-            import logging
-            logger = logging.getLogger(__name__)
+            # Any other error
             logger.warning(f"Failed to format currency for payment {self.id}: {e}")
-            
-            # Simple fallback based on currency
-            if self.currency == 'PHP':
-                return f"₱{int(self.amount):,}"
-            elif self.currency == 'USD':
-                return f"${float(self.amount):,.2f}"
-            else:
-                return f"{self.currency} {float(self.amount):,.2f}"
+        
+        # Fallback formatting if settings domain is not available
+        currency_symbols = {
+            'PHP': '₱',
+            'USD': '$',
+            'EUR': '€',
+            'SGD': 'S$',
+            'HKD': 'HK$',
+        }
+        
+        symbol = currency_symbols.get(self.currency, f'{self.currency} ')
+        
+        # Use appropriate decimal places
+        if self.currency == 'PHP':
+            return f"{symbol}{int(self.amount):,}"
+        else:
+            return f"{symbol}{float(self.amount):,.2f}"
     
     def __str__(self):
         return f"Payment {self.payment_number} for Event {self.event.id}"

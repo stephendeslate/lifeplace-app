@@ -114,8 +114,22 @@ class ClientPaymentViewSet(viewsets.ReadOnlyModelViewSet):
         try:
             payment = self.get_object()
             
+            # Validate payment has been completed
+            if payment.status != 'COMPLETED':
+                return Response(
+                    {"detail": "Receipt is only available for completed payments"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             # Generate PDF receipt
-            pdf_buffer = PaymentReceiptPDFService.generate_receipt_pdf(payment)
+            try:
+                pdf_buffer = PaymentReceiptPDFService.generate_receipt_pdf(payment)
+            except Exception as pdf_error:
+                logger.error(f"PDF generation failed for payment {pk}: {pdf_error}", exc_info=True)
+                return Response(
+                    {"detail": "Failed to generate PDF. Please try again later or contact support."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
             
             # Create response
             response = HttpResponse(
@@ -126,10 +140,15 @@ class ClientPaymentViewSet(viewsets.ReadOnlyModelViewSet):
             
             return response
             
-        except Exception as e:
-            logger.error(f"Failed to generate receipt PDF for payment {pk}: {e}")
+        except Payment.DoesNotExist:
             return Response(
-                {"detail": "Failed to generate receipt PDF"},
+                {"detail": "Payment not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error downloading receipt for payment {pk}: {e}", exc_info=True)
+            return Response(
+                {"detail": "An unexpected error occurred. Please try again later."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -227,22 +246,45 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
         try:
             invoice = self.get_object()
             
+            # Check if pre-generated PDF exists
             if invoice.invoice_pdf and hasattr(invoice.invoice_pdf, 'url'):
-                # If PDF already exists, redirect to it
-                from django.shortcuts import redirect
-                return redirect(invoice.invoice_pdf.url)
+                try:
+                    # If PDF already exists, redirect to it
+                    from django.shortcuts import redirect
+                    return redirect(invoice.invoice_pdf.url)
+                except Exception as redirect_error:
+                    logger.warning(f"Failed to redirect to invoice PDF URL: {redirect_error}")
             
-            # Generate new PDF (implementation would depend on your PDF service)
-            # For now, return an error asking admin to generate
+            # Try to generate PDF using the PDF service
+            try:
+                from .pdf_service import PaymentReceiptPDFService
+                pdf_buffer = PaymentReceiptPDFService.generate_invoice_receipt_pdf(invoice)
+                
+                # Create response
+                response = HttpResponse(
+                    pdf_buffer.getvalue(),
+                    content_type='application/pdf'
+                )
+                response['Content-Disposition'] = f'attachment; filename="invoice-{invoice.invoice_id}.pdf"'
+                
+                return response
+                
+            except Exception as pdf_error:
+                logger.error(f"PDF generation failed for invoice {pk}: {pdf_error}", exc_info=True)
+                return Response(
+                    {"detail": "Failed to generate invoice PDF. Please contact support."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+        except Invoice.DoesNotExist:
             return Response(
-                {"detail": "Invoice PDF not available. Please contact support."},
+                {"detail": "Invoice not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-            
         except Exception as e:
-            logger.error(f"Failed to download invoice PDF for invoice {pk}: {e}")
+            logger.error(f"Unexpected error downloading invoice PDF for invoice {pk}: {e}", exc_info=True)
             return Response(
-                {"detail": "Failed to download invoice PDF"},
+                {"detail": "An unexpected error occurred. Please try again later."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
