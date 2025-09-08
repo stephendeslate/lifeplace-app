@@ -214,6 +214,12 @@ export interface Payment {
   paid_on?: string; // ISO date string
   payment_method?: number;
   payment_method_details?: PaymentMethod;
+  inferred_payment_method?: {
+    type: PaymentMethod['type'];
+    type_display: string;
+    gateway_name: string;
+    gateway_code: string;
+  };
   description?: string;
   notes?: string;
   reference_number?: string;

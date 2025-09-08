@@ -25,6 +25,9 @@ import {
   LinearProgress,
   Card,
   CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
 import {
   Payment as PaymentIcon,
@@ -41,12 +44,15 @@ import {
   Refresh as RefreshIcon,
   CalendarToday as CalendarIcon,
   PlayArrow as PayIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useFinancialOverview, useDownloadPaymentReceipt, useDownloadInvoicePdf, usePayInstallment } from '../../hooks/useFinancial';
 import FinancialApi from '../../apis/financial.api';
-import type { PaymentInstallment } from '../../types/financial.types';
+import type { PaymentInstallment, Payment, Invoice } from '../../types/financial.types';
+import { PaymentViewer } from '../../components/payments/PaymentViewer';
+import { InvoiceViewer } from '../../components/payments/InvoiceViewer';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -70,6 +76,10 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 const FinancialPortal: React.FC = () => {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(0);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
 
   // Fetch financial data
   const { 
@@ -143,6 +153,26 @@ const FinancialPortal: React.FC = () => {
         installment_id: installment.id,
       },
     });
+  };
+
+  const handleViewPayment = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setPaymentDialogOpen(true);
+  };
+
+  const handleViewInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setInvoiceDialogOpen(true);
+  };
+
+  const handleClosePaymentDialog = () => {
+    setPaymentDialogOpen(false);
+    setSelectedPayment(null);
+  };
+
+  const handleCloseInvoiceDialog = () => {
+    setInvoiceDialogOpen(false);
+    setSelectedInvoice(null);
   };
 
   if (error) {
@@ -525,6 +555,13 @@ const FinancialPortal: React.FC = () => {
                                         {payment.payment_method_details.type_display}
                                       </Typography>
                                     </>
+                                  ) : payment.inferred_payment_method ? (
+                                    <>
+                                      {getPaymentMethodIcon(payment.inferred_payment_method.type)}
+                                      <Typography variant="body2">
+                                        {payment.inferred_payment_method.type_display}
+                                      </Typography>
+                                    </>
                                   ) : (
                                     <Typography variant="body2" color="text.secondary">
                                       {payment.is_manual ? 'Manual Payment' : 'Not specified'}
@@ -552,7 +589,10 @@ const FinancialPortal: React.FC = () => {
                               <TableCell>
                                 <Stack direction="row" spacing={1}>
                                   <Tooltip title="View Details">
-                                    <IconButton size="small">
+                                    <IconButton 
+                                      size="small"
+                                      onClick={() => handleViewPayment(payment)}
+                                    >
                                       <ViewIcon fontSize="small" />
                                     </IconButton>
                                   </Tooltip>
@@ -713,6 +753,7 @@ const FinancialPortal: React.FC = () => {
                             <Tooltip title="View Invoice">
                               <IconButton 
                                 size="small"
+                                onClick={() => handleViewInvoice(invoice)}
                                 sx={{
                                   backgroundColor: alpha('#fff', 0.1),
                                   '&:hover': {
@@ -963,6 +1004,78 @@ const FinancialPortal: React.FC = () => {
           </TabPanel>
         </GlassCard>
       </AnimatedElement>
+
+      {/* Payment Viewer Dialog */}
+      <Dialog
+        open={paymentDialogOpen}
+        onClose={handleClosePaymentDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Payment Details
+            </Typography>
+            <IconButton
+              onClick={handleClosePaymentDialog}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  backgroundColor: alpha('#fff', 0.1),
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          {selectedPayment && (
+            <PaymentViewer
+              payment={selectedPayment}
+              onDownloadReceipt={selectedPayment.receipt_number ? () => handleDownloadReceipt(selectedPayment.id) : undefined}
+              downloadingReceipt={downloadReceiptMutation.isPending}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice Viewer Dialog */}
+      <Dialog
+        open={invoiceDialogOpen}
+        onClose={handleCloseInvoiceDialog}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Invoice Details
+            </Typography>
+            <IconButton
+              onClick={handleCloseInvoiceDialog}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  backgroundColor: alpha('#fff', 0.1),
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          {selectedInvoice && (
+            <InvoiceViewer
+              invoice={selectedInvoice}
+              onDownloadPdf={() => handleDownloadInvoice(selectedInvoice.id)}
+              downloadingPdf={downloadInvoiceMutation.isPending}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

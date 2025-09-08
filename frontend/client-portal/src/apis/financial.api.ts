@@ -483,7 +483,7 @@ export class FinancialApi {
     // Calculate total amount paid from related payments
     if (Array.isArray(invoice.related_payments)) {
       amountPaid = invoice.related_payments
-        .filter(payment => payment.status === 'COMPLETED' || payment.status === 'PAID')
+        .filter(payment => payment.status === 'COMPLETED')
         .reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
     }
 
