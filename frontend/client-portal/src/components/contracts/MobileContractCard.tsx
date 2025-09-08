@@ -21,6 +21,7 @@ import {
   ExpandMore as ExpandIcon,
   Download as DownloadIcon,
   Visibility as ViewIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { contractUtils } from '../../apis/contracts.api';
 import type { Contract } from '../../types/contracts.types';
@@ -30,6 +31,7 @@ interface MobileContractCardProps {
   showActions?: boolean;
   onSign?: (contract: Contract) => void;
   onView?: (contract: Contract) => void;
+  onViewHistory?: (contract: Contract) => void;
   onDownload?: (contract: Contract) => void;
 }
 
@@ -38,6 +40,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
   showActions = true,
   onSign,
   onView,
+  onViewHistory,
   onDownload,
 }) => {
   const theme = useTheme();
@@ -207,7 +210,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
 
         {/* Action Buttons */}
         {showActions && (
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
             <Button
               variant="outlined"
               size="small"
@@ -216,6 +219,17 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
               sx={{ fontSize: '0.75rem', minWidth: 0, px: 2 }}
             >
               View
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<HistoryIcon />}
+              onClick={() => onViewHistory?.(contract)}
+              color="info"
+              sx={{ fontSize: '0.75rem', minWidth: 0, px: 1.5 }}
+            >
+              History
             </Button>
             
             {canSign && (

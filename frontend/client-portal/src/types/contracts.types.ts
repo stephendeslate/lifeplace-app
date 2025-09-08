@@ -253,3 +253,99 @@ export interface SignatureValidationResult {
   warnings: string[];
   confidenceScore?: number;
 }
+
+// Contract History and Activity types
+export type ContractActivityType = 
+  | 'CREATED'
+  | 'SENT'
+  | 'VIEWED'
+  | 'SIGNED'
+  | 'FULLY_SIGNED'
+  | 'AMENDED'
+  | 'VOIDED'
+  | 'EXPIRED'
+  | 'DOCUMENT_ADDED'
+  | 'NOTE_ADDED'
+  | 'VALUE_CHANGED';
+
+export interface ContractActivity {
+  id: string;
+  contract_id: string;
+  activity_type: ContractActivityType;
+  title: string;
+  description: string;
+  performed_by?: User;
+  performed_at: string;
+  metadata?: Record<string, unknown>;
+  old_value?: string | number;
+  new_value?: string | number;
+}
+
+export interface ContractAmendment {
+  id: string;
+  original_contract: string;
+  amendment_contract?: Contract;
+  amendment_reason: string;
+  changes_description: string;
+  section_changes: Record<string, unknown>;
+  status: 'REQUESTED' | 'DRAFT' | 'SENT_FOR_REVIEW' | 'APPROVED' | 'SIGNED' | 'REJECTED' | 'CANCELLED';
+  original_value?: string;
+  new_value?: string;
+  value_change?: string;
+  requested_by?: User;
+  requested_at: string;
+  reviewed_by?: User;
+  reviewed_at?: string;
+  review_notes?: string;
+  requires_new_signatures: boolean;
+  signature_deadline?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContractVersion {
+  id: string;
+  contract_id: string;
+  version_number: number;
+  content: string;
+  created_at: string;
+  created_by?: User;
+  changes_summary: string;
+  is_current: boolean;
+}
+
+export interface ContractHistory {
+  contract: Contract;
+  versions: ContractVersion[];
+  amendments: ContractAmendment[];
+  activities: ContractActivity[];
+  value_changes: Array<{
+    date: string;
+    old_value: string | null;
+    new_value: string | null;
+    reason: string;
+    changed_by?: User;
+  }>;
+}
+
+export interface ContractTimelineEvent {
+  id: string;
+  type: ContractActivityType;
+  title: string;
+  description: string;
+  date: string;
+  user?: User;
+  status?: 'completed' | 'pending' | 'failed';
+  metadata?: Record<string, unknown>;
+}
+
+// Contract history filters
+export interface ContractHistoryFilters {
+  activity_type?: ContractActivityType[];
+  date_from?: string;
+  date_to?: string;
+  user_id?: string;
+  include_amendments?: boolean;
+  include_signatures?: boolean;
+  include_documents?: boolean;
+}
