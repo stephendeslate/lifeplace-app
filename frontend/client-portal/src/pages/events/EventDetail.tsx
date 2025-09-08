@@ -36,6 +36,7 @@ import {
   CalendarToday as CalendarIcon,
   Payment as PaymentIcon,
   Assignment as ContractIcon,
+  Feedback as FeedbackIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
@@ -45,6 +46,7 @@ import {
   EventTimeline, 
   EventDocuments, 
   EventTasks,
+  EventFeedback,
   ContractStatusChip 
 } from '../../components/events';
 
@@ -397,19 +399,26 @@ const EventDetail: React.FC = () => {
             aria-controls="event-tabpanel-1"
           />
           <Tab 
-            label={`Tasks (${event.upcoming_tasks.length})`}
+            label="Tasks"
             icon={<TasksIcon />} 
             iconPosition="start"
             id="event-tab-2"
             aria-controls="event-tabpanel-2"
+          />
+          <Tab 
+            label="Feedback"
+            icon={<FeedbackIcon />} 
+            iconPosition="start"
+            id="event-tab-3"
+            aria-controls="event-tabpanel-3"
           />
           {hasContracts && (
             <Tab 
               label={`Contracts (${eventContracts.length})`}
               icon={<ContractIcon />} 
               iconPosition="start"
-              id="event-tab-3"
-              aria-controls="event-tabpanel-3"
+              id="event-tab-4"
+              aria-controls="event-tabpanel-4"
             />
           )}
           {event.has_notes && (
@@ -417,8 +426,8 @@ const EventDetail: React.FC = () => {
               label={`Notes (${notes.length})`}
               icon={<NotesIcon />} 
               iconPosition="start"
-              id={hasContracts ? "event-tab-4" : "event-tab-3"}
-              aria-controls={hasContracts ? "event-tabpanel-4" : "event-tabpanel-3"}
+              id={hasContracts ? "event-tab-5" : "event-tab-4"}
+              aria-controls={hasContracts ? "event-tabpanel-5" : "event-tabpanel-4"}
             />
           )}
         </Tabs>
@@ -432,11 +441,15 @@ const EventDetail: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={2}>
-          <EventTasks tasks={event.upcoming_tasks} />
+          <EventTasks eventId={eventId} />
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={3}>
+          <EventFeedback eventId={eventId} eventStatus={event.status} />
         </TabPanel>
 
         {hasContracts && (
-          <TabPanel value={activeTab} index={3}>
+          <TabPanel value={activeTab} index={4}>
             {isLoadingContracts ? (
               <Box>
                 {[1, 2].map((item) => (
@@ -525,7 +538,7 @@ const EventDetail: React.FC = () => {
         )}
 
         {event.has_notes && (
-          <TabPanel value={activeTab} index={hasContracts ? 4 : 3}>
+          <TabPanel value={activeTab} index={hasContracts ? 5 : 4}>
             {isLoadingNotes ? (
               <Box>
                 {[1, 2, 3].map((item) => (

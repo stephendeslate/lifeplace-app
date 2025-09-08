@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/events/EventTasks.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -8,10 +8,21 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  ListItemSecondaryAction,
   Paper,
   Stack,
   Skeleton,
   Chip,
+  Button,
+  Alert,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  Tooltip,
 } from '@mui/material';
 import {
   Schedule as ScheduleIcon,
@@ -21,23 +32,73 @@ import {
   Cancel as CancelledIcon,
   PriorityHigh as HighPriorityIcon,
   Assignment as AssignmentIcon,
+  Edit as EditIcon,
+  PlayArrow as StartIcon,
 } from '@mui/icons-material';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
-import type { EventTask, TaskStatus, TaskPriority } from '../../types/events.types';
+import { useEvents } from '../../hooks/useEvents';
+import type { EventTask, TaskStatus, TaskPriority, TaskUpdate } from '../../types/events.types';
 
 interface EventTasksProps {
-  tasks: EventTask[];
+  eventId: number;
   loading?: boolean;
   showEmpty?: boolean;
   maxItems?: number;
 }
 
 const EventTasks: React.FC<EventTasksProps> = ({ 
-  tasks, 
-  loading = false, 
+  eventId, 
+  loading: externalLoading = false, 
   showEmpty = true,
   maxItems 
 }) => {
+  const { useEventTasks, useUpdateEventTask } = useEvents();
+  const { data: tasks, isLoading, error, refetch } = useEventTasks(eventId);
+  const updateTaskMutation = useUpdateEventTask();
+  
+  // Task update dialog state
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<EventTask | null>(null);
+  const [updateData, setUpdateData] = useState<TaskUpdate>({
+    status: 'IN_PROGRESS',
+    completion_notes: '',
+  });
+
+  const loading = externalLoading || isLoading;
+
+  // Handle task update
+  const handleTaskUpdate = (task: EventTask) => {
+    setSelectedTask(task);
+    setUpdateData({
+      status: task.status === 'PENDING' ? 'IN_PROGRESS' : 'COMPLETED',
+      completion_notes: '',
+    });
+    setUpdateDialogOpen(true);
+  };
+
+  const handleTaskUpdateSubmit = async () => {
+    if (!selectedTask) return;
+
+    try {
+      await updateTaskMutation.mutateAsync({
+        eventId,
+        taskId: selectedTask.id,
+        data: updateData,
+      });
+      setUpdateDialogOpen(false);
+      setSelectedTask(null);
+      refetch(); // Refresh tasks list
+    } catch {
+      // Error is handled by the mutation's onError
+    }
+  };
+
+  const handleUpdateDialogClose = () => {
+    setUpdateDialogOpen(false);
+    setSelectedTask(null);
+    setUpdateData({ status: 'IN_PROGRESS', completion_notes: '' });
+  };
+
   const getTaskIcon = (status: TaskStatus) => {
     switch (status) {
       case 'COMPLETED':
@@ -45,6 +106,8 @@ const EventTasks: React.FC<EventTasksProps> = ({
       case 'IN_PROGRESS':
         return <InProgressIcon color="warning" />;
       case 'CANCELLED':
+        return <CancelledIcon color="error" />;
+      case 'BLOCKED':
         return <CancelledIcon color="error" />;
       default:
         return <PendingIcon color="action" />;
@@ -73,6 +136,8 @@ const EventTasks: React.FC<EventTasksProps> = ({
       case 'IN_PROGRESS':
         return 'warning';
       case 'CANCELLED':
+        return 'error';
+      case 'BLOCKED':
         return 'error';
       default:
         return 'default';
@@ -111,6 +176,14 @@ const EventTasks: React.FC<EventTasksProps> = ({
           ))}
         </List>
       </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Unable to load event tasks. Please try again later.
+      </Alert>
     );
   }
 
@@ -226,6 +299,26 @@ const EventTasks: React.FC<EventTasksProps> = ({
                 </Stack>
               }
             />
+            
+            {/* Action buttons for client-updatable tasks */}
+            {task.can_update && (
+              <ListItemSecondaryAction>
+                <Tooltip title={
+                  task.status === 'PENDING' 
+                    ? 'Start working on this task' 
+                    : 'Mark task as complete'
+                }>
+                  <IconButton
+                    onClick={() => handleTaskUpdate(task)}
+                    disabled={updateTaskMutation.isPending}
+                    size="small"
+                    color={task.status === 'PENDING' ? 'primary' : 'success'}
+                  >
+                    {task.status === 'PENDING' ? <StartIcon /> : <EditIcon />}
+                  </IconButton>
+                </Tooltip>
+              </ListItemSecondaryAction>
+            )}
           </ListItem>
         ))}
       </List>
@@ -243,6 +336,69 @@ const EventTasks: React.FC<EventTasksProps> = ({
           {displayTasks.length} task{displayTasks.length !== 1 ? 's' : ''}
         </Typography>
       </Box>
+
+      {/* Task Update Dialog */}
+      <Dialog
+        open={updateDialogOpen}
+        onClose={handleUpdateDialogClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Update Task: {selectedTask?.title}
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <TextField
+              label="Status"
+              select
+              value={updateData.status || ''}
+              onChange={(e) => setUpdateData(prev => ({ 
+                ...prev, 
+                status: e.target.value as TaskUpdate['status'] 
+              }))}
+              fullWidth
+            >
+              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+              <MenuItem value="COMPLETED">Completed</MenuItem>
+            </TextField>
+
+            <TextField
+              label="Notes"
+              multiline
+              rows={3}
+              value={updateData.completion_notes || ''}
+              onChange={(e) => setUpdateData(prev => ({ 
+                ...prev, 
+                completion_notes: e.target.value 
+              }))}
+              placeholder={
+                updateData.status === 'COMPLETED' 
+                  ? 'Add completion notes...' 
+                  : 'Add progress notes...'
+              }
+              helperText={
+                updateData.status === 'COMPLETED' 
+                  ? 'Briefly describe what was completed' 
+                  : 'Optional: Add any notes about your progress'
+              }
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleUpdateDialogClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleTaskUpdateSubmit}
+            variant="contained"
+            disabled={updateTaskMutation.isPending}
+          >
+            {updateTaskMutation.isPending ? 'Updating...' : 'Update Task'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

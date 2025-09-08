@@ -9,7 +9,12 @@ import type {
   EventFilters,
   EventPreferencesUpdate,
   EventNote,
-  EventsListResponse
+  EventsListResponse,
+  EventTask,
+  EventFeedback,
+  FeedbackSubmission,
+  TaskUpdate,
+  FileUpload
 } from '../types/events.types';
 
 export const eventsApi = {
@@ -148,5 +153,53 @@ export const eventsApi = {
     const endDate = new Date(event.end_date);
     const now = new Date();
     return now >= startDate && now <= endDate;
+  },
+
+  // Get event tasks
+  getEventTasks: async (id: number): Promise<EventTask[]> => {
+    const response = await api.get<EventTask[]>(`/client/events/${id}/tasks/`);
+    return response.data;
+  },
+
+  // Update event task
+  updateEventTask: async (eventId: number, taskId: number, data: TaskUpdate): Promise<EventTask> => {
+    const response = await api.patch<EventTask>(`/client/events/${eventId}/tasks/${taskId}/`, data);
+    return response.data;
+  },
+
+  // Upload file for event
+  uploadEventFile: async (id: number, data: FileUpload): Promise<EventFile> => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('category', data.category);
+    if (data.description) {
+      formData.append('description', data.description);
+    }
+    formData.append('file', data.file);
+
+    const response = await api.post<EventFile>(`/client/events/${id}/upload_file/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Get event feedback
+  getEventFeedback: async (id: number): Promise<EventFeedback> => {
+    const response = await api.get<EventFeedback>(`/client/events/${id}/feedback/`);
+    return response.data;
+  },
+
+  // Submit event feedback
+  submitEventFeedback: async (id: number, data: FeedbackSubmission): Promise<EventFeedback> => {
+    const response = await api.post<EventFeedback>(`/client/events/${id}/feedback/`, data);
+    return response.data;
+  },
+
+  // Update event feedback
+  updateEventFeedback: async (eventId: number, feedbackId: number, data: Partial<FeedbackSubmission>): Promise<EventFeedback> => {
+    const response = await api.patch<EventFeedback>(`/client/events/${eventId}/feedback/${feedbackId}/`, data);
+    return response.data;
   },
 };
