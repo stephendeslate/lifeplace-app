@@ -12,9 +12,13 @@ export interface WorkflowStage {
 export interface EventTask {
   id: number;
   title: string;
+  description?: string;
   due_date: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'BLOCKED';
+  requires_client_input?: boolean;
+  can_update?: boolean;
+  completed_at?: string;
 }
 
 // Event Timeline interface matching backend ClientEventTimelineSerializer
@@ -117,6 +121,44 @@ export interface EventNote {
   is_private: boolean;
 }
 
+// Event feedback interface matching backend ClientEventFeedbackSerializer
+export interface EventFeedback {
+  id: number;
+  overall_rating: number;
+  categories: Record<string, number>;
+  comments: string;
+  testimonial: string;
+  is_public: boolean;
+  response: string;
+  created_at: string;
+  submitted_by_name: string;
+  response_by_name: string;
+  has_response: boolean;
+}
+
+// Feedback submission interface
+export interface FeedbackSubmission {
+  overall_rating: number;
+  categories?: Record<string, number>;
+  comments?: string;
+  testimonial?: string;
+  is_public?: boolean;
+}
+
+// Task update interface
+export interface TaskUpdate {
+  status?: 'IN_PROGRESS' | 'COMPLETED';
+  completion_notes?: string;
+}
+
+// File upload interface  
+export interface FileUpload {
+  name: string;
+  category: 'CONTRACT' | 'QUOTE' | 'PAYMENT' | 'REQUIREMENTS' | 'PHOTO' | 'OTHER';
+  description?: string;
+  file: File;
+}
+
 // API Response types
 export interface EventsListResponse {
   count: number;
@@ -135,7 +177,7 @@ export type PaymentStatus = 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 // Task status type
-export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'BLOCKED';
 
 // Workflow stage type
 export type WorkflowStageType = 'LEAD' | 'PRODUCTION' | 'POST_PRODUCTION';

@@ -7,7 +7,10 @@ import type {
   Event,
   EventDetail,
   EventFilters,
-  EventPreferencesUpdate
+  EventPreferencesUpdate,
+  TaskUpdate,
+  FileUpload,
+  FeedbackSubmission
 } from '../types/events.types';
 
 export const useEvents = () => {
@@ -122,6 +125,124 @@ export const useEvents = () => {
     });
   };
 
+  // Get event tasks
+  const useEventTasks = (id: number) => {
+    return useQuery({
+      queryKey: ['event-tasks', id],
+      queryFn: () => eventsApi.getEventTasks(id),
+      enabled: !!id,
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    });
+  };
+
+  // Update event task mutation
+  const useUpdateEventTask = () => {
+    return useMutation({
+      mutationFn: ({ eventId, taskId, data }: { eventId: number; taskId: number; data: TaskUpdate }) =>
+        eventsApi.updateEventTask(eventId, taskId, data),
+      onSuccess: (updatedTask, variables) => {
+        showSuccess('Task Updated', `Task "${updatedTask.title}" has been updated successfully.`);
+        
+        // Update tasks in cache
+        queryClient.invalidateQueries({ queryKey: ['event-tasks', variables.eventId] });
+        
+        // Update the event detail to refresh task counts
+        queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
+      },
+      onError: (error: unknown) => {
+        const err = error as { response?: { data?: { detail?: string; error?: string } } };
+        const message = err.response?.data?.detail || 
+                       err.response?.data?.error || 
+                       'Failed to update task. Please try again.';
+        showError('Update Failed', message);
+      },
+    });
+  };
+
+  // Upload event file mutation
+  const useUploadEventFile = () => {
+    return useMutation({
+      mutationFn: ({ eventId, data }: { eventId: number; data: FileUpload }) =>
+        eventsApi.uploadEventFile(eventId, data),
+      onSuccess: (uploadedFile, variables) => {
+        showSuccess('Upload Successful', `File "${uploadedFile.name}" has been uploaded successfully.`);
+        
+        // Invalidate related queries
+        queryClient.invalidateQueries({ queryKey: ['event-documents', variables.eventId] });
+        queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
+        queryClient.invalidateQueries({ queryKey: ['event-timeline', variables.eventId] });
+      },
+      onError: (error: unknown) => {
+        const err = error as { response?: { data?: { detail?: string; error?: string } } };
+        const message = err.response?.data?.detail || 
+                       err.response?.data?.error || 
+                       'Failed to upload file. Please try again.';
+        showError('Upload Failed', message);
+      },
+    });
+  };
+
+  // Get event feedback
+  const useEventFeedback = (id: number) => {
+    return useQuery({
+      queryKey: ['event-feedback', id],
+      queryFn: () => eventsApi.getEventFeedback(id),
+      enabled: !!id,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: (failureCount, error) => {
+        // Don't retry for 404 errors (no feedback submitted yet)
+        const err = error as { response?: { status?: number } };
+        if (err?.response?.status === 404) return false;
+        return failureCount < 3;
+      },
+    });
+  };
+
+  // Submit event feedback mutation
+  const useSubmitEventFeedback = () => {
+    return useMutation({
+      mutationFn: ({ eventId, data }: { eventId: number; data: FeedbackSubmission }) =>
+        eventsApi.submitEventFeedback(eventId, data),
+      onSuccess: (feedback, variables) => {
+        showSuccess('Feedback Submitted', 'Thank you for your feedback! Your input helps us improve our services.');
+        
+        // Update feedback in cache
+        queryClient.setQueryData(['event-feedback', variables.eventId], feedback);
+        
+        // Invalidate timeline to show new feedback entry
+        queryClient.invalidateQueries({ queryKey: ['event-timeline', variables.eventId] });
+      },
+      onError: (error: unknown) => {
+        const err = error as { response?: { data?: { detail?: string; error?: string } } };
+        const message = err.response?.data?.detail || 
+                       err.response?.data?.error || 
+                       'Failed to submit feedback. Please try again.';
+        showError('Submission Failed', message);
+      },
+    });
+  };
+
+  // Update event feedback mutation
+  const useUpdateEventFeedback = () => {
+    return useMutation({
+      mutationFn: ({ eventId, feedbackId, data }: { eventId: number; feedbackId: number; data: Partial<FeedbackSubmission> }) =>
+        eventsApi.updateEventFeedback(eventId, feedbackId, data),
+      onSuccess: (feedback, variables) => {
+        showSuccess('Feedback Updated', 'Your feedback has been updated successfully.');
+        
+        // Update feedback in cache
+        queryClient.setQueryData(['event-feedback', variables.eventId], feedback);
+      },
+      onError: (error: unknown) => {
+        const err = error as { response?: { data?: { detail?: string; error?: string } } };
+        const message = err.response?.data?.detail || 
+                       err.response?.data?.error || 
+                       'Failed to update feedback. Please try again.';
+        showError('Update Failed', message);
+      },
+    });
+  };
+
   // Prefetch event data (useful for hover effects or preloading)
   const prefetchEvent = async (id: number) => {
     await queryClient.prefetchQuery({
@@ -172,10 +293,16 @@ export const useEvents = () => {
     useEventNotes,
     useUpcomingEvents,
     useEventsByStatus,
+    useEventTasks,
+    useEventFeedback,
 
     // Mutation hooks
     useUpdatePreferences,
     useDownloadFile,
+    useUpdateEventTask,
+    useUploadEventFile,
+    useSubmitEventFeedback,
+    useUpdateEventFeedback,
 
     // Utility functions
     prefetchEvent,
