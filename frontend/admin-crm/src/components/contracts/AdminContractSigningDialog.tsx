@@ -32,7 +32,7 @@ import {
   CheckCircle as CompleteIcon,
 } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
-import type { EventContract, CreateContractSignatureData, SignatureRole } from '../../types/contracts.types';
+import type { EventContract, SignatureRole } from '../../types/contracts.types';
 import { SIGNATURE_ROLES } from '../../types/contracts.types';
 import { useAddContractSignature } from '../../hooks/useContracts';
 import { useAuth } from '../../contexts/AuthContext';
@@ -151,8 +151,11 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
     addSignature(
       { id: contract.id, data: signatureSubmissionData },
       {
-        onSuccess: (signedContract) => {
-          onSignComplete(signedContract);
+        onSuccess: (contractSignature) => {
+          // Since we don't have the full contract object from the signature response,
+          // we can either refetch the contract or update the original contract
+          const updatedContract = { ...contract!, signatures: [...(contract?.signatures || []), contractSignature] };
+          onSignComplete(updatedContract);
           onClose();
         },
         onError: (error) => {

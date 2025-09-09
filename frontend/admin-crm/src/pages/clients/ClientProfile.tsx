@@ -60,9 +60,8 @@ import type { UpdateClientData } from '../../types/clients.types';
 import { useContractsForClient } from '../../hooks/useContracts';
 import { useInvoicesForClient } from '../../hooks/usePayments';
 import { getClientStatusSummary } from '../../utils/clientStatus';
-import { SendMessageDialog } from '../../components/communications/SendMessageDialog';
 import { ClientForm } from '../../components/clients/ClientForm';
-import { CommunicationRecords } from '../../components/clients/CommunicationRecords';
+import { ClientMessages } from '../../components/clients/ClientMessages';
 import { ClientQuotes } from '../../components/clients/ClientQuotes';
 import { ClientContracts } from '../../components/clients/ClientContracts';
 import { ClientInvoices } from '../../components/clients/ClientInvoices';
@@ -101,7 +100,6 @@ export const ClientProfile: React.FC = () => {
   // State
   const [tabValue, setTabValue] = useState(0);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [sendMessageOpen, setSendMessageOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -215,7 +213,8 @@ export const ClientProfile: React.FC = () => {
   };
 
   const handleSendMessage = () => {
-    setSendMessageOpen(true);
+    // Navigate to the messages page with this client's conversations
+    navigate(`/messages?client_id=${client?.id}`);
     handleMenuClose();
   };
 
@@ -724,7 +723,7 @@ export const ClientProfile: React.FC = () => {
               iconPosition="start"
             />
             <Tab 
-              label={`Communications (${communications.length})`} 
+              label="Messages" 
               icon={<MessageIcon />} 
               iconPosition="start"
             />
@@ -804,9 +803,9 @@ export const ClientProfile: React.FC = () => {
             )}
           </TabPanel>
 
-          {/* Communications Tab */}
+          {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
-            <CommunicationRecords clientId={clientId} />
+            <ClientMessages client={client} />
           </TabPanel>
 
           {/* Quotes Tab */}
@@ -873,12 +872,6 @@ export const ClientProfile: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-        {/* Send Message Dialog */}
-        <SendMessageDialog
-          open={sendMessageOpen}
-          onClose={() => setSendMessageOpen(false)}
-          client={client}
-        />
       </Container>
     </Box>
   );

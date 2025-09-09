@@ -67,6 +67,7 @@ import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
 import { EventForm } from '../../components/events/EventForm';
 import { EventCommunications } from '../../components/events/EventCommunications';
+import { EventMessages } from '../../components/events/EventMessages';
 import { EventQuestionnaires } from '../../components/events/EventQuestionnaires';
 import { EventQuotes } from '../../components/events/EventQuotes';
 import { EventContracts } from '../../components/events/EventContracts';
@@ -1501,6 +1502,11 @@ export const EventProfile: React.FC = () => {
               iconPosition="start"
             />
             <Tab 
+              label="Messages" 
+              icon={<MessageIcon />} 
+              iconPosition="start"
+            />
+            <Tab 
               label="Quotes" 
               icon={<QuoteIcon />} 
               iconPosition="start"
@@ -1556,33 +1562,38 @@ export const EventProfile: React.FC = () => {
             />
           </TabPanel>
 
-          {/* Quotes Tab */}
+          {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
+            <EventMessages event={event} />
+          </TabPanel>
+
+          {/* Quotes Tab */}
+          <TabPanel value={tabValue} index={3}>
             <EventQuotes event={event} />
           </TabPanel>
 
           {/* Contracts Tab */}
-          <TabPanel value={tabValue} index={3}>
+          <TabPanel value={tabValue} index={4}>
             <EventContracts event={event} />
           </TabPanel>
 
           {/* Invoices Tab */}
-          <TabPanel value={tabValue} index={4}>
+          <TabPanel value={tabValue} index={5}>
             <EventInvoices event={event} />
           </TabPanel>
 
           {/* Questionnaires Tab */}
-          <TabPanel value={tabValue} index={5}>
+          <TabPanel value={tabValue} index={6}>
             <EventQuestionnaires event={event} />
           </TabPanel>
 
           {/* Files Tab */}
-          <TabPanel value={tabValue} index={6}>
+          <TabPanel value={tabValue} index={7}>
             <EventFiles event={event} />
           </TabPanel>
 
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={7}>
+          <TabPanel value={tabValue} index={8}>
             <NotesList
               contentType="event"
               objectId={eventId}

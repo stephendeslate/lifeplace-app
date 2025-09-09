@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'core',
     'core.domains.users',
     'core.domains.communications',
+    'core.domains.messaging',
     'core.domains.clients',
     'core.domains.events',
     'core.domains.products',
