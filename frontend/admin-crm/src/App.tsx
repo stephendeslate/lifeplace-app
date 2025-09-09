@@ -15,6 +15,7 @@ import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
 import { ContractEdit, ContractView, ContractSign } from './pages/contracts';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
+import { Messages } from './pages/messages';
 import { AppLayout } from './components/layout';
 
 // Analytics imports
@@ -339,6 +340,16 @@ const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <PaymentProfile />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Messages Route */}
+      <Route
+        path="/messages"
+        element={
+          <ProtectedRoute>
+            <Messages />
           </ProtectedRoute>
         }
       />

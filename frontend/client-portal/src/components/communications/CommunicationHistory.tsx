@@ -45,11 +45,9 @@ import {
   MarkEmailRead as OpenedIcon,
   History as HistoryIcon,
   MarkEmailUnread as UnreadIcon,
-  Reply as ReplyIcon,
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import { sanitizeHTML } from '../../utils/security';
-import SendMessageDialog from './SendMessageDialog';
 import type { CommunicationRecord, CommunicationFilters } from '../../types/communications.types';
 
 export const CommunicationHistory: React.FC = () => {
@@ -58,8 +56,6 @@ export const CommunicationHistory: React.FC = () => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedRecordForAction, setSelectedRecordForAction] = useState<CommunicationRecord | null>(null);
-  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
-  const [replyRecipient, setReplyRecipient] = useState('');
 
   const { useRecords, useMarkAsRead, useMarkAsUnread } = useCommunications();
   const { 
@@ -111,28 +107,6 @@ export const CommunicationHistory: React.FC = () => {
       markAsUnreadMutation.mutate(selectedRecordForAction.id);
     }
     handleActionMenuClose();
-  };
-
-  const handleReply = (record: CommunicationRecord) => {
-    // Set recipient based on who sent the message
-    const recipient = record.sent_by_name ? 
-      `${record.sent_by_name} <${record.client_email || 'unknown@lifeplace.com'}>` : 
-      record.client_email || '';
-      
-    setReplyRecipient(recipient);
-    setReplyDialogOpen(true);
-  };
-
-  const handleReplyComplete = (success: boolean, message?: string) => {
-    setReplyDialogOpen(false);
-    setReplyRecipient('');
-    
-    if (success) {
-      // Refresh messages to show the newly sent message
-      refetch();
-      // You could show a toast notification here
-      console.log('Reply sent successfully:', message);
-    }
   };
 
   const getChannelIcon = (channel: string) => {
@@ -667,20 +641,7 @@ export const CommunicationHistory: React.FC = () => {
             </Stack>
           )}
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'space-between', p: 3 }}>
-          <Box>
-            {selectedRecord && selectedRecord.channel === 'EMAIL' && selectedRecord.sent_by_name && (
-              <Button
-                variant="outlined"
-                startIcon={<ReplyIcon />}
-                onClick={() => handleReply(selectedRecord)}
-                sx={{ textTransform: 'none' }}
-              >
-                Reply to {selectedRecord.sent_by_name}
-              </Button>
-            )}
-          </Box>
-          
+        <DialogActions sx={{ p: 3 }}>
           <Button 
             variant="contained"
             onClick={() => setDetailDialogOpen(false)}
@@ -690,15 +651,6 @@ export const CommunicationHistory: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Reply Dialog */}
-      <SendMessageDialog
-        open={replyDialogOpen}
-        onClose={() => setReplyDialogOpen(false)}
-        onSendComplete={handleReplyComplete}
-        defaultRecipient={replyRecipient}
-        defaultChannel="EMAIL"
-      />
     </Box>
   );
 };

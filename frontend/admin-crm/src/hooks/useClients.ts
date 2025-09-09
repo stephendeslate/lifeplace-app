@@ -41,6 +41,16 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
       queryKey: ['client', id],
       queryFn: () => clientsApi.getClient(id),
       enabled: !!id,
+      retry: (failureCount, error: unknown) => {
+        // Don't retry on 404 errors
+        if (error && typeof error === 'object' && 'response' in error) {
+          const apiError = error as { response?: { status?: number } };
+          if (apiError.response?.status === 404) {
+            return false;
+          }
+        }
+        return failureCount < 3;
+      },
     });
   };
 
