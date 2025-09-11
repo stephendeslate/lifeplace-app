@@ -139,6 +139,13 @@ export const navigationConfig: NavigationGroup[] = [
         roles: ['ADMIN'],
       },
       {
+        id: 'messages',
+        label: 'Messages',
+        path: '/messages',
+        icon: Message,
+        roles: ['ADMIN'],
+      },
+      {
         id: 'payments',
         label: 'Payments',
         path: '/payments',
@@ -152,13 +159,6 @@ export const navigationConfig: NavigationGroup[] = [
     id: 'system',
     label: 'System',
     items: [
-      {
-        id: 'messages',
-        label: 'Messages',
-        path: '/messages',
-        icon: Message,
-        roles: ['ADMIN'],
-      },
       {
         id: 'records',
         label: 'Records',

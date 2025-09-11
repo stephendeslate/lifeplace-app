@@ -22,7 +22,6 @@ import {
   Menu as MenuIcon,
   Settings,
   ExitToApp,
-  Message,
   Person,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
@@ -140,27 +139,6 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
             <NotificationCenter />
           </AnimatedElement>
 
-          {/* Messages */}
-          <AnimatedElement animation="fadeIn" delay={350}>
-            <Tooltip title="Messages">
-              <IconButton
-                color="inherit"
-                onClick={() => navigate('/messages')}
-                sx={{
-                  color: alpha(theme.palette.primary.main, 0.8),
-                  backgroundColor: alpha('#fff', 0.08),
-                  '&:hover': {
-                    backgroundColor: alpha('#fff', 0.15),
-                    transform: 'scale(1.05)',
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {/* TODO: Replace with API-driven unread message count */}
-                <Message />
-              </IconButton>
-            </Tooltip>
-          </AnimatedElement>
 
           {/* Profile Menu */}
           <AnimatedElement animation="fadeIn" delay={400}>

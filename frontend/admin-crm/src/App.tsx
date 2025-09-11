@@ -15,7 +15,6 @@ import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
 import { ContractEdit, ContractView, ContractSign } from './pages/contracts';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
-import { Messages } from './pages/messages';
 import { AppLayout } from './components/layout';
 
 // Analytics imports
@@ -44,6 +43,11 @@ import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
 import { PaymentsOverview, PaymentProfile } from './pages/payments';
 import { FunnelAnalytics } from './pages/analytics/funnels/FunnelAnalytics';
+
+// Messaging imports
+import { MessagesOverview } from './pages/messages/MessagesOverview';
+import { AdminMessageThread } from './components/messaging/AdminMessageThread';
+import { useParams } from 'react-router-dom';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -132,6 +136,13 @@ const SettingsRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   ) : (
     <Navigate to="/login" replace />
   );
+};
+
+// Thread Wrapper Component to extract threadId from URL
+const ThreadWrapper: React.FC = () => {
+  const { threadId } = useParams<{ threadId: string }>();
+  if (!threadId) return null;
+  return <AdminMessageThread threadId={threadId} />;
 };
 
 // Main App Router Component
@@ -344,15 +355,24 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Messages Route */}
+      {/* Messages Routes */}
       <Route
         path="/messages"
         element={
           <ProtectedRoute>
-            <Messages />
+            <MessagesOverview />
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/messages/thread/:threadId"
+        element={
+          <ProtectedRoute>
+            <ThreadWrapper />
+          </ProtectedRoute>
+        }
+      />
+
 
       {/* Records Route */}
       <Route

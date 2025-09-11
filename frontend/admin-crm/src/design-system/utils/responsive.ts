@@ -31,8 +31,8 @@ export const mediaQueries = {
   },
 } as const;
 
-// Responsive value type
-export type ResponsiveValue<T> = {
+// Responsive value type with proper constraint
+export type ResponsiveValue<T extends string | number> = {
   xs?: T;
   sm?: T;
   md?: T;
@@ -42,29 +42,31 @@ export type ResponsiveValue<T> = {
 } | T;
 
 // Convert responsive values to CSS media query styles
-export const createResponsiveStyles = <T>(
+export const createResponsiveStyles = <T extends string | number>(
   property: string,
   values: ResponsiveValue<T>
-): Record<string, unknown> => {
+): Record<string, string | number | Record<string, string | number>> => {
   if (typeof values !== 'object' || values === null) {
     return { [property]: values };
   }
 
-  const styles: Record<string, unknown> = {};
+  const styles: Record<string, string | number | Record<string, string | number>> = {};
   const breakpointKeys = Object.keys(breakpoints) as Breakpoint[];
 
   // Add base value (xs or first defined value)
-  const baseValue = (values as Record<string, unknown>).xs || Object.values(values)[0];
+  const responsiveValues = values as Record<string, T>;
+  const baseValue = responsiveValues.xs || Object.values(responsiveValues)[0];
   if (baseValue !== undefined) {
     styles[property] = baseValue;
   }
 
   // Add media query styles for each breakpoint
   breakpointKeys.forEach(bp => {
-    const value = (values as Record<string, unknown>)[bp];
+    const responsiveValues = values as Record<string, T>;
+    const value = responsiveValues[bp];
     if (value !== undefined && bp !== 'xs') {
       styles[mediaQueries.up(bp)] = {
-        [property]: String(value),
+        [property]: value,
       };
     }
   });
@@ -103,17 +105,19 @@ export const responsivePatterns = {
     createResponsiveStyles('flexDirection', values),
 
   // Responsive grid columns
-  gridColumns: (values: ResponsiveValue<string | number>) => 
-    createResponsiveStyles('gridTemplateColumns', 
-      typeof values === 'object' && values !== null
-        ? Object.fromEntries(
-            Object.entries(values).map(([key, value]) => [
-              key,
-              typeof value === 'number' ? `repeat(${value}, 1fr)` : value
-            ])
-          )
-        : typeof values === 'number' ? `repeat(${values}, 1fr)` : values
-    ),
+  gridColumns: (values: ResponsiveValue<string | number>) => {
+    if (typeof values === 'object' && values !== null) {
+      const gridValues = Object.fromEntries(
+        Object.entries(values).map(([key, value]) => [
+          key,
+          typeof value === 'number' ? `repeat(${value}, 1fr)` : value
+        ])
+      ) as ResponsiveValue<string>;
+      return createResponsiveStyles('gridTemplateColumns', gridValues);
+    }
+    const gridValue = typeof values === 'number' ? `repeat(${values}, 1fr)` : values;
+    return createResponsiveStyles('gridTemplateColumns', gridValue);
+  },
 };
 
 // Layout utilities
@@ -345,14 +349,15 @@ export const componentResponsive = {
 };
 
 // Hook-like utility for responsive values
-export const useResponsiveValue = <T>(values: ResponsiveValue<T>): T => {
+export const useResponsiveValue = <T extends string | number>(values: ResponsiveValue<T>): T => {
   if (typeof values !== 'object' || values === null) {
-    return values;
+    return values as T;
   }
 
   // This would typically be used with a React hook to detect current breakpoint
   // For now, return the mobile value as default
-  return (values as Record<string, T>).xs || Object.values(values)[0];
+  const responsiveValues = values as Record<string, T>;
+  return responsiveValues.xs || Object.values(responsiveValues)[0];
 };
 
 // Utility to detect current breakpoint (for use in components)
@@ -398,14 +403,15 @@ export const gridUtils = {
     createResponsiveStyles('gridTemplateAreas', areas),
 
   // Grid span utilities
-  span: (columns: ResponsiveValue<number>) =>
-    createResponsiveStyles('gridColumn', 
-      typeof columns === 'object' && columns !== null
-        ? Object.fromEntries(
-            Object.entries(columns).map(([key, value]) => [key, `span ${value}`])
-          )
-        : `span ${columns}`
-    ),
+  span: (columns: ResponsiveValue<number>) => {
+    if (typeof columns === 'object' && columns !== null) {
+      const spanValues = Object.fromEntries(
+        Object.entries(columns).map(([key, value]) => [key, `span ${value}`])
+      ) as ResponsiveValue<string>;
+      return createResponsiveStyles('gridColumn', spanValues);
+    }
+    return createResponsiveStyles('gridColumn', `span ${columns}`);
+  },
 };
 
 // Flexbox utilities

@@ -1,429 +1,603 @@
-# backend/core/domains/messaging/views.py
+"""
+Views for the messaging domain.
 
+This module provides REST API endpoints for message threads and messages,
+with proper permissions and filtering for both admin and client users.
+"""
+
+import logging
 from django.db import transaction
-from django.db.models import Q, Count, Exists, OuterRef, Prefetch
-from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
-from rest_framework import status, viewsets, permissions
+from django.db.models import Q, Count, Max, Prefetch
+from django.utils import timezone
+from django.http import FileResponse, Http404
+from rest_framework import viewsets, status, filters, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import MessageThread, Message, MessageAttachment, MessageRead, ThreadActivity
-from .serializers import (
-    MessageThreadSerializer, MessageSerializer, MessageCreateSerializer, 
-    SendMessageResponseSerializer, ThreadStatsSerializer, MessageAttachmentSerializer
+from core.utils.pagination import StandardResultsSetPagination
+from core.utils.permissions import IsAdmin, IsClient, IsAdminOrClient
+
+from .models import (
+    MessageThread,
+    ThreadParticipant,
+    Message,
+    MessageAttachment,
+    MessageReadReceipt,
+    TypingIndicator
 )
+from .serializers import (
+    MessageThreadListSerializer,
+    MessageThreadDetailSerializer,
+    CreateMessageThreadSerializer,
+    UpdateMessageThreadSerializer,
+    MessageSerializer,
+    CreateMessageSerializer,
+    MessageAttachmentSerializer,
+    TypingIndicatorSerializer,
+    MessageReadReceiptSerializer,
+    FileUploadSerializer
+)
+from .services import MessagingService, NotificationService
 
-User = get_user_model()
-
-
-class IsOwnerOrAdmin(permissions.BasePermission):
-    """
-    Custom permission to only allow owners of an object or admins to access it.
-    """
-    def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated
-    
-    def has_object_permission(self, request, view, obj):
-        # Admins can access all threads
-        if request.user.role == 'ADMIN':
-            return True
-        
-        # Clients can only access their own event threads
-        if hasattr(obj, 'event'):  # MessageThread
-            return obj.event.client == request.user
-        elif hasattr(obj, 'thread'):  # Message
-            return obj.thread.event.client == request.user
-            
-        return False
+logger = logging.getLogger(__name__)
 
 
 class MessageThreadViewSet(viewsets.ModelViewSet):
-    """ViewSet for message threads"""
-    serializer_class = MessageThreadSerializer
-    permission_classes = [IsOwnerOrAdmin]
+    """
+    ViewSet for managing message threads
+    
+    Provides CRUD operations for message threads with proper
+    permission-based filtering and access control.
+    """
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['subject', 'client__first_name', 'client__last_name', 'client__email']
+    filterset_fields = ['status', 'priority', 'assigned_admin']
+    ordering_fields = ['created_at', 'last_message_at', 'priority']
+    ordering = ['-last_message_at']
+    
+    def get_permissions(self):
+        """Get permissions based on action"""
+        if self.action in ['create', 'assign_admin', 'bulk_update']:
+            permission_classes = [IsAdmin]
+        else:
+            permission_classes = [IsAdminOrClient]
+        return [permission() for permission in permission_classes]
     
     def get_queryset(self):
-        """Filter threads based on user role and permissions"""
+        """Get queryset based on user role and filters"""
         user = self.request.user
         
         # Base queryset with optimizations
-        queryset = MessageThread.objects.select_related(
-            'event', 
-            'event__client', 
-            'event__event_type',
-            'assigned_admin'
-        ).prefetch_related(
-            Prefetch(
-                'messages',
-                queryset=Message.objects.select_related('sender').order_by('-created_at')[:1],
-                to_attr='latest_messages'
-            )
-        )
+        queryset = MessageThread.objects.with_details()
         
         # Filter based on user role
         if user.role == 'CLIENT':
-            queryset = queryset.filter(event__client=user)
+            # Clients can only see their own threads
+            queryset = queryset.filter(client=user)
         elif user.role == 'ADMIN':
-            # Admins can see all threads, optionally filter by assignment
-            assigned_admin = self.request.query_params.get('assigned_admin')
-            if assigned_admin:
-                queryset = queryset.filter(assigned_admin_id=assigned_admin)
-        
-        # Apply filters
-        status_filter = self.request.query_params.get('status')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
+            # Admins can see all threads
+            # Add filtering options for admins
+            unassigned = self.request.query_params.get('unassigned')
+            if unassigned and unassigned.lower() == 'true':
+                queryset = queryset.filter(assigned_admin__isnull=True)
             
-        priority_filter = self.request.query_params.get('priority')
-        if priority_filter:
-            queryset = queryset.filter(priority=priority_filter)
+            assigned_to_me = self.request.query_params.get('assigned_to_me')
+            if assigned_to_me and assigned_to_me.lower() == 'true':
+                queryset = queryset.filter(assigned_admin=user)
+        
+        # Add unread count annotation
+        queryset = queryset.with_unread_counts(user.id)
+        
+        return queryset
+    
+    def get_serializer_class(self):
+        """Get appropriate serializer based on action"""
+        if self.action == 'list':
+            return MessageThreadListSerializer
+        elif self.action == 'create':
+            return CreateMessageThreadSerializer
+        elif self.action in ['update', 'partial_update']:
+            return UpdateMessageThreadSerializer
+        else:
+            return MessageThreadDetailSerializer
+    
+    def perform_create(self, serializer):
+        """Create thread with proper initialization"""
+        with transaction.atomic():
+            thread = serializer.save()
             
-        event_id = self.request.query_params.get('event_id')
-        if event_id:
-            queryset = queryset.filter(event_id=event_id)
-        
-        search = self.request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(event__name__icontains=search) |
-                Q(messages__content__icontains=search)
-            ).distinct()
-        
-        # We'll calculate unread_count in the list method for each thread
-        
-        return queryset.order_by('-updated_at')
+            # Log creation
+            logger.info(f"Message thread created: {thread.id} by user {self.request.user.id}")
+            
+            # Send notification to client if created by admin
+            if self.request.user.role == 'ADMIN' and self.request.user != thread.client:
+                NotificationService.notify_thread_created(thread, self.request.user)
     
-    def list(self, request, *args, **kwargs):
-        """List threads with last message info"""
-        queryset = self.get_queryset()
-        serializer_data = []
+    def perform_update(self, serializer):
+        """Update thread with notifications"""
+        old_status = serializer.instance.status
+        old_admin = serializer.instance.assigned_admin
         
-        for thread in queryset:
-            data = MessageThreadSerializer(thread).data
-            # Add last message if available
-            if hasattr(thread, 'latest_messages') and thread.latest_messages:
-                from .serializers import LastMessageSerializer
-                data['last_message'] = LastMessageSerializer(thread.latest_messages[0]).data
-            # Calculate unread count for current user
-            data['unread_count'] = thread.get_unread_count(request.user)
-            serializer_data.append(data)
+        thread = serializer.save()
         
-        return Response(serializer_data)
+        # Send notifications for status changes
+        if old_status != thread.status:
+            NotificationService.notify_thread_status_changed(thread, old_status)
+        
+        # Send notifications for assignment changes
+        if old_admin != thread.assigned_admin:
+            NotificationService.notify_thread_assigned(thread, old_admin)
     
-    @action(detail=True, methods=['post'])
-    def mark_read(self, request, pk=None):
-        """Mark all messages in thread as read"""
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
+    def assign_admin(self, request, pk=None):
+        """Assign admin to thread"""
         thread = self.get_object()
-        user = request.user
+        admin_id = request.data.get('admin_id')
         
-        # Get unread messages for this user
-        unread_messages = Message.objects.filter(
-            thread=thread
-        ).exclude(
-            read_by=user
-        ).exclude(
-            sender=user  # Don't mark own messages as read
-        )
+        if not admin_id:
+            return Response(
+                {'error': 'admin_id is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        # Filter out internal notes for clients
-        if user.role == 'CLIENT':
-            unread_messages = unread_messages.filter(is_internal_note=False)
+        try:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            admin = User.objects.get(id=admin_id, role='ADMIN')
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'Admin user not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
         
-        # Bulk create read records
-        read_records = [
-            MessageRead(user=user, message=message)
-            for message in unread_messages
-        ]
-        MessageRead.objects.bulk_create(read_records, ignore_conflicts=True)
+        old_admin = thread.assigned_admin
+        thread.assigned_admin = admin
+        thread.save()
         
-        return Response({'status': 'marked_read'})
+        # Add admin as participant if not already
+        thread.add_participant(admin)
+        
+        # Send notification
+        NotificationService.notify_thread_assigned(thread, old_admin)
+        
+        serializer = self.get_serializer(thread)
+        return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
     def mark_urgent(self, request, pk=None):
-        """Mark thread as urgent - available to clients"""
+        """Mark thread as urgent"""
         thread = self.get_object()
-        old_priority = thread.priority
+        
+        # Only admins can mark as urgent, or clients can mark their own threads
+        if request.user.role == 'CLIENT' and thread.client != request.user:
+            return Response(
+                {'error': 'Permission denied'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         thread.priority = 'urgent'
         thread.save()
         
-        # Create activity record
-        ThreadActivity.objects.create(
-            thread=thread,
-            activity_type='priority_changed',
-            actor=request.user,
-            description=f"Priority changed from {old_priority} to urgent",
-            metadata={'old_priority': old_priority, 'new_priority': 'urgent'}
-        )
+        # Notify assigned admin if marked urgent by client
+        if request.user.role == 'CLIENT' and thread.assigned_admin:
+            NotificationService.notify_thread_marked_urgent(thread)
         
-        return Response({'status': 'marked_urgent'})
-    
-    @action(detail=True, methods=['post'])
-    def request_callback(self, request, pk=None):
-        """Request callback - creates system message"""
-        thread = self.get_object()
-        
-        # Create system message for callback request
-        Message.objects.create(
-            thread=thread,
-            sender=request.user,
-            content=f"{request.user.get_display_name()} has requested a callback.",
-            message_type='system'
-        )
-        
-        # Create activity record
-        ThreadActivity.objects.create(
-            thread=thread,
-            activity_type='message_sent',
-            actor=request.user,
-            description="Callback requested",
-            metadata={'message_type': 'callback_request'}
-        )
-        
-        return Response({'status': 'callback_requested'})
+        serializer = self.get_serializer(thread)
+        return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
     def resolve(self, request, pk=None):
-        """Resolve thread - admin only"""
-        if request.user.role != 'ADMIN':
-            return Response({'error': 'Only admins can resolve threads'}, 
-                          status=status.HTTP_403_FORBIDDEN)
-        
+        """Resolve thread"""
         thread = self.get_object()
-        old_status = thread.status
+        
+        # Only admins can resolve threads
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only admins can resolve threads'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         thread.status = 'resolved'
         thread.save()
         
-        # Create system message
-        Message.objects.create(
-            thread=thread,
-            sender=request.user,
-            content=f"Thread resolved by {request.user.get_display_name()}.",
-            message_type='system'
-        )
+        # Send notification to client
+        NotificationService.notify_thread_resolved(thread)
         
-        # Create activity record
-        ThreadActivity.objects.create(
-            thread=thread,
-            activity_type='status_changed',
-            actor=request.user,
-            description=f"Status changed from {old_status} to resolved",
-            metadata={'old_status': old_status, 'new_status': 'resolved'}
-        )
-        
-        return Response({'status': 'resolved'})
+        serializer = self.get_serializer(thread)
+        return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
     def reopen(self, request, pk=None):
         """Reopen resolved thread"""
         thread = self.get_object()
-        old_status = thread.status
+        
+        if thread.status != 'resolved':
+            return Response(
+                {'error': 'Thread is not resolved'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         thread.status = 'active'
         thread.save()
         
-        # Create system message
-        Message.objects.create(
-            thread=thread,
-            sender=request.user,
-            content=f"Thread reopened by {request.user.get_display_name()}.",
-            message_type='system'
-        )
+        # Send notification
+        NotificationService.notify_thread_reopened(thread)
         
-        # Create activity record
-        ThreadActivity.objects.create(
-            thread=thread,
-            activity_type='status_changed',
-            actor=request.user,
-            description=f"Status changed from {old_status} to active",
-            metadata={'old_status': old_status, 'new_status': 'active'}
-        )
-        
-        return Response({'status': 'reopened'})
+        serializer = self.get_serializer(thread)
+        return Response(serializer.data)
     
-    @action(detail=True, methods=['get'])
-    def stats(self, request, pk=None):
-        """Get thread statistics"""
-        thread = self.get_object()
-        
-        # Get participants (users who have sent messages)
-        participants = User.objects.filter(
-            sent_messages__thread=thread
-        ).distinct()
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def stats(self, request):
+        """Get thread statistics for admin dashboard"""
+        queryset = self.get_queryset()
         
         stats = {
-            'total_messages': thread.messages.count(),
-            'unread_messages': thread.messages.exclude(read_by=request.user).count(),
-            'last_activity': thread.updated_at,
-            'participants': [
-                {
-                    'id': user.id,
-                    'name': user.get_display_name(),
-                    'role': user.role
-                }
-                for user in participants
-            ]
+            'total': queryset.count(),
+            'active': queryset.filter(status='active').count(),
+            'waiting': queryset.filter(status='waiting').count(),
+            'resolved': queryset.filter(status='resolved').count(),
+            'urgent': queryset.filter(priority='urgent').count(),
+            'unassigned': queryset.filter(assigned_admin__isnull=True).count(),
+            'assigned_to_me': queryset.filter(assigned_admin=request.user).count()
         }
         
-        serializer = ThreadStatsSerializer(stats)
-        return Response(serializer.data)
+        return Response(stats)
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    """ViewSet for messages"""
+    """
+    ViewSet for managing messages within threads
+    
+    Provides CRUD operations for messages with proper
+    permission-based access and real-time features.
+    """
     serializer_class = MessageSerializer
-    permission_classes = [IsOwnerOrAdmin]
+    pagination_class = StandardResultsSetPagination
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['created_at']
+    ordering = ['created_at']
+    
+    def get_permissions(self):
+        """Get permissions based on action"""
+        return [IsAdminOrClient()]
     
     def get_queryset(self):
-        """Filter messages based on thread and user permissions"""
+        """Get messages with proper filtering"""
         user = self.request.user
-        thread_id = self.request.query_params.get('thread_id')
         
-        if not thread_id:
-            return Message.objects.none()
+        # Base queryset with optimizations
+        queryset = Message.objects.select_related('sender', 'thread').prefetch_related('attachments')
         
-        # Check thread access
-        thread = get_object_or_404(MessageThread, id=thread_id)
-        if user.role == 'CLIENT' and thread.event.client != user:
-            return Message.objects.none()
+        # Filter by thread if provided
+        thread_id = self.request.query_params.get('thread')
+        if thread_id:
+            queryset = queryset.filter(thread_id=thread_id)
+            
+            # Check thread access
+            try:
+                thread = MessageThread.objects.get(id=thread_id)
+                if user.role == 'CLIENT' and thread.client != user:
+                    return queryset.none()
+            except MessageThread.DoesNotExist:
+                return queryset.none()
         
-        queryset = Message.objects.filter(thread_id=thread_id).select_related(
-            'sender', 'thread'
-        ).prefetch_related('attachments', 'read_by')
-        
-        # Clients don't see internal notes
+        # Filter internal notes for clients
         if user.role == 'CLIENT':
             queryset = queryset.filter(is_internal_note=False)
         
-        # Pagination filters
-        before = self.request.query_params.get('before')
-        if before:
-            queryset = queryset.filter(created_at__lt=before)
+        # Filter by sender if provided
+        sender_id = self.request.query_params.get('sender')
+        if sender_id:
+            queryset = queryset.filter(sender_id=sender_id)
         
-        limit = self.request.query_params.get('limit')
-        if limit:
-            try:
-                limit = int(limit)
-                queryset = queryset[:limit]
-            except ValueError:
-                pass
-        
-        return queryset.order_by('created_at')
+        return queryset
     
-    def create(self, request, *args, **kwargs):
-        """Create a new message"""
-        serializer = MessageCreateSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        
-        thread_id = serializer.validated_data['thread_id']
-        thread = get_object_or_404(MessageThread, id=thread_id)
-        
-        # Check permissions
-        if request.user.role == 'CLIENT' and thread.event.client != request.user:
-            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        
+    def get_serializer_class(self):
+        """Get appropriate serializer based on action"""
+        if self.action == 'create':
+            return CreateMessageSerializer
+        return MessageSerializer
+    
+    def perform_create(self, serializer):
+        """Create message with real-time notifications"""
         with transaction.atomic():
-            # Create message
-            message = Message.objects.create(
-                thread=thread,
-                sender=request.user,
-                content=serializer.validated_data['content'],
-                message_type=serializer.validated_data.get('message_type', 'message'),
-                is_internal_note=serializer.validated_data.get('is_internal_note', False)
-            )
+            message = serializer.save()
             
-            # Handle attachments if provided
-            attachment_ids = serializer.validated_data.get('attachments', [])
-            if attachment_ids:
-                # Update existing attachments to link to this message
-                MessageAttachment.objects.filter(
-                    id__in=attachment_ids,
-                    uploaded_by=request.user,
-                    message__isnull=True  # Only link unattached files
-                ).update(message=message)
+            # Mark message as read by sender
+            message.mark_as_read_by(self.request.user)
             
-            # Mark as read by sender
-            MessageRead.objects.create(user=request.user, message=message)
+            # Clear typing indicator for sender
+            TypingIndicator.objects.filter(
+                thread=message.thread,
+                user=self.request.user
+            ).delete()
             
-            # Update thread timestamp
-            thread.save()  # Triggers updated_at
+            # Send real-time notification via WebSocket
+            MessagingService.broadcast_new_message(message)
             
-            # Create activity record
-            ThreadActivity.objects.create(
-                thread=thread,
-                activity_type='message_sent',
-                actor=request.user,
-                description=f"Message sent by {request.user.get_display_name()}",
-                metadata={
-                    'message_type': message.message_type,
-                    'is_internal_note': message.is_internal_note
-                }
+            # Send push notifications to other participants
+            NotificationService.notify_new_message(message)
+            
+            logger.info(f"Message created: {message.id} in thread {message.thread.id}")
+    
+    def update(self, request, *args, **kwargs):
+        """Update message with edit tracking"""
+        instance = self.get_object()
+        
+        # Check edit permissions
+        if instance.sender != request.user:
+            return Response(
+                {'error': 'You can only edit your own messages'}, 
+                status=status.HTTP_403_FORBIDDEN
             )
         
-        response_serializer = SendMessageResponseSerializer({
-            'message': message,
-            'success': True
-        })
+        # Check time limit (15 minutes)
+        time_limit = timezone.now() - timezone.timedelta(minutes=15)
+        if instance.created_at < time_limit:
+            return Response(
+                {'error': 'Message can only be edited within 15 minutes'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
         
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        # Store original content if first edit
+        if not instance.original_content:
+            instance.original_content = instance.content
+        
+        instance.edited_at = timezone.now()
+        
+        response = super().update(request, *args, **kwargs)
+        
+        # Broadcast edit to WebSocket
+        if response.status_code == 200:
+            MessagingService.broadcast_message_edited(instance)
+        
+        return response
+    
+    def destroy(self, request, *args, **kwargs):
+        """Delete message with permissions check"""
+        instance = self.get_object()
+        
+        # Check delete permissions
+        if request.user.role == 'ADMIN':
+            # Admins can delete any message
+            pass
+        elif instance.sender == request.user:
+            # Users can delete their own messages within 1 hour
+            time_limit = timezone.now() - timezone.timedelta(hours=1)
+            if instance.created_at < time_limit:
+                return Response(
+                    {'error': 'Message can only be deleted within 1 hour'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        else:
+            return Response(
+                {'error': 'Permission denied'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Broadcast deletion before deleting
+        MessagingService.broadcast_message_deleted(instance)
+        
+        return super().destroy(request, *args, **kwargs)
     
     @action(detail=True, methods=['post'])
     def mark_read(self, request, pk=None):
-        """Mark specific message as read"""
+        """Mark message as read by current user"""
         message = self.get_object()
-        MessageRead.objects.get_or_create(
+        receipt = message.mark_as_read_by(request.user)
+        
+        # Broadcast read receipt
+        MessagingService.broadcast_message_read(message, request.user)
+        
+        serializer = MessageReadReceiptSerializer(receipt)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'])
+    def mark_thread_read(self, request):
+        """Mark all messages in thread as read"""
+        thread_id = request.data.get('thread_id')
+        if not thread_id:
+            return Response(
+                {'error': 'thread_id is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            thread = MessageThread.objects.get(id=thread_id)
+            
+            # Check access
+            if request.user.role == 'CLIENT' and thread.client != request.user:
+                return Response(
+                    {'error': 'Permission denied'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except MessageThread.DoesNotExist:
+            return Response(
+                {'error': 'Thread not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get unread messages
+        unread_messages = thread.messages.exclude(read_receipts__user=request.user)
+        if request.user.role == 'CLIENT':
+            unread_messages = unread_messages.filter(is_internal_note=False)
+        
+        # Mark all as read
+        with transaction.atomic():
+            for message in unread_messages:
+                message.mark_as_read_by(request.user)
+        
+        # Broadcast bulk read
+        MessagingService.broadcast_thread_read(thread, request.user)
+        
+        return Response({'marked_read': unread_messages.count()})
+
+
+class MessageAttachmentViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for message attachments
+    
+    Provides read-only access to message attachments with
+    proper security and download functionality.
+    """
+    serializer_class = MessageAttachmentSerializer
+    permission_classes = [IsAdminOrClient]
+    
+    def get_queryset(self):
+        """Get attachments with proper filtering"""
+        user = self.request.user
+        queryset = MessageAttachment.objects.select_related('message__thread', 'uploaded_by')
+        
+        # Filter based on thread access
+        if user.role == 'CLIENT':
+            queryset = queryset.filter(message__thread__client=user)
+        
+        return queryset
+    
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        """Download attachment file"""
+        attachment = self.get_object()
+        
+        try:
+            response = FileResponse(
+                attachment.file.open('rb'),
+                as_attachment=True,
+                filename=attachment.filename
+            )
+            response['Content-Type'] = attachment.file_type
+            return response
+        except FileNotFoundError:
+            raise Http404("File not found")
+
+
+class TypingIndicatorViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing typing indicators
+    
+    Handles real-time typing status for message threads.
+    """
+    serializer_class = TypingIndicatorSerializer
+    permission_classes = [IsAdminOrClient]
+    
+    def get_queryset(self):
+        """Get typing indicators with proper filtering"""
+        user = self.request.user
+        queryset = TypingIndicator.objects.select_related('thread', 'user')
+        
+        # Filter based on thread access
+        if user.role == 'CLIENT':
+            queryset = queryset.filter(thread__client=user)
+        
+        return queryset
+    
+    def perform_create(self, serializer):
+        """Create or update typing indicator"""
+        thread = serializer.validated_data['thread']
+        
+        # Check thread access
+        if self.request.user.role == 'CLIENT' and thread.client != self.request.user:
+            return Response(
+                {'error': 'Permission denied'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Create or update typing indicator
+        indicator, created = TypingIndicator.objects.update_or_create(
+            thread=thread,
+            user=self.request.user,
+            defaults={
+                'is_typing': serializer.validated_data.get('is_typing', True),
+                'last_activity': timezone.now()
+            }
+        )
+        
+        # Broadcast typing status
+        MessagingService.broadcast_typing_status(indicator)
+        
+        return indicator
+    
+    @action(detail=False, methods=['post'])
+    def update_typing(self, request):
+        """Update typing status for thread"""
+        thread_id = request.data.get('thread_id')
+        is_typing = request.data.get('is_typing', True)
+        
+        if not thread_id:
+            return Response(
+                {'error': 'thread_id is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            thread = MessageThread.objects.get(id=thread_id)
+            
+            # Check access
+            if request.user.role == 'CLIENT' and thread.client != request.user:
+                return Response(
+                    {'error': 'Permission denied'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except MessageThread.DoesNotExist:
+            return Response(
+                {'error': 'Thread not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Update typing indicator
+        indicator, created = TypingIndicator.objects.update_or_create(
+            thread=thread,
             user=request.user,
-            message=message
-        )
-        return Response({'status': 'marked_read'})
-
-
-class AttachmentUploadView(APIView):
-    """Handle file uploads for message attachments"""
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def post(self, request):
-        """Upload file and return attachment info"""
-        file_obj = request.FILES.get('file')
-        if not file_obj:
-            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Create attachment record (without linking to message yet)
-        attachment = MessageAttachment.objects.create(
-            filename=file_obj.name,
-            file_url=f"/media/message_attachments/{file_obj.name}",  # Simplified for now
-            file_size=file_obj.size,
-            mime_type=file_obj.content_type or 'application/octet-stream',
-            uploaded_by=request.user,
-            message=None  # Will be linked when message is created
+            defaults={
+                'is_typing': is_typing,
+                'last_activity': timezone.now()
+            }
         )
         
-        # TODO: Actually handle file storage (S3, local media, etc.)
-        # For now, just return the attachment info
+        # Broadcast typing status
+        MessagingService.broadcast_typing_status(indicator)
         
-        return Response({
-            'id': str(attachment.id),
-            'url': attachment.file_url,
-            'filename': attachment.filename,
-            'size': attachment.file_size
-        }, status=status.HTTP_201_CREATED)
+        # Clean up if stopped typing
+        if not is_typing:
+            indicator.delete()
+            return Response({'status': 'typing_stopped'})
+        
+        serializer = self.get_serializer(indicator)
+        return Response(serializer.data)
 
 
-class TypingIndicatorView(APIView):
-    """Handle typing indicators"""
-    permission_classes = [permissions.IsAuthenticated]
+# File upload views
+class FileUploadView(viewsets.ViewSet):
+    """
+    ViewSet for handling file uploads
     
-    def post(self, request, thread_id):
-        """Send typing indicator"""
-        thread = get_object_or_404(MessageThread, id=thread_id)
+    Provides standalone file upload functionality for messages.
+    """
+    permission_classes = [IsAdminOrClient]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def create(self, request):
+        """Upload file for later attachment to message"""
+        serializer = FileUploadSerializer(data=request.data)
+        if serializer.is_valid():
+            file = serializer.validated_data['file']
+            
+            # Create temporary attachment (without message)
+            attachment = MessageAttachment.objects.create(
+                file=file,
+                filename=file.name,
+                uploaded_by=request.user,
+                message=None  # Will be set when message is created
+            )
+            
+            attachment_serializer = MessageAttachmentSerializer(
+                attachment, 
+                context={'request': request}
+            )
+            return Response(attachment_serializer.data, status=status.HTTP_201_CREATED)
         
-        # Check permissions
-        if request.user.role == 'CLIENT' and thread.event.client != request.user:
-            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        
-        is_typing = request.data.get('is_typing', False)
-        
-        # TODO: Implement WebSocket or Server-Sent Events for real-time typing
-        # For now, just return success
-        
-        return Response({'status': 'typing_updated', 'is_typing': is_typing})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

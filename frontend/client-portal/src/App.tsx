@@ -12,13 +12,15 @@ import { ProtectedRoute } from './components/auth';
 import { Home } from './pages/home';
 import { Login, Register } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
-import { Messages } from './pages/messages';
 import { EventsList, EventDetail } from './pages/events';
 import { Profile } from './pages/profile';
 import { FinancialPortal } from './pages/payments';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
 import ContractsPage from './pages/contracts/ContractsPage';
+
+// Messaging imports
+import { ClientMessages } from './pages/messages/ClientMessages';
 
 // Import booking components
 
@@ -309,16 +311,6 @@ const AppRouter: React.FC = () => {
         } 
       />
 
-      <Route 
-        path="/messages" 
-        element={
-          <ProtectedRoute>
-            <ClientLayoutWrapper>
-              <Messages />
-            </ClientLayoutWrapper>
-          </ProtectedRoute>
-        } 
-      />
 
       <Route 
         path="/profile" 
@@ -370,6 +362,28 @@ const AppRouter: React.FC = () => {
           <ProtectedRoute>
             <ClientLayoutWrapper>
               <ContractsPage />
+            </ClientLayoutWrapper>
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Messages Routes */}
+      <Route 
+        path="/messages" 
+        element={
+          <ProtectedRoute>
+            <ClientLayoutWrapper>
+              <ClientMessages />
+            </ClientLayoutWrapper>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/messages/thread/:threadId" 
+        element={
+          <ProtectedRoute>
+            <ClientLayoutWrapper>
+              <ClientMessages />
             </ClientLayoutWrapper>
           </ProtectedRoute>
         } 

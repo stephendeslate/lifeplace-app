@@ -61,7 +61,6 @@ import { useContractsForClient } from '../../hooks/useContracts';
 import { useInvoicesForClient } from '../../hooks/usePayments';
 import { getClientStatusSummary } from '../../utils/clientStatus';
 import { ClientForm } from '../../components/clients/ClientForm';
-import { ClientMessages } from '../../components/clients/ClientMessages';
 import { ClientQuotes } from '../../components/clients/ClientQuotes';
 import { ClientContracts } from '../../components/clients/ClientContracts';
 import { ClientInvoices } from '../../components/clients/ClientInvoices';
@@ -212,11 +211,6 @@ export const ClientProfile: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleSendMessage = () => {
-    // Navigate to the messages page with this client's conversations
-    navigate(`/messages?client_id=${client?.id}`);
-    handleMenuClose();
-  };
 
   const handleEditClient = () => {
     setEditDialogOpen(true);
@@ -500,28 +494,6 @@ export const ClientProfile: React.FC = () => {
             Create Event
           </Button>
 
-          <Button
-            variant="outlined"
-            startIcon={<EmailIcon />}
-            onClick={handleSendMessage}
-            sx={{
-              borderColor: tokens.color.neutral[300],
-              color: tokens.color.neutral[700],
-              borderRadius: tokens.spacing.radius.lg,
-              textTransform: 'none',
-              fontWeight: 500,
-              px: 2,
-              py: 1,
-              transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
-              '&:hover': {
-                borderColor: tokens.color.info[500],
-                background: `${tokens.color.info[500]}05`,
-                transform: 'translateY(-1px)',
-              }
-            }}
-          >
-            Message
-          </Button>
 
           <Button
             variant="outlined"
@@ -805,7 +777,9 @@ export const ClientProfile: React.FC = () => {
 
           {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
-            <ClientMessages client={client} />
+            <Typography variant="body2" color="text.secondary">
+              Messaging functionality has been removed.
+            </Typography>
           </TabPanel>
 
           {/* Quotes Tab */}

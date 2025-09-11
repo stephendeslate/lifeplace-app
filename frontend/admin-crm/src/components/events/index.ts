@@ -5,7 +5,6 @@ export { EventTypesTable } from './EventTypesTable';
 export { EventForm } from './EventForm';
 export { WorkflowProgress } from './WorkflowProgress';
 export { EventCommunications } from './EventCommunications';
-export { EventMessages } from './EventMessages';
 export { EventQuestionnaires } from './EventQuestionnaires';
 export { EventQuotes } from './EventQuotes';
 export { EventContracts } from './EventContracts';

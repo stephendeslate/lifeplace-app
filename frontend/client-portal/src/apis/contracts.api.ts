@@ -130,22 +130,23 @@ export const contractsApi = {
       });
       
       // Check if the response is actually an error (JSON) instead of a PDF
-      if (response.data.type === 'application/json') {
+      const dataBlob = response.data as Blob;
+      if (dataBlob.type === 'application/json') {
         // Parse the error from blob
-        const text = await response.data.text();
+        const text = await dataBlob.text();
         const errorData = JSON.parse(text);
         throw new Error(errorData.detail || errorData.error || 'Failed to download contract');
       }
       
       return response.data as Blob;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If it's an axios error with a blob response, try to parse it
       if (error.response?.data instanceof Blob) {
         try {
           const text = await error.response.data.text();
           const errorData = JSON.parse(text);
           throw new Error(errorData.detail || errorData.error || 'Failed to download contract');
-        } catch (parseError) {
+        } catch (_parseError) {
           // If we can't parse it, throw the original error
           throw error;
         }

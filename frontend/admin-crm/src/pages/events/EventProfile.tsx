@@ -67,7 +67,6 @@ import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
 import { EventForm } from '../../components/events/EventForm';
 import { EventCommunications } from '../../components/events/EventCommunications';
-import { EventMessages } from '../../components/events/EventMessages';
 import { EventQuestionnaires } from '../../components/events/EventQuestionnaires';
 import { EventQuotes } from '../../components/events/EventQuotes';
 import { EventContracts } from '../../components/events/EventContracts';
@@ -1564,7 +1563,9 @@ export const EventProfile: React.FC = () => {
 
           {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
-            <EventMessages event={event} />
+            <Typography variant="body2" color="text.secondary">
+              Messaging functionality has been removed.
+            </Typography>
           </TabPanel>
 
           {/* Quotes Tab */}
