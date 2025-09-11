@@ -1,0 +1,212 @@
+{
+  "timestamp": "2025-09-11T14:10:10.003840",
+  "summary": {
+    "total_tests": 32,
+    "passed": 1,
+    "failed": 31,
+    "pass_rate": "3.1%"
+  },
+  "test_details": {
+    "Django Server Health": {
+      "passed": false,
+      "details": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104938ec0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "timestamp": "2025-09-11T14:10:09.985914"
+    },
+    "Database Health": {
+      "passed": false,
+      "details": "You cannot call this from an async context - use a thread or sync_to_async.",
+      "timestamp": "2025-09-11T14:10:09.985974"
+    },
+    "Redis Health": {
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-09-11T14:10:09.987013"
+    },
+    "ASGI WebSocket Health": {
+      "passed": false,
+      "details": "BaseEventLoop.create_connection() got an unexpected keyword argument 'extra_headers'",
+      "timestamp": "2025-09-11T14:10:10.001093"
+    },
+    "Test Data Setup": {
+      "passed": false,
+      "details": "You cannot call this from an async context - use a thread or sync_to_async.",
+      "timestamp": "2025-09-11T14:10:10.001126"
+    },
+    "MessageThread CRUD Operations": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.001144"
+    },
+    "Message CRUD Operations": {
+      "passed": false,
+      "details": "'general_thread'",
+      "timestamp": "2025-09-11T14:10:10.001152"
+    },
+    "Thread Participants": {
+      "passed": false,
+      "details": "'general_thread'",
+      "timestamp": "2025-09-11T14:10:10.001159"
+    },
+    "Message Attachments": {
+      "passed": false,
+      "details": "'client_message'",
+      "timestamp": "2025-09-11T14:10:10.001166"
+    },
+    "Message Read Receipts": {
+      "passed": false,
+      "details": "'admin_message'",
+      "timestamp": "2025-09-11T14:10:10.001173"
+    },
+    "Typing Indicators": {
+      "passed": false,
+      "details": "'general_thread'",
+      "timestamp": "2025-09-11T14:10:10.001180"
+    },
+    "Optimized Queries": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.001187"
+    },
+    "API Authentication": {
+      "passed": false,
+      "details": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/messaging/threads/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10494a0d0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "timestamp": "2025-09-11T14:10:10.001728"
+    },
+    "Thread API Endpoints": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.001740"
+    },
+    "Message API Endpoints": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.001748"
+    },
+    "File Upload Endpoints": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.001755"
+    },
+    "API Permissions": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.001762"
+    },
+    "WebSocket Connection": {
+      "passed": false,
+      "details": "Could not establish connection",
+      "timestamp": "2025-09-11T14:10:10.001877"
+    },
+    "WebSocket Authentication": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.001886"
+    },
+    "Real-time Messaging Infrastructure": {
+      "passed": false,
+      "details": "No test thread available",
+      "timestamp": "2025-09-11T14:10:10.001893"
+    },
+    "Typing Indicators WebSocket Support": {
+      "passed": false,
+      "details": "No test thread available",
+      "timestamp": "2025-09-11T14:10:10.001900"
+    },
+    "Authentication Security": {
+      "passed": false,
+      "details": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/messaging/threads/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10494aad0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "timestamp": "2025-09-11T14:10:10.002200"
+    },
+    "Authorization Security": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.002210"
+    },
+    "Data Validation": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.002218"
+    },
+    "Audit Logging": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.002246"
+    },
+    "Query Performance": {
+      "passed": false,
+      "details": "You cannot call this from an async context - use a thread or sync_to_async.",
+      "timestamp": "2025-09-11T14:10:10.003683"
+    },
+    "API Response Times": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.003697"
+    },
+    "WebSocket Performance": {
+      "passed": false,
+      "details": "BaseEventLoop.create_connection() got an unexpected keyword argument 'extra_headers'",
+      "timestamp": "2025-09-11T14:10:10.003794"
+    },
+    "Client Message Flow": {
+      "passed": false,
+      "details": "'client_2'",
+      "timestamp": "2025-09-11T14:10:10.003811"
+    },
+    "Admin Response Flow": {
+      "passed": false,
+      "details": "'admin_2'",
+      "timestamp": "2025-09-11T14:10:10.003818"
+    },
+    "Event-Specific Messaging": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.003825"
+    },
+    "File Sharing Flow": {
+      "passed": false,
+      "details": "'client_1'",
+      "timestamp": "2025-09-11T14:10:10.003832"
+    }
+  },
+  "errors": [
+    "Django Server Health: HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104938ec0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+    "Database Health: You cannot call this from an async context - use a thread or sync_to_async.",
+    "ASGI WebSocket Health: BaseEventLoop.create_connection() got an unexpected keyword argument 'extra_headers'",
+    "Test Data Setup: You cannot call this from an async context - use a thread or sync_to_async.",
+    "MessageThread CRUD Operations: 'client_1'",
+    "Message CRUD Operations: 'general_thread'",
+    "Thread Participants: 'general_thread'",
+    "Message Attachments: 'client_message'",
+    "Message Read Receipts: 'admin_message'",
+    "Typing Indicators: 'general_thread'",
+    "Optimized Queries: 'client_1'",
+    "API Authentication: HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/messaging/threads/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10494a0d0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+    "Thread API Endpoints: 'client_1'",
+    "Message API Endpoints: 'client_1'",
+    "File Upload Endpoints: 'client_1'",
+    "API Permissions: 'client_1'",
+    "WebSocket Connection: Could not establish connection",
+    "WebSocket Authentication: 'client_1'",
+    "Real-time Messaging Infrastructure: No test thread available",
+    "Typing Indicators WebSocket Support: No test thread available",
+    "Authentication Security: HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/messaging/threads/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10494aad0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+    "Authorization Security: 'client_1'",
+    "Data Validation: 'client_1'",
+    "Audit Logging: 'client_1'",
+    "Query Performance: You cannot call this from an async context - use a thread or sync_to_async.",
+    "API Response Times: 'client_1'",
+    "WebSocket Performance: BaseEventLoop.create_connection() got an unexpected keyword argument 'extra_headers'",
+    "Client Message Flow: 'client_2'",
+    "Admin Response Flow: 'admin_2'",
+    "Event-Specific Messaging: 'client_1'",
+    "File Sharing Flow: 'client_1'"
+  ],
+  "system_info": {
+    "base_url": "http://127.0.0.1:8000",
+    "websocket_url": "ws://127.0.0.1:8000",
+    "test_users_created": 0,
+    "test_events_created": 0,
+    "test_threads_created": 0,
+    "test_messages_created": 0
+  }
+}

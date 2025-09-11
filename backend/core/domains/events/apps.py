@@ -7,3 +7,6 @@ class EventsConfig(AppConfig):
     name = 'core.domains.events'
     label = 'events'
     verbose_name = 'Events'
+    
+    def ready(self):
+        import core.domains.events.signals  # noqa

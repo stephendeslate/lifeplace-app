@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/common/TemplatePreviewDialog.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -112,14 +112,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
     }
   }, [open, variables]);
 
-  // Generate preview when context data changes
-  useEffect(() => {
-    if (open && Object.keys(contextData).length > 0) {
-      handlePreview();
-    }
-  }, [open, contextData]);
-
-  const handlePreview = async () => {
+  const handlePreview = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
@@ -131,7 +124,14 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [contextData, onPreview]);
+
+  // Generate preview when context data changes
+  useEffect(() => {
+    if (open && Object.keys(contextData).length > 0) {
+      handlePreview();
+    }
+  }, [open, contextData, handlePreview]);
 
   const handleContextChange = (variable: string, value: string) => {
     setContextData(prev => ({

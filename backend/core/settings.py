@@ -58,7 +58,6 @@ INSTALLED_APPS = [
     'core',
     'core.domains.users',
     'core.domains.communications',
-    'core.domains.messaging',
     'core.domains.clients',
     'core.domains.events',
     'core.domains.products',
@@ -71,6 +70,7 @@ INSTALLED_APPS = [
     'core.domains.notes',
     'core.domains.notifications',
     'core.domains.analytics',
+    'core.domains.messaging',  # Real-time messaging with WebSocket support
     'core.domains.settings',  # Currency and application settings management
     'django.contrib.admin',
     'django.contrib.auth',
@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'channels',  # Django Channels for WebSocket support
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',  # SECURITY: JWT token blacklisting
@@ -115,6 +116,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+
+# Django Channels ASGI Configuration
+ASGI_APPLICATION = 'core.asgi.application'
 
 
 # Database
@@ -306,6 +310,19 @@ CACHES = {
 # Use Redis for session storage (much faster than database)
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'sessions'
+
+# Django Channels Layer Configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_URL + '/5'],  # Use Redis database 5 for channels
+            'capacity': 1500,  # Maximum number of messages to buffer in each channel
+            'expiry': 60,  # How long to keep message in seconds
+        },
+    },
+}
+
 
 # JWT settings - SECURITY ENHANCED
 # SECURITY FIX: Use dedicated JWT signing key
@@ -523,3 +540,4 @@ SITE_NAME = os.getenv('SITE_NAME', 'LifePlace')
 BUSINESS_TIMEZONE = 'Asia/Manila'  # Primary business location (Philippines)
 BUSINESS_TIMEZONE_DISPLAY = 'PHT'  # Display abbreviation
 BUSINESS_TIMEZONE_OFFSET = '+08:00'  # UTC offset
+

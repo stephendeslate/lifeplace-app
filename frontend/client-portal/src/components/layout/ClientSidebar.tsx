@@ -20,9 +20,9 @@ import {
   Dashboard as DashboardIcon,
   Event as EventIcon,
   CalendarMonth as BookingIcon,
-  Message as MessageIcon,
   Payment as PaymentIcon,
   Description as ContractIcon,
+  Message as MessageIcon,
   Person as ProfileIcon,
   HelpOutline as HelpIcon,
   Home as HomeIcon,
@@ -62,17 +62,17 @@ const navigationItems: NavigationItem[] = [
     // TODO: Replace with API-driven count
   },
   {
-    id: 'booking',
-    label: 'Book New Event',
-    path: '/booking',
-    icon: <BookingIcon />,
-  },
-  {
     id: 'messages',
     label: 'Messages',
     path: '/messages',
     icon: <MessageIcon />,
-    // TODO: Replace with API-driven unread count
+    // TODO: Replace with unread messages count
+  },
+  {
+    id: 'booking',
+    label: 'Book New Event',
+    path: '/booking',
+    icon: <BookingIcon />,
   },
   {
     id: 'payments',

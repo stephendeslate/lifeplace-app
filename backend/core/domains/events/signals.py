@@ -12,6 +12,10 @@ def invalidate_event_cache_on_save(sender, instance, created, **kwargs):
     
     # Also invalidate availability cache when event changes
     _invalidate_availability_cache_for_event(instance)
+    
+    # NOTE: MessageThread auto-creation removed during messaging cleanup
+    # if created:
+    #     _create_message_thread_for_event(instance)
 
 @receiver(post_delete, sender=Event)
 def invalidate_event_cache_on_delete(sender, instance, **kwargs):
@@ -46,7 +50,18 @@ def invalidate_task_cache_on_save(sender, instance, created, **kwargs):
     """Invalidate task-related cache when task changes"""
     CacheInvalidator.on_event_task_change(sender, instance, created, **kwargs)
 
-@receiver([post_save, post_delete], sender=EventType)
-def invalidate_event_type_cache(sender, instance, **kwargs):
-    """Invalidate event type cache when changed"""
-    CacheInvalidator.on_event_type_change(sender, instance, None, **kwargs)
+@receiver(post_save, sender=EventType)
+def invalidate_event_type_cache_on_save(sender, instance, created, **kwargs):
+    """Invalidate event type cache when saved"""
+    CacheInvalidator.on_event_type_change(sender, instance, created, **kwargs)
+
+@receiver(post_delete, sender=EventType)
+def invalidate_event_type_cache_on_delete(sender, instance, **kwargs):
+    """Invalidate event type cache when deleted"""
+    CacheInvalidator.on_event_type_change(sender, instance, False, **kwargs)
+
+
+# def _create_message_thread_for_event(event):
+#     """Create a MessageThread for a new event - REMOVED during messaging cleanup"""
+#     # Messaging domain removed - this function is no longer needed
+#     pass

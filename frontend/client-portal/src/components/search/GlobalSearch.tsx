@@ -21,7 +21,6 @@ import {
   Search as SearchIcon,
   Event as EventIcon,
   Payment as PaymentIcon,
-  Message as MessageIcon,
   Person as PersonIcon,
   Receipt as ReceiptIcon,
   History as HistoryIcon,
@@ -36,7 +35,7 @@ import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface SearchResult {
   id: string;
-  type: 'event' | 'payment' | 'invoice' | 'message' | 'contact' | 'page';
+  type: 'event' | 'payment' | 'invoice' | 'contact' | 'page';
   title: string;
   subtitle?: string;
   description: string;
@@ -116,18 +115,6 @@ export const GlobalSearch: React.FC = () => {
       },
     },
     {
-      id: '4',
-      type: 'message',
-      title: 'Message from Sarah',
-      subtitle: 'Catering Options',
-      description: 'New message about menu selection and dietary requirements',
-      url: '/messages',
-      metadata: {
-        date: '2024-01-10',
-        priority: 'medium',
-      },
-    },
-    {
       id: '5',
       type: 'page',
       title: 'My Profile',
@@ -197,7 +184,6 @@ export const GlobalSearch: React.FC = () => {
       case 'event': return <EventIcon fontSize="small" />;
       case 'payment': return <PaymentIcon fontSize="small" />;
       case 'invoice': return <ReceiptIcon fontSize="small" />;
-      case 'message': return <MessageIcon fontSize="small" />;
       case 'contact': return <PersonIcon fontSize="small" />;
       case 'page': return <TrendingUpIcon fontSize="small" />;
       default: return <SearchIcon fontSize="small" />;
@@ -220,7 +206,6 @@ export const GlobalSearch: React.FC = () => {
     { type: 'all', label: 'All', icon: <SearchIcon fontSize="small" />, count: searchResults.length },
     { type: 'event', label: 'Events', icon: <EventIcon fontSize="small" />, count: searchResults.filter(r => r.type === 'event').length },
     { type: 'payment', label: 'Payments', icon: <PaymentIcon fontSize="small" />, count: searchResults.filter(r => r.type === 'payment' || r.type === 'invoice').length },
-    { type: 'message', label: 'Messages', icon: <MessageIcon fontSize="small" />, count: searchResults.filter(r => r.type === 'message').length },
   ];
 
   const filteredResults = selectedCategory && selectedCategory !== 'all' 
@@ -583,20 +568,6 @@ export const GlobalSearch: React.FC = () => {
                         }}
                       >
                         Check Payments
-                      </Button>
-                      <Button
-                        variant="text"
-                        startIcon={<MessageIcon fontSize="small" />}
-                        onClick={() => navigate('/messages')}
-                        sx={{
-                          justifyContent: 'flex-start',
-                          backgroundColor: alpha('#fff', 0.05),
-                          '&:hover': {
-                            backgroundColor: alpha('#fff', 0.1),
-                          },
-                        }}
-                      >
-                        View Messages
                       </Button>
                     </Stack>
                   </Box>
