@@ -22,14 +22,12 @@ import {
   keyframes
 } from '@mui/material';
 import {
-  Circle as CircleIcon,
-  Schedule as ScheduleIcon,
   PhoneAndroid as MobileIcon,
   Computer as DesktopIcon,
   Tablet as TabletIcon
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
-import { User } from '../../../types/messaging.types';
+import type { User } from '../../../types/messaging.types';
 
 // Presence status types
 export type PresenceStatus = 'online' | 'idle' | 'away' | 'offline';
@@ -175,7 +173,7 @@ const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
   onClick
 }) => {
   const theme = useTheme();
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [, setCurrentTime] = useState(Date.now());
 
   // Update current time every minute for accurate "last seen" display
   useEffect(() => {
@@ -339,7 +337,7 @@ export default React.memo(PresenceIndicator);
 export { PresenceIndicator };
 
 // Hook for managing user presence
-export const usePresence = (userId: number, initialPresence?: PresenceData) => {
+export const usePresence = (_userId: number, initialPresence?: PresenceData) => {
   const [presence, setPresence] = useState<PresenceData>({
     status: 'offline',
     ...initialPresence

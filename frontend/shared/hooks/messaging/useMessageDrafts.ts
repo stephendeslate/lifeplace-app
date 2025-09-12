@@ -254,7 +254,7 @@ export const useMessageDrafts = (config: DraftConfig = {}) => {
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       // Force save any pending drafts
-      Object.entries(autoSaveTimeouts.current).forEach(([threadId, timeout]) => {
+      Object.entries(autoSaveTimeouts.current).forEach(([, timeout]) => {
         clearTimeout(timeout);
         // Note: We can't async save here, but localStorage is synchronous
       });

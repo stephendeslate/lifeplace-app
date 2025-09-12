@@ -56,7 +56,7 @@ interface MemoryMetrics {
 
 export const useMemoryManagement = (config: MemoryManagementConfig = {}) => {
   const {
-    maxCacheSize = 50, // 50MB
+    maxCacheSize: _ = 50, // 50MB
     cleanupInterval = 300000, // 5 minutes
     enableLeakDetection = process.env.NODE_ENV === 'development',
     webSocketConnections = [],

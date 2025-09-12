@@ -24,12 +24,15 @@ export {
   type WebSocketContextState
 } from './websocket.context';
 
-// API Services
+// API Services - Using proper authenticated API
 export {
-  messagingAPI,
-  MessagingAPIService,
+  messagingApi,
+  setApiClient,
+  type ThreadResponse,
+  type MessageResponse,
+  type UnreadCountsResponse,
   type UploadProgressCallback
-} from './messaging.api';
+} from '../apis/messaging.api';
 
 // React Query Hooks
 export {

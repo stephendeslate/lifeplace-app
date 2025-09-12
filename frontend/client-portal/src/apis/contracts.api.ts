@@ -141,9 +141,9 @@ export const contractsApi = {
       return response.data as Blob;
     } catch (error: unknown) {
       // If it's an axios error with a blob response, try to parse it
-      if (error.response?.data instanceof Blob) {
+      if ((error as any).response?.data instanceof Blob) {
         try {
-          const text = await error.response.data.text();
+          const text = await (error as any).response.data.text();
           const errorData = JSON.parse(text);
           throw new Error(errorData.detail || errorData.error || 'Failed to download contract');
         } catch (_parseError) {

@@ -3,25 +3,15 @@
 import {
   useQuery,
   useInfiniteQuery,
-  useMutation,
   useQueryClient,
   useQueries,
-  UseMutationResult,
-  InfiniteData,
-  QueryFunctionContext,
+  type QueryFunctionContext,
 } from '@tanstack/react-query';
 
 import { messagingApi } from '../../apis/messaging.api';
 import { messagingKeys } from '../../queries/messagingKeys';
 import type {
-  MessageThread,
-  Message,
   ThreadFilters,
-  MessageFilters,
-  SendMessageRequest,
-  CreateMessageData,
-  ThreadStats,
-  CannedResponse,
 } from '../../types/messaging.types';
 
 // Thread queries

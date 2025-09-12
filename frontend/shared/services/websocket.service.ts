@@ -493,9 +493,24 @@ class WebSocketManager {
   private buildWebSocketUrl(endpoint: string, token?: string): string {
     let url = `${this.config.baseUrl}${endpoint}`;
     
-    if (token) {
+    // Try to get JWT token from multiple sources
+    let authToken = token;
+    if (!authToken) {
+      // Try to get JWT from localStorage (following the auth context pattern)
+      try {
+        const tokens = localStorage.getItem('tokens');
+        if (tokens) {
+          const tokenData = JSON.parse(tokens);
+          authToken = tokenData.access; // Use access token for JWT auth
+        }
+      } catch (error) {
+        this.log('Failed to get JWT from localStorage:', error);
+      }
+    }
+    
+    if (authToken) {
       const separator = url.includes('?') ? '&' : '?';
-      url += `${separator}token=${encodeURIComponent(token)}`;
+      url += `${separator}token=${encodeURIComponent(authToken)}`;
     }
     
     // Add compression support if available

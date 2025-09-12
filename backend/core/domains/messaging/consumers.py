@@ -346,30 +346,24 @@ class ThreadMessagingConsumer(BaseMessagingConsumer):
                       is_internal_note: bool = False, parent_message_id: Optional[str] = None):
         """Create a new message in the thread."""
         try:
-            from .models import MessageThread, Message
-            from .services import MessagingService
+            from .protocol_coordinator import message_coordinator
+            from .models import Message
             
-            thread = MessageThread.objects.get(id=self.thread_id)
-            
-            parent_message = None
-            if parent_message_id:
-                try:
-                    parent_message = Message.objects.get(id=parent_message_id, thread=thread)
-                except Message.DoesNotExist:
-                    pass
-            
-            message = MessagingService.send_message(
-                thread=thread,
-                sender=self.user,
+            # Use MessageCoordinator for consistent message creation
+            result = message_coordinator.create_message(
+                user=self.user,
+                thread_id=str(self.thread_id),
                 content=content,
                 message_type=message_type,
-                is_internal_note=is_internal_note,
-                parent_message=parent_message
+                is_internal_note=is_internal_note
             )
             
+            # Return the created message object for compatibility
+            message = Message.objects.get(id=result['message']['id'])
             return message
+            
         except Exception as e:
-            logger.error(f"Error creating message: {e}")
+            logger.error(f"Error creating message via coordinator: {e}")
             return None
     
     @database_sync_to_async
@@ -454,16 +448,16 @@ class ThreadMessagingConsumer(BaseMessagingConsumer):
     def edit_message(self, message_id: str, new_content: str) -> bool:
         """Edit a message."""
         try:
+            from .protocol_coordinator import message_coordinator
             from .models import Message
-            from .services import MessagingService
             
+            # Basic permission and time limit checks
             message = Message.objects.get(
                 id=message_id,
                 thread_id=self.thread_id,
                 sender=self.user
             )
             
-            # Check time limit (15 minutes)
             time_limit = timezone.now() - timezone.timedelta(minutes=15)
             if message.created_at < time_limit:
                 raise ValidationError("Message can only be edited within 15 minutes")
@@ -471,32 +465,33 @@ class ThreadMessagingConsumer(BaseMessagingConsumer):
             # Store original content if first edit
             if not message.original_content:
                 message.original_content = message.content
+                message.save()
             
-            message.content = new_content.strip()
-            message.edited_at = timezone.now()
-            message.save()
-            
-            # Broadcast edit
-            MessagingService.broadcast_message_edited(message)
+            # Use MessageCoordinator for consistent message editing
+            result = message_coordinator.edit_message(
+                user=self.user,
+                message_id=message_id,
+                content=new_content.strip()
+            )
             
             return True
         except Exception as e:
-            logger.error(f"Error editing message: {e}")
+            logger.error(f"Error editing message via coordinator: {e}")
             raise e
     
     @database_sync_to_async
     def delete_message(self, message_id: str) -> bool:
         """Delete a message."""
         try:
+            from .protocol_coordinator import message_coordinator
             from .models import Message
-            from .services import MessagingService
             
+            # Basic permission checks
             message = Message.objects.get(
                 id=message_id,
                 thread_id=self.thread_id
             )
             
-            # Check permissions
             if self.user.role == 'ADMIN':
                 # Admins can delete any message
                 pass
@@ -508,13 +503,15 @@ class ThreadMessagingConsumer(BaseMessagingConsumer):
             else:
                 raise ValidationError("Permission denied")
             
-            # Broadcast deletion before deleting
-            MessagingService.broadcast_message_deleted(message)
+            # Use MessageCoordinator for consistent message deletion
+            result = message_coordinator.delete_message(
+                user=self.user,
+                message_id=message_id
+            )
             
-            message.delete()
             return True
         except Exception as e:
-            logger.error(f"Error deleting message: {e}")
+            logger.error(f"Error deleting message via coordinator: {e}")
             raise e
 
 

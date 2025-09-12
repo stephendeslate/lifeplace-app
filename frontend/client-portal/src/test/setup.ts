@@ -2,6 +2,8 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Global test utilities and mocks
+
 // Mock environment variables
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

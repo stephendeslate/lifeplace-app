@@ -33,9 +33,7 @@ export default defineConfig({
           'vendor-stripe': ['@stripe/react-stripe-js', '@stripe/stripe-js'],
           'vendor-utils': ['axios', 'date-fns', 'date-fns-tz', 'lodash', 'dompurify'],
           'vendor-charts': ['recharts'],
-          // Shared components
-          'shared-messaging': ['../shared/contexts/MessagingContext', '../shared/contexts/WebSocketContext'],
-          'shared-hooks': ['../shared/hooks/useMessagingWebSocket', '../shared/hooks/useMemoryManagement'],
+          // Remove problematic messaging context chunking to fix React context instance conflicts
         },
         // Optimize chunk naming
         chunkFileNames: (chunkInfo) => {

@@ -9,9 +9,10 @@
  * - Breadcrumb support
  */
 
-import React, { ComponentType } from 'react';
+import React, { type ComponentType } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { MessagingProvider, DEFAULT_MESSAGING_CONFIG } from '../../providers/MessagingProvider';
+import { MessagingProvider } from '../../providers/MessagingProvider';
+import { DEFAULT_MESSAGING_CONFIG } from '../../configs/messaging.config';
 import type { MessagingConfig } from '../../types/messaging.types';
 
 export interface MessageRoutesProps {
@@ -47,7 +48,6 @@ export const MessageRoutes: React.FC<MessageRoutesProps> = ({
   MessageSettings,
   customRoutes = [],
   onNavigateToThread,
-  onNavigateToOverview,
 }) => {
   // Merge configuration with defaults based on user role
   const messagingConfig: MessagingConfig = {

@@ -28,7 +28,7 @@ export const useRealtimeSync = (config: RealtimeSyncConfig) => {
     userRole,
     userId,
     enableBroadcast = true,
-    autoMarkAsRead = true,
+    autoMarkAsRead: _ = true,
     activeThreadId,
   } = config;
 

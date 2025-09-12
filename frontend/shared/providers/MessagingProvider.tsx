@@ -10,11 +10,13 @@
  * - Performance optimizations
  */
 
-import React, { createContext, useContext, useCallback, useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocketConnectionState } from '../services/websocket.context';
 import { useMessaging } from '../hooks/useMessaging';
 import { useRealTimeUpdates } from '../hooks/useRealTimeUpdates';
+import { DEFAULT_MESSAGING_CONFIG } from '../configs/messaging.config';
+import { MessagingContext } from '../contexts/MessagingProviderContext';
 import type { MessageThread, Message, ThreadFilters, MessageFilters, MessagingConfig } from '../types/messaging.types';
 
 export interface MessagingState {
@@ -83,44 +85,20 @@ export interface MessagingContextValue {
   config: MessagingConfig;
 }
 
-const MessagingContext = createContext<MessagingContextValue | null>(null);
 
 export interface MessagingProviderProps {
   children: React.ReactNode;
   config: MessagingConfig;
 }
 
-// MessagingConfig is now imported from types
-
-export const DEFAULT_MESSAGING_CONFIG: MessagingConfig = {
-  userRole: 'CLIENT',
-  enableRealTime: true,
-  enableFileUploads: true,
-  enableInternalNotes: false,
-  enableBulkOperations: false,
-  enableCannedResponses: false,
-  enableSearch: true,
-  enableVirtualScrolling: true,
-  maxFileSize: 10 * 1024 * 1024, // 10MB
-  allowedFileTypes: ['image/*', 'application/pdf', '.doc', '.docx', '.txt'],
-  messagesPerPage: 50,
-  threadsPerPage: 20,
-  typingTimeout: 3000,
-  typingDebounceMs: 1000,
-  reconnectAttempts: 5,
-  reconnectDelay: 1000,
-  simplified: false,
-  autoMarkAsRead: false,
-  enableTypingIndicators: true,
-  enableReadReceipts: false,
-};
+// MessagingConfig is now imported from configs
 
 export const MessagingProvider: React.FC<MessagingProviderProps> = ({
   children,
   config = DEFAULT_MESSAGING_CONFIG,
 }) => {
   // Authentication context
-  const { user, isAuthenticated } = useAuth();
+  const { user: _user, isAuthenticated } = useAuth();
   
   // Internal state
   const [searchQuery, setSearchQuery] = useState('');
@@ -142,7 +120,7 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
   });
 
   // Real-time updates
-  const { state: realTimeState, actions: realTimeActions } = useRealTimeUpdates({
+  const { state: realTimeState, actions: _actions } = useRealTimeUpdates({
     enabled: config.enableRealTime && isAuthenticated,
     threadId: messagingState.selectedThreadId || undefined,
     onMessage: (message) => {
@@ -155,7 +133,7 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
   });
 
   // WebSocket connection state
-  const { isConnected, connectionQuality } = useWebSocketConnectionState();
+  const { isConnected, connectionQuality: _quality } = useWebSocketConnectionState();
 
   // Enhanced actions with error handling
   const enhancedActions: MessagingActions = useMemo(() => ({
@@ -356,9 +334,56 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
     }
   }, [connectionError]);
 
-  // Don't render if not authenticated
+  // Render children with minimal context if not authenticated or not ready
+  // This prevents the app from completely failing to render
   if (!isAuthenticated || !isReady) {
-    return null;
+    const fallbackContextValue: MessagingContextValue = {
+      state: {
+        threads: [],
+        messages: [],
+        selectedThreadId: null,
+        selectedThread: null,
+        isLoadingThreads: false,
+        isLoadingMessages: false,
+        isLoadingMore: false,
+        hasMoreThreads: false,
+        hasMoreMessages: false,
+        threadFilters: {},
+        messageFilters: {},
+        searchQuery: '',
+        isConnected: false,
+        isTyping: false,
+        typingUsers: [],
+        onlineUsers: [],
+        unreadCount: 0,
+        error: null,
+        connectionError: null,
+      },
+      actions: {
+        selectThread: async () => {},
+        refreshThreads: async () => {},
+        loadMoreThreads: async () => {},
+        sendMessage: async () => {},
+        refreshMessages: async () => {},
+        loadMoreMessages: async () => {},
+        markAsRead: async () => {},
+        setSearchQuery: () => {},
+        setThreadFilters: () => {},
+        setMessageFilters: () => {},
+        startTyping: () => {},
+        stopTyping: () => {},
+        reconnect: async () => {},
+        clearError: () => {},
+        clearConnectionError: () => {},
+      },
+      config: { ...DEFAULT_MESSAGING_CONFIG, ...config },
+    };
+
+    return (
+      <MessagingContext.Provider value={fallbackContextValue}>
+        {children}
+      </MessagingContext.Provider>
+    );
   }
 
   return (
@@ -366,43 +391,6 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
       {children}
     </MessagingContext.Provider>
   );
-};
-
-/**
- * Hook to access messaging context
- */
-export const useMessagingContext = (): MessagingContextValue => {
-  const context = useContext(MessagingContext);
-  
-  if (!context) {
-    throw new Error('useMessagingContext must be used within a MessagingProvider');
-  }
-  
-  return context;
-};
-
-/**
- * Hook to access only messaging state (for read-only components)
- */
-export const useMessagingState = (): MessagingState => {
-  const { state } = useMessagingContext();
-  return state;
-};
-
-/**
- * Hook to access only messaging actions
- */
-export const useMessagingActions = (): MessagingActions => {
-  const { actions } = useMessagingContext();
-  return actions;
-};
-
-/**
- * Hook to access messaging configuration
- */
-export const useMessagingConfig = (): MessagingConfig => {
-  const { config } = useMessagingContext();
-  return config;
 };
 
 export default MessagingProvider;

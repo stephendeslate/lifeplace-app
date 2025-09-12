@@ -39,9 +39,9 @@ import {
   ChatBubbleOutline as ChatIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMessagingContext } from '../../../../shared/providers/MessagingProvider';
+import { useMessagingContext } from '@shared';
 import { ClientMessageThread } from '../../components/messaging/ClientMessageThread';
-import type { MessageThread } from '../../../../shared/types/messaging.types';
+import type { MessageThread } from '@shared/types/messaging.types';
 
 export interface ClientMessagesProps {
   eventId?: string;

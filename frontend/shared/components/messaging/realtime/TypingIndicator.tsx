@@ -21,7 +21,7 @@ import {
   keyframes,
   useTheme
 } from '@mui/material';
-import { User, TypingUser } from '../../../types/messaging.types';
+import type { User, TypingUser } from '../../../types/messaging.types';
 
 // Typing animation keyframes
 const typingDots = keyframes`
@@ -346,14 +346,14 @@ export { TypingIndicator };
 
 // Hook for managing typing state
 export const useTypingIndicator = (
-  threadId: string,
-  currentUserId?: number,
+  _threadId: string,
+  _currentUserId?: number,
   options: {
     typingTimeout?: number;
     debounceDelay?: number;
   } = {}
 ) => {
-  const { typingTimeout = 5000, debounceDelay = 1000 } = options;
+  const { typingTimeout = 5000, debounceDelay: _ = 1000 } = options;
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 

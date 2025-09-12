@@ -1,7 +1,8 @@
 // Responsive Design System for Messaging Components
 // Unified breakpoint and layout management for both Admin CRM and Client Portal
 
-import { Theme, useTheme } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 
 // === UNIFIED BREAKPOINT SYSTEM ===
@@ -455,7 +456,7 @@ export const useAdminResponsiveMessaging = (): ResponsiveMessagingState => {
   const isLg = useMediaQuery(theme.breakpoints.between('lg', 'xl'));
   const isXl = useMediaQuery(theme.breakpoints.up('xl'));
   
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  useMediaQuery('(prefers-color-scheme: dark)');
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const isLandscape = useMediaQuery('(orientation: landscape)');
   const hasTouch = useMediaQuery('(pointer: coarse)');

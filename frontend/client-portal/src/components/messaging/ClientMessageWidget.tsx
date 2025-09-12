@@ -36,8 +36,8 @@ import {
   Event as EventIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useMessagingState } from '../../../../shared/providers/MessagingProvider';
-import type { MessageThread } from '../../../../shared/types/messaging.types';
+import { useMessagingState } from '@shared';
+import type { MessageThread } from '@shared/types/messaging.types';
 
 export interface ClientMessageWidgetProps {
   variant?: 'dashboard' | 'compact' | 'floating';

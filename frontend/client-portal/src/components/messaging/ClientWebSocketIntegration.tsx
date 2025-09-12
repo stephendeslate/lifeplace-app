@@ -28,9 +28,9 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { webSocketManager, MessagingWebSocketService } from '../../../../shared/services/websocket.service';
-import { useRealtimeSync } from '../../../../shared/hooks/messaging/useRealtimeSync';
-import { useMemoryManagement } from '../../../../shared/hooks/useMemoryManagement';
+import { webSocketManager, MessagingWebSocketService } from '@shared/services/websocket.service';
+import { useRealtimeSync } from '@shared/hooks/messaging/useRealtimeSync';
+import { useMemoryManagement } from '@shared/hooks/useMemoryManagement';
 
 // Styled components for clean client theme
 const ClientWebSocketContainer = styled(Box)(({ theme: _theme }) => ({

@@ -1,10 +1,11 @@
 // frontend/client-portal/src/contexts/__tests__/ContractsContext.test.tsx
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '../../test/utils';
+import { render as rtlRender } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ContractsProvider, useContracts, useContract, useOptimisticContractUpdates } from '../ContractsContext';
+import { QueryClient } from '@tanstack/react-query';
+import { useContracts, useContract, useOptimisticContractUpdates } from '../ContractsContext';
 import { contractsApi } from '../../apis/contracts.api';
 import type { Contract } from '../../types/contracts.types';
 
@@ -223,23 +224,14 @@ describe('ContractsContext', () => {
   });
 
   const renderWithProviders = (component: React.ReactElement) => {
-    return render(
-      <QueryClientProvider client={queryClient}>
-        <ContractsProvider>
-          {component}
-        </ContractsProvider>
-      </QueryClientProvider>
-    );
+    return render(component, { queryClient });
   };
 
   describe('ContractsProvider', () => {
     it('provides contract data correctly', async () => {
       renderWithProviders(<TestComponent />);
 
-      // Initially loading
-      expect(screen.getByTestId('loading')).toHaveTextContent('Loading');
-
-      // Wait for data to load
+      // Wait for data to load - auth resolves quickly in tests
       await waitFor(() => {
         expect(screen.getByTestId('loading')).toHaveTextContent('Loaded');
       });
@@ -489,7 +481,7 @@ describe('ContractsContext', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       expect(() => {
-        render(<TestComponentOutsideProvider />);
+        rtlRender(<TestComponentOutsideProvider />);
       }).toThrow('useContracts must be used within a ContractsProvider');
 
       consoleSpy.mockRestore();

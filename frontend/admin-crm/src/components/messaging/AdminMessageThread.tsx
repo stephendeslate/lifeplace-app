@@ -52,8 +52,8 @@ import {
   InsertDriveFile as FileIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { useMessagingContext } from '../../../../shared/providers/MessagingProvider';
-import type { Message } from '../../../../shared/types/messaging.types';
+import { useMessagingContext } from '@shared';
+import type { Message } from '@shared/types/messaging.types';
 
 export interface AdminMessageThreadProps {
   threadId: string;

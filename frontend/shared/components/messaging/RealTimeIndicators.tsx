@@ -19,13 +19,13 @@ export interface RealTimeIndicatorsProps {
 
 export const RealTimeIndicators: React.FC<RealTimeIndicatorsProps> = ({
   threadId,
-  showTyping = true,
-  showPresence = true,
-  isConnected = false,
-  connectionQuality = 'offline',
-  typingUsers = [],
-  onlineUsers = [],
-  compact = false
+  showTyping: _ = true,
+  showPresence: _1 = true,
+  isConnected: _2 = false,
+  connectionQuality: _3 = 'offline',
+  typingUsers: _4 = [],
+  onlineUsers: _5 = [],
+  compact: _6 = false
 }) => {
   return (
     <Box>

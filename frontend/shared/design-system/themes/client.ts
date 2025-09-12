@@ -1,4 +1,4 @@
-import { createTheme, Theme } from '@mui/material/styles';
+import { createTheme, type Theme } from '@mui/material/styles';
 import { designTokens } from '../tokens/base';
 
 export const createClientTheme = (mode: 'light' | 'dark' = 'light'): Theme => {

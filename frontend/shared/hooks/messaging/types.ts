@@ -5,8 +5,6 @@ import type {
   MessagingConfig,
   AdminMessagingConfig,
   ClientMessagingConfig,
-  UseMessagingOptions,
-  UseMessagingReturn,
   MessagingState,
   MessagingActions,
   MessagingQueries,

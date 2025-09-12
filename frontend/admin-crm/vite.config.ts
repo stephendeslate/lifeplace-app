@@ -35,7 +35,7 @@ export default defineConfig({
           'vendor-charts': ['recharts'],
           // Shared components
           'shared-messaging': ['../shared/contexts/MessagingContext', '../shared/contexts/WebSocketContext'],
-          'shared-hooks': ['../shared/hooks/useMessagingWebSocket', '../shared/hooks/useMemoryManagement'],
+          'shared-hooks': ['../shared/hooks/useRealTimeUpdates', '../shared/hooks/useMemoryManagement'],
         },
         // Optimize chunk naming
         chunkFileNames: (chunkInfo) => {

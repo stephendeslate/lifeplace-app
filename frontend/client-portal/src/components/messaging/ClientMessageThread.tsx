@@ -35,9 +35,9 @@ import {
   DoneAll as DoneAllIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import { useMessagingContext } from '../../../../shared/providers/MessagingProvider';
+import { useMessagingContext } from '@shared';
 import { ClientMessageComposer } from './ClientMessageComposer';
-import type { Message } from '../../../../shared/types/messaging.types';
+import type { Message } from '@shared/types/messaging.types';
 
 export interface ClientMessageThreadProps {
   threadId: string;
