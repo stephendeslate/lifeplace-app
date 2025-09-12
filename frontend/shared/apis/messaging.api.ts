@@ -8,20 +8,13 @@ import type {
   AdminMessageAction,
   CannedResponse,
   ThreadStats,
+  PaginatedThreadsResponse,
+  PaginatedMessagesResponse,
 } from '../types/messaging.types';
 
-// API response types matching backend patterns
-interface PaginatedResponse<T> {
-  results: T[];
-  count: number;
-  next?: string;
-  previous?: string;
-  nextPage?: number;
-  nextCursor?: string;
-}
-
-export interface ThreadResponse extends PaginatedResponse<MessageThread> {}
-export interface MessageResponse extends PaginatedResponse<Message> {}
+// Re-export the paginated response types for consistency
+export interface ThreadResponse extends PaginatedThreadsResponse {}
+export interface MessageResponse extends PaginatedMessagesResponse {}
 
 export interface UnreadCountsResponse {
   total_unread: number;
@@ -45,6 +38,9 @@ let apiClient: any;
 export const setApiClient = (client: any) => {
   apiClient = client;
 };
+
+// File upload progress callback type
+export type UploadProgressCallback = (progress: number) => void;
 
 export const messagingApi = {
   // Thread operations
@@ -103,6 +99,12 @@ export const messagingApi = {
   // Thread stats
   getThreadStats: async (threadId: string): Promise<ThreadStats> => {
     const response = await apiClient.get(`/messaging/threads/${threadId}/stats/`);
+    return response.data;
+  },
+
+  // General thread statistics (admin only)
+  getGeneralStats: async (): Promise<any> => {
+    const response = await apiClient.get('/messaging/threads/stats/');
     return response.data;
   },
 
@@ -174,5 +176,53 @@ export const messagingApi = {
       thread_id: threadId,
       is_typing: isTyping,
     });
+  },
+
+  // Additional essential methods for compatibility
+  getMessage: async (messageId: string): Promise<Message> => {
+    const response = await apiClient.get(`/messaging/messages/${messageId}/`);
+    return response.data;
+  },
+
+  searchMessages: async (query: string, filters: any = {}): Promise<any> => {
+    const params = new URLSearchParams({ search: query });
+    const response = await apiClient.get(`/messaging/messages/?${params}`);
+    return response.data;
+  },
+
+  searchThreads: async (query: string, filters: any = {}): Promise<any> => {
+    return messagingApi.getThreads({ ...filters, search: query });
+  },
+
+  createThread: async (data: Partial<MessageThread>): Promise<MessageThread> => {
+    const response = await apiClient.post('/messaging/threads/', data);
+    return response.data;
+  },
+
+  updateThread: async (threadId: string, data: any): Promise<MessageThread> => {
+    const response = await apiClient.patch(`/messaging/threads/${threadId}/`, data);
+    return response.data;
+  },
+
+  updateMessage: async (messageId: string, data: any): Promise<Message> => {
+    const response = await apiClient.patch(`/messaging/messages/${messageId}/`, data);
+    return response.data;
+  },
+
+  deleteMessage: async (messageId: string): Promise<void> => {
+    await apiClient.delete(`/messaging/messages/${messageId}/`);
+  },
+
+  markMessageRead: async (messageId: string): Promise<void> => {
+    await apiClient.post(`/messaging/messages/${messageId}/mark_read/`);
+  },
+
+  markThreadRead: async (threadId: string): Promise<void> => {
+    await apiClient.post('/messaging/messages/mark_thread_read/', { thread_id: threadId });
+  },
+
+  performAdminAction: async (action: any): Promise<any> => {
+    // This is a placeholder - implement based on the specific admin actions needed
+    throw new Error('performAdminAction not yet implemented - please implement specific admin actions');
   },
 };

@@ -17,11 +17,9 @@ import {
   useUpdateThread,
   useAdminAction,
   useThreadStats,
-  messagingKeys,
-  MessageThread,
-  ThreadFilters,
-  AdminMessageAction,
-  ThreadStats
+  type MessageThread,
+  type AdminMessageAction,
+  type ThreadStats
 } from '../services';
 
 export interface ThreadManagementState {
@@ -144,7 +142,7 @@ export const useThreadManagement = (
 
     const isAdmin = userRole === 'ADMIN';
     const isResolved = selectedThread.status === 'resolved';
-    const isAssignedToUser = selectedThread.assigned_admin?.id === 0; // Would need actual user ID
+    selectedThread.assigned_admin?.id === 0; // Would need actual user ID
 
     return {
       canEdit: isAdmin || !isResolved,

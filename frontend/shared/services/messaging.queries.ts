@@ -22,7 +22,7 @@ import type {
   InfiniteData
 } from '@tanstack/react-query';
 
-import { messagingAPI } from './messaging.api';
+import { messagingApi } from '../apis/messaging.api';
 import type {
   MessageThread,
   Message,
@@ -32,7 +32,6 @@ import type {
   MessageFilters,
   AdminMessageAction,
   ThreadStats,
-  PaginatedApiResponse,
   PaginatedThreadsResponse,
   PaginatedMessagesResponse
 } from '../types/messaging.types';
@@ -68,7 +67,7 @@ export const useThreads = (
 ) => {
   return useQuery({
     queryKey: [...messagingKeys.threads(), filters],
-    queryFn: () => messagingAPI.getThreads(filters),
+    queryFn: () => messagingApi.getThreads(filters),
     staleTime: 30000, // Consider data fresh for 30 seconds
     refetchOnWindowFocus: true,
     refetchInterval: 60000, // Refetch every minute for active data
@@ -91,7 +90,7 @@ export const useInfiniteThreads = (
 ) => {
   return useInfiniteQuery({
     queryKey: [...messagingKeys.threads(), 'infinite', filters],
-    queryFn: ({ pageParam = 1 }) => messagingAPI.getThreads(filters, pageParam as number),
+    queryFn: ({ pageParam = 1 }) => messagingApi.getThreads({ ...filters, page: pageParam as number }),
     getNextPageParam: (lastPage, allPages) => {
       // Check if there's a next page using Django REST Framework pagination
       if (lastPage.next) {
@@ -117,7 +116,7 @@ export const useThread = (
 ) => {
   return useQuery({
     queryKey: messagingKeys.thread(threadId),
-    queryFn: () => messagingAPI.getThread(threadId),
+    queryFn: () => messagingApi.getThread(threadId),
     enabled: Boolean(threadId),
     staleTime: 30000,
     ...options,
@@ -132,7 +131,7 @@ export const useThreadStats = (
 ) => {
   return useQuery({
     queryKey: messagingKeys.threadStats(),
-    queryFn: () => messagingAPI.getThreadStats(),
+    queryFn: () => messagingApi.getGeneralStats(),
     staleTime: 60000, // Stats can be stale for 1 minute
     ...options,
   });
@@ -156,7 +155,7 @@ export const useThreadMessages = (
 ) => {
   return useInfiniteQuery({
     queryKey: [...messagingKeys.threadMessages(threadId), filters],
-    queryFn: ({ pageParam = 1 }) => messagingAPI.getMessages({ ...filters, thread_id: threadId }, pageParam as number),
+    queryFn: ({ pageParam = 1 }) => messagingApi.getMessages(threadId, { ...filters, limit: 50 }),
     getNextPageParam: (lastPage, allPages) => {
       // Check if there's a next page using Django REST Framework pagination
       if (lastPage.next) {
@@ -184,7 +183,7 @@ export const useMessage = (
 ) => {
   return useQuery({
     queryKey: messagingKeys.message(messageId),
-    queryFn: () => messagingAPI.getMessage(messageId),
+    queryFn: () => messagingApi.getMessage(messageId),
     enabled: Boolean(messageId),
     staleTime: 30000,
     ...options,
@@ -201,7 +200,7 @@ export const useSearchMessages = (
 ) => {
   return useQuery({
     queryKey: [...messagingKeys.search(query), 'messages', filters],
-    queryFn: () => messagingAPI.searchMessages(query, filters),
+    queryFn: () => messagingApi.searchMessages(query, filters),
     enabled: Boolean(query.trim()),
     staleTime: 60000,
     ...options,
@@ -218,7 +217,7 @@ export const useSearchThreads = (
 ) => {
   return useQuery({
     queryKey: [...messagingKeys.search(query), 'threads', filters],
-    queryFn: () => messagingAPI.searchThreads(query, filters),
+    queryFn: () => messagingApi.searchThreads(query, filters),
     enabled: Boolean(query.trim()),
     staleTime: 60000,
     ...options,
@@ -236,7 +235,7 @@ export const useCreateThread = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Partial<MessageThread>) => messagingAPI.createThread(data),
+    mutationFn: (data: Partial<MessageThread>) => messagingApi.createThread(data),
     onSuccess: (newThread) => {
       // Invalidate and refetch threads list
       queryClient.invalidateQueries({ queryKey: messagingKeys.threads() });
@@ -257,7 +256,7 @@ export const useUpdateThread = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ threadId, data }) => messagingAPI.updateThread(threadId, data),
+    mutationFn: ({ threadId, data }) => messagingApi.updateThread(threadId, data),
     onMutate: async ({ threadId, data }: { threadId: string; data: Partial<MessageThread> }): Promise<{ previousThread: MessageThread | undefined }> => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: messagingKeys.thread(threadId) });
@@ -300,7 +299,7 @@ export const useSendMessage = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: SendMessageRequest) => messagingAPI.sendMessage(data),
+    mutationFn: (data: SendMessageRequest) => messagingApi.sendMessage(data),
     onMutate: async (newMessage: SendMessageRequest): Promise<{ previousMessages: InfiniteData<PaginatedMessagesResponse, unknown> | undefined; optimisticMessage: Message }> => {
       const queryKey = messagingKeys.threadMessages(newMessage.thread_id);
       
@@ -392,7 +391,7 @@ export const useUpdateMessage = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ messageId, data }) => messagingAPI.updateMessage(messageId, data),
+    mutationFn: ({ messageId, data }) => messagingApi.updateMessage(messageId, data),
     onSuccess: (updatedMessage) => {
       // Update message in cache
       queryClient.setQueryData(messagingKeys.message(updatedMessage.id), updatedMessage);
@@ -428,7 +427,7 @@ export const useDeleteMessage = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ messageId }) => messagingAPI.deleteMessage(messageId),
+    mutationFn: ({ messageId }) => messagingApi.deleteMessage(messageId),
     onSuccess: (_, { messageId, threadId }) => {
       // Remove message from cache
       queryClient.removeQueries({ queryKey: messagingKeys.message(messageId) });
@@ -463,7 +462,7 @@ export const useMarkMessageRead = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (messageId: string) => messagingAPI.markMessageRead(messageId),
+    mutationFn: (messageId: string) => messagingApi.markMessageRead(messageId),
     onSuccess: (_, messageId) => {
       // Update message read status in cache
       queryClient.setQueryData<Message>(
@@ -490,7 +489,7 @@ export const useMarkThreadRead = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (threadId: string) => messagingAPI.markThreadRead(threadId),
+    mutationFn: (threadId: string) => messagingApi.markThreadRead(threadId),
     onSuccess: (_, threadId) => {
       // Update thread unread count
       queryClient.setQueryData<MessageThread>(
@@ -526,10 +525,14 @@ export const useMarkThreadRead = (
  * Upload file attachment
  */
 export const useUploadFile = (
-  options?: UseMutationOptions<MessageAttachment, MessagingError, File>
+  options?: UseMutationOptions<
+    { id: string; file_url: string }, 
+    MessagingError, 
+    { file: File; threadId: string }
+  >
 ) => {
   return useMutation({
-    mutationFn: (file: File) => messagingAPI.uploadFile(file),
+    mutationFn: ({ file, threadId }) => messagingApi.uploadFile(file, threadId),
     ...options,
   });
 };
@@ -543,7 +546,7 @@ export const useAdminAction = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (action: AdminMessageAction) => messagingAPI.performAdminAction(action),
+    mutationFn: (action: AdminMessageAction) => messagingApi.performAdminAction(action),
     onSuccess: (_, action) => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: messagingKeys.thread(action.thread_id) });

@@ -174,7 +174,7 @@ export const injectDesignTokens = () => {
 // Accessibility helpers
 export const a11y = {
   // Color contrast utilities
-  getContrastRatio: (foreground: string, background: string): number => {
+  getContrastRatio: (_foreground: string, _background: string): number => {
     // Simplified contrast calculation - in production, use a proper color library
     // This is a placeholder implementation
     return 4.5; // WCAG AA compliance minimum

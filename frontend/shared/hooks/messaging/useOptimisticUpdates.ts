@@ -3,7 +3,7 @@
 import {
   useMutation,
   useQueryClient,
-  UseMutationResult,
+  type UseMutationResult,
 } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
@@ -13,7 +13,6 @@ import type {
   Message,
   MessageThread,
   SendMessageRequest,
-  CreateMessageData,
 } from '../../types/messaging.types';
 
 // Optimistic message sending with sophisticated rollback
@@ -231,7 +230,7 @@ export const useSendMessage = (): UseMutationResult<
     },
 
     // Always run - cleanup and logging
-    onSettled: (data: Message | undefined, error: Error | null, variables: SendMessageRequest) => {
+    onSettled: (_data: Message | undefined, error: Error | null, variables: SendMessageRequest) => {
       if (error) {
         console.error('Message sending settled with error:', {
           error: error.message,
@@ -272,7 +271,7 @@ export const useMarkAsRead = () => {
       return { previousUnreadCounts };
     },
 
-    onError: (error: Error, variables: string[], context?: { previousUnreadCounts?: unknown }) => {
+    onError: (_error: Error, _variables: string[], context?: { previousUnreadCounts?: unknown }) => {
       if (context?.previousUnreadCounts) {
         queryClient.setQueryData(
           messagingKeys.unreadCounts(),
@@ -322,7 +321,7 @@ export const useAdminActions = () => {
       return { previousThread };
     },
 
-    onError: (error: Error, variables: { threadId: string; adminId: number }, context?: { previousThread?: unknown }) => {
+    onError: (_error: Error, variables: { threadId: string; adminId: number }, context?: { previousThread?: unknown }) => {
       if (context?.previousThread) {
         queryClient.setQueryData(
           messagingKeys.thread(variables.threadId),
@@ -367,7 +366,7 @@ export const useAdminActions = () => {
       return { previousThread };
     },
 
-    onError: (error: Error, variables: { threadId: string; priority: MessageThread['priority'] }, context?: { previousThread?: unknown }) => {
+    onError: (_error: Error, variables: { threadId: string; priority: MessageThread['priority'] }, context?: { previousThread?: unknown }) => {
       if (context?.previousThread) {
         queryClient.setQueryData(
           messagingKeys.thread(variables.threadId),
@@ -411,7 +410,7 @@ export const useAdminActions = () => {
       return { previousThread };
     },
 
-    onError: (error: Error, threadId: string, context?: { previousThread?: unknown }) => {
+    onError: (_error: Error, threadId: string, context?: { previousThread?: unknown }) => {
       if (context?.previousThread) {
         queryClient.setQueryData(
           messagingKeys.thread(threadId),

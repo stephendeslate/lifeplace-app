@@ -33,7 +33,7 @@ import {
   InsertDriveFile as FileIcon,
   CloudUpload as UploadIcon,
 } from '@mui/icons-material';
-import { useMessagingContext } from '../../../../shared/providers/MessagingProvider';
+import { useMessagingContext } from '@shared';
 
 export interface ClientMessageComposerProps {
   threadId: string;

@@ -58,9 +58,9 @@ import {
   Event as EventIcon,
   Notifications as NotificationsIcon,
 } from '@mui/icons-material';
-import { useMessagingContext } from '../../../../shared/providers/MessagingProvider';
+import { useMessagingContext } from '@shared';
 import { AdminMessageThread } from '../../components/messaging/AdminMessageThread';
-import type { MessageThread, ThreadFilters } from '../../../../shared/types/messaging.types';
+import type { MessageThread, ThreadFilters } from '@shared/types/messaging.types';
 
 export interface MessagesOverviewProps {
   className?: string;

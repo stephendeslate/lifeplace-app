@@ -15,9 +15,7 @@ import { LayoutProvider } from '../contexts/LayoutContext';
 import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
 
 // Messaging system imports
-import { WebSocketProvider } from '@shared/contexts/WebSocketContext';
-import { MessagingProvider } from '@shared/providers/MessagingProvider';
-import { setApiClient } from '@shared/apis/messaging.api';
+import { WebSocketProvider, MessagingProvider, setApiClient } from '@shared';
 import api from '../utils/api';
 import { storage } from '../utils/storage';
 
@@ -57,7 +55,7 @@ const queryClient = new QueryClient({
 
 // Messaging-enabled wrapper that has access to auth context
 const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   
   // WebSocket configuration for admin CRM
   const getWebSocketUrl = () => {
@@ -104,35 +102,21 @@ const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children
     reconnectDelay: 1000,
   };
 
-  if (!isAuthenticated || !user) {
-    // Don't initialize messaging for unauthenticated users
-    return (
-      <LayoutProvider>
-        <ToastProvider>
-          <ConfirmDialogProvider>
-            {children}
-            {/* Only show React Query devtools in development */}
-            {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-          </ConfirmDialogProvider>
-        </ToastProvider>
-      </LayoutProvider>
-    );
-  }
-
+  // Always render the full provider tree - MessagingProvider now handles auth state internally
   return (
-    <WebSocketProvider config={webSocketConfig} enabled={isAuthenticated}>
-      <MessagingProvider config={messagingConfig}>
-        <LayoutProvider>
-          <ToastProvider>
-            <ConfirmDialogProvider>
+    <LayoutProvider>
+      <ToastProvider>
+        <ConfirmDialogProvider>
+          <WebSocketProvider config={webSocketConfig} enabled={isAuthenticated && !isLoading}>
+            <MessagingProvider config={messagingConfig}>
               {children}
               {/* Only show React Query devtools in development */}
               {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-            </ConfirmDialogProvider>
-          </ToastProvider>
-        </LayoutProvider>
-      </MessagingProvider>
-    </WebSocketProvider>
+            </MessagingProvider>
+          </WebSocketProvider>
+        </ConfirmDialogProvider>
+      </ToastProvider>
+    </LayoutProvider>
   );
 };
 

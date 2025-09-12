@@ -30,6 +30,7 @@ import {
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { useContracts } from '../../contexts/ContractsContext';
+import { useMessagingState } from '@shared';
 
 interface ClientSidebarProps {
   open: boolean;
@@ -121,6 +122,14 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { pendingContracts } = useContracts();
+  
+  // Get messaging state for unread count
+  let messagingState: any = null;
+  try {
+    messagingState = useMessagingState();
+  } catch {
+    // MessagingProvider might not be available yet
+  }
 
   // Enhanced navigation items with dynamic badges
   const getEnhancedNavigationItems = (): NavigationItem[] => {
@@ -129,6 +138,12 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
         return {
           ...item,
           badge: pendingContracts.length > 0 ? pendingContracts.length : undefined,
+        };
+      }
+      if (item.id === 'messages' && messagingState) {
+        return {
+          ...item,
+          badge: messagingState.unreadCount > 0 ? messagingState.unreadCount : undefined,
         };
       }
       return item;

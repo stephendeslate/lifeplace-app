@@ -18,10 +18,10 @@ import {
   useDeleteMessage,
   useUploadFile,
   useMarkMessageRead,
-  Message,
-  SendMessageRequest,
-  MessageAttachment,
-  UploadProgressCallback
+  type Message,
+  type SendMessageRequest,
+  type MessageAttachment,
+  type UploadProgressCallback
 } from '../services';
 
 export interface MessageDraft {
@@ -372,7 +372,7 @@ export const useMessageOperations = (
   // File operations
   const uploadFile = useCallback(async (
     file: File,
-    onProgress?: UploadProgressCallback
+    _onProgress?: UploadProgressCallback
   ): Promise<MessageAttachment> => {
     const validation = validateFile(file);
     if (!validation.isValid) {

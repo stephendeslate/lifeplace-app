@@ -38,7 +38,7 @@ import {
   MarkEmailRead as MarkReadIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useMessagingState } from '../../../../shared/providers/MessagingProvider';
+import { useMessagingState } from '@shared';
 
 export interface MessageNotificationBadgeProps {
   variant?: 'header' | 'sidebar' | 'floating';

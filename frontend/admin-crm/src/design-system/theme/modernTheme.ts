@@ -3,7 +3,101 @@
 
 import { createTheme } from '@mui/material/styles';
 import type { ThemeOptions, Components } from '@mui/material/styles';
-import { tokens } from '../tokens';
+import { designTokens as sharedTokens } from '@shared/design-system';
+
+// Compatibility layer to map shared design tokens to the old structure
+const tokens = {
+  color: {
+    primary: sharedTokens.colors.brand.primary,
+    secondary: sharedTokens.colors.brand.secondary,
+    error: sharedTokens.colors.semantic.error,
+    warning: sharedTokens.colors.semantic.warning,
+    info: sharedTokens.colors.semantic.info,
+    success: sharedTokens.colors.semantic.success,
+    neutral: sharedTokens.colors.neutral,
+    glass: {
+      light: sharedTokens.glass.light.subtle.background,
+      medium: sharedTokens.glass.light.medium.background,
+      strong: sharedTokens.glass.light.strong.background,
+      primaryGlass: sharedTokens.glass.colored.primary.background,
+      successGlass: sharedTokens.glass.colored.success.background,
+      warningGlass: sharedTokens.glass.colored.warning.background,
+      errorGlass: sharedTokens.glass.colored.error.background,
+    },
+    backgrounds: {
+      primaryGradient: `linear-gradient(135deg, ${sharedTokens.colors.brand.primary[500]}, ${sharedTokens.colors.brand.primary[700]})`,
+    },
+    borders: {
+      glass: sharedTokens.glass.light.subtle.border,
+      primary: sharedTokens.glass.colored.primary.border,
+    },
+  },
+  typography: {
+    fontFamily: {
+      body: sharedTokens.typography.fontFamily,
+    },
+    styles: {
+      h1: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 700, lineHeight: 1.2 },
+      h2: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.3 },
+      h3: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.3 },
+      h4: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.4 },
+      h5: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.4 },
+      h6: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.5 },
+      bodyMd: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 400, lineHeight: 1.7 },
+      bodySm: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 400, lineHeight: 1.6 },
+      subtitle1: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 500, lineHeight: 1.5 },
+      subtitle2: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 500, lineHeight: 1.5 },
+      caption: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 400, lineHeight: 1.5 },
+      overline: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.5 },
+      button: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.5 },
+    },
+  },
+  spacing: {
+    radius: {
+      ...sharedTokens.spacing.radius,
+      xxl: '24px',
+      xxxl: '32px',
+    },
+    breakpoints: sharedTokens.spacing.breakpoints,
+  },
+  shadow: {
+    glass: {
+      ...sharedTokens.shadows.glass,
+      floating: sharedTokens.shadows.glass.strong,
+    },
+    elevation: sharedTokens.shadows.elevation,
+    component: {
+      card: sharedTokens.shadows.elevation.md,
+      modal: sharedTokens.shadows.elevation.xl,
+      buttonHover: sharedTokens.shadows.elevation.sm,
+      header: sharedTokens.shadows.elevation.sm,
+      inputFocus: sharedTokens.shadows.elevation.sm,
+      drawer: sharedTokens.shadows.elevation.lg,
+      dropdown: sharedTokens.shadows.elevation.md,
+      popover: sharedTokens.shadows.elevation.lg,
+    },
+  },
+  animation: {
+    transitions: {
+      fast: sharedTokens.animations.transitions.all,
+      normal: sharedTokens.animations.transitions.all,
+      slow: sharedTokens.animations.transitions.all,
+      glass: sharedTokens.animations.transitions.all,
+      button: sharedTokens.animations.transitions.all,
+      card: sharedTokens.animations.transitions.all,
+    },
+    duration: {
+      ...sharedTokens.animations.duration,
+      fastest: '100ms',
+    },
+    easing: {
+      standard: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      decelerate: 'cubic-bezier(0, 0, 0.2, 1)',
+      accelerate: 'cubic-bezier(0.4, 0, 1, 1)',
+      sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
+    },
+  },
+};
 
 // Extend MUI theme interface for custom properties
 declare module '@mui/material/styles' {
@@ -284,13 +378,13 @@ const modernThemeOptions: ThemeOptions = {
       sharp: tokens.animation.easing.sharp,
     },
     duration: {
-      shortest: tokens.animation.duration.fastest,
-      shorter: tokens.animation.duration.fast,
-      short: tokens.animation.duration.normal,
-      standard: tokens.animation.duration.normal,
-      complex: tokens.animation.duration.slow,
-      enteringScreen: tokens.animation.duration.normal,
-      leavingScreen: tokens.animation.duration.fast,
+      shortest: 100,
+      shorter: 150,
+      short: 250,
+      standard: 250,
+      complex: 350,
+      enteringScreen: 250,
+      leavingScreen: 150,
     },
   },
 

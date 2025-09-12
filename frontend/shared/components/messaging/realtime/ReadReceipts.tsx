@@ -17,7 +17,6 @@ import {
   AvatarGroup,
   Tooltip,
   Typography,
-  IconButton,
   Popover,
   List,
   ListItem,
@@ -34,7 +33,7 @@ import {
   Schedule as ScheduleIcon
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
-import { User, MessageReadReceipt, ReadReceiptUser } from '../../../types/messaging.types';
+import type { User, MessageReadReceipt, ReadReceiptUser } from '../../../types/messaging.types';
 
 const ReadReceiptContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
@@ -133,7 +132,7 @@ const ReadReceipts: React.FC<ReadReceiptsProps> = ({
   maxAvatars = 3,
   size = 'small',
   align = 'right',
-  showTimestamp = true,
+  showTimestamp: _ = true,
   sx
 }) => {
   const theme = useTheme();
@@ -372,7 +371,7 @@ export default React.memo(ReadReceipts);
 export { ReadReceipts };
 
 // Hook for managing read receipts
-export const useReadReceipts = (messageId: string) => {
+export const useReadReceipts = (_messageId: string) => {
   const [readReceipts, setReadReceipts] = useState<MessageReadReceipt[]>([]);
   const [status, setStatus] = useState<MessageStatus>('sent');
 

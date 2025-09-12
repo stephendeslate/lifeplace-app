@@ -40,6 +40,7 @@ from .serializers import (
     FileUploadSerializer
 )
 from .services import MessagingService, NotificationService
+from .protocol_coordinator import message_coordinator
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +71,20 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
         """Get queryset based on user role and filters"""
         user = self.request.user
         
-        # Base queryset with optimizations
-        queryset = MessageThread.objects.with_details()
+        # Start with unread counts annotation (must be called on manager)
+        queryset = MessageThread.objects.with_unread_counts(user.id)
+        
+        # Add detailed prefetches for performance
+        queryset = queryset.select_related(
+            'client',
+            'event',
+            'assigned_admin'
+        ).prefetch_related(
+            'participants__user',
+            'messages__sender',
+            'messages__attachments',
+            'messages__read_receipts__user'
+        )
         
         # Filter based on user role
         if user.role == 'CLIENT':
@@ -87,9 +100,6 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
             assigned_to_me = self.request.query_params.get('assigned_to_me')
             if assigned_to_me and assigned_to_me.lower() == 'true':
                 queryset = queryset.filter(assigned_admin=user)
-        
-        # Add unread count annotation
-        queryset = queryset.with_unread_counts(user.id)
         
         return queryset
     
@@ -304,38 +314,51 @@ class MessageViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Create message with real-time notifications"""
-        with transaction.atomic():
-            message = serializer.save()
-            
-            # Mark message as read by sender
-            message.mark_as_read_by(self.request.user)
+        # Get the validated data
+        thread_id = str(serializer.validated_data['thread'].id)
+        content = serializer.validated_data['content']
+        message_type = serializer.validated_data.get('message_type', 'text')
+        
+        # Use MessageCoordinator for consistent message creation
+        try:
+            result = message_coordinator.create_message(
+                user=self.request.user,
+                thread_id=thread_id,
+                content=content,
+                message_type=message_type,
+                **{k: v for k, v in serializer.validated_data.items() 
+                   if k not in ['thread', 'content', 'message_type']}
+            )
             
             # Clear typing indicator for sender
             TypingIndicator.objects.filter(
-                thread=message.thread,
+                thread_id=thread_id,
                 user=self.request.user
             ).delete()
             
-            # Send real-time notification via WebSocket
-            MessagingService.broadcast_new_message(message)
-            
-            # Send push notifications to other participants
+            # Send push notifications to other participants  
+            message = Message.objects.get(id=result['message']['id'])
+            message.mark_as_read_by(self.request.user)
             NotificationService.notify_new_message(message)
             
-            logger.info(f"Message created: {message.id} in thread {message.thread.id}")
+            logger.info(f"Message created via coordinator: {result['message']['id']} in thread {thread_id}")
+            
+        except Exception as e:
+            logger.error(f"Error creating message via coordinator: {e}")
+            # Fallback to original method if coordinator fails
+            super().perform_create(serializer)
     
     def update(self, request, *args, **kwargs):
         """Update message with edit tracking"""
         instance = self.get_object()
         
-        # Check edit permissions
+        # Check edit permissions and time limits
         if instance.sender != request.user:
             return Response(
                 {'error': 'You can only edit your own messages'}, 
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Check time limit (15 minutes)
         time_limit = timezone.now() - timezone.timedelta(minutes=15)
         if instance.created_at < time_limit:
             return Response(
@@ -343,19 +366,36 @@ class MessageViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Store original content if first edit
-        if not instance.original_content:
-            instance.original_content = instance.content
+        # Get new content
+        new_content = request.data.get('content', '').strip()
+        if not new_content:
+            return Response(
+                {'error': 'Content is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        instance.edited_at = timezone.now()
-        
-        response = super().update(request, *args, **kwargs)
-        
-        # Broadcast edit to WebSocket
-        if response.status_code == 200:
-            MessagingService.broadcast_message_edited(instance)
-        
-        return response
+        # Use MessageCoordinator for consistent message editing
+        try:
+            # Store original content if first edit
+            if not instance.original_content:
+                instance.original_content = instance.content
+                instance.save()
+            
+            result = message_coordinator.edit_message(
+                user=request.user,
+                message_id=str(instance.id),
+                content=new_content
+            )
+            
+            # Return the updated message data
+            return Response(result['message'], status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error editing message via coordinator: {e}")
+            return Response(
+                {'error': 'Failed to edit message'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     def destroy(self, request, *args, **kwargs):
         """Delete message with permissions check"""
@@ -379,10 +419,24 @@ class MessageViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Broadcast deletion before deleting
-        MessagingService.broadcast_message_deleted(instance)
-        
-        return super().destroy(request, *args, **kwargs)
+        # Use MessageCoordinator for consistent message deletion
+        try:
+            result = message_coordinator.delete_message(
+                user=request.user,
+                message_id=str(instance.id)
+            )
+            
+            return Response(
+                {'detail': 'Message deleted successfully', 'message_id': result['message_id']}, 
+                status=status.HTTP_204_NO_CONTENT
+            )
+            
+        except Exception as e:
+            logger.error(f"Error deleting message via coordinator: {e}")
+            return Response(
+                {'error': 'Failed to delete message'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @action(detail=True, methods=['post'])
     def mark_read(self, request, pk=None):

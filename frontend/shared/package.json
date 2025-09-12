@@ -2,8 +2,15 @@
   "name": "@lifeplace/shared",
   "version": "1.0.0",
   "type": "module",
-  "exports": {},
-  "description": "",
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./design-system": "./design-system/index.ts",
+    "./configs": "./configs/messaging.config.ts"
+  },
+  "description": "Shared messaging and design system for LifePlace applications",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",

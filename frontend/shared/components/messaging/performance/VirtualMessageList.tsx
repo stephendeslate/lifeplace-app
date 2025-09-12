@@ -21,12 +21,10 @@ import React, {
   forwardRef, 
   useImperativeHandle 
 } from 'react';
-import { FixedSizeList, VariableSizeList, ListChildComponentProps } from 'react-window';
+import { VariableSizeList, type ListChildComponentProps } from 'react-window';
 import { Box, Typography, CircularProgress, styled } from '@mui/material';
-import { Message, MessageThread, User } from '../../../types/messaging.types';
-import ReadReceipts from '../realtime/ReadReceipts';
-import TypingIndicator from '../realtime/TypingIndicator';
-import { useIntersectionObserver } from '../../../hooks/useIntersectionObserver';
+import type { Message, MessageThread, User } from '../../../types/messaging.types';
+import { ReadReceipts } from '../realtime/ReadReceipts';
 
 // Performance monitoring
 interface PerformanceMetrics {
@@ -160,7 +158,6 @@ export interface VirtualMessageListRef {
 const VirtualMessageList = forwardRef<VirtualMessageListRef, VirtualMessageListProps>(({
   messages,
   currentUser,
-  thread,
   loading = false,
   hasMore = false,
   onLoadMore,
@@ -253,7 +250,7 @@ const VirtualMessageList = forwardRef<VirtualMessageListRef, VirtualMessageListP
   }, [virtualItems]);
 
   // Handle scroll events
-  const handleScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: any) => {
+  const handleScroll = useCallback(({ scrollOffset }: any) => {
     if (!listRef.current || !containerRef.current) return;
     
     const containerHeight = containerRef.current.offsetHeight;
@@ -272,7 +269,7 @@ const VirtualMessageList = forwardRef<VirtualMessageListRef, VirtualMessageListP
   }, [hasMore, onLoadMore, scrollBehavior.autoScrollThreshold]);
 
   // Scroll to bottom
-  const scrollToBottom = useCallback((smooth = true) => {
+  const scrollToBottom = useCallback(() => {
     if (listRef.current) {
       listRef.current.scrollToItem(virtualItems.length - 1, 'end');
     }
@@ -445,7 +442,7 @@ const VirtualMessageList = forwardRef<VirtualMessageListRef, VirtualMessageListP
       ) : (
         // Fallback non-virtualized list for small datasets
         <Box sx={{ height, overflow: 'auto' }}>
-          {virtualItems.map((item, index) => 
+          {virtualItems.map((_, index) => 
             renderItem({ 
               index, 
               style: { height: getItemHeight(index) },

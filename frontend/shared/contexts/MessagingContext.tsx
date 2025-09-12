@@ -5,14 +5,15 @@
  * to maintain compatibility with existing imports.
  */
 
-export { 
-  MessagingProvider,
+export { MessagingProvider } from '../providers/MessagingProvider';
+export {
   useMessagingContext,
   useMessagingState,
   useMessagingActions,
   useMessagingConfig,
-  DEFAULT_MESSAGING_CONFIG
-} from '../providers/MessagingProvider';
+} from '../hooks/useMessagingProvider';
+
+export { DEFAULT_MESSAGING_CONFIG } from '../configs/messaging.config';
 
 export type {
   MessagingState,

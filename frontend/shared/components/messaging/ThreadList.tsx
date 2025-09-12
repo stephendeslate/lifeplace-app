@@ -21,20 +21,7 @@ export interface ThreadListProps {
   enableSearch?: boolean;
 }
 
-export const ThreadList: React.FC<ThreadListProps> = ({
-  threads = [],
-  selectedThreadId,
-  onThreadSelect,
-  loading = false,
-  onLoadMore,
-  hasMore = false,
-  isLoading = false,
-  searchQuery = '',
-  onSearchChange,
-  userRole = 'CLIENT',
-  compact = false,
-  enableSearch = true
-}) => {
+export const ThreadList: React.FC<ThreadListProps> = (_props) => {
   return (
     <Box>
       <div>Thread List Placeholder</div>

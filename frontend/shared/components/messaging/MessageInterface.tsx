@@ -48,10 +48,6 @@ import {
   useWebSocketConnectionState
 } from '../../services';
 import type {
-  MessagingState,
-  MessagingActions
-} from '../../providers/MessagingProvider';
-import type {
   MessageThread
 } from '../../types/messaging.types';
 
@@ -102,8 +98,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   onError,
   title = 'Messages',
   subtitle,
-  primaryColor,
-  secondaryColor
+  primaryColor
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));

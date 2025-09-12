@@ -23,7 +23,6 @@ import {
   useMarkMessageRead,
   useAddMessageToCache,
   useUpdateThreadInCache,
-  messagingKeys,
 } from '../services/messaging.queries';
 import {
   useWebSocket,
@@ -37,7 +36,6 @@ import type {
   MessageThread,
   Message,
   ThreadFilters,
-  MessageFilters,
   SendMessageRequest,
   PaginatedThreadsResponse,
   PaginatedMessagesResponse
@@ -132,10 +130,10 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
   const {
     autoConnect = true,
     enableRealTime = true,
-    enableOfflineSupport = true,
+    enableOfflineSupport: _ = true,
     typingTimeout = 3000,
     maxRetries = 3,
-    pageSize = 20,
+    pageSize: _1 = 20,
     filters: initialFilters = {}
   } = options;
 
@@ -175,7 +173,7 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
   const {
     data: selectedThread,
     isLoading: isLoadingThread,
-    refetch: refreshThread
+    refetch: _refreshThread
   } = useThread(selectedThreadId || '', {
     enabled: Boolean(selectedThreadId),
   } as any);
@@ -212,7 +210,7 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
   // Cache management
   const addMessageToCache = useAddMessageToCache();
   const updateThreadInCache = useUpdateThreadInCache();
-  const queryClient = useQueryClient();
+  useQueryClient();
 
   // Derived state - handle InfiniteData properly
   const threads = useMemo(() => {
@@ -411,12 +409,12 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     }
   }, [selectedThreadId, sendMessageMutation, isTyping]);
 
-  const editMessage = useCallback(async (messageId: string, content: string) => {
+  const editMessage = useCallback(async (_messageId: string, _content: string) => {
     // Implementation would use updateMessage mutation
     throw new Error('Message editing not yet implemented');
   }, []);
 
-  const deleteMessage = useCallback(async (messageId: string) => {
+  const deleteMessage = useCallback(async (_messageId: string) => {
     // Implementation would use deleteMessage mutation
     throw new Error('Message deletion not yet implemented');
   }, []);

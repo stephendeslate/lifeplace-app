@@ -99,7 +99,7 @@ export const useRealTimeUpdates = (
 
   // Hooks
   const webSocket = useWebSocket();
-  const { isConnected, isConnecting, isReconnecting, hasError } = useWebSocketConnectionState();
+  const { isConnected, isConnecting: _, isReconnecting: _1, hasError: _2 } = useWebSocketConnectionState();
   const queryClient = useQueryClient();
   const addMessageToCache = useAddMessageToCache();
   const updateThreadInCache = useUpdateThreadInCache();

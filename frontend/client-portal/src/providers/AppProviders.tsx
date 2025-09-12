@@ -8,7 +8,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-import theme from '../utils/theme';
+import { createClientTheme, injectDesignTokens } from '@shared/design-system';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { ContractsProvider } from '../contexts/ContractsContext';
 import { ToastProvider } from '../contexts/ToastContext';
@@ -16,9 +16,7 @@ import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
 import { AccessibilityProvider } from '../components/accessibility/AccessibilityProvider';
 
 // Messaging system imports
-import { WebSocketProvider } from '../../../shared/contexts/WebSocketContext';
-import { MessagingProvider } from '../../../shared/providers/MessagingProvider';
-import { setApiClient } from '../../../shared/apis/messaging.api';
+import { WebSocketProvider, MessagingProvider, setApiClient } from '@shared';
 import api from '../utils/api';
 import { storage } from '../utils/storage';
 
@@ -61,7 +59,7 @@ const queryClient = new QueryClient({
 
 // Messaging-enabled wrapper that has access to auth context
 const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   
   // WebSocket configuration for client portal
   const getWebSocketUrl = () => {
@@ -108,19 +106,9 @@ const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children
     reconnectDelay: 2000,
   };
 
-  if (!isAuthenticated || !user) {
-    // Don't initialize messaging for unauthenticated users
-    return (
-      <ContractsProvider>
-        {children}
-        {/* Only show React Query devtools in development */}
-        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-      </ContractsProvider>
-    );
-  }
-
+  // Always render the full provider tree - MessagingProvider now handles auth state internally
   return (
-    <WebSocketProvider config={webSocketConfig} enabled={isAuthenticated}>
+    <WebSocketProvider config={webSocketConfig} enabled={isAuthenticated && !isLoading}>
       <MessagingProvider config={messagingConfig}>
         <ContractsProvider>
           {children}
@@ -133,6 +121,15 @@ const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
+  // Create theme instance with light mode
+  // TODO: Add theme switching capability later if needed
+  const theme = React.useMemo(() => createClientTheme('light'), []);
+  
+  // Inject design tokens on mount
+  React.useEffect(() => {
+    injectDesignTokens();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
