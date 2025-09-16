@@ -452,7 +452,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           error={isOverLimit}
           helperText={
             showCharacterCount ? (
-              <CharacterCount component="span" isNearLimit={isNearLimit}>
+              <CharacterCount isNearLimit={isNearLimit}>
                 {message.length}/{maxLength}
               </CharacterCount>
             ) : undefined

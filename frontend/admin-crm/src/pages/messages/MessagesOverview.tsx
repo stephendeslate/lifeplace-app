@@ -58,9 +58,11 @@ import {
   Person as PersonIcon,
   Event as EventIcon,
   Notifications as NotificationsIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { useMessagingContext } from '@shared';
 import { AdminMessageThread } from '../../components/messaging/AdminMessageThread';
+import { CreateThreadDialog } from '../../components/messaging/CreateThreadDialog';
 import type { MessageThread, ThreadFilters } from '@shared/types/messaging.types';
 
 export interface MessagesOverviewProps {
@@ -93,6 +95,7 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
   const [selectedThreads, setSelectedThreads] = useState<Set<string>>(new Set());
   const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   
   // Filter state
   const [localFilters, setLocalFilters] = useState<ThreadFilters>({
@@ -340,6 +343,29 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
         </Box>
 
         <Box sx={{ flexGrow: 1 }} />
+
+        {/* New Thread Button */}
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setCreateDialogOpen(true)}
+          sx={{
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 600,
+            px: 3,
+            py: 1,
+            background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+            boxShadow: '0 4px 12px rgba(25, 118, 210, 0.25)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 6px 16px rgba(25, 118, 210, 0.35)',
+            }
+          }}
+        >
+          New Thread
+        </Button>
 
         {/* Search */}
         {enableSearch && (
@@ -628,6 +654,12 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
           Connection lost. Attempting to reconnect...
         </Alert>
       )}
+
+      {/* Create Thread Dialog */}
+      <CreateThreadDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+      />
     </Box>
   );
 };

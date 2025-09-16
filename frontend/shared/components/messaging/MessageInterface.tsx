@@ -45,7 +45,7 @@ import { ConnectionStatus } from './ConnectionStatus';
 import {
   useMessagingContext,
   useWebSocketConnectionState
-} from '@shared';
+} from '../..';
 import {
   useRealTimeUpdates
 } from '../../services';

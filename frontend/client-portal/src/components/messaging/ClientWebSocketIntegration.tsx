@@ -134,6 +134,7 @@ const ClientWebSocketIntegration: React.FC<ClientWebSocketIntegrationProps> = ({
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [showOfflineAlert, setShowOfflineAlert] = useState(false);
   const [showReconnectedSnack, setShowReconnectedSnack] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const wsServiceRef = useRef<MessagingWebSocketService | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);

@@ -451,9 +451,8 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                         )}
                         
                         {/* Thread metadata */}
-                        <ThreadMeta component="span">
+                        <ThreadMeta>
                           <StatusChip
-                            component="span"
                             label={thread.status}
                             status={thread.status}
                             size="small"
@@ -461,7 +460,6 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                           
                           {showAssignments && thread.assigned_admin && userRole === 'ADMIN' && (
                             <Chip
-                              component="span"
                               icon={<AssignmentIcon />}
                               label={thread.assigned_admin.name}
                               size="small"

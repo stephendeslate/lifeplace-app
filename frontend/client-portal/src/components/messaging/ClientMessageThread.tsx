@@ -386,7 +386,7 @@ const ClientMessageItem: React.FC<ClientMessageItemProps> = ({
               }}
               src={message.sender.avatar}
             >
-              {message.sender.name.charAt(0)}
+              {message.sender.name?.charAt(0) || '?'}
             </Avatar>
           )}
         </Box>
@@ -405,7 +405,7 @@ const ClientMessageItem: React.FC<ClientMessageItemProps> = ({
                 fontSize: '0.7rem',
               }}
             >
-              {message.sender.name}
+              {message.sender.name || 'Unknown User'}
             </Typography>
           )}
 
