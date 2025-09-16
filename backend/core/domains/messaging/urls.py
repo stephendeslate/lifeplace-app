@@ -36,6 +36,7 @@ urlpatterns = [
     # GET /api/messaging/threads/{id}/ - Thread detail
     # PUT/PATCH /api/messaging/threads/{id}/ - Update thread
     # DELETE /api/messaging/threads/{id}/ - Delete thread
+    # GET /api/messaging/threads/{id}/messages/ - Get messages in thread (nested)
     # POST /api/messaging/threads/{id}/assign_admin/ - Assign admin
     # POST /api/messaging/threads/{id}/mark_urgent/ - Mark urgent
     # POST /api/messaging/threads/{id}/resolve/ - Resolve thread

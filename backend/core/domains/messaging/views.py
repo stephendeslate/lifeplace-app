@@ -255,6 +255,54 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
         }
         
         return Response(stats)
+    
+    @action(detail=True, methods=['get'])
+    def messages(self, request, pk=None):
+        """Get messages for a specific thread (nested endpoint)"""
+        thread = self.get_object()
+        user = request.user
+        
+        # Check thread access permissions
+        if user.role == 'CLIENT' and thread.client != user:
+            return Response(
+                {'error': 'Permission denied'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Base queryset for messages in this thread
+        queryset = thread.messages.select_related('sender').prefetch_related('attachments')
+        
+        # Filter internal notes for clients
+        if user.role == 'CLIENT':
+            queryset = queryset.filter(is_internal_note=False)
+        
+        # Apply ordering
+        queryset = queryset.order_by('created_at')
+        
+        # Apply filtering
+        before = request.query_params.get('before')
+        if before:
+            try:
+                from django.utils.dateparse import parse_datetime
+                before_datetime = parse_datetime(before)
+                if before_datetime:
+                    queryset = queryset.filter(created_at__lt=before_datetime)
+            except (ValueError, TypeError):
+                pass
+        
+        # Paginate results
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        if page is not None:
+            serializer = MessageSerializer(page, many=True, context={'request': request})
+            return paginator.get_paginated_response(serializer.data)
+        
+        # If pagination is disabled, return all results
+        serializer = MessageSerializer(queryset, many=True, context={'request': request})
+        return Response({
+            'results': serializer.data,
+            'count': queryset.count()
+        })
 
 
 class MessageViewSet(viewsets.ModelViewSet):

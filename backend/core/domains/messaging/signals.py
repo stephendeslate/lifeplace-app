@@ -269,7 +269,9 @@ def schedule_cleanup_on_message_create(sender, instance, created, **kwargs):
     
     This helps keep the database clean by removing old data periodically.
     """
-    if created and instance.id % 100 == 0:  # Every 100th message
+    # Skip cleanup check for UUID-based IDs - use random chance instead
+    import random
+    if created and random.randint(1, 100) == 1:  # 1% chance to trigger cleanup
         logger.info("Scheduling cleanup tasks")
         
         try:

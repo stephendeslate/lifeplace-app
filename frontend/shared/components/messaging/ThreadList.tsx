@@ -79,7 +79,9 @@ const ThreadListContent = styled(Box)({
   flexDirection: 'column',
 });
 
-const ThreadItem = styled(ListItemButton)<{ selected?: boolean; compact?: boolean }>(({ theme, selected, compact }) => ({
+const ThreadItem = styled(ListItemButton, {
+  shouldForwardProp: (prop) => prop !== 'compact'
+})<{ selected?: boolean; compact?: boolean }>(({ theme, selected, compact }) => ({
   padding: theme.spacing(compact ? 1 : 1.5),
   borderBottom: `1px solid ${theme.palette.divider}`,
   backgroundColor: selected ? theme.palette.action.selected : 'transparent',
@@ -93,7 +95,7 @@ const ThreadItem = styled(ListItemButton)<{ selected?: boolean; compact?: boolea
 }));
 
 const ThreadMeta = styled(Box)(({ theme }) => ({
-  display: 'flex',
+  display: 'inline-flex',
   alignItems: 'center',
   gap: theme.spacing(0.5),
   marginTop: theme.spacing(0.5),
@@ -415,10 +417,10 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                       </Box>
                     }
                     secondary={
-                      <Box>
+                      <Box component="span">
                         {/* Event info */}
                         {showEventContext && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                             <EventIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                             <Typography variant="caption" color="text.secondary" noWrap>
                               {thread.event_name}
@@ -449,8 +451,9 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                         )}
                         
                         {/* Thread metadata */}
-                        <ThreadMeta>
+                        <ThreadMeta component="span">
                           <StatusChip
+                            component="span"
                             label={thread.status}
                             status={thread.status}
                             size="small"
@@ -458,6 +461,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                           
                           {showAssignments && thread.assigned_admin && userRole === 'ADMIN' && (
                             <Chip
+                              component="span"
                               icon={<AssignmentIcon />}
                               label={thread.assigned_admin.name}
                               size="small"
