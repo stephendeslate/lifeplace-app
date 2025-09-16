@@ -131,6 +131,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return;
         }
 
+        // Skip auth check if we're on the login page or accept invitation page
+        const currentPath = window.location.pathname;
+        if (currentPath === '/login' || currentPath.startsWith('/accept-invitation/')) {
+          setIsLoading(false);
+          return;
+        }
+
         const tokens = storage.getTokens();
         const storedUser = storage.getUser();
         

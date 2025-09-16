@@ -55,7 +55,7 @@ const queryClient = new QueryClient({
 
 // Messaging-enabled wrapper that has access to auth context
 const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   
   // WebSocket configuration for admin CRM
   const getWebSocketUrl = () => {

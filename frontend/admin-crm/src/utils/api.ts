@@ -77,9 +77,11 @@ api.interceptors.response.use(
         const tokens = storage.getTokens();
 
         if (!tokens?.refresh) {
-          // No refresh token, clear tokens and redirect to login
+          // No refresh token, clear tokens and redirect to login only if not already there
           storage.clearAuth();
-          window.location.href = "/login";
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
           return Promise.reject(error);
         }
 
@@ -104,9 +106,11 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch {
-        // If refresh fails, clear tokens and redirect to login
+        // If refresh fails, clear tokens and redirect to login only if not already there
         storage.clearAuth();
-        window.location.href = "/login";
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
         return Promise.reject(error);
       }
     }
