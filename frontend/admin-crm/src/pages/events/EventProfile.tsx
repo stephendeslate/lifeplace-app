@@ -1388,40 +1388,6 @@ export const EventProfile: React.FC = () => {
             </Box>
 
 
-            {/* Enhanced Activity Timeline */}
-            <Box
-              sx={{
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.xxl,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                position: 'relative',
-                overflow: 'visible',
-                
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `linear-gradient(135deg, ${tokens.color.info[500]}04 0%, ${tokens.color.success[500]}04 100%)`,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  pointerEvents: 'none',
-                }
-              }}
-            >
-              <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-                <ActivityTimeline
-                  activities={activityItems}
-                  maxHeight="400px"
-                  showFilters={true}
-                  onRefresh={() => {
-                    // Refresh all data
-                    refetch();
-                  }}
-                />
-              </Box>
-            </Box>
           </Stack>
         </Grow>
 

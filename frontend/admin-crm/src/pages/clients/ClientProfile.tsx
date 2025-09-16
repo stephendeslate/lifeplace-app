@@ -641,37 +641,19 @@ export const ClientProfile: React.FC = () => {
           compactMode={false}
         />
 
-        {/* Related Events & Activity Timeline */}
-        <Box 
-          sx={{ 
-            display: 'flex',
-            flexDirection: { xs: 'column', lg: 'row' },
-            gap: 3,
-          }}
-        >
-          {/* Related Events */}
-          <Box sx={{ flex: 1 }}>
-            <EntityNavigation
-              title="Recent Events"
-              entities={relatedEvents}
-              layout="list"
-              maxVisible={3}
-              showViewAll={true}
-              onViewAll={() => {
-                // Navigate to events filtered by client
-                console.log('Navigate to client events');
-              }}
-            />
-          </Box>
-
-          {/* Activity Timeline */}
-          <Box sx={{ flex: 2 }}>
-            <ActivityTimeline
-              activities={activityItems}
-              maxHeight="400px"
-              showFilters={false}
-            />
-          </Box>
+        {/* Related Events */}
+        <Box>
+          <EntityNavigation
+            title="Recent Events"
+            entities={relatedEvents}
+            layout="list"
+            maxVisible={3}
+            showViewAll={true}
+            onViewAll={() => {
+              // Navigate to events filtered by client
+              console.log('Navigate to client events');
+            }}
+          />
         </Box>
       </Stack>
 
