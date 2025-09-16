@@ -126,6 +126,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Skip auth initialization if on login/register pages to prevent API calls that could cause loops
+        const currentPath = window.location.pathname;
+        const isOnAuthPage = currentPath === '/login' || currentPath === '/register' || currentPath.startsWith('/accept-invitation');
+        
         // Check if storage is available
         if (!storage.isStorageAvailable()) {
           console.warn('localStorage is not available');
@@ -135,6 +139,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         const tokens = storage.getTokens();
         const storedUser = storage.getUser();
+        
+        // If on auth page and no tokens, just set loading to false without making API calls
+        if (isOnAuthPage && !tokens?.access) {
+          setIsLoading(false);
+          return;
+        }
         
         if (tokens?.access && storedUser) {
           // Try to get fresh user data
