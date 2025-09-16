@@ -242,7 +242,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
         flexDirection: 'column',
         overflow: 'hidden',
         bgcolor: 'background.default',
-        borderRadius: theme.shape.borderRadius,
+        borderRadius: 0,
         border: `1px solid ${theme.palette.divider}`,
       }}
     >
