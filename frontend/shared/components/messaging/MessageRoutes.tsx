@@ -15,10 +15,18 @@ import { MessagingProvider } from '../../providers/MessagingProvider';
 import { DEFAULT_MESSAGING_CONFIG } from '../../configs/messaging.config';
 import type { MessagingConfig } from '../../types/messaging.types';
 
+// Auth interface that the provider expects
+interface AuthContextValue {
+  user: any;
+  isAuthenticated: boolean;
+  isLoading?: boolean;
+}
+
 export interface MessageRoutesProps {
   basePath: string;
   userRole: 'ADMIN' | 'CLIENT';
   layoutWrapper: ComponentType<{ children: React.ReactNode }>;
+  authContext: AuthContextValue;
   config?: Partial<MessagingConfig>;
   
   // Route components - will be passed from parent apps
@@ -42,6 +50,7 @@ export const MessageRoutes: React.FC<MessageRoutesProps> = ({
   basePath,
   userRole,
   layoutWrapper: LayoutWrapper,
+  authContext,
   config = {},
   MessagesOverview,
   MessageThread,
@@ -112,7 +121,7 @@ export const MessageRoutes: React.FC<MessageRoutesProps> = ({
   const pathPrefix = normalizedBasePath === '/' ? '' : normalizedBasePath;
 
   return (
-    <MessagingProvider config={messagingConfig}>
+    <MessagingProvider config={messagingConfig} authContext={authContext}>
       <Routes>
         {/* Messages Overview Route */}
         <Route

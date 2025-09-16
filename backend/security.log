@@ -1230,3 +1230,9 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-09-16 16:56:29,819 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
 🔒 SECURITY 2025-09-16 16:56:30,493 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
 🔒 SECURITY 2025-09-16 16:56:31,755 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-16 16:57:25,136 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-16 16:57:51,643 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-16 17:21:22,234 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-16 17:21:47,598 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-16 17:21:53,216 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-16 17:22:32,625 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com

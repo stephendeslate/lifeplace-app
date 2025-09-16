@@ -341,8 +341,8 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
             <RealTimeIndicators
               isConnected={isConnected}
               connectionQuality={realTimeState.connectionQuality}
-              typingUsers={state.typingUsers.map(user => user.user_name)}
-              onlineUsers={realTimeState.onlineUsers}
+              typingUsers={[]}
+              onlineUsers={[]}
               compact={isMobile}
             />
           )}
@@ -455,7 +455,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
                   onLoadMore={actions.loadMoreMessages}
                   hasMore={state.hasMoreMessages}
                   isLoading={state.isLoadingMessages}
-                  onMarkAsRead={actions.markAsRead}
+                  onMarkAsRead={(messageId?: string) => messageId ? actions.markAsRead(messageId) : Promise.resolve()}
                   userRole={userRole}
                   enableVirtualization={state.messages.length > 50}
                 />
