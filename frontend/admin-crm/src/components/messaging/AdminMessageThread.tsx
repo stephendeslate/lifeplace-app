@@ -633,7 +633,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
             }}
             src={message.sender.avatar}
           >
-            {message.sender.name.charAt(0)}
+            {message.sender.name?.charAt(0) || '?'}
           </Avatar>
         )}
       </Box>
@@ -657,7 +657,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
             }}
           >
             <Typography variant="caption" color="text.secondary">
-              {message.sender.name}
+              {message.sender.name || 'Unknown User'}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {new Date(message.created_at).toLocaleTimeString()}

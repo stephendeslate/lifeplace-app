@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MessageInterface } from '@shared/components/messaging';
+import { CreateThreadDialog } from '../../components/messaging/CreateThreadDialog';
 import {
   Box,
   Button,
@@ -55,6 +56,7 @@ import {
   Schedule as ScheduleIcon,
   ContentCopy as ContentCopyIcon,
   Download as DownloadIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
@@ -108,6 +110,7 @@ export const EventProfile: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [createThreadDialogOpen, setCreateThreadDialogOpen] = useState(false);
   
   // Hooks
   const { 
@@ -1530,6 +1533,32 @@ export const EventProfile: React.FC = () => {
 
           {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Messages for {event.name}
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setCreateThreadDialogOpen(true)}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1,
+                  background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.25)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 6px 16px rgba(25, 118, 210, 0.35)',
+                  }
+                }}
+              >
+                New Thread
+              </Button>
+            </Box>
             <MessageInterface
               userRole="ADMIN"
               title={`Messages for ${event.name}`}
@@ -1699,6 +1728,14 @@ export const EventProfile: React.FC = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Create Thread Dialog */}
+        <CreateThreadDialog
+          open={createThreadDialogOpen}
+          onClose={() => setCreateThreadDialogOpen(false)}
+          preSelectedClient={client}
+          preSelectedEvent={event}
+        />
       </Container>
     </Box>
   );

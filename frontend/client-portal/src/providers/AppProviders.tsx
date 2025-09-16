@@ -60,6 +60,12 @@ const queryClient = new QueryClient({
 // Messaging-enabled wrapper that has access to auth context
 const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
+
+  const authContext = {
+    user,
+    isAuthenticated,
+    isLoading
+  };
   
   // WebSocket configuration for client portal
   const getWebSocketUrl = () => {
@@ -109,7 +115,7 @@ const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children
   // Always render the full provider tree - MessagingProvider now handles auth state internally
   return (
     <WebSocketProvider config={webSocketConfig} enabled={isAuthenticated && !isLoading}>
-      <MessagingProvider config={messagingConfig}>
+      <MessagingProvider config={messagingConfig} authContext={authContext}>
         <ContractsProvider>
           {children}
           {/* Only show React Query devtools in development */}
