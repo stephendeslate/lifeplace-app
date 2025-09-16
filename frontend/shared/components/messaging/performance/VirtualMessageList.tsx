@@ -127,6 +127,7 @@ interface VirtualMessageListProps {
     smoothScrollDuration: number;
     preserveScrollPosition: boolean;
     autoScrollOnNewMessage: boolean;
+    alwaysScrollOnNewMessage?: boolean; // Always scroll to new messages regardless of position
   };
   
   /**
@@ -169,6 +170,7 @@ const VirtualMessageList = forwardRef<VirtualMessageListRef, VirtualMessageListP
     smoothScrollDuration: 300,
     preserveScrollPosition: true,
     autoScrollOnNewMessage: true,
+    alwaysScrollOnNewMessage: true, // Default to always scroll for better UX
   },
   performanceOptions = {
     overscan: 5,
@@ -292,12 +294,12 @@ const VirtualMessageList = forwardRef<VirtualMessageListRef, VirtualMessageListP
   useEffect(() => {
     if (
       scrollBehavior.autoScrollOnNewMessage && 
-      isNearBottom && 
-      messages.length > 0
+      messages.length > 0 &&
+      (scrollBehavior.alwaysScrollOnNewMessage || isNearBottom)
     ) {
       scrollToBottom();
     }
-  }, [messages.length, isNearBottom, scrollBehavior.autoScrollOnNewMessage, scrollToBottom]);
+  }, [messages.length, isNearBottom, scrollBehavior.autoScrollOnNewMessage, scrollBehavior.alwaysScrollOnNewMessage, scrollToBottom]);
 
   // Performance monitoring
   useEffect(() => {

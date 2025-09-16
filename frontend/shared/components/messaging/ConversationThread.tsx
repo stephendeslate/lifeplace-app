@@ -142,6 +142,7 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
 }) => {
   const theme = useTheme();
   const virtualListRef = useRef<VirtualMessageListRef>(null);
+  const simpleScrollRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -177,6 +178,24 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
       setLoadingMore(false);
     }
   }, [loadingMore, onLoadMore]);
+
+  // Unified scroll to bottom function for both rendering paths
+  const scrollToBottom = useCallback((smooth: boolean = true) => {
+    // Use requestAnimationFrame to ensure DOM updates are complete
+    requestAnimationFrame(() => {
+      if (enableVirtualization && messages.length > 50 && virtualListRef.current) {
+        // Use VirtualMessageList scroll method
+        virtualListRef.current.scrollToBottom(smooth);
+      } else if (simpleScrollRef.current) {
+        // Use simple scroll for the Box container
+        const behavior = smooth ? 'smooth' : 'auto';
+        simpleScrollRef.current.scrollTo({
+          top: simpleScrollRef.current.scrollHeight,
+          behavior
+        });
+      }
+    });
+  }, [enableVirtualization, messages.length]);
 
   // Handle message click
   const handleMessageClick = useCallback((message: Message) => {
@@ -300,10 +319,10 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (autoScrollToBottom && virtualListRef.current) {
-      virtualListRef.current.scrollToBottom();
+    if (autoScrollToBottom && messages.length > 0) {
+      scrollToBottom(true);
     }
-  }, [messages.length, autoScrollToBottom]);
+  }, [messages.length, autoScrollToBottom, scrollToBottom]);
 
   // Show error state
   if (error) {
@@ -406,15 +425,18 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
           />
         ) : (
           // Simple scrollable list for smaller message counts
-          <Box sx={{ 
-            height: '100%', 
-            overflowY: 'auto',
-            '&::-webkit-scrollbar': { width: 6 },
-            '&::-webkit-scrollbar-thumb': { 
-              backgroundColor: theme.palette.divider,
-              borderRadius: 3 
-            }
-          }}>
+          <Box 
+            ref={simpleScrollRef}
+            sx={{ 
+              height: '100%', 
+              overflowY: 'auto',
+              '&::-webkit-scrollbar': { width: 6 },
+              '&::-webkit-scrollbar-thumb': { 
+                backgroundColor: theme.palette.divider,
+                borderRadius: 3 
+              }
+            }}
+          >
             {messages.map((message, index) => messageRenderer(message, index))}
             
             {/* Loading indicator at bottom */}
