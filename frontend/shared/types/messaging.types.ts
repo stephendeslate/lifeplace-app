@@ -492,6 +492,14 @@ export interface MessageBubbleProps {
   className?: string;
 }
 
+// Request types for API operations
+export interface CreateMessageThreadRequest {
+  client: number;
+  event?: number;
+  subject: string;
+  priority?: 'urgent' | 'high' | 'normal' | 'low';
+}
+
 // Theme integration types
 export interface MessagingThemeVariant {
   name: 'admin-glassmorphism' | 'client-organic';

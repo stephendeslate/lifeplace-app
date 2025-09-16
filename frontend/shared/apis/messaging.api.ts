@@ -5,6 +5,7 @@ import type {
   ThreadFilters,
   MessageFilters,
   SendMessageRequest,
+  CreateMessageThreadRequest,
   AdminMessageAction,
   CannedResponse,
   ThreadStats,
@@ -194,7 +195,7 @@ export const messagingApi = {
     return messagingApi.getThreads({ ...filters, search: query });
   },
 
-  createThread: async (data: Partial<MessageThread>): Promise<MessageThread> => {
+  createThread: async (data: CreateMessageThreadRequest): Promise<MessageThread> => {
     const response = await apiClient.post('/messaging/threads/', data);
     return response.data;
   },

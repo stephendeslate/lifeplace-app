@@ -28,6 +28,7 @@ import { useToastActions } from '../../contexts/ToastContext';
 import { useMessagingContext, messagingApi } from '@shared';
 import type { Client } from '../../types/clients.types';
 import type { Event } from '../../types/events.types';
+import type { SendMessageRequest } from '@shared';
 import { ClientSelector } from './ThreadCreation/ClientSelector';
 import { EventSelector } from './ThreadCreation/EventSelector';
 
@@ -60,6 +61,7 @@ export const CreateThreadDialog: React.FC<CreateThreadDialogProps> = ({
 }) => {
   const [formData, setFormData] = useState<CreateThreadFormData>(defaultFormData);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentOperation, setCurrentOperation] = useState<'thread' | 'message' | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { showSuccess, showError } = useToastActions();
@@ -112,10 +114,38 @@ export const CreateThreadDialog: React.FC<CreateThreadDialogProps> = ({
         client: formData.client!.id,
         event: formData.event?.id,
         subject: formData.subject.trim(),
-        initial_message: formData.message.trim(),
       };
 
-      await messagingApi.createThread(threadData);
+      setCurrentOperation('thread');
+
+      const createdThread = await messagingApi.createThread(threadData);
+
+      // Send initial message if provided
+      if (formData.message.trim()) {
+        try {
+          setCurrentOperation('message');
+
+          const threadId = String(createdThread.id);
+
+          if (!threadId || threadId === 'undefined' || threadId === 'null') {
+            throw new Error('Invalid thread ID received from server');
+          }
+
+          const messageData: SendMessageRequest = {
+            thread: threadId,
+            content: formData.message.trim()
+          };
+
+          await messagingApi.sendMessage(messageData);
+        } catch (messageError) {
+          console.error('Failed to send initial message:', messageError);
+          showError(
+            'Message Failed',
+            'Thread created but initial message failed to send. You can add messages manually.'
+          );
+          // Don't return - still show success for thread creation
+        }
+      }
 
       // Refresh threads in context
       await actions.refreshThreads();
@@ -134,6 +164,7 @@ export const CreateThreadDialog: React.FC<CreateThreadDialogProps> = ({
       );
     } finally {
       setIsLoading(false);
+      setCurrentOperation(null);
     }
   }, [formData, validateForm, actions, showSuccess, showError, onClose]);
 
@@ -271,7 +302,13 @@ export const CreateThreadDialog: React.FC<CreateThreadDialogProps> = ({
           variant="contained"
           startIcon={isLoading ? <CircularProgress size={16} /> : undefined}
         >
-          {isLoading ? 'Creating...' : 'Create Thread'}
+          {isLoading
+            ? currentOperation === 'thread'
+              ? 'Creating Thread...'
+              : currentOperation === 'message'
+                ? 'Sending Message...'
+                : 'Creating...'
+            : 'Create Thread'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -345,7 +345,7 @@ class CreateMessageThreadSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = MessageThread
-        fields = ['client', 'event', 'priority', 'subject']
+        fields = ['id', 'client', 'event', 'priority', 'subject']
     
     def validate_client(self, value):
         """Validate client exists and has correct role"""
