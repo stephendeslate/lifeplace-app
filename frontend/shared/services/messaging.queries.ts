@@ -321,7 +321,7 @@ export const useSendMessage = (
   return useMutation({
     mutationFn: (data: SendMessageRequest) => messagingApi.sendMessage(data),
     onMutate: async (newMessage: SendMessageRequest): Promise<{ previousMessages: InfiniteData<PaginatedMessagesResponse, unknown> | undefined; optimisticMessage: Message }> => {
-      const queryKey = messagingKeys.threadMessages(newMessage.thread_id);
+      const queryKey = messagingKeys.threadMessages(newMessage.thread);
       
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey });
@@ -332,7 +332,7 @@ export const useSendMessage = (
       // Create optimistic message
       const optimisticMessage: Message = {
         id: `temp_${Date.now()}`,
-        thread_id: newMessage.thread_id,
+        thread_id: newMessage.thread,
         content: newMessage.content,
         message_type: newMessage.message_type || 'text',
         is_internal_note: newMessage.is_internal_note || false,
@@ -366,7 +366,7 @@ export const useSendMessage = (
       // Rollback on error
       if (context && typeof context === 'object' && context !== null && 'previousMessages' in context && context.previousMessages) {
         queryClient.setQueryData(
-          messagingKeys.threadMessages(newMessage.thread_id),
+          messagingKeys.threadMessages(newMessage.thread),
           context.previousMessages
         );
       }
@@ -374,7 +374,7 @@ export const useSendMessage = (
     onSuccess: (data, variables) => {
       // Update thread's last message info
       queryClient.setQueryData<MessageThread>(
-        messagingKeys.thread(variables.thread_id),
+        messagingKeys.thread(variables.thread),
         (oldThread) => {
           if (!oldThread) return undefined;
           return {
@@ -395,7 +395,7 @@ export const useSendMessage = (
     onSettled: (_data, _error, variables) => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ 
-        queryKey: messagingKeys.threadMessages(variables.thread_id) 
+        queryKey: messagingKeys.threadMessages(variables.thread) 
       });
     },
     ...options,

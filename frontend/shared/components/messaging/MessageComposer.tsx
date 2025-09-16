@@ -146,7 +146,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const isOverLimit = message.length > maxLength;
   
   // Send button state
-  const canSend = message.trim().length > 0 && !isOverLimit && !uploading && !disabled;
+  const canSend = message.trim().length > 0 && !isOverLimit && !uploading;
 
   // Handle typing indicators
   const handleTypingStart = useCallback(() => {
@@ -442,8 +442,8 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           value={message}
           onChange={handleMessageChange}
           onKeyDown={handleKeyPress}
-          placeholder={disabled ? 'Cannot send messages' : placeholder}
-          disabled={disabled}
+          placeholder={placeholder}
+          disabled={false}
           multiline
           maxRows={6}
           variant="outlined"

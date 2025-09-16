@@ -42,7 +42,9 @@ const ThreadContainer = styled(Box)(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
 }));
 
-const MessageBubble = styled(Paper)<{ isOwn: boolean }>(({ theme, isOwn }) => ({
+const MessageBubble = styled(Paper, {
+  shouldForwardProp: (prop) => prop !== 'isOwn',
+})<{ isOwn: boolean }>(({ theme, isOwn }) => ({
   maxWidth: '75%',
   padding: theme.spacing(1.5, 2),
   marginBottom: theme.spacing(1),

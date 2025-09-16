@@ -492,7 +492,7 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     }
 
     const messageData: SendMessageRequest = {
-      thread_id: selectedThreadId,
+      thread: selectedThreadId,
       content: content.trim(),
       is_internal_note: isInternalNote,
     };
