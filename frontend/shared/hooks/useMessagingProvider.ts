@@ -7,8 +7,8 @@
 
 import { useContext } from 'react';
 
-// Import the context from separate file
-import { MessagingContext } from '../contexts/MessagingProviderContext';
+// Import the context and types from MessagingProvider
+import { MessagingContext } from '../providers/MessagingProvider';
 import type { MessagingContextValue, MessagingState, MessagingActions, MessagingConfig } from '../providers/MessagingProvider';
 
 /**

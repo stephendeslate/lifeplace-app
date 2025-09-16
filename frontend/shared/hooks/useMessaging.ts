@@ -124,6 +124,40 @@ export interface UseMessagingReturn {
 }
 
 /**
+ * Categorize errors for different retry strategies
+ */
+const categorizeError = (error: Error): 'auth' | 'rate_limit' | 'network' | 'unknown' => {
+  const errorMessage = error.message.toLowerCase();
+  
+  // Authentication errors
+  if (errorMessage.includes('unauthorized') || 
+      errorMessage.includes('invalid token') ||
+      errorMessage.includes('authentication') ||
+      errorMessage.includes('403') ||
+      errorMessage.includes('401')) {
+    return 'auth';
+  }
+  
+  // Rate limiting errors
+  if (errorMessage.includes('rate limit') ||
+      errorMessage.includes('too many') ||
+      errorMessage.includes('429')) {
+    return 'rate_limit';
+  }
+  
+  // Network errors
+  if (errorMessage.includes('network') ||
+      errorMessage.includes('connection') ||
+      errorMessage.includes('timeout') ||
+      errorMessage.includes('offline') ||
+      errorMessage.includes('fetch')) {
+    return 'network';
+  }
+  
+  return 'unknown';
+};
+
+/**
  * Main messaging hook providing comprehensive messaging functionality
  */
 export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingReturn => {
@@ -230,8 +264,10 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
   }, [threads]);
 
   const isReady = useMemo(() => {
-    return isInitializedRef.current && !isLoadingThreads && (selectedThreadId ? !isLoadingThread : true);
-  }, [isLoadingThreads, isLoadingThread, selectedThreadId]);
+    // isReady should indicate if the messaging system is ready to use
+    // Not dependent on data loading, but on basic initialization
+    return isInitializedRef.current;
+  }, []);
 
   // WebSocket event handler
   const handleWebSocketEvent = useCallback((event: WebSocketEvent) => {
@@ -280,15 +316,54 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     }
   }, [addMessageToCache, updateThreadInCache]);
 
-  // Connection management
+  // Helper function to get access token from different storage formats
+  // Stabilized with no dependencies to prevent effect loops
+  const getAccessToken = useCallback((): string | null => {
+    // Try admin tokens format first (for admin-crm)
+    const adminTokensStr = localStorage.getItem('lifeplace_admin_tokens');
+    if (adminTokensStr) {
+      try {
+        const adminTokens = JSON.parse(adminTokensStr);
+        if (adminTokens?.access) {
+          return adminTokens.access;
+        }
+      } catch (e) {
+        console.warn('[useMessaging] Failed to parse admin tokens:', e);
+      }
+    }
+
+    // Try client tokens format (for client portal)
+    const clientTokensStr = localStorage.getItem('lifeplace_client_tokens');
+    if (clientTokensStr) {
+      try {
+        const clientTokens = JSON.parse(clientTokensStr);
+        if (clientTokens?.access) {
+          return clientTokens.access;
+        }
+      } catch (e) {
+        console.warn('[useMessaging] Failed to parse client tokens:', e);
+      }
+    }
+
+    // Try direct access_token as fallback
+    const directToken = localStorage.getItem('access_token');
+    if (directToken) {
+      return directToken;
+    }
+
+    return null;
+  }, []);
+
+  // Connection management with debouncing to prevent rapid reconnects
   const connect = useCallback(async (threadId?: string) => {
     try {
       setConnectionError(null);
       setError(null);
 
-      const token = localStorage.getItem('access_token');
+      const token = getAccessToken();
       if (!token) {
-        throw new Error('No authentication token available');
+        const authError = new Error('No authentication token available - user may need to log in again');
+        throw authError;
       }
 
       if (threadId) {
@@ -303,13 +378,40 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
       setConnectionError(err);
       setError(err);
       
-      // Retry logic
+      // Enhanced retry logic with error categorization
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current++;
-        setTimeout(() => connect(threadId), 1000 * Math.pow(2, retryCountRef.current));
+        
+        // Categorize error for different retry strategies
+        const errorType = categorizeError(err);
+        let backoffDelay: number;
+        
+        switch (errorType) {
+          case 'auth':
+            // For auth errors, try immediate refresh then longer delay
+            backoffDelay = retryCountRef.current === 1 ? 100 : 10000; // 100ms first, then 10s
+            break;
+          case 'rate_limit':
+            // For rate limiting, use aggressive backoff
+            backoffDelay = Math.min(5000 * Math.pow(2, retryCountRef.current), 60000); // Start at 5s, max 60s
+            break;
+          case 'network':
+            // For network errors, use standard exponential backoff
+            backoffDelay = Math.min(1000 * Math.pow(2, retryCountRef.current), 30000); // Max 30 seconds
+            break;
+          default:
+            // For unknown errors, use conservative backoff
+            backoffDelay = Math.min(2000 * Math.pow(2, retryCountRef.current), 45000); // Max 45 seconds
+        }
+        
+        // Add jitter to prevent thundering herd
+        const jitter = Math.random() * 0.3 * backoffDelay;
+        const finalDelay = backoffDelay + jitter;
+        
+        setTimeout(() => connect(threadId), finalDelay);
       }
     }
-  }, [webSocket, maxRetries]);
+  }, [webSocket, maxRetries, getAccessToken]);
 
   const disconnect = useCallback(() => {
     webSocket.disconnect();
@@ -332,10 +434,11 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     setTypingUsers([]);
     setIsTyping(false);
     
-    if (enableRealTime && threadId) {
+    // Only connect to specific thread if we're not already connected to the user channel
+    if (enableRealTime && threadId && !isConnected) {
       connect(threadId);
     }
-  }, [selectedThreadId, enableRealTime, connect]);
+  }, [selectedThreadId, enableRealTime, connect, isConnected]);
 
   const updateThreadStatus = useCallback(async (status: MessageThread['status']) => {
     if (!selectedThreadId) throw new Error('No thread selected');
@@ -481,19 +584,13 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     return unsubscribe;
   }, [enableRealTime, webSocket, handleWebSocketEvent]);
 
-  // Auto-connect
-  useEffect(() => {
-    if (autoConnect && enableRealTime && !isConnected && !isConnecting) {
-      connect();
-    }
-  }, [autoConnect, enableRealTime, isConnected, isConnecting, connect]);
+  // Disable auto-connect to prevent connection loops
+  // WebSocket will connect only when explicitly needed (e.g., when selecting a thread)
 
-  // Mark as initialized
+  // Mark as initialized immediately - messaging system is ready once hook initializes
   useEffect(() => {
-    if (!isInitializedRef.current && threadsData) {
-      isInitializedRef.current = true;
-    }
-  }, [threadsData]);
+    isInitializedRef.current = true;
+  }, []);
 
   // Handle connection errors
   useEffect(() => {
@@ -505,17 +602,16 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     }
   }, [threadsError, messagesError]);
 
-  // Cleanup
+  // Cleanup - only on unmount
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      if (enableRealTime) {
-        disconnect();
-      }
+      // Only disconnect on component unmount, not on every re-render
+      webSocket.disconnect();
     };
-  }, [enableRealTime, disconnect]);
+  }, []); // Empty dependency array - only runs on mount/unmount
 
   // Prepare return value
   const state: MessagingState = {

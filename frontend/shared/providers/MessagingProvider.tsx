@@ -10,14 +10,19 @@
  * - Performance optimizations
  */
 
-import React, { useMemo, useEffect, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import React, { createContext, useMemo, useEffect, useState } from 'react';
 import { useWebSocketConnectionState } from '../services/websocket.context';
 import { useMessaging } from '../hooks/useMessaging';
 import { useRealTimeUpdates } from '../hooks/useRealTimeUpdates';
 import { DEFAULT_MESSAGING_CONFIG } from '../configs/messaging.config';
-import { MessagingContext } from '../contexts/MessagingProviderContext';
 import type { MessageThread, Message, ThreadFilters, MessageFilters, MessagingConfig } from '../types/messaging.types';
+
+// Auth interface that the provider expects
+interface AuthContextValue {
+  user: any;
+  isAuthenticated: boolean;
+  isLoading?: boolean;
+}
 
 export interface MessagingState {
   // Core state
@@ -85,10 +90,17 @@ export interface MessagingContextValue {
   config: MessagingConfig;
 }
 
+// Create the MessagingContext
+const MessagingContext = createContext<MessagingContextValue | null>(null);
+
+// Export the context for use in hooks
+export { MessagingContext };
+
 
 export interface MessagingProviderProps {
   children: React.ReactNode;
   config: MessagingConfig;
+  authContext: AuthContextValue;
 }
 
 // MessagingConfig is now imported from configs
@@ -96,9 +108,10 @@ export interface MessagingProviderProps {
 export const MessagingProvider: React.FC<MessagingProviderProps> = ({
   children,
   config = DEFAULT_MESSAGING_CONFIG,
+  authContext,
 }) => {
-  // Authentication context
-  const { user: _user, isAuthenticated } = useAuth();
+  // Authentication context (injected from parent)
+  const { user: _user, isAuthenticated, isLoading: authLoading } = authContext;
   
   // Internal state
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,7 +127,7 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
     error: messagingError,
     isReady
   } = useMessaging({
-    autoConnect: config.enableRealTime && isAuthenticated,
+    autoConnect: false, // Disabled to prevent connection loops
     enableRealTime: config.enableRealTime,
     filters: { ...threadFilters, search: searchQuery },
   });
@@ -334,9 +347,9 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
     }
   }, [connectionError]);
 
-  // Render children with minimal context if not authenticated or not ready
+  // Render children with minimal context if not authenticated or still loading auth
   // This prevents the app from completely failing to render
-  if (!isAuthenticated || !isReady) {
+  if (!isAuthenticated || authLoading) {
     const fallbackContextValue: MessagingContextValue = {
       state: {
         threads: [],
@@ -356,7 +369,7 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
         typingUsers: [],
         onlineUsers: [],
         unreadCount: 0,
-        error: null,
+        error: authLoading ? null : new Error('Authentication required for messaging'),
         connectionError: null,
       },
       actions: {
@@ -385,6 +398,9 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
       </MessagingContext.Provider>
     );
   }
+
+  // If not ready but authenticated, continue with normal provider rendering
+  // The isReady state will be managed by the useMessaging hook
 
   return (
     <MessagingContext.Provider value={contextValue}>

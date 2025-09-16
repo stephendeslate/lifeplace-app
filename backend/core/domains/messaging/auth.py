@@ -149,30 +149,29 @@ class JWTAuthMiddleware(BaseMiddleware):
     def _extract_token(self, scope) -> Optional[str]:
         """
         Extract JWT token from WebSocket connection
-        Supports multiple methods of token transmission
+        SECURITY: Only supports secure token transmission methods
         """
-        # Method 1: Query parameter
-        query_string = scope.get('query_string', b'').decode()
-        if query_string:
-            params = parse_qs(query_string)
-            if 'token' in params:
-                return params['token'][0]
-        
-        # Method 2: Authorization header
         headers = dict(scope.get('headers', []))
+        
+        # Method 1: Authorization header (preferred method)
         if b'authorization' in headers:
             auth_header = headers[b'authorization'].decode()
             if auth_header.startswith('Bearer '):
-                return auth_header[7:]  # Remove 'Bearer ' prefix
+                token = auth_header[7:]  # Remove 'Bearer ' prefix
+                # Basic JWT format validation
+                if token.count('.') == 2 and len(token) > 20:
+                    return token
         
-        # Method 3: Sec-WebSocket-Protocol header (for some clients)
-        if b'sec-websocket-protocol' in headers:
-            protocols = headers[b'sec-websocket-protocol'].decode()
-            # Look for token in protocol list (format: "protocol1, token.jwt.here")
-            for protocol in protocols.split(','):
-                protocol = protocol.strip()
-                if protocol.count('.') == 2:  # JWT format check
-                    return protocol
+        # Method 2: Query parameter (for Django Channels compatibility)
+        query_string = scope.get('query_string', b'').decode()
+        if query_string:
+            from urllib.parse import parse_qs
+            query_params = parse_qs(query_string)
+            if 'token' in query_params and query_params['token']:
+                token = query_params['token'][0]
+                # Basic JWT format validation
+                if token.count('.') == 2 and len(token) > 20:
+                    return token
         
         return None
     

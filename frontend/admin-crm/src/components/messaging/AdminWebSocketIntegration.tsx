@@ -233,10 +233,19 @@ const AdminWebSocketIntegration: React.FC<AdminWebSocketIntegrationProps> = ({
         // Initialize messaging service
         wsServiceRef.current = new MessagingWebSocketService();
         
-        // Connect to admin messaging endpoint
+        // Validate user token before attempting connection
         if (!user.token) {
-          throw new Error('User token not available');
+          throw new Error('User token not available - please refresh your session');
         }
+        
+        // Validate token format (basic JWT structure check)
+        const tokenParts = user.token.split('.');
+        if (tokenParts.length !== 3) {
+          throw new Error('Invalid token format - please log in again');
+        }
+        
+        // Connect to admin messaging endpoint with explicit token
+        console.log('🔧 Connecting admin WebSocket with user token');
         await wsServiceRef.current.connectToUser(user.token);
 
         // Subscribe to admin-specific events
@@ -253,9 +262,25 @@ const AdminWebSocketIntegration: React.FC<AdminWebSocketIntegrationProps> = ({
       } catch (error) {
         console.error('❌ Failed to initialize admin WebSocket:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
+        
+        // Categorize error types for better user experience
+        let userMessage = 'Connection failed';
+        let alertType: 'error' | 'warning' = 'error';
+        
+        if (errorMessage.includes('token')) {
+          userMessage = 'Authentication failed - please refresh your session';
+          alertType = 'warning';
+        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+          userMessage = 'Network connection failed - check your internet connection';
+        } else if (errorMessage.includes('timeout')) {
+          userMessage = 'Connection timed out - server may be busy';
+        } else {
+          userMessage = `Connection failed: ${errorMessage}`;
+        }
+        
         setAlerts(prev => [...prev, {
-          type: 'error',
-          message: `Connection failed: ${errorMessage}`
+          type: alertType,
+          message: userMessage
         }]);
       }
     };

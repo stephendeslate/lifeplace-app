@@ -40,6 +40,7 @@ import {
   Button,
   ButtonGroup,
   Alert,
+  CircularProgress,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -235,6 +236,74 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
 
   // Filter badges
   const activeFiltersCount = Object.values(localFilters).filter(Boolean).length;
+
+  // Error handling
+  if (state.error) {
+    return (
+      <Box
+        sx={{
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: 'background.default',
+        }}
+      >
+        {/* Header */}
+        <Paper
+          elevation={0}
+          className="glass"
+          sx={{
+            p: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            borderRadius: 0,
+            borderBottom: `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <MessageIcon color="primary" />
+            <Typography variant="h5" fontWeight={600}>
+              Messages
+            </Typography>
+          </Box>
+        </Paper>
+
+        {/* Error State */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            p: 3,
+          }}
+        >
+          <Alert 
+            severity="error" 
+            sx={{ maxWidth: 600 }}
+            action={
+              <Button color="inherit" size="small" onClick={actions.refreshThreads}>
+                Retry
+              </Button>
+            }
+          >
+            <Typography variant="h6" gutterBottom>
+              Unable to load messages
+            </Typography>
+            <Typography variant="body2">
+              {state.error.message}
+            </Typography>
+            {state.error.message.includes('authentication') && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Please try refreshing the page or logging out and back in.
+              </Typography>
+            )}
+          </Alert>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -621,8 +690,11 @@ const ThreadList: React.FC<ThreadListProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 2,
         }}
       >
+        <CircularProgress size={40} />
         <Typography color="text.secondary">Loading threads...</Typography>
       </Box>
     );

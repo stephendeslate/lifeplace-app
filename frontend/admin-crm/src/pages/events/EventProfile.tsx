@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { MessageInterface } from '@shared/components/messaging';
 import {
   Box,
   Button,
@@ -1563,9 +1564,20 @@ export const EventProfile: React.FC = () => {
 
           {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
-            <Typography variant="body2" color="text.secondary">
-              Messaging functionality has been removed.
-            </Typography>
+            <MessageInterface
+              userRole="ADMIN"
+              title={`Messages for ${event.name}`}
+              subtitle={`Event communications for ${event.name} with ${event.client_name || 'client'}`}
+              height="600px"
+              enableThreadList={true}
+              enableRealTime={true}
+              enableSearch={true}
+              enableFileUploads={true}
+              initialFilters={{ event_id: event.id }}
+              onError={(error) => {
+                console.error('Messaging error:', error);
+              }}
+            />
           </TabPanel>
 
           {/* Quotes Tab */}

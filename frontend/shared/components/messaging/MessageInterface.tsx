@@ -43,9 +43,11 @@ import { RealTimeIndicators } from './RealTimeIndicators';
 import { ConnectionStatus } from './ConnectionStatus';
 
 import {
-  useMessaging,
-  useRealTimeUpdates,
+  useMessagingContext,
   useWebSocketConnectionState
+} from '@shared';
+import {
+  useRealTimeUpdates
 } from '../../services';
 import type {
   MessageThread
@@ -110,12 +112,9 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<Error | null>(null);
 
-  // Messaging hook
-  const { state, actions, error: messagingError, isReady } = useMessaging({
-    autoConnect: enableRealTime,
-    enableRealTime,
-    filters: initialFilters,
-  });
+  // Use shared messaging context instead of creating a separate instance
+  const { state, actions } = useMessagingContext();
+  const isReady = true; // Context is always ready when component renders
 
   // Real-time updates
   const { state: realTimeState } = useRealTimeUpdates({
@@ -203,11 +202,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
     }
   }, [initialThreadId, isReady, actions]);
 
-  useEffect(() => {
-    if (messagingError) {
-      handleError(messagingError);
-    }
-  }, [messagingError, handleError]);
+  // Error handling is now managed by the MessagingProvider
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {

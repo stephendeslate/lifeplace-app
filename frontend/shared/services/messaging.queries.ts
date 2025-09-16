@@ -90,7 +90,17 @@ export const useInfiniteThreads = (
 ) => {
   return useInfiniteQuery({
     queryKey: [...messagingKeys.threads(), 'infinite', filters],
-    queryFn: ({ pageParam = 1 }) => messagingApi.getThreads({ ...filters, page: pageParam as number }),
+    queryFn: async ({ pageParam = 1 }) => {
+      try {
+        console.log('[useInfiniteThreads] Fetching threads page:', pageParam, 'with filters:', filters);
+        const result = await messagingApi.getThreads({ ...filters, page: pageParam as number });
+        console.log('[useInfiniteThreads] Successfully fetched threads:', result.results?.length, 'threads');
+        return result;
+      } catch (error) {
+        console.error('[useInfiniteThreads] Failed to fetch threads:', error);
+        throw error;
+      }
+    },
     getNextPageParam: (lastPage, allPages) => {
       // Check if there's a next page using Django REST Framework pagination
       if (lastPage.next) {
@@ -103,6 +113,16 @@ export const useInfiniteThreads = (
     },
     initialPageParam: 1,
     staleTime: 30000,
+    retry: (failureCount, error) => {
+      // Don't retry on authentication errors
+      if (error?.status === 401 || error?.status === 403) {
+        console.error('[useInfiniteThreads] Authentication error, not retrying');
+        return false;
+      }
+      // Retry up to 3 times for other errors
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     ...options,
   });
 };
