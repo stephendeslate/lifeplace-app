@@ -279,8 +279,8 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
         addMessageToCache(message);
         
         // Update typing indicators
-        if (message.sender.name) {
-          setTypingUsers(prev => prev.filter(user => user.user_name !== message.sender.name));
+        if (message.sender?.display_name) {
+          setTypingUsers(prev => prev.filter(user => user.user_name !== message.sender.display_name));
         }
         break;
 
