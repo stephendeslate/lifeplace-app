@@ -81,7 +81,9 @@ const DropZone = styled(Box)<{ isDragOver: boolean }>(({ theme, isDragOver }) =>
   },
 }));
 
-const CharacterCount = styled(Typography)<{ isNearLimit: boolean }>(({ theme, isNearLimit }) => ({
+const CharacterCount = styled(Typography, {
+  shouldForwardProp: (prop) => prop !== 'isNearLimit'
+})<{ isNearLimit: boolean }>(({ theme, isNearLimit }) => ({
   fontSize: '0.75rem',
   color: isNearLimit ? theme.palette.warning.main : theme.palette.text.secondary,
   fontWeight: isNearLimit ? 600 : 400,
@@ -406,27 +408,31 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       <InputContainer>
         {/* Emoji Button */}
         <Tooltip title="Add emoji">
-          <IconButton
-            size="small"
-            onClick={(e) => setEmojiMenuAnchor(e.currentTarget)}
-            disabled={disabled}
-          >
-            <EmojiIcon />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              onClick={(e) => setEmojiMenuAnchor(e.currentTarget)}
+              disabled={disabled}
+            >
+              <EmojiIcon />
+            </IconButton>
+          </span>
         </Tooltip>
 
         {/* File Attachment Button */}
         {enableFileUploads && (
           <Tooltip title="Attach files">
-            <IconButton
-              size="small"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={disabled || attachments.length >= maxFiles}
-            >
-              <Badge badgeContent={attachments.length} color="primary" invisible={attachments.length === 0}>
-                <AttachFileIcon />
-              </Badge>
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={disabled || attachments.length >= maxFiles}
+              >
+                <Badge badgeContent={attachments.length} color="primary" invisible={attachments.length === 0}>
+                  <AttachFileIcon />
+                </Badge>
+              </IconButton>
+            </span>
           </Tooltip>
         )}
 
@@ -446,7 +452,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           error={isOverLimit}
           helperText={
             showCharacterCount ? (
-              <CharacterCount isNearLimit={isNearLimit}>
+              <CharacterCount component="span" isNearLimit={isNearLimit}>
                 {message.length}/{maxLength}
               </CharacterCount>
             ) : undefined
