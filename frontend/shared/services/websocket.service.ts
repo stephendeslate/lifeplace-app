@@ -40,7 +40,10 @@ export type WebSocketEventType =
   | 'bulk_operation_complete'
   | 'system_notification'
   | 'ping'
-  | 'pong';
+  | 'pong'
+  | 'connection_failed_permanently'
+  | 'reconnect_scheduled'
+  | 'auth_error';
 
 export interface WebSocketEvent<T = any> {
   type: WebSocketEventType;
@@ -118,6 +121,10 @@ class WebSocketManager {
   private healthCheckIntervals: Map<string, NodeJS.Timeout> = new Map();
   private connectionAgeTimeouts: Map<string, NodeJS.Timeout> = new Map();
   
+  // Connection debouncing to prevent rapid connection attempts
+  private connectionAttemptTimestamps: Map<string, number> = new Map();
+  private readonly CONNECTION_DEBOUNCE_DELAY = 1000; // 1 second minimum between connection attempts
+  
   // Metrics and monitoring
   private connectionMetrics: Map<string, ConnectionMetrics> = new Map();
   private pendingMessages: Map<string, { resolve: Function; reject: Function; timeout: NodeJS.Timeout; }> = new Map();
@@ -177,6 +184,16 @@ class WebSocketManager {
   ): Promise<void> {
     const { token, autoReconnect = true, customHeaders: _customHeaders = {}, priority = 'normal', pooled: _pooled = true } = options;
     
+    // Connection debouncing to prevent rapid successive attempts
+    const now = Date.now();
+    const lastAttempt = this.connectionAttemptTimestamps.get(connectionId) || 0;
+    
+    if (now - lastAttempt < this.CONNECTION_DEBOUNCE_DELAY) {
+      this.log(`⏳ Connection debounced for ${connectionId}, too soon after last attempt`);
+      throw new Error('Connection attempt rate limited');
+    }
+    
+    this.connectionAttemptTimestamps.set(connectionId, now);
     this.log(`🔌 Connecting to ${endpoint} (${connectionId}) [Priority: ${priority}]`);
     
     // Initialize enhanced metrics
@@ -208,6 +225,8 @@ class WebSocketManager {
     return new Promise((resolve, reject) => {
       try {
         const wsUrl = this.buildWebSocketUrl(endpoint, token);
+        
+        // Create WebSocket connection (token is now in URL query parameter)
         const ws = new WebSocket(wsUrl);
         
         // Create connection pool entry
@@ -496,21 +515,44 @@ class WebSocketManager {
     // Try to get JWT token from multiple sources
     let authToken = token;
     if (!authToken) {
-      // Try to get JWT from localStorage (following the auth context pattern)
+      // Try to get JWT from localStorage using app-specific keys
       try {
-        const tokens = localStorage.getItem('tokens');
+        // Try admin-crm storage key
+        let tokens = localStorage.getItem('lifeplace_admin_tokens');
         if (tokens) {
           const tokenData = JSON.parse(tokens);
-          authToken = tokenData.access; // Use access token for JWT auth
+          authToken = tokenData.access;
+          this.log('Using admin-crm JWT token for WebSocket connection');
+        } else {
+          // Try client-portal storage key
+          tokens = localStorage.getItem('lifeplace_client_tokens');
+          if (tokens) {
+            const tokenData = JSON.parse(tokens);
+            authToken = tokenData.access;
+            this.log('Using client-portal JWT token for WebSocket connection');
+          } else {
+            // Fallback to legacy storage key for backward compatibility
+            tokens = localStorage.getItem('tokens');
+            if (tokens) {
+              const tokenData = JSON.parse(tokens);
+              authToken = tokenData.access;
+              this.log('Using legacy JWT token for WebSocket connection');
+            }
+          }
         }
       } catch (error) {
         this.log('Failed to get JWT from localStorage:', error);
       }
+    } else {
+      this.log('Using provided JWT token for WebSocket connection');
     }
     
+    // Add JWT token as query parameter for Django Channels compatibility
     if (authToken) {
-      const separator = url.includes('?') ? '&' : '?';
-      url += `${separator}token=${encodeURIComponent(authToken)}`;
+      const tokenSeparator = url.includes('?') ? '&' : '?';
+      url += `${tokenSeparator}token=${encodeURIComponent(authToken)}`;
+    } else {
+      this.log('⚠️ No JWT token available for WebSocket connection - connection may be rejected');
     }
     
     // Add compression support if available
@@ -753,6 +795,7 @@ class WebSocketManager {
     this.messageQueue.delete(connectionId);
     this.connectionMetrics.delete(connectionId);
     this.latencyHistory.delete(connectionId);
+    this.connectionAttemptTimestamps.delete(connectionId);
     
     // Clean up any pending messages
     Array.from(this.pendingMessages.entries())
@@ -783,6 +826,43 @@ class WebSocketManager {
     }
     
     return false;
+  }
+
+  private categorizeError(error: any): 'network' | 'auth' | 'rate_limit' | 'server' | 'unknown' {
+    const errorMessage = error?.message?.toLowerCase() || '';
+    const errorCode = error?.code;
+    
+    // Authentication errors
+    if (errorMessage.includes('unauthorized') || 
+        errorMessage.includes('invalid token') ||
+        errorMessage.includes('authentication') ||
+        errorCode === 4001 || errorCode === 1008) {
+      return 'auth';
+    }
+    
+    // Rate limiting errors
+    if (errorMessage.includes('rate limit') ||
+        errorMessage.includes('too many') ||
+        errorCode === 4429 || errorCode === 1013) {
+      return 'rate_limit';
+    }
+    
+    // Network errors
+    if (errorMessage.includes('network') ||
+        errorMessage.includes('connection') ||
+        errorMessage.includes('timeout') ||
+        errorCode === 1006 || errorCode === 1001) {
+      return 'network';
+    }
+    
+    // Server errors
+    if (errorMessage.includes('server') ||
+        errorMessage.includes('internal') ||
+        errorCode >= 1011 && errorCode <= 1014) {
+      return 'server';
+    }
+    
+    return 'unknown';
   }
   
   private assessNetworkQuality(connection: any): string {
@@ -905,23 +985,66 @@ class WebSocketManager {
     if (metrics.totalReconnects >= this.config.reconnectAttempts) {
       this.log(`Max reconnection attempts reached for ${connectionId}`);
       this.setConnectionState(connectionId, 'error');
+      
+      // Emit final error event for upper layers to handle
+      this.emitEvent(connectionId, {
+        type: 'connection_failed_permanently',
+        payload: { 
+          reason: 'max_attempts_reached',
+          attempts: metrics.totalReconnects,
+          lastError: 'Maximum reconnection attempts exceeded'
+        },
+        timestamp: Date.now()
+      });
       return;
     }
 
-    const delay = Math.min(
-      this.config.reconnectDelay * Math.pow(2, metrics.totalReconnects),
-      this.config.maxReconnectDelay
-    );
+    // Enhanced exponential backoff with jitter to prevent thundering herd
+    const baseDelay = this.config.reconnectDelay * Math.pow(2, metrics.totalReconnects);
+    const jitter = Math.random() * 0.3 * baseDelay; // 30% jitter
+    const delay = Math.min(baseDelay + jitter, this.config.maxReconnectDelay);
 
-    this.log(`Scheduling reconnect in ${delay}ms for ${connectionId}`);
+    this.log(`Scheduling reconnect in ${Math.round(delay)}ms for ${connectionId} (attempt ${metrics.totalReconnects + 1}/${this.config.reconnectAttempts})`);
     this.setConnectionState(connectionId, 'reconnecting');
+
+    // Emit reconnect attempt event
+    this.emitEvent(connectionId, {
+      type: 'reconnect_scheduled',
+      payload: { 
+        attempt: metrics.totalReconnects + 1,
+        maxAttempts: this.config.reconnectAttempts,
+        delay: Math.round(delay)
+      },
+      timestamp: Date.now()
+    });
 
     const timeout = setTimeout(async () => {
       this.incrementReconnectCount(connectionId);
       try {
         await this.connect(endpoint, connectionId, options);
       } catch (error) {
-        this.log(`Reconnection failed for ${connectionId}:`, error);
+        const errorType = this.categorizeError(error);
+        this.log(`Reconnection failed for ${connectionId} (${errorType}):`, error);
+        
+        // For auth errors, don't retry immediately - user needs to refresh token
+        if (errorType === 'auth') {
+          this.setConnectionState(connectionId, 'error');
+          this.emitEvent(connectionId, {
+            type: 'auth_error',
+            payload: { 
+              reason: 'Authentication failed during reconnection',
+              requiresTokenRefresh: true
+            },
+            timestamp: Date.now()
+          });
+          return;
+        }
+        
+        // For rate limiting, back off more aggressively
+        if (errorType === 'rate_limit') {
+          const backoffMultiplier = 3;
+          metrics.totalReconnects += backoffMultiplier - 1; // Skip ahead in backoff sequence
+        }
       }
     }, delay);
 

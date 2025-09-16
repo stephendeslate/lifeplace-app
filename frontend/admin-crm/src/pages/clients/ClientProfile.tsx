@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { MessageInterface } from '@shared/components/messaging';
 import {
   Box,
   Button,
@@ -777,9 +778,20 @@ export const ClientProfile: React.FC = () => {
 
           {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
-            <Typography variant="body2" color="text.secondary">
-              Messaging functionality has been removed.
-            </Typography>
+            <MessageInterface
+              userRole="ADMIN"
+              title={`Messages with ${client.first_name} ${client.last_name}`}
+              subtitle={`Client communications for ${client.first_name} ${client.last_name}`}
+              height="600px"
+              enableThreadList={true}
+              enableRealTime={true}
+              enableSearch={true}
+              enableFileUploads={true}
+              initialFilters={{ client_id: client.id }}
+              onError={(error) => {
+                console.error('Messaging error:', error);
+              }}
+            />
           </TabPanel>
 
           {/* Quotes Tab */}

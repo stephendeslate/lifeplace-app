@@ -175,10 +175,19 @@ const ClientWebSocketIntegration: React.FC<ClientWebSocketIntegrationProps> = ({
         // Initialize messaging service
         wsServiceRef.current = new MessagingWebSocketService();
         
-        // Connect to client messaging
+        // Validate user token before attempting connection
         if (!user.token) {
-          throw new Error('User token not available');
+          throw new Error('User token not available - please refresh your session');
         }
+        
+        // Validate token format (basic JWT structure check)
+        const tokenParts = user.token.split('.');
+        if (tokenParts.length !== 3) {
+          throw new Error('Invalid token format - please log in again');
+        }
+        
+        // Connect to client messaging endpoint with explicit token
+        console.log('🔧 Connecting client WebSocket with user token');
         await wsServiceRef.current.connectToUser(user.token);
         
         // Subscribe to client events
@@ -200,6 +209,19 @@ const ClientWebSocketIntegration: React.FC<ClientWebSocketIntegrationProps> = ({
         };
       } catch (error) {
         console.error('Client WebSocket connection failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
+        
+        // Set appropriate error message for different failure types
+        if (errorMessage.includes('token')) {
+          setErrorMessage('Authentication failed - please refresh your session');
+        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+          setErrorMessage('Network connection failed - check your internet connection');
+        } else if (errorMessage.includes('timeout')) {
+          setErrorMessage('Connection timed out - server may be busy');
+        } else {
+          setErrorMessage(`Connection failed: ${errorMessage}`);
+        }
+        
         setConnectionState('error');
         onConnectionChange?.(false);
         scheduleReconnect();

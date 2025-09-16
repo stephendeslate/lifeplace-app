@@ -156,6 +156,24 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         console.warn('Token refresh required - implement token refresh logic');
         break;
         
+      case 'connection_failed_permanently':
+        setLastError(`Connection permanently failed: ${event.payload.reason} (${event.payload.attempts} attempts)`);
+        setConnectionQuality('offline');
+        console.error('WebSocket connection permanently failed:', event.payload);
+        break;
+        
+      case 'reconnect_scheduled':
+        console.log(`📅 Reconnection scheduled: attempt ${event.payload.attempt}/${event.payload.maxAttempts} in ${event.payload.delay}ms`);
+        // You could update UI here to show reconnection status
+        break;
+        
+      case 'auth_error':
+        setLastError('Authentication error - please refresh your session');
+        setConnectionQuality('offline');
+        console.error('WebSocket authentication error:', event.payload);
+        // Could trigger a token refresh or redirect to login
+        break;
+        
       default:
         // Forward all events to registered listeners
         eventListenersRef.current.forEach(listener => {
@@ -295,17 +313,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     eventListenersRef.current.delete(listener);
   }, []);
 
-  // Update connection state from service
+  // Update connection state from service via events instead of polling
+  // This replaces the previous polling approach which was causing interference
   useEffect(() => {
-    const updateConnectionState = () => {
-      const currentState = wsServiceRef.current.getConnectionState();
-      setConnectionState(currentState);
-    };
-
-    // Check connection state periodically
-    const interval = setInterval(updateConnectionState, 1000);
+    // Initial state sync
+    const currentState = wsServiceRef.current.getConnectionState();
+    setConnectionState(currentState);
     
-    return () => clearInterval(interval);
+    // The connection state will be updated via the handleWebSocketEvent function
+    // when 'connection_state_changed' events are received from the WebSocket manager
   }, []);
 
   // Cleanup on unmount

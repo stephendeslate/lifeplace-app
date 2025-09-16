@@ -24,7 +24,10 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser
 
-# Development
+# Development (for WebSocket support, use Daphne instead of runserver)
+daphne -p 8000 core.asgi:application
+
+# Alternative: Standard development (no WebSocket support)
 python manage.py runserver
 
 # Database operations

@@ -21,7 +21,7 @@ django_asgi_app = get_asgi_application()
 
 # Import routing after Django is initialized
 from core.domains.messaging.routing import websocket_urlpatterns
-from core.domains.messaging.jwt_middleware import JWTWebSocketMiddleware
+from core.domains.messaging.auth import JWTAuthMiddlewareStack
 
 # Create the ASGI application with protocol routing
 application = ProtocolTypeRouter({
@@ -30,10 +30,8 @@ application = ProtocolTypeRouter({
     
     # WebSocket routing with JWT+session authentication and origin validation
     "websocket": AllowedHostsOriginValidator(
-        JWTWebSocketMiddleware(
-            AuthMiddlewareStack(
-                URLRouter(websocket_urlpatterns)
-            )
+        JWTAuthMiddlewareStack(
+            URLRouter(websocket_urlpatterns)
         )
     ),
 })
