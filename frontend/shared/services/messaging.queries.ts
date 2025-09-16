@@ -28,6 +28,7 @@ import type {
   Message,
   MessageAttachment,
   SendMessageRequest,
+  CreateMessageThreadRequest,
   ThreadFilters,
   MessageFilters,
   AdminMessageAction,
@@ -250,12 +251,12 @@ export const useSearchThreads = (
  * Create a new thread
  */
 export const useCreateThread = (
-  options?: UseMutationOptions<MessageThread, MessagingError, Partial<MessageThread>>
+  options?: UseMutationOptions<MessageThread, MessagingError, CreateMessageThreadRequest>
 ) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Partial<MessageThread>) => messagingApi.createThread(data),
+    mutationFn: (data: CreateMessageThreadRequest) => messagingApi.createThread(data),
     onSuccess: (newThread) => {
       // Invalidate and refetch threads list
       queryClient.invalidateQueries({ queryKey: messagingKeys.threads() });
