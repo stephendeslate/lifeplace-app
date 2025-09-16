@@ -103,7 +103,7 @@ export interface MessageComposition {
 }
 
 export interface SendMessageRequest {
-  thread_id: string;
+  thread: string;
   content: string;
   message_type?: 'text' | 'file';
   attachments?: string[]; // File IDs after upload

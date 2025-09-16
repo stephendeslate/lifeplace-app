@@ -43,7 +43,9 @@ const MessageListContainer = styled(Box)(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
 }));
 
-const MessageBubble = styled(Box)<{ isOwn: boolean; theme?: any }>(({ theme, isOwn }) => ({
+const MessageBubble = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'isOwn',
+})<{ isOwn: boolean; theme?: any }>(({ theme, isOwn }) => ({
   maxWidth: '75%',
   marginLeft: isOwn ? 'auto' : 0,
   marginRight: isOwn ? 0 : 'auto',
