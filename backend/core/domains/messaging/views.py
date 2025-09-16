@@ -360,41 +360,34 @@ class MessageViewSet(viewsets.ModelViewSet):
             return CreateMessageSerializer
         return MessageSerializer
     
-    def perform_create(self, serializer):
-        """Create message with real-time notifications"""
-        # Get the validated data
-        thread_id = str(serializer.validated_data['thread'].id)
-        content = serializer.validated_data['content']
-        message_type = serializer.validated_data.get('message_type', 'text')
+    def create(self, request, *args, **kwargs):
+        """Create message with separate serializers for input/output"""
+        # Use CreateMessageSerializer for input validation
+        input_serializer = CreateMessageSerializer(data=request.data, context={'request': request})
+        input_serializer.is_valid(raise_exception=True)
         
-        # Use MessageCoordinator for consistent message creation
-        try:
-            result = message_coordinator.create_message(
-                user=self.request.user,
-                thread_id=thread_id,
-                content=content,
-                message_type=message_type,
-                **{k: v for k, v in serializer.validated_data.items() 
-                   if k not in ['thread', 'content', 'message_type']}
-            )
-            
-            # Clear typing indicator for sender
-            TypingIndicator.objects.filter(
-                thread_id=thread_id,
-                user=self.request.user
-            ).delete()
-            
-            # Send push notifications to other participants  
-            message = Message.objects.get(id=result['message']['id'])
-            message.mark_as_read_by(self.request.user)
-            NotificationService.notify_new_message(message)
-            
-            logger.info(f"Message created via coordinator: {result['message']['id']} in thread {thread_id}")
-            
-        except Exception as e:
-            logger.error(f"Error creating message via coordinator: {e}")
-            # Fallback to original method if coordinator fails
-            super().perform_create(serializer)
+        # Create the message using the serializer
+        message = input_serializer.save()
+        
+        # Clear typing indicator for sender
+        TypingIndicator.objects.filter(
+            thread=message.thread,
+            user=request.user
+        ).delete()
+        
+        # Mark as read by sender and send notifications
+        message.mark_as_read_by(request.user)
+        NotificationService.notify_new_message(message)
+        
+        # Broadcast via WebSocket
+        MessagingService.broadcast_new_message(message)
+        
+        logger.info(f"Message created: {message.id} in thread {message.thread.id}")
+        
+        # Use MessageSerializer for response serialization
+        response_serializer = MessageSerializer(message, context={'request': request})
+        headers = self.get_success_headers(response_serializer.data)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
     def update(self, request, *args, **kwargs):
         """Update message with edit tracking"""
