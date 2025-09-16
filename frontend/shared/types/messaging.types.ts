@@ -63,8 +63,12 @@ export interface Message {
   thread_id: string;
   sender: {
     id: number;
-    name: string;
+    first_name?: string;
+    last_name?: string;
+    email: string;
     role: 'CLIENT' | 'ADMIN';
+    display_name: string;
+    name?: string; // Legacy support
     avatar?: string;
   };
   content: string;

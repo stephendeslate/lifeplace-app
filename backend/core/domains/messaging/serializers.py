@@ -194,6 +194,9 @@ class CreateMessageSerializer(serializers.ModelSerializer):
                 uploaded_by=request.user
             )
         
+        # Reload the message with proper prefetching for serialization
+        message = Message.objects.select_related('sender').prefetch_related('attachments').get(id=message.id)
+        
         return message
 
 
