@@ -54,6 +54,7 @@ export const messagingApi = {
     if (filters?.assigned_admin) params.append('assigned_admin', filters.assigned_admin.toString());
     if (filters?.search) params.append('search', filters.search);
     if (filters?.event_id) params.append('event_id', filters.event_id.toString());
+    if (filters?.ordering) params.append('ordering', filters.ordering);
     
     const response = await apiClient.get(`/messaging/threads/?${params}`);
     return response.data;

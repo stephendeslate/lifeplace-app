@@ -13,7 +13,7 @@ from .models import (
 class MessageThreadAdmin(admin.ModelAdmin):
     """Admin interface for MessageThread"""
     list_display = [
-        'id', 'client_name', 'event_name_display', 'status', 
+        'id', 'client_display', 'event_name_display', 'status',
         'priority', 'assigned_admin', 'last_message_at', 'created_at'
     ]
     list_filter = ['status', 'priority', 'created_at', 'last_message_at']
@@ -34,9 +34,9 @@ class MessageThreadAdmin(admin.ModelAdmin):
         }),
     )
     
-    def client_name(self, obj):
+    def client_display(self, obj):
         return obj.client.get_display_name()
-    client_name.short_description = 'Client'
+    client_display.short_description = 'Client'
     
     def event_name_display(self, obj):
         if obj.event:

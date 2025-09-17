@@ -217,8 +217,8 @@ class MessageThreadListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for thread list views"""
     client = UserBasicSerializer(read_only=True)
     assigned_admin = UserBasicSerializer(read_only=True)
-    event_name = serializers.CharField(read_only=True)
-    client_name = serializers.CharField(read_only=True)
+    event_name = serializers.SerializerMethodField()
+    client_name = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
     last_message_preview = serializers.SerializerMethodField()
     can_manage = serializers.SerializerMethodField()
@@ -260,6 +260,18 @@ class MessageThreadListSerializer(serializers.ModelSerializer):
             return request.user.role == 'ADMIN'
         return False
 
+    def get_event_name(self, obj):
+        """Get event name from annotation or model"""
+        if hasattr(obj, 'event_display_name') and obj.event_display_name:
+            return obj.event_display_name
+        return obj.event.name if obj.event else None
+
+    def get_client_name(self, obj):
+        """Get client name from annotation or model"""
+        if hasattr(obj, 'client_full_name') and obj.client_full_name:
+            return obj.client_full_name.strip()  # Clean up any extra spaces
+        return f"{obj.client.first_name} {obj.client.last_name}".strip() if obj.client else None
+
 
 class MessageThreadDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for thread detail views"""
@@ -267,9 +279,9 @@ class MessageThreadDetailSerializer(serializers.ModelSerializer):
     assigned_admin = UserBasicSerializer(read_only=True)
     participants = ThreadParticipantSerializer(many=True, read_only=True)
     messages = serializers.SerializerMethodField()
-    event_name = serializers.CharField(read_only=True)
+    event_name = serializers.SerializerMethodField()
     event_date = serializers.CharField(read_only=True)
-    client_name = serializers.CharField(read_only=True)
+    client_name = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
     can_manage = serializers.SerializerMethodField()
     typing_users = serializers.SerializerMethodField()
@@ -338,6 +350,18 @@ class MessageThreadDetailSerializer(serializers.ModelSerializer):
             }
             for indicator in typing_indicators
         ]
+
+    def get_event_name(self, obj):
+        """Get event name from annotation or model"""
+        if hasattr(obj, 'event_display_name') and obj.event_display_name:
+            return obj.event_display_name
+        return obj.event.name if obj.event else None
+
+    def get_client_name(self, obj):
+        """Get client name from annotation or model"""
+        if hasattr(obj, 'client_full_name') and obj.client_full_name:
+            return obj.client_full_name.strip()  # Clean up any extra spaces
+        return f"{obj.client.first_name} {obj.client.last_name}".strip() if obj.client else None
 
 
 class CreateMessageThreadSerializer(serializers.ModelSerializer):

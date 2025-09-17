@@ -37,6 +37,9 @@ import {
   MenuItem,
   Tooltip,
   Paper,
+  Select,
+  FormControl,
+  InputLabel,
   styled,
   useTheme
 } from '@mui/material';
@@ -51,7 +54,8 @@ import {
   MoreVert as MoreVertIcon,
   Check as CheckIcon,
   Warning as WarningIcon,
-  Circle as CircleIcon
+  Circle as CircleIcon,
+  Sort as SortIcon
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import type { MessageThread, User } from '../../types/messaging.types';
@@ -165,6 +169,10 @@ export interface ThreadListProps {
   showEventContext?: boolean;
   showAssignments?: boolean;
   onThreadAction?: (action: string, threadId: string) => void;
+  // Sorting props
+  ordering?: string;
+  onOrderingChange?: (ordering: string) => void;
+  enableSorting?: boolean;
 }
 
 export const ThreadList: React.FC<ThreadListProps> = ({
@@ -184,7 +192,11 @@ export const ThreadList: React.FC<ThreadListProps> = ({
   height = 500,
   showEventContext = true,
   showAssignments = true,
-  onThreadAction
+  onThreadAction,
+  // Sorting props
+  ordering = '-last_message_at',
+  onOrderingChange,
+  enableSorting = true
 }) => {
   const theme = useTheme();
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
@@ -288,40 +300,72 @@ export const ThreadList: React.FC<ThreadListProps> = ({
 
   return (
     <ThreadListContainer sx={{ height }}>
-      {/* Search Header */}
-      {enableSearch && (
+      {/* Search and Sort Header */}
+      {(enableSearch || enableSorting) && (
         <SearchContainer>
-          <TextField
-            size="small"
-            placeholder="Search conversations..."
-            value={localSearchQuery}
-            onChange={handleSearchChange}
-            fullWidth
-            variant="outlined"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-              endAdornment: localSearchQuery && (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={handleClearSearch}
-                    edge="end"
-                  >
-                    <ClearIcon fontSize="small" />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-              },
-            }}
-          />
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            {enableSearch && (
+              <TextField
+                size="small"
+                placeholder="Search conversations..."
+                value={localSearchQuery}
+                onChange={handleSearchChange}
+                variant="outlined"
+                sx={{
+                  flex: enableSorting ? 1 : 1,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: localSearchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={handleClearSearch}
+                        edge="end"
+                      >
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            )}
+
+            {enableSorting && onOrderingChange && (
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel id="thread-sort-label">Sort by</InputLabel>
+                <Select
+                  labelId="thread-sort-label"
+                  value={ordering}
+                  label="Sort by"
+                  onChange={(e) => onOrderingChange(e.target.value)}
+                  startAdornment={<SortIcon fontSize="small" sx={{ mr: 1 }} />}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    },
+                  }}
+                >
+                  <MenuItem value="-last_message_at">Newest first</MenuItem>
+                  <MenuItem value="last_message_at">Oldest first</MenuItem>
+                  <MenuItem value="-priority_order">Priority</MenuItem>
+                  <MenuItem value="subject">Subject A-Z</MenuItem>
+                  <MenuItem value="-subject">Subject Z-A</MenuItem>
+                  <MenuItem value="client_name">Client A-Z</MenuItem>
+                  <MenuItem value="-client_name">Client Z-A</MenuItem>
+                  <MenuItem value="event_name">Event A-Z</MenuItem>
+                  <MenuItem value="-event_name">Event Z-A</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+          </Box>
         </SearchContainer>
       )}
 
@@ -403,32 +447,52 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                   {/* Content */}
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <Typography
-                          variant={compact ? 'body2' : 'subtitle1'}
-                          fontWeight={hasUnread ? 600 : 400}
-                          noWrap
-                          sx={{ flex: 1 }}
-                        >
-                          {thread.client_name}
-                        </Typography>
-                        <PriorityIndicator priority={thread.priority} />
-                        {getPriorityIcon(thread.priority)}
+                      <Box sx={{ mb: 0.5 }}>
+                        {/* Subject line (primary) */}
+                        {thread.subject && (
+                          <Typography
+                            variant={compact ? 'subtitle2' : 'subtitle1'}
+                            fontWeight={hasUnread ? 600 : 500}
+                            noWrap
+                            sx={{ mb: 0.25 }}
+                          >
+                            {thread.subject}
+                          </Typography>
+                        )}
+
+                        {/* Client name and priority indicators */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography
+                            variant={compact ? 'body2' : 'body1'}
+                            fontWeight={hasUnread ? 500 : 400}
+                            color={thread.subject ? 'text.secondary' : 'text.primary'}
+                            noWrap
+                            sx={{ flex: 1 }}
+                          >
+                            {thread.client_name}
+                          </Typography>
+                          <PriorityIndicator priority={thread.priority} />
+                          {getPriorityIcon(thread.priority)}
+                        </Box>
                       </Box>
                     }
                     secondary={
                       <Box component="span">
                         {/* Event info */}
-                        {showEventContext && (
+                        {showEventContext && thread.event_name && (
                           <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                             <EventIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary" noWrap>
+                            <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>
                               {thread.event_name}
                             </Typography>
-                            <ScheduleIcon sx={{ fontSize: 12, color: 'text.secondary', ml: 0.5 }} />
-                            <Typography variant="caption" color="text.secondary">
-                              {new Date(thread.event_date).toLocaleDateString()}
-                            </Typography>
+                            {thread.event_date && (
+                              <>
+                                <ScheduleIcon sx={{ fontSize: 12, color: 'text.secondary', ml: 0.5 }} />
+                                <Typography variant="caption" color="text.secondary">
+                                  {new Date(thread.event_date).toLocaleDateString()}
+                                </Typography>
+                              </>
+                            )}
                           </Box>
                         )}
                         

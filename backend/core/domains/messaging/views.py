@@ -7,7 +7,8 @@ with proper permissions and filtering for both admin and client users.
 
 import logging
 from django.db import transaction
-from django.db.models import Q, Count, Max, Prefetch
+from django.db.models import Q, Count, Max, Prefetch, Case, When, IntegerField, F, CharField, Value
+from django.db.models.functions import Concat, Coalesce
 from django.utils import timezone
 from django.http import FileResponse, Http404
 from rest_framework import viewsets, status, filters, permissions
@@ -56,7 +57,7 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['subject', 'client__first_name', 'client__last_name', 'client__email']
     filterset_fields = ['status', 'priority', 'assigned_admin']
-    ordering_fields = ['created_at', 'last_message_at', 'priority']
+    ordering_fields = ['created_at', 'last_message_at', 'priority', 'priority_order', 'subject']
     ordering = ['-last_message_at']
     
     def get_permissions(self):
@@ -85,7 +86,29 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
             'messages__attachments',
             'messages__read_receipts__user'
         )
-        
+
+        # Add computed fields for sorting
+        queryset = queryset.annotate(
+            # Priority order for logical sorting (urgent=4, high=3, normal=2, low=1)
+            priority_order=Case(
+                When(priority='urgent', then=4),
+                When(priority='high', then=3),
+                When(priority='normal', then=2),
+                When(priority='low', then=1),
+                default=2,
+                output_field=IntegerField()
+            ),
+            # Client name for sorting (concatenated first + last name with null safety)
+            client_full_name=Concat(
+                Coalesce('client__first_name', Value('')),
+                Value(' '),
+                Coalesce('client__last_name', Value('')),
+                output_field=CharField()
+            ),
+            # Event name for sorting (null-safe)
+            event_display_name=F('event__name')
+        )
+
         # Filter based on user role
         if user.role == 'CLIENT':
             # Clients can only see their own threads

@@ -44,6 +44,7 @@ export interface MessageThread {
   };
   priority: 'urgent' | 'high' | 'normal' | 'low';
   status: 'active' | 'waiting' | 'resolved';
+  subject?: string;
   unread_count: number;
   last_message?: {
     content: string;
@@ -134,6 +135,7 @@ export interface ThreadFilters {
   assigned_admin?: number;
   search?: string;
   event_id?: number;
+  ordering?: string;
   // Index signature for React Query compatibility
   [key: string]: unknown;
 }
