@@ -182,6 +182,20 @@ export interface MessageReadReceipt {
   user_avatar?: string;
 }
 
+// Thread update interface for WebSocket events
+export interface ThreadUpdate {
+  thread_id: string;
+  last_message_at: string | null;
+  last_message_content: string;
+  last_message_sender_name: string;
+}
+
+// Enhanced new_message event payload with thread update data
+export interface NewMessageEvent {
+  message: Message;
+  thread_update?: ThreadUpdate;
+}
+
 // WebSocket event types - compatible with WebSocketEventType
 export interface WSMessage {
   type: 'new_message' | 'message_read' | 'typing_indicator' | 'thread_updated' | 'user_presence' | 'connection_state_changed' | 'error' | 'ping' | 'pong';

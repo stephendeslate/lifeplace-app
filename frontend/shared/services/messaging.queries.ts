@@ -621,25 +621,9 @@ export const useAddMessageToCache = () => {
       }
     );
 
-    // Update thread's last message
-    queryClient.setQueryData<MessageThread>(
-      messagingKeys.thread(message.thread_id),
-      (oldThread) => {
-        if (!oldThread) return undefined;
-        return {
-          ...oldThread,
-          last_message: {
-            content: message.content,
-            sender_name: message.sender.name,
-            sent_at: message.created_at,
-          },
-          updated_at: message.created_at,
-        };
-      }
-    );
-
-    // Invalidate threads list to update sorting
-    queryClient.invalidateQueries({ queryKey: messagingKeys.threads() });
+    // Note: Thread updates are now handled by the WebSocket event handler
+    // which uses useUpdateThreadInCache with authoritative server data.
+    // This prevents the need for query invalidation and provides more accurate updates.
   };
 };
 
@@ -648,7 +632,7 @@ export const useAddMessageToCache = () => {
  */
 export const useUpdateThreadInCache = () => {
   const queryClient = useQueryClient();
-  
+
   return (threadId: string, updates: Partial<MessageThread>) => {
     queryClient.setQueryData<MessageThread>(
       messagingKeys.thread(threadId),
@@ -658,16 +642,58 @@ export const useUpdateThreadInCache = () => {
       }
     );
 
-    // Update in threads list
+    // Update in threads list with intelligent reordering
     queryClient.setQueryData<{ results: MessageThread[]; count: number }>(
       messagingKeys.threads(),
       (oldData) => {
         if (!oldData) return undefined;
+
+        // Update the thread with new data
+        const updatedResults = oldData.results.map(thread =>
+          thread.id === threadId ? { ...thread, ...updates } : thread
+        );
+
+        // If last_message_at was updated, reorder threads by last_message_at
+        if (updates.last_message_at || updates.updated_at) {
+          updatedResults.sort((a, b) => {
+            const aTime = a.last_message_at || a.updated_at;
+            const bTime = b.last_message_at || b.updated_at;
+            return new Date(bTime).getTime() - new Date(aTime).getTime();
+          });
+        }
+
         return {
           ...oldData,
-          results: oldData.results.map(thread =>
+          results: updatedResults,
+        };
+      }
+    );
+
+    // Also update infinite query cache for threads
+    queryClient.setQueryData<any>(
+      [...messagingKeys.threads(), 'infinite'],
+      (oldData) => {
+        if (!oldData?.pages) return oldData;
+
+        const updatedPages = oldData.pages.map((page: any) => ({
+          ...page,
+          results: page.results.map((thread: MessageThread) =>
             thread.id === threadId ? { ...thread, ...updates } : thread
-          ),
+          )
+        }));
+
+        // Reorder first page if necessary
+        if ((updates.last_message_at || updates.updated_at) && updatedPages[0]) {
+          updatedPages[0].results.sort((a: MessageThread, b: MessageThread) => {
+            const aTime = a.last_message_at || a.updated_at;
+            const bTime = b.last_message_at || b.updated_at;
+            return new Date(bTime).getTime() - new Date(aTime).getTime();
+          });
+        }
+
+        return {
+          ...oldData,
+          pages: updatedPages
         };
       }
     );

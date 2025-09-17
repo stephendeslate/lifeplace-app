@@ -58,7 +58,7 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
     search_fields = ['subject', 'client__first_name', 'client__last_name', 'client__email']
     filterset_fields = ['status', 'priority', 'assigned_admin']
     ordering_fields = ['created_at', 'last_message_at', 'priority', 'priority_order', 'subject']
-    ordering = ['-last_message_at']
+    ordering = []  # Handle ordering in get_queryset() for NULL value control
     
     def get_permissions(self):
         """Get permissions based on action"""
@@ -123,7 +123,19 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
             assigned_to_me = self.request.query_params.get('assigned_to_me')
             if assigned_to_me and assigned_to_me.lower() == 'true':
                 queryset = queryset.filter(assigned_admin=user)
-        
+
+        # Apply proper ordering with NULL handling
+        # Always apply proper ordering unless specifically overridden by query params
+        if not self.request.query_params.get('ordering'):
+            from django.db.models import F as OrderF
+            queryset = queryset.order_by(
+                OrderF('last_message_at').desc(nulls_last=True),
+                OrderF('created_at').desc()
+            )
+        else:
+            # Let the ordering filter handle it, but ensure we still have sensible fallback
+            pass
+
         return queryset
     
     def get_serializer_class(self):

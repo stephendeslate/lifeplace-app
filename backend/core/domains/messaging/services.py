@@ -229,13 +229,14 @@ class MessagingService:
     @staticmethod
     def broadcast_new_message(message: Message):
         """Broadcast new message to thread participants via WebSocket"""
+        thread = message.thread
         MessagingService._broadcast_to_thread(
-            message.thread,
+            thread,
             {
                 'type': 'new_message',
                 'message': {
                     'id': str(message.id),
-                    'thread_id': str(message.thread.id),
+                    'thread_id': str(thread.id),
                     'sender_id': message.sender.id,
                     'sender_name': message.sender.get_display_name(),
                     'content': message.content,
@@ -251,6 +252,12 @@ class MessagingService:
                         }
                         for att in message.attachments.all()
                     ]
+                },
+                'thread_update': {
+                    'thread_id': str(thread.id),
+                    'last_message_at': thread.last_message_at.isoformat() if thread.last_message_at else None,
+                    'last_message_content': thread.last_message_content,
+                    'last_message_sender_name': thread.last_message_sender_name,
                 }
             }
         )
