@@ -594,7 +594,6 @@ export const EventProfile: React.FC = () => {
                   variant="outlined"
                   startIcon={<ContractIcon />}
                   onClick={() => {
-                    console.log('Send contract:', event.id);
                     // Open contract sending dialog
                   }}
                   sx={{
@@ -620,7 +619,6 @@ export const EventProfile: React.FC = () => {
                   variant="outlined"
                   startIcon={<InvoiceIcon />}
                   onClick={() => {
-                    console.log('Generate invoice:', event.id);
                     // Open invoice generation dialog
                   }}
                   sx={{
@@ -646,7 +644,6 @@ export const EventProfile: React.FC = () => {
                   variant="outlined"
                   startIcon={<EmailIcon />}
                   onClick={() => {
-                    console.log('Send message:', event.id);
                     // Open message dialog
                   }}
                   sx={{
@@ -1396,69 +1393,14 @@ export const EventProfile: React.FC = () => {
 
         {/* Enhanced Modern Tabs */}
         <Fade in={isLoaded} timeout={1200}>
-          <Card
-            elevation={0}
-            sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.xxl,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              position: 'relative',
-              overflow: 'visible',
-              
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: `linear-gradient(135deg, ${tokens.color.neutral[500]}02 0%, ${tokens.color.primary[500]}02 100%)`,
-                borderRadius: tokens.spacing.radius.xxl,
-                pointerEvents: 'none',
-              }
-            }}
-          >
-            <Box 
-              sx={{ 
-                borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                position: 'relative',
-                zIndex: 1,
-                background: glassPresets.light.background,
-                borderRadius: `${tokens.spacing.radius.xxl} ${tokens.spacing.radius.xxl} 0 0`,
-              }}
-            >
-              <Tabs 
-                value={tabValue} 
+          <Card>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs
+                value={tabValue}
                 onChange={(_, newValue) => setTabValue(newValue)}
                 variant="scrollable"
                 scrollButtons="auto"
                 allowScrollButtonsMobile
-                sx={{
-                  '& .MuiTabs-indicator': {
-                    background: tokens.color.backgrounds.primaryGradient,
-                    height: 3,
-                    borderRadius: tokens.spacing.radius.full,
-                  },
-                  '& .MuiTab-root': {
-                    color: tokens.color.neutral[600],
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    minHeight: 60,
-                    transition: createTransition(['color', 'background'], 'fast'),
-                    borderRadius: tokens.spacing.radius.lg,
-                    margin: '8px 4px',
-                    
-                    '&:hover': {
-                      color: tokens.color.primary[700],
-                      background: `${tokens.color.primary[500]}08`,
-                    },
-                    
-                    '&.Mui-selected': {
-                      color: tokens.color.primary[700],
-                      background: `${tokens.color.primary[500]}12`,
-                    }
-                  }
-                }}
               >
             <Tab 
               label={`Activity (${activityItems.length})`}
@@ -1508,7 +1450,7 @@ export const EventProfile: React.FC = () => {
           </Tabs>
             </Box>
 
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+            <CardContent>
           {/* Activity Tab */}
           <TabPanel value={tabValue} index={0}>
             <ActivityTimeline
@@ -1570,8 +1512,8 @@ export const EventProfile: React.FC = () => {
               enableFileUploads={true}
               contextFilters={{ event_id: event.id }}
               enableDirectAPI={true}
-              onError={(error) => {
-                console.error('Messaging error:', error);
+              onError={(_error) => {
+                // Handle messaging errors
               }}
             />
           </TabPanel>

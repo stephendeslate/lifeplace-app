@@ -477,7 +477,6 @@ export const ClientProfile: React.FC = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => {
-              console.log('Create event for client:', client.id);
               // Navigate to event creation with client pre-selected
             }}
             sx={{
@@ -502,7 +501,6 @@ export const ClientProfile: React.FC = () => {
             variant="outlined"
             startIcon={<PhoneIcon />}
             onClick={() => {
-              console.log('Call client:', client.id);
               // Initiate phone call
             }}
             sx={{
@@ -653,7 +651,6 @@ export const ClientProfile: React.FC = () => {
             showViewAll={true}
             onViewAll={() => {
               // Navigate to events filtered by client
-              console.log('Navigate to client events');
             }}
           />
         </Box>
@@ -799,8 +796,8 @@ export const ClientProfile: React.FC = () => {
               enableFileUploads={true}
               contextFilters={{ client_id: client.id }}
               enableDirectAPI={true}
-              onError={(error) => {
-                console.error('Messaging error:', error);
+              onError={(_error) => {
+                // Handle messaging errors
               }}
             />
           </TabPanel>
