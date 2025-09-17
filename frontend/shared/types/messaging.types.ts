@@ -135,6 +135,7 @@ export interface ThreadFilters {
   assigned_admin?: number;
   search?: string;
   event_id?: number;
+  client_id?: number;
   ordering?: string;
   // Index signature for React Query compatibility
   [key: string]: unknown;

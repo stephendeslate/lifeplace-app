@@ -1568,7 +1568,8 @@ export const EventProfile: React.FC = () => {
               enableRealTime={true}
               enableSearch={true}
               enableFileUploads={true}
-              initialFilters={{ event_id: event.id }}
+              contextFilters={{ event_id: event.id }}
+              enableDirectAPI={true}
               onError={(error) => {
                 console.error('Messaging error:', error);
               }}

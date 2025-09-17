@@ -384,7 +384,7 @@ export const useMessageOperations = (
     try {
       setError(null);
       
-      const attachment = await uploadFileMutation.mutateAsync(file, {
+      const attachment = await uploadFileMutation.mutateAsync({ file, threadId }, {
         onSuccess: () => {
           setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
         }
@@ -399,7 +399,14 @@ export const useMessageOperations = (
         });
       }, 1000);
 
-      return attachment;
+      return {
+        id: attachment.id,
+        file_url: attachment.file_url,
+        filename: attachment.filename || file.name,
+        file_size: attachment.file_size || file.size,
+        file_type: attachment.file_type || file.type,
+        uploaded_at: attachment.uploaded_at || new Date().toISOString()
+      };
     } catch (error) {
       setUploadProgress(prev => {
         const newProgress = { ...prev };
@@ -464,7 +471,7 @@ export const useMessageOperations = (
 
       // Send message
       const messageData: SendMessageRequest = {
-        thread_id: targetThreadId,
+        thread: targetThreadId,
         content: content.trim(),
         is_internal_note: isInternalNote,
         attachments: attachmentIds.length > 0 ? attachmentIds : undefined,

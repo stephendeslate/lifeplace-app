@@ -122,6 +122,16 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
   const [error, setError] = useState<Error | null>(null);
   const [connectionError, setConnectionError] = useState<Error | null>(null);
 
+  // Memoize the filters object to prevent unnecessary re-renders
+  const memoizedFilters = useMemo(() => {
+    const filters = {
+      ...threadFilters,
+      search: searchQuery
+    };
+    console.log('[MessagingProvider] Filters updated:', filters);
+    return filters;
+  }, [threadFilters, searchQuery]);
+
   // Core messaging functionality
   const {
     state: messagingState,
@@ -131,7 +141,7 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
   } = useMessaging({
     autoConnect: false, // Disabled to prevent connection loops
     enableRealTime: config.enableRealTime,
-    filters: { ...threadFilters, search: searchQuery },
+    filters: memoizedFilters,
     getAuthToken, // Pass the authentication token provider
   });
 
@@ -264,7 +274,12 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
     },
 
     setThreadFilters: (filters: Partial<ThreadFilters>) => {
-      setThreadFiltersState(prev => ({ ...prev, ...filters }));
+      console.log('[MessagingProvider] setThreadFilters called with:', filters);
+      setThreadFiltersState(prev => {
+        const newFilters = { ...prev, ...filters };
+        console.log('[MessagingProvider] threadFilters updated from:', prev, 'to:', newFilters);
+        return newFilters;
+      });
     },
 
     setMessageFilters: (filters: Partial<MessageFilters>) => {

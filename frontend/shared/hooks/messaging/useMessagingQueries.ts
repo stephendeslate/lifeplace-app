@@ -23,7 +23,7 @@ export const useThreads = (filters?: ThreadFilters) => {
         ...filters,
         page: pageParam as number,
       }),
-    getNextPageParam: (lastPage: { nextPage?: number; next?: string }) => {
+    getNextPageParam: (lastPage) => {
       // Handle both cursor and page-based pagination
       return lastPage.nextPage || (lastPage.next ? lastPage.nextPage : undefined);
     },

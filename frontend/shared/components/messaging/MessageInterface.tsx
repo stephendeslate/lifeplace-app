@@ -49,8 +49,12 @@ import {
 import {
   useRealTimeUpdates
 } from '../../services';
+import {
+  useDirectThreads
+} from '../../hooks/messaging/useDirectThreads';
 import type {
-  MessageThread
+  MessageThread,
+  ThreadFilters
 } from '../../types/messaging.types';
 
 export interface MessageInterfaceProps {
@@ -70,6 +74,10 @@ export interface MessageInterfaceProps {
   // Initial state
   initialThreadId?: string;
   initialFilters?: Record<string, any>;
+
+  // Context-aware filtering (bypasses provider timing issues)
+  contextFilters?: ThreadFilters;
+  enableDirectAPI?: boolean;
   
   // Event handlers
   onThreadSelect?: (thread: MessageThread | null) => void;
@@ -95,6 +103,8 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   showFooter = true,
   initialThreadId,
   initialFilters = {},
+  contextFilters,
+  enableDirectAPI = false,
   onThreadSelect,
   onMessageSent,
   onError,
@@ -112,9 +122,49 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<Error | null>(null);
 
-  // Use shared messaging context instead of creating a separate instance
+  // Use shared messaging context or direct API based on configuration
   const { state, actions } = useMessagingContext();
   const isReady = true; // Context is always ready when component renders
+
+  // Direct API query for context-aware filtering
+  const directThreadsQuery = useDirectThreads(
+    contextFilters,
+    enableDirectAPI && !!contextFilters
+  );
+
+  // Determine which data source to use
+  const threadsData = enableDirectAPI && contextFilters
+    ? {
+        threads: directThreadsQuery.data?.pages.flatMap(page => page.results) || [],
+        isLoadingThreads: directThreadsQuery.isLoading,
+        hasMoreThreads: directThreadsQuery.hasNextPage || false,
+        loadMoreThreads: directThreadsQuery.fetchNextPage,
+        error: directThreadsQuery.error
+      }
+    : {
+        threads: state.threads,
+        isLoadingThreads: state.isLoadingThreads,
+        hasMoreThreads: state.hasMoreThreads,
+        loadMoreThreads: actions.loadMoreThreads,
+        error: state.error
+      };
+
+  // Apply initial filters when component mounts (only for provider-based mode)
+  useEffect(() => {
+    // Skip if using direct API with contextFilters
+    if (enableDirectAPI && contextFilters) {
+      console.log('[MessageInterface] Using direct API with contextFilters:', contextFilters);
+      return;
+    }
+
+    console.log('[MessageInterface] useEffect triggered with initialFilters:', initialFilters);
+    if (initialFilters && Object.keys(initialFilters).length > 0) {
+      console.log('[MessageInterface] Applying initialFilters:', initialFilters);
+      actions.setThreadFilters(initialFilters);
+    } else {
+      console.log('[MessageInterface] No initialFilters to apply');
+    }
+  }, [initialFilters, actions, enableDirectAPI, contextFilters]);
 
   // Real-time updates
   const { state: realTimeState } = useRealTimeUpdates({
@@ -184,11 +234,15 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   }, []);
 
   const handleRefresh = useCallback(() => {
-    actions.refreshThreads();
+    if (enableDirectAPI && contextFilters) {
+      directThreadsQuery.refetch();
+    } else {
+      actions.refreshThreads();
+    }
     if (state.selectedThreadId) {
       actions.refreshMessages();
     }
-  }, [actions, state.selectedThreadId]);
+  }, [actions, state.selectedThreadId, enableDirectAPI, contextFilters, directThreadsQuery]);
 
   const handleError = useCallback((err: Error) => {
     setError(err);
@@ -364,7 +418,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
               <IconButton
                 onClick={handleRefresh}
                 size="small"
-                disabled={state.isLoadingThreads || state.isLoadingMessages}
+                disabled={threadsData.isLoadingThreads || state.isLoadingMessages}
                 aria-label="Refresh messages"
               >
                 <RefreshIcon />
@@ -418,12 +472,12 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
               }}
             >
               <ThreadList
-                threads={state.threads}
+                threads={threadsData.threads}
                 selectedThreadId={state.selectedThreadId}
                 onThreadSelect={handleThreadSelect}
-                onLoadMore={actions.loadMoreThreads}
-                hasMore={state.hasMoreThreads}
-                isLoading={state.isLoadingThreads}
+                onLoadMore={threadsData.loadMoreThreads}
+                hasMore={threadsData.hasMoreThreads}
+                isLoading={threadsData.isLoadingThreads}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 userRole={userRole}
@@ -499,17 +553,17 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
               }}
             >
               <Typography variant="h6" color="text.secondary" gutterBottom>
-                {state.error?.message.includes('authentication') || state.error?.message.includes('token')
+                {(threadsData.error as any)?.message?.includes('authentication') || (threadsData.error as any)?.message?.includes('token')
                   ? 'Authentication Required'
-                  : state.threads.length === 0
+                  : threadsData.threads.length === 0
                     ? 'No conversations yet'
                     : 'Select a conversation to start messaging'
                 }
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {state.error?.message.includes('authentication') || state.error?.message.includes('token')
+                {(threadsData.error as any)?.message?.includes('authentication') || (threadsData.error as any)?.message?.includes('token')
                   ? 'Please log in to access your conversations'
-                  : state.threads.length === 0
+                  : threadsData.threads.length === 0
                     ? 'Your conversations will appear here when you start messaging'
                     : 'Choose a conversation from the list to view and send messages'
                 }

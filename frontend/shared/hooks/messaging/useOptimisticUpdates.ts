@@ -56,7 +56,7 @@ export const useSendMessage = (): UseMutationResult<
       // Create optimistic message
       const optimisticMessage: Message = {
         id: tempId,
-        thread_id: newMessage.thread_id,
+        thread: newMessage.thread_id,
         sender: {
           id: 0, // Will be updated by context
           name: 'You',
@@ -462,7 +462,7 @@ export const useRetryFailedMessage = () => {
 
       // Retry the message
       return sendMessage.mutateAsync({
-        thread_id: failedMessage.thread_id,
+        thread: failedMessage.thread_id,
         content: failedMessage.content,
         message_type: failedMessage.message_type as 'text' | 'file',
         is_internal_note: failedMessage.is_internal_note,
