@@ -202,15 +202,35 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
     if (onMessageClick) {
       onMessageClick(message.id);
     }
-    
+
     // Mark as read if this is a received message
     if (onMarkAsRead && message.sender.id !== defaultUser.id) {
       onMarkAsRead(message.id).catch(console.error);
     }
   }, [onMessageClick, onMarkAsRead, defaultUser.id]);
 
+  // Auto-read thread when entering conversation
+  useEffect(() => {
+    if (threadId && onMarkAsRead && messages.length > 0) {
+      // Debounce auto-read to avoid rapid API calls when switching threads
+      const timer = setTimeout(() => {
+        // Only auto-read if there are unread messages from other users
+        const hasUnreadFromOthers = messages.some(
+          message => message.sender.id !== defaultUser.id &&
+          !message.read_by?.includes(defaultUser.id)
+        );
+
+        if (hasUnreadFromOthers) {
+          onMarkAsRead().catch(console.error);
+        }
+      }, 1000); // 1 second delay
+
+      return () => clearTimeout(timer);
+    }
+  }, [threadId, onMarkAsRead, messages, defaultUser.id]);
+
   // Custom message renderer for the virtual list
-  const messageRenderer = useCallback((message: Message, index: number) => {
+  const messageRenderer = useCallback((message: Message, _index: number) => {
     const isOwn = message.sender.id === defaultUser.id;
     const showAvatar = showAvatars && !isOwn;
     const isSystem = message.message_type === 'system';

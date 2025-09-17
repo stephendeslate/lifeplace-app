@@ -343,7 +343,9 @@ export const useSendMessage = (
         sender: {
           id: 0, // Will be filled by backend
           name: 'You',
+          email: 'you@example.com',
           role: 'CLIENT', // Will be determined by backend
+          display_name: 'You',
         },
       };
 
@@ -382,7 +384,7 @@ export const useSendMessage = (
             ...oldThread,
             last_message: {
               content: data.content,
-              sender_name: data.sender.name,
+              sender_name: data.sender.display_name || data.sender.name || 'Unknown',
               sent_at: data.created_at,
             },
             updated_at: data.created_at,
@@ -524,7 +526,7 @@ export const useMarkThreadRead = (
         }
       );
 
-      // Update thread in threads list
+      // Update thread in regular threads list cache
       queryClient.setQueryData<{ results: MessageThread[]; count: number }>(
         messagingKeys.threads(),
         (oldData) => {
@@ -534,6 +536,42 @@ export const useMarkThreadRead = (
             results: oldData.results.map(thread =>
               thread.id === threadId ? { ...thread, unread_count: 0 } : thread
             ),
+          };
+        }
+      );
+
+      // Update thread in infinite threads list cache
+      queryClient.setQueriesData<InfiniteData<PaginatedThreadsResponse, unknown>>(
+        { queryKey: [...messagingKeys.threads(), 'infinite'] },
+        (oldData) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map(page => ({
+              ...page,
+              results: page.results.map(thread =>
+                thread.id === threadId ? { ...thread, unread_count: 0 } : thread
+              ),
+            })),
+          };
+        }
+      );
+
+      // Also update any filtered infinite queries that may contain this thread
+      queryClient.setQueriesData<InfiniteData<PaginatedThreadsResponse, unknown>>(
+        { queryKey: messagingKeys.threads() },
+        (oldData) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map(page => ({
+              ...page,
+              results: page.results.map(thread =>
+                thread.id === threadId ? { ...thread, unread_count: 0 } : thread
+              ),
+            })),
           };
         }
       );
@@ -670,12 +708,12 @@ export const useUpdateThreadInCache = () => {
     );
 
     // Also update infinite query cache for threads
-    queryClient.setQueryData<any>(
+    queryClient.setQueryData<InfiniteData<PaginatedThreadsResponse, unknown>>(
       [...messagingKeys.threads(), 'infinite'],
-      (oldData) => {
+      (oldData: InfiniteData<PaginatedThreadsResponse, unknown> | undefined) => {
         if (!oldData?.pages) return oldData;
 
-        const updatedPages = oldData.pages.map((page: any) => ({
+        const updatedPages = oldData.pages.map((page: PaginatedThreadsResponse) => ({
           ...page,
           results: page.results.map((thread: MessageThread) =>
             thread.id === threadId ? { ...thread, ...updates } : thread

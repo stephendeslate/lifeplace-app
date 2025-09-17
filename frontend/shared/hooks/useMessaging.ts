@@ -77,29 +77,30 @@ export interface MessagingActions {
   loadMoreMessages: () => void;
   refreshThreads: () => void;
   refreshMessages: () => void;
-  
+
   // Message operations
   sendMessage: (content: string, attachments?: File[], isInternalNote?: boolean) => Promise<void>;
   editMessage: (messageId: string, content: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
   markAsRead: (messageId?: string) => Promise<void>;
-  
+  markAsReadDebounced: (messageId?: string) => Promise<void>;
+
   // Thread operations
   updateThreadStatus: (status: MessageThread['status']) => Promise<void>;
   updateThreadPriority: (priority: MessageThread['priority']) => Promise<void>;
   assignAdmin: (adminId: number) => Promise<void>;
   resolveThread: () => Promise<void>;
   reopenThread: () => Promise<void>;
-  
+
   // Typing indicators
   startTyping: () => void;
   stopTyping: () => void;
-  
+
   // Search and filtering
   setSearchQuery: (query: string) => void;
   setFilters: (filters: Partial<ThreadFilters>) => void;
   clearFilters: () => void;
-  
+
   // Connection management
   connect: (threadId?: string) => Promise<void>;
   disconnect: () => void;
@@ -188,6 +189,8 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
   const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const retryCountRef = useRef(0);
   const isInitializedRef = useRef(false);
+  const markAsReadTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const lastMarkAsReadThreadRef = useRef<string | null>(null);
 
   // WebSocket
   const webSocket = useWebSocket();
@@ -503,6 +506,41 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     }
   }, [selectedThreadId, markMessageReadMutation, markThreadReadMutation]);
 
+  // Debounced version of markAsRead for auto-read functionality
+  const markAsReadDebounced = useCallback((messageId?: string) => {
+    const threadToMarkRead = selectedThreadId;
+
+    if (!threadToMarkRead) return Promise.resolve();
+
+    // Clear existing timeout for debouncing
+    if (markAsReadTimeoutRef.current) {
+      clearTimeout(markAsReadTimeoutRef.current);
+    }
+
+    // Prevent duplicate calls for the same thread
+    if (lastMarkAsReadThreadRef.current === threadToMarkRead) {
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      markAsReadTimeoutRef.current = setTimeout(async () => {
+        try {
+          lastMarkAsReadThreadRef.current = threadToMarkRead;
+
+          if (messageId) {
+            await markMessageReadMutation.mutateAsync(messageId);
+          } else {
+            await markThreadReadMutation.mutateAsync(threadToMarkRead);
+          }
+
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      }, 300); // 300ms debounce to batch rapid calls
+    });
+  }, [selectedThreadId, markMessageReadMutation, markThreadReadMutation]);
+
   // Typing indicators
   const startTyping = useCallback(() => {
     if (!selectedThreadId || !isConnected) return;
@@ -581,6 +619,9 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
+      if (markAsReadTimeoutRef.current) {
+        clearTimeout(markAsReadTimeoutRef.current);
+      }
       // Only disconnect on component unmount, not on every re-render
       webSocket.disconnect();
     };
@@ -632,6 +673,8 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     connect,
     disconnect,
     reconnect,
+    // Add debounced version for auto-read functionality
+    markAsReadDebounced,
   };
 
   return {

@@ -55,7 +55,9 @@ import {
   Check as CheckIcon,
   Warning as WarningIcon,
   Circle as CircleIcon,
-  Sort as SortIcon
+  Sort as SortIcon,
+  MarkEmailRead,
+  MarkEmailUnread
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import type { MessageThread, User } from '../../types/messaging.types';
@@ -268,6 +270,12 @@ export const ThreadList: React.FC<ThreadListProps> = ({
     }
     handleActionMenuClose();
   }, [onThreadAction, selectedActionThreadId, handleActionMenuClose]);
+
+  // Get selected thread for conditional menu items
+  const selectedThread = useMemo(() =>
+    selectedActionThreadId ? threads.find(t => t.id === selectedActionThreadId) : null,
+    [selectedActionThreadId, threads]
+  );
 
   // Format timestamp
   const formatTimestamp = useCallback((timestamp: string) => {
@@ -602,6 +610,18 @@ export const ThreadList: React.FC<ThreadListProps> = ({
           <CheckIcon sx={{ mr: 1, fontSize: 16 }} />
           Mark resolved
         </MenuItem>
+        {selectedThread && (selectedThread.unread_count ?? 0) > 0 && (
+          <MenuItem onClick={() => handleThreadAction('mark_read')}>
+            <MarkEmailRead sx={{ mr: 1, fontSize: 16 }} />
+            Mark as Read
+          </MenuItem>
+        )}
+        {selectedThread && (selectedThread.unread_count ?? 0) === 0 && (
+          <MenuItem onClick={() => handleThreadAction('mark_unread')}>
+            <MarkEmailUnread sx={{ mr: 1, fontSize: 16 }} />
+            Mark as Unread
+          </MenuItem>
+        )}
         <Divider />
         <MenuItem onClick={() => handleThreadAction('archive')}>
           Archive thread
