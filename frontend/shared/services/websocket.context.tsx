@@ -25,6 +25,7 @@ export interface WebSocketContextState {
   metrics?: ConnectionMetrics;
   lastError?: string;
   connectionQuality: 'excellent' | 'good' | 'fair' | 'poor' | 'offline' | 'unknown';
+  activeThreadConnections: Set<string>;
   
   // Connection methods
   connectToThread: (threadId: string, token: string) => Promise<void>;
@@ -79,6 +80,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   onError
 }) => {
   const [connectionState, setConnectionState] = useState<WebSocketConnectionState>('disconnected');
+  const [activeThreadConnections, setActiveThreadConnections] = useState<Set<string>>(new Set());
   const [metrics, setMetrics] = useState<ConnectionMetrics>();
   const [lastError, setLastError] = useState<string>();
   const [connectionQuality, setConnectionQuality] = useState<'excellent' | 'good' | 'fair' | 'poor' | 'offline' | 'unknown'>('offline');
@@ -153,7 +155,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         
       case 'token_refresh_required':
         // Handle token refresh logic here
-        console.warn('Token refresh required - implement token refresh logic');
+        setLastError('Your session is about to expire. Please refresh the page to continue.');
+        console.warn('Token refresh required - user should refresh session');
         break;
         
       case 'connection_failed_permanently':
@@ -161,17 +164,29 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         setConnectionQuality('offline');
         console.error('WebSocket connection permanently failed:', event.payload);
         break;
-        
+
       case 'reconnect_scheduled':
         console.log(`📅 Reconnection scheduled: attempt ${event.payload.attempt}/${event.payload.maxAttempts} in ${event.payload.delay}ms`);
         // You could update UI here to show reconnection status
         break;
-        
+
       case 'auth_error':
-        setLastError('Authentication error - please refresh your session');
+        setLastError('Authentication failed - your session has expired. Please refresh the page to log in again.');
         setConnectionQuality('offline');
         console.error('WebSocket authentication error:', event.payload);
         // Could trigger a token refresh or redirect to login
+        break;
+
+      case 'thread_connected':
+        setActiveThreadConnections(prev => new Set(prev).add(event.payload.threadId));
+        break;
+
+      case 'thread_disconnected':
+        setActiveThreadConnections(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(event.payload.threadId);
+          return newSet;
+        });
         break;
         
       default:
@@ -191,17 +206,47 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const connectToThread = useCallback(async (threadId: string, token: string) => {
     try {
       setLastError(undefined);
+
+      // Validate token before attempting connection
+      if (!token || typeof token !== 'string' || token.trim().length === 0) {
+        const errorMessage = 'Authentication token is required for thread connection';
+        setLastError(errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      // Validate threadId
+      if (!threadId || typeof threadId !== 'string' || threadId.trim().length === 0) {
+        const errorMessage = 'Thread ID is required for thread connection';
+        setLastError(errorMessage);
+        throw new Error(errorMessage);
+      }
+
       await wsServiceRef.current.connectToThread(threadId, token);
-      
+
       // Subscribe to events
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
       }
       unsubscribeRef.current = wsServiceRef.current.subscribe(handleWebSocketEvent);
-      
+
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to connect to thread';
+      let errorMessage: string;
+
+      if (error instanceof Error) {
+        // Check for authentication-specific errors
+        if (error.message.toLowerCase().includes('token') ||
+            error.message.toLowerCase().includes('auth') ||
+            error.message.toLowerCase().includes('unauthorized')) {
+          errorMessage = `Authentication failed: ${error.message}. Please refresh your session.`;
+        } else {
+          errorMessage = error.message;
+        }
+      } else {
+        errorMessage = 'Failed to connect to thread';
+      }
+
       setLastError(errorMessage);
+      setConnectionQuality('offline');
       throw error;
     }
   }, [handleWebSocketEvent]);
@@ -209,17 +254,40 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const connectToUser = useCallback(async (token: string) => {
     try {
       setLastError(undefined);
+
+      // Validate token before attempting connection
+      if (!token || typeof token !== 'string' || token.trim().length === 0) {
+        const errorMessage = 'Authentication token is required for user messaging connection';
+        setLastError(errorMessage);
+        throw new Error(errorMessage);
+      }
+
       await wsServiceRef.current.connectToUser(token);
-      
+
       // Subscribe to events
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
       }
       unsubscribeRef.current = wsServiceRef.current.subscribe(handleWebSocketEvent);
-      
+
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to connect to user messaging';
+      let errorMessage: string;
+
+      if (error instanceof Error) {
+        // Check for authentication-specific errors
+        if (error.message.toLowerCase().includes('token') ||
+            error.message.toLowerCase().includes('auth') ||
+            error.message.toLowerCase().includes('unauthorized')) {
+          errorMessage = `Authentication failed: ${error.message}. Please refresh your session.`;
+        } else {
+          errorMessage = error.message;
+        }
+      } else {
+        errorMessage = 'Failed to connect to user messaging';
+      }
+
       setLastError(errorMessage);
+      setConnectionQuality('offline');
       throw error;
     }
   }, [handleWebSocketEvent]);
@@ -349,10 +417,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
   const contextValue: WebSocketContextState = {
     connectionState,
-    isConnected: connectionState === 'connected',
+    isConnected: connectionState === 'connected' || activeThreadConnections.size > 0,
     metrics,
     lastError,
     connectionQuality,
+    activeThreadConnections,
     connectToThread,
     connectToUser,
     disconnect,
@@ -391,11 +460,11 @@ export const useWebSocketConnectionState = (): {
   hasError: boolean;
   connectionQuality: 'excellent' | 'good' | 'fair' | 'poor' | 'offline' | 'unknown';
 } => {
-  const { connectionState, connectionQuality } = useWebSocket();
-  
+  const { connectionState, connectionQuality, activeThreadConnections } = useWebSocket();
+
   return {
     connectionState,
-    isConnected: connectionState === 'connected',
+    isConnected: connectionState === 'connected' || activeThreadConnections.size > 0,
     isConnecting: connectionState === 'connecting',
     isReconnecting: connectionState === 'reconnecting',
     hasError: connectionState === 'error',

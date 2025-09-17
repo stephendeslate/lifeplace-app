@@ -115,7 +115,7 @@ const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children
   // Always render the full provider tree - MessagingProvider now handles auth state internally
   return (
     <WebSocketProvider config={webSocketConfig} enabled={isAuthenticated && !isLoading}>
-      <MessagingProvider config={messagingConfig} authContext={authContext}>
+      <MessagingProvider config={messagingConfig} authContext={authContext} getAuthToken={getAuthToken}>
         <ContractsProvider>
           {children}
           {/* Only show React Query devtools in development */}

@@ -114,6 +114,7 @@ export interface UseMessagingOptions {
   maxRetries?: number;
   pageSize?: number;
   filters?: ThreadFilters;
+  getAuthToken?: () => string | null;  // Required for WebSocket authentication
 }
 
 export interface UseMessagingReturn {
@@ -168,7 +169,8 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     typingTimeout = 3000,
     maxRetries = 3,
     pageSize: _1 = 20,
-    filters: initialFilters = {}
+    filters: initialFilters = {},
+    getAuthToken
   } = options;
 
   // State
@@ -316,43 +318,8 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
     }
   }, [addMessageToCache, updateThreadInCache]);
 
-  // Helper function to get access token from different storage formats
-  // Stabilized with no dependencies to prevent effect loops
-  const getAccessToken = useCallback((): string | null => {
-    // Try admin tokens format first (for admin-crm)
-    const adminTokensStr = localStorage.getItem('lifeplace_admin_tokens');
-    if (adminTokensStr) {
-      try {
-        const adminTokens = JSON.parse(adminTokensStr);
-        if (adminTokens?.access) {
-          return adminTokens.access;
-        }
-      } catch (e) {
-        console.warn('[useMessaging] Failed to parse admin tokens:', e);
-      }
-    }
-
-    // Try client tokens format (for client portal)
-    const clientTokensStr = localStorage.getItem('lifeplace_client_tokens');
-    if (clientTokensStr) {
-      try {
-        const clientTokens = JSON.parse(clientTokensStr);
-        if (clientTokens?.access) {
-          return clientTokens.access;
-        }
-      } catch (e) {
-        console.warn('[useMessaging] Failed to parse client tokens:', e);
-      }
-    }
-
-    // Try direct access_token as fallback
-    const directToken = localStorage.getItem('access_token');
-    if (directToken) {
-      return directToken;
-    }
-
-    return null;
-  }, []);
+  // Authentication token access - required to be provided by consumer
+  // No more localStorage access in shared components
 
   // Connection management with debouncing to prevent rapid reconnects
   const connect = useCallback(async (threadId?: string) => {
@@ -360,7 +327,13 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
       setConnectionError(null);
       setError(null);
 
-      const token = getAccessToken();
+      // Require authentication token to be provided by consumer
+      if (!getAuthToken) {
+        const authError = new Error('No authentication token provider available - useMessaging requires getAuthToken option');
+        throw authError;
+      }
+
+      const token = getAuthToken();
       if (!token) {
         const authError = new Error('No authentication token available - user may need to log in again');
         throw authError;
@@ -377,15 +350,15 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
       const err = error instanceof Error ? error : new Error('Connection failed');
       setConnectionError(err);
       setError(err);
-      
+
       // Enhanced retry logic with error categorization
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current++;
-        
+
         // Categorize error for different retry strategies
         const errorType = categorizeError(err);
         let backoffDelay: number;
-        
+
         switch (errorType) {
           case 'auth':
             // For auth errors, try immediate refresh then longer delay
@@ -403,15 +376,15 @@ export const useMessaging = (options: UseMessagingOptions = {}): UseMessagingRet
             // For unknown errors, use conservative backoff
             backoffDelay = Math.min(2000 * Math.pow(2, retryCountRef.current), 45000); // Max 45 seconds
         }
-        
+
         // Add jitter to prevent thundering herd
         const jitter = Math.random() * 0.3 * backoffDelay;
         const finalDelay = backoffDelay + jitter;
-        
+
         setTimeout(() => connect(threadId), finalDelay);
       }
     }
-  }, [webSocket, maxRetries, getAccessToken]);
+  }, [webSocket, maxRetries, getAuthToken]);
 
   const disconnect = useCallback(() => {
     webSocket.disconnect();
