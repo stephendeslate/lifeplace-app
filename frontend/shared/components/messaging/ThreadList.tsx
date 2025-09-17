@@ -17,7 +17,6 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import {
   Box,
   List,
-  ListItem,
   ListItemButton,
   ListItemText,
   ListItemAvatar,
@@ -28,7 +27,6 @@ import {
   TextField,
   InputAdornment,
   CircularProgress,
-  Alert,
   Button,
   Divider,
   Skeleton,
@@ -166,7 +164,7 @@ export interface ThreadListProps {
   userRole?: 'CLIENT' | 'ADMIN';
   compact?: boolean;
   enableSearch?: boolean;
-  currentUser?: User;
+  currentUser?: User; // Currently unused but kept for future extension
   height?: number;
   showEventContext?: boolean;
   showAssignments?: boolean;
@@ -190,7 +188,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
   userRole = 'CLIENT',
   compact = false,
   enableSearch = true,
-  currentUser,
+  // currentUser, // Currently unused but kept for future extension
   height = 500,
   showEventContext = true,
   showAssignments = true,
@@ -214,7 +212,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
     return threads.filter(thread => 
       thread.client_name.toLowerCase().includes(query) ||
       thread.event_name.toLowerCase().includes(query) ||
-      thread.last_message?.content.toLowerCase().includes(query) ||
+      thread.last_message_content.toLowerCase().includes(query) ||
       thread.event_date.toLowerCase().includes(query)
     );
   }, [threads, localSearchQuery]);
@@ -468,7 +466,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                           </Typography>
                         )}
 
-                        {/* Client name and priority indicators */}
+                        {/* Last message content and priority indicators */}
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Typography
                             variant={compact ? 'body2' : 'body1'}
@@ -477,7 +475,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                             noWrap
                             sx={{ flex: 1 }}
                           >
-                            {thread.client_name}
+                            {thread.last_message_content || 'No messages yet'}
                           </Typography>
                           <PriorityIndicator priority={thread.priority} />
                           {getPriorityIcon(thread.priority)}
@@ -502,24 +500,6 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                               </>
                             )}
                           </Box>
-                        )}
-                        
-                        {/* Last message */}
-                        {thread.last_message && (
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ 
-                              display: '-webkit-box',
-                              WebkitLineClamp: compact ? 1 : 2,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                              fontWeight: hasUnread ? 500 : 400,
-                              mb: 0.5
-                            }}
-                          >
-                            {thread.last_message.content}
-                          </Typography>
                         )}
                         
                         {/* Thread metadata */}

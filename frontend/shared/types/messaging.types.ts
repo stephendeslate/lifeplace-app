@@ -51,6 +51,11 @@ export interface MessageThread {
     sender_name: string;
     sent_at: string;
   };
+  // Direct fields from API response
+  last_message_content: string;
+  last_message_sender_name: string;
+  last_message_preview: string;
+  can_manage: boolean;
   created_at: string;
   updated_at: string;
   // Legacy properties for backward compatibility
