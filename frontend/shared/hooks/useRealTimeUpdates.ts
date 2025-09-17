@@ -24,7 +24,9 @@ import type {
   Message,
   MessageThread,
   TypingIndicator,
-  MessageReadReceipt
+  MessageReadReceipt,
+  ThreadUpdate,
+  NewMessageEvent
 } from '../types/messaging.types';
 
 export interface RealTimeState {
@@ -218,14 +220,57 @@ export const useRealTimeUpdates = (
 
     switch (event.type) {
       case 'new_message':
-        const message = event.payload as Message;
-        
+        // Handle enhanced new_message event with thread_update data
+        const newMessageData = event.payload as any;
+
+        // Check if this is the new format with message and thread_update
+        let message: Message;
+        let threadUpdate: ThreadUpdate | undefined = undefined;
+
+        if (newMessageData.message && typeof newMessageData.message === 'object') {
+          // New format: { message: Message, thread_update?: ThreadUpdate }
+          const eventData = newMessageData as NewMessageEvent;
+          message = eventData.message;
+          threadUpdate = eventData.thread_update;
+        } else {
+          // Legacy format: direct message object
+          message = newMessageData as Message;
+        }
+
         // Filter by thread if specified
         if (threadId && message.thread_id !== threadId) {
           return;
         }
-        
+
+        // Add message to cache
         addMessageToCache(message);
+
+        // Process thread update data if available
+        if (threadUpdate) {
+          const { thread_id, last_message_at, last_message_content, last_message_sender_name } = threadUpdate;
+
+          // Update thread with authoritative server data
+          updateThreadInCache(thread_id, {
+            last_message_at,
+            last_message: {
+              content: last_message_content,
+              sender_name: last_message_sender_name,
+              sent_at: last_message_at || message.created_at,
+            },
+            updated_at: last_message_at || message.created_at,
+          });
+        } else {
+          // Fallback: update thread using message data (legacy behavior)
+          updateThreadInCache(message.thread_id, {
+            last_message: {
+              content: message.content,
+              sender_name: message.sender.name || message.sender.display_name,
+              sent_at: message.created_at,
+            },
+            updated_at: message.created_at,
+          });
+        }
+
         onMessage?.(message);
         break;
 

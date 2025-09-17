@@ -314,10 +314,11 @@ class Message(BaseModel):
         return f"Message from {self.sender.get_display_name()}: {content_preview}"
     
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
+        # Use _state.adding to correctly detect new objects with UUID primary keys
+        is_new = self._state.adding
         self.full_clean()
         super().save(*args, **kwargs)
-        
+
         # Update thread's last message cache
         if is_new:
             self.thread.update_last_message_cache(self)

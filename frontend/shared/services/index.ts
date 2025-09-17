@@ -110,6 +110,8 @@ export type {
   MessageFilters,
   TypingIndicator,
   MessageReadReceipt,
+  ThreadUpdate,
+  NewMessageEvent,
   WSMessage,
   ThreadStats,
   QuickAction,
