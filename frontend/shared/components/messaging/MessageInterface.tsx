@@ -47,7 +47,8 @@ import {
   useWebSocketConnectionState
 } from '../..';
 import {
-  useRealTimeUpdates
+  useRealTimeUpdates,
+  useMarkThreadRead
 } from '../../services';
 import {
   useDirectThreads
@@ -125,6 +126,14 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   // Use shared messaging context or direct API based on configuration
   const { state, actions } = useMessagingContext();
   const isReady = true; // Context is always ready when component renders
+
+  // Thread management mutations
+  const markThreadReadMutation = useMarkThreadRead({
+    onError: (error) => {
+      console.error('[MessageInterface] Failed to mark thread as read:', error);
+      setError(new Error('Failed to mark thread as read'));
+    }
+  });
 
   // Direct API query for context-aware filtering
   const directThreadsQuery = useDirectThreads(
@@ -248,6 +257,37 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
     setError(err);
     onError?.(err);
   }, [onError]);
+
+  // Thread action handler for admin actions
+  const handleThreadAction = useCallback((action: string, threadId: string) => {
+    console.log('[MessageInterface] handleThreadAction called with:', { action, threadId });
+
+    switch (action) {
+      case 'mark_read':
+        // Mark the specific thread as read using the thread-level API
+        markThreadReadMutation.mutate(threadId, {
+          onSuccess: () => {
+            console.log('[MessageInterface] Successfully marked thread as read:', threadId);
+          },
+          onError: (error) => {
+            console.error('[MessageInterface] Failed to mark thread as read:', error);
+            setError(new Error('Failed to mark thread as read'));
+          }
+        });
+        break;
+
+      case 'mark_unread':
+        // No unread API available - show user feedback
+        console.warn('[MessageInterface] mark_unread action not supported - no API available');
+        setError(new Error('Mark as unread functionality is not yet available'));
+        break;
+
+      default:
+        console.log('[MessageInterface] Unhandled thread action:', action);
+        // Future thread actions can be implemented here (assign, priority_high, resolve, archive)
+        break;
+    }
+  }, [markThreadReadMutation]);
 
   // Effects
   useEffect(() => {
@@ -475,6 +515,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
                 threads={threadsData.threads}
                 selectedThreadId={state.selectedThreadId}
                 onThreadSelect={handleThreadSelect}
+                onThreadAction={handleThreadAction}
                 onLoadMore={threadsData.loadMoreThreads}
                 hasMore={threadsData.hasMoreThreads}
                 isLoading={threadsData.isLoadingThreads}
