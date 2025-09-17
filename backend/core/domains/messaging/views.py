@@ -56,7 +56,7 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['subject', 'client__first_name', 'client__last_name', 'client__email']
-    filterset_fields = ['status', 'priority', 'assigned_admin']
+    filterset_fields = ['status', 'priority', 'assigned_admin', 'event', 'client']
     ordering_fields = ['created_at', 'last_message_at', 'priority', 'priority_order', 'subject']
     ordering = []  # Handle ordering in get_queryset() for NULL value control
     

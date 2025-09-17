@@ -16,6 +16,11 @@ export {
   useCacheUtils,
 } from './useMessagingQueries';
 
+// Direct API hooks for context-aware filtering
+export {
+  useDirectThreads,
+} from './useDirectThreads';
+
 // Optimistic updates and mutations
 export {
   useSendMessage,

@@ -797,7 +797,8 @@ export const ClientProfile: React.FC = () => {
               enableRealTime={true}
               enableSearch={true}
               enableFileUploads={true}
-              initialFilters={{ client_id: client.id }}
+              contextFilters={{ client_id: client.id }}
+              enableDirectAPI={true}
               onError={(error) => {
                 console.error('Messaging error:', error);
               }}

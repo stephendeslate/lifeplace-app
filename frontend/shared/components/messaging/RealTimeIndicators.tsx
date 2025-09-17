@@ -370,7 +370,7 @@ export const RealTimeIndicators: React.FC<RealTimeIndicatorsProps> = ({
             {!compact && onlineUsers.length > 0 && (
               <PresenceIndicator
                 user={onlineUsers[0]}
-                presence={{ status: 'online', lastSeen: new Date() }}
+                presence={{ status: 'online', lastSeen: new Date().toISOString() }}
               />
             )}
           </PresenceContainer>

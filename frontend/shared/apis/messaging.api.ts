@@ -47,15 +47,16 @@ export const messagingApi = {
   // Thread operations
   getThreads: async (filters?: ThreadFilters & { page?: number }): Promise<ThreadResponse> => {
     const params = new URLSearchParams();
-    
+
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.status) params.append('status', filters.status);
     if (filters?.priority) params.append('priority', filters.priority);
     if (filters?.assigned_admin) params.append('assigned_admin', filters.assigned_admin.toString());
     if (filters?.search) params.append('search', filters.search);
-    if (filters?.event_id) params.append('event_id', filters.event_id.toString());
+    if (filters?.event_id) params.append('event', filters.event_id.toString());
+    if (filters?.client_id) params.append('client', filters.client_id.toString());
     if (filters?.ordering) params.append('ordering', filters.ordering);
-    
+
     const response = await apiClient.get(`/messaging/threads/?${params}`);
     return response.data;
   },
