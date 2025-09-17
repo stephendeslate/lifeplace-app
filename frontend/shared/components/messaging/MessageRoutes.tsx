@@ -27,20 +27,21 @@ export interface MessageRoutesProps {
   userRole: 'ADMIN' | 'CLIENT';
   layoutWrapper: ComponentType<{ children: React.ReactNode }>;
   authContext: AuthContextValue;
+  getAuthToken: () => string | null;  // Required for WebSocket authentication
   config?: Partial<MessagingConfig>;
-  
+
   // Route components - will be passed from parent apps
   MessagesOverview?: ComponentType;
   MessageThread?: ComponentType<{ threadId: string }>;
   MessageSettings?: ComponentType;
-  
+
   // Custom route configurations
   customRoutes?: Array<{
     path: string;
     element: React.ReactElement;
     requiresAuth?: boolean;
   }>;
-  
+
   // Navigation callbacks
   onNavigateToThread?: (threadId: string) => void;
   onNavigateToOverview?: () => void;
@@ -51,6 +52,7 @@ export const MessageRoutes: React.FC<MessageRoutesProps> = ({
   userRole,
   layoutWrapper: LayoutWrapper,
   authContext,
+  getAuthToken,
   config = {},
   MessagesOverview,
   MessageThread,
@@ -121,7 +123,7 @@ export const MessageRoutes: React.FC<MessageRoutesProps> = ({
   const pathPrefix = normalizedBasePath === '/' ? '' : normalizedBasePath;
 
   return (
-    <MessagingProvider config={messagingConfig} authContext={authContext}>
+    <MessagingProvider config={messagingConfig} authContext={authContext} getAuthToken={getAuthToken}>
       <Routes>
         {/* Messages Overview Route */}
         <Route

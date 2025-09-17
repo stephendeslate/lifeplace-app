@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { webSocketManager, MessagingWebSocketService } from '@shared/services/websocket.service';
+import { useWebSocket } from '@shared/services/websocket.context';
 import { useRealtimeSync } from '@shared/hooks/messaging/useRealtimeSync';
 import { useMemoryManagement } from '@shared/hooks/useMemoryManagement';
 
@@ -160,9 +161,10 @@ const AdminWebSocketIntegration: React.FC<AdminWebSocketIntegrationProps> = ({
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [connectionMetrics, setConnectionMetrics] = useState<ConnectionMetrics>({});
-  const [alerts, setAlerts] = useState<Array<{ type: 'error' | 'warning' | 'info'; message: string }>>([]);
+  const [alerts, setAlerts] = useState<Array<{ type: 'error' | 'warning' | 'info'; message: string; timestamp?: number }>>([]);
   
   const wsServiceRef = useRef<MessagingWebSocketService | null>(null);
+  const { connectToUser: connectToUserViaProvider, addEventListener: addWebSocketEventListener, connectionState: providerConnectionState } = useWebSocket();
   const metricsIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Memory management with admin-specific config
@@ -173,7 +175,7 @@ const AdminWebSocketIntegration: React.FC<AdminWebSocketIntegrationProps> = ({
     webSocketConnections: endpoints.map(ep => `admin_${ep}`),
   });
 
-  // Real-time sync for admin features
+  // Real-time sync for admin features with authentication monitoring
   const { isConnected } = useRealtimeSync({
     userRole: 'ADMIN',
     userId,
@@ -181,42 +183,131 @@ const AdminWebSocketIntegration: React.FC<AdminWebSocketIntegrationProps> = ({
     autoMarkAsRead: false, // Admins manually control read status
   });
 
-  // Handle WebSocket events
+  // Handle WebSocket events with enhanced authentication handling
   const handleWebSocketEvent = useCallback((event: Record<string, unknown>) => {
     const payload = event.payload as Record<string, unknown> | undefined;
-    
+
     switch (event.type) {
       case 'bulk_operation_complete':
         setAlerts(prev => [...prev, {
           type: 'info',
-          message: `Bulk operation completed: ${payload?.operation || 'unknown'} affected ${payload?.affected_count || 0} items`
+          message: `Bulk operation completed: ${payload?.operation || 'unknown'} affected ${payload?.affected_count || 0} items`,
+          timestamp: Date.now()
         }]);
         break;
-      
+
       case 'system_notification':
         setAlerts(prev => [...prev, {
           type: (payload?.level as 'error' | 'warning' | 'info') || 'info',
-          message: (payload?.message as string) || 'System notification'
+          message: (payload?.message as string) || 'System notification',
+          timestamp: Date.now()
         }]);
         break;
-      
+
       case 'connection_quality_changed':
         if (payload?.quality === 'poor') {
           setAlerts(prev => [...prev, {
             type: 'warning',
-            message: 'Connection quality degraded - some features may be slower'
+            message: 'Connection quality degraded - some features may be slower',
+            timestamp: Date.now()
+          }]);
+        }
+        break;
+
+      case 'auth_error':
+      case 'token_refresh_required':
+        console.warn('🔧 Authentication error from WebSocket:', event.type, payload);
+        setAlerts(prev => [...prev, {
+          type: 'warning',
+          message: 'Session expired - please refresh the page to continue',
+          timestamp: Date.now()
+        }]);
+
+        // WebSocketProvider will handle disconnection for auth errors
+        console.log('🔧 Auth error - WebSocketProvider will handle disconnection');
+        break;
+
+      case 'connection_failed_permanently':
+        console.error('🔧 WebSocket connection failed permanently:', payload);
+        setAlerts(prev => [...prev, {
+          type: 'error',
+          message: 'Connection failed permanently - please refresh the page',
+          timestamp: Date.now()
+        }]);
+        break;
+
+      case 'reconnect_scheduled':
+        console.log('🔧 WebSocket reconnection scheduled:', payload);
+        if ((payload?.attempt as number) > 1) {
+          setAlerts(prev => [...prev, {
+            type: 'info',
+            message: `Reconnecting to server (attempt ${payload?.attempt || 1}/${payload?.maxAttempts || 10})...`,
+            timestamp: Date.now()
           }]);
         }
         break;
     }
-    
+
     // Notify parent component
     onConnectionChange?.(event.type as string, payload || {});
   }, [onConnectionChange]);
 
-  // Initialize WebSocket connections
+  // Enhanced token validation function
+  const validateToken = useCallback((token?: string): { isValid: boolean; error?: string } => {
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      return { isValid: false, error: 'Token is missing or empty' };
+    }
+
+    // Basic JWT format validation (should have 3 parts separated by dots)
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      return { isValid: false, error: 'Invalid token format - not a valid JWT' };
+    }
+
+    try {
+      // Decode the payload to check if token is expired
+      const payload = JSON.parse(atob(tokenParts[1]));
+      const now = Date.now() / 1000;
+
+      if (payload.exp && payload.exp < now) {
+        return { isValid: false, error: 'Token has expired' };
+      }
+
+      return { isValid: true };
+    } catch (_e) {
+      return { isValid: false, error: 'Token payload is malformed' };
+    }
+  }, []);
+
+  // Initialize WebSocket connections with enhanced authentication handling
   useEffect(() => {
-    if (!user?.token) return;
+    // Enhanced authentication checks
+    if (!user) {
+      console.log('🔧 No user available - WebSocket connection skipped');
+      return;
+    }
+
+    if (!user.token) {
+      console.warn('🔧 User has no token - WebSocket connection skipped');
+      setAlerts(prev => [...prev, {
+        type: 'warning',
+        message: 'Authentication token missing - please log in again',
+        timestamp: Date.now()
+      }]);
+      return;
+    }
+
+    // Validate token before attempting connection
+    const tokenValidation = validateToken(user.token);
+    if (!tokenValidation.isValid) {
+      console.warn('🔧 Invalid token detected:', tokenValidation.error);
+      setAlerts(prev => [...prev, {
+        type: 'warning',
+        message: `Authentication issue: ${tokenValidation.error} - please refresh your session`,
+        timestamp: Date.now()
+      }]);
+      return;
+    }
 
     const initializeConnections = async () => {
       try {
@@ -230,58 +321,67 @@ const AdminWebSocketIntegration: React.FC<AdminWebSocketIntegrationProps> = ({
           healthCheckInterval: 30000, // 30 seconds
         });
 
-        // Initialize messaging service
-        wsServiceRef.current = new MessagingWebSocketService();
-        
-        // Validate user token before attempting connection
-        if (!user.token) {
-          throw new Error('User token not available - please refresh your session');
-        }
-        
-        // Validate token format (basic JWT structure check)
-        const tokenParts = user.token.split('.');
-        if (tokenParts.length !== 3) {
-          throw new Error('Invalid token format - please log in again');
-        }
-        
-        // Connect to admin messaging endpoint with explicit token
-        console.log('🔧 Connecting admin WebSocket with user token');
-        await wsServiceRef.current.connectToUser(user.token);
+        // Connect via WebSocketProvider instead of direct service instantiation
+        console.log('🔧 Connecting admin WebSocket via WebSocketProvider with validated user token');
+        await connectToUserViaProvider(user.token!);
 
-        // Subscribe to admin-specific events
-        const unsubscribe = wsServiceRef.current.subscribe((event) => {
+        // Subscribe to admin-specific events via WebSocketProvider
+        const unsubscribe = addWebSocketEventListener((event) => {
           handleWebSocketEvent(event as unknown as Record<string, unknown>);
         });
 
-        console.log('🔧 Admin WebSocket integration initialized');
-        
+        // Keep reference to service for metrics (from provider's internal service)
+        wsServiceRef.current = null; // No longer managing direct service instance
+
+        console.log('🔧 Admin WebSocket integration initialized successfully');
+
+        // Clear any previous authentication errors
+        setAlerts(prev => prev.filter(alert => !alert.message.includes('Authentication')));
+
         return () => {
           unsubscribe();
-          wsServiceRef.current?.disconnect();
+          // No need to disconnect directly - WebSocketProvider manages this
         };
       } catch (error) {
         console.error('❌ Failed to initialize admin WebSocket:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
-        
-        // Categorize error types for better user experience
+
+        // Enhanced error categorization for better user experience
         let userMessage = 'Connection failed';
         let alertType: 'error' | 'warning' = 'error';
-        
-        if (errorMessage.includes('token')) {
-          userMessage = 'Authentication failed - please refresh your session';
+        let isAuthError = false;
+
+        if (errorMessage.includes('Token is required') ||
+            errorMessage.includes('unauthorized') ||
+            errorMessage.includes('authentication') ||
+            errorMessage.includes('invalid token') ||
+            errorMessage.includes('token')) {
+          userMessage = 'Authentication failed - your session may have expired. Please refresh the page.';
           alertType = 'warning';
+          isAuthError = true;
         } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
           userMessage = 'Network connection failed - check your internet connection';
         } else if (errorMessage.includes('timeout')) {
           userMessage = 'Connection timed out - server may be busy';
+        } else if (errorMessage.includes('rate limit')) {
+          userMessage = 'Connection rate limited - please wait a moment and try again';
         } else {
           userMessage = `Connection failed: ${errorMessage}`;
         }
-        
+
         setAlerts(prev => [...prev, {
           type: alertType,
-          message: userMessage
+          message: userMessage,
+          timestamp: Date.now()
         }]);
+
+        // For authentication errors, suggest token refresh
+        if (isAuthError) {
+          console.log('🔧 Authentication error detected - user should refresh session');
+        }
+
+        // Clear wsServiceRef since we're using WebSocketProvider
+        wsServiceRef.current = null;
       }
     };
 
@@ -289,33 +389,30 @@ const AdminWebSocketIntegration: React.FC<AdminWebSocketIntegrationProps> = ({
     return () => {
       cleanup?.then(fn => fn?.());
     };
-  }, [user?.token, handleWebSocketEvent]);
+  }, [user, user?.token, handleWebSocketEvent, validateToken]);
 
-  // Update metrics periodically
+  // Update metrics periodically - using WebSocketProvider connection state
   useEffect(() => {
     if (!enableMonitoring) return;
 
     metricsIntervalRef.current = setInterval(() => {
-      if (wsServiceRef.current) {
-        const wsMetrics = wsServiceRef.current.getMetrics();
-        const memoryMetrics = getMemoryMetrics();
-        const connectionState = wsServiceRef.current.getConnectionState();
-        
-        setConnectionMetrics({
-          connection: {
-            state: connectionState,
-            latency: wsMetrics?.averageLatency || 0,
-            messagesReceived: wsMetrics?.messagesReceived || 0,
-            messagesSent: wsMetrics?.messagesSent || 0,
-            errorCount: wsMetrics?.errorCount || 0,
-          },
-          performance: {
-            heapUsed: Math.round((memoryMetrics.heapUsed || 0) / 1024 / 1024),
-            cacheSize: memoryMetrics.cacheSize || 0,
-            activeConnections: webSocketManager.getActiveConnections().length,
-          }
-        });
-      }
+      // Get metrics from memory management and WebSocket manager
+      const memoryMetrics = getMemoryMetrics();
+
+      setConnectionMetrics({
+        connection: {
+          state: providerConnectionState,
+          latency: 0, // Provider doesn't expose latency metrics yet
+          messagesReceived: 0, // Provider doesn't expose message counts yet
+          messagesSent: 0, // Provider doesn't expose message counts yet
+          errorCount: 0, // Provider doesn't expose error counts yet
+        },
+        performance: {
+          heapUsed: Math.round((memoryMetrics.heapUsed || 0) / 1024 / 1024),
+          cacheSize: memoryMetrics.cacheSize || 0,
+          activeConnections: webSocketManager.getActiveConnections().length,
+        }
+      });
     }, 2000);
 
     return () => {
@@ -323,14 +420,41 @@ const AdminWebSocketIntegration: React.FC<AdminWebSocketIntegrationProps> = ({
         clearInterval(metricsIntervalRef.current);
       }
     };
-  }, [enableMonitoring, getMemoryMetrics]);
+  }, [enableMonitoring, getMemoryMetrics, providerConnectionState]);
 
-  // Clean up alerts
+  // Enhanced alert management with auto-cleanup
   useEffect(() => {
     if (alerts.length > 5) {
       setAlerts(prev => prev.slice(-5)); // Keep only last 5 alerts
     }
+
+    // Auto-remove info alerts after 10 seconds
+    const timer = setTimeout(() => {
+      setAlerts(prev => prev.filter(alert => {
+        const age = Date.now() - (alert.timestamp || 0);
+        return alert.type !== 'info' || age < 10000; // Keep non-info alerts, or info alerts less than 10s old
+      }));
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [alerts]);
+
+  // Monitor authentication state changes
+  useEffect(() => {
+    if (!user) {
+      // User logged out - WebSocketProvider will handle disconnection
+      console.log('🔧 User logged out - WebSocketProvider will handle disconnection');
+
+      // Clear the service reference since we're not managing it directly
+      wsServiceRef.current = null;
+
+      // Clear connection-related alerts
+      setAlerts(prev => prev.filter(alert =>
+        !alert.message.includes('Connection') &&
+        !alert.message.includes('Authentication')
+      ));
+    }
+  }, [user]);
 
   const getStatusText = () => {
     const state = connectionMetrics.connection?.state || 'disconnected';

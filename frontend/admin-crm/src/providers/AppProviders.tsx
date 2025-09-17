@@ -119,7 +119,7 @@ const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children
       <ToastProvider>
         <ConfirmDialogProvider>
           <WebSocketProvider config={webSocketConfig} enabled={isAuthenticated && !isLoading}>
-            <MessagingProvider config={messagingConfig} authContext={authContextForMessaging}>
+            <MessagingProvider config={messagingConfig} authContext={authContextForMessaging} getAuthToken={getAuthToken}>
               {children}
               {/* Only show React Query devtools in development */}
               {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}

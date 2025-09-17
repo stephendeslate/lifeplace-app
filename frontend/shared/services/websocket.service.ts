@@ -26,7 +26,7 @@ export type WebSocketConnectionState =
   | 'throttled'
   | 'suspended';
 
-export type WebSocketEventType = 
+export type WebSocketEventType =
   | 'connection_state_changed'
   | 'new_message'
   | 'message_read'
@@ -43,7 +43,9 @@ export type WebSocketEventType =
   | 'pong'
   | 'connection_failed_permanently'
   | 'reconnect_scheduled'
-  | 'auth_error';
+  | 'auth_error'
+  | 'thread_connected'
+  | 'thread_disconnected';
 
 export interface WebSocketEvent<T = any> {
   type: WebSocketEventType;
@@ -172,17 +174,28 @@ class WebSocketManager {
    * Enhanced connection method with pooling and quality management
    */
   public async connect(
-    endpoint: string, 
+    endpoint: string,
     connectionId: string,
-    options: { 
-      token?: string;
+    options: {
+      token: string;
       autoReconnect?: boolean;
       customHeaders?: Record<string, string>;
       priority?: 'high' | 'normal' | 'low';
       pooled?: boolean;
-    } = {}
+    }
   ): Promise<void> {
     const { token, autoReconnect = true, customHeaders: _customHeaders = {}, priority = 'normal', pooled: _pooled = true } = options;
+
+    // Validate token is provided
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      throw new Error('Token is required for WebSocket connection');
+    }
+
+    // Basic JWT format validation (should have 3 parts separated by dots)
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      console.warn('[WebSocketManager] Token does not appear to be a valid JWT format');
+    }
     
     // Connection debouncing to prevent rapid successive attempts
     const now = Date.now();
@@ -509,51 +522,19 @@ class WebSocketManager {
 
   // Private methods
 
-  private buildWebSocketUrl(endpoint: string, token?: string): string {
+  private buildWebSocketUrl(endpoint: string, token: string): string {
     let url = `${this.config.baseUrl}${endpoint}`;
-    
-    // Try to get JWT token from multiple sources
-    let authToken = token;
-    if (!authToken) {
-      // Try to get JWT from localStorage using app-specific keys
-      try {
-        // Try admin-crm storage key
-        let tokens = localStorage.getItem('lifeplace_admin_tokens');
-        if (tokens) {
-          const tokenData = JSON.parse(tokens);
-          authToken = tokenData.access;
-          this.log('Using admin-crm JWT token for WebSocket connection');
-        } else {
-          // Try client-portal storage key
-          tokens = localStorage.getItem('lifeplace_client_tokens');
-          if (tokens) {
-            const tokenData = JSON.parse(tokens);
-            authToken = tokenData.access;
-            this.log('Using client-portal JWT token for WebSocket connection');
-          } else {
-            // Fallback to legacy storage key for backward compatibility
-            tokens = localStorage.getItem('tokens');
-            if (tokens) {
-              const tokenData = JSON.parse(tokens);
-              authToken = tokenData.access;
-              this.log('Using legacy JWT token for WebSocket connection');
-            }
-          }
-        }
-      } catch (error) {
-        this.log('Failed to get JWT from localStorage:', error);
-      }
-    } else {
-      this.log('Using provided JWT token for WebSocket connection');
+
+    // Validate token is provided
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      throw new Error('Token is required to build WebSocket URL');
     }
-    
+
+    this.log('Using provided JWT token for WebSocket connection');
+
     // Add JWT token as query parameter for Django Channels compatibility
-    if (authToken) {
-      const tokenSeparator = url.includes('?') ? '&' : '?';
-      url += `${tokenSeparator}token=${encodeURIComponent(authToken)}`;
-    } else {
-      this.log('⚠️ No JWT token available for WebSocket connection - connection may be rejected');
-    }
+    const tokenSeparator = url.includes('?') ? '&' : '?';
+    url += `${tokenSeparator}token=${encodeURIComponent(token)}`;
     
     // Add compression support if available
     if (this.config.compressionEnabled && 'WebSocket' in window) {

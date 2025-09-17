@@ -101,6 +101,7 @@ export interface MessagingProviderProps {
   children: React.ReactNode;
   config: MessagingConfig;
   authContext: AuthContextValue;
+  getAuthToken: () => string | null;  // Required for WebSocket authentication
 }
 
 // MessagingConfig is now imported from configs
@@ -109,6 +110,7 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
   children,
   config = DEFAULT_MESSAGING_CONFIG,
   authContext,
+  getAuthToken,
 }) => {
   // Authentication context (injected from parent)
   const { user: _user, isAuthenticated, isLoading: authLoading } = authContext;
@@ -130,6 +132,7 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
     autoConnect: false, // Disabled to prevent connection loops
     enableRealTime: config.enableRealTime,
     filters: { ...threadFilters, search: searchQuery },
+    getAuthToken, // Pass the authentication token provider
   });
 
   // Real-time updates

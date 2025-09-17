@@ -29,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { webSocketManager, MessagingWebSocketService } from '@shared/services/websocket.service';
+import { useWebSocket } from '@shared/services/websocket.context';
 import { useRealtimeSync } from '@shared/hooks/messaging/useRealtimeSync';
 import { useMemoryManagement } from '@shared/hooks/useMemoryManagement';
 
@@ -138,6 +139,7 @@ const ClientWebSocketIntegration: React.FC<ClientWebSocketIntegrationProps> = ({
   
   const wsServiceRef = useRef<MessagingWebSocketService | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { connectToUser: connectToUserViaProvider, addEventListener: addWebSocketEventListener, connectionState: providerConnectionState } = useWebSocket();
 
   // Memory management optimized for client devices
   const { performCleanup } = useMemoryManagement({
@@ -155,109 +157,32 @@ const ClientWebSocketIntegration: React.FC<ClientWebSocketIntegrationProps> = ({
     autoMarkAsRead: true, // Auto-mark messages as read for clients
   });
 
-  // Initialize WebSocket connection
-  useEffect(() => {
-    if (!user?.token) return;
-
-    const initializeConnection = async () => {
-      try {
-        setConnectionState('connecting');
-
-        // Configure WebSocket manager for client
-        webSocketManager.configure({
-          baseUrl: process.env.NODE_ENV === 'production' ? 'wss://api.lifeplace.app' : 'ws://localhost:8000',
-          enableLogging: false, // Disabled in client production
-          enableMetrics: false, // Disabled for client privacy
-          enableOfflineQueue: true,
-          reconnectAttempts: 3, // Fewer attempts for client
-          heartbeatInterval: 45000, // Less frequent heartbeat
-        });
-
-        // Initialize messaging service
-        wsServiceRef.current = new MessagingWebSocketService();
-        
-        // Validate user token before attempting connection
-        if (!user.token) {
-          throw new Error('User token not available - please refresh your session');
-        }
-        
-        // Validate token format (basic JWT structure check)
-        const tokenParts = user.token.split('.');
-        if (tokenParts.length !== 3) {
-          throw new Error('Invalid token format - please log in again');
-        }
-        
-        // Connect to client messaging endpoint with explicit token
-        console.log('🔧 Connecting client WebSocket with user token');
-        await wsServiceRef.current.connectToUser(user.token);
-        
-        // Subscribe to client events
-        const unsubscribe = wsServiceRef.current.subscribe((event) => {
-          handleWebSocketEvent(event);
-        });
-
-        setConnectionState('connected');
-        onConnectionChange?.(true);
-        
-        if (isReconnecting) {
-          setIsReconnecting(false);
-          setShowReconnectedSnack(true);
-        }
-
-        return () => {
-          unsubscribe();
-          wsServiceRef.current?.disconnect();
-        };
-      } catch (error) {
-        console.error('Client WebSocket connection failed:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
-        
-        // Set appropriate error message for different failure types
-        if (errorMessage.includes('token')) {
-          setErrorMessage('Authentication failed - please refresh your session');
-        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-          setErrorMessage('Network connection failed - check your internet connection');
-        } else if (errorMessage.includes('timeout')) {
-          setErrorMessage('Connection timed out - server may be busy');
-        } else {
-          setErrorMessage(`Connection failed: ${errorMessage}`);
-        }
-        
-        setConnectionState('error');
-        onConnectionChange?.(false);
-        scheduleReconnect();
-      }
-    };
-
-    const cleanup = initializeConnection();
-    return () => {
-      cleanup?.then(fn => fn?.());
-    };
-  }, [user?.token, isReconnecting]);
-
-  // Handle WebSocket events
-  const handleWebSocketEvent = useCallback((event: { type: string; payload: Record<string, unknown> }) => {
-    switch (event.type) {
-      case 'connection_state_changed': {
-        const newState = event.payload.newState as 'disconnected' | 'connecting' | 'connected' | 'error';
-        setConnectionState(newState);
-        onConnectionChange?.(newState === 'connected');
-        
-        if (newState === 'disconnected' || newState === 'error') {
-          setShowOfflineAlert(true);
-          scheduleReconnect();
-        }
-        break;
-      }
-      
-      case 'message_queued':
-        // Show subtle indicator that message is queued
-        if (!isConnected) {
-          setShowOfflineAlert(true);
-        }
-        break;
+  // Enhanced token validation function for client
+  const validateToken = useCallback((token?: string): { isValid: boolean; error?: string } => {
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      return { isValid: false, error: 'Authentication token is missing' };
     }
-  }, [isConnected, onConnectionChange]);
+
+    // Basic JWT format validation (should have 3 parts separated by dots)
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      return { isValid: false, error: 'Invalid authentication format' };
+    }
+
+    try {
+      // Decode the payload to check if token is expired
+      const payload = JSON.parse(atob(tokenParts[1]));
+      const now = Date.now() / 1000;
+
+      if (payload.exp && payload.exp < now) {
+        return { isValid: false, error: 'Your session has expired' };
+      }
+
+      return { isValid: true };
+    } catch (_e) {
+      return { isValid: false, error: 'Authentication data is corrupted' };
+    }
+  }, []);
 
   // Schedule reconnection attempts
   const scheduleReconnect = useCallback(() => {
@@ -270,6 +195,168 @@ const ClientWebSocketIntegration: React.FC<ClientWebSocketIntegrationProps> = ({
       setConnectionState('connecting');
     }, 3000);
   }, []);
+
+  // Handle WebSocket events with enhanced authentication handling
+  const handleWebSocketEvent = useCallback((event: { type: string; payload: Record<string, unknown> }) => {
+    switch (event.type) {
+      case 'connection_state_changed': {
+        const newState = event.payload.newState as 'disconnected' | 'connecting' | 'connected' | 'error';
+        setConnectionState(newState);
+        onConnectionChange?.(newState === 'connected');
+
+        if (newState === 'disconnected' || newState === 'error') {
+          setShowOfflineAlert(true);
+          scheduleReconnect();
+        }
+        break;
+      }
+
+      case 'message_queued':
+        // Show subtle indicator that message is queued
+        if (!isConnected) {
+          setShowOfflineAlert(true);
+        }
+        break;
+
+      case 'auth_error':
+      case 'token_refresh_required':
+        console.warn('🔧 Authentication error from WebSocket:', event.type, event.payload);
+        setErrorMessage('Your session has expired - please refresh the page to continue');
+        setConnectionState('error');
+
+        // Disconnect the current WebSocket to prevent further auth errors
+        if (wsServiceRef.current) {
+          wsServiceRef.current.disconnect();
+        }
+        break;
+
+      case 'connection_failed_permanently':
+        console.error('🔧 WebSocket connection failed permanently:', event.payload);
+        setErrorMessage('Unable to establish connection - please refresh the page');
+        setConnectionState('error');
+        break;
+
+      case 'reconnect_scheduled':
+        console.log('🔧 WebSocket reconnection scheduled:', event.payload);
+        if ((event.payload?.attempt as number) > 1) {
+          setErrorMessage(`Reconnecting... (attempt ${event.payload?.attempt || 1})`);
+        }
+        break;
+    }
+  }, [isConnected, onConnectionChange, scheduleReconnect]);
+
+  // Initialize WebSocket connection with enhanced authentication handling
+  useEffect(() => {
+    // Enhanced authentication checks
+    if (!user) {
+      console.log('🔧 No user available - WebSocket connection skipped');
+      return;
+    }
+
+    if (!user.token) {
+      console.warn('🔧 User has no authentication token - WebSocket connection skipped');
+      setErrorMessage('Please log in to enable real-time messaging');
+      setConnectionState('error');
+      return;
+    }
+
+    // Validate token before attempting connection
+    const tokenValidation = validateToken(user.token);
+    if (!tokenValidation.isValid) {
+      console.warn('🔧 Invalid token detected:', tokenValidation.error);
+      setErrorMessage(tokenValidation.error || 'Authentication failed');
+      setConnectionState('error');
+      return;
+    }
+
+    const initializeConnection = async () => {
+      try {
+        setConnectionState('connecting');
+        setErrorMessage(null); // Clear any previous errors
+
+        // Configure WebSocket manager for client
+        webSocketManager.configure({
+          baseUrl: process.env.NODE_ENV === 'production' ? 'wss://api.lifeplace.app' : 'ws://localhost:8000',
+          enableLogging: false, // Disabled in client production
+          enableMetrics: false, // Disabled for client privacy
+          enableOfflineQueue: true,
+          reconnectAttempts: 3, // Fewer attempts for client
+          heartbeatInterval: 45000, // Less frequent heartbeat
+        });
+
+        // Connect via WebSocketProvider instead of direct service instantiation
+        console.log('🔧 Connecting client WebSocket via WebSocketProvider with validated user token');
+        await connectToUserViaProvider(user.token!);
+
+        // Subscribe to client events via WebSocketProvider
+        const unsubscribe = addWebSocketEventListener((event) => {
+          handleWebSocketEvent(event as unknown as { type: string; payload: Record<string, unknown> });
+        });
+
+        // Keep reference to service for compatibility (from provider's internal service)
+        wsServiceRef.current = null; // No longer managing direct service instance
+
+        setConnectionState('connected');
+        onConnectionChange?.(true);
+
+        if (isReconnecting) {
+          setIsReconnecting(false);
+          setShowReconnectedSnack(true);
+        }
+
+        console.log('🔧 Client WebSocket integration initialized successfully');
+
+        return () => {
+          unsubscribe();
+          // No need to disconnect directly - WebSocketProvider manages this
+        };
+      } catch (error) {
+        console.error('❌ Failed to initialize client WebSocket:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
+
+        // Enhanced error categorization for better user experience
+        let userMessage = 'Connection failed';
+        let isAuthError = false;
+
+        if (errorMessage.includes('Token is required') ||
+            errorMessage.includes('unauthorized') ||
+            errorMessage.includes('authentication') ||
+            errorMessage.includes('invalid token') ||
+            errorMessage.includes('token')) {
+          userMessage = 'Your session has expired. Please refresh the page to continue.';
+          isAuthError = true;
+        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+          userMessage = 'Network connection failed - check your internet connection';
+        } else if (errorMessage.includes('timeout')) {
+          userMessage = 'Connection timed out - please try again';
+        } else if (errorMessage.includes('rate limit')) {
+          userMessage = 'Too many connection attempts - please wait a moment and try again';
+        } else {
+          userMessage = 'Unable to connect to messaging service';
+        }
+
+        setErrorMessage(userMessage);
+        setConnectionState('error');
+        onConnectionChange?.(false);
+
+        // For authentication errors, don't schedule automatic reconnect
+        if (!isAuthError) {
+          scheduleReconnect();
+        } else {
+          console.log('🔧 Authentication error detected - user should refresh session');
+        }
+
+        // Clear wsServiceRef since we're using WebSocketProvider
+        wsServiceRef.current = null;
+      }
+    };
+
+    const cleanup = initializeConnection();
+    return () => {
+      cleanup?.then(fn => fn?.());
+    };
+  }, [user, user?.token, isReconnecting, validateToken, handleWebSocketEvent, onConnectionChange, scheduleReconnect]);
+
 
   // Manual reconnect
   const handleManualReconnect = useCallback(() => {
@@ -289,6 +376,23 @@ const ClientWebSocketIntegration: React.FC<ClientWebSocketIntegrationProps> = ({
       performCleanup();
     };
   }, [performCleanup]);
+
+  // Monitor authentication state changes
+  useEffect(() => {
+    if (!user) {
+      // User logged out - WebSocketProvider will handle disconnection
+      console.log('🔧 User logged out - WebSocketProvider will handle disconnection');
+
+      // Clear the service reference since we're not managing it directly
+      wsServiceRef.current = null;
+
+      // Clear connection state and errors
+      setConnectionState('disconnected');
+      setErrorMessage(null);
+      setShowOfflineAlert(false);
+      onConnectionChange?.(false);
+    }
+  }, [user, onConnectionChange]);
 
   // Network status monitoring
   useEffect(() => {
@@ -416,9 +520,9 @@ const ClientWebSocketIntegration: React.FC<ClientWebSocketIntegrationProps> = ({
             )
           }
         >
-          {navigator.onLine 
-            ? 'Connection lost. Messages will be queued and sent when reconnected.' 
-            : 'You appear to be offline. Please check your internet connection.'}
+          {errorMessage || (navigator.onLine
+            ? 'Connection lost. Messages will be queued and sent when reconnected.'
+            : 'You appear to be offline. Please check your internet connection.')}
         </MinimalAlert>
       </Snackbar>
 

@@ -474,10 +474,10 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
                       isTyping={state.isTyping}
                       enableFileUploads={enableFileUploads}
                       userRole={userRole}
-                      disabled={!isConnected && enableRealTime}
+                      disabled={Boolean(state.error?.message.includes('authentication') || state.error?.message.includes('token'))}
                       placeholder={
-                        !isConnected && enableRealTime 
-                          ? 'Reconnecting...' 
+                        state.error?.message.includes('authentication') || state.error?.message.includes('token')
+                          ? 'Please log in to send messages...'
                           : 'Type your message...'
                       }
                     />
@@ -499,15 +499,19 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
               }}
             >
               <Typography variant="h6" color="text.secondary" gutterBottom>
-                {state.threads.length === 0 
-                  ? 'No conversations yet'
-                  : 'Select a conversation to start messaging'
+                {state.error?.message.includes('authentication') || state.error?.message.includes('token')
+                  ? 'Authentication Required'
+                  : state.threads.length === 0
+                    ? 'No conversations yet'
+                    : 'Select a conversation to start messaging'
                 }
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {state.threads.length === 0
-                  ? 'Your conversations will appear here when you start messaging'
-                  : 'Choose a conversation from the list to view and send messages'
+                {state.error?.message.includes('authentication') || state.error?.message.includes('token')
+                  ? 'Please log in to access your conversations'
+                  : state.threads.length === 0
+                    ? 'Your conversations will appear here when you start messaging'
+                    : 'Choose a conversation from the list to view and send messages'
                 }
               </Typography>
             </Box>
