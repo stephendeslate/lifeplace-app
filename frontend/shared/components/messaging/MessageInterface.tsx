@@ -18,6 +18,7 @@ import {
   Typography,
   IconButton,
   Badge,
+  Button,
   useTheme,
   useMediaQuery,
   Divider,
@@ -33,7 +34,8 @@ import {
   Settings as SettingsIcon,
   Search as SearchIcon,
   Close as CloseIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
+  Add as AddIcon
 } from '@mui/icons-material';
 
 import { ConversationThread } from './ConversationThread';
@@ -84,6 +86,7 @@ export interface MessageInterfaceProps {
   onThreadSelect?: (thread: MessageThread | null) => void;
   onMessageSent?: (message: any) => void;
   onError?: (error: Error) => void;
+  onCreateThread?: () => void;
   
   // Customization
   title?: string;
@@ -109,6 +112,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   onThreadSelect,
   onMessageSent,
   onError,
+  onCreateThread,
   title = 'Messages',
   subtitle,
   primaryColor
@@ -485,6 +489,25 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
                 <SettingsIcon />
               </IconButton>
             </Tooltip>
+
+            {/* New Thread Button */}
+            {userRole === 'ADMIN' && onCreateThread && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={onCreateThread}
+                size="small"
+                sx={{
+                  ml: 1,
+                  textTransform: 'none',
+                  minWidth: 'auto',
+                  px: 2,
+                  fontWeight: 600
+                }}
+              >
+                New Thread
+              </Button>
+            )}
           </Box>
         </Toolbar>
       )}

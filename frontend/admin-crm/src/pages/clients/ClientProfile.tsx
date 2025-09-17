@@ -759,32 +759,6 @@ export const ClientProfile: React.FC = () => {
 
           {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Messages with {client.first_name} {client.last_name}
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setCreateThreadDialogOpen(true)}
-                sx={{
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 3,
-                  py: 1,
-                  background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
-                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.25)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 6px 16px rgba(25, 118, 210, 0.35)',
-                  }
-                }}
-              >
-                New Thread
-              </Button>
-            </Box>
             <MessageInterface
               userRole="ADMIN"
               title={`Messages with ${client.first_name} ${client.last_name}`}
@@ -799,6 +773,7 @@ export const ClientProfile: React.FC = () => {
               onError={(_error) => {
                 // Handle messaging errors
               }}
+              onCreateThread={() => setCreateThreadDialogOpen(true)}
             />
           </TabPanel>
 
