@@ -127,9 +127,21 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
         # Apply proper ordering with NULL handling
         # Always apply proper ordering unless specifically overridden by query params
         if not self.request.query_params.get('ordering'):
-            from django.db.models import F as OrderF
-            queryset = queryset.order_by(
+            from django.db.models import F as OrderF, BooleanField
+
+            # Sort archived threads to the bottom by using a computed field
+            queryset = queryset.annotate(
+                is_not_archived=Case(
+                    When(status='archived', then=Value(False)),
+                    default=Value(True),
+                    output_field=BooleanField()
+                )
+            ).order_by(
+                # First, sort by archive status (non-archived first)
+                OrderF('is_not_archived').desc(),
+                # Then by last message time (for active threads) or archived time (for archived threads)
                 OrderF('last_message_at').desc(nulls_last=True),
+                # Final fallback
                 OrderF('created_at').desc()
             )
         else:

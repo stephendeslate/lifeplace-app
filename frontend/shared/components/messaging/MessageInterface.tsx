@@ -17,7 +17,6 @@ import {
   Toolbar,
   Typography,
   IconButton,
-  Badge,
   Button,
   useTheme,
   useMediaQuery,
@@ -90,6 +89,7 @@ export interface MessageInterfaceProps {
   onThreadSelect?: (thread: MessageThread | null) => void;
   onMessageSent?: (message: any) => void;
   onError?: (error: Error) => void;
+  onSuccess?: (title: string, message?: string) => void;
   onCreateThread?: () => void;
   
   // Customization
@@ -116,6 +116,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   onThreadSelect,
   onMessageSent,
   onError,
+  onSuccess,
   onCreateThread,
   title = 'Messages',
   subtitle,
@@ -146,6 +147,21 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   // Archive/unarchive mutations with optimistic updates
   const archiveThreadMutation = useArchiveThread();
   const unarchiveThreadMutation = useUnarchiveThread();
+
+  // Debug logging for mutations
+  console.log('[MessageInterface] Archive mutation state:', {
+    isPending: archiveThreadMutation.isPending,
+    isError: archiveThreadMutation.isError,
+    error: archiveThreadMutation.error,
+    isSuccess: archiveThreadMutation.isSuccess
+  });
+
+  console.log('[MessageInterface] Unarchive mutation state:', {
+    isPending: unarchiveThreadMutation.isPending,
+    isError: unarchiveThreadMutation.isError,
+    error: unarchiveThreadMutation.error,
+    isSuccess: unarchiveThreadMutation.isSuccess
+  });
 
   // Direct API query for context-aware filtering
   const directThreadsQuery = useDirectThreads(
@@ -265,10 +281,6 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
     }
   }, [actions, state.selectedThreadId, enableDirectAPI, contextFilters, directThreadsQuery]);
 
-  const handleError = useCallback((err: Error) => {
-    setError(err);
-    onError?.(err);
-  }, [onError]);
 
   // Thread action handler for admin actions
   const handleThreadAction = useCallback(async (action: string, threadId: string) => {
@@ -291,44 +303,68 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
       case 'mark_unread':
         // No unread API available - show user feedback
         console.warn('[MessageInterface] mark_unread action not supported - no API available');
-        setError(new Error('Mark as unread functionality is not yet available'));
+        onError?.(new Error('Mark as unread functionality is not yet available'));
         break;
 
       case 'archive':
-        // Archive the thread using optimistic mutation
-        archiveThreadMutation.mutate(threadId, {
-          onSuccess: () => {
-            console.log('[MessageInterface] Successfully archived thread:', threadId);
+        console.log('[MessageInterface] Starting archive mutation for thread:', threadId);
+        console.log('[MessageInterface] Archive mutation available:', !!archiveThreadMutation);
+        console.log('[MessageInterface] Archive mutation mutate function:', typeof archiveThreadMutation.mutate);
 
-            // If this was the selected thread, clear the selection
-            if (state.selectedThreadId === threadId) {
-              actions.selectThread(null);
+        try {
+          // Archive the thread using optimistic mutation
+          archiveThreadMutation.mutate(threadId, {
+            onSuccess: () => {
+              console.log('[MessageInterface] Successfully archived thread:', threadId);
+
+              // If this was the selected thread, clear the selection
+              if (state.selectedThreadId === threadId) {
+                actions.selectThread(null);
+              }
+
+              // Show success feedback
+              console.log('[MessageInterface] Showing success notification for archived thread');
+              onSuccess?.('Thread Archived', 'Thread has been archived successfully');
+            },
+            onError: (error) => {
+              console.error('[MessageInterface] Failed to archive thread:', error);
+              console.error('[MessageInterface] Error details:', JSON.stringify(error, null, 2));
+              onError?.(new Error('Failed to archive thread. Please try again.'));
             }
-
-            // Show success feedback
-            setError(new Error('Thread archived successfully'));
-          },
-          onError: (error) => {
-            console.error('[MessageInterface] Failed to archive thread:', error);
-            setError(new Error('Failed to archive thread. Please try again.'));
-          }
-        });
+          });
+          console.log('[MessageInterface] Archive mutation submitted successfully');
+        } catch (error) {
+          console.error('[MessageInterface] Exception during archive mutation:', error);
+          onError?.(new Error('Failed to initiate archive operation'));
+        }
         break;
 
       case 'unarchive':
-        // Unarchive the thread using optimistic mutation
-        unarchiveThreadMutation.mutate(threadId, {
-          onSuccess: () => {
-            console.log('[MessageInterface] Successfully unarchived thread:', threadId);
+        console.log('[MessageInterface] Starting unarchive mutation for thread:', threadId);
+        console.log('[MessageInterface] Unarchive mutation available:', !!unarchiveThreadMutation);
+        console.log('[MessageInterface] Unarchive mutation mutate function:', typeof unarchiveThreadMutation.mutate);
 
-            // Show success feedback
-            setError(new Error('Thread unarchived successfully'));
-          },
-          onError: (error) => {
-            console.error('[MessageInterface] Failed to unarchive thread:', error);
-            setError(new Error('Failed to unarchive thread. Please try again.'));
-          }
-        });
+        try {
+          // Unarchive the thread using optimistic mutation
+          unarchiveThreadMutation.mutate(threadId, {
+            onSuccess: () => {
+              console.log('[MessageInterface] Successfully unarchived thread:', threadId);
+
+              // Show success feedback
+              console.log('[MessageInterface] Showing success notification for unarchived thread');
+              onSuccess?.('Thread Unarchived', 'Thread has been unarchived successfully');
+            },
+            onError: (error) => {
+              console.error('[MessageInterface] Failed to unarchive thread:', error);
+              console.error('[MessageInterface] Error details:', JSON.stringify(error, null, 2));
+              onError?.(new Error('Failed to unarchive thread. Please try again.'));
+            }
+          });
+          console.log('[MessageInterface] Unarchive mutation submitted successfully');
+        } catch (error) {
+          console.error('[MessageInterface] Exception during unarchive mutation:', error);
+          onError?.(new Error('Failed to initiate unarchive operation'));
+        }
         break;
 
       default:

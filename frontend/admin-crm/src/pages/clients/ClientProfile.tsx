@@ -55,6 +55,7 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
+import { useToastActions } from '../../contexts/ToastContext';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuotesForClient } from '../../hooks/useSales';
@@ -97,6 +98,7 @@ export const ClientProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
+  const { showSuccess, showError } = useToastActions();
   
   // State
   const [tabValue, setTabValue] = useState(0);
@@ -770,8 +772,13 @@ export const ClientProfile: React.FC = () => {
               enableFileUploads={true}
               contextFilters={{ client_id: client.id }}
               enableDirectAPI={true}
-              onError={(_error) => {
-                // Handle messaging errors
+              onError={(error) => {
+                console.error('[ClientProfile] MessageInterface error:', error);
+                showError('Message Error', error.message);
+              }}
+              onSuccess={(title, message) => {
+                console.log('[ClientProfile] MessageInterface success:', title, message);
+                showSuccess(title, message);
               }}
               onCreateThread={() => setCreateThreadDialogOpen(true)}
             />

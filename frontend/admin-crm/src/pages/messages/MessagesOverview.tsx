@@ -323,12 +323,13 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
           actions.selectThread(null);
         }
       },
-      onError: (error: Error & { isAlreadyArchived?: boolean; message: string }) => {
+      onError: (error: any) => {
         console.error('Failed to archive thread:', error);
 
         // Handle "already archived" case as informational message
-        if (error.isAlreadyArchived) {
-          showInfo('Already Archived', error.message);
+        if (error.isAlreadyArchived || (error.originalError && error.isAlreadyArchived)) {
+          const message = error.message || 'Thread was already archived.';
+          showInfo('Already Archived', message);
 
           // If this was the selected thread, clear the selection since it's archived
           if (state.selectedThreadId === threadId) {
@@ -336,7 +337,8 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
           }
         } else {
           // Show actual error for other cases
-          showError('Archive Failed', error.message || 'Failed to archive thread. Please try again.');
+          const message = error.message || 'Failed to archive thread. Please try again.';
+          showError('Archive Failed', message);
         }
       }
     });
@@ -353,15 +355,17 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
         const successMessage = (updatedThread as MessageThread & { _successMessage?: string })._successMessage || 'Thread unarchived successfully.';
         showSuccess('Thread Unarchived', successMessage);
       },
-      onError: (error: Error & { isNotArchived?: boolean; message: string }) => {
+      onError: (error: any) => {
         console.error('Failed to unarchive thread:', error);
 
         // Handle "not archived" case as informational message
-        if (error.isNotArchived) {
-          showInfo('Already Active', error.message);
+        if (error.isNotArchived || (error.originalError && error.isNotArchived)) {
+          const message = error.message || 'Thread was not archived.';
+          showInfo('Already Active', message);
         } else {
           // Show actual error for other cases
-          showError('Unarchive Failed', error.message || 'Failed to unarchive thread. Please try again.');
+          const message = error.message || 'Failed to unarchive thread. Please try again.';
+          showError('Unarchive Failed', message);
         }
       }
     });

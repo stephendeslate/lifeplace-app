@@ -1368,3 +1368,17 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-09-18 09:26:15,615 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
 🔒 SECURITY 2025-09-18 09:26:22,982 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
 🔒 SECURITY 2025-09-18 09:26:31,306 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-18 10:10:40,903 WARNING [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-18 10:10:49,437 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-18 10:17:19,346 WARNING [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-18 10:17:24,304 WARNING [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-18 10:18:21,963 WARNING [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-18 10:20:32,391 ERROR [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-18 10:20:36,296 ERROR [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-18 10:20:59,746 ERROR [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-18 10:23:09,350 INFO [LOGIN_SUCCESS] User sjdeslate@protonmail.com logged in successfully
+🔒 SECURITY 2025-09-18 10:23:32,658 INFO [LOGIN_SUCCESS] WebSocket authentication successful for sjdeslate@protonmail.com
+🔒 SECURITY 2025-09-18 10:23:43,601 INFO [LOGIN_SUCCESS] WebSocket authentication successful for sjdeslate@protonmail.com
+🔒 SECURITY 2025-09-18 10:24:31,523 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-18 10:24:47,486 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-18 10:24:48,846 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
