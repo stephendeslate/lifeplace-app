@@ -56,9 +56,9 @@ import {
   Schedule as ScheduleIcon,
   ContentCopy as ContentCopyIcon,
   Download as DownloadIcon,
-  Add as AddIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
+import { useToastActions } from '../../contexts/ToastContext';
 import { useEvents } from '../../hooks/useEvents';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
@@ -103,6 +103,7 @@ export const EventProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
+  const { showSuccess, showError } = useToastActions();
   
   // State
   const [tabValue, setTabValue] = useState(0);
@@ -1486,8 +1487,13 @@ export const EventProfile: React.FC = () => {
               enableFileUploads={true}
               contextFilters={{ event_id: event.id }}
               enableDirectAPI={true}
-              onError={(_error) => {
-                // Handle messaging errors
+              onError={(error) => {
+                console.error('[EventProfile] MessageInterface error:', error);
+                showError('Message Error', error.message);
+              }}
+              onSuccess={(title, message) => {
+                console.log('[EventProfile] MessageInterface success:', title, message);
+                showSuccess(title, message);
               }}
               onCreateThread={() => setCreateThreadDialogOpen(true)}
             />

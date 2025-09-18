@@ -29,102 +29,191 @@ export const useCacheUtils = () => {
     threadId: string,
     updater: (thread: MessageThread) => MessageThread
   ) => {
-    // Update in individual thread queries
-    queryClient.setQueryData(
-      messagingKeys.thread(threadId),
-      (oldThread: MessageThread | undefined) => {
-        if (!oldThread) return oldThread;
-        return updater(oldThread);
-      }
-    );
+    console.log('[useCacheUtils] Updating thread in cache:', threadId);
 
-    // Update in paginated threads queries
-    queryClient.setQueriesData(
-      { queryKey: messagingKeys.threads() },
-      (oldData: InfiniteData<PaginatedThreadsResponse> | undefined) => {
-        if (!oldData) return oldData;
+    try {
+      // Update in individual thread queries
+      queryClient.setQueryData(
+        messagingKeys.thread(threadId),
+        (oldThread: MessageThread | undefined) => {
+          if (!oldThread) {
+            console.warn('[useCacheUtils] No existing thread data found for:', threadId);
+            return oldThread;
+          }
+          const updated = updater(oldThread);
+          console.log('[useCacheUtils] Updated individual thread:', {
+            threadId,
+            wasArchived: oldThread.is_archived,
+            nowArchived: updated.is_archived
+          });
+          return updated;
+        }
+      );
 
-        return {
-          ...oldData,
-          pages: oldData.pages.map(page => ({
-            ...page,
-            results: page.results.map(thread =>
-              thread.id === threadId ? updater(thread) : thread
-            )
-          }))
-        };
-      }
-    );
+      // Update in paginated threads queries with error handling
+      let updatedQueries = 0;
+      queryClient.setQueriesData(
+        { queryKey: messagingKeys.threads() },
+        (oldData: InfiniteData<PaginatedThreadsResponse> | undefined) => {
+          if (!oldData) return oldData;
 
-    // Update in filtered threads queries
-    queryClient.setQueriesData(
-      { predicate: (query) => query.queryKey[0] === 'messaging' && query.queryKey[1] === 'threads' },
-      (oldData: InfiniteData<PaginatedThreadsResponse> | undefined) => {
-        if (!oldData) return oldData;
+          try {
+            const updated = {
+              ...oldData,
+              pages: oldData.pages.map(page => ({
+                ...page,
+                results: page.results.map(thread =>
+                  thread.id === threadId ? updater(thread) : thread
+                )
+              }))
+            };
+            updatedQueries++;
+            return updated;
+          } catch (error) {
+            console.error('[useCacheUtils] Error updating paginated query:', error);
+            return oldData;
+          }
+        }
+      );
 
-        return {
-          ...oldData,
-          pages: oldData.pages.map(page => ({
-            ...page,
-            results: page.results.map(thread =>
-              thread.id === threadId ? updater(thread) : thread
-            )
-          }))
-        };
-      }
-    );
+      // Update in filtered threads queries with error handling
+      queryClient.setQueriesData(
+        { predicate: (query) => query.queryKey[0] === 'messaging' && query.queryKey[1] === 'threads' },
+        (oldData: InfiniteData<PaginatedThreadsResponse> | undefined) => {
+          if (!oldData) return oldData;
+
+          try {
+            const updated = {
+              ...oldData,
+              pages: oldData.pages.map(page => ({
+                ...page,
+                results: page.results.map(thread =>
+                  thread.id === threadId ? updater(thread) : thread
+                )
+              }))
+            };
+            updatedQueries++;
+            return updated;
+          } catch (error) {
+            console.error('[useCacheUtils] Error updating filtered query:', error);
+            return oldData;
+          }
+        }
+      );
+
+      console.log(`[useCacheUtils] Successfully updated ${updatedQueries} thread list queries`);
+    } catch (error) {
+      console.error('[useCacheUtils] Critical error updating thread in cache:', error);
+      throw error;
+    }
   };
 
   const removeThreadFromCache = (threadId: string, archiveStatus?: 'active' | 'archived') => {
-    // Only remove from cache if the current filter would exclude this thread
-    queryClient.setQueriesData(
-      { predicate: (query) => query.queryKey[0] === 'messaging' && query.queryKey[1] === 'threads' },
-      (oldData: InfiniteData<PaginatedThreadsResponse> | undefined, query: any) => {
-        if (!oldData) return oldData;
+    console.log('[useCacheUtils] Removing thread from cache:', { threadId, archiveStatus });
 
-        // Check if this query has archive_status filter that would exclude the thread
-        const queryKey = query.queryKey as any[];
-        const filters = queryKey[2] as ThreadFilters | undefined;
+    try {
+      let removedFromQueries = 0;
 
-        if (filters?.archive_status === 'active' && archiveStatus === 'archived') {
-          // Remove from active-only views when archived
-          return {
-            ...oldData,
-            pages: oldData.pages.map(page => ({
-              ...page,
-              results: page.results.filter(thread => thread.id !== threadId),
-              count: Math.max(0, page.count - 1)
-            }))
-          };
+      // Only remove from cache if the current filter would exclude this thread
+      queryClient.setQueriesData(
+        { predicate: (query) => query.queryKey[0] === 'messaging' && query.queryKey[1] === 'threads' },
+        (oldData: InfiniteData<PaginatedThreadsResponse> | undefined, query: any) => {
+          if (!oldData) return oldData;
+
+          try {
+            // Check if this query has archive_status filter that would exclude the thread
+            const queryKey = query.queryKey as any[];
+            const filters = queryKey[2] as ThreadFilters | undefined;
+
+            console.log('[useCacheUtils] Checking query filters:', {
+              queryKey: queryKey.slice(0, 3),
+              archiveStatusFilter: filters?.archive_status,
+              threadArchiveStatus: archiveStatus
+            });
+
+            if (filters?.archive_status === 'active' && archiveStatus === 'archived') {
+              // Remove from active-only views when archived
+              console.log('[useCacheUtils] Removing archived thread from active view');
+              removedFromQueries++;
+              return {
+                ...oldData,
+                pages: oldData.pages.map(page => ({
+                  ...page,
+                  results: page.results.filter(thread => thread.id !== threadId),
+                  count: Math.max(0, page.count - 1)
+                }))
+              };
+            }
+
+            if (filters?.archive_status === 'archived' && archiveStatus === 'active') {
+              // Remove from archived-only views when unarchived
+              console.log('[useCacheUtils] Removing unarchived thread from archived view');
+              removedFromQueries++;
+              return {
+                ...oldData,
+                pages: oldData.pages.map(page => ({
+                  ...page,
+                  results: page.results.filter(thread => thread.id !== threadId),
+                  count: Math.max(0, page.count - 1)
+                }))
+              };
+            }
+
+            return oldData;
+          } catch (error) {
+            console.error('[useCacheUtils] Error processing query for thread removal:', error);
+            return oldData;
+          }
         }
+      );
 
-        if (filters?.archive_status === 'archived' && archiveStatus === 'active') {
-          // Remove from archived-only views when unarchived
-          return {
-            ...oldData,
-            pages: oldData.pages.map(page => ({
-              ...page,
-              results: page.results.filter(thread => thread.id !== threadId),
-              count: Math.max(0, page.count - 1)
-            }))
-          };
-        }
-
-        return oldData;
-      }
-    );
+      console.log(`[useCacheUtils] Removed thread from ${removedFromQueries} filtered queries`);
+    } catch (error) {
+      console.error('[useCacheUtils] Critical error removing thread from cache:', error);
+      throw error;
+    }
   };
 
   const invalidateThreadQueries = () => {
-    queryClient.invalidateQueries({
-      queryKey: messagingKeys.threads(),
-    });
+    console.log('[useCacheUtils] Invalidating thread queries');
+    try {
+      queryClient.invalidateQueries({
+        queryKey: messagingKeys.threads(),
+      });
+      console.log('[useCacheUtils] Successfully invalidated thread queries');
+    } catch (error) {
+      console.error('[useCacheUtils] Error invalidating thread queries:', error);
+    }
   };
 
   const invalidateThreadCounts = () => {
-    queryClient.invalidateQueries({
-      queryKey: messagingKeys.threadCounts(),
-    });
+    console.log('[useCacheUtils] Invalidating thread count queries');
+    try {
+      queryClient.invalidateQueries({
+        queryKey: messagingKeys.threadCounts(),
+      });
+      console.log('[useCacheUtils] Successfully invalidated thread count queries');
+    } catch (error) {
+      console.error('[useCacheUtils] Error invalidating thread count queries:', error);
+    }
+  };
+
+  const ensureCacheConsistency = (threadId: string) => {
+    console.log('[useCacheUtils] Ensuring cache consistency for thread:', threadId);
+    try {
+      // Force re-fetch of individual thread to ensure it's in sync
+      queryClient.invalidateQueries({
+        queryKey: messagingKeys.thread(threadId),
+      });
+
+      // Invalidate all thread lists to prevent stale data
+      invalidateThreadQueries();
+      invalidateThreadCounts();
+
+      console.log('[useCacheUtils] Cache consistency check completed');
+    } catch (error) {
+      console.error('[useCacheUtils] Error ensuring cache consistency:', error);
+    }
   };
 
   return {
@@ -132,13 +221,14 @@ export const useCacheUtils = () => {
     removeThreadFromCache,
     invalidateThreadQueries,
     invalidateThreadCounts,
+    ensureCacheConsistency,
   };
 };
 
 // Archive thread mutation with optimistic updates and comprehensive error handling
 export const useArchiveThread = () => {
   const queryClient = useQueryClient();
-  const { updateThreadInCache, removeThreadFromCache, invalidateThreadCounts } = useCacheUtils();
+  const { updateThreadInCache, removeThreadFromCache, invalidateThreadCounts, ensureCacheConsistency } = useCacheUtils();
 
   return useMutation({
     mutationFn: async (threadId: string) => {
@@ -146,49 +236,119 @@ export const useArchiveThread = () => {
       return updatedThread;
     },
     onMutate: async (threadId: string) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: messagingKeys.threads() });
-      await queryClient.cancelQueries({ queryKey: messagingKeys.thread(threadId) });
+      console.log('[useArchiveThread] Starting archive mutation for thread:', threadId);
 
-      // Snapshot the previous value for rollback
-      const previousThread = queryClient.getQueryData(messagingKeys.thread(threadId)) as MessageThread | undefined;
-      const previousThreads = queryClient.getQueriesData({ queryKey: messagingKeys.threads() });
+      try {
+        // Cancel any outgoing refetches to prevent race conditions
+        console.log('[useArchiveThread] Cancelling ongoing queries');
+        await queryClient.cancelQueries({ queryKey: messagingKeys.threads() });
+        await queryClient.cancelQueries({ queryKey: messagingKeys.thread(threadId) });
 
-      // Check if thread is already archived
-      const wasAlreadyArchived = previousThread?.is_archived || false;
+        // Comprehensive snapshot of the previous state for rollback
+        const previousThread = queryClient.getQueryData(messagingKeys.thread(threadId)) as MessageThread | undefined;
+        const previousThreads = queryClient.getQueriesData({ queryKey: messagingKeys.threads() });
+        const previousThreadCounts = queryClient.getQueryData(messagingKeys.threadCounts());
 
-      // Only apply optimistic updates if not already archived
-      if (!wasAlreadyArchived) {
-        // Optimistically update the thread status
-        updateThreadInCache(threadId, (thread) => ({
-          ...thread,
-          is_archived: true,
-          archived_at: new Date().toISOString(),
-          status: 'archived' as const,
-        }));
+        console.log('[useArchiveThread] Captured rollback context:', {
+          threadId,
+          hadPreviousThread: !!previousThread,
+          previousArchiveStatus: previousThread?.is_archived,
+          capturedQueriesCount: previousThreads.length
+        });
 
-        // Remove from active filters
-        removeThreadFromCache(threadId, 'archived');
+        // Check if thread is already archived
+        const wasAlreadyArchived = previousThread?.is_archived || false;
+
+        // Only apply optimistic updates if not already archived
+        if (!wasAlreadyArchived) {
+          console.log('[useArchiveThread] Applying optimistic updates');
+          // Optimistically update the thread status
+          updateThreadInCache(threadId, (thread) => ({
+            ...thread,
+            is_archived: true,
+            archived_at: new Date().toISOString(),
+            status: 'archived' as const,
+          }));
+
+          // Remove from active filters
+          removeThreadFromCache(threadId, 'archived');
+        } else {
+          console.log('[useArchiveThread] Thread already archived, skipping optimistic updates');
+        }
+
+        return {
+          previousThread,
+          previousThreads,
+          previousThreadCounts,
+          wasAlreadyArchived
+        };
+      } catch (error) {
+        console.error('[useArchiveThread] Error during onMutate:', error);
+        throw error;
       }
-
-      return { previousThread, previousThreads, wasAlreadyArchived };
     },
     onError: (err: ApiError, threadId, context) => {
+      console.error('[useArchiveThread] Archive operation failed:', {
+        threadId,
+        error: err,
+        context: context ? {
+          hadPreviousThread: !!context.previousThread,
+          hadPreviousThreads: !!context.previousThreads,
+          wasAlreadyArchived: context.wasAlreadyArchived
+        } : null
+      });
+
       // Handle "already archived" case as success
       if (isAlreadyArchivedError(err)) {
+        console.log('[useArchiveThread] Thread already archived, treating as success');
         // Don't rollback in this case, treat as success
         // The thread should remain in archived state
         return;
       }
 
-      // For all other errors, rollback optimistic updates
-      if (context?.previousThread) {
-        queryClient.setQueryData(messagingKeys.thread(threadId), context.previousThread);
-      }
-      if (context?.previousThreads) {
-        context.previousThreads.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
+      // For all other errors, perform comprehensive rollback
+      console.log('[useArchiveThread] Performing rollback for failed archive operation');
+
+      try {
+        // Cancel any ongoing queries to prevent race conditions
+        queryClient.cancelQueries({ queryKey: messagingKeys.threads() });
+        queryClient.cancelQueries({ queryKey: messagingKeys.thread(threadId) });
+
+        // Restore individual thread data
+        if (context?.previousThread) {
+          console.log('[useArchiveThread] Restoring previous thread data');
+          queryClient.setQueryData(messagingKeys.thread(threadId), context.previousThread);
+        }
+
+        // Restore all affected thread list queries
+        if (context?.previousThreads && context.previousThreads.length > 0) {
+          console.log(`[useArchiveThread] Restoring ${context.previousThreads.length} thread list queries`);
+          context.previousThreads.forEach(([queryKey, data]) => {
+            try {
+              queryClient.setQueryData(queryKey, data);
+            } catch (restoreError) {
+              console.error('[useArchiveThread] Failed to restore query data:', {
+                queryKey,
+                error: restoreError
+              });
+            }
+          });
+        }
+
+        // Force invalidation to ensure consistency
+        console.log('[useArchiveThread] Ensuring cache consistency after rollback');
+        ensureCacheConsistency(threadId);
+
+      } catch (rollbackError) {
+        console.error('[useArchiveThread] Critical error during rollback:', rollbackError);
+        // Force a complete refetch if rollback fails
+        try {
+          ensureCacheConsistency(threadId);
+        } catch (consistencyError) {
+          console.error('[useArchiveThread] Failed to ensure consistency after rollback error:', consistencyError);
+          // Last resort: invalidate everything
+          queryClient.clear();
+        }
       }
 
       // Re-throw enhanced error for component handling
@@ -215,7 +375,7 @@ export const useArchiveThread = () => {
 // Unarchive thread mutation with optimistic updates and comprehensive error handling
 export const useUnarchiveThread = () => {
   const queryClient = useQueryClient();
-  const { updateThreadInCache, removeThreadFromCache, invalidateThreadCounts } = useCacheUtils();
+  const { updateThreadInCache, removeThreadFromCache, invalidateThreadCounts, ensureCacheConsistency } = useCacheUtils();
 
   return useMutation({
     mutationFn: async (threadId: string) => {
@@ -223,50 +383,120 @@ export const useUnarchiveThread = () => {
       return updatedThread;
     },
     onMutate: async (threadId: string) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: messagingKeys.threads() });
-      await queryClient.cancelQueries({ queryKey: messagingKeys.thread(threadId) });
+      console.log('[useUnarchiveThread] Starting unarchive mutation for thread:', threadId);
 
-      // Snapshot the previous value for rollback
-      const previousThread = queryClient.getQueryData(messagingKeys.thread(threadId)) as MessageThread | undefined;
-      const previousThreads = queryClient.getQueriesData({ queryKey: messagingKeys.threads() });
+      try {
+        // Cancel any outgoing refetches to prevent race conditions
+        console.log('[useUnarchiveThread] Cancelling ongoing queries');
+        await queryClient.cancelQueries({ queryKey: messagingKeys.threads() });
+        await queryClient.cancelQueries({ queryKey: messagingKeys.thread(threadId) });
 
-      // Check if thread is already unarchived
-      const wasAlreadyUnarchived = !previousThread?.is_archived;
+        // Comprehensive snapshot of the previous state for rollback
+        const previousThread = queryClient.getQueryData(messagingKeys.thread(threadId)) as MessageThread | undefined;
+        const previousThreads = queryClient.getQueriesData({ queryKey: messagingKeys.threads() });
+        const previousThreadCounts = queryClient.getQueryData(messagingKeys.threadCounts());
 
-      // Only apply optimistic updates if currently archived
-      if (!wasAlreadyUnarchived) {
-        // Optimistically update the thread status
-        updateThreadInCache(threadId, (thread) => ({
-          ...thread,
-          is_archived: false,
-          archived_at: undefined,
-          archived_by: undefined,
-          status: thread.status === 'archived' ? 'active' : thread.status,
-        }));
+        console.log('[useUnarchiveThread] Captured rollback context:', {
+          threadId,
+          hadPreviousThread: !!previousThread,
+          previousArchiveStatus: previousThread?.is_archived,
+          capturedQueriesCount: previousThreads.length
+        });
 
-        // Remove from archived filters
-        removeThreadFromCache(threadId, 'active');
+        // Check if thread is already unarchived
+        const wasAlreadyUnarchived = !previousThread?.is_archived;
+
+        // Only apply optimistic updates if currently archived
+        if (!wasAlreadyUnarchived) {
+          console.log('[useUnarchiveThread] Applying optimistic updates');
+          // Optimistically update the thread status
+          updateThreadInCache(threadId, (thread) => ({
+            ...thread,
+            is_archived: false,
+            archived_at: undefined,
+            archived_by: undefined,
+            status: thread.status === 'archived' ? 'active' : thread.status,
+          }));
+
+          // Remove from archived filters
+          removeThreadFromCache(threadId, 'active');
+        } else {
+          console.log('[useUnarchiveThread] Thread already unarchived, skipping optimistic updates');
+        }
+
+        return {
+          previousThread,
+          previousThreads,
+          previousThreadCounts,
+          wasAlreadyUnarchived
+        };
+      } catch (error) {
+        console.error('[useUnarchiveThread] Error during onMutate:', error);
+        throw error;
       }
-
-      return { previousThread, previousThreads, wasAlreadyUnarchived };
     },
     onError: (err: ApiError, threadId, context) => {
+      console.error('[useUnarchiveThread] Unarchive operation failed:', {
+        threadId,
+        error: err,
+        context: context ? {
+          hadPreviousThread: !!context.previousThread,
+          hadPreviousThreads: !!context.previousThreads,
+          wasAlreadyUnarchived: context.wasAlreadyUnarchived
+        } : null
+      });
+
       // Handle "not archived" case as success
       if (isNotArchivedError(err)) {
+        console.log('[useUnarchiveThread] Thread not archived, treating as success');
         // Don't rollback in this case, treat as success
         // The thread should remain in unarchived state
         return;
       }
 
-      // For all other errors, rollback optimistic updates
-      if (context?.previousThread) {
-        queryClient.setQueryData(messagingKeys.thread(threadId), context.previousThread);
-      }
-      if (context?.previousThreads) {
-        context.previousThreads.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
+      // For all other errors, perform comprehensive rollback
+      console.log('[useUnarchiveThread] Performing rollback for failed unarchive operation');
+
+      try {
+        // Cancel any ongoing queries to prevent race conditions
+        queryClient.cancelQueries({ queryKey: messagingKeys.threads() });
+        queryClient.cancelQueries({ queryKey: messagingKeys.thread(threadId) });
+
+        // Restore individual thread data
+        if (context?.previousThread) {
+          console.log('[useUnarchiveThread] Restoring previous thread data');
+          queryClient.setQueryData(messagingKeys.thread(threadId), context.previousThread);
+        }
+
+        // Restore all affected thread list queries
+        if (context?.previousThreads && context.previousThreads.length > 0) {
+          console.log(`[useUnarchiveThread] Restoring ${context.previousThreads.length} thread list queries`);
+          context.previousThreads.forEach(([queryKey, data]) => {
+            try {
+              queryClient.setQueryData(queryKey, data);
+            } catch (restoreError) {
+              console.error('[useUnarchiveThread] Failed to restore query data:', {
+                queryKey,
+                error: restoreError
+              });
+            }
+          });
+        }
+
+        // Force invalidation to ensure consistency
+        console.log('[useUnarchiveThread] Ensuring cache consistency after rollback');
+        ensureCacheConsistency(threadId);
+
+      } catch (rollbackError) {
+        console.error('[useUnarchiveThread] Critical error during rollback:', rollbackError);
+        // Force a complete refetch if rollback fails
+        try {
+          ensureCacheConsistency(threadId);
+        } catch (consistencyError) {
+          console.error('[useUnarchiveThread] Failed to ensure consistency after rollback error:', consistencyError);
+          // Last resort: invalidate everything
+          queryClient.clear();
+        }
       }
 
       // Re-throw enhanced error for component handling

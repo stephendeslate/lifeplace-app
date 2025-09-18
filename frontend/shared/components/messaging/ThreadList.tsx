@@ -604,9 +604,15 @@ export const ThreadList: React.FC<ThreadListProps> = ({
           </MenuItem>
         )}
         <Divider />
-        <MenuItem onClick={() => handleThreadAction('archive')}>
-          Archive thread
-        </MenuItem>
+        {selectedThread?.status === 'archived' ? (
+          <MenuItem onClick={() => handleThreadAction('unarchive')}>
+            Remove from archive
+          </MenuItem>
+        ) : (
+          <MenuItem onClick={() => handleThreadAction('archive')}>
+            Archive thread
+          </MenuItem>
+        )}
       </Menu>
     </ThreadListContainer>
   );
