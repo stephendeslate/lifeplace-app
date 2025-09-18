@@ -843,6 +843,19 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
                 threadId={state.selectedThreadId}
                 showContext={!layoutConfig.showContext}
                 enableInternalNotes={config.enableInternalNotes}
+                currentThread={state.threads.find(t => t.id === state.selectedThreadId)}
+                messages={state.messages}
+                isConnected={state.isConnected}
+                isLoadingMessages={state.isLoadingMessages}
+                hasMoreMessages={state.hasMoreMessages}
+                typingUsers={state.typingUsers}
+                config={config}
+                isTyping={state.isTyping}
+                onSendMessage={actions.sendMessage}
+                onMarkAsRead={actions.markAsRead}
+                onLoadMoreMessages={actions.loadMoreMessages}
+                onStartTyping={actions.startTyping}
+                onStopTyping={actions.stopTyping}
               />
             ) : (
               <Box

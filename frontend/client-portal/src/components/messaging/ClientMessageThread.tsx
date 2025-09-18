@@ -35,17 +35,11 @@ import {
   DoneAll as DoneAllIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import { useMessagingContext } from '@shared';
 import { ClientMessageComposer } from './ClientMessageComposer';
+import { useAuth } from '../../contexts/AuthContext';
+import { useMessagingContext } from '@shared';
 import type { Message } from '@shared/types/messaging.types';
-
-export interface ClientMessageThreadProps {
-  threadId: string;
-  simplified?: boolean;
-  showBackButton?: boolean;
-  onBack?: () => void;
-  className?: string;
-}
+import type { ClientMessageThreadProps } from './ClientMessageThread.types';
 
 export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
   threadId,
@@ -56,31 +50,44 @@ export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
-  // Messaging context
+  const { user } = useAuth();
+
+  // Get messaging state and actions from context
   const { state, actions, config } = useMessagingContext();
-  
+
+  // Destructure what we need from messaging state
+  const {
+    messages,
+    selectedThread: currentThread,
+    isConnected,
+    isLoadingMessages,
+    hasMoreMessages,
+    typingUsers,
+  } = state;
+
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-
-  // Get current thread
-  const currentThread = state.threads.find(t => t.id === threadId);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [state.messages]);
+  }, [messages]);
+
+  // Extract stable action reference to prevent effect recreation
+  const markAsReadAction = actions.markAsRead;
 
   // Mark messages as read when they come into view
   useEffect(() => {
-    const unreadMessages = state.messages.filter(msg => !(msg.read_by || []).includes(1)); // Current user ID
+    if (!user?.id) return;
+
+    const unreadMessages = messages.filter(msg => !(msg.read_by || []).includes(user.id));
     unreadMessages.forEach(msg => {
-      actions.markAsRead(msg.id);
+      markAsReadAction(msg.id);
     });
-  }, [state.messages, actions]);
+  }, [messages, markAsReadAction, user?.id]);
 
   if (!currentThread) {
     return (
@@ -156,8 +163,8 @@ export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
             }
             sx={{ textTransform: 'capitalize' }}
           />
-          
-          {state.isConnected ? (
+
+          {isConnected ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Box
                 sx={{
@@ -180,7 +187,7 @@ export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
       </Paper>
 
       {/* Connection Status */}
-      {!state.isConnected && (
+      {!isConnected && (
         <Alert severity="warning" sx={{ m: 1 }}>
           Connection lost. Your messages will be sent when connection is restored.
         </Alert>
@@ -196,20 +203,20 @@ export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
           bgcolor: '#f8f9fa',
         }}
       >
-        {state.isLoadingMessages && (
+        {isLoadingMessages && (
           <LinearProgress sx={{ mb: 2 }} />
         )}
 
         <ClientMessageList
-          messages={state.messages}
-          currentUserId={1} // This should come from auth context
+          messages={messages}
+          currentUserId={user?.id || 0}
           onLoadMore={actions.loadMoreMessages}
-          hasMore={state.hasMoreMessages}
+          hasMore={hasMoreMessages}
         />
 
         {/* Typing Indicators */}
-        {state.typingUsers.length > 0 && (
-          <TypingIndicator users={state.typingUsers} />
+        {typingUsers.length > 0 && (
+          <TypingIndicator users={typingUsers} />
         )}
 
         <div ref={messagesEndRef} />
