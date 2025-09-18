@@ -618,8 +618,52 @@ class MessageViewSet(viewsets.ModelViewSet):
         
         # Broadcast bulk read
         MessagingService.broadcast_thread_read(thread, request.user)
-        
+
         return Response({'marked_read': unread_messages.count()})
+
+    @action(detail=False, methods=['post'])
+    def mark_thread_unread(self, request):
+        """Mark all messages in thread as unread by removing read receipts"""
+        thread_id = request.data.get('thread_id')
+        if not thread_id:
+            return Response(
+                {'error': 'thread_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            thread = MessageThread.objects.get(id=thread_id)
+
+            # Check access
+            if request.user.role == 'CLIENT' and thread.client != request.user:
+                return Response(
+                    {'error': 'Permission denied'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except MessageThread.DoesNotExist:
+            return Response(
+                {'error': 'Thread not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Get messages that are currently read by this user
+        read_messages = thread.messages.filter(read_receipts__user=request.user)
+        if request.user.role == 'CLIENT':
+            read_messages = read_messages.filter(is_internal_note=False)
+
+        # Remove read receipts to mark as unread
+        with transaction.atomic():
+            receipts_to_delete = MessageReadReceipt.objects.filter(
+                message__in=read_messages,
+                user=request.user
+            )
+            deleted_count = receipts_to_delete.count()
+            receipts_to_delete.delete()
+
+        # Broadcast bulk unread (if we need this feature in the future)
+        # MessagingService.broadcast_thread_unread(thread, request.user)
+
+        return Response({'marked_unread': deleted_count})
 
 
 class MessageAttachmentViewSet(viewsets.ReadOnlyModelViewSet):

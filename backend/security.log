@@ -1382,3 +1382,9 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-09-18 10:24:31,523 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
 🔒 SECURITY 2025-09-18 10:24:47,486 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
 🔒 SECURITY 2025-09-18 10:24:48,846 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-18 10:46:36,980 ERROR [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-18 10:46:40,811 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-18 10:50:11,062 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-18 10:50:17,939 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-18 10:50:38,932 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-18 10:50:44,663 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com

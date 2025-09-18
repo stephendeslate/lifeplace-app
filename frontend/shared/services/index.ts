@@ -54,6 +54,7 @@ export {
   useDeleteMessage,
   useMarkMessageRead,
   useMarkThreadRead,
+  useMarkThreadUnread,
   useUploadFile,
   useAdminAction,
   
