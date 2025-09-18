@@ -183,7 +183,11 @@ export const ClientConversation: React.FC<ClientConversationProps> = ({
       {/* Connection Status */}
       {!isConnected && (
         <Alert severity="warning" sx={{ m: 1 }}>
-          Connection lost. Your messages will be sent when connection is restored.
+          {state.error?.message?.includes('rate limit') ? (
+            <>Connection temporarily limited. Please wait a moment - the system will reconnect automatically.</>
+          ) : (
+            <>Connection lost. Your messages will be sent when connection is restored.</>
+          )}
         </Alert>
       )}
 

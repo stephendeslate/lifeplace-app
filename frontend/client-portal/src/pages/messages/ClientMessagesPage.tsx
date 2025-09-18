@@ -101,13 +101,32 @@ export const ClientMessagesPage: React.FC<ClientMessagesPageProps> = ({
     );
   }
 
-  // Error state
+  // Error state with rate limiting handling
   if (state.error) {
+    const isRateLimited = state.error.message?.includes('rate limited') ||
+                         state.error.message?.includes('rate limit') ||
+                         state.error.message?.includes('too many requests');
+
     return (
       <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {state.error.message}
+        <Alert
+          severity={isRateLimited ? "warning" : "error"}
+          sx={{ mb: 2 }}
+        >
+          {isRateLimited ? (
+            <>
+              <strong>Connection temporarily limited</strong><br />
+              Please wait a moment and refresh the page. The messaging system will reconnect automatically.
+            </>
+          ) : (
+            state.error.message
+          )}
         </Alert>
+        {!isRateLimited && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            You can still view your message history. Real-time messaging will resume when the connection is restored.
+          </Typography>
+        )}
       </Container>
     );
   }
