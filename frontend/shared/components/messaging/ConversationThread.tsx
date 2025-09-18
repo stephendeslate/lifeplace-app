@@ -28,7 +28,7 @@ import {
   Person as PersonIcon,
   ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
-import { formatDistanceToNow } from 'date-fns';
+import { formatSmartTimestamp } from '../../utils';
 
 import { VirtualMessageList, type VirtualMessageListRef } from './performance/VirtualMessageList';
 import { ReadReceipts } from './realtime/ReadReceipts';
@@ -157,11 +157,7 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
 
   // Format message timestamp
   const formatMessageTime = useCallback((timestamp: string) => {
-    try {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-    } catch {
-      return 'Recently';
-    }
+    return formatSmartTimestamp(timestamp);
   }, []);
 
   // Handle load more messages
