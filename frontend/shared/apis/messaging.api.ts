@@ -157,18 +157,28 @@ export const messagingApi = {
       return response.data.results || response.data;
     },
 
-    getAnalytics: async (filters?: { 
-      start_date?: string; 
-      end_date?: string; 
-      admin_id?: number 
+    getAnalytics: async (filters?: {
+      start_date?: string;
+      end_date?: string;
+      admin_id?: number
     }) => {
       const params = new URLSearchParams();
-      
+
       if (filters?.start_date) params.append('start_date', filters.start_date);
       if (filters?.end_date) params.append('end_date', filters.end_date);
       if (filters?.admin_id) params.append('admin_id', filters.admin_id.toString());
-      
+
       const response = await apiClient.get(`/messaging/analytics/?${params}`);
+      return response.data;
+    },
+
+    archiveThread: async (threadId: string): Promise<MessageThread> => {
+      const response = await apiClient.post(`/messaging/threads/${threadId}/archive/`);
+      return response.data;
+    },
+
+    unarchiveThread: async (threadId: string): Promise<MessageThread> => {
+      const response = await apiClient.post(`/messaging/threads/${threadId}/unarchive/`);
       return response.data;
     },
   },

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archive Workflow Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .response { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Archive Thread Functionality Test</h1>
+    <p>This page tests the complete frontend-to-backend archive workflow.</p>
+
+    <div id="status" class="info">Ready to test...</div>
+
+    <div>
+        <h3>Configuration</h3>
+        <label>API Base URL: <input id="apiUrl" value="http://localhost:8000/api" style="width: 300px;"></label><br><br>
+        <label>JWT Token: <input id="jwtToken" placeholder="Paste your JWT token here" style="width: 500px;"></label><br><br>
+    </div>
+
+    <div>
+        <h3>Test Steps</h3>
+        <button onclick="testAuthentication()">1. Test Authentication</button>
+        <button onclick="getThreadsList()">2. Get Threads List</button>
+        <button onclick="selectTestThread()">3. Select Test Thread</button>
+        <button onclick="archiveThread()">4. Archive Thread</button>
+        <button onclick="verifyArchive()">5. Verify Archive</button>
+        <button onclick="unarchiveThread()">6. Unarchive Thread</button>
+        <button onclick="verifyUnarchive()">7. Verify Unarchive</button>
+        <button onclick="runFullTest()">Run Full Test</button>
+    </div>
+
+    <div>
+        <h3>Results</h3>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let selectedThreadId = null;
+        let testThread = null;
+
+        function log(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+
+            const statusClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            statusEl.className = `status ${statusClass}`;
+            statusEl.textContent = message;
+
+            const logEntry = document.createElement('div');
+            logEntry.className = `status ${statusClass}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            resultsEl.appendChild(logEntry);
+        }
+
+        function logResponse(response, type = 'info') {
+            const resultsEl = document.getElementById('results');
+            const responseEl = document.createElement('div');
+            responseEl.className = 'response';
+            responseEl.textContent = JSON.stringify(response, null, 2);
+            resultsEl.appendChild(responseEl);
+        }
+
+        async function makeRequest(url, options = {}) {
+            const token = document.getElementById('jwtToken').value;
+            const baseUrl = document.getElementById('apiUrl').value;
+
+            if (!token) {
+                throw new Error('JWT token is required');
+            }
+
+            const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            };
+
+            const response = await fetch(fullUrl, { ...defaultOptions, ...options });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return await response.json();
+            } else {
+                return await response.text();
+            }
+        }
+
+        async function testAuthentication() {
+            try {
+                log('Testing authentication...', 'info');
+                const response = await makeRequest('/auth/user/');
+                log('Authentication successful!', 'success');
+                logResponse(response);
+                return true;
+            } catch (error) {
+                log(`Authentication failed: ${error.message}`, 'error');
+                logResponse(error, 'error');
+                return false;
+            }
+        }
+
+        async function getThreadsList() {
+            try {
+                log('Fetching threads list...', 'info');
+                const response = await makeRequest('/messaging/threads/');
+                log(`Found ${response.count || 0} threads`, 'success');
+                logResponse(response);
+
+                if (response.results && response.results.length > 0) {
+                    // Find an active thread for testing
+                    testThread = response.results.find(t => t.status === 'active');
+                    if (testThread) {
+                        selectedThreadId = testThread.id;
+                        log(`Selected thread: ${testThread.id} (${testThread.status})`, 'info');
+                    } else {
+                        log('No active threads found for testing', 'warning');
+                    }
+                }
+                return response;
+            } catch (error) {
+                log(`Failed to fetch threads: ${error.message}`, 'error');
+                logResponse(error, 'error');
+                throw error;
+            }
+        }
+
+        async function selectTestThread() {
+            if (!testThread) {
+                log('No test thread available. Run "Get Threads List" first.', 'warning');
+                return;
+            }
+
+            try {
+                log(`Getting details for thread: ${selectedThreadId}`, 'info');
+                const response = await makeRequest(`/messaging/threads/${selectedThreadId}/`);
+                log('Thread details retrieved successfully', 'success');
+                logResponse(response);
+
+                log(`Thread status: ${response.status}, archived: ${response.archived_at ? 'Yes' : 'No'}`, 'info');
+                return response;
+            } catch (error) {
+                log(`Failed to get thread details: ${error.message}`, 'error');
+                logResponse(error, 'error');
+                throw error;
+            }
+        }
+
+        async function archiveThread() {
+            if (!selectedThreadId) {
+                log('No thread selected. Run "Select Test Thread" first.', 'warning');
+                return;
+            }
+
+            try {
+                log(`Archiving thread: ${selectedThreadId}`, 'info');
+                const response = await makeRequest(`/messaging/threads/${selectedThreadId}/archive/`, {
+                    method: 'POST'
+                });
+                log('Thread archived successfully!', 'success');
+                logResponse(response);
+
+                // Update test thread status
+                if (response.status === 'archived') {
+                    log('✓ Thread status is now "archived"', 'success');
+                } else {
+                    log(`⚠ Expected status "archived", got "${response.status}"`, 'warning');
+                }
+
+                if (response.archived_at) {
+                    log(`✓ Archived timestamp: ${response.archived_at}`, 'success');
+                } else {
+                    log('⚠ No archived_at timestamp found', 'warning');
+                }
+
+                if (response.archived_by) {
+                    log(`✓ Archived by: ${response.archived_by}`, 'success');
+                } else {
+                    log('⚠ No archived_by information found', 'warning');
+                }
+
+                return response;
+            } catch (error) {
+                log(`Failed to archive thread: ${error.message}`, 'error');
+                logResponse(error, 'error');
+                throw error;
+            }
+        }
+
+        async function verifyArchive() {
+            if (!selectedThreadId) {
+                log('No thread selected', 'warning');
+                return;
+            }
+
+            try {
+                log('Verifying archive operation...', 'info');
+                const response = await makeRequest(`/messaging/threads/${selectedThreadId}/`);
+
+                if (response.status === 'archived') {
+                    log('✓ Archive verification successful - thread is archived', 'success');
+                } else {
+                    log(`✗ Archive verification failed - status is "${response.status}"`, 'error');
+                }
+
+                logResponse(response);
+                return response;
+            } catch (error) {
+                log(`Archive verification failed: ${error.message}`, 'error');
+                logResponse(error, 'error');
+                throw error;
+            }
+        }
+
+        async function unarchiveThread() {
+            if (!selectedThreadId) {
+                log('No thread selected', 'warning');
+                return;
+            }
+
+            try {
+                log(`Unarchiving thread: ${selectedThreadId}`, 'info');
+                const response = await makeRequest(`/messaging/threads/${selectedThreadId}/unarchive/`, {
+                    method: 'POST'
+                });
+                log('Thread unarchived successfully!', 'success');
+                logResponse(response);
+
+                if (response.status === 'active') {
+                    log('✓ Thread status is now "active"', 'success');
+                } else {
+                    log(`⚠ Expected status "active", got "${response.status}"`, 'warning');
+                }
+
+                if (!response.archived_at) {
+                    log('✓ archived_at field cleared', 'success');
+                } else {
+                    log('⚠ archived_at field not cleared', 'warning');
+                }
+
+                if (!response.archived_by) {
+                    log('✓ archived_by field cleared', 'success');
+                } else {
+                    log('⚠ archived_by field not cleared', 'warning');
+                }
+
+                return response;
+            } catch (error) {
+                log(`Failed to unarchive thread: ${error.message}`, 'error');
+                logResponse(error, 'error');
+                throw error;
+            }
+        }
+
+        async function verifyUnarchive() {
+            if (!selectedThreadId) {
+                log('No thread selected', 'warning');
+                return;
+            }
+
+            try {
+                log('Verifying unarchive operation...', 'info');
+                const response = await makeRequest(`/messaging/threads/${selectedThreadId}/`);
+
+                if (response.status === 'active' && !response.archived_at) {
+                    log('✓ Unarchive verification successful - thread is active and unarchived', 'success');
+                } else {
+                    log(`✗ Unarchive verification failed - status: "${response.status}", archived_at: ${response.archived_at}`, 'error');
+                }
+
+                logResponse(response);
+                return response;
+            } catch (error) {
+                log(`Unarchive verification failed: ${error.message}`, 'error');
+                logResponse(error, 'error');
+                throw error;
+            }
+        }
+
+        async function runFullTest() {
+            log('Starting full archive workflow test...', 'info');
+            document.getElementById('results').innerHTML = '';
+
+            try {
+                // Step 1: Authentication
+                const authResult = await testAuthentication();
+                if (!authResult) {
+                    log('Authentication failed - stopping test', 'error');
+                    return;
+                }
+
+                // Step 2: Get threads
+                await getThreadsList();
+                if (!selectedThreadId) {
+                    log('No active thread found for testing - stopping test', 'error');
+                    return;
+                }
+
+                // Step 3: Select thread
+                await selectTestThread();
+
+                // Step 4: Archive
+                await archiveThread();
+
+                // Step 5: Verify archive
+                await verifyArchive();
+
+                // Step 6: Unarchive
+                await unarchiveThread();
+
+                // Step 7: Verify unarchive
+                await verifyUnarchive();
+
+                log('🎉 Full archive workflow test completed successfully!', 'success');
+
+            } catch (error) {
+                log(`Full test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Helper to get JWT token from localStorage (if available)
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('access_token') || localStorage.getItem('token');
+            if (token) {
+                document.getElementById('jwtToken').value = token;
+                log('JWT token found in localStorage', 'info');
+            } else {
+                log('No JWT token found in localStorage. Please paste your token manually.', 'warning');
+            }
+        });
+    </script>
+</body>
+</html>

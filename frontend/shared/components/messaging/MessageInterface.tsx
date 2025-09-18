@@ -55,6 +55,10 @@ import {
 import {
   useDirectThreads
 } from '../../hooks/messaging/useDirectThreads';
+import {
+  useArchiveThread,
+  useUnarchiveThread
+} from '../../hooks/messaging/useMessagingMutations';
 import type {
   MessageThread,
   ThreadFilters
@@ -138,6 +142,10 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
       setError(new Error('Failed to mark thread as read'));
     }
   });
+
+  // Archive/unarchive mutations with optimistic updates
+  const archiveThreadMutation = useArchiveThread();
+  const unarchiveThreadMutation = useUnarchiveThread();
 
   // Direct API query for context-aware filtering
   const directThreadsQuery = useDirectThreads(
@@ -263,7 +271,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   }, [onError]);
 
   // Thread action handler for admin actions
-  const handleThreadAction = useCallback((action: string, threadId: string) => {
+  const handleThreadAction = useCallback(async (action: string, threadId: string) => {
     console.log('[MessageInterface] handleThreadAction called with:', { action, threadId });
 
     switch (action) {
@@ -286,12 +294,49 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
         setError(new Error('Mark as unread functionality is not yet available'));
         break;
 
+      case 'archive':
+        // Archive the thread using optimistic mutation
+        archiveThreadMutation.mutate(threadId, {
+          onSuccess: () => {
+            console.log('[MessageInterface] Successfully archived thread:', threadId);
+
+            // If this was the selected thread, clear the selection
+            if (state.selectedThreadId === threadId) {
+              actions.selectThread(null);
+            }
+
+            // Show success feedback
+            setError(new Error('Thread archived successfully'));
+          },
+          onError: (error) => {
+            console.error('[MessageInterface] Failed to archive thread:', error);
+            setError(new Error('Failed to archive thread. Please try again.'));
+          }
+        });
+        break;
+
+      case 'unarchive':
+        // Unarchive the thread using optimistic mutation
+        unarchiveThreadMutation.mutate(threadId, {
+          onSuccess: () => {
+            console.log('[MessageInterface] Successfully unarchived thread:', threadId);
+
+            // Show success feedback
+            setError(new Error('Thread unarchived successfully'));
+          },
+          onError: (error) => {
+            console.error('[MessageInterface] Failed to unarchive thread:', error);
+            setError(new Error('Failed to unarchive thread. Please try again.'));
+          }
+        });
+        break;
+
       default:
         console.log('[MessageInterface] Unhandled thread action:', action);
-        // Future thread actions can be implemented here (assign, priority_high, resolve, archive)
+        // Future thread actions can be implemented here (assign, priority_high, resolve)
         break;
     }
-  }, [markThreadReadMutation]);
+  }, [markThreadReadMutation, archiveThreadMutation, unarchiveThreadMutation, actions, state.selectedThreadId]);
 
   // Effects
   useEffect(() => {
@@ -398,14 +443,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
                 sx={{ mr: 1 }}
                 aria-label="Toggle thread list"
               >
-                <Badge
-                  badgeContent={state.unreadCount}
-                  color="primary"
-                  max={99}
-                  invisible={state.unreadCount === 0}
-                >
-                  <MoreVertIcon />
-                </Badge>
+                <MoreVertIcon />
               </IconButton>
             </Tooltip>
           )}
@@ -592,6 +630,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
                       isTyping={state.isTyping}
                       enableFileUploads={enableFileUploads}
                       userRole={userRole}
+                      thread={state.selectedThread}
                       disabled={Boolean(state.error?.message.includes('authentication') || state.error?.message.includes('token'))}
                       placeholder={
                         state.error?.message.includes('authentication') || state.error?.message.includes('token')

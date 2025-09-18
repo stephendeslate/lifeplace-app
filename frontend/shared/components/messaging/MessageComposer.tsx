@@ -11,7 +11,7 @@
  * - Auto-expanding text area
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   Box,
   TextField,
@@ -39,7 +39,8 @@ import {
   VideoLibrary as VideoIcon,
   AudioFile as AudioIcon,
   Description as DocumentIcon,
-  Cancel as CancelIcon
+  Cancel as CancelIcon,
+  Archive
 } from '@mui/icons-material';
 
 const ComposerContainer = styled(Paper)(({ theme }) => ({
@@ -91,6 +92,16 @@ const CharacterCount = styled(Typography, {
 
 export interface MessageComposerProps {
   threadId?: string;
+  thread?: {
+    id: string;
+    status: 'active' | 'waiting' | 'resolved' | 'archived';
+    is_archived?: boolean;
+    archived_at?: string;
+    archived_by?: {
+      id: number;
+      name: string;
+    };
+  } | null;
   onSendMessage?: (content: string, attachments?: File[]) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -109,6 +120,7 @@ export interface MessageComposerProps {
 
 export const MessageComposer: React.FC<MessageComposerProps> = ({
   threadId,
+  thread,
   onSendMessage,
   placeholder = 'Type your message...',
   disabled = false,
@@ -141,12 +153,35 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const [uploading, setUploading] = useState(false);
   const [emojiMenuAnchor, setEmojiMenuAnchor] = useState<null | HTMLElement>(null);
 
+  // Archive state derivation from thread data (single source of truth)
+  const isThreadArchived = useMemo(() => {
+    if (!thread) return false;
+
+    // Check multiple ways thread can be archived to ensure compatibility
+    return thread.status === 'archived' ||
+           thread.is_archived === true ||
+           Boolean(thread.archived_at);
+  }, [thread]);
+
+  // Derived disabled state that considers archive status
+  const isComposerDisabled = useMemo(() => {
+    return disabled || isThreadArchived;
+  }, [disabled, isThreadArchived]);
+
+  // Dynamic placeholder based on thread state
+  const dynamicPlaceholder = useMemo(() => {
+    if (isThreadArchived) {
+      return 'This conversation has been archived and cannot accept new messages';
+    }
+    return placeholder;
+  }, [isThreadArchived, placeholder]);
+
   // Character count status
   const isNearLimit = message.length > maxLength * 0.8;
   const isOverLimit = message.length > maxLength;
   
-  // Send button state
-  const canSend = message.trim().length > 0 && !isOverLimit && !uploading;
+  // Send button state (includes archive check)
+  const canSend = message.trim().length > 0 && !isOverLimit && !uploading && !isThreadArchived;
 
   // Handle typing indicators
   const handleTypingStart = useCallback(() => {
@@ -347,6 +382,29 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       onDragLeave={enableFileUploads ? handleDragLeave : undefined}
       onDrop={enableFileUploads ? handleDrop : undefined}
     >
+      {/* Archived Thread Indicator */}
+      {isThreadArchived && (
+        <Alert
+          severity="info"
+          sx={{
+            mb: 1,
+            bgcolor: theme.palette.grey[50],
+            border: `1px solid ${theme.palette.grey[300]}`,
+            '& .MuiAlert-message': {
+              fontWeight: 500
+            }
+          }}
+          icon={<Archive />}
+        >
+          This conversation has been archived
+          {thread?.archived_by && (
+            <Typography variant="caption" display="block" sx={{ mt: 0.5, opacity: 0.8 }}>
+              Archived by {thread.archived_by.name} on {new Date(thread.archived_at || '').toLocaleDateString()}
+            </Typography>
+          )}
+        </Alert>
+      )}
+
       {/* Error Alert */}
       {error && (
         <Alert 
@@ -412,7 +470,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             <IconButton
               size="small"
               onClick={(e) => setEmojiMenuAnchor(e.currentTarget)}
-              disabled={disabled}
+              disabled={isComposerDisabled}
             >
               <EmojiIcon />
             </IconButton>
@@ -426,7 +484,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               <IconButton
                 size="small"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || attachments.length >= maxFiles}
+                disabled={isComposerDisabled || attachments.length >= maxFiles}
               >
                 <Badge badgeContent={attachments.length} color="primary" invisible={attachments.length === 0}>
                   <AttachFileIcon />
@@ -442,8 +500,8 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           value={message}
           onChange={handleMessageChange}
           onKeyDown={handleKeyPress}
-          placeholder={placeholder}
-          disabled={false}
+          placeholder={dynamicPlaceholder}
+          disabled={isComposerDisabled}
           multiline
           maxRows={6}
           variant="outlined"
@@ -470,7 +528,15 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         />
 
         {/* Send Button */}
-        <Tooltip title={canSend ? 'Send message' : 'Cannot send empty message'}>
+        <Tooltip
+          title={
+            isThreadArchived
+              ? 'Cannot send messages to archived conversations'
+              : canSend
+                ? 'Send message'
+                : 'Cannot send empty message'
+          }
+        >
           <span>
             <Button
               variant="contained"

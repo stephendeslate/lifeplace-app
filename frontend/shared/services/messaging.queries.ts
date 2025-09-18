@@ -365,17 +365,52 @@ export const useSendMessage = (
 
       return { previousMessages, optimisticMessage };
     },
-    onError: (_err, newMessage, context) => {
-      // Rollback on error
+    onError: (error, newMessage, context) => {
+      console.error('[useSendMessage] Message send failed:', error);
+
+      // Rollback optimistic update on error
       if (context && typeof context === 'object' && context !== null && 'previousMessages' in context && context.previousMessages) {
         queryClient.setQueryData(
           messagingKeys.threadMessages(newMessage.thread),
           context.previousMessages
         );
       }
+
+      // Only invalidate on error to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: messagingKeys.threadMessages(newMessage.thread)
+      });
     },
-    onSuccess: (data, variables) => {
-      // Update thread's last message info
+    onSuccess: (data, variables, context) => {
+      console.log('[useSendMessage] Message sent successfully:', data.id);
+
+      // Replace optimistic message with real message data
+      if (context && typeof context === 'object' && context !== null && 'optimisticMessage' in context) {
+        const optimisticMessage = (context as { optimisticMessage: Message }).optimisticMessage;
+        queryClient.setQueryData<InfiniteData<PaginatedMessagesResponse, unknown>>(
+          messagingKeys.threadMessages(variables.thread),
+          (old) => {
+            if (!old) return undefined;
+
+            return {
+              ...old,
+              pages: old.pages.map((page, index) =>
+                index === 0
+                  ? {
+                      ...page,
+                      results: page.results.map(msg =>
+                        msg.id === optimisticMessage.id ? data : msg
+                      )
+                    }
+                  : page
+              ),
+            };
+          }
+        );
+      }
+
+      // Update thread's last message info (this will be handled by WebSocket events)
+      // But we'll do it optimistically for immediate feedback
       queryClient.setQueryData<MessageThread>(
         messagingKeys.thread(variables.thread),
         (oldThread) => {
@@ -395,12 +430,7 @@ export const useSendMessage = (
       // Invalidate thread list to update sorting/unread counts
       queryClient.invalidateQueries({ queryKey: messagingKeys.threads() });
     },
-    onSettled: (_data, _error, variables) => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ 
-        queryKey: messagingKeys.threadMessages(variables.thread) 
-      });
-    },
+    // Remove onSettled to avoid automatic invalidation that cancels optimistic updates
     ...options,
   });
 };
@@ -633,25 +663,62 @@ export const useInvalidateMessaging = () => {
  */
 export const useAddMessageToCache = () => {
   const queryClient = useQueryClient();
-  
+
   return (message: Message) => {
+    console.log('[useAddMessageToCache] Adding message to cache:', message.id);
+
     // Add to specific thread messages
     queryClient.setQueryData<InfiniteData<PaginatedMessagesResponse, unknown>>(
       messagingKeys.threadMessages(message.thread_id),
       (old) => {
         if (!old) return undefined;
-        
-        // Check if message already exists
-        const messageExists = old.pages.some(page => 
-          page.results.some(m => m.id === message.id)
+
+        // Enhanced deduplication - check both real IDs and temporary optimistic IDs
+        const messageExists = old.pages.some(page =>
+          page.results.some(m => {
+            // Check for exact ID match
+            if (m.id === message.id) return true;
+
+            // Check for optimistic message replacement
+            // If we have a temporary ID and the message content matches, replace it
+            if (m.id.toString().startsWith('temp_') &&
+                m.content === message.content &&
+                m.thread_id === message.thread_id) {
+              return true;
+            }
+
+            return false;
+          })
         );
-        
-        if (messageExists) return old;
-        
+
+        if (messageExists) {
+          console.log('[useAddMessageToCache] Message already exists, replacing if optimistic:', message.id);
+
+          // Replace optimistic message with real one
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              results: page.results.map(m => {
+                // Replace temp message with real message
+                if (m.id.toString().startsWith('temp_') &&
+                    m.content === message.content &&
+                    m.thread_id === message.thread_id) {
+                  console.log('[useAddMessageToCache] Replacing optimistic message:', m.id, '->', message.id);
+                  return message;
+                }
+                return m;
+              })
+            }))
+          };
+        }
+
+        console.log('[useAddMessageToCache] Adding new message to cache:', message.id);
+
         return {
           ...old,
-          pages: old.pages.map((page, index) => 
-            index === 0 
+          pages: old.pages.map((page, index) =>
+            index === 0
               ? { ...page, results: [message, ...page.results], count: page.count + 1 }
               : page
           ),

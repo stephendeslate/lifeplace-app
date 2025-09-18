@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { keyframes } from '@mui/material';
 import {
   Box,
   Paper,
@@ -27,6 +28,8 @@ import {
   Tooltip,
   Card,
   CardContent,
+  MenuList,
+  ListSubheader,
   List,
   ListItem,
   ListItemButton,
@@ -59,10 +62,19 @@ import {
   Event as EventIcon,
   Notifications as NotificationsIcon,
   Add as AddIcon,
+  Archive as ArchiveIcon,
+  MoreVert as MoreVertIcon,
+  Unarchive as UnarchiveIcon,
+  Sort as SortIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon,
 } from '@mui/icons-material';
 import { useMessagingContext } from '@shared';
+import { useArchiveThread, useUnarchiveThread } from '@shared/hooks/messaging/useMessagingMutations';
+import { useSortedThreads, useThreadSortConfig, type ThreadSortCriteria, type ThreadSortConfig } from '@shared/utils/threadSorting';
 import { AdminMessageThread } from '../../components/messaging/AdminMessageThread';
 import { CreateThreadDialog } from '../../components/messaging/CreateThreadDialog';
+import { useToastActions } from '../../contexts/ToastContext';
 import type { MessageThread, ThreadFilters } from '@shared/types/messaging.types';
 
 export interface MessagesOverviewProps {
@@ -74,6 +86,18 @@ export interface MessagesOverviewProps {
 
 type ViewMode = 'grid' | 'list';
 type PanelLayout = 'three-panel' | 'two-panel' | 'single-panel';
+
+// Animation for state transitions
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+`;
 
 export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
   className,
@@ -88,6 +112,13 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
   // Messaging context
   const { state, actions, config } = useMessagingContext();
 
+  // Toast notifications
+  const { showSuccess, showError, showInfo } = useToastActions();
+
+  // Archive/unarchive mutations with optimistic updates
+  const archiveThreadMutation = useArchiveThread();
+  const unarchiveThreadMutation = useUnarchiveThread();
+
   // Component state
   const [viewMode, setViewMode] = useState<ViewMode>(defaultView);
   const [panelLayout, setPanelLayout] = useState<PanelLayout>('three-panel');
@@ -96,13 +127,33 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
   const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [sortMenuAnchor, setSortMenuAnchor] = useState<null | HTMLElement>(null);
   
   // Filter state
   const [localFilters, setLocalFilters] = useState<ThreadFilters>({
     status: undefined,
     priority: undefined,
     assigned_admin: undefined,
+    archive_status: 'active', // Default to showing only active threads
   });
+
+  // Sort configuration with archive awareness
+  const {
+    sortConfig,
+    setSortCriteria,
+    toggleSortDirection,
+  } = useThreadSortConfig({
+    criteria: 'last_message_at',
+    direction: 'desc',
+    archiveAware: true,
+  });
+
+  // Archive-aware sorted threads with performance optimization
+  const {
+    sortedThreads,
+    activeThreads,
+    archivedThreads,
+  } = useSortedThreads(state.threads, sortConfig);
 
   // Keyboard shortcut handling
   useEffect(() => {
@@ -198,10 +249,28 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
   }, [actions]);
 
   const clearFilters = useCallback(() => {
-    const emptyFilters = { status: undefined, priority: undefined, assigned_admin: undefined };
+    const emptyFilters: ThreadFilters = { status: undefined, priority: undefined, assigned_admin: undefined, archive_status: 'active' };
     actions.setThreadFilters(emptyFilters);
     setLocalFilters(emptyFilters);
   }, [actions]);
+
+  // Sort handlers
+  const handleSortMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setSortMenuAnchor(event.currentTarget);
+  }, []);
+
+  const handleSortMenuClose = useCallback(() => {
+    setSortMenuAnchor(null);
+  }, []);
+
+  const handleSortCriteriaChange = useCallback((criteria: ThreadSortCriteria) => {
+    setSortCriteria(criteria);
+    handleSortMenuClose();
+  }, [setSortCriteria, handleSortMenuClose]);
+
+  const handleSortDirectionToggle = useCallback(() => {
+    toggleSortDirection();
+  }, [toggleSortDirection]);
 
   // Selection handlers
   const handleSelectThread = useCallback((threadId: string, selected: boolean) => {
@@ -217,12 +286,12 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    if (selectedThreads.size === state.threads.length) {
+    if (selectedThreads.size === sortedThreads.length) {
       setSelectedThreads(new Set());
     } else {
-      setSelectedThreads(new Set(state.threads.map(t => t.id)));
+      setSelectedThreads(new Set(sortedThreads.map(t => t.id)));
     }
-  }, [selectedThreads.size, state.threads]);
+  }, [selectedThreads.size, sortedThreads]);
 
   // Bulk operations
   const handleBulkMarkAsRead = useCallback(() => {
@@ -237,8 +306,74 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
     setSelectedThreads(new Set());
   }, [selectedThreads]);
 
+  // Archive/Unarchive handlers with comprehensive error handling
+  const handleArchiveThread = useCallback((threadId: string) => {
+    console.log('Archive thread:', threadId);
+
+    archiveThreadMutation.mutate(threadId, {
+      onSuccess: (updatedThread) => {
+        console.log('Successfully archived thread:', threadId);
+
+        // Show appropriate success message
+        const successMessage = (updatedThread as MessageThread & { _successMessage?: string })._successMessage || 'Thread archived successfully.';
+        showSuccess('Thread Archived', successMessage);
+
+        // If this was the selected thread, clear the selection
+        if (state.selectedThreadId === threadId) {
+          actions.selectThread(null);
+        }
+      },
+      onError: (error: Error & { isAlreadyArchived?: boolean; message: string }) => {
+        console.error('Failed to archive thread:', error);
+
+        // Handle "already archived" case as informational message
+        if (error.isAlreadyArchived) {
+          showInfo('Already Archived', error.message);
+
+          // If this was the selected thread, clear the selection since it's archived
+          if (state.selectedThreadId === threadId) {
+            actions.selectThread(null);
+          }
+        } else {
+          // Show actual error for other cases
+          showError('Archive Failed', error.message || 'Failed to archive thread. Please try again.');
+        }
+      }
+    });
+  }, [archiveThreadMutation, state.selectedThreadId, actions, showSuccess, showError, showInfo]);
+
+  const handleUnarchiveThread = useCallback((threadId: string) => {
+    console.log('Unarchive thread:', threadId);
+
+    unarchiveThreadMutation.mutate(threadId, {
+      onSuccess: (updatedThread) => {
+        console.log('Successfully unarchived thread:', threadId);
+
+        // Show appropriate success message
+        const successMessage = (updatedThread as MessageThread & { _successMessage?: string })._successMessage || 'Thread unarchived successfully.';
+        showSuccess('Thread Unarchived', successMessage);
+      },
+      onError: (error: Error & { isNotArchived?: boolean; message: string }) => {
+        console.error('Failed to unarchive thread:', error);
+
+        // Handle "not archived" case as informational message
+        if (error.isNotArchived) {
+          showInfo('Already Active', error.message);
+        } else {
+          // Show actual error for other cases
+          showError('Unarchive Failed', error.message || 'Failed to unarchive thread. Please try again.');
+        }
+      }
+    });
+  }, [unarchiveThreadMutation, showSuccess, showError, showInfo]);
+
   // Filter badges
-  const activeFiltersCount = Object.values(localFilters).filter(Boolean).length;
+  const activeFiltersCount = Object.entries(localFilters)
+    .filter(([key, value]) => {
+      // Don't count archive_status as active if it's 'active' (default)
+      if (key === 'archive_status') return value !== 'active';
+      return Boolean(value);
+    }).length;
 
   // Error handling
   if (state.error) {
@@ -426,6 +561,16 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
           </Button>
         </ButtonGroup>
 
+        {/* Sort Menu */}
+        <Tooltip title="Sort Options">
+          <IconButton
+            onClick={handleSortMenuOpen}
+            color={sortConfig.criteria !== 'last_message_at' ? 'primary' : 'default'}
+          >
+            <SortIcon />
+          </IconButton>
+        </Tooltip>
+
         {/* Refresh */}
         <Tooltip title="Refresh (Ctrl+R)">
           <IconButton
@@ -489,6 +634,21 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
             </Select>
           </FormControl>
 
+          {/* Archive Status Filter */}
+          <FormControl fullWidth size="small">
+            <InputLabel>Archive Status</InputLabel>
+            <Select
+              value={localFilters.archive_status || 'active'}
+              onChange={(e) =>
+                setLocalFilters(prev => ({ ...prev, archive_status: e.target.value as 'active' | 'archived' | 'all' }))
+              }
+            >
+              <MenuItem value="active">Active Only</MenuItem>
+              <MenuItem value="archived">Archived Only</MenuItem>
+              <MenuItem value="all">All Threads</MenuItem>
+            </Select>
+          </FormControl>
+
           <Divider />
 
           <Box sx={{ display: 'flex', gap: 1 }}>
@@ -508,6 +668,74 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
             </Button>
           </Box>
         </Box>
+      </Menu>
+
+      {/* Sort Menu */}
+      <Menu
+        anchorEl={sortMenuAnchor}
+        open={Boolean(sortMenuAnchor)}
+        onClose={handleSortMenuClose}
+        PaperProps={{
+          sx: {
+            width: 280,
+            bgcolor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+          },
+        }}
+      >
+        <ListSubheader sx={{ bgcolor: 'transparent', fontWeight: 600 }}>
+          Sort Threads
+        </ListSubheader>
+
+        <MenuList dense>
+          <MenuItem
+            onClick={() => handleSortCriteriaChange('last_message_at')}
+            selected={sortConfig.criteria === 'last_message_at'}
+          >
+            Last Message
+          </MenuItem>
+          <MenuItem
+            onClick={() => handleSortCriteriaChange('priority')}
+            selected={sortConfig.criteria === 'priority'}
+          >
+            Priority
+          </MenuItem>
+          <MenuItem
+            onClick={() => handleSortCriteriaChange('client_name')}
+            selected={sortConfig.criteria === 'client_name'}
+          >
+            Client Name
+          </MenuItem>
+          <MenuItem
+            onClick={() => handleSortCriteriaChange('event_name')}
+            selected={sortConfig.criteria === 'event_name'}
+          >
+            Event Name
+          </MenuItem>
+          <MenuItem
+            onClick={() => handleSortCriteriaChange('event_date')}
+            selected={sortConfig.criteria === 'event_date'}
+          >
+            Event Date
+          </MenuItem>
+          <MenuItem
+            onClick={() => handleSortCriteriaChange('created_at')}
+            selected={sortConfig.criteria === 'created_at'}
+          >
+            Created Date
+          </MenuItem>
+
+          <Divider sx={{ my: 1 }} />
+
+          <MenuItem onClick={handleSortDirectionToggle}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {sortConfig.direction === 'desc' ? <ArrowDownIcon fontSize="small" /> : <ArrowUpIcon fontSize="small" />}
+              <Typography variant="body2">
+                {sortConfig.direction === 'desc' ? 'Newest First' : 'Oldest First'}
+              </Typography>
+            </Box>
+          </MenuItem>
+        </MenuList>
       </Menu>
 
       {/* Main Content Area */}
@@ -570,7 +798,8 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
                   }
                   label={
                     <Typography variant="body2" color="text.secondary">
-                      {state.threads.length} threads
+                      {activeThreads.length} active
+                      {archivedThreads.length > 0 && `, ${archivedThreads.length} archived`}
                     </Typography>
                   }
                 />
@@ -579,12 +808,18 @@ export const MessagesOverview: React.FC<MessagesOverviewProps> = ({
 
             {/* Thread List */}
             <ThreadList
-              threads={state.threads}
+              threads={sortedThreads}
               selectedThreadId={state.selectedThreadId}
               selectedThreads={selectedThreads}
               onThreadSelect={actions.selectThread}
               onThreadSelectionChange={handleSelectThread}
+              onArchiveThread={handleArchiveThread}
+              onUnarchiveThread={handleUnarchiveThread}
+              currentFilters={localFilters}
+              sortConfig={sortConfig}
               isLoading={state.isLoadingThreads}
+              isArchiving={archiveThreadMutation.isPending}
+              isUnarchiving={unarchiveThreadMutation.isPending}
             />
           </Paper>
         )}
@@ -673,7 +908,13 @@ interface ThreadListProps {
   selectedThreads: Set<string>;
   onThreadSelect: (threadId: string) => void;
   onThreadSelectionChange: (threadId: string, selected: boolean) => void;
+  onArchiveThread?: (threadId: string) => void;
+  onUnarchiveThread?: (threadId: string) => void;
+  currentFilters?: ThreadFilters;
+  sortConfig?: ThreadSortConfig;
   isLoading: boolean;
+  isArchiving?: boolean;
+  isUnarchiving?: boolean;
 }
 
 const ThreadList: React.FC<ThreadListProps> = ({
@@ -682,9 +923,19 @@ const ThreadList: React.FC<ThreadListProps> = ({
   selectedThreads,
   onThreadSelect,
   onThreadSelectionChange,
+  onArchiveThread,
+  onUnarchiveThread,
+  currentFilters,
+  sortConfig: _sortConfig,
   isLoading,
+  isArchiving = false,
+  isUnarchiving = false,
 }) => {
   const theme = useTheme();
+  const [actionMenuAnchor, setActionMenuAnchor] = useState<{
+    element: HTMLElement;
+    threadId: string;
+  } | null>(null);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -714,6 +965,49 @@ const ThreadList: React.FC<ThreadListProps> = ({
     }
   };
 
+  const handleActionMenuOpen = (event: React.MouseEvent<HTMLElement>, threadId: string) => {
+    event.stopPropagation(); // Prevent thread selection
+    setActionMenuAnchor({
+      element: event.currentTarget,
+      threadId,
+    });
+  };
+
+  const handleActionMenuClose = () => {
+    setActionMenuAnchor(null);
+  };
+
+  const handleArchiveAction = (threadId: string) => {
+    if (onArchiveThread) {
+      onArchiveThread(threadId);
+    }
+    // Close menu immediately to provide responsive feedback
+    handleActionMenuClose();
+  };
+
+  const handleUnarchiveAction = (threadId: string) => {
+    if (onUnarchiveThread) {
+      onUnarchiveThread(threadId);
+    }
+    // Close menu immediately to provide responsive feedback
+    handleActionMenuClose();
+  };
+
+  // Filter threads based on archive status
+  const filteredThreads = useMemo(() => {
+    if (!currentFilters?.archive_status) return threads;
+
+    switch (currentFilters.archive_status) {
+      case 'active':
+        return threads.filter(thread => !thread.is_archived);
+      case 'archived':
+        return threads.filter(thread => thread.is_archived);
+      case 'all':
+      default:
+        return threads;
+    }
+  }, [threads, currentFilters?.archive_status]);
+
   if (isLoading) {
     return (
       <Box
@@ -732,7 +1026,7 @@ const ThreadList: React.FC<ThreadListProps> = ({
     );
   }
 
-  if (threads.length === 0) {
+  if (filteredThreads.length === 0) {
     return (
       <Box
         sx={{
@@ -758,126 +1052,324 @@ const ThreadList: React.FC<ThreadListProps> = ({
   }
 
   return (
-    <List sx={{ flexGrow: 1, overflow: 'auto', p: 1 }}>
-      {threads.map((thread) => (
-        <ListItem key={thread.id} disablePadding>
-          <ListItemButton
-            selected={selectedThreadId === thread.id}
-            onClick={() => onThreadSelect(thread.id)}
-            sx={{
-              borderRadius: 2,
-              mb: 1,
-              p: 2,
-              '&.Mui-selected': {
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  bgcolor: 'primary.dark',
+    <>
+      <List sx={{ flexGrow: 1, overflow: 'auto', p: 1 }}>
+        {filteredThreads.map((thread) => (
+          <ListItem key={thread.id} disablePadding>
+            <ListItemButton
+              selected={selectedThreadId === thread.id}
+              onClick={() => onThreadSelect(thread.id)}
+              sx={{
+                borderRadius: 2,
+                mb: 1,
+                p: 2,
+                opacity: thread.is_archived ? 0.75 : 1,
+                bgcolor: thread.is_archived ? 'rgba(255, 193, 7, 0.08)' : 'transparent',
+                border: thread.is_archived ? '1px solid rgba(255, 193, 7, 0.2)' : '1px solid transparent',
+                transition: 'all 0.2s ease-in-out',
+                position: 'relative',
+                '&.Mui-selected': {
+                  bgcolor: thread.is_archived ? 'warning.light' : 'primary.main',
+                  color: thread.is_archived ? 'warning.contrastText' : 'primary.contrastText',
+                  opacity: 1,
+                  border: thread.is_archived ? '1px solid rgba(255, 193, 7, 0.5)' : '1px solid transparent',
+                  '&:hover': {
+                    bgcolor: thread.is_archived ? 'warning.main' : 'primary.dark',
+                  },
                 },
-              },
-            }}
-          >
-            <ListItemAvatar>
-              <Box sx={{ position: 'relative' }}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                  {thread.client_name.charAt(0)}
-                </Avatar>
-                {/* Selection checkbox */}
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onThreadSelectionChange(
-                      thread.id,
-                      !selectedThreads.has(thread.id)
-                    );
-                  }}
-                  sx={{
+                '&:hover': {
+                  bgcolor: thread.is_archived ? 'rgba(255, 193, 7, 0.12)' : 'action.hover',
+                  border: thread.is_archived ? '1px solid rgba(255, 193, 7, 0.3)' : '1px solid transparent',
+                  transform: 'translateY(-1px)',
+                  boxShadow: thread.is_archived ? '0 2px 8px rgba(255, 193, 7, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                },
+                ...(thread.is_archived && {
+                  '&::before': {
+                    content: '""',
                     position: 'absolute',
-                    top: -8,
-                    right: -8,
-                    bgcolor: 'background.paper',
-                    width: 20,
-                    height: 20,
-                  }}
-                >
-                  {selectedThreads.has(thread.id) ? (
-                    <CheckBoxIcon fontSize="inherit" color="primary" />
-                  ) : (
-                    <CheckBoxBlankIcon fontSize="inherit" />
-                  )}
-                </IconButton>
-              </Box>
-            </ListItemAvatar>
-
-            <ListItemText
-              primary={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle2" noWrap>
-                    {thread.event_name}
-                  </Typography>
-                  <Chip
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '4px',
+                    bgcolor: 'warning.main',
+                    borderRadius: '0 2px 2px 0'
+                  }
+                })
+              }}
+            >
+              <ListItemAvatar>
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar sx={{ bgcolor: 'primary.main' }}>
+                    {thread.client_name.charAt(0)}
+                  </Avatar>
+                  {/* Selection checkbox */}
+                  <IconButton
                     size="small"
-                    label={thread.priority}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onThreadSelectionChange(
+                        thread.id,
+                        !selectedThreads.has(thread.id)
+                      );
+                    }}
                     sx={{
-                      bgcolor: getPriorityColor(thread.priority),
-                      color: 'white',
-                      fontSize: '0.7rem',
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      bgcolor: 'background.paper',
+                      width: 20,
                       height: 20,
                     }}
-                  />
+                  >
+                    {selectedThreads.has(thread.id) ? (
+                      <CheckBoxIcon fontSize="inherit" color="primary" />
+                    ) : (
+                      <CheckBoxBlankIcon fontSize="inherit" />
+                    )}
+                  </IconButton>
                 </Box>
-              }
-              secondary={
-                <Box>
-                  <Typography variant="body2" noWrap>
-                    {thread.client_name}
-                  </Typography>
-                  {thread.last_message && (
+              </ListItemAvatar>
+
+              <ListItemText
+                primary={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography
-                      variant="caption"
+                      variant="subtitle2"
+                      noWrap
                       sx={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        mt: 0.5,
+                        textDecoration: thread.is_archived ? 'line-through' : 'none',
+                        opacity: thread.is_archived ? 0.7 : 1,
+                        transition: 'all 0.2s ease-in-out'
                       }}
                     >
-                      {thread.last_message.content}
+                      {thread.event_name}
                     </Typography>
-                  )}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    {thread.is_archived && (
+                      <Tooltip
+                        title={`Archived ${thread.archived_at ? new Date(thread.archived_at).toLocaleDateString() : ''} by ${thread.archived_by?.name || 'System'}`}
+                        arrow
+                      >
+                        <Chip
+                          icon={<ArchiveIcon />}
+                          label="Archived"
+                          size="small"
+                          sx={{
+                            bgcolor: 'warning.light',
+                            color: 'warning.contrastText',
+                            fontWeight: 500,
+                            fontSize: '0.65rem',
+                            height: 22,
+                            '& .MuiChip-icon': {
+                              color: 'warning.contrastText',
+                              fontSize: '0.875rem'
+                            },
+                            animation: `${fadeIn} 0.3s ease-in-out`
+                          }}
+                        />
+                      </Tooltip>
+                    )}
                     <Chip
                       size="small"
-                      label={thread.status}
-                      variant="outlined"
+                      label={thread.priority}
                       sx={{
-                        borderColor: getStatusColor(thread.status),
-                        color: getStatusColor(thread.status),
-                        fontSize: '0.6rem',
-                        height: 16,
+                        bgcolor: getPriorityColor(thread.priority),
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        height: 20,
+                        opacity: thread.is_archived ? 0.6 : 1,
+                        transition: 'opacity 0.2s ease-in-out'
                       }}
                     />
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(thread.updated_at).toLocaleDateString()}
-                    </Typography>
                   </Box>
-                </Box>
-              }
-            />
-
-            {thread.unread_count > 0 && (
-              <Badge
-                badgeContent={thread.unread_count}
-                color="primary"
-                max={99}
+                }
+                secondary={
+                  <Box>
+                    <Typography
+                      variant="body2"
+                      noWrap
+                      sx={{
+                        opacity: thread.is_archived ? 0.8 : 1,
+                        transition: 'opacity 0.2s ease-in-out'
+                      }}
+                    >
+                      {thread.client_name}
+                    </Typography>
+                    {thread.last_message && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          mt: 0.5,
+                          opacity: thread.is_archived ? 0.7 : 1,
+                          fontStyle: thread.is_archived ? 'italic' : 'normal',
+                          transition: 'all 0.2s ease-in-out'
+                        }}
+                      >
+                        {thread.last_message.content}
+                      </Typography>
+                    )}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                      <Chip
+                        size="small"
+                        label={thread.status}
+                        variant="outlined"
+                        sx={{
+                          borderColor: getStatusColor(thread.status),
+                          color: getStatusColor(thread.status),
+                          fontSize: '0.6rem',
+                          height: 16,
+                          opacity: thread.is_archived ? 0.6 : 1,
+                          transition: 'opacity 0.2s ease-in-out'
+                        }}
+                      />
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          opacity: thread.is_archived ? 0.7 : 1,
+                          transition: 'opacity 0.2s ease-in-out'
+                        }}
+                      >
+                        {thread.is_archived && thread.archived_at
+                          ? `Archived ${new Date(thread.archived_at).toLocaleDateString()}`
+                          : new Date(thread.updated_at).toLocaleDateString()
+                        }
+                      </Typography>
+                    </Box>
+                  </Box>
+                }
               />
-            )}
-          </ListItemButton>
-        </ListItem>
-      ))}
-    </List>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {thread.unread_count > 0 && (
+                  <Badge
+                    badgeContent={thread.unread_count}
+                    color="primary"
+                    max={99}
+                  />
+                )}
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleActionMenuOpen(e, thread.id)}
+                  sx={{
+                    opacity: 0.7,
+                    '&:hover': {
+                      opacity: 1,
+                      bgcolor: 'action.hover',
+                    },
+                  }}
+                >
+                  <MoreVertIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={actionMenuAnchor?.element}
+        open={Boolean(actionMenuAnchor)}
+        onClose={handleActionMenuClose}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            boxShadow: theme.shadows[3],
+          },
+        }}
+      >
+        {actionMenuAnchor && (() => {
+          const thread = filteredThreads.find(t => t.id === actionMenuAnchor.threadId);
+          if (!thread) return null;
+
+          return thread.is_archived ? (
+            <MenuItem
+              onClick={() => handleUnarchiveAction(actionMenuAnchor.threadId)}
+              disabled={isUnarchiving}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                py: 1.5,
+                px: 2,
+                minHeight: 48,
+                opacity: isUnarchiving ? 0.6 : 1,
+                '&:hover': {
+                  bgcolor: 'success.main',
+                  color: 'success.contrastText',
+                  '& .MuiSvgIcon-root': {
+                    color: 'success.contrastText',
+                  },
+                },
+                '&:disabled': {
+                  opacity: 0.5,
+                },
+              }}
+            >
+              <UnarchiveIcon
+                fontSize="small"
+                sx={{
+                  color: isUnarchiving ? 'action.disabled' : 'success.main',
+                  transition: 'color 0.2s ease-in-out'
+                }}
+              />
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {isUnarchiving ? 'Removing from archive...' : 'Remove from archive'}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                  Make thread active again
+                </Typography>
+              </Box>
+            </MenuItem>
+          ) : (
+            <MenuItem
+              onClick={() => handleArchiveAction(actionMenuAnchor.threadId)}
+              disabled={isArchiving}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                py: 1.5,
+                px: 2,
+                minHeight: 48,
+                opacity: isArchiving ? 0.6 : 1,
+                '&:hover': {
+                  bgcolor: 'warning.main',
+                  color: 'warning.contrastText',
+                  '& .MuiSvgIcon-root': {
+                    color: 'warning.contrastText',
+                  },
+                },
+                '&:disabled': {
+                  opacity: 0.5,
+                },
+              }}
+            >
+              <ArchiveIcon
+                fontSize="small"
+                sx={{
+                  color: isArchiving ? 'action.disabled' : 'warning.main',
+                  transition: 'color 0.2s ease-in-out'
+                }}
+              />
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {isArchiving ? 'Archiving thread...' : 'Archive thread'}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                  Hide from active conversations
+                </Typography>
+              </Box>
+            </MenuItem>
+          );
+        })()}
+      </Menu>
+    </>
   );
 };
 

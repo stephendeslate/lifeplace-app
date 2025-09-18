@@ -41,6 +41,8 @@ urlpatterns = [
     # POST /api/messaging/threads/{id}/mark_urgent/ - Mark urgent
     # POST /api/messaging/threads/{id}/resolve/ - Resolve thread
     # POST /api/messaging/threads/{id}/reopen/ - Reopen thread
+    # POST /api/messaging/threads/{id}/archive/ - Archive thread (admin only)
+    # POST /api/messaging/threads/{id}/unarchive/ - Unarchive thread (admin only)
     # GET /api/messaging/threads/stats/ - Thread statistics
     
     # Message URLs:

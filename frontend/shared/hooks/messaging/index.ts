@@ -29,6 +29,16 @@ export {
   useRetryFailedMessage,
 } from './useOptimisticUpdates';
 
+// Archive/unarchive mutations with optimistic updates
+export {
+  useArchiveThread,
+  useUnarchiveThread,
+  useAssignThread,
+  useSetThreadPriority,
+  useResolveThread,
+  useMessagingMutations,
+} from './useMessagingMutations';
+
 // Real-time synchronization
 export {
   useRealtimeSync,

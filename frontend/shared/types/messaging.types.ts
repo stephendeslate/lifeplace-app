@@ -43,7 +43,7 @@ export interface MessageThread {
     avatar?: string;
   };
   priority: 'urgent' | 'high' | 'normal' | 'low';
-  status: 'active' | 'waiting' | 'resolved';
+  status: 'active' | 'waiting' | 'resolved' | 'archived';
   subject?: string;
   unread_count: number;
   last_message?: {
@@ -58,6 +58,13 @@ export interface MessageThread {
   can_manage: boolean;
   created_at: string;
   updated_at: string;
+  // Archive-related fields
+  is_archived?: boolean;
+  archived_at?: string;
+  archived_by?: {
+    id: number;
+    name: string;
+  };
   // Legacy properties for backward compatibility
   last_message_at?: string;
   client_email?: string;
@@ -135,13 +142,14 @@ export interface CreateMessageData {
 }
 
 export interface ThreadFilters {
-  status?: 'active' | 'waiting' | 'resolved';
+  status?: 'active' | 'waiting' | 'resolved' | 'archived';
   priority?: 'urgent' | 'high' | 'normal' | 'low';
   assigned_admin?: number;
   search?: string;
   event_id?: number;
   client_id?: number;
   ordering?: string;
+  archive_status?: 'active' | 'archived' | 'all';
   // Index signature for React Query compatibility
   [key: string]: unknown;
 }
@@ -155,8 +163,9 @@ export interface MessageFilters {
   client_id?: number;
   event_id?: number;
   priority?: 'urgent' | 'high' | 'normal' | 'low';
-  status?: 'active' | 'waiting' | 'resolved';
+  status?: 'active' | 'waiting' | 'resolved' | 'archived';
   search?: string;
+  archive_status?: 'active' | 'archived' | 'all';
   // Index signature for React Query compatibility
   [key: string]: unknown;
 }
@@ -245,7 +254,7 @@ export interface CannedResponse {
 }
 
 export interface AdminMessageAction {
-  action: 'assign' | 'change_priority' | 'add_internal_note' | 'resolve';
+  action: 'assign' | 'change_priority' | 'add_internal_note' | 'resolve' | 'archive' | 'unarchive';
   thread_id: string;
   data?: {
     admin_id?: number;
@@ -336,6 +345,7 @@ export interface BulkMessageOperations {
   assignThreads: (threadIds: string[], adminId: number) => Promise<void>;
   changePriority: (threadIds: string[], priority: MessageThread['priority']) => Promise<void>;
   archiveThreads: (threadIds: string[]) => Promise<void>;
+  unarchiveThreads: (threadIds: string[]) => Promise<void>;
   deleteThreads: (threadIds: string[]) => Promise<void>;
 }
 
