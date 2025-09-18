@@ -234,6 +234,10 @@ export const messagingApi = {
     await apiClient.post('/messaging/messages/mark_thread_read/', { thread_id: threadId });
   },
 
+  markThreadUnread: async (threadId: string): Promise<void> => {
+    await apiClient.post('/messaging/messages/mark_thread_unread/', { thread_id: threadId });
+  },
+
   performAdminAction: async (action: any): Promise<any> => {
     // This is a placeholder - implement based on the specific admin actions needed
     throw new Error('performAdminAction not yet implemented - please implement specific admin actions');

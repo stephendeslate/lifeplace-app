@@ -53,6 +53,7 @@ urlpatterns = [
     # DELETE /api/messaging/messages/{id}/ - Delete message
     # POST /api/messaging/messages/{id}/mark_read/ - Mark message read
     # POST /api/messaging/messages/mark_thread_read/ - Mark thread read
+    # POST /api/messaging/messages/mark_thread_unread/ - Mark thread unread
     
     # Attachment URLs:
     # GET /api/messaging/attachments/ - List attachments

@@ -49,7 +49,8 @@ import {
 } from '../..';
 import {
   useRealTimeUpdates,
-  useMarkThreadRead
+  useMarkThreadRead,
+  useMarkThreadUnread
 } from '../../services';
 import {
   useDirectThreads
@@ -141,6 +142,13 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
     onError: (error) => {
       console.error('[MessageInterface] Failed to mark thread as read:', error);
       setError(new Error('Failed to mark thread as read'));
+    }
+  });
+
+  const markThreadUnreadMutation = useMarkThreadUnread({
+    onError: (error) => {
+      console.error('[MessageInterface] Failed to mark thread as unread:', error);
+      setError(new Error('Failed to mark thread as unread'));
     }
   });
 
@@ -251,13 +259,26 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   // Event handlers
   const handleThreadSelect = useCallback((thread: MessageThread | null) => {
     actions.selectThread(thread?.id || null);
-    
+
+    // Automatically mark thread as read if it has unread messages
+    if (thread && thread.unread_count > 0) {
+      markThreadReadMutation.mutate(thread.id, {
+        onSuccess: () => {
+          console.log('[MessageInterface] Successfully auto-marked thread as read:', thread.id);
+        },
+        onError: (error) => {
+          console.error('[MessageInterface] Failed to auto-mark thread as read:', error);
+          // Don't show error to user for automatic action, just log it
+        }
+      });
+    }
+
     if (isMobile && thread) {
       setShowThreadList(false);
     }
-    
+
     onThreadSelect?.(thread);
-  }, [actions, isMobile, onThreadSelect]);
+  }, [actions, isMobile, onThreadSelect, markThreadReadMutation]);
 
   const handleBackToList = useCallback(() => {
     if (isMobile) {
@@ -301,9 +322,16 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
         break;
 
       case 'mark_unread':
-        // No unread API available - show user feedback
-        console.warn('[MessageInterface] mark_unread action not supported - no API available');
-        onError?.(new Error('Mark as unread functionality is not yet available'));
+        // Mark the specific thread as unread using the thread-level API
+        markThreadUnreadMutation.mutate(threadId, {
+          onSuccess: () => {
+            console.log('[MessageInterface] Successfully marked thread as unread:', threadId);
+          },
+          onError: (error) => {
+            console.error('[MessageInterface] Failed to mark thread as unread:', error);
+            setError(new Error('Failed to mark thread as unread'));
+          }
+        });
         break;
 
       case 'archive':
@@ -372,7 +400,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
         // Future thread actions can be implemented here (assign, priority_high, resolve)
         break;
     }
-  }, [markThreadReadMutation, archiveThreadMutation, unarchiveThreadMutation, actions, state.selectedThreadId]);
+  }, [markThreadReadMutation, markThreadUnreadMutation, archiveThreadMutation, unarchiveThreadMutation, actions, state.selectedThreadId]);
 
   // Effects
   useEffect(() => {

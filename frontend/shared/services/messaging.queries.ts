@@ -611,6 +611,89 @@ export const useMarkThreadRead = (
 };
 
 /**
+ * Mark thread as unread
+ */
+export const useMarkThreadUnread = (
+  options?: UseMutationOptions<void, MessagingError, string>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (threadId: string) => messagingApi.markThreadUnread(threadId),
+    onSuccess: (_, threadId) => {
+      // Update thread to have unread count > 0 (optimistic - set to 1)
+      queryClient.setQueryData<MessageThread>(
+        messagingKeys.thread(threadId),
+        (oldThread) => {
+          if (!oldThread) return undefined;
+          return {
+            ...oldThread,
+            unread_count: Math.max(1, oldThread.unread_count || 0),
+          };
+        }
+      );
+
+      // Update thread in regular threads list cache
+      queryClient.setQueryData<{ results: MessageThread[]; count: number }>(
+        messagingKeys.threads(),
+        (oldData) => {
+          if (!oldData) return undefined;
+          return {
+            ...oldData,
+            results: oldData.results.map(thread =>
+              thread.id === threadId
+                ? { ...thread, unread_count: Math.max(1, thread.unread_count || 0) }
+                : thread
+            ),
+          };
+        }
+      );
+
+      // Update thread in infinite threads list cache
+      queryClient.setQueriesData<InfiniteData<PaginatedThreadsResponse, unknown>>(
+        { queryKey: [...messagingKeys.threads(), 'infinite'] },
+        (oldData) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map(page => ({
+              ...page,
+              results: page.results.map(thread =>
+                thread.id === threadId
+                  ? { ...thread, unread_count: Math.max(1, thread.unread_count || 0) }
+                  : thread
+              ),
+            })),
+          };
+        }
+      );
+
+      // Also update any filtered infinite queries that may contain this thread
+      queryClient.setQueriesData<InfiniteData<PaginatedThreadsResponse, unknown>>(
+        { queryKey: messagingKeys.threads() },
+        (oldData) => {
+          if (!oldData?.pages) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map(page => ({
+              ...page,
+              results: page.results.map(thread =>
+                thread.id === threadId
+                  ? { ...thread, unread_count: Math.max(1, thread.unread_count || 0) }
+                  : thread
+              ),
+            })),
+          };
+        }
+      );
+    },
+    ...options,
+  });
+};
+
+/**
  * Upload file attachment
  */
 export const useUploadFile = (
