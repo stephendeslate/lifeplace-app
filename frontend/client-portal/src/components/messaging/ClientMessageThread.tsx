@@ -76,7 +76,7 @@ export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
 
   // Mark messages as read when they come into view
   useEffect(() => {
-    const unreadMessages = state.messages.filter(msg => !msg.read_by.includes(1)); // Current user ID
+    const unreadMessages = state.messages.filter(msg => !(msg.read_by || []).includes(1)); // Current user ID
     unreadMessages.forEach(msg => {
       actions.markAsRead(msg.id);
     });
@@ -128,12 +128,12 @@ export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
         )}
         
         <Avatar sx={{ bgcolor: 'primary.main' }}>
-          {currentThread.event_name.charAt(0)}
+          {currentThread.event_name?.charAt(0) || 'E'}
         </Avatar>
         
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography variant="h6" noWrap>
-            {currentThread.event_name}
+            {currentThread.event_name || 'Event'}
           </Typography>
           <Typography variant="body2" color="text.secondary" noWrap>
             {new Date(currentThread.event_date).toLocaleDateString('en-US', {
@@ -322,7 +322,7 @@ const ClientMessageItem: React.FC<ClientMessageItemProps> = ({
 
   const getStatusIcon = () => {
     if (isOwnMessage) {
-      if (message.read_by.length > 1) { // Read by others
+      if ((message.read_by || []).length > 1) { // Read by others
         return <DoneAllIcon fontSize="small" sx={{ color: 'primary.main' }} />;
       }
       if (message.id) { // Delivered
