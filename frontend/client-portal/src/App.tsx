@@ -20,7 +20,7 @@ import { BookingComplete, BookingPage } from './pages/booking';
 import ContractsPage from './pages/contracts/ContractsPage';
 
 // Messaging imports
-import { ClientMessages } from './pages/messages/ClientMessages';
+import { ClientMessagesPage } from './pages/messages/ClientMessagesPage';
 
 // Import booking components
 
@@ -368,25 +368,25 @@ const AppRouter: React.FC = () => {
       />
 
       {/* Messages Routes */}
-      <Route 
-        path="/messages" 
+      <Route
+        path="/messages"
         element={
           <ProtectedRoute>
             <ClientLayoutWrapper>
-              <ClientMessages />
+              <ClientMessagesPage />
             </ClientLayoutWrapper>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/messages/thread/:threadId" 
+      <Route
+        path="/messages/thread/:threadId"
         element={
           <ProtectedRoute>
             <ClientLayoutWrapper>
-              <ClientMessages />
+              <ClientMessagesPage />
             </ClientLayoutWrapper>
           </ProtectedRoute>
-        } 
+        }
       />
 
       <Route 
