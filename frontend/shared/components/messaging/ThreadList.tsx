@@ -57,7 +57,7 @@ import {
   MarkEmailRead,
   MarkEmailUnread
 } from '@mui/icons-material';
-import { formatDistanceToNow } from 'date-fns';
+import { formatSmartTimestamp } from '../../utils';
 import type { MessageThread, User } from '../../types/messaging.types';
 
 const ThreadListContainer = styled(Paper)(({ theme }) => ({
@@ -278,11 +278,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
 
   // Format timestamp
   const formatTimestamp = useCallback((timestamp: string) => {
-    try {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-    } catch {
-      return 'Recently';
-    }
+    return formatSmartTimestamp(timestamp);
   }, []);
 
   // Get priority icon
