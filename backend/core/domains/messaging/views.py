@@ -274,21 +274,64 @@ class MessageThreadViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(thread)
         return Response(serializer.data)
     
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
+    def archive(self, request, pk=None):
+        """Archive thread"""
+        thread = self.get_object()
+
+        if thread.status == 'archived':
+            return Response(
+                {'error': 'Thread is already archived'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        thread.status = 'archived'
+        thread.archived_at = timezone.now()
+        thread.archived_by = request.user
+        thread.save()
+
+        logger.info(f"Message thread archived: {thread.id} by user {request.user.id}")
+
+        serializer = self.get_serializer(thread)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
+    def unarchive(self, request, pk=None):
+        """Unarchive thread"""
+        thread = self.get_object()
+
+        if thread.status != 'archived':
+            return Response(
+                {'error': 'Thread is not archived'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        thread.status = 'active'
+        thread.archived_at = None
+        thread.archived_by = None
+        thread.save()
+
+        logger.info(f"Message thread unarchived: {thread.id} by user {request.user.id}")
+
+        serializer = self.get_serializer(thread)
+        return Response(serializer.data)
+
     @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
     def stats(self, request):
         """Get thread statistics for admin dashboard"""
         queryset = self.get_queryset()
-        
+
         stats = {
             'total': queryset.count(),
             'active': queryset.filter(status='active').count(),
             'waiting': queryset.filter(status='waiting').count(),
             'resolved': queryset.filter(status='resolved').count(),
+            'archived': queryset.filter(status='archived').count(),
             'urgent': queryset.filter(priority='urgent').count(),
             'unassigned': queryset.filter(assigned_admin__isnull=True).count(),
             'assigned_to_me': queryset.filter(assigned_admin=request.user).count()
         }
-        
+
         return Response(stats)
     
     @action(detail=True, methods=['get'])

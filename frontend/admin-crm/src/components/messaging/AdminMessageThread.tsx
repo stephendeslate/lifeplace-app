@@ -51,6 +51,7 @@ import {
   PictureAsPdf as PdfIcon,
   InsertDriveFile as FileIcon,
   Delete as DeleteIcon,
+  Archive as ArchiveIcon,
 } from '@mui/icons-material';
 import { useMessagingContext } from '@shared';
 import type { Message } from '@shared/types/messaging.types';
@@ -101,6 +102,16 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
 
   // Get current thread
   const currentThread = state.threads.find(t => t.id === threadId);
+
+  // Archive state derivation from thread data (single source of truth)
+  const isThreadArchived = useMemo(() => {
+    if (!currentThread) return false;
+
+    // Check multiple ways thread can be archived to ensure compatibility
+    return currentThread.status === 'archived' ||
+           currentThread.is_archived === true ||
+           Boolean(currentThread.archived_at);
+  }, [currentThread]);
 
   // Filter messages based on internal notes visibility
   const visibleMessages = useMemo(() => {
@@ -271,8 +282,10 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
             color={
               currentThread.status === 'active' ? 'success' :
               currentThread.status === 'waiting' ? 'warning' :
+              currentThread.status === 'archived' ? 'error' :
               'default'
             }
+            icon={currentThread.status === 'archived' ? <ArchiveIcon /> : undefined}
           />
 
           {enableInternalNotes && (
@@ -349,6 +362,29 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
         </Alert>
       )}
 
+      {/* Archived Thread Indicator */}
+      {isThreadArchived && (
+        <Alert
+          severity="info"
+          sx={{
+            m: 1,
+            bgcolor: theme.palette.grey[50],
+            border: `1px solid ${theme.palette.grey[300]}`,
+            '& .MuiAlert-message': {
+              fontWeight: 500
+            }
+          }}
+          icon={<ArchiveIcon />}
+        >
+          This conversation has been archived
+          {currentThread?.archived_by && (
+            <Typography variant="caption" display="block" sx={{ mt: 0.5, opacity: 0.8 }}>
+              Archived by {currentThread.archived_by.name} on {new Date(currentThread.archived_at || '').toLocaleDateString()}
+            </Typography>
+          )}
+        </Alert>
+      )}
+
       {/* Message Composer */}
       <Paper
         elevation={0}
@@ -407,13 +443,15 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
             fullWidth
             variant="outlined"
             placeholder={
-              isInternalNote 
-                ? "Add internal note..." 
-                : "Type your message..."
+              isThreadArchived
+                ? "This conversation has been archived and cannot accept new messages"
+                : isInternalNote
+                  ? "Add internal note..."
+                  : "Type your message..."
             }
             value={messageContent}
             onChange={(e) => setMessageContent(e.target.value)}
-            disabled={isUploading}
+            disabled={isUploading || isThreadArchived}
             sx={{
               '& .MuiOutlinedInput-root': {
                 bgcolor: isInternalNote ? 'warning.50' : 'background.paper',
@@ -432,19 +470,19 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
               style={{ display: 'none' }}
             />
 
-            <Tooltip title="Attach files">
+            <Tooltip title={isThreadArchived ? "Cannot attach files to archived conversations" : "Attach files"}>
               <IconButton
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
+                disabled={isUploading || isThreadArchived}
               >
                 <AttachFileIcon />
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Send message">
+            <Tooltip title={isThreadArchived ? "Cannot send messages to archived conversations" : "Send message"}>
               <IconButton
                 onClick={handleSendMessage}
-                disabled={(!messageContent.trim() && attachments.length === 0) || isUploading}
+                disabled={(!messageContent.trim() && attachments.length === 0) || isUploading || isThreadArchived}
                 color="primary"
               >
                 <SendIcon />

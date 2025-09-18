@@ -123,11 +123,12 @@ const PriorityIndicator = styled(Box)<{ priority: 'urgent' | 'high' | 'normal' |
   };
 });
 
-const StatusChip = styled(Chip)<{ status: 'active' | 'waiting' | 'resolved' }>(({ theme, status }) => {
+const StatusChip = styled(Chip)<{ status: 'active' | 'waiting' | 'resolved' | 'archived' }>(({ theme, status }) => {
   const variants = {
     active: { color: theme.palette.success.main, background: theme.palette.success.light + '20' },
     waiting: { color: theme.palette.warning.main, background: theme.palette.warning.light + '20' },
     resolved: { color: theme.palette.grey[600], background: theme.palette.grey[100] },
+    archived: { color: theme.palette.grey[500], background: theme.palette.grey[50] },
   };
   
   return {

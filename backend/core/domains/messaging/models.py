@@ -75,6 +75,7 @@ class MessageThread(BaseModel):
         ('active', 'Active'),
         ('waiting', 'Waiting for Response'),
         ('resolved', 'Resolved'),
+        ('archived', 'Archived'),
     ]
     
     # Core identifiers
@@ -119,7 +120,23 @@ class MessageThread(BaseModel):
         choices=STATUS_CHOICES,
         default='active'
     )
-    
+
+    # Archive functionality
+    archived_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when the thread was archived"
+    )
+
+    archived_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        related_name='archived_message_threads',
+        null=True,
+        blank=True,
+        help_text="User who archived this thread"
+    )
+
     # Thread metadata
     subject = models.CharField(
         max_length=255,
@@ -143,6 +160,7 @@ class MessageThread(BaseModel):
             models.Index(fields=['assigned_admin', 'status', '-last_message_at']),
             models.Index(fields=['priority', 'status', '-created_at']),
             models.Index(fields=['-last_message_at']),
+            models.Index(fields=['status', 'archived_at']),
         ]
         # Note: Cross-table constraints are implemented in model validation instead
     

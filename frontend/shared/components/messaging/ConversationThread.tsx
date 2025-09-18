@@ -340,9 +340,30 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (autoScrollToBottom && messages.length > 0) {
-      scrollToBottom(true);
+      // Use a longer delay to ensure DOM updates are complete after optimistic updates
+      const timer = setTimeout(() => {
+        scrollToBottom(true);
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
   }, [messages.length, autoScrollToBottom, scrollToBottom]);
+
+  // Also scroll when messages content changes (for optimistic updates)
+  const lastMessageContent = useMemo(() => {
+    return messages.length > 0 ? messages[0]?.content : '';
+  }, [messages]);
+
+  useEffect(() => {
+    if (autoScrollToBottom && lastMessageContent) {
+      // Shorter delay for content changes
+      const timer = setTimeout(() => {
+        scrollToBottom(true);
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, [lastMessageContent, autoScrollToBottom, scrollToBottom]);
 
   // Show error state
   if (error) {
