@@ -72,33 +72,39 @@ export const ClientMessages: React.FC<ClientMessagesProps> = ({
     return state.threads.filter(thread => thread.event_id === parseInt(eventId));
   }, [state.threads, eventId]);
 
+  // Extract stable action reference to prevent callback recreation
+  const selectThreadAction = actions.selectThread;
+
   // Handle thread selection
   const handleThreadSelect = useCallback((threadId: string) => {
     setSelectedThread(threadId);
-    actions.selectThread(threadId);
-    
+    selectThreadAction(threadId);
+
     if (isMobile) {
       setShowThreadList(false);
     }
-    
+
     // Update URL
     navigate(`/messages/thread/${threadId}`, { replace: true });
-  }, [actions, isMobile, navigate]);
+  }, [selectThreadAction, isMobile, navigate]);
 
   // Handle back to list
   const handleBackToList = useCallback(() => {
     setShowThreadList(true);
     setSelectedThread(null);
-    actions.selectThread(null);
+    selectThreadAction(null);
     navigate('/messages', { replace: true });
-  }, [actions, navigate]);
+  }, [selectThreadAction, navigate]);
 
-  // Auto-select first thread if none selected
+  // Auto-select first thread if none selected (use effect without callback dependency)
   useEffect(() => {
     if (!selectedThread && filteredThreads.length > 0 && !isMobile) {
-      handleThreadSelect(filteredThreads[0].id);
+      const firstThreadId = filteredThreads[0].id;
+      setSelectedThread(firstThreadId);
+      selectThreadAction(firstThreadId);
+      navigate(`/messages/thread/${firstThreadId}`, { replace: true });
     }
-  }, [filteredThreads, selectedThread, isMobile, handleThreadSelect]);
+  }, [filteredThreads, selectedThread, isMobile, selectThreadAction, navigate]);
 
   // Loading state
   if (state.isLoadingThreads) {

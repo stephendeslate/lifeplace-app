@@ -53,17 +53,9 @@ import {
   Delete as DeleteIcon,
   Archive as ArchiveIcon,
 } from '@mui/icons-material';
-import { useMessagingContext } from '@shared';
 import type { Message } from '@shared/types/messaging.types';
+import type { AdminMessageThreadProps } from './AdminMessageThread.types';
 
-export interface AdminMessageThreadProps {
-  threadId: string;
-  clientId?: string;
-  eventId?: string;
-  showContext?: boolean;
-  enableInternalNotes?: boolean;
-  className?: string;
-}
 
 interface MessageItemProps {
   message: Message;
@@ -75,14 +67,24 @@ interface MessageItemProps {
 }
 
 export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
-  threadId,
+  threadId: _threadId,
   enableInternalNotes = true,
   className,
+  currentThread,
+  messages,
+  isConnected: _isConnected,
+  isLoadingMessages,
+  hasMoreMessages,
+  typingUsers,
+  config,
+  isTyping,
+  onSendMessage,
+  onMarkAsRead: _onMarkAsRead,
+  onLoadMoreMessages,
+  onStartTyping,
+  onStopTyping,
 }) => {
   const theme = useTheme();
-  
-  // Messaging context
-  const { state, actions, config } = useMessagingContext();
   
   // Component state
   const [messageContent, setMessageContent] = useState('');
@@ -100,8 +102,7 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
 
-  // Get current thread
-  const currentThread = state.threads.find(t => t.id === threadId);
+  // Current thread is passed as prop
 
   // Archive state derivation from thread data (single source of truth)
   const isThreadArchived = useMemo(() => {
@@ -116,10 +117,10 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
   // Filter messages based on internal notes visibility
   const visibleMessages = useMemo(() => {
     if (!showInternalNotes) {
-      return state.messages.filter(msg => !msg.is_internal_note);
+      return messages.filter(msg => !msg.is_internal_note);
     }
-    return state.messages;
-  }, [state.messages, showInternalNotes]);
+    return messages;
+  }, [messages, showInternalNotes]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -130,13 +131,13 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
 
   // Handle message sending
   const handleSendMessage = useCallback(async () => {
-    if ((!messageContent.trim() && attachments.length === 0) || state.isTyping) {
+    if ((!messageContent.trim() && attachments.length === 0) || isTyping) {
       return;
     }
 
     try {
       setIsUploading(true);
-      await actions.sendMessage(messageContent, attachments, isInternalNote);
+      await onSendMessage(messageContent, attachments, isInternalNote);
       setMessageContent('');
       setAttachments([]);
       setReplyingTo(null);
@@ -145,7 +146,7 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
     } finally {
       setIsUploading(false);
     }
-  }, [messageContent, attachments, isInternalNote, actions, state.isTyping]);
+  }, [messageContent, attachments, isInternalNote, onSendMessage, isTyping]);
 
   // Handle file selection
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,9 +167,9 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
     let typingTimer: NodeJS.Timeout;
 
     if (messageContent.trim()) {
-      actions.startTyping();
+      onStartTyping();
       typingTimer = setTimeout(() => {
-        actions.stopTyping();
+        onStopTyping();
       }, config.typingTimeout);
     }
 
@@ -176,9 +177,9 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
       if (typingTimer) {
         clearTimeout(typingTimer);
       }
-      actions.stopTyping();
+      onStopTyping();
     };
-  }, [messageContent, actions, config.typingTimeout]);
+  }, [messageContent, onStartTyping, onStopTyping, config.typingTimeout]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -320,7 +321,7 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
           bgcolor: 'grey.50',
         }}
       >
-        {state.isLoadingMessages && (
+        {isLoadingMessages && (
           <LinearProgress sx={{ mb: 2 }} />
         )}
 
@@ -328,16 +329,16 @@ export const AdminMessageThread: React.FC<AdminMessageThreadProps> = ({
           messages={visibleMessages}
           currentUserId={1} // This should come from auth context
           onReply={setReplyingTo}
-          onLoadMore={actions.loadMoreMessages}
-          hasMore={state.hasMoreMessages}
+          onLoadMore={onLoadMoreMessages}
+          hasMore={hasMoreMessages}
         />
 
         {/* Typing Indicators */}
-        {state.typingUsers.length > 0 && (
+        {typingUsers.length > 0 && (
           <Box sx={{ p: 2 }}>
             <Typography variant="caption" color="text.secondary">
-              {state.typingUsers.map(u => u.user_name).join(', ')} 
-              {state.typingUsers.length === 1 ? ' is' : ' are'} typing...
+              {typingUsers.map(u => u.user_name).join(', ')}
+              {typingUsers.length === 1 ? ' is' : ' are'} typing...
             </Typography>
           </Box>
         )}

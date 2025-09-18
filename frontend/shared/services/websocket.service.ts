@@ -125,7 +125,7 @@ class WebSocketManager {
   
   // Connection debouncing to prevent rapid connection attempts
   private connectionAttemptTimestamps: Map<string, number> = new Map();
-  private readonly CONNECTION_DEBOUNCE_DELAY = 1000; // 1 second minimum between connection attempts
+  private readonly CONNECTION_DEBOUNCE_DELAY = 3000; // 3 seconds minimum between connection attempts
   
   // Metrics and monitoring
   private connectionMetrics: Map<string, ConnectionMetrics> = new Map();
@@ -197,12 +197,19 @@ class WebSocketManager {
       console.warn('[WebSocketManager] Token does not appear to be a valid JWT format');
     }
     
+    // Check current connection state to prevent duplicate connections
+    const currentState = this.getConnectionState(connectionId);
+    if (currentState === 'connecting' || currentState === 'connected') {
+      this.log(`⚠️ Connection attempt rejected for ${connectionId} - already ${currentState}`);
+      throw new Error(`Connection already ${currentState}`);
+    }
+
     // Connection debouncing to prevent rapid successive attempts
     const now = Date.now();
     const lastAttempt = this.connectionAttemptTimestamps.get(connectionId) || 0;
-    
+
     if (now - lastAttempt < this.CONNECTION_DEBOUNCE_DELAY) {
-      this.log(`⏳ Connection debounced for ${connectionId}, too soon after last attempt`);
+      this.log(`⏳ Connection debounced for ${connectionId}, too soon after last attempt (${now - lastAttempt}ms < ${this.CONNECTION_DEBOUNCE_DELAY}ms)`);
       throw new Error('Connection attempt rate limited');
     }
     

@@ -47,7 +47,9 @@ import { FunnelAnalytics } from './pages/analytics/funnels/FunnelAnalytics';
 // Messaging imports
 import { MessagesOverview } from './pages/messages/MessagesOverview';
 import { AdminMessageThread } from './components/messaging/AdminMessageThread';
+import { useMessagingContext } from '@shared';
 import { useParams } from 'react-router-dom';
+import { useEffect } from 'react';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -141,8 +143,40 @@ const SettingsRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 // Thread Wrapper Component to extract threadId from URL
 const ThreadWrapper: React.FC = () => {
   const { threadId } = useParams<{ threadId: string }>();
+  const { state, actions, config } = useMessagingContext();
+
+  useEffect(() => {
+    if (threadId) {
+      actions.selectThread(threadId);
+    }
+  }, [threadId, actions]);
+
   if (!threadId) return null;
-  return <AdminMessageThread threadId={threadId} />;
+
+  const currentThread = state.threads.find(t => t.id === threadId);
+
+  return (
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <AdminMessageThread
+        threadId={threadId}
+        showContext={false}
+        enableInternalNotes={config.enableInternalNotes}
+        currentThread={currentThread}
+        messages={state.messages}
+        isConnected={state.isConnected}
+        isLoadingMessages={state.isLoadingMessages}
+        hasMoreMessages={state.hasMoreMessages}
+        typingUsers={state.typingUsers}
+        config={config}
+        isTyping={state.isTyping}
+        onSendMessage={actions.sendMessage}
+        onMarkAsRead={actions.markAsRead}
+        onLoadMoreMessages={actions.loadMoreMessages}
+        onStartTyping={actions.startTyping}
+        onStopTyping={actions.stopTyping}
+      />
+    </Box>
+  );
 };
 
 // Main App Router Component
