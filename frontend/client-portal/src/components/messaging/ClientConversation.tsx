@@ -1,6 +1,6 @@
 /**
- * ClientMessageThread - Client-Facing Message Thread Component
- * 
+ * ClientConversation - Message Thread Component for Client Portal
+ *
  * Features:
  * - Simple, clean WhatsApp-style interface
  * - Mobile-optimized touch interactions
@@ -39,9 +39,16 @@ import { ClientMessageComposer } from './ClientMessageComposer';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMessagingContext } from '@shared';
 import type { Message } from '@shared/types/messaging.types';
-import type { ClientMessageThreadProps } from './ClientMessageThread.types';
 
-export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
+export interface ClientConversationProps {
+  threadId: string;
+  simplified?: boolean;
+  showBackButton?: boolean;
+  onBack?: () => void;
+  className?: string;
+}
+
+export const ClientConversation: React.FC<ClientConversationProps> = ({
   threadId,
   simplified: _simplified = false,
   showBackButton = false,
@@ -75,19 +82,6 @@ export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
-
-  // Extract stable action reference to prevent effect recreation
-  const markAsReadAction = actions.markAsRead;
-
-  // Mark messages as read when they come into view
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const unreadMessages = messages.filter(msg => !(msg.read_by || []).includes(user.id));
-    unreadMessages.forEach(msg => {
-      markAsReadAction(msg.id);
-    });
-  }, [messages, markAsReadAction, user?.id]);
 
   if (!currentThread) {
     return (
@@ -133,11 +127,11 @@ export const ClientMessageThread: React.FC<ClientMessageThreadProps> = ({
             <ArrowBackIcon />
           </IconButton>
         )}
-        
+
         <Avatar sx={{ bgcolor: 'primary.main' }}>
           {currentThread.event_name?.charAt(0) || 'E'}
         </Avatar>
-        
+
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography variant="h6" noWrap>
             {currentThread.event_name || 'Event'}
@@ -278,7 +272,7 @@ const ClientMessageList: React.FC<ClientMessageListProps> = ({
               👋 Welcome to your conversation!
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              This is the start of your conversation with our team. 
+              This is the start of your conversation with our team.
               We're here to help make your event amazing!
             </Typography>
           </CardContent>
@@ -295,12 +289,12 @@ const ClientMessageList: React.FC<ClientMessageListProps> = ({
           message={message}
           isOwnMessage={message.sender.id === currentUserId}
           showAvatar={
-            index === 0 || 
+            index === 0 ||
             messages[index - 1].sender.id !== message.sender.id
           }
           showTimestamp={
             index === 0 ||
-            new Date(message.created_at).getTime() - 
+            new Date(message.created_at).getTime() -
             new Date(messages[index - 1].created_at).getTime() > 300000 // 5 minutes
           }
         />
@@ -385,8 +379,8 @@ const ClientMessageItem: React.FC<ClientMessageItemProps> = ({
         <Box sx={{ width: 32, display: 'flex', justifyContent: 'center' }}>
           {showAvatar && !isOwnMessage && (
             <Avatar
-              sx={{ 
-                width: 28, 
+              sx={{
+                width: 28,
                 height: 28,
                 bgcolor: 'secondary.main',
                 fontSize: '0.8rem',
@@ -405,9 +399,9 @@ const ClientMessageItem: React.FC<ClientMessageItemProps> = ({
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ 
-                display: 'block', 
-                mb: 0.5, 
+              sx={{
+                display: 'block',
+                mb: 0.5,
                 ml: 1,
                 fontSize: '0.7rem',
               }}
@@ -427,9 +421,9 @@ const ClientMessageItem: React.FC<ClientMessageItemProps> = ({
               boxShadow: theme.shadows[1],
             }}
           >
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
               }}
@@ -565,7 +559,7 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({ users }) => {
         <Avatar sx={{ width: 28, height: 28, bgcolor: 'secondary.main' }}>
           {users[0]?.user_name.charAt(0) || '?'}
         </Avatar>
-        
+
         <Paper
           sx={{
             p: 1.5,
@@ -618,4 +612,4 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({ users }) => {
   );
 };
 
-export default ClientMessageThread;
+export default ClientConversation;

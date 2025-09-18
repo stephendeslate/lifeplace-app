@@ -1,13 +1,12 @@
 /**
- * ClientMessageComposer - Simple Message Composition Component
- * 
+ * ClientMessageComposer - Message Input Component for Client Portal
+ *
  * Features:
- * - Clean, accessible text input
- * - File upload with drag-and-drop support
- * - Send shortcuts (Enter to send, Shift+Enter for new line)
- * - Character limits with visual feedback
- * - Mobile keyboard optimization
- * - File type and size validation
+ * - Simple text input with file upload
+ * - Character limits
+ * - Send on Enter (mobile-friendly)
+ * - Drag and drop file support
+ * - Mobile-optimized touch interactions
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
@@ -16,14 +15,11 @@ import {
   TextField,
   IconButton,
   Chip,
+  Paper,
   Typography,
   LinearProgress,
   Alert,
-  Paper,
-  Tooltip,
-  Fade,
   useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -31,7 +27,6 @@ import {
   Image as ImageIcon,
   PictureAsPdf as PdfIcon,
   InsertDriveFile as FileIcon,
-  CloudUpload as UploadIcon,
 } from '@mui/icons-material';
 import { useMessagingContext } from '@shared';
 
@@ -41,148 +36,140 @@ export interface ClientMessageComposerProps {
   maxLength?: number;
   enableFiles?: boolean;
   autoFocus?: boolean;
-  className?: string;
+  disabled?: boolean;
 }
 
 export const ClientMessageComposer: React.FC<ClientMessageComposerProps> = ({
   threadId: _threadId,
-  placeholder = "Type your message...",
+  placeholder = 'Type your message...',
   maxLength = 2000,
   enableFiles = true,
   autoFocus = false,
-  className,
+  disabled = false,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
-  // Messaging context
   const { actions, config } = useMessagingContext();
-  
+
   // Component state
-  const [message, setMessage] = useState('');
+  const [messageContent, setMessageContent] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Refs
-  const textFieldRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Character count
-  const remainingChars = maxLength - message.length;
-  const isNearLimit = remainingChars < 100;
-  const isOverLimit = remainingChars < 0;
+  const textFieldRef = useRef<HTMLDivElement>(null);
 
   // Handle message sending
-  const handleSend = useCallback(async () => {
-    if ((!message.trim() && attachments.length === 0) || isUploading || isOverLimit) {
+  const handleSendMessage = useCallback(async () => {
+    if ((!messageContent.trim() && attachments.length === 0) || isUploading || disabled) {
       return;
     }
 
     try {
       setIsUploading(true);
-      setError(null);
-      
-      await actions.sendMessage(message.trim(), attachments);
-      
-      // Reset form
-      setMessage('');
+      await actions.sendMessage(messageContent, attachments);
+      setMessageContent('');
       setAttachments([]);
-      
-      // Focus back to input
-      if (textFieldRef.current) {
-        textFieldRef.current.focus();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message');
+    } catch (error) {
+      console.error('Failed to send message:', error);
     } finally {
       setIsUploading(false);
     }
-  }, [message, attachments, isUploading, isOverLimit, actions]);
-
-  // Handle keyboard shortcuts
-  const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleSend();
-    }
-  }, [handleSend]);
+  }, [messageContent, attachments, actions, isUploading, disabled]);
 
   // Handle file selection
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    handleFiles(files);
+    const validFiles = files.filter(file => {
+      // Check file size
+      if (file.size > (config.maxFileSize || 10 * 1024 * 1024)) {
+        console.warn(`File ${file.name} is too large`);
+        return false;
+      }
+
+      // Check file type if allowedFileTypes is specified
+      if (config.allowedFileTypes?.length) {
+        const isAllowed = config.allowedFileTypes.some(type => {
+          if (type.startsWith('.')) {
+            return file.name.toLowerCase().endsWith(type.toLowerCase());
+          }
+          return file.type.match(type);
+        });
+        if (!isAllowed) {
+          console.warn(`File type ${file.type} is not allowed`);
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    setAttachments(prev => [...prev, ...validFiles]);
     if (event.target) {
       event.target.value = '';
     }
-  }, []);
-
-  // Handle files (from input or drag-and-drop)
-  const handleFiles = useCallback((files: File[]) => {
-    const validFiles: File[] = [];
-    const errors: string[] = [];
-
-    files.forEach((file) => {
-      // Check file size
-      if (file.size > config.maxFileSize) {
-        errors.push(`"${file.name}" is too large (max ${config.maxFileSize / (1024 * 1024)}MB)`);
-        return;
-      }
-
-      // Check file type
-      const allowedTypes = config.allowedFileTypes || ['image/*', 'application/pdf', '.doc', '.docx'];
-      const isAllowedType = allowedTypes.some(type => {
-        if (type.includes('*')) {
-          const baseType = type.split('/')[0];
-          return file.type.startsWith(baseType);
-        }
-        return file.type === type || file.name.toLowerCase().endsWith(type.toLowerCase());
-      });
-
-      if (!isAllowedType) {
-        errors.push(`"${file.name}" is not an allowed file type`);
-        return;
-      }
-
-      validFiles.push(file);
-    });
-
-    if (errors.length > 0) {
-      setError(errors.join(', '));
-      setTimeout(() => setError(null), 5000);
-    }
-
-    if (validFiles.length > 0) {
-      setAttachments(prev => [...prev, ...validFiles]);
-    }
-  }, [config]);
+  }, [config.maxFileSize, config.allowedFileTypes]);
 
   // Handle file removal
   const handleRemoveFile = useCallback((index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  // Drag and drop handlers
+  // Handle drag and drop
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    setDragOver(true);
+    setIsDragOver(true);
   }, []);
 
   const handleDragLeave = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    setDragOver(false);
+    setIsDragOver(false);
   }, []);
 
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    setDragOver(false);
-    
-    const files = Array.from(event.dataTransfer.files);
-    handleFiles(files);
-  }, [handleFiles]);
+    setIsDragOver(false);
 
-  // Get file icon
+    const files = Array.from(event.dataTransfer.files);
+    if (files.length > 0) {
+      // Create a synthetic event to reuse file selection logic
+      const syntheticEvent = {
+        target: { files }
+      } as React.ChangeEvent<HTMLInputElement>;
+      handleFileSelect(syntheticEvent);
+    }
+  }, [handleFileSelect]);
+
+  // Handle keyboard shortcuts
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  }, [handleSendMessage]);
+
+  // Handle typing indicators
+  useEffect(() => {
+    let typingTimer: NodeJS.Timeout;
+
+    if (messageContent.trim() && config.enableTypingIndicators) {
+      actions.startTyping();
+      typingTimer = setTimeout(() => {
+        actions.stopTyping();
+      }, config.typingTimeout || 3000);
+    }
+
+    return () => {
+      if (typingTimer) {
+        clearTimeout(typingTimer);
+      }
+      if (config.enableTypingIndicators) {
+        actions.stopTyping();
+      }
+    };
+  }, [messageContent, actions, config.enableTypingIndicators, config.typingTimeout]);
+
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith('image/')) {
       return <ImageIcon fontSize="small" />;
@@ -193,49 +180,80 @@ export const ClientMessageComposer: React.FC<ClientMessageComposerProps> = ({
     return <FileIcon fontSize="small" />;
   };
 
-  // Auto-resize text field
-  useEffect(() => {
-    if (textFieldRef.current) {
-      const element = textFieldRef.current;
-      element.style.height = 'auto';
-      element.style.height = `${Math.min(element.scrollHeight, 120)}px`;
-    }
-  }, [message]);
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   return (
-    <Box className={className}>
-      {/* Error Alert */}
-      {error && (
-        <Alert
-          severity="error"
-          onClose={() => setError(null)}
-          sx={{ mx: 2, mb: 1 }}
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        borderTop: `1px solid ${theme.palette.divider}`,
+        borderRadius: 0,
+        position: 'relative',
+      }}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragOver && enableFiles && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            bgcolor: 'rgba(25, 118, 210, 0.1)',
+            border: `2px dashed ${theme.palette.primary.main}`,
+            borderRadius: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1,
+          }}
         >
-          {error}
-        </Alert>
+          <Typography variant="h6" color="primary">
+            Drop files here to attach
+          </Typography>
+        </Box>
       )}
 
-      {/* File Attachments Preview */}
+      {/* File attachments preview */}
       {attachments.length > 0 && (
-        <Box sx={{ p: 2, pb: 1 }}>
+        <Box sx={{ mb: 2 }}>
           <Typography variant="caption" color="text.secondary" gutterBottom>
             Attachments ({attachments.length})
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {attachments.map((file, index) => (
               <Chip
                 key={index}
                 icon={getFileIcon(file.type)}
-                label={`${file.name} (${(file.size / 1024).toFixed(1)}KB)`}
+                label={
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <Typography variant="caption" noWrap sx={{ maxWidth: 150 }}>
+                      {file.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                      {formatFileSize(file.size)}
+                    </Typography>
+                  </Box>
+                }
                 onDelete={() => handleRemoveFile(index)}
                 size="small"
                 sx={{
-                  maxWidth: 200,
+                  height: 'auto',
+                  py: 1,
                   '& .MuiChip-label': {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  },
+                    py: 0.5,
+                  }
                 }}
               />
             ))}
@@ -244,51 +262,36 @@ export const ClientMessageComposer: React.FC<ClientMessageComposerProps> = ({
       )}
 
       {/* Composer */}
-      <Box
-        sx={{
-          p: 2,
-          borderTop: attachments.length > 0 ? `1px solid ${theme.palette.divider}` : 'none',
-        }}
-        onDragOver={enableFiles ? handleDragOver : undefined}
-        onDragLeave={enableFiles ? handleDragLeave : undefined}
-        onDrop={enableFiles ? handleDrop : undefined}
-      >
-        {/* Drag Overlay */}
-        {enableFiles && dragOver && (
-          <Fade in>
-            <Paper
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: 'rgba(25, 118, 210, 0.1)',
-                borderColor: 'primary.main',
-                borderWidth: 2,
-                borderStyle: 'dashed',
-                borderRadius: 2,
-                zIndex: 10,
-              }}
-            >
-              <Box sx={{ textAlign: 'center' }}>
-                <UploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
-                <Typography variant="h6" color="primary.main">
-                  Drop files here
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Release to attach files to your message
-                </Typography>
-              </Box>
-            </Paper>
-          </Fade>
-        )}
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+        <TextField
+          ref={textFieldRef}
+          multiline
+          maxRows={4}
+          fullWidth
+          variant="outlined"
+          placeholder={placeholder}
+          value={messageContent}
+          onChange={(e) => {
+            if (e.target.value.length <= maxLength) {
+              setMessageContent(e.target.value);
+            }
+          }}
+          onKeyDown={handleKeyDown}
+          disabled={isUploading || disabled}
+          autoFocus={autoFocus}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              bgcolor: 'background.paper',
+            },
+          }}
+          helperText={
+            messageContent.length > maxLength * 0.9 ?
+            `${messageContent.length}/${maxLength}` :
+            undefined
+          }
+        />
 
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-          {/* File Upload Input */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {enableFiles && (
             <>
               <input
@@ -296,123 +299,53 @@ export const ClientMessageComposer: React.FC<ClientMessageComposerProps> = ({
                 type="file"
                 multiple
                 onChange={handleFileSelect}
-                accept={(config.allowedFileTypes || ['image/*', 'application/pdf', '.doc', '.docx']).join(',')}
+                accept={config.allowedFileTypes?.join(',')}
                 style={{ display: 'none' }}
               />
-              
-              <Tooltip title="Attach files">
-                <IconButton
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  size={isMobile ? 'medium' : 'small'}
-                  sx={{ mb: 0.5 }}
-                >
-                  <AttachFileIcon />
-                </IconButton>
-              </Tooltip>
+
+              <IconButton
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading || disabled}
+                size="small"
+              >
+                <AttachFileIcon />
+              </IconButton>
             </>
           )}
 
-          {/* Text Input */}
-          <TextField
-            inputRef={textFieldRef}
-            fullWidth
-            multiline
-            maxRows={4}
-            placeholder={placeholder}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={isUploading}
-            autoFocus={autoFocus && !isMobile}
-            error={isOverLimit}
+          <IconButton
+            onClick={handleSendMessage}
+            disabled={(!messageContent.trim() && attachments.length === 0) || isUploading || disabled}
+            color="primary"
+            size="large"
             sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 3,
-                bgcolor: 'background.paper',
-                '&:hover': {
-                  bgcolor: 'grey.50',
-                },
-                '&.Mui-focused': {
-                  bgcolor: 'background.paper',
-                },
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': {
+                bgcolor: 'primary.dark',
               },
-              '& textarea': {
-                resize: 'none',
+              '&.Mui-disabled': {
+                bgcolor: 'action.disabledBackground',
+                color: 'action.disabled',
               },
-            }}
-          />
-
-          {/* Send Button */}
-          <Tooltip title={`Send message ${!isMobile ? '(Enter)' : ''}`}>
-            <span>
-              <IconButton
-                onClick={handleSend}
-                disabled={(!message.trim() && attachments.length === 0) || isUploading || isOverLimit}
-                color="primary"
-                size={isMobile ? 'medium' : 'small'}
-                sx={{ 
-                  mb: 0.5,
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  },
-                  '&.Mui-disabled': {
-                    bgcolor: 'action.disabledBackground',
-                    color: 'action.disabled',
-                  },
-                }}
-              >
-                <SendIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </Box>
-
-        {/* Character Count */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-          <Box>
-            {isUploading && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LinearProgress sx={{ width: 100, height: 4 }} />
-                <Typography variant="caption" color="text.secondary">
-                  Sending...
-                </Typography>
-              </Box>
-            )}
-          </Box>
-          
-          {(isNearLimit || isOverLimit) && (
-            <Typography
-              variant="caption"
-              color={isOverLimit ? 'error' : 'warning.main'}
-              sx={{ fontSize: '0.7rem' }}
-            >
-              {remainingChars} characters {isOverLimit ? 'over limit' : 'remaining'}
-            </Typography>
-          )}
-        </Box>
-
-        {/* Helper Text */}
-        {!isMobile && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ 
-              display: 'block', 
-              mt: 1, 
-              fontSize: '0.7rem',
-              opacity: message.length > 0 || attachments.length > 0 ? 1 : 0.6,
-              transition: theme.transitions.create('opacity'),
             }}
           >
-            Press Enter to send • Shift+Enter for new line
-            {enableFiles && ' • Drag files to attach'}
-          </Typography>
-        )}
+            <SendIcon />
+          </IconButton>
+        </Box>
       </Box>
-    </Box>
+
+      {isUploading && (
+        <LinearProgress sx={{ mt: 1 }} />
+      )}
+
+      {/* Error states */}
+      {messageContent.length > maxLength && (
+        <Alert severity="warning" sx={{ mt: 1 }}>
+          Message is too long. Please keep it under {maxLength} characters.
+        </Alert>
+      )}
+    </Paper>
   );
 };
 

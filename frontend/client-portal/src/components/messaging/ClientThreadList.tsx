@@ -1,23 +1,18 @@
 /**
- * ClientMessages - Client Portal Messages Interface
- * 
+ * ClientThreadList - Thread List Component for Client Portal
+ *
  * Features:
- * - WhatsApp-style clean messaging interface
- * - Event-specific messaging context
- * - Mobile-first responsive design
- * - Simple file sharing with drag-and-drop
- * - Clear message delivery status
- * - Accessibility compliance
- * - Clean consumer-grade UX
+ * - Event-focused thread display
+ * - Unread message indicators
+ * - Simple filtering (by event)
+ * - Consumer-grade UX
+ * - Mobile-optimized touch interactions
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React from 'react';
 import {
   Box,
-  Paper,
   Typography,
-  Card,
-  CardContent,
   List,
   ListItem,
   ListItemButton,
@@ -26,10 +21,7 @@ import {
   Avatar,
   Chip,
   Alert,
-  Skeleton,
   useTheme,
-  useMediaQuery,
-  Container,
 } from '@mui/material';
 import {
   Message as MessageIcon,
@@ -38,176 +30,9 @@ import {
   DoneAll as DoneAllIcon,
   ChatBubbleOutline as ChatIcon,
 } from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useMessagingContext } from '@shared';
-import { ClientMessageThread } from '../../components/messaging/ClientMessageThread';
 import type { MessageThread } from '@shared/types/messaging.types';
 
-export interface ClientMessagesProps {
-  eventId?: string;
-  simplified?: boolean;
-  showWelcome?: boolean;
-}
-
-export const ClientMessages: React.FC<ClientMessagesProps> = ({
-  eventId,
-  simplified = false,
-  showWelcome = true,
-}) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const navigate = useNavigate();
-  const { threadId } = useParams<{ threadId?: string }>();
-  
-  // Messaging context
-  const { state, actions } = useMessagingContext();
-  
-  // Component state
-  const [selectedThread, setSelectedThread] = useState<string | null>(threadId || null);
-  const [showThreadList, setShowThreadList] = useState(!threadId);
-
-  // Filter threads by event if specified
-  const filteredThreads = useMemo(() => {
-    if (!eventId) return state.threads;
-    return state.threads.filter(thread => thread.event_id === parseInt(eventId));
-  }, [state.threads, eventId]);
-
-  // Extract stable action reference to prevent callback recreation
-  const selectThreadAction = actions.selectThread;
-
-  // Handle thread selection
-  const handleThreadSelect = useCallback((threadId: string) => {
-    setSelectedThread(threadId);
-    selectThreadAction(threadId);
-
-    if (isMobile) {
-      setShowThreadList(false);
-    }
-
-    // Update URL
-    navigate(`/messages/thread/${threadId}`, { replace: true });
-  }, [selectThreadAction, isMobile, navigate]);
-
-  // Handle back to list
-  const handleBackToList = useCallback(() => {
-    setShowThreadList(true);
-    setSelectedThread(null);
-    selectThreadAction(null);
-    navigate('/messages', { replace: true });
-  }, [selectThreadAction, navigate]);
-
-  // Auto-select first thread if none selected (use effect without callback dependency)
-  useEffect(() => {
-    if (!selectedThread && filteredThreads.length > 0 && !isMobile) {
-      const firstThreadId = filteredThreads[0].id;
-      setSelectedThread(firstThreadId);
-      selectThreadAction(firstThreadId);
-      navigate(`/messages/thread/${firstThreadId}`, { replace: true });
-    }
-  }, [filteredThreads, selectedThread, isMobile, selectThreadAction, navigate]);
-
-  // Loading state
-  if (state.isLoadingThreads) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <LoadingSkeleton />
-      </Container>
-    );
-  }
-
-  // Error state
-  if (state.error) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {state.error.message}
-        </Alert>
-      </Container>
-    );
-  }
-
-  // Mobile layout - single panel
-  if (isMobile) {
-    return (
-      <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        {showThreadList ? (
-          <ThreadListView
-            threads={filteredThreads}
-            onThreadSelect={handleThreadSelect}
-            showWelcome={showWelcome}
-            eventId={eventId}
-          />
-        ) : selectedThread ? (
-          <ClientMessageThread
-            threadId={selectedThread}
-            onBack={handleBackToList}
-            showBackButton
-          />
-        ) : null}
-      </Box>
-    );
-  }
-
-  // Desktop layout - two panels
-  return (
-    <Container maxWidth="lg" sx={{ py: 3, height: 'calc(100vh - 140px)' }}>
-      <Box
-        sx={{
-          height: '100%',
-          display: 'flex',
-          gap: 2,
-          bgcolor: 'background.default',
-        }}
-      >
-        {/* Thread List Panel */}
-        <Paper
-          sx={{
-            width: '350px',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-          }}
-        >
-          <ThreadListView
-            threads={filteredThreads}
-            selectedThreadId={selectedThread}
-            onThreadSelect={handleThreadSelect}
-            showWelcome={false}
-            eventId={eventId}
-          />
-        </Paper>
-
-        {/* Message View Panel */}
-        <Paper
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-          }}
-        >
-          {selectedThread ? (
-            <ClientMessageThread
-              threadId={selectedThread}
-              simplified={simplified}
-            />
-          ) : (
-            <EmptyStateView showWelcome={showWelcome} />
-          )}
-        </Paper>
-      </Box>
-    </Container>
-  );
-};
-
-/**
- * Thread List View Component
- */
-interface ThreadListViewProps {
+export interface ClientThreadListProps {
   threads: MessageThread[];
   selectedThreadId?: string | null;
   onThreadSelect: (threadId: string) => void;
@@ -215,7 +40,7 @@ interface ThreadListViewProps {
   eventId?: string;
 }
 
-const ThreadListView: React.FC<ThreadListViewProps> = ({
+export const ClientThreadList: React.FC<ClientThreadListProps> = ({
   threads,
   selectedThreadId,
   onThreadSelect,
@@ -273,8 +98,8 @@ const ThreadListView: React.FC<ThreadListViewProps> = ({
       {showWelcome && !eventId && (
         <Alert
           severity="info"
-          sx={{ 
-            m: 2, 
+          sx={{
+            m: 2,
             borderRadius: 2,
             '& .MuiAlert-message': {
               fontSize: '0.875rem',
@@ -442,71 +267,4 @@ const EmptyThreadList: React.FC<{ eventId?: string }> = ({ eventId }) => (
   </Box>
 );
 
-/**
- * Empty State View Component
- */
-const EmptyStateView: React.FC<{ showWelcome: boolean }> = ({ showWelcome }) => (
-  <Box
-    sx={{
-      height: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
-      p: 4,
-    }}
-  >
-    <Box sx={{ maxWidth: 400 }}>
-      <MessageIcon
-        sx={{
-          fontSize: 80,
-          color: 'primary.main',
-          opacity: 0.7,
-          mb: 3,
-        }}
-      />
-      <Typography variant="h5" fontWeight={600} gutterBottom>
-        Select a conversation
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Choose a conversation from the list to start chatting with our team
-      </Typography>
-      {showWelcome && (
-        <Card sx={{ mt: 3, bgcolor: 'primary.50' }}>
-          <CardContent>
-            <Typography variant="body2" color="primary.dark">
-              💬 <strong>Pro tip:</strong> Our team is here to help with any questions about your events. 
-              Feel free to reach out anytime!
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
-    </Box>
-  </Box>
-);
-
-/**
- * Loading Skeleton Component
- */
-const LoadingSkeleton: React.FC = () => (
-  <Box sx={{ display: 'flex', gap: 2, height: '600px' }}>
-    <Paper sx={{ width: '350px', p: 2 }}>
-      <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
-      {[...Array(5)].map((_, index) => (
-        <Box key={index} sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
-          <Skeleton variant="circular" width={40} height={40} />
-          <Box sx={{ flexGrow: 1 }}>
-            <Skeleton variant="text" width="80%" />
-            <Skeleton variant="text" width="60%" />
-          </Box>
-        </Box>
-      ))}
-    </Paper>
-    <Paper sx={{ flexGrow: 1, p: 2 }}>
-      <Skeleton variant="text" width="40%" height={32} sx={{ mb: 2 }} />
-      <Skeleton variant="rectangular" width="100%" height="80%" />
-    </Paper>
-  </Box>
-);
-
-export default ClientMessages;
+export default ClientThreadList;

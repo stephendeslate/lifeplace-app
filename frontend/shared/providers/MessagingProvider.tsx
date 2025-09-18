@@ -309,7 +309,7 @@ export const MessagingProvider: React.FC<MessagingProviderProps> = ({
 
     clearError: () => setError(null),
     clearConnectionError: () => setConnectionError(null),
-  }), [messagingActions, messagingState.selectedThreadId, config]);
+  }), [messagingActions]);
 
   // Enhanced state with computed values
   const enhancedState: MessagingState = useMemo(() => ({
