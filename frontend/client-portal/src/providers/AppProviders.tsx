@@ -84,9 +84,15 @@ const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children
     url: getWebSocketUrl(),
     protocols: ['messaging'],
     getAuthToken,
-    reconnectInterval: 3000,
-    maxReconnectAttempts: 5,
+    reconnectInterval: 5000, // Increased from 3000 to reduce connection frequency
+    maxReconnectAttempts: 3, // Reduced from 5 to be less aggressive
     heartbeatInterval: 30000,
+    // Add exponential backoff configuration
+    reconnectBackoffFactor: 1.5, // Exponentially increase delay
+    maxReconnectDelay: 30000, // Cap maximum delay at 30 seconds
+    // Rate limiting resilience
+    rateLimitBackoff: 10000, // Wait 10s when rate limited
+    enableConnectionPooling: true, // Share connections between components
   };
 
   const messagingConfig = {
@@ -109,7 +115,7 @@ const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children
     messagesPerPage: 30,
     threadsPerPage: 10,
     reconnectAttempts: 3,
-    reconnectDelay: 2000,
+    reconnectDelay: 5000, // Increased from 2000 to match webSocketConfig
   };
 
   // Always render the full provider tree - MessagingProvider now handles auth state internally

@@ -1424,3 +1424,11 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-09-19 02:45:18,724 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
 🔒 SECURITY 2025-09-19 02:45:20,197 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
 🔒 SECURITY 2025-09-19 02:46:11,597 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-19 02:52:44,411 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-19 02:53:01,198 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-19 02:53:02,218 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-19 02:53:32,575 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-19 02:53:41,397 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-19 02:53:58,002 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-19 02:53:59,910 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-19 02:54:01,761 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
