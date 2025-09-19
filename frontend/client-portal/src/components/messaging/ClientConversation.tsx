@@ -136,14 +136,16 @@ export const ClientConversation: React.FC<ClientConversationProps> = ({
           <Typography variant="h6" noWrap>
             {currentThread.event_name || 'Event'}
           </Typography>
-          <Typography variant="body2" color="text.secondary" noWrap>
-            {new Date(currentThread.event_date).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </Typography>
+          {currentThread.created_at && (
+            <Typography variant="body2" color="text.secondary" noWrap>
+              {new Date(currentThread.created_at).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </Typography>
+          )}
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -391,7 +393,7 @@ const ClientMessageItem: React.FC<ClientMessageItemProps> = ({
               }}
               src={message.sender.avatar}
             >
-              {message.sender.name?.charAt(0) || '?'}
+              {message.sender.display_name?.charAt(0) || '?'}
             </Avatar>
           )}
         </Box>
@@ -410,7 +412,7 @@ const ClientMessageItem: React.FC<ClientMessageItemProps> = ({
                 fontSize: '0.7rem',
               }}
             >
-              {message.sender.name || 'Unknown User'}
+              {message.sender.display_name || 'Unknown User'}
             </Typography>
           )}
 

@@ -58,7 +58,7 @@ export const ClientMessagesPage: React.FC<ClientMessagesPageProps> = ({
   // Filter threads by event if specified
   const filteredThreads = useMemo(() => {
     if (!eventId) return state.threads;
-    return state.threads.filter(thread => thread.event_id === parseInt(eventId));
+    return state.threads.filter(thread => thread.event === parseInt(eventId));
   }, [state.threads, eventId]);
 
   // Handle thread selection
