@@ -32,41 +32,54 @@ export interface User {
 
 export interface MessageThread {
   id: string;
-  event_id: number;
-  event_name: string;
-  event_date: string;
-  client_id: number;
+  // Client info from API response
+  client: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    role: string;
+    display_name: string;
+  };
+  // Event info (can be null)
+  event: number | null;
+  event_name: string | null;
   client_name: string;
-  assigned_admin?: {
+  assigned_admin: {
     id: number;
     name: string;
     avatar?: string;
-  };
+  } | null;
   priority: 'urgent' | 'high' | 'normal' | 'low';
   status: 'active' | 'waiting' | 'resolved' | 'archived';
-  subject?: string;
+  subject: string;
   unread_count: number;
-  last_message?: {
-    content: string;
-    sender_name: string;
-    sent_at: string;
-  };
-  // Direct fields from API response
+  // Flattened message fields from API response
+  last_message_at: string | null;
   last_message_content: string;
   last_message_sender_name: string;
   last_message_preview: string;
   can_manage: boolean;
   created_at: string;
   updated_at: string;
-  // Archive-related fields
+
+  // Legacy nested structure for backward compatibility
+  last_message?: {
+    content: string;
+    sender_name: string;
+    sent_at: string;
+  };
+
+  // Legacy properties for backward compatibility
+  event_id?: number;
+  event_date?: string;
+  client_id?: number;
   is_archived?: boolean;
   archived_at?: string;
   archived_by?: {
     id: number;
     name: string;
   };
-  // Legacy properties for backward compatibility
-  last_message_at?: string;
   client_email?: string;
   client_phone?: string;
 }

@@ -143,7 +143,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
       if (item.id === 'messages' && messagingState) {
         return {
           ...item,
-          badge: messagingState.unreadCount > 0 ? messagingState.unreadCount : undefined,
+          badge: messagingState?.state?.unreadCount > 0 ? messagingState.state.unreadCount : undefined,
         };
       }
       return item;

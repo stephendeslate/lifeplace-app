@@ -59,8 +59,12 @@ export const ClientThreadList: React.FC<ClientThreadListProps> = ({
     return <DoneAllIcon fontSize="small" color="action" />;
   };
 
-  const formatLastMessageTime = (dateString: string) => {
+  const formatLastMessageTime = (dateString: string | null) => {
+    if (!dateString) return '';
+
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
@@ -160,25 +164,27 @@ export const ClientThreadList: React.FC<ClientThreadListProps> = ({
                             flexGrow: 1,
                           }}
                         >
-                          {thread.event_name}
+                          {thread.event_name || thread.subject || 'General Message'}
                         </Typography>
                         {getStatusIcon(thread)}
                       </Box>
                     }
                     secondary={
                       <Box>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontSize: '0.8rem', mb: 0.5 }}
-                        >
-                          {new Date(thread.event_date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </Typography>
-                        {thread.last_message && (
+                        {thread.created_at && (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontSize: '0.8rem', mb: 0.5 }}
+                          >
+                            {new Date(thread.created_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </Typography>
+                        )}
+                        {thread.last_message_content && (
                           <Typography
                             variant="caption"
                             sx={{
@@ -190,16 +196,16 @@ export const ClientThreadList: React.FC<ClientThreadListProps> = ({
                               fontSize: '0.75rem',
                             }}
                           >
-                            {thread.last_message.sender_name}: {thread.last_message.content}
+                            {thread.last_message_sender_name}: {thread.last_message_content}
                           </Typography>
                         )}
-                        {thread.last_message && (
+                        {thread.last_message_at && (
                           <Typography
                             variant="caption"
                             color="text.secondary"
                             sx={{ display: 'block', mt: 0.5, fontSize: '0.7rem' }}
                           >
-                            {formatLastMessageTime(thread.last_message.sent_at)}
+                            {formatLastMessageTime(thread.last_message_at)}
                           </Typography>
                         )}
                       </Box>
