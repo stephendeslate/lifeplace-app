@@ -64,7 +64,7 @@ export const useConfirmation = (
     }
 
     // Then search through step data
-    for (const [stepKey, stepData] of Object.entries(bookingData)) {
+    for (const [, stepData] of Object.entries(bookingData)) {
       if (typeof stepData === 'object' && stepData !== null) {
         const data = stepData as Record<string, unknown>;
         if (data.completion_type === 'quote' || data.completion_type === 'payment') {
