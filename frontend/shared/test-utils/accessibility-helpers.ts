@@ -1,6 +1,6 @@
 // shared/test-utils/accessibility-helpers.ts
 /// <reference types="./types" />
-import { within, screen } from '@testing-library/react'
+import { within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 // Using vitest globals
 

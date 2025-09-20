@@ -16,7 +16,7 @@ from core.domains.payments.models import (
     Invoice, PaymentPlan, PaymentInstallment
 )
 from core.domains.payments.services.payment_service import PaymentService
-from core.domains.payments.services.payment_gateway_service import PaymentGatewayService
+from core.domains.payments.services.gateway_service import PaymentGatewayService
 from core.domains.payments.services.invoice_service import InvoiceService
 from core.domains.events.models import Event, EventType
 from core.domains.sales.models import EventQuote, QuoteLineItem

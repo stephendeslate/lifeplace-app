@@ -1,6 +1,6 @@
 // frontend/client-portal/src/contexts/__tests__/ContractsContext.test.tsx
 import React from 'react';
-import { render, screen, waitFor, act } from '../../test/utils';
+import { render, screen, waitFor } from '../../test/utils';
 import { render as rtlRender } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';

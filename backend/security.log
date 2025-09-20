@@ -1434,3 +1434,115 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-09-19 02:54:01,761 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
 🔒 SECURITY 2025-09-19 03:00:36,965 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
 🔒 SECURITY 2025-09-19 03:00:57,406 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 02:19:29,087 WARNING [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-20 02:19:33,614 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 02:19:46,304 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 02:21:12,983 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 02:21:25,181 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 02:22:59,937 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 03:02:54,604 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 03:03:00,111 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 03:03:13,073 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 03:03:18,515 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 03:03:58,451 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 03:12:10,404 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 03:12:10,741 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 03:12:13,975 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:27:25,786 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:27:25,845 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:27:34,689 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:27:41,618 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:27:41,660 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:28:08,090 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:28:59,661 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:29:11,320 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:30:25,724 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:30:49,394 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:31:31,131 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:31:46,379 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:34:41,806 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:34:41,871 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:34:46,054 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:35:03,152 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:35:03,200 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:39:05,737 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:39:06,039 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:42:01,419 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:42:26,046 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:42:39,703 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:42:39,739 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:42:48,829 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:43:04,830 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:43:04,877 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:48:50,476 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:48:59,555 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:49:57,641 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:49:57,682 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:50:02,541 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:50:02,601 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:50:13,522 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:54:07,891 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:54:08,083 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:55:39,175 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:55:39,214 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:56:24,871 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:56:42,687 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 04:58:33,895 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 04:59:17,296 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 04:59:17,357 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 05:19:38,187 ERROR Failed to log security event: Object of type User is not JSON serializable
+🔒 SECURITY 2025-09-20 05:19:38,187 ERROR [SUSPICIOUS_ACTIVITY] User exceeded rate limit (IP: None, User: client@test.com)
+🔒 SECURITY 2025-09-20 05:24:52,779 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 05:24:52,838 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 05:24:57,120 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 05:25:09,258 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 05:25:09,304 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 06:30:08,017 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 06:30:08,075 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 06:30:15,625 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 06:30:15,673 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 06:30:34,128 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 06:31:15,940 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 06:44:37,072 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 06:44:37,111 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 06:44:55,430 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 06:44:55,481 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 06:44:59,953 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 06:45:06,155 INFO [LOGIN_SUCCESS] WebSocket authentication successful for stephendeslate@gmail.com
+🔒 SECURITY 2025-09-20 06:45:29,693 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 06:45:51,507 INFO [LOGIN_SUCCESS] WebSocket authentication successful for john.doe@gmail.com
+🔒 SECURITY 2025-09-20 07:36:12,168 WARNING [LOGIN_FAILURE] Failed login attempt for admin@example.com: Invalid credentials
+🔒 SECURITY 2025-09-20 07:36:12,257 WARNING [LOGIN_FAILURE] Failed login attempt for test@example.com: Invalid credentials
+🔒 SECURITY 2025-09-20 07:36:12,345 WARNING [LOGIN_FAILURE] Failed login attempt for client@example.com: Invalid credentials
+🔒 SECURITY 2025-09-20 07:36:12,435 WARNING [LOGIN_FAILURE] Failed login attempt for user@example.com: Invalid credentials
+🔒 SECURITY 2025-09-20 07:36:29,298 INFO [LOGIN_SUCCESS] User test@websocket.com logged in successfully
+🔒 SECURITY 2025-09-20 07:36:29,389 ERROR [LOGIN_FAILURE] Failed login attempt for admin@example.com: Invalid credentials
+🔒 SECURITY 2025-09-20 07:36:29,476 ERROR [LOGIN_FAILURE] Failed login attempt for test@example.com: Invalid credentials
+🔒 SECURITY 2025-09-20 07:36:29,564 ERROR [LOGIN_FAILURE] Failed login attempt for client@example.com: Invalid credentials
+🔒 SECURITY 2025-09-20 07:36:29,651 ERROR [LOGIN_FAILURE] Failed login attempt for user@example.com: Invalid credentials
+🔒 SECURITY 2025-09-20 07:36:34,631 INFO [LOGIN_SUCCESS] User test@websocket.com logged in successfully
+🔒 SECURITY 2025-09-20 07:36:48,224 INFO [LOGIN_SUCCESS] User test@websocket.com logged in successfully
+🔒 SECURITY 2025-09-20 08:36:52,266 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 08:37:08,105 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-20 10:23:55,824 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 03:42:59,407 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 03:44:45,993 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-21 03:44:50,679 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 03:46:13,343 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 03:49:24,186 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:02:17,228 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:07:24,403 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:13:10,307 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:13:21,833 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:13:34,385 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:14:33,341 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:24:34,499 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:25:39,089 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:27:44,515 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:33:31,665 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 04:49:51,652 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 05:12:00,244 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 05:48:57,137 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 05:58:12,337 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 06:03:46,370 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-21 06:14:11,072 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully

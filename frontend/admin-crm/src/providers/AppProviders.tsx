@@ -9,24 +9,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
-import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { AuthProvider } from '../contexts/AuthContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { LayoutProvider } from '../contexts/LayoutContext';
 import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
 
-// Messaging system imports
-import { WebSocketProvider, MessagingProvider, setApiClient } from '@shared';
-import api from '../utils/api';
-import { storage } from '../utils/storage';
 
 interface AppProvidersProps {
   children: React.ReactNode;
 }
 
-// Initialize messaging API client
-setApiClient(api);
-
-// Create QueryClient with default options optimized for messaging
+// Create QueryClient with default options
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -41,90 +34,22 @@ const queryClient = new QueryClient({
         return failureCount < 3;
       },
       refetchOnWindowFocus: false,
-      // Enhanced error handling for real-time features
-      refetchOnReconnect: true,
-      networkMode: 'online',
     },
     mutations: {
       retry: false,
-      // Enhanced mutation settings for optimistic updates
-      networkMode: 'online',
     },
   },
 });
 
-// Messaging-enabled wrapper that has access to auth context
-const MessagingEnabledApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  
-  // Don't render messaging components until auth has finished loading
-  if (isLoading) {
-    return <div>Loading authentication...</div>;
-  }
-  
-  // WebSocket configuration for admin CRM
-  const getWebSocketUrl = () => {
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const baseUrl = import.meta.env.VITE_WS_BASE_URL || 
-                   (import.meta.env.PROD ? window.location.host : 'localhost:8000');
-    return `${wsProtocol}//${baseUrl}/ws/messaging/`;
-  };
-
-  const getAuthToken = () => {
-    const tokens = storage.getTokens();
-    return tokens?.access || null;
-  };
-
-  const webSocketConfig = {
-    url: getWebSocketUrl(),
-    protocols: ['messaging'],
-    getAuthToken,
-    reconnectInterval: 3000,
-    maxReconnectAttempts: 5,
-    heartbeatInterval: 30000,
-  };
-
-  const messagingConfig = {
-    userRole: 'ADMIN' as const,
-    enableInternalNotes: true,
-    enableBulkOperations: true,
-    enableCannedResponses: true,
-    enableFileUploads: true,
-    maxFileSize: 50 * 1024 * 1024, // 50MB for admin
-    allowedFileTypes: ['image/*', 'application/pdf', '.doc', '.docx', '.txt', '.xlsx', '.pptx'],
-    autoMarkAsRead: false, // Admins manually mark as read
-    simplified: false,
-    enableTypingIndicators: true,
-    enableReadReceipts: true,
-    typingTimeout: 3000,
-    typingDebounceMs: 1000,
-    enableRealTime: true,
-    enableSearch: true,
-    enableVirtualScrolling: true,
-    messagesPerPage: 50,
-    threadsPerPage: 20,
-    reconnectAttempts: 5,
-    reconnectDelay: 1000,
-  };
-
-  // Pass proper auth context to MessagingProvider
-  const authContextForMessaging = {
-    user,
-    isAuthenticated,
-    isLoading: false, // Auth loading is already complete when we reach here
-  };
-
+// App wrapper with core providers
+const CoreApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <LayoutProvider>
       <ToastProvider>
         <ConfirmDialogProvider>
-          <WebSocketProvider config={webSocketConfig} enabled={isAuthenticated && !isLoading}>
-            <MessagingProvider config={messagingConfig} authContext={authContextForMessaging} getAuthToken={getAuthToken}>
-              {children}
-              {/* Only show React Query devtools in development */}
-              {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-            </MessagingProvider>
-          </WebSocketProvider>
+          {children}
+          {/* Only show React Query devtools in development */}
+          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
         </ConfirmDialogProvider>
       </ToastProvider>
     </LayoutProvider>
@@ -140,9 +65,9 @@ const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <CssBaseline enableColorScheme />
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <AuthProvider>
-          <MessagingEnabledApp>
+          <CoreApp>
             {children}
-          </MessagingEnabledApp>
+          </CoreApp>
         </AuthProvider>
       </LocalizationProvider>
     </MuiThemeProvider>

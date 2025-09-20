@@ -19,19 +19,18 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 # Initialize Django ASGI application early to ensure the AppRegistry is populated
 django_asgi_app = get_asgi_application()
 
-# Import routing after Django is initialized
+# Import WebSocket routing
 from core.domains.messaging.routing import websocket_urlpatterns
-from core.domains.messaging.auth import JWTAuthMiddlewareStack
 
 # Create the ASGI application with protocol routing
 application = ProtocolTypeRouter({
     # Django's ASGI application to handle traditional HTTP requests
     "http": django_asgi_app,
-    
-    # WebSocket routing with JWT+session authentication and origin validation
-    "websocket": AllowedHostsOriginValidator(
-        JWTAuthMiddlewareStack(
-            URLRouter(websocket_urlpatterns)
-        )
+
+    # WebSocket chat handler
+    # Note: AllowedHostsOriginValidator removed for development
+    # In production, configure with proper allowed origins
+    "websocket": AuthMiddlewareStack(
+        URLRouter(websocket_urlpatterns)
     ),
 })

@@ -70,8 +70,8 @@ INSTALLED_APPS = [
     'core.domains.notes',
     'core.domains.notifications',
     'core.domains.analytics',
-    'core.domains.messaging',  # Real-time messaging with WebSocket support
     'core.domains.settings',  # Currency and application settings management
+    'core.domains.messaging',  # Real-time messaging system
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

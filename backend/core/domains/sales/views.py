@@ -4,6 +4,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.http import Http404, HttpResponse
+from django.utils import timezone
 
 from .models import (
     EventQuote,
@@ -20,7 +22,9 @@ from .serializers import (
     QuoteOptionSerializer,
     QuoteTemplateProductSerializer,
     QuoteTemplateSerializer,
+    ClientEventQuoteSerializer,
 )
+from .permissions import IsClientQuoteAccessible
 from .services import QuoteService, QuoteTemplateService
 
 
@@ -333,3 +337,170 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ClientEventQuoteViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Client-facing ViewSet for accessing their own event quotes
+    Provides read-only access plus accept/reject actions
+    """
+    serializer_class = ClientEventQuoteSerializer
+    permission_classes = [IsAuthenticated, IsClientQuoteAccessible]
+
+    def get_queryset(self):
+        """
+        Filter quotes to only those belonging to the authenticated client's events
+        and only quotes that are in SENT, ACCEPTED, or REJECTED status
+        """
+        queryset = EventQuote.objects.select_related(
+            'event',
+            'event__client',
+            'template'
+        ).prefetch_related(
+            'line_items',
+            'line_items__product',
+            'options',
+            'options__items'
+        ).filter(
+            event__client=self.request.user,
+            status__in=['SENT', 'ACCEPTED', 'REJECTED']
+        ).order_by('-created_at')
+
+        # Apply event filter if provided
+        event_id = self.request.query_params.get('event', None)
+        if event_id:
+            queryset = queryset.filter(event_id=event_id)
+
+        return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        """Get a specific quote with activity logging"""
+        try:
+            quote = self.get_object()
+
+            # Log that client viewed the quote
+            from .models import QuoteActivity
+            QuoteActivity.objects.create(
+                quote=quote,
+                action='VIEWED',
+                action_by=request.user,
+                notes=f"Quote viewed by client {request.user.get_full_name()}"
+            )
+
+            serializer = self.get_serializer(quote)
+            return Response(serializer.data)
+        except Http404:
+            return Response(
+                {"detail": "Quote not found or not accessible"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=True, methods=['post'])
+    def accept(self, request, pk=None):
+        """Accept a quote"""
+        try:
+            quote = self.get_object()
+
+            # Validate quote can be accepted
+            if quote.status != 'SENT':
+                return Response(
+                    {"detail": "Only sent quotes can be accepted"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Accept the quote using the model method
+            signature_data = request.data.get('signature_data', None)
+            quote.accept(signature_data=signature_data)
+
+            serializer = self.get_serializer(quote)
+            return Response(serializer.data)
+
+        except Http404:
+            return Response(
+                {"detail": "Quote not found or not accessible"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject a quote with optional reason"""
+        try:
+            quote = self.get_object()
+
+            # Validate quote can be rejected
+            if quote.status != 'SENT':
+                return Response(
+                    {"detail": "Only sent quotes can be rejected"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Get rejection reason from request
+            reason = request.data.get('reason', '')
+            if not reason:
+                return Response(
+                    {"detail": "Rejection reason is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Reject the quote using the model method
+            quote.reject(reason=reason)
+
+            serializer = self.get_serializer(quote)
+            return Response(serializer.data)
+
+        except Http404:
+            return Response(
+                {"detail": "Quote not found or not accessible"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        """Download quote as PDF"""
+        try:
+            quote = self.get_object()
+
+            # Check if PDF file exists
+            if not quote.pdf_file:
+                return Response(
+                    {"detail": "PDF not available for this quote"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Log PDF download
+            from .models import QuoteActivity
+            QuoteActivity.objects.create(
+                quote=quote,
+                action='VIEWED',
+                action_by=request.user,
+                notes=f"PDF downloaded by client {request.user.get_full_name()}"
+            )
+
+            # Return file response
+            response = HttpResponse(
+                quote.pdf_file.read(),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = f'attachment; filename="quote_{quote.id}_v{quote.version}.pdf"'
+            return response
+
+        except Http404:
+            return Response(
+                {"detail": "Quote not found or not accessible"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

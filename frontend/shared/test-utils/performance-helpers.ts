@@ -22,7 +22,7 @@ export const measureRenderTime = async (renderFunction: () => void | Promise<voi
 export const testReRenderCount = () => {
   let renderCount = 0
   
-  const MockComponent = ({ children, ...props }: any) => {
+  const MockComponent = ({ children }: { children: React.ReactNode }) => {
     renderCount++
     return children
   }
@@ -220,7 +220,7 @@ export const mockNetworkPerformance = () => {
 export const testConcurrentFeatures = () => {
   // Mock Scheduler for testing concurrent rendering
   const mockScheduler = {
-    unstable_scheduleCallback: vi.fn((priority: any, callback: Function) => {
+    unstable_scheduleCallback: vi.fn((_priority: any, callback: Function) => {
       // In tests, execute immediately for predictability
       return setTimeout(callback, 0)
     }),
@@ -229,7 +229,7 @@ export const testConcurrentFeatures = () => {
     unstable_requestPaint: vi.fn(),
     unstable_now: vi.fn(() => performance.now()),
     unstable_getCurrentPriorityLevel: vi.fn(() => 3), // Normal priority
-    unstable_runWithPriority: vi.fn((priority: any, callback: Function) => callback()),
+    unstable_runWithPriority: vi.fn((_priority: any, callback: Function) => callback()),
   }
 
   return {

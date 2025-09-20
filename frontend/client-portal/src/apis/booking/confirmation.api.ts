@@ -1,28 +1,17 @@
 // frontend/client-portal/src/apis/booking/confirmation.api.ts
 
 import api from '../../utils/api';
-import type {
-  BookingCompletionResult
-} from '../../types/booking';
 
 /**
  * Confirmation step API functions
+ *
+ * Note: The completeBooking method has been consolidated into BookingCoreApi to avoid duplication.
+ * All booking completion should use BookingCoreApi.completeBooking() instead.
+ *
+ * This API class now focuses on confirmation-specific utilities like session details,
+ * email sending, and data formatting.
  */
 export class ConfirmationApi {
-  
-  /**
-   * Complete the booking
-   */
-  static async completeBooking(
-    sessionId: string, 
-    completionType: 'payment' | 'quote' = 'payment'
-  ): Promise<BookingCompletionResult> {
-    const response = await api.post<BookingCompletionResult>(
-      `/bookingflow/public/flows/session/${sessionId}/complete/`,
-      { completion_type: completionType }
-    );
-    return response.data;
-  }
 
   /**
    * Get session details for confirmation display

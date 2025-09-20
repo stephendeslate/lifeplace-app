@@ -446,14 +446,19 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 )
             
             completion_type = request.data.get('completion_type', 'payment')
-            
+
+            # ENHANCED DEBUGGING: Log the incoming request data
+            logger.info(f"🔥 PUBLIC COMPLETION ENDPOINT: session_uuid={session_uuid}")
+            logger.info(f"🔥 REQUEST DATA: {request.data}")
+            logger.info(f"🔥 EXTRACTED COMPLETION_TYPE: '{completion_type}'")
+
             # Validate completion_type
             if completion_type not in ['payment', 'quote']:
                 return Response(
                     {"detail": "completion_type must be 'payment' or 'quote'"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             event = BookingSessionService.complete_booking(session_uuid, completion_type)
             
             from core.domains.events.serializers import EventSerializer

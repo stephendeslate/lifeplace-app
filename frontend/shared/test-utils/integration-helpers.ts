@@ -277,7 +277,7 @@ export const simulatePaymentFlow = () => {
   ;(global as any).Stripe = vi.fn(() => mockStripe)
 
   return {
-    fillPaymentDetails: async (cardDetails = {
+    fillPaymentDetails: async (_cardDetails = {
       cardNumber: '4242424242424242',
       expiry: '12/25',
       cvc: '123',
@@ -292,7 +292,7 @@ export const simulatePaymentFlow = () => {
       })
     },
 
-    processPayment: async (amount = 10000) => {
+    processPayment: async (_amount = 10000) => {
       const result = await mockStripe.confirmCardPayment('pi_test_client_secret', {
         payment_method: {
           card: mockStripeElement,
@@ -340,7 +340,7 @@ export const simulateDataFlow = () => {
 /**
  * Integration test runner with setup and teardown
  */
-export const createIntegrationTest = (testName: string) => {
+export const createIntegrationTest = (_testName: string) => {
   const mockWebSocket = createMockWebSocket()
   const dataFlow = simulateDataFlow()
   
