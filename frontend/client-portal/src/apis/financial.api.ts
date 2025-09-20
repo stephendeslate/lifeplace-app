@@ -89,9 +89,9 @@ export class FinancialApi {
       return response.data as Blob;
     } catch (error: unknown) {
       // If it's an axios error with a blob response, try to parse it
-      if ((error as any).response?.data instanceof Blob) {
+      if ((error as { response?: { data?: Blob } }).response?.data instanceof Blob) {
         try {
-          const text = await (error as any).response.data.text();
+          const text = await ((error as { response: { data: Blob } }).response.data.text());
           const errorData = JSON.parse(text);
           throw new Error(errorData.detail || 'Failed to download receipt');
         } catch (_parseError) {
@@ -159,9 +159,9 @@ export class FinancialApi {
       return response.data as Blob;
     } catch (error: unknown) {
       // If it's an axios error with a blob response, try to parse it
-      if ((error as any).response?.data instanceof Blob) {
+      if ((error as { response?: { data?: Blob } }).response?.data instanceof Blob) {
         try {
-          const text = await (error as any).response.data.text();
+          const text = await ((error as { response: { data: Blob } }).response.data.text());
           const errorData = JSON.parse(text);
           throw new Error(errorData.detail || 'Failed to download invoice');
         } catch (_parseError) {
