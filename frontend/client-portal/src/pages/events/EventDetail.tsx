@@ -36,18 +36,23 @@ import {
   CalendarToday as CalendarIcon,
   Payment as PaymentIcon,
   Assignment as ContractIcon,
+  Assignment as QuestionnaireIcon,
   Feedback as FeedbackIcon,
+  RequestQuote as RequestQuoteIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
-import { 
-  EventStatusBadge, 
-  EventCountdown, 
-  EventTimeline, 
-  EventDocuments, 
+import { useEventQuotes } from '../../hooks/useEventQuotes';
+import {
+  EventStatusBadge,
+  EventCountdown,
+  EventTimeline,
+  EventDocuments,
   EventTasks,
   EventFeedback,
-  ContractStatusChip 
+  EventQuestionnaires,
+  EventQuotes,
+  ContractStatusChip
 } from '../../components/events';
 
 interface TabPanelProps {
@@ -107,6 +112,12 @@ const EventDetail: React.FC = () => {
     hasContracts,
     needsSignature
   } = useEventContracts(eventId);
+
+  // Get quotes for this event
+  const {
+    data: quotesData
+  } = useEventQuotes(eventId);
+  const quotesCount = quotesData?.results?.length || 0;
 
   // Mutations
   const updatePreferencesMutation = useUpdatePreferences();
@@ -384,50 +395,64 @@ const EventDetail: React.FC = () => {
           allowScrollButtonsMobile
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
-          <Tab 
-            label="Timeline" 
-            icon={<TimelineIcon />} 
+          <Tab
+            label="Timeline"
+            icon={<TimelineIcon />}
             iconPosition="start"
             id="event-tab-0"
             aria-controls="event-tabpanel-0"
           />
-          <Tab 
-            label={`Documents (${event.accessible_documents_count})`}
-            icon={<DocumentsIcon />} 
+          <Tab
+            label="Questionnaires"
+            icon={<QuestionnaireIcon />}
             iconPosition="start"
             id="event-tab-1"
             aria-controls="event-tabpanel-1"
           />
-          <Tab 
-            label="Tasks"
-            icon={<TasksIcon />} 
+          <Tab
+            label={`Documents (${event.accessible_documents_count})`}
+            icon={<DocumentsIcon />}
             iconPosition="start"
             id="event-tab-2"
             aria-controls="event-tabpanel-2"
           />
-          <Tab 
-            label="Feedback"
-            icon={<FeedbackIcon />} 
+          <Tab
+            label="Tasks"
+            icon={<TasksIcon />}
             iconPosition="start"
             id="event-tab-3"
             aria-controls="event-tabpanel-3"
           />
+          <Tab
+            label="Feedback"
+            icon={<FeedbackIcon />}
+            iconPosition="start"
+            id="event-tab-4"
+            aria-controls="event-tabpanel-4"
+          />
+          <Tab
+            label={`Quotes${quotesCount > 0 ? ` (${quotesCount})` : ''}`}
+            icon={<RequestQuoteIcon />}
+            iconPosition="start"
+            id="event-tab-5"
+            aria-controls="event-tabpanel-5"
+          />
           {hasContracts && (
-            <Tab 
+            <Tab
               label={`Contracts (${eventContracts.length})`}
-              icon={<ContractIcon />} 
+              icon={<ContractIcon />}
               iconPosition="start"
-              id="event-tab-4"
-              aria-controls="event-tabpanel-4"
+              id="event-tab-6"
+              aria-controls="event-tabpanel-6"
             />
           )}
           {event.has_notes && (
-            <Tab 
+            <Tab
               label={`Notes (${notes.length})`}
-              icon={<NotesIcon />} 
+              icon={<NotesIcon />}
               iconPosition="start"
-              id={hasContracts ? "event-tab-5" : "event-tab-4"}
-              aria-controls={hasContracts ? "event-tabpanel-5" : "event-tabpanel-4"}
+              id={hasContracts ? "event-tab-7" : "event-tab-6"}
+              aria-controls={hasContracts ? "event-tabpanel-7" : "event-tabpanel-6"}
             />
           )}
         </Tabs>
@@ -437,19 +462,27 @@ const EventDetail: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
-          <EventDocuments eventId={eventId} />
+          <EventQuestionnaires eventId={eventId} />
         </TabPanel>
 
         <TabPanel value={activeTab} index={2}>
-          <EventTasks eventId={eventId} />
+          <EventDocuments eventId={eventId} />
         </TabPanel>
 
         <TabPanel value={activeTab} index={3}>
+          <EventTasks eventId={eventId} />
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={4}>
           <EventFeedback eventId={eventId} eventStatus={event.status} />
         </TabPanel>
 
+        <TabPanel value={activeTab} index={5}>
+          <EventQuotes eventId={eventId} />
+        </TabPanel>
+
         {hasContracts && (
-          <TabPanel value={activeTab} index={4}>
+          <TabPanel value={activeTab} index={6}>
             {isLoadingContracts ? (
               <Box>
                 {[1, 2].map((item) => (
@@ -538,7 +571,7 @@ const EventDetail: React.FC = () => {
         )}
 
         {event.has_notes && (
-          <TabPanel value={activeTab} index={hasContracts ? 5 : 4}>
+          <TabPanel value={activeTab} index={hasContracts ? 7 : 6}>
             {isLoadingNotes ? (
               <Box>
                 {[1, 2, 3].map((item) => (

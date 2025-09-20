@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ConfirmationApi } from '../../apis/booking/confirmation.api';
+import { BookingCoreApi } from '../../apis/booking/core.api';
 import type {
   BookingCompletionResult,
   ConfirmationStepConfiguration,
@@ -48,8 +49,35 @@ export const useConfirmation = (
     }
   }, [sessionId]);
 
+  // Extract completion type from session data
+  const getCompletionType = useCallback((): 'payment' | 'quote' => {
+    if (!sessionDetails?.booking_data) {
+      return 'payment'; // Default to payment if no session data
+    }
+
+    // Search through all step data for completion_type
+    const bookingData = sessionDetails.booking_data as Record<string, unknown>;
+
+    // First check for completion_type at the root level
+    if (bookingData.completion_type === 'quote' || bookingData.completion_type === 'payment') {
+      return bookingData.completion_type as 'payment' | 'quote';
+    }
+
+    // Then search through step data
+    for (const [stepKey, stepData] of Object.entries(bookingData)) {
+      if (typeof stepData === 'object' && stepData !== null) {
+        const data = stepData as Record<string, unknown>;
+        if (data.completion_type === 'quote' || data.completion_type === 'payment') {
+          return data.completion_type as 'payment' | 'quote';
+        }
+      }
+    }
+
+    return 'payment'; // Default to payment if completion_type not found
+  }, [sessionDetails]);
+
   // Complete the booking
-  const completeBooking = useCallback(async (): Promise<boolean> => {
+  const completeBooking = useCallback(async (providedCompletionType?: 'payment' | 'quote'): Promise<boolean> => {
     if (!sessionId) {
       setError('Session information missing');
       return false;
@@ -59,12 +87,15 @@ export const useConfirmation = (
     setError(null);
 
     try {
-      const result = await ConfirmationApi.completeBooking(sessionId);
+      // Use provided type if available, fallback to session detection
+      const completionType = providedCompletionType || getCompletionType();
+
+      const result = await BookingCoreApi.completeBooking(sessionId, completionType);
       setCompletionResult(result);
-      
+
       // Reload session details to get updated information
       await loadSessionDetails();
-      
+
       return true;
     } catch (err) {
       // Error objects from API calls have dynamic structure requiring any
@@ -75,7 +106,7 @@ export const useConfirmation = (
     } finally {
       setCompleting(false);
     }
-  }, [sessionId, loadSessionDetails]);
+  }, [sessionId, loadSessionDetails, getCompletionType]);
 
   // Send confirmation email
   const sendConfirmationEmail = useCallback(async (): Promise<boolean> => {

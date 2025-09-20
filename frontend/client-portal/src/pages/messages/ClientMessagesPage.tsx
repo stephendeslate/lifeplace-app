@@ -1,36 +1,21 @@
 /**
  * ClientMessagesPage - Main Messages Page for Client Portal
  *
- * Features:
- * - WhatsApp-style clean messaging interface
- * - Event-specific messaging context
- * - Mobile-first responsive design
- * - Simple file sharing with drag-and-drop
- * - Clear message delivery status
- * - Accessibility compliance
- * - Clean consumer-grade UX
+ * Placeholder implementation - messaging components are under development
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React from 'react';
 import {
   Box,
-  Paper,
   Typography,
+  Alert,
   Card,
   CardContent,
-  Alert,
-  Skeleton,
-  useTheme,
-  useMediaQuery,
   Container,
 } from '@mui/material';
 import {
-  Message as MessageIcon,
+  Construction as ConstructionIcon,
 } from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useMessagingContext } from '@shared';
-import { ClientThreadList } from '../../components/messaging/ClientThreadList';
-import { ClientConversation } from '../../components/messaging/ClientConversation';
 
 export interface ClientMessagesPageProps {
   eventId?: string;
@@ -40,240 +25,70 @@ export interface ClientMessagesPageProps {
 
 export const ClientMessagesPage: React.FC<ClientMessagesPageProps> = ({
   eventId,
-  simplified = false,
   showWelcome = true,
 }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const navigate = useNavigate();
-  const { threadId } = useParams<{ threadId?: string }>();
+  // const theme = useTheme();
 
-  // Messaging context
-  const { state, actions } = useMessagingContext();
-
-  // Component state
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(threadId || null);
-  const [showThreadList, setShowThreadList] = useState(!threadId);
-
-  // Filter threads by event if specified
-  const filteredThreads = useMemo(() => {
-    if (!eventId) return state.threads;
-    return state.threads.filter(thread => thread.event === parseInt(eventId));
-  }, [state.threads, eventId]);
-
-  // Handle thread selection
-  const handleThreadSelect = useCallback((threadId: string) => {
-    setSelectedThreadId(threadId);
-    actions.selectThread(threadId);
-
-    if (isMobile) {
-      setShowThreadList(false);
-    }
-
-    // Update URL
-    navigate(`/messages/thread/${threadId}`, { replace: true });
-  }, [actions, isMobile, navigate]);
-
-  // Handle back to list
-  const handleBackToList = useCallback(() => {
-    setShowThreadList(true);
-    setSelectedThreadId(null);
-    actions.selectThread(null);
-    navigate('/messages', { replace: true });
-  }, [actions, navigate]);
-
-  // Auto-select first thread if none selected (desktop only)
-  useEffect(() => {
-    if (!selectedThreadId && filteredThreads.length > 0 && !isMobile) {
-      const firstThreadId = filteredThreads[0].id;
-      setSelectedThreadId(firstThreadId);
-      actions.selectThread(firstThreadId);
-      navigate(`/messages/thread/${firstThreadId}`, { replace: true });
-    }
-  }, [filteredThreads, selectedThreadId, isMobile, actions, navigate]);
-
-  // Loading state
-  if (state.isLoadingThreads) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <LoadingSkeleton />
-      </Container>
-    );
-  }
-
-  // Error state with rate limiting handling
-  if (state.error) {
-    const isRateLimited = state.error.message?.includes('rate limited') ||
-                         state.error.message?.includes('rate limit') ||
-                         state.error.message?.includes('too many requests');
-
-    return (
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Alert
-          severity={isRateLimited ? "warning" : "error"}
-          sx={{ mb: 2 }}
-        >
-          {isRateLimited ? (
-            <>
-              <strong>Connection temporarily limited</strong><br />
-              Please wait a moment and refresh the page. The messaging system will reconnect automatically.
-            </>
-          ) : (
-            state.error.message
-          )}
-        </Alert>
-        {!isRateLimited && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            You can still view your message history. Real-time messaging will resume when the connection is restored.
-          </Typography>
-        )}
-      </Container>
-    );
-  }
-
-  // Mobile layout - single panel
-  if (isMobile) {
-    return (
-      <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        {showThreadList ? (
-          <ClientThreadList
-            threads={filteredThreads}
-            onThreadSelect={handleThreadSelect}
-            showWelcome={showWelcome}
-            eventId={eventId}
-          />
-        ) : selectedThreadId ? (
-          <ClientConversation
-            threadId={selectedThreadId}
-            onBack={handleBackToList}
-            showBackButton
-          />
-        ) : null}
-      </Box>
-    );
-  }
-
-  // Desktop layout - two panels
   return (
-    <Container maxWidth="lg" sx={{ py: 3, height: 'calc(100vh - 140px)' }}>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
       <Box
         sx={{
-          height: '100%',
+          height: 'calc(100vh - 140px)',
           display: 'flex',
-          gap: 2,
-          bgcolor: 'background.default',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        {/* Thread List Panel */}
-        <Paper
-          sx={{
-            width: '350px',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-          }}
-        >
-          <ClientThreadList
-            threads={filteredThreads}
-            selectedThreadId={selectedThreadId}
-            onThreadSelect={handleThreadSelect}
-            showWelcome={false}
-            eventId={eventId}
-          />
-        </Paper>
-
-        {/* Message View Panel */}
-        <Paper
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-          }}
-        >
-          {selectedThreadId ? (
-            <ClientConversation
-              threadId={selectedThreadId}
-              simplified={simplified}
+        <Card sx={{ maxWidth: 600, textAlign: 'center' }}>
+          <CardContent sx={{ p: 4 }}>
+            <ConstructionIcon
+              sx={{
+                fontSize: 80,
+                color: 'primary.main',
+                mb: 2
+              }}
             />
-          ) : (
-            <EmptyStateView showWelcome={showWelcome} />
-          )}
-        </Paper>
+            <Typography variant="h5" gutterBottom fontWeight={600}>
+              Messages Coming Soon
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              We're building a beautiful messaging experience that will let you communicate directly with our team about your events.
+            </Typography>
+            <Box sx={{ textAlign: 'left', mb: 3 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                • Chat with our team in real-time
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                • Share photos and documents
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                • Get instant updates about your events
+              </Typography>
+              <Typography variant="body2">
+                • View conversation history
+              </Typography>
+            </Box>
+            {showWelcome && (
+              <Alert severity="info" sx={{ textAlign: 'left' }}>
+                <Typography variant="body2">
+                  <strong>Need help now?</strong> Please contact us directly via email or phone.
+                  We're here to help with any questions about your events!
+                </Typography>
+              </Alert>
+            )}
+            {eventId && (
+              <Alert severity="success" sx={{ textAlign: 'left', mt: 2 }}>
+                <Typography variant="body2">
+                  This messaging feature will be connected to your specific event once available.
+                </Typography>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
       </Box>
     </Container>
   );
 };
-
-/**
- * Empty State View Component
- */
-const EmptyStateView: React.FC<{ showWelcome: boolean }> = ({ showWelcome }) => (
-  <Box
-    sx={{
-      height: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
-      p: 4,
-    }}
-  >
-    <Box sx={{ maxWidth: 400 }}>
-      <MessageIcon
-        sx={{
-          fontSize: 80,
-          color: 'primary.main',
-          opacity: 0.7,
-          mb: 3,
-        }}
-      />
-      <Typography variant="h5" fontWeight={600} gutterBottom>
-        Select a conversation
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Choose a conversation from the list to start chatting with our team
-      </Typography>
-      {showWelcome && (
-        <Card sx={{ mt: 3, bgcolor: 'primary.50' }}>
-          <CardContent>
-            <Typography variant="body2" color="primary.dark">
-              💬 <strong>Pro tip:</strong> Our team is here to help with any questions about your events.
-              Feel free to reach out anytime!
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
-    </Box>
-  </Box>
-);
-
-/**
- * Loading Skeleton Component
- */
-const LoadingSkeleton: React.FC = () => (
-  <Box sx={{ display: 'flex', gap: 2, height: '600px' }}>
-    <Paper sx={{ width: '350px', p: 2 }}>
-      <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
-      {[...Array(5)].map((_, index) => (
-        <Box key={index} sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
-          <Skeleton variant="circular" width={40} height={40} />
-          <Box sx={{ flexGrow: 1 }}>
-            <Skeleton variant="text" width="80%" />
-            <Skeleton variant="text" width="60%" />
-          </Box>
-        </Box>
-      ))}
-    </Paper>
-    <Paper sx={{ flexGrow: 1, p: 2 }}>
-      <Skeleton variant="text" width="40%" height={32} sx={{ mb: 2 }} />
-      <Skeleton variant="rectangular" width="100%" height="80%" />
-    </Paper>
-  </Box>
-);
 
 export default ClientMessagesPage;

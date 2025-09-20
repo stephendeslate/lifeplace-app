@@ -114,7 +114,7 @@ export const mockApiError = (message = 'API Error', status = 500, delay = 0) => 
 export const createMockFunction = <T extends (...args: any[]) => any>(
   implementation?: T
 ): MockedFunction<T> => {
-  return vi.fn(implementation) as MockedFunction<T>
+  return vi.fn(implementation) as unknown as MockedFunction<T>
 }
 
 /**

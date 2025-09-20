@@ -8,7 +8,6 @@ import type {
   BookingSessionStartResponse,
   BookingSessionGetResponse,
   BookingSessionUpdateResponse,
-  BookingCompletionResult,
   StepValidationResult,
   PaymentGatewayResponse,
 } from '../../types/booking';
@@ -284,40 +283,6 @@ export const useBookingSession = (sessionId?: string) => {
     }
   }, [sessionId]);
 
-  const completeBooking = useCallback(async (): Promise<BookingCompletionResult | null> => {
-    if (!sessionId) {
-      setError('No active session');
-      return null;
-    }
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const result = await BookingCoreApi.completeBooking(sessionId);
-      
-      // Clear session from local storage
-      BookingCoreApi.clearSessionFromLocal(sessionId);
-      
-      // Update session state
-      if (session) {
-        setSession({
-          ...session,
-          is_completed: true,
-        });
-      }
-      
-      return result;
-    } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = BookingCoreApi.handleApiError(err as any);
-      setError(errorMessage);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [sessionId, session]);
 
   const abandonSession = useCallback(async (reason?: string): Promise<void> => {
     if (!sessionId) return;
@@ -355,7 +320,6 @@ export const useBookingSession = (sessionId?: string) => {
     startSession,
     updateSessionData,
     validateStep,
-    completeBooking,
     abandonSession,
     refetch: fetchSession,
     clearErrors: () => {

@@ -172,7 +172,8 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         completion_status: 'processing'
       });
 
-      const success = await completeBooking();
+      const completionType = state.stepData.payment_info?.completion_type || 'payment';
+      const success = await completeBooking(completionType);
       
       if (success) {
         onDataChange({

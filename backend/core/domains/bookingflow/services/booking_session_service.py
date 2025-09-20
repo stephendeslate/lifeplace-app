@@ -277,14 +277,21 @@ class BookingSessionService:
     @staticmethod
     def complete_booking(session_id, completion_type='payment'):
         """Complete the booking and create event with payment processing or quote generation
-        
+
         Args:
             session_id: The booking session ID
             completion_type: 'payment' for immediate payment, 'quote' for quote request
         """
+        # ENHANCED DEBUGGING: Log the received completion type
+        logger.info(f"🔥 COMPLETE_BOOKING CALLED: session_id={session_id}, completion_type='{completion_type}'")
+
         session = BookingSessionService.get_session_by_id(session_id)
-        
+
+        # Log session booking data to see what completion_type is stored
+        logger.info(f"🔥 SESSION BOOKING DATA: {session.booking_data}")
+
         if session.is_completed:
+            logger.info(f"🔥 Session already completed, returning existing event: {session.created_event}")
             return session.created_event
         
         # Validate all required steps are completed
@@ -310,67 +317,75 @@ class BookingSessionService:
             try:
                 # Create event from booking data
                 event = BookingSessionService._create_event_from_session(session)
-                
+
                 # NEW QUOTE-FIRST APPROACH: Always create quote first
                 logger.info(f"Creating quote from booking session for event {event.id}")
-                quote = BookingSessionService.create_quote_from_booking_session(session, event)
-                
+                quote = BookingSessionService.create_quote_from_booking_session(session, event, completion_type)
+
                 # Create invoice from the accepted quote
                 logger.info(f"Creating invoice from quote {quote.id}")
                 from core.domains.payments.services.invoice_service import InvoiceService
                 invoice = InvoiceService.create_from_quote(quote)
                 logger.info(f"Created invoice {invoice.invoice_id} from quote")
-                
-                if completion_type == 'payment':
+
+                # FIXED: Handle quote requests FIRST to avoid payment processing
+
+                if completion_type == 'quote':
+                    logger.info(f"Processing quote completion for session {session.session_id}")
+                    # For quote requests, issue the invoice but don't process payment
+                    invoice.issue()  # Changes status from DRAFT to ISSUED
+
+                    # Event stays as LEAD status for quote requests
+                    logger.info(f"Quote request completed - event {event.id} remains as LEAD, invoice {invoice.invoice_id} issued")
+
+                    # Send quote notification
+                    try:
+                        BookingSessionService._send_quote_notification(session, quote)
+                        logger.info(f"Quote notification sent for session {session.session_id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to send quote notification: {e}")
+
+                elif completion_type == 'payment':
+                    logger.info(f"Processing payment completion for session {session.session_id}")
                     # Handle payment completion - process payment against invoice
                     payment_data = BookingSessionService._extract_payment_data(session)
-                    
+
                     # If no payment data found, create empty dict to trigger fallback to default gateway
                     if payment_data is None:
                         payment_data = {}
-                    
+
                     # Process payment against the invoice
                     payment = BookingSessionService._process_booking_payment_for_invoice(
                         session, event, invoice, payment_data
                     )
-                    
+
                     # Refresh payment from database to get updated status
                     payment.refresh_from_db()
                     logger.info(f"Payment status after processing: {payment.status}")
-                    
+
                     # Check if payment completed or if we have a successful transaction
                     payment_successful = (
-                        payment.status == 'COMPLETED' or 
+                        payment.status == 'COMPLETED' or
                         payment.transactions.filter(status='COMPLETED').exists()
                     )
-                    
+
                     if payment_successful:
                         # Payment successful - confirm the event and mark invoice as paid
                         event.status = 'CONFIRMED'
                         event.save()
-                        
+
                         # Update invoice status
                         invoice.status = 'PAID'
                         invoice.save()
-                        
+
                         logger.info(f"Event {event.id} confirmed and invoice {invoice.invoice_id} marked as paid")
                     else:
                         logger.error(f"Payment processing failed - payment status: {payment.status}")
                         raise EventCreationFailed("Payment processing failed")
-                    
-                elif completion_type == 'quote':
-                    # For quote requests, issue the invoice but don't process payment
-                    invoice.issue()  # Changes status from DRAFT to ISSUED
-                    
-                    # Event stays as LEAD status for quote requests
-                    # Send quote notification
-                    try:
-                        BookingSessionService._send_quote_notification(session, quote)
-                    except Exception as e:
-                        logger.warning(f"Failed to send quote notification: {e}")
-                
+
                 else:
                     # Default case: issue invoice but don't process payment immediately
+                    logger.info(f"Processing default completion type for session {session.session_id}")
                     invoice.issue()  # Changes status from DRAFT to ISSUED
                     logger.info(f"Invoice {invoice.invoice_id} issued for later payment")
                 
@@ -575,18 +590,26 @@ class BookingSessionService:
     @staticmethod
     def _process_booking_payment_for_invoice(session, event, invoice, payment_data):
         """Process payment for completed booking against an invoice
-        
+
         Args:
             session: BookingSession instance
             event: Event instance
             invoice: Invoice instance
             payment_data: Payment data from session
-            
+
         Returns:
             Payment: The created payment record
         """
         logger.info(f"Starting payment processing for invoice {invoice.invoice_id}")
         logger.info(f"Payment data received: {payment_data}")
+
+        # SAFETY GUARD: This method should never be called for quote requests
+        # This is a defensive check to prevent quote requests from accidentally triggering payment processing
+        current_booking_data = session.booking_data or {}
+        for step_key, step_data in current_booking_data.items():
+            if isinstance(step_data, dict) and step_data.get('completion_type') == 'quote':
+                logger.error(f"CRITICAL ERROR: Payment processing called for quote request! Session: {session.session_id}")
+                raise ValueError("Payment processing should not be called for quote requests")
         
         gateway_id = payment_data.get('gateway_id') or payment_data.get('payment_gateway_id')
         logger.info(f"Gateway ID from payment data: {gateway_id}")
@@ -1351,13 +1374,14 @@ class BookingSessionService:
         return {'available': True, 'message': 'Time slot is available'}
 
     @staticmethod
-    def create_quote_from_booking_session(session, event):
+    def create_quote_from_booking_session(session, event, completion_type='payment'):
         """Create a quote from booking session data using centralized pricing service
-        
+
         Args:
             session: BookingSession instance
             event: Event instance
-            
+            completion_type: 'payment' for auto-accepted quotes, 'quote' for pending quotes
+
         Returns:
             EventQuote: The created quote
         """
@@ -1376,21 +1400,35 @@ class BookingSessionService:
         )
         
         logger.info(f"Centralized pricing calculated: ₱{pricing_breakdown.total_amount}")
-        
-        # Create the quote - auto-accepted since client already confirmed booking
+
+        # Determine quote status based on completion type
+        if completion_type == 'quote':
+            # Quote requests should be pending client acceptance
+            quote_status = 'SENT'
+            accepted_at = None
+            status_note = "Quote sent to client for review"
+        else:
+            # Payment completions auto-accept the quote
+            quote_status = 'ACCEPTED'
+            accepted_at = timezone.now()
+            status_note = "Quote auto-accepted from booking completion"
+
+        logger.info(f"Creating quote with status '{quote_status}' for completion_type '{completion_type}'")
+
+        # Create the quote with conditional status
         # Initialize with basic values, will be recalculated after line items are added
         quote = EventQuote.objects.create(
             event=event,
             version=1,
-            status='ACCEPTED',  # Auto-accept since this is from confirmed booking
+            status=quote_status,
             subtotal=Decimal('0.00'),  # Will be recalculated
             tax_amount=Decimal('0.00'),  # Will be recalculated
             discount_amount=pricing_breakdown.discount_amount,
             total_amount=Decimal('0.00'),  # Will be recalculated
             valid_until=timezone.now().date() + timedelta(days=30),
-            accepted_at=timezone.now(),
+            accepted_at=accepted_at,
             created_by=session.client,
-            notes=f"Quote generated from booking session {session.session_id}",
+            notes=f"Quote generated from booking session {session.session_id} - {status_note}",
             discount=pricing_breakdown.applied_discount
         )
         
@@ -1401,9 +1439,26 @@ class BookingSessionService:
         
         # IMPORTANT: Recalculate totals after line items are created (includes tax calculation)
         quote.calculate_totals()
-        
+
         logger.info(f"Quote {quote.id} final total after recalculation: ₱{quote.total_amount}")
-        
+
+        # Record quote activity based on status
+        from core.domains.sales.models import QuoteActivity
+        if quote.status == 'SENT':
+            activity_action = 'SENT'
+            activity_notes = f"Quote sent to client for review from booking session {session.session_id}"
+        else:
+            activity_action = 'ACCEPTED'
+            activity_notes = f"Quote auto-accepted from booking completion {session.session_id}"
+
+        QuoteActivity.objects.create(
+            quote=quote,
+            action=activity_action,
+            action_by=session.client,
+            notes=activity_notes
+        )
+        logger.info(f"Quote activity '{activity_action}' recorded for quote {quote.id}")
+
         return quote
     
     @staticmethod

@@ -3,8 +3,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MessageInterface } from '@shared/components/messaging';
-import { CreateThreadDialog } from '../../components/messaging/CreateThreadDialog';
 import {
   Box,
   Button,
@@ -49,13 +47,12 @@ import {
   Assignment as ContractIcon,
   AttachMoney as QuoteIcon,
   Payment as InvoiceIcon,
-  Message as MessageIcon,
   Schedule as ScheduleIcon,
   Star as StarIcon,
   Add as AddIcon,
+  Message as MessageIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
-import { useToastActions } from '../../contexts/ToastContext';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuotesForClient } from '../../hooks/useSales';
@@ -68,7 +65,8 @@ import { ClientQuotes } from '../../components/clients/ClientQuotes';
 import { ClientContracts } from '../../components/clients/ClientContracts';
 import { ClientInvoices } from '../../components/clients/ClientInvoices';
 import { NotesList } from '../../components/notes';
-import { 
+import { MessageInterface } from '../../components/messaging/MessageInterface';
+import {
   ActivityTimeline,
   FinancialSummary,
   EntityNavigation,
@@ -98,7 +96,6 @@ export const ClientProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
-  const { showSuccess, showError } = useToastActions();
   
   // State
   const [tabValue, setTabValue] = useState(0);
@@ -106,7 +103,6 @@ export const ClientProfile: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [createThreadDialogOpen, setCreateThreadDialogOpen] = useState(false);
   
   // Hooks
   const { 
@@ -673,19 +669,19 @@ export const ClientProfile: React.FC = () => {
               icon={<ScheduleIcon />} 
               iconPosition="start"
             />
-            <Tab 
-              label={`Events (${events.length})`} 
-              icon={<EventIcon />} 
+            <Tab
+              label={`Events (${events.length})`}
+              icon={<EventIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Messages" 
-              icon={<MessageIcon />} 
+            <Tab
+              label="Messages"
+              icon={<MessageIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label={`Quotes (${quotes.length})`} 
-              icon={<QuoteIcon />} 
+            <Tab
+              label={`Quotes (${quotes.length})`}
+              icon={<QuoteIcon />}
               iconPosition="start"
             />
             <Tab 
@@ -746,9 +742,9 @@ export const ClientProfile: React.FC = () => {
                             {new Date(event.start_date).toLocaleDateString()} - {event.end_date ? new Date(event.end_date).toLocaleDateString() : 'Ongoing'}
                           </Typography>
                         </Box>
-                        <Chip 
-                          label={event.status} 
-                          size="small" 
+                        <Chip
+                          label={event.status}
+                          size="small"
                           color={event.status === 'COMPLETED' ? 'success' : 'primary'}
                         />
                       </Box>
@@ -761,27 +757,7 @@ export const ClientProfile: React.FC = () => {
 
           {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
-            <MessageInterface
-              userRole="ADMIN"
-              title={`Messages with ${client.first_name} ${client.last_name}`}
-              subtitle={`Client communications for ${client.first_name} ${client.last_name}`}
-              height="600px"
-              enableThreadList={true}
-              enableRealTime={true}
-              enableSearch={true}
-              enableFileUploads={true}
-              contextFilters={{ client_id: client.id }}
-              enableDirectAPI={true}
-              onError={(error) => {
-                console.error('[ClientProfile] MessageInterface error:', error);
-                showError('Message Error', error.message);
-              }}
-              onSuccess={(title, message) => {
-                console.log('[ClientProfile] MessageInterface success:', title, message);
-                showSuccess(title, message);
-              }}
-              onCreateThread={() => setCreateThreadDialogOpen(true)}
-            />
+            <MessageInterface clientId={clientId.toString()} />
           </TabPanel>
 
           {/* Quotes Tab */}
@@ -848,12 +824,6 @@ export const ClientProfile: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Create Thread Dialog */}
-      <CreateThreadDialog
-        open={createThreadDialogOpen}
-        onClose={() => setCreateThreadDialogOpen(false)}
-        preSelectedClient={client}
-      />
 
       </Container>
     </Box>

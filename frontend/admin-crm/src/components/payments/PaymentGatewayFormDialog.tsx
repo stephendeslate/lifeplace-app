@@ -62,11 +62,21 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
   // Initialize form data
   useEffect(() => {
     if (gateway) {
+      // Use masked_config for initial display if available, but keep empty config for new values
+      const initialConfig = gateway.masked_config && Object.keys(gateway.masked_config).length > 0
+        ? {
+            // Only populate non-sensitive fields and masked fields for display
+            test_mode: gateway.masked_config.test_mode || false,
+            environment: gateway.masked_config.environment || 'sandbox',
+            // Keep sensitive fields empty for editing (they'll show as placeholders)
+          }
+        : {};
+
       setFormData({
         name: gateway.name,
         code: gateway.code,
         is_active: gateway.is_active,
-        config: gateway.config || {},
+        config: initialConfig,
         description: gateway.description,
       });
     } else {
@@ -174,11 +184,36 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
   const handleSubmit = () => {
     if (!validateForm()) return;
 
+    // For editing, merge with existing config to preserve values for empty fields
+    let finalConfig = formData.config;
+
+    if (isEditing && gateway?.masked_config) {
+      // Only include fields that have values to avoid overwriting existing config with empty strings
+      const configToUpdate: Record<string, unknown> = {};
+
+      // Copy over existing non-sensitive fields that we want to keep
+      if ('test_mode' in formData.config) {
+        configToUpdate.test_mode = formData.config.test_mode;
+      }
+      if ('environment' in formData.config) {
+        configToUpdate.environment = formData.config.environment;
+      }
+
+      // Only add sensitive fields if they have values
+      Object.entries(formData.config).forEach(([key, value]) => {
+        if (value && typeof value === 'string' && value.trim() !== '') {
+          configToUpdate[key] = value.trim();
+        }
+      });
+
+      finalConfig = configToUpdate;
+    }
+
     const submitData = {
       name: formData.name.trim(),
       code: formData.code.trim(),
       is_active: formData.is_active,
-      config: formData.config,
+      config: finalConfig,
       description: formData.description.trim(),
     };
 
@@ -220,6 +255,35 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
       contentSx={{ minHeight: '60vh' }}
     >
         <Box sx={{ mt: 2 }}>
+          {/* Configuration Status for Editing */}
+          {isEditing && gateway?.masked_config && (
+            <Box sx={{ mb: 3 }}>
+              <Alert
+                severity={gateway.masked_config._configured ? "success" : "warning"}
+                sx={{
+                  backdropFilter: 'blur(10px)',
+                  background: gateway.masked_config._configured ?
+                    'rgba(76, 175, 80, 0.1)' : 'rgba(255, 152, 0, 0.1)',
+                  borderRadius: tokens.spacing.radius.lg,
+                  border: `1px solid ${gateway.masked_config._configured ?
+                    tokens.color.success.main : tokens.color.warning.main}25`,
+                }}
+              >
+                <strong>
+                  {gateway.masked_config._configured ?
+                    '✅ Gateway Configured' :
+                    '⚠️ Configuration Incomplete'
+                  }
+                </strong>
+                <br />
+                {gateway.masked_config._configured ?
+                  'This gateway has all required API keys configured. Leave fields empty to keep existing values.' :
+                  'This gateway is missing required configuration. Please provide the necessary API keys.'
+                }
+              </Alert>
+            </Box>
+          )}
+
           {/* Quick Setup Options */}
           {!isEditing && (
             <Box sx={{ mb: 3 }}>
@@ -340,8 +404,18 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                   value={stripeConfig.publishable_key || ''}
                   onChange={handleStripeConfigChange('publishable_key')}
                   error={!!errors.publishable_key}
-                  helperText={errors.publishable_key || 'Starts with pk_test_ or pk_live_'}
-                  placeholder="pk_test_..."
+                  helperText={
+                    errors.publishable_key ||
+                    (gateway?.masked_config?.publishable_key ?
+                      `Currently configured: ${gateway.masked_config.publishable_key}` :
+                      'Starts with pk_test_ or pk_live_'
+                    )
+                  }
+                  placeholder={
+                    gateway?.masked_config?.publishable_key ?
+                      'Leave empty to keep current key' :
+                      'pk_test_...'
+                  }
                 />
 
                 <TextField
@@ -351,8 +425,18 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                   value={stripeConfig.secret_key || ''}
                   onChange={handleStripeConfigChange('secret_key')}
                   error={!!errors.secret_key}
-                  helperText={errors.secret_key || 'Starts with sk_test_ or sk_live_'}
-                  placeholder="sk_test_..."
+                  helperText={
+                    errors.secret_key ||
+                    (gateway?.masked_config?.secret_key ?
+                      `Currently configured: ${gateway.masked_config.secret_key}` :
+                      'Starts with sk_test_ or sk_live_'
+                    )
+                  }
+                  placeholder={
+                    gateway?.masked_config?.secret_key ?
+                      'Leave empty to keep current key' :
+                      'sk_test_...'
+                  }
                   InputProps={{
                     startAdornment: <SecurityIcon sx={{ mr: 1, color: 'text.secondary' }} />,
                   }}
@@ -364,8 +448,16 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                   type="password"
                   value={stripeConfig.webhook_secret || ''}
                   onChange={handleStripeConfigChange('webhook_secret')}
-                  helperText="Used to verify webhook authenticity (optional)"
-                  placeholder="whsec_..."
+                  helperText={
+                    gateway?.masked_config?.webhook_secret ?
+                      `Currently configured: ${gateway.masked_config.webhook_secret}` :
+                      'Used to verify webhook authenticity (optional)'
+                  }
+                  placeholder={
+                    gateway?.masked_config?.webhook_secret ?
+                      'Leave empty to keep current secret' :
+                      'whsec_...'
+                  }
                 />
 
                 <Box>
@@ -415,8 +507,18 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                   value={paymongoConfig.public_key || ''}
                   onChange={handlePayMongoConfigChange('public_key')}
                   error={!!errors.public_key}
-                  helperText={errors.public_key || 'Starts with pk_test_ or pk_live_'}
-                  placeholder="pk_test_..."
+                  helperText={
+                    errors.public_key ||
+                    (gateway?.masked_config?.public_key ?
+                      `Currently configured: ${gateway.masked_config.public_key}` :
+                      'Starts with pk_test_ or pk_live_'
+                    )
+                  }
+                  placeholder={
+                    gateway?.masked_config?.public_key ?
+                      'Leave empty to keep current key' :
+                      'pk_test_...'
+                  }
                 />
 
                 <TextField
@@ -426,8 +528,18 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                   value={paymongoConfig.secret_key || ''}
                   onChange={handlePayMongoConfigChange('secret_key')}
                   error={!!errors.secret_key}
-                  helperText={errors.secret_key || 'Starts with sk_test_ or sk_live_'}
-                  placeholder="sk_test_..."
+                  helperText={
+                    errors.secret_key ||
+                    (gateway?.masked_config?.secret_key ?
+                      `Currently configured: ${gateway.masked_config.secret_key}` :
+                      'Starts with sk_test_ or sk_live_'
+                    )
+                  }
+                  placeholder={
+                    gateway?.masked_config?.secret_key ?
+                      'Leave empty to keep current key' :
+                      'sk_test_...'
+                  }
                   InputProps={{
                     startAdornment: <SecurityIcon sx={{ mr: 1, color: 'text.secondary' }} />,
                   }}
@@ -439,8 +551,16 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                   type="password"
                   value={paymongoConfig.webhook_secret || ''}
                   onChange={handlePayMongoConfigChange('webhook_secret')}
-                  helperText="Used to verify webhook authenticity (optional)"
-                  placeholder="whsec_..."
+                  helperText={
+                    gateway?.masked_config?.webhook_secret ?
+                      `Currently configured: ${gateway.masked_config.webhook_secret}` :
+                      'Used to verify webhook authenticity (optional)'
+                  }
+                  placeholder={
+                    gateway?.masked_config?.webhook_secret ?
+                      'Leave empty to keep current secret' :
+                      'whsec_...'
+                  }
                 />
 
                 <Box>

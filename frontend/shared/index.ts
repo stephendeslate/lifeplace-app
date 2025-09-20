@@ -1,39 +1,20 @@
-// Main export file for shared messaging system
+// Main export file for shared utilities
 // Provides a single entry point for both applications
 
-// Context exports
-export {
-  WebSocketProvider,
-  useWebSocket,
-  useWebSocketConnectionState,
-} from './services/websocket.context';
+// Design system exports
+export * from './design-system';
 
-export { MessagingProvider } from './providers/MessagingProvider';
-export {
-  useMessagingContext,
-  useMessagingActions,
-  useMessagingState,
-  useMessagingConfig,
-} from './hooks/useMessagingProvider';
+// Utility hook exports
+export * from './hooks';
 
-// Hook exports
-export * from './hooks/messaging';
+// Common utilities
+export * from './utils';
 
-// API exports
-export { 
-  messagingApi,
-  setApiClient,
-} from './apis/messaging.api';
+// Types
+export * from './types';
 
-// Query keys
-export { messagingKeys } from './queries/messagingKeys';
+// APIs
+export * from './apis/messagingApi';
 
-// Type exports
-export * from './types/messaging.types';
-
-// Configuration exports
-export {
-  DEFAULT_MESSAGING_CONFIG,
-  createMessagingConfig,
-  createWebSocketConfig,
-} from './configs/messaging.config';
+// Test utilities for development and testing
+export * from './test-utils';

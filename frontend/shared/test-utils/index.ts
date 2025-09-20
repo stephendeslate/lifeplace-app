@@ -126,7 +126,7 @@ export const testPatterns = {
   /**
    * API testing pattern
    */
-  apiTest: (apiFunction: Function, mockData: any) => {
+  apiTest: (_apiFunction: Function, mockData: any) => {
     const { vi } = require('vitest')
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,

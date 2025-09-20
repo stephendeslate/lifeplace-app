@@ -27,6 +27,7 @@ from .serializers import (
     InvoiceSerializer,
     InvoiceTaxSerializer,
     PaymentGatewaySerializer,
+    PaymentGatewayAdminSerializer,
     PaymentInstallmentSerializer,
     PaymentMethodSerializer,
     PaymentNotificationSerializer,
@@ -205,6 +206,12 @@ class PaymentGatewayViewSet(viewsets.ModelViewSet):
     queryset = PaymentGateway.objects.all()
     serializer_class = PaymentGatewaySerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_serializer_class(self):
+        """Use admin-safe serializer for read operations to show masked sensitive fields"""
+        if self.action in ['list', 'retrieve']:
+            return PaymentGatewayAdminSerializer
+        return PaymentGatewaySerializer
     
     def get_queryset(self):
         queryset = super().get_queryset().order_by('name')

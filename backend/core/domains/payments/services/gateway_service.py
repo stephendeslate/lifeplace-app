@@ -319,24 +319,40 @@ class PaymentGatewayService:
         # Only staff can update gateways
         if not user.is_staff:
             raise PermissionError("Only staff members can manage payment gateways")
-        
+
         try:
             gateway = PaymentGateway.objects.get(pk=gateway_id)
         except PaymentGateway.DoesNotExist:
             raise ValueError(f"Payment gateway with ID {gateway_id} not found")
-        
+
         # Update fields
-        for field in ['name', 'is_active', 'config', 'description']:
+        for field in ['name', 'is_active', 'description']:
             if field in data:
                 setattr(gateway, field, data[field])
-        
+
+        # Handle config updates more carefully - merge with existing config
+        if 'config' in data:
+            existing_config = gateway.get_decrypted_config() or {}
+            new_config = data['config'] or {}
+
+            # Merge configurations, allowing new values to overwrite existing ones
+            # but preserving existing values when new ones are empty/None
+            merged_config = existing_config.copy()
+
+            for key, value in new_config.items():
+                if value is not None and value != '':
+                    merged_config[key] = value
+                # Don't remove existing keys if new value is empty
+
+            gateway.config = merged_config
+
         # Code can only be updated if not used in any payment methods
         if 'code' in data and data['code'] != gateway.code:
             has_methods = PaymentMethod.objects.filter(gateway=gateway).exists()
             if has_methods:
                 raise ValueError("Cannot change code for a gateway that is in use")
             gateway.code = data['code']
-        
+
         gateway.save()
         return gateway
     

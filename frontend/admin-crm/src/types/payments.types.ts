@@ -6,9 +6,32 @@ export interface PaymentGateway {
   code: string;
   is_active: boolean;
   config: Record<string, unknown>;
+  masked_config?: MaskedGatewayConfig;
   description: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface MaskedGatewayConfig {
+  // Stripe fields
+  publishable_key?: string | null;
+  secret_key?: string | null;
+  webhook_secret?: string | null;
+
+  // PayMongo fields
+  public_key?: string | null;
+
+  // PayPal fields
+  client_id?: string | null;
+  client_secret?: string | null;
+  environment?: string;
+
+  // Common fields
+  test_mode?: boolean;
+  _configured?: boolean;
+
+  // Generic for other gateways
+  [key: string]: unknown;
 }
 
 export interface CreatePaymentGatewayData {

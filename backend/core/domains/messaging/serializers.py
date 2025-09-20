@@ -1,465 +1,272 @@
-"""
-Serializers for the messaging domain.
-
-This module provides serializers for handling message thread and message data
-serialization/deserialization for both API endpoints and frontend interfaces.
-"""
-
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.utils import timezone
-
-from .models import (
-    MessageThread,
-    ThreadParticipant, 
-    Message,
-    MessageAttachment,
-    MessageReadReceipt,
-    TypingIndicator
-)
+from django.db.models import Count, Q
+from .models import MessageThread, Message, MessageAttachment, MessageReadStatus
 
 User = get_user_model()
 
 
 class UserBasicSerializer(serializers.ModelSerializer):
-    """Basic user information for messages"""
+    """Basic user info for messaging context"""
     display_name = serializers.CharField(source='get_display_name', read_only=True)
-    
+
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'email', 'role', 'display_name']
-        read_only_fields = ['id', 'email', 'role', 'display_name']
+        read_only_fields = ['id', 'first_name', 'last_name', 'email', 'role', 'display_name']
 
 
 class MessageAttachmentSerializer(serializers.ModelSerializer):
-    """Serializer for message attachments"""
-    file_url = serializers.SerializerMethodField()
-    file_size_formatted = serializers.SerializerMethodField()
-    
+    """Message attachment serializer"""
+    file_url = serializers.CharField(read_only=True)
+
     class Meta:
         model = MessageAttachment
-        fields = [
-            'id', 'filename', 'file_url', 'file_size', 'file_size_formatted', 
-            'file_type', 'uploaded_by', 'created_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'file_size', 'file_type']
-    
-    def get_file_url(self, obj):
-        """Get the full URL for the file"""
-        if obj.file:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.file.url)
-            return obj.file.url
-        return None
-    
-    def get_file_size_formatted(self, obj):
-        """Format file size in human readable format"""
-        if not obj.file_size:
-            return "0 B"
-        
-        size = obj.file_size
-        for unit in ['B', 'KB', 'MB', 'GB']:
-            if size < 1024.0:
-                return f"{size:.1f} {unit}"
-            size /= 1024.0
-        return f"{size:.1f} TB"
+        fields = ['id', 'filename', 'file_url', 'file_size', 'file_type', 'created_at']
+        read_only_fields = ['id', 'file_url', 'file_size', 'file_type', 'created_at']
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    """Serializer for individual messages"""
+    """Message serializer with sender info and attachments"""
     sender = UserBasicSerializer(read_only=True)
     attachments = MessageAttachmentSerializer(many=True, read_only=True)
-    is_read_by_user = serializers.SerializerMethodField()
-    can_edit = serializers.SerializerMethodField()
-    can_delete = serializers.SerializerMethodField()
-    time_ago = serializers.SerializerMethodField()
-    
+    read_by = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # Convert UUID fields to string to ensure JSON serialization
+    id = serializers.CharField(read_only=True)
+    thread = serializers.CharField(source='thread.id', read_only=True)
+
     class Meta:
         model = Message
         fields = [
-            'id', 'thread', 'sender', 'content', 'message_type', 
-            'is_internal_note', 'edited_at', 'original_content', 
-            'parent_message', 'attachments', 'created_at', 'updated_at',
-            'is_read_by_user', 'can_edit', 'can_delete', 'time_ago'
+            'id', 'thread', 'sender', 'content', 'message_type',
+            'is_internal_note', 'attachments', 'read_by',
+            'created_at', 'updated_at', 'edited_at'
         ]
-        read_only_fields = [
-            'id', 'sender', 'edited_at', 'original_content', 'created_at', 
-            'updated_at', 'is_read_by_user', 'can_edit', 'can_delete', 'time_ago'
-        ]
-    
-    def get_is_read_by_user(self, obj):
-        """Check if current user has read this message"""
+        read_only_fields = ['id', 'sender', 'created_at', 'updated_at', 'edited_at']
+
+    def create(self, validated_data):
+        # Set sender from request context
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.is_read_by(request.user)
-        return False
-    
-    def get_can_edit(self, obj):
-        """Check if current user can edit this message"""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            # Only sender can edit within 15 minutes
-            if obj.sender == request.user:
-                time_limit = timezone.now() - timezone.timedelta(minutes=15)
-                return obj.created_at > time_limit
-        return False
-    
-    def get_can_delete(self, obj):
-        """Check if current user can delete this message"""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            # Sender can delete within 1 hour, admins can always delete
-            if request.user.role == 'ADMIN':
-                return True
-            if obj.sender == request.user:
-                time_limit = timezone.now() - timezone.timedelta(hours=1)
-                return obj.created_at > time_limit
-        return False
-    
-    def get_time_ago(self, obj):
-        """Get human readable time ago"""
-        now = timezone.now()
-        diff = now - obj.created_at
-        
-        if diff.days > 0:
-            return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
-        elif diff.seconds > 3600:
-            hours = diff.seconds // 3600
-            return f"{hours} hour{'s' if hours > 1 else ''} ago"
-        elif diff.seconds > 60:
-            minutes = diff.seconds // 60
-            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
-        else:
-            return "Just now"
+        if request and request.user:
+            validated_data['sender'] = request.user
+        return super().create(validated_data)
 
 
-class CreateMessageSerializer(serializers.ModelSerializer):
-    """Serializer for creating new messages"""
-    attachments = serializers.ListField(
+class MessageCreateSerializer(serializers.ModelSerializer):
+    """Simplified serializer for creating messages"""
+    attachment_files = serializers.ListField(
         child=serializers.FileField(),
-        required=False,
-        allow_empty=True,
-        max_length=10  # Max 10 files per message
+        write_only=True,
+        required=False
     )
-    
+
     class Meta:
         model = Message
-        fields = ['thread', 'content', 'message_type', 'is_internal_note', 'parent_message', 'attachments']
-    
-    def validate_content(self, value):
-        """Validate message content"""
-        if not value.strip():
-            raise serializers.ValidationError("Message content cannot be empty.")
-        if len(value) > 5000:
-            raise serializers.ValidationError("Message content cannot exceed 5000 characters.")
-        return value.strip()
-    
+        fields = ['thread', 'content', 'message_type', 'is_internal_note', 'attachment_files']
+
     def validate_is_internal_note(self, value):
-        """Validate internal note permission"""
+        """Only admin users can create internal notes"""
         request = self.context.get('request')
         if value and request and request.user.role != 'ADMIN':
-            raise serializers.ValidationError("Only admin users can create internal notes.")
+            raise serializers.ValidationError("Only admin users can create internal notes")
         return value
-    
-    def validate_thread(self, value):
-        """Validate thread access"""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            # Check if user has access to this thread
-            if request.user.role == 'CLIENT':
-                # Clients can only access their own threads
-                if value.client != request.user:
-                    raise serializers.ValidationError("You don't have access to this thread.")
-            # Admins can access all threads
-        return value
-    
+
     def create(self, validated_data):
-        """Create message with attachments"""
-        attachments_data = validated_data.pop('attachments', [])
+        attachment_files = validated_data.pop('attachment_files', [])
         request = self.context.get('request')
-        
+
         # Set sender from request
         validated_data['sender'] = request.user
-        
+
         # Create message
-        message = Message.objects.create(**validated_data)
-        
-        # Create attachments
-        for attachment_file in attachments_data:
+        message = super().create(validated_data)
+
+        # Create attachments if any
+        for file_obj in attachment_files:
             MessageAttachment.objects.create(
                 message=message,
-                file=attachment_file,
-                filename=attachment_file.name,
-                uploaded_by=request.user
+                file=file_obj,
+                filename=file_obj.name
             )
-        
-        # Reload the message with proper prefetching for serialization
-        message = Message.objects.select_related('sender').prefetch_related('attachments').get(id=message.id)
-        
+
         return message
 
 
-class ThreadParticipantSerializer(serializers.ModelSerializer):
-    """Serializer for thread participants"""
-    user = UserBasicSerializer(read_only=True)
-    
-    class Meta:
-        model = ThreadParticipant
-        fields = [
-            'id', 'user', 'joined_at', 'is_active', 
-            'notifications_enabled', 'created_at'
-        ]
-        read_only_fields = ['id', 'joined_at', 'created_at']
-
-
 class MessageThreadListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for thread list views"""
+    """Thread list serializer with computed fields for frontend compatibility"""
     client = UserBasicSerializer(read_only=True)
     assigned_admin = UserBasicSerializer(read_only=True)
-    event_name = serializers.SerializerMethodField()
-    client_name = serializers.SerializerMethodField()
-    unread_count = serializers.SerializerMethodField()
+    client_name = serializers.CharField(read_only=True)
+    event_name = serializers.CharField(read_only=True)
+
+    # Flattened last message fields
+    last_message_content = serializers.SerializerMethodField()
+    last_message_sender_name = serializers.SerializerMethodField()
     last_message_preview = serializers.SerializerMethodField()
+
+    # Computed fields
+    unread_count = serializers.SerializerMethodField()
     can_manage = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = MessageThread
         fields = [
             'id', 'client', 'event', 'event_name', 'client_name',
             'assigned_admin', 'priority', 'status', 'subject',
             'last_message_at', 'last_message_content', 'last_message_sender_name',
-            'unread_count', 'last_message_preview', 'can_manage',
+            'last_message_preview', 'unread_count', 'can_manage',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
-            'id', 'last_message_at', 'last_message_content', 
-            'last_message_sender_name', 'created_at', 'updated_at'
+            'id', 'client_name', 'event_name', 'last_message_content',
+            'last_message_sender_name', 'last_message_preview',
+            'unread_count', 'can_manage', 'created_at', 'updated_at'
         ]
-    
-    def get_unread_count(self, obj):
-        """Get unread message count for current user"""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.get_unread_count_for_user(request.user)
-        return 0
-    
+
+    def get_last_message_content(self, obj):
+        """Get the content of the last message"""
+        last_message = obj.messages.filter(
+            Q(is_internal_note=False) |
+            Q(is_internal_note=True, sender__role='ADMIN') if self._is_admin_request() else Q(is_internal_note=False)
+        ).order_by('-created_at').first()
+        return last_message.content if last_message else ""
+
+    def get_last_message_sender_name(self, obj):
+        """Get the sender name of the last message"""
+        last_message = obj.messages.filter(
+            Q(is_internal_note=False) |
+            Q(is_internal_note=True, sender__role='ADMIN') if self._is_admin_request() else Q(is_internal_note=False)
+        ).order_by('-created_at').first()
+        return last_message.sender.get_display_name() if last_message else ""
+
     def get_last_message_preview(self, obj):
-        """Get formatted last message preview"""
-        if obj.last_message_content:
-            preview = obj.last_message_content[:100]
-            if len(obj.last_message_content) > 100:
-                preview += "..."
-            return preview
-        return ""
-    
-    def get_can_manage(self, obj):
-        """Check if current user can manage this thread"""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return request.user.role == 'ADMIN'
-        return False
+        """Get a preview of the last message (truncated)"""
+        content = self.get_last_message_content(obj)
+        return content[:100] + "..." if len(content) > 100 else content
 
-    def get_event_name(self, obj):
-        """Get event name from annotation or model"""
-        if hasattr(obj, 'event_display_name') and obj.event_display_name:
-            return obj.event_display_name
-        return obj.event.name if obj.event else None
-
-    def get_client_name(self, obj):
-        """Get client name from annotation or model"""
-        if hasattr(obj, 'client_full_name') and obj.client_full_name:
-            return obj.client_full_name.strip()  # Clean up any extra spaces
-        return f"{obj.client.first_name} {obj.client.last_name}".strip() if obj.client else None
-
-
-class MessageThreadDetailSerializer(serializers.ModelSerializer):
-    """Detailed serializer for thread detail views"""
-    client = UserBasicSerializer(read_only=True)
-    assigned_admin = UserBasicSerializer(read_only=True)
-    participants = ThreadParticipantSerializer(many=True, read_only=True)
-    messages = serializers.SerializerMethodField()
-    event_name = serializers.SerializerMethodField()
-    event_date = serializers.CharField(read_only=True)
-    client_name = serializers.SerializerMethodField()
-    unread_count = serializers.SerializerMethodField()
-    can_manage = serializers.SerializerMethodField()
-    typing_users = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = MessageThread
-        fields = [
-            'id', 'client', 'event', 'event_name', 'event_date', 'client_name',
-            'assigned_admin', 'priority', 'status', 'subject',
-            'participants', 'messages', 'unread_count', 'can_manage',
-            'typing_users', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-    
-    def get_messages(self, obj):
-        """Get paginated messages for this thread"""
-        request = self.context.get('request')
-        
-        # Get messages with proper filtering
-        messages_queryset = obj.messages.select_related('sender').prefetch_related('attachments')
-        
-        # Filter internal notes for clients
-        if request and request.user.role == 'CLIENT':
-            messages_queryset = messages_queryset.filter(is_internal_note=False)
-        
-        # Order by creation time
-        messages_queryset = messages_queryset.order_by('created_at')
-        
-        # Serialize messages
-        return MessageSerializer(
-            messages_queryset,
-            many=True,
-            context=self.context
-        ).data
-    
     def get_unread_count(self, obj):
-        """Get unread message count for current user"""
+        """Get unread message count for the request user"""
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.get_unread_count_for_user(request.user)
-        return 0
-    
+        if not request or not request.user:
+            return 0
+
+        # Filter messages visible to user
+        messages_query = obj.messages.all()
+        if not self._is_admin_request():
+            # Clients can't see internal notes
+            messages_query = messages_query.filter(is_internal_note=False)
+
+        # Count unread messages
+        unread_count = messages_query.exclude(
+            read_by=request.user
+        ).count()
+
+        return unread_count
+
     def get_can_manage(self, obj):
-        """Check if current user can manage this thread"""
+        """Check if user can manage this thread"""
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return request.user.role == 'ADMIN'
-        return False
-    
-    def get_typing_users(self, obj):
-        """Get currently typing users"""
-        # Clean up stale indicators first
-        TypingIndicator.cleanup_stale_indicators()
-        
-        # Get active typing indicators
-        typing_indicators = obj.typing_indicators.filter(
-            is_typing=True,
-            last_activity__gte=timezone.now() - timezone.timedelta(minutes=2)
-        ).select_related('user')
-        
-        return [
-            {
-                'id': indicator.user.id,
-                'name': indicator.user.get_display_name(),
-                'last_activity': indicator.last_activity
-            }
-            for indicator in typing_indicators
-        ]
+        if not request or not request.user:
+            return False
 
-    def get_event_name(self, obj):
-        """Get event name from annotation or model"""
-        if hasattr(obj, 'event_display_name') and obj.event_display_name:
-            return obj.event_display_name
-        return obj.event.name if obj.event else None
+        # Admins can manage all threads, clients can only view their own
+        return (request.user.role == 'ADMIN' or
+                obj.client == request.user)
 
-    def get_client_name(self, obj):
-        """Get client name from annotation or model"""
-        if hasattr(obj, 'client_full_name') and obj.client_full_name:
-            return obj.client_full_name.strip()  # Clean up any extra spaces
-        return f"{obj.client.first_name} {obj.client.last_name}".strip() if obj.client else None
+    def _is_admin_request(self):
+        """Check if the request is from an admin user"""
+        request = self.context.get('request')
+        return request and request.user and request.user.role == 'ADMIN'
 
 
-class CreateMessageThreadSerializer(serializers.ModelSerializer):
+class MessageThreadDetailSerializer(MessageThreadListSerializer):
+    """Detailed thread serializer with messages"""
+    messages = serializers.SerializerMethodField()
+
+    class Meta(MessageThreadListSerializer.Meta):
+        fields = MessageThreadListSerializer.Meta.fields + ['messages']
+
+    def get_messages(self, obj):
+        """Get messages for this thread, filtered by user permissions"""
+        request = self.context.get('request')
+        messages_query = obj.messages.all()
+
+        # Filter internal notes for non-admin users
+        if not self._is_admin_request():
+            messages_query = messages_query.filter(is_internal_note=False)
+
+        messages = messages_query.order_by('created_at')
+        return MessageSerializer(messages, many=True, context=self.context).data
+
+
+class MessageThreadCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating new message threads"""
-    
+    initial_message = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = MessageThread
-        fields = ['id', 'client', 'event', 'priority', 'subject']
-    
+        fields = ['client', 'event', 'subject', 'priority', 'initial_message']
+
     def validate_client(self, value):
-        """Validate client exists and has correct role"""
+        """Ensure client has CLIENT role"""
         if value.role != 'CLIENT':
-            raise serializers.ValidationError("Selected user must be a client.")
+            raise serializers.ValidationError("Selected user must be a client")
         return value
-    
-    def validate_event(self, value):
-        """Validate event belongs to client if specified"""
-        if value:
-            client = self.initial_data.get('client')
-            if client and value.client_id != client:
-                raise serializers.ValidationError("Event must belong to the selected client.")
-        return value
-    
-    def create(self, validated_data):
-        """Create thread and add participants"""
-        thread = MessageThread.objects.create(**validated_data)
-        
-        # Add client as participant
-        thread.add_participant(thread.client)
-        
-        # Add creating user as participant if admin
+
+    def validate(self, data):
+        """Validate thread creation permissions"""
         request = self.context.get('request')
-        if request and request.user.role == 'ADMIN' and request.user != thread.client:
-            thread.add_participant(request.user)
-        
+
+        # Only admins can create threads for other clients
+        if request.user.role == 'CLIENT':
+            if data.get('client') != request.user:
+                raise serializers.ValidationError("Clients can only create threads for themselves")
+
+        return data
+
+    def create(self, validated_data):
+        initial_message = validated_data.pop('initial_message', None)
+        request = self.context.get('request')
+
+        # Set client to request user if they're a client
+        if request.user.role == 'CLIENT':
+            validated_data['client'] = request.user
+
+        # Create thread
+        thread = super().create(validated_data)
+
+        # Create initial message if provided
+        if initial_message:
+            Message.objects.create(
+                thread=thread,
+                sender=request.user,
+                content=initial_message,
+                message_type='text'
+            )
+
         return thread
 
 
-class UpdateMessageThreadSerializer(serializers.ModelSerializer):
-    """Serializer for updating message threads"""
-    
+class MessageThreadUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating message threads (admin only)"""
+
     class Meta:
         model = MessageThread
         fields = ['assigned_admin', 'priority', 'status', 'subject']
-    
-    def validate_assigned_admin(self, value):
-        """Validate assigned admin has correct role"""
-        if value and value.role != 'ADMIN':
-            raise serializers.ValidationError("Assigned user must be an admin.")
-        return value
+
+    def validate(self, data):
+        """Only admins can update threads"""
+        request = self.context.get('request')
+        if request.user.role != 'ADMIN':
+            raise serializers.ValidationError("Only admin users can update threads")
+        return data
 
 
-class TypingIndicatorSerializer(serializers.ModelSerializer):
-    """Serializer for typing indicators"""
+class MessageReadStatusSerializer(serializers.ModelSerializer):
+    """Serializer for message read status"""
     user = UserBasicSerializer(read_only=True)
-    
+
     class Meta:
-        model = TypingIndicator
-        fields = ['id', 'thread', 'user', 'is_typing', 'last_activity']
-        read_only_fields = ['id', 'user', 'last_activity']
-
-
-class MessageReadReceiptSerializer(serializers.ModelSerializer):
-    """Serializer for message read receipts"""
-    user = UserBasicSerializer(read_only=True)
-    
-    class Meta:
-        model = MessageReadReceipt
-        fields = ['id', 'message', 'user', 'read_at']
-        read_only_fields = ['id', 'user', 'read_at']
-
-
-# File upload serializers
-class FileUploadSerializer(serializers.Serializer):
-    """Serializer for standalone file uploads"""
-    file = serializers.FileField()
-    
-    def validate_file(self, value):
-        """Validate file size and type"""
-        # Max file size: 10MB
-        if value.size > 10 * 1024 * 1024:
-            raise serializers.ValidationError("File size cannot exceed 10MB.")
-        
-        # Check file extension
-        allowed_extensions = [
-            'pdf', 'doc', 'docx', 'txt', 'rtf',  # Documents
-            'jpg', 'jpeg', 'png', 'gif', 'webp',  # Images
-            'mp4', 'mov', 'avi', 'mkv',  # Videos
-            'mp3', 'wav', 'ogg',  # Audio
-            'zip', 'rar', '7z'  # Archives
-        ]
-        
-        import os
-        file_extension = os.path.splitext(value.name)[1][1:].lower()
-        if file_extension not in allowed_extensions:
-            raise serializers.ValidationError(
-                f"File type '{file_extension}' is not allowed. "
-                f"Allowed types: {', '.join(allowed_extensions)}"
-            )
-        
-        return value
+        model = MessageReadStatus
+        fields = ['user', 'read_at']
+        read_only_fields = ['user', 'read_at']

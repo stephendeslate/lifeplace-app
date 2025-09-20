@@ -3,8 +3,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MessageInterface } from '@shared/components/messaging';
-import { CreateThreadDialog } from '../../components/messaging/CreateThreadDialog';
 import {
   Box,
   Button,
@@ -58,7 +56,6 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
-import { useToastActions } from '../../contexts/ToastContext';
 import { useEvents } from '../../hooks/useEvents';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
@@ -76,7 +73,8 @@ import { EventContracts } from '../../components/events/EventContracts';
 import { EventInvoices } from '../../components/events/EventInvoices';
 import { EventFiles } from '../../components/events/EventFiles';
 import { NotesList } from '../../components/notes';
-import { 
+import { MessageInterface } from '../../components/messaging/MessageInterface';
+import {
   ActivityTimeline,
   FinancialSummary,
   WorkflowVisualization,
@@ -103,7 +101,6 @@ export const EventProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
-  const { showSuccess, showError } = useToastActions();
   
   // State
   const [tabValue, setTabValue] = useState(0);
@@ -111,7 +108,6 @@ export const EventProfile: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [createThreadDialogOpen, setCreateThreadDialogOpen] = useState(false);
   
   // Hooks
   const { 
@@ -1408,19 +1404,19 @@ export const EventProfile: React.FC = () => {
               icon={<ScheduleIcon />} 
               iconPosition="start"
             />
-            <Tab 
-              label={`Communications (${communicationsCount})`} 
-              icon={<MessageIcon />} 
+            <Tab
+              label={`Communications (${communicationsCount})`}
+              icon={<MessageIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Messages" 
-              icon={<MessageIcon />} 
+            <Tab
+              label="Messages"
+              icon={<MessageIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Quotes" 
-              icon={<QuoteIcon />} 
+            <Tab
+              label="Quotes"
+              icon={<QuoteIcon />}
               iconPosition="start"
             />
             <Tab 
@@ -1476,27 +1472,7 @@ export const EventProfile: React.FC = () => {
 
           {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
-            <MessageInterface
-              userRole="ADMIN"
-              title={`Messages for ${event.name}`}
-              subtitle={`Event communications for ${event.name} with ${event.client_name || 'client'}`}
-              height="600px"
-              enableThreadList={true}
-              enableRealTime={true}
-              enableSearch={true}
-              enableFileUploads={true}
-              contextFilters={{ event_id: event.id }}
-              enableDirectAPI={true}
-              onError={(error) => {
-                console.error('[EventProfile] MessageInterface error:', error);
-                showError('Message Error', error.message);
-              }}
-              onSuccess={(title, message) => {
-                console.log('[EventProfile] MessageInterface success:', title, message);
-                showSuccess(title, message);
-              }}
-              onCreateThread={() => setCreateThreadDialogOpen(true)}
-            />
+            <MessageInterface eventId={eventId.toString()} />
           </TabPanel>
 
           {/* Quotes Tab */}
@@ -1653,13 +1629,6 @@ export const EventProfile: React.FC = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Create Thread Dialog */}
-        <CreateThreadDialog
-          open={createThreadDialogOpen}
-          onClose={() => setCreateThreadDialogOpen(false)}
-          preSelectedClient={client}
-          preSelectedEvent={event}
-        />
       </Container>
     </Box>
   );

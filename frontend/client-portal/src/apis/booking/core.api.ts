@@ -111,6 +111,20 @@ export class BookingCoreApi {
 
   /**
    * Complete the booking and create event
+   *
+   * This is the primary completion method that should be used by all frontend components.
+   *
+   * @param sessionId - The booking session UUID
+   * @param completionType - 'payment' for immediate payment processing, 'quote' for quote generation only
+   * @returns Promise<BookingCompletionResult> - Contains event details and completion status
+   *
+   * @example
+   * // For immediate payment
+   * const result = await BookingCoreApi.completeBooking(sessionId, 'payment');
+   *
+   * @example
+   * // For quote request
+   * const result = await BookingCoreApi.completeBooking(sessionId, 'quote');
    */
   static async completeBooking(sessionId: string, completionType: 'payment' | 'quote' = 'payment'): Promise<BookingCompletionResult> {
     const response = await api.post<BookingCompletionResult>(`/bookingflow/public/flows/session/${sessionId}/complete/`, {

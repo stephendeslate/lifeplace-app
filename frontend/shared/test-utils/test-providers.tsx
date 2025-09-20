@@ -75,8 +75,8 @@ export const TestProviders: React.FC<TestProvidersProps> = ({
   queryClient,
   initialRoutes = ['/'],
   theme = testTheme,
-  mockWebSocket = mockWebSocketContext,
-  mockMessaging = mockMessagingContext,
+  mockWebSocket: _mockWebSocket = mockWebSocketContext,
+  mockMessaging: _mockMessaging = mockMessagingContext,
 }) => {
   const testQueryClient = queryClient || createTestQueryClient()
 

@@ -1,42 +1,17 @@
 /**
- * Shared Messaging Hooks
- * 
- * Comprehensive React hooks for messaging functionality
+ * Shared Utility Hooks
+ *
+ * React hooks for common functionality
  * across both admin-crm and client-portal applications
  */
 
-// Main messaging hook
-export {
-  useMessaging,
-  type MessagingState,
-  type MessagingActions,
-  type UseMessagingOptions,
-  type UseMessagingReturn
-} from './useMessaging';
+// Intersection Observer hook for viewport detection
+export * from './useIntersectionObserver';
 
-// Real-time updates hook
-export {
-  useRealTimeUpdates,
-  type RealTimeState,
-  type UseRealTimeUpdatesOptions,
-  type UseRealTimeUpdatesReturn
-} from './useRealTimeUpdates';
+// Memory management hook for performance optimization
+export * from './useMemoryManagement';
 
-// Message operations hook
-export {
-  useMessageOperations,
-  type MessageDraft,
-  type MessageOperation,
-  type MessageValidation,
-  type UseMessageOperationsOptions,
-  type UseMessageOperationsReturn
-} from './useMessageOperations';
-
-// Thread management hook
-export {
-  useThreadManagement,
-  type ThreadManagementState,
-  type ThreadManagementActions,
-  type UseThreadManagementOptions,
-  type UseThreadManagementReturn
-} from './useThreadManagement';
+// Messaging hooks
+export * from './useMessagingQueries';
+export * from './useMessagingMutations';
+export * from './useMessagingWebSocket';
