@@ -62,6 +62,7 @@ import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuestionnaires } from '../../hooks/useQuestionnaires';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { useWorkflowStages } from '../../hooks/useWorkflows';
 import { formatCurrency } from '../../utils/currency';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
@@ -84,6 +85,7 @@ import {
   type ActivityItem,
 } from '../../components/common';
 import { EVENT_STATUSES, type UpdateEventData } from '../../types/events.types';
+import type { WorkflowStage as WorkflowStageType } from '../../types/workflows.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -122,6 +124,7 @@ export const EventProfile: React.FC = () => {
   
   const { useClient } = useClients();
   const { useRecords } = useCommunications();
+  const { useStagesForTemplate } = useWorkflowStages();
   
   // Get user's currency settings for proper formatting
   const { settings: currencySettings } = useCurrencySettings();
@@ -153,7 +156,12 @@ export const EventProfile: React.FC = () => {
   }, [event?.client]);
   
   const { data: client } = useClient(clientId);
-  
+
+  // Get workflow stages for the event's template
+  const { data: workflowStages = [], isLoading: isLoadingStages } = useStagesForTemplate(
+    event?.workflow_template?.id || 0
+  );
+
   // Get counts for tabs
   const { data: communications = [] } = useRecords({ client_id: clientId });
   const communicationsCount = communications.length;
@@ -167,6 +175,48 @@ export const EventProfile: React.FC = () => {
       q.event_type === event?.event_type || q.event_type === null
     ).length;
   }, [allQuestionnaires, event?.event_type]);
+
+  // Transform workflow stages data for visualization component
+  const transformedWorkflowStages = useMemo(() => {
+    if (!workflowStages.length || !event) return [];
+
+    return workflowStages.map((stage: WorkflowStageType) => {
+      // Determine stage status based on current stage and event progress
+      let status: 'completed' | 'active' | 'pending' | 'blocked' | 'skipped' = 'pending';
+
+      if (event.current_stage && stage.id === event.current_stage.id) {
+        status = 'active';
+      } else if (event.current_stage && stage.order < event.current_stage.order) {
+        status = 'completed';
+      }
+
+      // Find associated tasks for this stage
+      const stageTasks = event.tasks?.filter(task => task.workflow_stage === stage.id) || [];
+
+      return {
+        id: stage.id,
+        name: stage.name,
+        description: stage.task_description,
+        status,
+        order: stage.order,
+        tasks: stageTasks.map(task => ({
+          id: task.id,
+          name: task.title,
+          status: task.status === 'COMPLETED' ? 'completed' as const :
+                  task.status === 'PENDING' ? 'pending' as const : 'active' as const,
+          completedAt: task.completed_at || undefined,
+          assignedTo: task.assigned_to_name ? {
+            id: task.assigned_to || 0,
+            name: task.assigned_to_name,
+          } : undefined,
+          priority: task.priority?.toLowerCase() as 'low' | 'medium' | 'high' | 'urgent' | undefined,
+          dueDate: task.due_date || undefined,
+        })),
+        completedAt: status === 'completed' ? stage.updated_at : undefined,
+        dueDate: stageTasks.find(t => t.due_date)?.due_date || undefined,
+      };
+    }).sort((a, b) => a.order - b.order);
+  }, [workflowStages, event]);
 
   // Enhanced components data
   const financialMetrics = useMemo(() => {
@@ -1335,15 +1385,24 @@ export const EventProfile: React.FC = () => {
                   </Box>
 
                   <Box sx={{ mt: 2 }}>
-                    <WorkflowVisualization
-                      workflowName={event.workflow_template_name}
-                      stages={[]} // This would come from actual workflow data
-                      currentStage={event.current_stage || undefined}
-                      overallProgress={event.workflow_progress}
-                      layout="vertical"
-                      showTasks={false}
-                      showProgress={true}
-                    />
+                    {isLoadingStages ? (
+                      <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+                        <CircularProgress size={24} />
+                        <Typography variant="body2" sx={{ ml: 2, color: tokens.color.neutral[600] }}>
+                          Loading workflow stages...
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <WorkflowVisualization
+                        workflowName={event.workflow_template_name}
+                        stages={transformedWorkflowStages}
+                        currentStage={event.current_stage?.id}
+                        overallProgress={event.workflow_progress}
+                        layout="vertical"
+                        showTasks={true}
+                        showProgress={true}
+                      />
+                    )}
                   </Box>
                 </Stack>
               </CardContent>

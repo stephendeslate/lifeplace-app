@@ -1578,3 +1578,18 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-09-21 13:16:28,179 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
 🔒 SECURITY 2025-09-21 13:26:36,075 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
 🔒 SECURITY 2025-09-21 13:33:39,850 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:12:10,000 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:12:23,842 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:15:05,997 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:16:09,294 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:16:09,418 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:18:51,413 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:18:51,502 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:19:19,339 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:19:19,429 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:53:44,602 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:54:48,639 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:58:05,209 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 04:59:51,322 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-22 04:59:54,255 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-22 05:05:34,597 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
