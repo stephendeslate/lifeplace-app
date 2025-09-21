@@ -48,6 +48,7 @@ import {
   Description as ContractIcon,
   Receipt as QuoteIcon,
   Payment as InvoiceIcon,
+  AccountBalance as PaymentIcon,
   Assignment as QuestionnaireIcon,
   Folder as FilesIcon,
   Note as NoteIcon,
@@ -71,6 +72,7 @@ import { EventQuestionnaires } from '../../components/events/EventQuestionnaires
 import { EventQuotes } from '../../components/events/EventQuotes';
 import { EventContracts } from '../../components/events/EventContracts';
 import { EventInvoices } from '../../components/events/EventInvoices';
+import { EventPaymentPlans } from '../../components/events/EventPaymentPlans';
 import { EventFiles } from '../../components/events/EventFiles';
 import { NotesList } from '../../components/notes';
 import { MessageInterface } from '../../components/messaging/MessageInterface';
@@ -1424,14 +1426,19 @@ export const EventProfile: React.FC = () => {
               icon={<ContractIcon />} 
               iconPosition="start"
             />
-            <Tab 
-              label="Invoices" 
-              icon={<InvoiceIcon />} 
+            <Tab
+              label="Invoices"
+              icon={<InvoiceIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label={`Questionnaires (${questionnairesCount})`} 
-              icon={<QuestionnaireIcon />} 
+            <Tab
+              label="Payment Plans"
+              icon={<PaymentIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label={`Questionnaires (${questionnairesCount})`}
+              icon={<QuestionnaireIcon />}
               iconPosition="start"
             />
             <Tab 
@@ -1490,18 +1497,23 @@ export const EventProfile: React.FC = () => {
             <EventInvoices event={event} />
           </TabPanel>
 
-          {/* Questionnaires Tab */}
+          {/* Payment Plans Tab */}
           <TabPanel value={tabValue} index={6}>
+            <EventPaymentPlans event={event} />
+          </TabPanel>
+
+          {/* Questionnaires Tab */}
+          <TabPanel value={tabValue} index={7}>
             <EventQuestionnaires event={event} />
           </TabPanel>
 
           {/* Files Tab */}
-          <TabPanel value={tabValue} index={7}>
+          <TabPanel value={tabValue} index={8}>
             <EventFiles event={event} />
           </TabPanel>
 
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={8}>
+          <TabPanel value={tabValue} index={9}>
             <NotesList
               contentType="event"
               objectId={eventId}

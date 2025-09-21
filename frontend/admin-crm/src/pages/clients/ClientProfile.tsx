@@ -51,6 +51,7 @@ import {
   Star as StarIcon,
   Add as AddIcon,
   Message as MessageIcon,
+  AccountBalance as PaymentIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useClients } from '../../hooks/useClients';
@@ -64,6 +65,7 @@ import { ClientForm } from '../../components/clients/ClientForm';
 import { ClientQuotes } from '../../components/clients/ClientQuotes';
 import { ClientContracts } from '../../components/clients/ClientContracts';
 import { ClientInvoices } from '../../components/clients/ClientInvoices';
+import { ClientPaymentPlans } from '../../components/clients/ClientPaymentPlans';
 import { NotesList } from '../../components/notes';
 import { MessageInterface } from '../../components/messaging/MessageInterface';
 import {
@@ -689,14 +691,19 @@ export const ClientProfile: React.FC = () => {
               icon={<ContractIcon />} 
               iconPosition="start"
             />
-            <Tab 
-              label={`Invoices (${invoices.length})`} 
-              icon={<InvoiceIcon />} 
+            <Tab
+              label={`Invoices (${invoices.length})`}
+              icon={<InvoiceIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Notes" 
-              icon={<NoteIcon />} 
+            <Tab
+              label="Payment Plans"
+              icon={<PaymentIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Notes"
+              icon={<NoteIcon />}
               iconPosition="start"
             />
           </Tabs>
@@ -775,8 +782,13 @@ export const ClientProfile: React.FC = () => {
             <ClientInvoices client={client} />
           </TabPanel>
 
-          {/* Notes Tab */}
+          {/* Payment Plans Tab */}
           <TabPanel value={tabValue} index={6}>
+            <ClientPaymentPlans client={client} />
+          </TabPanel>
+
+          {/* Notes Tab */}
+          <TabPanel value={tabValue} index={7}>
             <NotesList
               contentType="client"
               objectId={clientId}

@@ -16,14 +16,16 @@ import {
   Payment as PaymentIcon,
   AccountBalance as TaxIcon,
   Search as SearchIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { usePaymentGateways, useTaxRates } from '../../../hooks/usePayments';
-import { 
-  PaymentGatewayTable, 
+import {
+  PaymentGatewayTable,
   PaymentGatewayFormDialog,
   TaxRateTable,
   TaxRateFormDialog,
+  PaymentPlanSettings,
 } from '../../../components/payments';
 import type { PaymentGateway, TaxRate } from '../../../types/payments.types';
 
@@ -153,11 +155,11 @@ export const Payments: React.FC = () => {
     createRefreshAction(handleRefresh),
   ];
 
-  const primaryAction = createAddAction(
-    activeTab === 0 ? 'New Gateway' : 'New Tax Rate', 
-    activeTab === 0 ? handleAddGateway : handleAddTaxRate, 
+  const primaryAction = activeTab !== 1 ? createAddAction(
+    activeTab === 0 ? 'New Gateway' : 'New Tax Rate',
+    activeTab === 0 ? handleAddGateway : handleAddTaxRate,
     'primary'
-  );
+  ) : undefined;
 
   return (
     <ModernSettingsLayout>
@@ -340,13 +342,18 @@ export const Payments: React.FC = () => {
               },
             }}
           >
-            <Tab 
-              label="Payment Gateways" 
+            <Tab
+              label="Payment Gateways"
               icon={<PaymentIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Tax Rates" 
+            <Tab
+              label="Payment Plans"
+              icon={<SettingsIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Tax Rates"
               icon={<TaxIcon />}
               iconPosition="start"
             />
@@ -409,8 +416,36 @@ export const Payments: React.FC = () => {
             />
           </TabPanel>
 
-          {/* Tax Rates Tab */}
+          {/* Payment Plans Tab */}
           <TabPanel value={activeTab} index={1}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Box>
+                <Typography
+                  variant="h6"
+                  fontWeight="700"
+                  sx={{
+                    color: tokens.color.neutral[800],
+                    mb: 0.5,
+                  }}
+                >
+                  Payment Plan Settings
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: tokens.color.neutral[600],
+                  }}
+                >
+                  Configure default payment plan behavior, installment settings, and late fee policies
+                </Typography>
+              </Box>
+            </Box>
+
+            <PaymentPlanSettings />
+          </TabPanel>
+
+          {/* Tax Rates Tab */}
+          <TabPanel value={activeTab} index={2}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
               <Box>
                 <Typography 

@@ -14,10 +14,90 @@ from .models import (
     PaymentMethod,
     PaymentNotification,
     PaymentPlan,
+    PaymentSettings,
     PaymentTransaction,
     Refund,
     TaxRate,
 )
+
+
+class PaymentSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for PaymentSettings with validation"""
+
+    class Meta:
+        model = PaymentSettings
+        fields = [
+            'id',
+            'balance_due_days',
+            'grace_period_days',
+            'default_installments',
+            'default_installment_frequency',
+            'late_fee_enabled',
+            'default_late_fee_amount',
+            'default_deposit_percentage',
+            'default_currency',
+            'auto_payment_retry_attempts',
+            'auto_payment_retry_delay_days',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate_default_deposit_percentage(self, value):
+        """Validate deposit percentage is between 0 and 100"""
+        if not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Default deposit percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_balance_due_days(self, value):
+        """Validate balance due days is positive"""
+        if value <= 0:
+            raise serializers.ValidationError(
+                "Balance due days must be a positive number."
+            )
+        return value
+
+    def validate_grace_period_days(self, value):
+        """Validate grace period days is non-negative"""
+        if value < 0:
+            raise serializers.ValidationError(
+                "Grace period days must be non-negative."
+            )
+        return value
+
+    def validate_default_installments(self, value):
+        """Validate default installments is positive"""
+        if value <= 0:
+            raise serializers.ValidationError(
+                "Default installments must be a positive number."
+            )
+        return value
+
+    def validate_auto_payment_retry_attempts(self, value):
+        """Validate retry attempts is non-negative"""
+        if value < 0:
+            raise serializers.ValidationError(
+                "Auto payment retry attempts must be non-negative."
+            )
+        return value
+
+    def validate_auto_payment_retry_delay_days(self, value):
+        """Validate retry delay days is positive"""
+        if value <= 0:
+            raise serializers.ValidationError(
+                "Auto payment retry delay days must be a positive number."
+            )
+        return value
+
+    def validate_default_late_fee_amount(self, value):
+        """Validate late fee amount is non-negative"""
+        if value < 0:
+            raise serializers.ValidationError(
+                "Default late fee amount must be non-negative."
+            )
+        return value
 
 
 class TaxRateSerializer(serializers.ModelSerializer):
@@ -231,15 +311,28 @@ class PaymentInstallmentSerializer(serializers.ModelSerializer):
     payment_plan_details = serializers.SerializerMethodField(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     payment_details = serializers.SerializerMethodField(read_only=True)
-    
+
+    # Calculated fields
+    paid_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    remaining_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    is_fully_paid = serializers.BooleanField(read_only=True)
+    days_overdue_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = PaymentInstallment
         fields = [
             'id', 'payment_plan', 'payment_plan_details', 'amount', 'due_date',
             'status', 'status_display', 'installment_number', 'description',
             'payment_details', 'created_at', 'updated_at',
+            # New enhanced fields
+            'last_reminder_sent', 'reminder_count', 'late_fee_amount', 'late_fee_applied_date',
+            # Calculated fields
+            'paid_amount', 'remaining_amount', 'is_fully_paid', 'days_overdue_count',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'created_at', 'updated_at', 'paid_amount', 'remaining_amount',
+            'is_fully_paid', 'days_overdue_count'
+        ]
     
     def get_payment_plan_details(self, obj):
         if obj.payment_plan:
@@ -264,15 +357,35 @@ class PaymentPlanSerializer(serializers.ModelSerializer):
     event_details = EventSerializer(source='event', read_only=True)
     quote_details = EventQuoteSerializer(source='quote', read_only=True)
     installments = PaymentInstallmentSerializer(many=True, read_only=True)
-    
+    auto_payment_method_details = PaymentMethodSerializer(source='auto_payment_method', read_only=True)
+
+    # Calculated fields
+    paid_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    remaining_balance = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    is_overdue = serializers.BooleanField(read_only=True)
+    completion_percentage = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+
+    # Display fields
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
     class Meta:
         model = PaymentPlan
         fields = [
             'id', 'event', 'event_details', 'total_amount', 'down_payment_amount',
             'currency', 'down_payment_due_date', 'number_of_installments', 'frequency',
             'notes', 'quote', 'quote_details', 'installments', 'created_at', 'updated_at',
+            # New enhanced fields
+            'status', 'status_display', 'next_payment_date', 'final_payment_date',
+            'grace_period_days', 'terms_accepted', 'terms_accepted_at', 'terms_accepted_ip',
+            'auto_payment_enabled', 'auto_payment_method', 'auto_payment_method_details',
+            'created_from_booking_session',
+            # Calculated fields
+            'paid_amount', 'remaining_balance', 'is_overdue', 'completion_percentage',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'created_at', 'updated_at', 'paid_amount', 'remaining_balance',
+            'is_overdue', 'completion_percentage', 'status_display'
+        ]
 
 
 class RefundSerializer(serializers.ModelSerializer):

@@ -335,6 +335,38 @@ export interface Refund {
   updated_at: string;
 }
 
+/**
+ * PaymentSettings interface for configuring payment behavior and defaults
+ */
+export interface PaymentSettings {
+  /** Unique identifier for the payment settings */
+  id: number;
+  /** Number of days after event/service date when balance is due */
+  balance_due_days: number;
+  /** Number of grace period days after due date before late fees apply */
+  grace_period_days: number;
+  /** Default number of installments for payment plans */
+  default_installments: number;
+  /** Default frequency for installment payments */
+  default_installment_frequency: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+  /** Whether late fees are enabled system-wide */
+  late_fee_enabled: boolean;
+  /** Default late fee amount when late fees are applied */
+  default_late_fee_amount: number;
+  /** Default deposit percentage required for new bookings */
+  default_deposit_percentage: number;
+  /** Default currency code for payments */
+  default_currency: string;
+  /** Number of automatic retry attempts for failed payments */
+  auto_payment_retry_attempts: number;
+  /** Number of days to wait between auto payment retry attempts */
+  auto_payment_retry_delay_days: number;
+  /** Timestamp when settings were created */
+  created_at: string;
+  /** Timestamp when settings were last updated */
+  updated_at: string;
+}
+
 // Enums and Types
 export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
 export type PaymentMethodType = 'CREDIT_CARD' | 'BANK_TRANSFER' | 'CHECK' | 'CASH' | 'DIGITAL_WALLET';
@@ -495,6 +527,19 @@ export interface CreateRefundData {
   amount: string;
   currency?: string;
   reason: string;
+}
+
+export interface UpdatePaymentSettingsData {
+  balance_due_days?: number;
+  grace_period_days?: number;
+  default_installments?: number;
+  default_installment_frequency?: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+  late_fee_enabled?: boolean;
+  default_late_fee_amount?: number;
+  default_deposit_percentage?: number;
+  default_currency?: string;
+  auto_payment_retry_attempts?: number;
+  auto_payment_retry_delay_days?: number;
 }
 
 // Filter Types
