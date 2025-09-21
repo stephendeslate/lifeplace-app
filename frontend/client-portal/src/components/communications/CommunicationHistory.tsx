@@ -186,17 +186,6 @@ export const CommunicationHistory: React.FC = () => {
 
   return (
     <Box>
-      {/* Header */}
-      <AnimatedElement animation="slideDown" delay={100}>
-        <Box mb={4}>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
-            Communication History
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            View all messages and communications sent to you
-          </Typography>
-        </Box>
-      </AnimatedElement>
 
       {/* Filters */}
       <AnimatedElement animation="slideUp" delay={200}>

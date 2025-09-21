@@ -19,8 +19,9 @@ import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
 import ContractsPage from './pages/contracts/ContractsPage';
 
-// Messaging imports
+// Messaging and Records imports
 import { ClientMessagesPage } from './pages/messages/ClientMessagesPage';
+import { RecordsPage } from './pages/records/RecordsPage';
 
 // Import booking components
 
@@ -356,15 +357,26 @@ const AppRouter: React.FC = () => {
         } 
       />
 
-      <Route 
-        path="/contracts" 
+      <Route
+        path="/contracts"
         element={
           <ProtectedRoute>
             <ClientLayoutWrapper>
               <ContractsPage />
             </ClientLayoutWrapper>
           </ProtectedRoute>
-        } 
+        }
+      />
+
+      <Route
+        path="/records"
+        element={
+          <ProtectedRoute>
+            <ClientLayoutWrapper>
+              <RecordsPage />
+            </ClientLayoutWrapper>
+          </ProtectedRoute>
+        }
       />
 
       {/* Messages Routes */}

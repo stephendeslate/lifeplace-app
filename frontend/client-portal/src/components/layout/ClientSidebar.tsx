@@ -26,6 +26,7 @@ import {
   Person as ProfileIcon,
   HelpOutline as HelpIcon,
   Home as HomeIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GlassCard } from '../../design-system/components/GlassCard';
@@ -60,6 +61,12 @@ const navigationItems: NavigationItem[] = [
     path: '/events',
     icon: <EventIcon />,
     // TODO: Replace with API-driven count
+  },
+  {
+    id: 'records',
+    label: 'Records',
+    path: '/records',
+    icon: <HistoryIcon />,
   },
   {
     id: 'messages',

@@ -10,8 +10,6 @@ import {
   Button,
   Divider,
   CircularProgress,
-  Tabs,
-  Tab,
   useTheme,
   alpha,
   LinearProgress,
@@ -35,41 +33,16 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useDashboardData } from '../../hooks/useDashboardData';
-import { CommunicationHistory } from '../../components/communications';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useAcceptQuote, useRejectQuote } from '../../hooks/useEventQuotes';
 import { QuoteRejectionDialog } from '../../components/common/QuoteRejectionDialog';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`dashboard-tabpanel-${index}`}
-      aria-labelledby={`dashboard-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ py: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-};
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(0);
   const [rejectionDialog, setRejectionDialog] = useState<{
     open: boolean;
     quoteId: number | null;
@@ -140,10 +113,6 @@ const Dashboard: React.FC = () => {
   };
 
 
-  // @ts-expect-error - React SyntheticEvent parameter not properly typed
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
 
 
   return (
@@ -159,67 +128,17 @@ const Dashboard: React.FC = () => {
       </Box>
 
 
-      {/* Main Content Tabs */}
+      {/* Main Dashboard Content */}
       <AnimatedElement animation="slideUp" delay={400}>
-        <GlassCard 
-          variant="light" 
+        <GlassCard
+          variant="light"
           intensity="subtle"
-          sx={{ 
+          sx={{
             border: `1px solid ${alpha('#fff', 0.1)}`,
             overflow: 'hidden',
+            p: 3,
           }}
         >
-          <Box sx={{ 
-            borderBottom: 1, 
-            borderColor: alpha(theme.palette.divider, 0.3),
-            backgroundColor: alpha('#fff', 0.05),
-            backdropFilter: 'blur(10px)',
-          }}>
-            <Tabs 
-              value={activeTab} 
-              onChange={handleTabChange} 
-              aria-label="dashboard tabs"
-              sx={{ 
-                px: 2,
-                '& .MuiTab-root': {
-                  color: alpha(theme.palette.text.primary, 0.7),
-                  '&.Mui-selected': {
-                    color: theme.palette.primary.main,
-                  },
-                },
-                '& .MuiTabs-indicator': {
-                  backgroundColor: theme.palette.primary.main,
-                  height: 3,
-                  borderRadius: '3px 3px 0 0',
-                },
-              }}
-            >
-              <Tab 
-                label="Overview" 
-                icon={<CalendarIcon />} 
-                iconPosition="start"
-                id="dashboard-tab-0"
-                aria-controls="dashboard-tabpanel-0"
-              />
-              <Tab 
-                label="Messages" 
-                icon={<MessageIcon />} 
-                iconPosition="start"
-                id="dashboard-tab-1"
-                aria-controls="dashboard-tabpanel-1"
-              />
-              <Tab 
-                label="Events" 
-                icon={<EventIcon />} 
-                iconPosition="start"
-                id="dashboard-tab-2"
-                aria-controls="dashboard-tabpanel-2"
-              />
-            </Tabs>
-          </Box>
-
-        {/* Overview Tab */}
-        <TabPanel value={activeTab} index={0}>
           {dashboardData.loading ? (
             <Box display="flex" justifyContent="center" p={4}>
               <CircularProgress />
@@ -662,7 +581,7 @@ const Dashboard: React.FC = () => {
                             ? alpha(theme.palette.primary.main, 0.3)
                             : alpha('#fff', 0.1)}`,
                         }}
-                        onClick={() => setActiveTab(1)}
+                        onClick={() => navigate('/records')}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -697,10 +616,10 @@ const Dashboard: React.FC = () => {
                     ))}
                     <Button
                       variant="outlined"
-                      onClick={() => setActiveTab(1)}
+                      onClick={() => navigate('/records')}
                       sx={{ alignSelf: 'center' }}
                     >
-                      View All Messages
+                      View All Records
                     </Button>
                   </Stack>
                 ) : (
@@ -717,33 +636,6 @@ const Dashboard: React.FC = () => {
               </Box>
             </Stack>
           )}
-        </TabPanel>
-
-        {/* Messages Tab */}
-        <TabPanel value={activeTab} index={1}>
-          <CommunicationHistory />
-        </TabPanel>
-
-        {/* Events Tab */}
-        <TabPanel value={activeTab} index={2}>
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <EventIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-              Events Management
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
-              Your events will appear here once available.
-            </Typography>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
-              <Button variant="contained" size="large" startIcon={<EventIcon />}>
-                Create New Event
-              </Button>
-              <Button variant="outlined" size="large" startIcon={<CalendarIcon />}>
-                View Calendar
-              </Button>
-            </Stack>
-          </Box>
-        </TabPanel>
         </GlassCard>
       </AnimatedElement>
 
