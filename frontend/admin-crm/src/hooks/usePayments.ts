@@ -10,6 +10,7 @@ import type {
   TaxRate,
   CreateTaxRateData,
   UpdateTaxRateData,
+  PaymentSettings,
   CreatePaymentData,
   UpdatePaymentData,
   CreatePaymentPlanData,
@@ -18,6 +19,7 @@ import type {
   CreateInvoiceData,
   UpdateInvoiceData,
   CreateRefundData,
+  UpdatePaymentSettingsData,
   PaymentFilters,
   PaymentPlanFilters,
   PaymentInstallmentFilters,
@@ -35,6 +37,7 @@ const QUERY_KEYS = {
   paymentGateway: (id: number) => ['payment-gateway', id] as const,
   taxRates: ['tax-rates'] as const,
   taxRate: (id: number) => ['tax-rate', id] as const,
+  paymentSettings: ['payment-settings'] as const,
   paymentMethods: ['payment-methods'] as const,
   paymentMethodsForUser: (userId: number) => ['payment-methods', 'user', userId] as const,
   payments: (filters?: PaymentFilters) => ['payments', filters] as const,
@@ -211,6 +214,57 @@ export const useDeleteTaxRate = () => {
         ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete tax rate'
         : 'Failed to delete tax rate';
       showError('Delete Failed', message);
+    },
+  });
+};
+
+/**
+ * Payment Settings Hooks
+ */
+export const usePaymentSettings = () => {
+  return useQuery({
+    queryKey: QUERY_KEYS.paymentSettings,
+    queryFn: paymentsApi.getPaymentSettings,
+    staleTime: 10 * 60 * 1000, // 10 minutes - settings don't change frequently
+  });
+};
+
+export const useUpdatePaymentSettings = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToastActions();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdatePaymentSettingsData }) =>
+      paymentsApi.updatePaymentSettings(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentSettings });
+      showSuccess('Settings Updated', 'Payment settings have been updated successfully.');
+    },
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update payment settings'
+        : 'Failed to update payment settings';
+      showError('Update Failed', message);
+    },
+  });
+};
+
+export const usePartialUpdatePaymentSettings = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToastActions();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdatePaymentSettingsData }) =>
+      paymentsApi.partialUpdatePaymentSettings(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentSettings });
+      showSuccess('Settings Updated', 'Payment settings have been updated successfully.');
+    },
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update payment settings'
+        : 'Failed to update payment settings';
+      showError('Update Failed', message);
     },
   });
 };

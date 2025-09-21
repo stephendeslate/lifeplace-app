@@ -7,8 +7,121 @@ from core.utils.models import BaseModel
 from core.utils.encryption import EncryptedJSONField
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
+
+
+class PaymentSettings(BaseModel):
+    """Global payment settings with singleton pattern"""
+
+    # BALANCE DUE SETTINGS
+    balance_due_days = models.PositiveIntegerField(
+        default=30,
+        help_text="Default number of days before event when balance is due"
+    )
+
+    # GRACE PERIOD SETTINGS
+    grace_period_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Default grace period days before marking payments overdue"
+    )
+
+    # INSTALLMENT DEFAULTS
+    default_installments = models.PositiveIntegerField(
+        default=2,
+        help_text="Default number of installments for payment plans"
+    )
+
+    default_installment_frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('WEEKLY', 'Weekly'),
+            ('BIWEEKLY', 'Bi-weekly'),
+            ('MONTHLY', 'Monthly')
+        ],
+        default='MONTHLY',
+        help_text="Default frequency for payment installments"
+    )
+
+    # LATE FEE SETTINGS
+    late_fee_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable automatic late fee application"
+    )
+
+    default_late_fee_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('25.00'),
+        help_text="Default late fee amount to apply to overdue payments"
+    )
+
+    # DEPOSIT SETTINGS
+    default_deposit_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('50.00'),
+        help_text="Default deposit percentage (0-100)"
+    )
+
+    # CURRENCY SETTINGS
+    default_currency = models.CharField(
+        max_length=3,
+        default='PHP',
+        help_text="Default currency (ISO 4217 code)"
+    )
+
+    # AUTO PAYMENT RETRY SETTINGS
+    auto_payment_retry_attempts = models.PositiveIntegerField(
+        default=3,
+        help_text="Number of automatic retry attempts for failed payments"
+    )
+
+    auto_payment_retry_delay_days = models.PositiveIntegerField(
+        default=2,
+        help_text="Days to wait between automatic payment retry attempts"
+    )
+
+    class Meta:
+        verbose_name = "Payment Settings"
+        verbose_name_plural = "Payment Settings"
+
+    def clean(self):
+        """Validate that only one settings instance exists"""
+        if not self.pk and PaymentSettings.objects.exists():
+            raise ValidationError("Only one PaymentSettings instance is allowed.")
+
+        # Validate percentage fields
+        if not (0 <= self.default_deposit_percentage <= 100):
+            raise ValidationError("Default deposit percentage must be between 0 and 100.")
+
+    def save(self, *args, **kwargs):
+        """Ensure singleton pattern"""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_default_settings(cls):
+        """Get the default payment settings (singleton)"""
+        settings, created = cls.objects.get_or_create(
+            defaults={
+                'balance_due_days': 30,
+                'grace_period_days': 7,
+                'default_installments': 2,
+                'default_installment_frequency': 'MONTHLY',
+                'late_fee_enabled': True,
+                'default_late_fee_amount': Decimal('25.00'),
+                'default_deposit_percentage': Decimal('50.00'),
+                'default_currency': 'PHP',
+                'auto_payment_retry_attempts': 3,
+                'auto_payment_retry_delay_days': 2,
+            }
+        )
+        return settings
+
+    def __str__(self):
+        return "Global Payment Settings"
 
 
 class Payment(BaseModel):
@@ -116,6 +229,9 @@ class Payment(BaseModel):
         # Send payment notification
         self.send_receipt_notification()
 
+        # Auto-create payment plan for deposit payments
+        self._create_payment_plan_for_deposit()
+
     def generate_payment_number(self):
         """Generate a unique payment number"""
         return f"PAY-{timezone.now().strftime('%Y%m%d')}-{self.event.id}-{self.pk or 0}"
@@ -194,6 +310,61 @@ class Payment(BaseModel):
         else:
             return f"{symbol}{float(self.amount):,.2f}"
     
+    def _create_payment_plan_for_deposit(self):
+        """Create payment plan for remaining balance if this is a deposit payment"""
+        # Only create payment plan for deposit payments
+        if 'deposit' not in self.description.lower():
+            return
+
+        # Check if event already has a payment plan
+        if hasattr(self.event, 'payment_plan'):
+            return
+
+        # Calculate remaining balance
+        total_amount = self.event.total_amount_due or Decimal('0.00')
+        if total_amount <= self.amount:
+            return  # Full payment, no need for payment plan
+
+        remaining_amount = total_amount - self.amount
+
+        # Only create payment plan if there's a significant remaining balance
+        if remaining_amount < Decimal('100.00'):  # Minimum threshold
+            return
+
+        try:
+            # Import here to avoid circular imports
+            from core.domains.payments.services.payment_plan_service import PaymentPlanService
+
+            # Try to find the booking session that created this payment
+            booking_session = None
+            try:
+                from core.domains.bookingflow.models import BookingSession
+                # Look for recent session associated with this event
+                booking_session = BookingSession.objects.filter(
+                    created_event=self.event
+                ).order_by('-created_at').first()
+            except:
+                pass
+
+            # Create payment plan for remaining balance
+            payment_plan = PaymentPlanService.create_payment_plan_from_deposit(
+                event=self.event,
+                deposit_payment=self,
+                remaining_amount=remaining_amount,
+                booking_session=booking_session
+            )
+
+            # Log successful creation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Auto-created payment plan {payment_plan.id} for event {self.event.id} after deposit payment")
+
+        except Exception as e:
+            # Log error but don't fail the payment completion
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to auto-create payment plan for deposit payment {self.id}: {e}")
+
     def __str__(self):
         return f"Payment {self.payment_number} for Event {self.event.id}"
 
@@ -328,9 +499,82 @@ class PaymentPlan(BaseModel):
         ('MONTHLY', 'Monthly')
     ])
     notes = models.TextField(blank=True)
-    
+
     # Link to quote that originated the plan
     quote = models.ForeignKey('sales.EventQuote', on_delete=models.SET_NULL, null=True, blank=True, related_name='payment_plans')
+
+    # STATUS TRACKING - DRY compliant with existing patterns
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDING', 'Pending Setup'),
+            ('ACTIVE', 'Active'),
+            ('COMPLETED', 'Completed'),
+            ('SUSPENDED', 'Suspended'),
+            ('DEFAULTED', 'Defaulted'),
+            ('CANCELLED', 'Cancelled')
+        ],
+        default='PENDING',
+        help_text="Current status of the payment plan"
+    )
+
+    # SCHEDULE MANAGEMENT
+    next_payment_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date of next scheduled payment"
+    )
+
+    final_payment_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date of final installment"
+    )
+
+    # GRACE PERIOD AND DEFAULT HANDLING
+    grace_period_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Days after due date before marking overdue"
+    )
+
+    # TERMS AND CONDITIONS
+    terms_accepted = models.BooleanField(
+        default=False,
+        help_text="Client accepted payment plan terms"
+    )
+
+    terms_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    terms_accepted_ip = models.GenericIPAddressField(
+        null=True,
+        blank=True
+    )
+
+    # AUTOMATIC PAYMENT SETTINGS
+    auto_payment_enabled = models.BooleanField(
+        default=False,
+        help_text="Automatically charge saved payment method"
+    )
+
+    auto_payment_method = models.ForeignKey(
+        'PaymentMethod',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='auto_payment_plans'
+    )
+
+    # INTEGRATION FIELDS
+    created_from_booking_session = models.ForeignKey(
+        'bookingflow.BookingSession',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Booking session that created this plan"
+    )
     
     def __str__(self):
         return f"Payment Plan for Event {self.event.id}"
@@ -381,19 +625,125 @@ class PaymentPlan(BaseModel):
                 description=f"Installment {i} of {self.number_of_installments}"
             )
 
+    @property
+    def paid_amount(self):
+        """Calculate total paid from related payments - NO DB FIELD"""
+        from django.db.models import Sum
+        total = self.event.payments.filter(
+            status='COMPLETED'
+        ).aggregate(
+            total=Sum('amount')
+        )['total']
+        return total or Decimal('0.00')
+
+    @property
+    def remaining_balance(self):
+        """Calculate remaining balance - NO DB FIELD"""
+        return self.total_amount - self.paid_amount
+
+    @property
+    def is_overdue(self):
+        """Check if any installments are overdue - NO DB FIELD"""
+        return self.installments.filter(status='OVERDUE').exists()
+
+    @property
+    def completion_percentage(self):
+        """Calculate completion percentage"""
+        if self.total_amount == 0:
+            return 0
+        return (self.paid_amount / self.total_amount) * 100
+
+    def calculate_remaining_balance(self):
+        """Calculate and update remaining balance"""
+        return self.remaining_balance
+
+    def update_next_payment_date(self):
+        """Update next payment date based on pending installments"""
+        next_installment = self.installments.filter(
+            status='PENDING'
+        ).order_by('due_date').first()
+
+        self.next_payment_date = next_installment.due_date if next_installment else None
+        return self.next_payment_date
+
+    def update_status(self):
+        """Update payment plan status based on installment statuses"""
+        installments = self.installments.all()
+
+        if not installments.exists():
+            return
+
+        paid_installments = installments.filter(status='PAID').count()
+        total_installments = installments.count()
+        overdue_installments = installments.filter(status='OVERDUE').exists()
+
+        if paid_installments == total_installments:
+            self.status = 'COMPLETED'
+        elif overdue_installments:
+            # Check if overdue for more than grace period
+            from django.utils import timezone
+            overdue_beyond_grace = installments.filter(
+                status='OVERDUE',
+                due_date__lt=timezone.now().date() - timedelta(days=self.grace_period_days)
+            ).exists()
+
+            if overdue_beyond_grace:
+                self.status = 'DEFAULTED'
+            else:
+                self.status = 'ACTIVE'  # Still within grace period
+        elif paid_installments > 0:
+            self.status = 'ACTIVE'
+        else:
+            self.status = 'PENDING'
+
+        self.save(update_fields=['status'])
+
 
 class PaymentInstallment(BaseModel):
     """Individual installment for a payment plan"""
     payment_plan = models.ForeignKey(PaymentPlan, on_delete=models.CASCADE, related_name='installments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     due_date = models.DateField()
-    status = models.CharField(max_length=20, choices=[
-        ('PENDING', 'Pending'),
-        ('PAID', 'Paid'),
-        ('OVERDUE', 'Overdue')
-    ])
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDING', 'Pending'),
+            ('PAID', 'Paid'),
+            ('OVERDUE', 'Overdue'),
+            ('PARTIAL', 'Partially Paid'),
+            ('WAIVED', 'Waived'),
+            ('CANCELLED', 'Cancelled')
+        ],
+        default='PENDING'
+    )
     installment_number = models.PositiveIntegerField()
     description = models.CharField(max_length=255, blank=True)
+
+    # REMINDER AND NOTIFICATION TRACKING
+    last_reminder_sent = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date when last reminder was sent"
+    )
+
+    reminder_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of reminders sent for this installment"
+    )
+
+    # LATE FEES AND PENALTIES
+    late_fee_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Late fee amount applied to this installment"
+    )
+
+    late_fee_applied_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date when late fee was applied"
+    )
     
     def __str__(self):
         return f"Installment {self.installment_number} - {self.status}"
@@ -434,7 +784,73 @@ class PaymentInstallment(BaseModel):
         )
         
         return payment
-    
+
+    @property
+    def paid_amount(self):
+        """Get paid amount from related payment - NO DB FIELD"""
+        if hasattr(self, 'payment') and self.payment.exists():
+            payment = self.payment.first()
+            if payment.status == 'COMPLETED':
+                return payment.amount
+        return Decimal('0.00')
+
+    @property
+    def remaining_amount(self):
+        """Calculate remaining amount for this installment"""
+        return self.amount + self.late_fee_amount - self.paid_amount
+
+    @property
+    def is_fully_paid(self):
+        """Check if installment is fully paid"""
+        return self.paid_amount >= (self.amount + self.late_fee_amount)
+
+    @property
+    def days_overdue_count(self):
+        """Calculate days overdue"""
+        if self.status != 'OVERDUE':
+            return 0
+        return (timezone.now().date() - self.due_date).days
+
+    def apply_late_fee(self, fee_amount):
+        """Apply late fee to this installment"""
+        if self.late_fee_amount == 0:  # Only apply once
+            self.late_fee_amount = fee_amount
+            self.late_fee_applied_date = timezone.now().date()
+            self.save(update_fields=['late_fee_amount', 'late_fee_applied_date'])
+
+    def mark_as_paid(self, payment_amount=None):
+        """Mark installment as paid and update status"""
+        if payment_amount is None:
+            payment_amount = self.amount + self.late_fee_amount
+
+        if payment_amount >= (self.amount + self.late_fee_amount):
+            self.status = 'PAID'
+        elif payment_amount > 0:
+            self.status = 'PARTIAL'
+
+        self.save(update_fields=['status'])
+
+        # Update parent payment plan status
+        self.payment_plan.update_status()
+        self.payment_plan.update_next_payment_date()
+        self.payment_plan.save(update_fields=['next_payment_date'])
+
+    def send_reminder(self):
+        """Send payment reminder and update tracking"""
+        self.reminder_count += 1
+        self.last_reminder_sent = timezone.now()
+        self.save(update_fields=['reminder_count', 'last_reminder_sent'])
+
+        # Create notification record
+        PaymentNotification.objects.create(
+            payment=None,
+            notification_type='PAYMENT_REMINDER',
+            sent_at=timezone.now(),
+            sent_to=self.payment_plan.event.client.email,
+            is_successful=True,
+            reference=f"installment_{self.id}"
+        )
+
     class Meta:
         ordering = ['installment_number']
 

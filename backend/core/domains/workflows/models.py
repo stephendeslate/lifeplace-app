@@ -33,6 +33,7 @@ class WorkflowStage(BaseModel):
         ('TASK', 'Create Task'),
         ('QUOTE', 'Generate Quote'),
         ('CONTRACT', 'Generate Contract'),
+        ('PAYMENT_PLAN', 'Create Payment Plan'),
         ('REMINDER', 'Send Reminder'),
         ('NOTIFICATION', 'Send Notification'),
     ]
@@ -222,7 +223,70 @@ class WorkflowStage(BaseModel):
                     
             except Exception as e:
                 logger.error(f"Failed to generate/send contract: {e}")
-        
+
+        elif self.automation_type == 'PAYMENT_PLAN':
+            # Create payment plan
+            try:
+                from core.domains.payments.models import PaymentPlan
+
+                # Get payment plan configuration from metadata
+                payment_plan_config = self.metadata.get('payment_plan_config', {})
+
+                # Default payment plan configuration
+                total_amount = payment_plan_config.get('total_amount', event.total_amount_due or 0)
+                down_payment_percent = payment_plan_config.get('down_payment_percent', 30)
+                down_payment_amount = total_amount * (down_payment_percent / 100)
+                number_of_installments = payment_plan_config.get('number_of_installments', 3)
+                frequency = payment_plan_config.get('frequency', 'MONTHLY')
+                grace_period_days = payment_plan_config.get('grace_period_days', 7)
+
+                # Calculate due dates
+                from datetime import timedelta
+                today = timezone.now().date()
+                down_payment_due_date = today + timedelta(days=payment_plan_config.get('down_payment_due_days', 7))
+
+                # Create payment plan
+                payment_plan = PaymentPlan.objects.create(
+                    event=event,
+                    total_amount=total_amount,
+                    down_payment_amount=down_payment_amount,
+                    down_payment_due_date=down_payment_due_date,
+                    number_of_installments=number_of_installments,
+                    frequency=frequency,
+                    grace_period_days=grace_period_days,
+                    status='ACTIVE',
+                    notes=f'Auto-generated from workflow stage: {self.name}'
+                )
+
+                # Send email notification if template is configured
+                if self.email_template:
+                    from core.domains.communications.services import CommunicationService
+
+                    context_data = {
+                        'client_name': event.client.get_full_name(),
+                        'event_date': event.start_date.strftime('%B %d, %Y'),
+                        'venue_name': 'LifePlace Retreat & Events Center',
+                        'total_amount': str(total_amount),
+                        'down_payment_amount': str(down_payment_amount),
+                        'installment_amount': str((total_amount - down_payment_amount) / number_of_installments),
+                        'payment_frequency': frequency.replace('_', ' ').lower(),
+                        'down_payment_due_date': down_payment_due_date.strftime('%B %d, %Y'),
+                        'event': event,
+                        'stage': self,
+                        'payment_plan': payment_plan
+                    }
+
+                    CommunicationService.send_communication_by_template(
+                        template=self.email_template,
+                        recipient=event.client.email,
+                        context_data=context_data
+                    )
+
+                logger.info(f"Created payment plan {payment_plan.id} for event {event.id}")
+
+            except Exception as e:
+                logger.error(f"Failed to create payment plan: {e}")
+
         elif self.automation_type == 'NOTIFICATION':
             # Send notification
             from core.domains.notifications.services import NotificationService
@@ -239,6 +303,8 @@ class WorkflowTrigger(BaseModel):
     """Records of workflow trigger events for automation"""
     TRIGGER_TYPE_CHOICES = [
         ('PAYMENT_RECEIVED', 'Payment Received'),
+        ('PAYMENT_PLAN_CREATED', 'Payment Plan Created'),
+        ('PAYMENT_OVERDUE', 'Payment Overdue'),
         ('QUOTE_ACCEPTED', 'Quote Accepted'),
         ('CONTRACT_SIGNED', 'Contract Signed'),
         ('EVENT_CREATED', 'Event Created'),

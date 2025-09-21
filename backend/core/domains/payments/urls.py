@@ -11,6 +11,7 @@ from .views import (
     PaymentMethodViewSet,
     PaymentNotificationViewSet,
     PaymentPlanViewSet,
+    PaymentSettingsViewSet,
     PaymentTransactionViewSet,
     PaymentViewSet,
     RefundViewSet,
@@ -33,6 +34,7 @@ router.register(r'payment-plans', PaymentPlanViewSet, basename='payment-plan')
 router.register(r'installments', PaymentInstallmentViewSet, basename='installment')
 router.register(r'payment-methods', PaymentMethodViewSet, basename='payment-method')
 router.register(r'gateways', PaymentGatewayViewSet, basename='payment-gateway')
+router.register(r'settings', PaymentSettingsViewSet, basename='payment-settings')
 router.register(r'tax-rates', TaxRateViewSet, basename='tax-rate')
 router.register(r'transactions', PaymentTransactionViewSet, basename='transaction')
 router.register(r'refunds', RefundViewSet, basename='refund')

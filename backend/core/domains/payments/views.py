@@ -18,6 +18,7 @@ from .models import (
     PaymentMethod,
     PaymentNotification,
     PaymentPlan,
+    PaymentSettings,
     PaymentTransaction,
     Refund,
     TaxRate,
@@ -33,6 +34,7 @@ from .serializers import (
     PaymentNotificationSerializer,
     PaymentPlanSerializer,
     PaymentSerializer,
+    PaymentSettingsSerializer,
     PaymentTransactionSerializer,
     RefundSerializer,
     TaxRateSerializer,
@@ -48,6 +50,65 @@ from .services import (
 from .cache_service import payments_cache_service
 
 logger = logging.getLogger(__name__)
+
+
+class PaymentSettingsViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing payment settings (singleton pattern)"""
+    queryset = PaymentSettings.objects.all()
+    serializer_class = PaymentSettingsSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        """Always return the single settings instance"""
+        # Ensure settings exist
+        settings = PaymentSettings.get_default_settings()
+        return PaymentSettings.objects.filter(id=settings.id)
+
+    def list(self, request, *args, **kwargs):
+        """Return the single settings instance as a list with one item"""
+        settings = PaymentSettings.get_default_settings()
+        serializer = self.get_serializer(settings)
+        return Response([serializer.data])
+
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve the settings instance, creating it if it doesn't exist"""
+        settings = PaymentSettings.get_default_settings()
+        serializer = self.get_serializer(settings)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        """Prevent creation of new instances"""
+        return Response(
+            {"detail": "Payment settings already exists. Use PUT/PATCH to update."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def update(self, request, *args, **kwargs):
+        """Update the singleton settings instance"""
+        settings = PaymentSettings.get_default_settings()
+        serializer = self.get_serializer(settings, data=request.data, partial=False)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        logger.info(f"Payment settings updated by user {request.user.id}")
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        """Partially update the singleton settings instance"""
+        settings = PaymentSettings.get_default_settings()
+        serializer = self.get_serializer(settings, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        logger.info(f"Payment settings partially updated by user {request.user.id}")
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        """Prevent deletion of settings"""
+        return Response(
+            {"detail": "Payment settings cannot be deleted."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class PaymentViewSet(viewsets.ModelViewSet):
