@@ -1612,3 +1612,21 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-09-23 12:55:00,748 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
 🔒 SECURITY 2025-09-23 13:24:08,400 WARNING [LOGIN_FAILURE] Failed login attempt for john.do@gmail.com: Invalid credentials
 🔒 SECURITY 2025-09-23 13:24:14,922 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-23 13:34:37,855 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-09-23 13:35:02,960 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-23 15:04:15,707 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-23 15:04:15,795 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-23 15:04:15,883 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-09-23 15:04:15,971 WARNING [LOGIN_FAILURE] Failed login attempt for client@test.com: Invalid credentials
+🔒 SECURITY 2025-09-23 15:04:16,064 INFO [LOGIN_SUCCESS] User test@test.com logged in successfully
+🔒 SECURITY 2025-09-23 15:04:42,194 INFO [LOGIN_SUCCESS] User test@test.com logged in successfully
+🔒 SECURITY 2025-09-23 15:04:42,284 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-23 15:04:54,840 INFO [LOGIN_SUCCESS] User test@test.com logged in successfully
+🔒 SECURITY 2025-09-23 15:05:06,300 INFO [LOGIN_SUCCESS] User test@test.com logged in successfully
+🔒 SECURITY 2025-09-23 15:05:06,427 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-23 15:05:23,894 INFO [LOGIN_SUCCESS] User test@test.com logged in successfully
+🔒 SECURITY 2025-09-23 15:05:24,018 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-23 15:14:23,869 INFO [LOGIN_SUCCESS] User test@test.com logged in successfully
+🔒 SECURITY 2025-09-23 15:14:23,965 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-23 15:14:24,138 INFO [LOGIN_SUCCESS] User test@test.com logged in successfully
+🔒 SECURITY 2025-09-24 01:36:33,131 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully

@@ -1,15 +1,13 @@
 // frontend/client-portal/src/__tests__/integration/PaymentFlow.integration.test.tsx
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
-
-import { AppProviders } from '../../providers/AppProviders';
 import FinancialPortal from '../../pages/payments/FinancialPortal';
 import FinancialApi from '../../apis/financial.api';
 
@@ -221,7 +219,7 @@ describe('Payment Flow Integration Tests', () => {
       isPaid: invoice.status === 'PAID'
     }));
 
-    mockFinancialApi.formatAmount.mockImplementation((amount, currency) =>
+    mockFinancialApi.formatAmount.mockImplementation((amount, _currency) =>
       `₱${parseFloat(amount.toString()).toLocaleString()}`
     );
   });
@@ -295,7 +293,7 @@ describe('Payment Flow Integration Tests', () => {
     }
 
     // Click Pay Now button
-    await waitFor(() => {
+    await waitFor(async () => {
       const payButton = screen.getByText('Pay Now');
       await user.click(payButton);
     });
