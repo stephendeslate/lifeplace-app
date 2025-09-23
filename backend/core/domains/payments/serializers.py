@@ -506,3 +506,103 @@ class PaymentSerializer(serializers.ModelSerializer):
             'gateway_name': gateway_name,
             'gateway_code': gateway_code
         })
+
+
+# New serializers for invoice payment endpoints
+class InvoicePaymentRequestSerializer(serializers.Serializer):
+    """Serializer for invoice payment request data"""
+    payment_method_id = serializers.CharField(required=False, help_text="Stripe payment method ID or token")
+    payment_method_token = serializers.CharField(required=False, help_text="Payment method token from frontend")
+    gateway_id = serializers.IntegerField(required=False, help_text="Payment gateway ID to use")
+    gateway_code = serializers.CharField(required=False, help_text="Payment gateway code (e.g., 'stripe')")
+    save_payment_method = serializers.BooleanField(default=False, help_text="Save payment method for future use")
+    is_manual = serializers.BooleanField(default=False, help_text="Manual payment processing")
+    reference_number = serializers.CharField(required=False, max_length=255, help_text="External reference number")
+    notes = serializers.CharField(required=False, help_text="Additional payment notes")
+
+    def validate(self, data):
+        """Validate payment request data"""
+        # Require either payment method ID/token or manual payment
+        if not data.get('is_manual', False):
+            if not data.get('payment_method_id') and not data.get('payment_method_token'):
+                raise serializers.ValidationError(
+                    "payment_method_id or payment_method_token is required for non-manual payments"
+                )
+
+        # Require gateway for non-manual payments
+        if not data.get('is_manual', False):
+            if not data.get('gateway_id') and not data.get('gateway_code'):
+                raise serializers.ValidationError(
+                    "gateway_id or gateway_code is required for non-manual payments"
+                )
+
+        return data
+
+
+class PaymentIntentResponseSerializer(serializers.Serializer):
+    """Serializer for payment intent response from gateways"""
+    client_secret = serializers.CharField(help_text="Client secret for frontend payment confirmation")
+    payment_intent_id = serializers.CharField(help_text="Payment intent ID from gateway")
+    status = serializers.CharField(help_text="Current status of payment intent")
+    requires_action = serializers.BooleanField(help_text="Whether payment requires additional action")
+    next_action = serializers.DictField(required=False, help_text="Next action data for 3D Secure etc.")
+    payment_id = serializers.IntegerField(help_text="Internal payment record ID")
+    transaction_id = serializers.IntegerField(help_text="Internal transaction record ID")
+
+
+class PaymentPlanRequestSerializer(serializers.Serializer):
+    """Serializer for payment plan setup request"""
+    down_payment_amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Down payment amount (optional, defaults to 0)"
+    )
+    down_payment_due_date = serializers.DateField(
+        required=False,
+        help_text="Due date for down payment (defaults to today)"
+    )
+    number_of_installments = serializers.IntegerField(
+        min_value=1,
+        max_value=12,
+        help_text="Number of installments (1-12)"
+    )
+    frequency = serializers.ChoiceField(
+        choices=[
+            ('WEEKLY', 'Weekly'),
+            ('BIWEEKLY', 'Bi-weekly'),
+            ('MONTHLY', 'Monthly'),
+            ('QUARTERLY', 'Quarterly')
+        ],
+        default='MONTHLY',
+        help_text="Installment frequency"
+    )
+    auto_payment_enabled = serializers.BooleanField(
+        default=False,
+        help_text="Enable automatic payments"
+    )
+    auto_payment_method_id = serializers.IntegerField(
+        required=False,
+        help_text="Payment method ID for auto payments"
+    )
+    notes = serializers.CharField(
+        required=False,
+        max_length=1000,
+        help_text="Additional notes for payment plan"
+    )
+
+    def validate_down_payment_amount(self, value):
+        """Validate down payment amount"""
+        if value < 0:
+            raise serializers.ValidationError("Down payment amount cannot be negative")
+        return value
+
+    def validate(self, data):
+        """Validate payment plan request"""
+        # If auto payment is enabled, require payment method
+        if data.get('auto_payment_enabled', False):
+            if not data.get('auto_payment_method_id'):
+                raise serializers.ValidationError(
+                    "auto_payment_method_id is required when auto_payment_enabled is True"
+                )
+
+        return data

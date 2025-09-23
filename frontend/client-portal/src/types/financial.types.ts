@@ -407,4 +407,38 @@ export interface InstallmentAction {
   installment: PaymentInstallment;
 }
 
+// Invoice payment operation types
+export interface InvoicePaymentRequest {
+  gateway_code: string;
+  payment_method_id?: number;
+  payment_data?: Record<string, unknown>;
+  notes?: string;
+}
+
+export interface PaymentIntentResponse {
+  id: string;
+  client_secret: string;
+  amount: number;
+  currency: string;
+  status: string;
+  payment_method_types: string[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface PaymentPlanRequest {
+  down_payment_amount: string;
+  number_of_installments: number;
+  frequency: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+  down_payment_due_date: string; // ISO date string
+  notes?: string;
+}
+
+export interface InvoicePaymentResponse {
+  payment: Payment;
+  invoice: Invoice;
+  payment_intent?: PaymentIntentResponse;
+  success: boolean;
+  message?: string;
+}
+
 // All types are already exported above, no need to re-export

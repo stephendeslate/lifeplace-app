@@ -49,10 +49,12 @@ import {
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useFinancialOverview, useDownloadPaymentReceipt, useDownloadInvoicePdf, usePayInstallment } from '../../hooks/useFinancial';
+import { useInvoicePayments } from '../../hooks/useInvoicePayments';
 import FinancialApi from '../../apis/financial.api';
-import type { PaymentInstallment, Payment, Invoice } from '../../types/financial.types';
+import type { PaymentInstallment, Payment, Invoice, InvoicePaymentResponse } from '../../types/financial.types';
 import { PaymentViewer } from '../../components/payments/PaymentViewer';
 import { InvoiceViewer } from '../../components/payments/InvoiceViewer';
+import { InvoicePaymentDialog } from '../../components/payments/InvoicePaymentDialog';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -78,8 +80,10 @@ const FinancialPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [invoicePaymentDialogOpen, setInvoicePaymentDialogOpen] = useState(false);
 
   // Fetch financial data
   const { 
@@ -98,6 +102,16 @@ const FinancialPortal: React.FC = () => {
   const downloadReceiptMutation = useDownloadPaymentReceipt();
   const downloadInvoiceMutation = useDownloadInvoicePdf();
   const payInstallmentMutation = usePayInstallment();
+
+  // Invoice payment mutations
+  const {
+    canPayInvoice,
+    canSetupPaymentPlan,
+    getInvoiceDisplayStatus,
+    isInvoiceOverdue,
+    getDaysUntilDue,
+    getInvoicePaymentStatus
+  } = useInvoicePayments();
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -173,6 +187,26 @@ const FinancialPortal: React.FC = () => {
   const handleCloseInvoiceDialog = () => {
     setInvoiceDialogOpen(false);
     setSelectedInvoice(null);
+  };
+
+  const handlePayInvoice = (invoice: Invoice) => {
+    setSelectedInvoiceForPayment(invoice);
+    setInvoicePaymentDialogOpen(true);
+  };
+
+  const handleCloseInvoicePaymentDialog = () => {
+    setInvoicePaymentDialogOpen(false);
+    setSelectedInvoiceForPayment(null);
+  };
+
+  const handlePaymentSuccess = (_response: InvoicePaymentResponse) => {
+    // Payment successful, queries will be invalidated automatically
+    refetch();
+  };
+
+  const handlePaymentPlanCreated = () => {
+    // Payment plan created, queries will be invalidated automatically
+    refetch();
   };
 
   if (error) {
@@ -717,7 +751,7 @@ const FinancialPortal: React.FC = () => {
                               {FinancialApi.formatAmount(invoice.total_amount, invoice.currency)}
                             </Typography>
                             {(() => {
-                              const displayStatus = FinancialApi.getInvoiceDisplayStatus(invoice);
+                              const displayStatus = getInvoiceDisplayStatus(invoice);
                               return (
                                 <Tooltip title={displayStatus.description} arrow>
                                   <Chip
@@ -725,6 +759,7 @@ const FinancialPortal: React.FC = () => {
                                     size="small"
                                     color={displayStatus.color}
                                     variant="outlined"
+                                    icon={isInvoiceOverdue(invoice) ? <WarningIcon /> : undefined}
                                     sx={{
                                       mt: 1,
                                       backgroundColor: alpha('#fff', 0.1),
@@ -740,18 +775,70 @@ const FinancialPortal: React.FC = () => {
 
                         <Divider sx={{ my: 2, borderColor: alpha('#fff', 0.1) }} />
 
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Box
+                          display="flex"
+                          flexDirection={{ xs: 'column', sm: 'row' }}
+                          justifyContent="space-between"
+                          alignItems={{ xs: 'stretch', sm: 'center' }}
+                          gap={{ xs: 2, sm: 0 }}
+                          mb={2}
+                        >
                           <Box>
                             <Typography variant="body2" color="text.secondary">
                               Issue Date: {new Date(invoice.issue_date).toLocaleDateString()}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" color={isInvoiceOverdue(invoice) ? 'error.main' : 'text.secondary'}>
                               Due Date: {new Date(invoice.due_date).toLocaleDateString()}
+                              {isInvoiceOverdue(invoice) && (
+                                <span style={{ fontWeight: 600, marginLeft: 8 }}>
+                                  (Overdue by {Math.abs(getDaysUntilDue(invoice))} days)
+                                </span>
+                              )}
+                              {!isInvoiceOverdue(invoice) && getDaysUntilDue(invoice) <= 7 && getDaysUntilDue(invoice) > 0 && (
+                                <span style={{ color: theme.palette.warning.main, fontWeight: 600, marginLeft: 8 }}>
+                                  (Due in {getDaysUntilDue(invoice)} days)
+                                </span>
+                              )}
                             </Typography>
                           </Box>
-                          <Stack direction="row" spacing={1}>
+                          <Stack
+                            direction={{ xs: 'column', sm: 'row' }}
+                            spacing={1}
+                            sx={{
+                              width: { xs: '100%', sm: 'auto' },
+                              alignItems: { xs: 'stretch', sm: 'center' }
+                            }}
+                          >
+                            {canPayInvoice(invoice) && (
+                              <Tooltip title="Pay Invoice">
+                                <Button
+                                  variant="contained"
+                                  color={isInvoiceOverdue(invoice) ? 'error' : 'primary'}
+                                  size="small"
+                                  onClick={() => handlePayInvoice(invoice)}
+                                  startIcon={<PayIcon />}
+                                  sx={{ minWidth: 100 }}
+                                >
+                                  Pay Now
+                                </Button>
+                              </Tooltip>
+                            )}
+                            {canSetupPaymentPlan(invoice) && (
+                              <Tooltip title="Setup Payment Plan">
+                                <Button
+                                  variant="outlined"
+                                  color="primary"
+                                  size="small"
+                                  onClick={() => handlePayInvoice(invoice)}
+                                  startIcon={<ScheduleIcon />}
+                                  sx={{ minWidth: 120 }}
+                                >
+                                  Payment Plan
+                                </Button>
+                              </Tooltip>
+                            )}
                             <Tooltip title="View Invoice">
-                              <IconButton 
+                              <IconButton
                                 size="small"
                                 onClick={() => handleViewInvoice(invoice)}
                                 sx={{
@@ -765,7 +852,7 @@ const FinancialPortal: React.FC = () => {
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Download PDF">
-                              <IconButton 
+                              <IconButton
                                 size="small"
                                 onClick={() => handleDownloadInvoice(invoice.id)}
                                 disabled={downloadInvoiceMutation.isPending}
@@ -776,14 +863,52 @@ const FinancialPortal: React.FC = () => {
                                   },
                                 }}
                               >
-                                {downloadInvoiceMutation.isPending ? 
-                                  <CircularProgress size={14} /> : 
+                                {downloadInvoiceMutation.isPending ?
+                                  <CircularProgress size={14} /> :
                                   <DownloadIcon fontSize="small" />
                                 }
                               </IconButton>
                             </Tooltip>
                           </Stack>
                         </Box>
+
+                        {/* Payment Progress Bar */}
+                        {(() => {
+                          const paymentStatus = getInvoicePaymentStatus(invoice);
+                          const progressPercentage = paymentStatus.amountPaid > 0
+                            ? (paymentStatus.amountPaid / parseFloat(invoice.total_amount)) * 100
+                            : 0;
+
+                          return progressPercentage > 0 && progressPercentage < 100 ? (
+                            <Box sx={{ mb: 2 }}>
+                              <Box display="flex" justifyContent="space-between" mb={1}>
+                                <Typography variant="body2" color="text.secondary">
+                                  Payment Progress
+                                </Typography>
+                                <Typography variant="body2" color="primary.main">
+                                  {progressPercentage.toFixed(1)}%
+                                </Typography>
+                              </Box>
+                              <LinearProgress
+                                variant="determinate"
+                                value={progressPercentage}
+                                sx={{
+                                  height: 6,
+                                  borderRadius: 3,
+                                  backgroundColor: alpha('#fff', 0.1),
+                                }}
+                              />
+                              <Box display="flex" justifyContent="space-between" mt={0.5}>
+                                <Typography variant="caption" color="success.main">
+                                  Paid: {FinancialApi.formatAmount(paymentStatus.amountPaid, invoice.currency)}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Remaining: {FinancialApi.formatAmount(paymentStatus.amountRemaining, invoice.currency)}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          ) : null;
+                        })()}
 
                         {/* Invoice Items Preview */}
                         {invoice.line_items.length > 0 && (
@@ -877,40 +1002,105 @@ const FinancialPortal: React.FC = () => {
                           }}
                         >
                           <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
-                            <Box>
+                            <Box flex={1}>
                               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                                 Payment Plan for Event #{plan.event}
                               </Typography>
-                              <Typography variant="body2" color="text.secondary" gutterBottom>
-                                {(plan.installments || []).length} installments • {plan.frequency.toLowerCase()} payments
-                              </Typography>
+                              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
+                                <Chip
+                                  label={`${(plan.installments || []).length} installments`}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{
+                                    backgroundColor: alpha('#fff', 0.1),
+                                    backdropFilter: 'blur(5px)',
+                                  }}
+                                />
+                                <Chip
+                                  label={`${plan.frequency.toLowerCase()} payments`}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{
+                                    backgroundColor: alpha('#fff', 0.1),
+                                    backdropFilter: 'blur(5px)',
+                                  }}
+                                />
+                                {plan.created_at && (
+                                  <Chip
+                                    label={`Created ${new Date(plan.created_at).toLocaleDateString()}`}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{
+                                      backgroundColor: alpha('#fff', 0.1),
+                                      backdropFilter: 'blur(5px)',
+                                    }}
+                                  />
+                                )}
+                              </Stack>
+
                               <Box sx={{ mt: 2, mb: 2 }}>
-                                <Box display="flex" justifyContent="space-between" mb={1}>
-                                  <Typography variant="body2">
-                                    Progress: {FinancialApi.formatAmount(progress.totalPaid)} / {FinancialApi.formatAmount(plan.total_amount)}
-                                  </Typography>
-                                  <Typography variant="body2" color="primary.main">
-                                    {progress.progressPercentage.toFixed(1)}%
-                                  </Typography>
-                                </Box>
-                                <LinearProgress 
-                                  variant="determinate" 
+                                <Stack direction="row" spacing={3} sx={{ mb: 1 }}>
+                                  <Box>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Paid
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
+                                      {FinancialApi.formatAmount(progress.totalPaid)}
+                                    </Typography>
+                                  </Box>
+                                  <Box>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Pending
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'warning.main' }}>
+                                      {FinancialApi.formatAmount(progress.totalPending)}
+                                    </Typography>
+                                  </Box>
+                                  {progress.totalOverdue > 0 && (
+                                    <Box>
+                                      <Typography variant="caption" color="text.secondary">
+                                        Overdue
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
+                                        {FinancialApi.formatAmount(progress.totalOverdue)}
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Stack>
+                                <LinearProgress
+                                  variant="determinate"
                                   value={progress.progressPercentage}
-                                  sx={{ 
-                                    height: 8, 
+                                  sx={{
+                                    height: 8,
                                     borderRadius: 4,
                                     backgroundColor: alpha('#fff', 0.1),
                                   }}
                                 />
+                                <Box display="flex" justifyContent="space-between" mt={0.5}>
+                                  <Typography variant="caption" color="success.main">
+                                    {progress.progressPercentage.toFixed(1)}% Complete
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {FinancialApi.formatAmount(parseFloat(plan.total_amount) - progress.totalPaid)} remaining
+                                  </Typography>
+                                </Box>
                               </Box>
                             </Box>
-                            <Box textAlign="right">
+                            <Box textAlign="right" sx={{ ml: 3 }}>
                               <Typography variant="h5" sx={{ fontWeight: 600, color: 'primary.main' }}>
                                 {FinancialApi.formatAmount(plan.total_amount, plan.currency)}
                               </Typography>
                               <Typography variant="body2" color="text.secondary">
                                 Total Amount
                               </Typography>
+                              {progress.progressPercentage === 100 && (
+                                <Chip
+                                  label="COMPLETED"
+                                  size="small"
+                                  color="success"
+                                  sx={{ mt: 1 }}
+                                />
+                              )}
                             </Box>
                           </Box>
 
@@ -918,81 +1108,178 @@ const FinancialPortal: React.FC = () => {
 
                           {/* Installments List */}
                           <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                              Installments
-                            </Typography>
-                            
-                            {(plan.installments || []).map((installment) => {
-                              const isOverdue = FinancialApi.isInstallmentOverdue(installment);
-                              const daysUntilDue = FinancialApi.getDaysUntilDue(installment.due_date);
-                              
-                              return (
-                                <Box
-                                  key={installment.id}
-                                  sx={{
-                                    p: 2,
-                                    mb: 1,
-                                    borderRadius: 2,
-                                    backgroundColor: alpha('#fff', 0.05),
-                                    border: `1px solid ${alpha('#fff', 0.1)}`,
-                                  }}
-                                >
-                                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                                    <Box flex={1}>
-                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                        {installment.description}
-                                      </Typography>
-                                      <Typography variant="caption" color="text.secondary">
-                                        Due: {new Date(installment.due_date).toLocaleDateString()}
-                                        {installment.status === 'PENDING' && daysUntilDue !== undefined && (
-                                          <span>
-                                            {isOverdue 
-                                              ? ` • ${Math.abs(daysUntilDue)} days overdue`
-                                              : ` • ${daysUntilDue} days remaining`
-                                            }
-                                          </span>
-                                        )}
-                                      </Typography>
-                                    </Box>
-                                    
-                                    <Box display="flex" alignItems="center" gap={2}>
-                                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                        {FinancialApi.formatAmount(installment.amount, plan.currency)}
-                                      </Typography>
-                                      
-                                      <Chip
-                                        label={installment.status_display}
-                                        size="small"
-                                        color={getPaymentStatusColor(installment.status)}
-                                        variant="outlined"
-                                        sx={{
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                Payment Schedule
+                              </Typography>
+                              <Stack direction="row" spacing={1}>
+                                {(() => {
+                                  const installments = plan.installments || [];
+                                  const paidCount = installments.filter(i => i.status === 'PAID').length;
+                                  const pendingCount = installments.filter(i => i.status === 'PENDING').length;
+                                  const overdueCount = installments.filter(i => FinancialApi.isInstallmentOverdue(i)).length;
+
+                                  return (
+                                    <>
+                                      {paidCount > 0 && (
+                                        <Chip
+                                          label={`${paidCount} paid`}
+                                          size="small"
+                                          color="success"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.7rem' }}
+                                        />
+                                      )}
+                                      {pendingCount > 0 && (
+                                        <Chip
+                                          label={`${pendingCount} pending`}
+                                          size="small"
+                                          color="warning"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.7rem' }}
+                                        />
+                                      )}
+                                      {overdueCount > 0 && (
+                                        <Chip
+                                          label={`${overdueCount} overdue`}
+                                          size="small"
+                                          color="error"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.7rem' }}
+                                        />
+                                      )}
+                                    </>
+                                  );
+                                })()}
+                              </Stack>
+                            </Box>
+
+                            <Stack spacing={1}>
+                              {(plan.installments || [])
+                                .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+                                .map((installment, index) => {
+                                  const isOverdue = FinancialApi.isInstallmentOverdue(installment);
+                                  const daysUntilDue = FinancialApi.getDaysUntilDue(installment.due_date);
+                                  const isPaid = installment.status === 'PAID';
+                                  const isPending = installment.status === 'PENDING';
+
+                                  return (
+                                    <Box
+                                      key={installment.id}
+                                      sx={{
+                                        p: 2.5,
+                                        borderRadius: 2,
+                                        backgroundColor: alpha('#fff', isPaid ? 0.02 : isOverdue ? 0.08 : 0.05),
+                                        border: `1px solid ${alpha(
+                                          isPaid ? '#4caf50' : isOverdue ? '#f44336' : '#fff',
+                                          isPaid ? 0.3 : isOverdue ? 0.3 : 0.1
+                                        )}`,
+                                        position: 'relative',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
                                           backgroundColor: alpha('#fff', 0.1),
-                                          backdropFilter: 'blur(5px)',
-                                          minWidth: 80,
+                                          transform: 'translateX(4px)',
+                                        },
+                                      }}
+                                    >
+                                      {/* Installation number indicator */}
+                                      <Box
+                                        sx={{
+                                          position: 'absolute',
+                                          left: -1,
+                                          top: -1,
+                                          bottom: -1,
+                                          width: 4,
+                                          backgroundColor: isPaid ? 'success.main' : isOverdue ? 'error.main' : 'warning.main',
+                                          borderRadius: '2px 0 0 2px',
                                         }}
                                       />
-                                      
-                                      {installment.status === 'PENDING' && (
-                                        <Button
-                                          size="small"
-                                          variant="contained"
-                                          color={isOverdue ? 'error' : 'primary'}
-                                          startIcon={<PayIcon />}
-                                          onClick={() => handlePayInstallment(installment)}
-                                          disabled={payInstallmentMutation.isPending}
-                                          sx={{ minWidth: 100 }}
-                                        >
-                                          {payInstallmentMutation.isPending ? 
-                                            <CircularProgress size={16} /> : 
-                                            'Pay Now'
-                                          }
-                                        </Button>
-                                      )}
+
+                                      <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                                        <Box flex={1}>
+                                          <Stack direction="row" alignItems="center" spacing={2} mb={1}>
+                                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                              {installment.description || `Installment ${index + 1}`}
+                                            </Typography>
+                                            <Chip
+                                              label={installment.status_display}
+                                              size="small"
+                                              color={getPaymentStatusColor(installment.status)}
+                                              variant={isPaid ? 'filled' : 'outlined'}
+                                              sx={{
+                                                backgroundColor: isPaid ? undefined : alpha('#fff', 0.1),
+                                                backdropFilter: 'blur(5px)',
+                                                fontSize: '0.7rem',
+                                              }}
+                                            />
+                                          </Stack>
+
+                                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                            <Typography variant="caption" color="text.secondary">
+                                              Due: {new Date(installment.due_date).toLocaleDateString()}
+                                            </Typography>
+
+                                            {isPending && (
+                                              <Typography
+                                                variant="caption"
+                                                sx={{
+                                                  color: isOverdue ? 'error.main' : 'warning.main',
+                                                  fontWeight: 500,
+                                                }}
+                                              >
+                                                {isOverdue
+                                                  ? `${Math.abs(daysUntilDue)} days overdue`
+                                                  : `${daysUntilDue} days remaining`
+                                                }
+                                              </Typography>
+                                            )}
+
+                                            {isPaid && (installment as any).paid_on && (
+                                              <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 500 }}>
+                                                Paid on {new Date((installment as any).paid_on).toLocaleDateString()}
+                                              </Typography>
+                                            )}
+                                          </Stack>
+                                        </Box>
+
+                                        <Box display="flex" alignItems="center" gap={2}>
+                                          <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                                            {FinancialApi.formatAmount(installment.amount, plan.currency)}
+                                          </Typography>
+
+                                          {isPending && (
+                                            <Button
+                                              size="small"
+                                              variant="contained"
+                                              color={isOverdue ? 'error' : 'primary'}
+                                              startIcon={payInstallmentMutation.isPending ?
+                                                <CircularProgress size={14} color="inherit" /> :
+                                                <PayIcon />
+                                              }
+                                              onClick={() => handlePayInstallment(installment)}
+                                              disabled={payInstallmentMutation.isPending}
+                                              sx={{
+                                                minWidth: 100,
+                                                fontWeight: 600,
+                                                boxShadow: 2,
+                                                '&:hover': {
+                                                  boxShadow: 4,
+                                                },
+                                              }}
+                                            >
+                                              {isOverdue ? 'Pay Overdue' : 'Pay Now'}
+                                            </Button>
+                                          )}
+
+                                          {isPaid && (
+                                            <CheckCircleIcon sx={{ color: 'success.main', fontSize: 24 }} />
+                                          )}
+                                        </Box>
+                                      </Box>
                                     </Box>
-                                  </Box>
-                                </Box>
-                              );
-                            })}
+                                  );
+                                })}
+                            </Stack>
                           </Box>
                         </GlassCard>
                       </AnimatedElement>
@@ -1076,6 +1363,17 @@ const FinancialPortal: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Invoice Payment Dialog */}
+      {selectedInvoiceForPayment && (
+        <InvoicePaymentDialog
+          open={invoicePaymentDialogOpen}
+          invoice={selectedInvoiceForPayment}
+          onClose={handleCloseInvoicePaymentDialog}
+          onPaymentSuccess={handlePaymentSuccess}
+          onPaymentPlanCreated={handlePaymentPlanCreated}
+        />
+      )}
     </Box>
   );
 };

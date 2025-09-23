@@ -483,6 +483,12 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     nextStep: useCallback(async () => {
       if (!state.currentFlow || !state.currentSession) return;
 
+      // Early return if current step is confirmation type (additional safeguard)
+      if (state.currentSession.current_step?.step_type === 'confirmation') {
+        console.warn('nextStep called on confirmation step - blocked by safeguard');
+        return;
+      }
+
       // Cancel any pending debounced updates
       if (debouncedUpdateRef.current?.cancel) {
         debouncedUpdateRef.current.cancel();
