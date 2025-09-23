@@ -15,6 +15,10 @@ import type {
   PaymentMethodFormData,
   InstallmentPaymentData,
   FinancialAPIError,
+  InvoicePaymentRequest,
+  PaymentIntentResponse,
+  PaymentPlanRequest,
+  InvoicePaymentResponse,
 } from '../types/financial.types';
 
 /**
@@ -146,7 +150,7 @@ export class FinancialApi {
       const response = await api.get(`/payments/client/invoices/${invoiceId}/download_pdf/`, {
         responseType: 'blob',
       });
-      
+
       // Check if the response is actually an error (JSON) instead of a PDF
       const dataBlob = response.data as Blob;
       if (dataBlob.type === 'application/json') {
@@ -155,7 +159,7 @@ export class FinancialApi {
         const errorData = JSON.parse(text);
         throw new Error(errorData.detail || 'Failed to download invoice');
       }
-      
+
       return response.data as Blob;
     } catch (error: unknown) {
       // If it's an axios error with a blob response, try to parse it
@@ -170,6 +174,60 @@ export class FinancialApi {
         }
       }
       throw error;
+    }
+  }
+
+  /**
+   * Process full payment for an invoice
+   */
+  static async payInvoice(
+    invoiceId: number,
+    paymentData: InvoicePaymentRequest
+  ): Promise<InvoicePaymentResponse> {
+    try {
+      const response = await api.post<InvoicePaymentResponse>(
+        `/payments/client/invoices/${invoiceId}/pay/`,
+        paymentData
+      );
+      return response.data;
+    } catch (error: unknown) {
+      throw new Error(this.handleError(error));
+    }
+  }
+
+  /**
+   * Create a payment intent for Stripe payment processing
+   */
+  static async createInvoicePaymentIntent(
+    invoiceId: number,
+    gatewayCode: string
+  ): Promise<PaymentIntentResponse> {
+    try {
+      const response = await api.post<PaymentIntentResponse>(
+        `/payments/client/invoices/${invoiceId}/create_payment_intent/`,
+        { gateway_code: gatewayCode }
+      );
+      return response.data;
+    } catch (error: unknown) {
+      throw new Error(this.handleError(error));
+    }
+  }
+
+  /**
+   * Setup a payment plan for an invoice
+   */
+  static async setupInvoicePaymentPlan(
+    invoiceId: number,
+    planData: PaymentPlanRequest
+  ): Promise<PaymentPlan> {
+    try {
+      const response = await api.post<PaymentPlan>(
+        `/payments/client/invoices/${invoiceId}/setup_payment_plan/`,
+        planData
+      );
+      return response.data;
+    } catch (error: unknown) {
+      throw new Error(this.handleError(error));
     }
   }
   
@@ -243,8 +301,8 @@ export class FinancialApi {
    * Get client's payment methods
    */
   static async getPaymentMethods(): Promise<PaymentMethod[]> {
-    const response = await api.get<PaymentMethod[]>('/payments/client/payment-methods/');
-    return response.data;
+    const response = await api.get<PaginatedResponse<PaymentMethod>>('/payments/client/payment-methods/');
+    return response.data.results || [];
   }
   
   /**

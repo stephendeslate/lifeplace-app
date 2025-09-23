@@ -131,6 +131,12 @@ class BookingSessionService:
         """Update booking session data for a step"""
         session = BookingSessionService.get_session_by_id(session_id)
         print(f"SERVICE DEBUG: current_step={session.current_step.name if session.current_step else 'None'}")
+
+        # ENHANCED SAFEGUARD: Prevent updating completed sessions
+        if session.is_completed:
+            logger.warning(f"🔥 UPDATE_BLOCKED: Attempt to update already completed session {session_id}")
+            print(f"DEBUG: Session already completed, blocking update")
+            return session
         
         # Validate step data against current step
         if session.current_step:
@@ -229,26 +235,40 @@ class BookingSessionService:
                         print(f"DEBUG: Failed to create/associate client user: {str(e)}")
                         logger.error(f"Failed to create/associate client user for session {session.session_id}: {str(e)}")
                 
-                # Check if this is a confirmation step with create_event_immediately=True
-                if (session.current_step and 
-                    session.current_step.step_type == 'confirmation' and 
-                    hasattr(session.current_step, 'confirmation_config') and 
+                # ENHANCED SAFEGUARD: Check if this is a confirmation step with create_event_immediately=True
+                if (session.current_step and
+                    session.current_step.step_type == 'confirmation' and
+                    hasattr(session.current_step, 'confirmation_config') and
                     session.current_step.confirmation_config and
                     session.current_step.confirmation_config.create_event_immediately):
-                    
-                    print(f"DEBUG: Confirmation step completed with create_event_immediately=True - creating event")
-                    try:
-                        # Ensure we have a client before creating event
-                        if not session.client:
-                            raise Exception("No client associated with session")
-                        
-                        # Create event immediately
-                        event = BookingSessionService._create_event_from_session(session)
-                        session.created_event = event
-                        print(f"DEBUG: Event created immediately: {event.id}")
-                    except Exception as e:
-                        print(f"DEBUG: Failed to create event immediately: {str(e)}")
-                        logger.error(f"Failed to create event immediately for session {session.session_id}: {str(e)}")
+
+                    print(f"DEBUG: Confirmation step completed with create_event_immediately=True - checking for completion")
+                    logger.info(f"🔥 IMMEDIATE_CREATION triggered for session {session.session_id}")
+
+                    # CRITICAL SAFEGUARD: Check if session is already completed before creating event
+                    if session.is_completed or session.created_event:
+                        logger.warning(f"🔥 IMMEDIATE_CREATION BLOCKED: Session {session.session_id} already completed "f"(is_completed={session.is_completed}, created_event={session.created_event})")
+                        print(f"DEBUG: Event already exists, skipping immediate creation")
+                    else:
+                        try:
+                            # Ensure we have a client before creating event
+                            if not session.client:
+                                raise Exception("No client associated with session")
+
+                            # Create event immediately with completion safeguard
+                            logger.info(f"🔥 IMMEDIATE_CREATION proceeding for session {session.session_id}")
+                            event = BookingSessionService._create_event_from_session(session)
+                            session.created_event = event
+
+                            # IMPORTANT: Mark session as completed to prevent duplicate completion
+                            session.is_completed = True
+                            session.completed_at = timezone.now()
+
+                            print(f"DEBUG: Event created immediately: {event.id}")
+                            logger.info(f"🔥 IMMEDIATE_CREATION completed for session {session.session_id}, event {event.id}")
+                        except Exception as e:
+                            print(f"DEBUG: Failed to create event immediately: {str(e)}")
+                            logger.error(f"Failed to create event immediately for session {session.session_id}: {str(e)}")
                 
                 # Pass booking_data to check display conditions
                 next_step = session.booking_flow.get_next_step(
@@ -261,9 +281,13 @@ class BookingSessionService:
                     session.current_step = next_step
                 else:
                     # No more steps - booking flow is complete
-                    session.is_completed = True
-                    session.completed_at = timezone.now()
-                    logger.info(f"No more steps - marking session as completed")
+                    # ENHANCED SAFEGUARD: Double-check completion status before marking complete
+                    if not session.is_completed:
+                        session.is_completed = True
+                        session.completed_at = timezone.now()
+                        logger.info(f"🔥 FLOW_COMPLETION: No more steps - marking session {session.session_id} as completed")
+                    else:
+                        logger.warning(f"🔥 FLOW_COMPLETION: Session {session.session_id} already marked completed")
             
             session.save()
             
@@ -282,17 +306,49 @@ class BookingSessionService:
             session_id: The booking session ID
             completion_type: 'payment' for immediate payment, 'quote' for quote request
         """
-        # ENHANCED DEBUGGING: Log the received completion type
-        logger.info(f"🔥 COMPLETE_BOOKING CALLED: session_id={session_id}, completion_type='{completion_type}'")
+        # ENHANCED DEBUGGING: Log the received completion type with timestamp
+        import time
+        completion_attempt_time = time.time()
+        logger.info(f"🔥 COMPLETE_BOOKING CALLED: session_id={session_id}, completion_type='{completion_type}', attempt_time={completion_attempt_time}")
 
-        session = BookingSessionService.get_session_by_id(session_id)
+        # ENHANCED SAFEGUARD: Use atomic transaction with row-level locking to prevent race conditions
+        with transaction.atomic():
+            try:
+                # Get session with SELECT FOR UPDATE to prevent concurrent modifications
+                session = BookingSession.objects.select_for_update().get(
+                    session_id=session_id if isinstance(session_id, str) else session_id
+                )
+                logger.info(f"🔥 ACQUIRED LOCK on session {session_id} at {time.time()}")
+            except BookingSession.DoesNotExist:
+                logger.error(f"🔥 CRITICAL: Session {session_id} not found during completion attempt")
+                raise BookingSessionNotFound()
 
-        # Log session booking data to see what completion_type is stored
-        logger.info(f"🔥 SESSION BOOKING DATA: {session.booking_data}")
+            # ENHANCED DUPLICATE PROTECTION: Check completion status with detailed logging
+            if session.is_completed:
+                logger.warning(f"🔥 DUPLICATE COMPLETION ATTEMPT BLOCKED: session_id={session_id}, "f"completion_type='{completion_type}', original_completed_at={session.completed_at}, "f"existing_event={session.created_event.id if session.created_event else 'None'}")
 
-        if session.is_completed:
-            logger.info(f"🔥 Session already completed, returning existing event: {session.created_event}")
-            return session.created_event
+                # Log which endpoint/path triggered this duplicate attempt
+                import traceback
+                stack_trace = traceback.format_stack()
+                completion_caller = "unknown"
+                for frame in reversed(stack_trace):
+                    if "complete_booking_public" in frame:
+                        completion_caller = "PUBLIC_ENDPOINT"
+                        break
+                    elif "complete_booking" in frame and "views" in frame:
+                        completion_caller = "AUTHENTICATED_ENDPOINT"
+                        break
+                    elif "update_session_data" in frame:
+                        completion_caller = "UPDATE_ENDPOINT_IMMEDIATE_CREATION"
+                        break
+
+                logger.warning(f"🔥 DUPLICATE ATTEMPT SOURCE: {completion_caller}")
+
+                # Return existing event to maintain idempotency
+                return session.created_event
+
+            # Log session booking data to see what completion_type is stored
+            logger.info(f"🔥 SESSION BOOKING DATA: {session.booking_data}")
         
         # Validate all required steps are completed
         required_steps = session.booking_flow.steps.filter(is_required=True, is_enabled=True)
@@ -312,8 +368,20 @@ class BookingSessionService:
                 payment_data = BookingSessionService._extract_payment_data(session)
                 if not payment_data:
                     raise StepValidationError("Payment is required but no payment data provided")
-        
+
+        # ENHANCED SAFEGUARD: Final completion status check before event creation
+        # This prevents any remaining race conditions
+        if session.is_completed or session.created_event:
+            logger.warning(f"🔥 FINAL SAFEGUARD TRIGGERED: Session {session_id} already completed "f"during event creation phase (is_completed={session.is_completed}, "f"created_event_id={session.created_event.id if session.created_event else 'None'})")
+            return session.created_event
+
         with transaction.atomic():
+            # ENHANCED ATOMIC PROTECTION: Mark session as being completed to prevent concurrent access
+            session.is_completed = True
+            session.completed_at = timezone.now()
+            session.save()
+            logger.info(f"🔥 COMPLETION_LOCK: Session {session_id} marked as completed at {session.completed_at}")
+
             try:
                 # Create event from booking data
                 event = BookingSessionService._create_event_from_session(session)
@@ -389,17 +457,20 @@ class BookingSessionService:
                     invoice.issue()  # Changes status from DRAFT to ISSUED
                     logger.info(f"Invoice {invoice.invoice_id} issued for later payment")
                 
-                # Mark session as completed
-                session.is_completed = True
-                session.completed_at = timezone.now()
+                # FINALIZE: Link the created event to the session
                 session.created_event = event
                 session.save()
-                
-                logger.info(f"Completed booking session: {session.session_id} with {completion_type}, created event: {event.id}")
+
+                logger.info(f"🔥 COMPLETION_SUCCESS: Completed booking session {session.session_id} with {completion_type}, created event: {event.id}")
                 return event
-                
+
             except Exception as e:
-                logger.error(f"Failed to create event from session {session.session_id}: {str(e)}")
+                logger.error(f"🔥 COMPLETION_FAILED: Failed to create event from session {session.session_id}: {str(e)}")
+                # ROLLBACK SAFEGUARD: If event creation fails, reset completion status
+                session.is_completed = False
+                session.completed_at = None
+                session.save()
+                logger.info(f"🔥 ROLLBACK: Reset completion status for session {session.session_id}")
                 raise EventCreationFailed(f"Failed to create event: {str(e)}")
     
     @staticmethod

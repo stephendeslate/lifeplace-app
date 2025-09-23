@@ -343,27 +343,29 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
             )}
           </Box>
 
-          {/* Next Button */}
-          <Button
-            variant="contained"
-            endIcon={<ArrowForward />}
-            onClick={actions.nextStep}
-            disabled={!state.progress.canGoNext || state.ui.isSubmitting || state.ui.isValidating}
-            sx={{ 
-              minWidth: 120,
-              backgroundColor: alpha(theme.palette.primary.main, 0.9),
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 1),
-                transform: 'translateY(-2px)',
-                boxShadow: '0 12px 35px rgba(0,0,0,0.2)',
-              },
-              transition: 'all 0.3s ease',
-            }}
-          >
-            {stepIndex === state.progress.totalSteps - 1 ? 'Complete' : 'Next'}
-          </Button>
+          {/* Next Button - Hidden on confirmation step */}
+          {state.currentSession?.current_step?.step_type !== 'confirmation' && (
+            <Button
+              variant="contained"
+              endIcon={<ArrowForward />}
+              onClick={actions.nextStep}
+              disabled={!state.progress.canGoNext || state.ui.isSubmitting || state.ui.isValidating}
+              sx={{
+                minWidth: 120,
+                backgroundColor: alpha(theme.palette.primary.main, 0.9),
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 1),
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 35px rgba(0,0,0,0.2)',
+                },
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {stepIndex === state.progress.totalSteps - 1 ? 'Complete' : 'Next'}
+            </Button>
+          )}
           </Box>
         </AnimatedElement>
 

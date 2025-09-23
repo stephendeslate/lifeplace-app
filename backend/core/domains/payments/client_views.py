@@ -21,7 +21,10 @@ from .models import (
     Refund,
 )
 from .serializers import (
+    InvoicePaymentRequestSerializer,
     InvoiceSerializer,
+    PaymentIntentResponseSerializer,
+    PaymentPlanRequestSerializer,
     PaymentSerializer,
     PaymentInstallmentSerializer,
     PaymentMethodSerializer,
@@ -32,6 +35,9 @@ from .services import (
     PaymentMethodService,
     PaymentService,
 )
+from .services.invoice_service import InvoiceService
+from .services.gateway_service import PaymentGatewayService
+from .services.payment_plan_service import PaymentPlanService
 from .pdf_service import PaymentReceiptPDFService
 
 logger = logging.getLogger(__name__)
@@ -283,6 +289,189 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
             )
         except Exception as e:
             logger.error(f"Unexpected error downloading invoice PDF for invoice {pk}: {e}", exc_info=True)
+            return Response(
+                {"detail": "An unexpected error occurred. Please try again later."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['post'])
+    def pay(self, request, pk=None):
+        """Process full invoice payment"""
+        try:
+            invoice = self.get_object()
+
+            # Validate invoice can be paid
+            if invoice.status != 'ISSUED':
+                return Response(
+                    {"detail": f"Cannot pay invoice with status {invoice.get_status_display()}. Only issued invoices can be paid."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Validate payment data
+            serializer = InvoicePaymentRequestSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            payment_data = serializer.validated_data
+
+            try:
+                # Process invoice payment using service
+                payment_result = InvoiceService.process_invoice_payment(
+                    invoice, payment_data, request.user
+                )
+
+                if payment_result.get('success'):
+                    payment = payment_result.get('payment')
+                    return Response({
+                        'success': True,
+                        'message': 'Payment processed successfully',
+                        'payment': PaymentSerializer(payment).data,
+                        'invoice': InvoiceSerializer(invoice).data
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': payment_result.get('error', 'Payment processing failed'),
+                        'error_details': payment_result.get('details')
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+            except Exception as e:
+                logger.error(f"Payment processing failed for invoice {pk}: {e}", exc_info=True)
+                return Response({
+                    'success': False,
+                    'message': 'Payment processing failed',
+                    'error': str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Invoice.DoesNotExist:
+            return Response(
+                {"detail": "Invoice not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error processing payment for invoice {pk}: {e}", exc_info=True)
+            return Response(
+                {"detail": "An unexpected error occurred. Please try again later."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['post'])
+    def create_payment_intent(self, request, pk=None):
+        """Create payment intent for invoice payment with Stripe/gateway"""
+        try:
+            invoice = self.get_object()
+
+            # Validate invoice can be paid
+            if invoice.status != 'ISSUED':
+                return Response(
+                    {"detail": f"Cannot create payment intent for invoice with status {invoice.get_status_display()}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Get gateway code from request
+            gateway_code = request.data.get('gateway_code', 'stripe')
+
+            try:
+                # Create payment intent using service
+                intent_result = InvoiceService.create_payment_intent_for_invoice(
+                    invoice, gateway_code
+                )
+
+                if intent_result.get('success'):
+                    # Return payment intent data for frontend
+                    response_data = PaymentIntentResponseSerializer({
+                        'client_secret': intent_result.get('client_secret'),
+                        'payment_intent_id': intent_result.get('payment_intent_id'),
+                        'status': intent_result.get('status'),
+                        'requires_action': intent_result.get('requires_action', False),
+                        'next_action': intent_result.get('next_action'),
+                        'payment_id': intent_result.get('payment_id'),
+                        'transaction_id': intent_result.get('transaction_id')
+                    }).data
+
+                    return Response(response_data, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': intent_result.get('error', 'Failed to create payment intent'),
+                        'error_details': intent_result.get('details')
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+            except Exception as e:
+                logger.error(f"Payment intent creation failed for invoice {pk}: {e}", exc_info=True)
+                return Response({
+                    'success': False,
+                    'message': 'Failed to create payment intent',
+                    'error': str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Invoice.DoesNotExist:
+            return Response(
+                {"detail": "Invoice not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error creating payment intent for invoice {pk}: {e}", exc_info=True)
+            return Response(
+                {"detail": "An unexpected error occurred. Please try again later."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['post'])
+    def setup_payment_plan(self, request, pk=None):
+        """Create payment plan for invoice"""
+        try:
+            invoice = self.get_object()
+
+            # Validate invoice can have payment plan
+            if invoice.status not in ['ISSUED']:
+                return Response(
+                    {"detail": f"Cannot create payment plan for invoice with status {invoice.get_status_display()}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Check if payment plan already exists for this event
+            if hasattr(invoice.event, 'payment_plan'):
+                return Response(
+                    {"detail": "A payment plan already exists for this event"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Validate payment plan data
+            serializer = PaymentPlanRequestSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            plan_data = serializer.validated_data
+
+            try:
+                # Create payment plan using service
+                payment_plan = InvoiceService.setup_payment_plan_for_invoice(
+                    invoice, plan_data, request.user
+                )
+
+                return Response({
+                    'success': True,
+                    'message': 'Payment plan created successfully',
+                    'payment_plan': PaymentPlanSerializer(payment_plan).data,
+                    'invoice': InvoiceSerializer(invoice).data
+                }, status=status.HTTP_201_CREATED)
+
+            except Exception as e:
+                logger.error(f"Payment plan creation failed for invoice {pk}: {e}", exc_info=True)
+                return Response({
+                    'success': False,
+                    'message': 'Failed to create payment plan',
+                    'error': str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Invoice.DoesNotExist:
+            return Response(
+                {"detail": "Invoice not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error creating payment plan for invoice {pk}: {e}", exc_info=True)
             return Response(
                 {"detail": "An unexpected error occurred. Please try again later."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
