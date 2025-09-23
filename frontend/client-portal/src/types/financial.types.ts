@@ -8,6 +8,18 @@ export interface PaymentGateway {
   code: string;
   is_active: boolean;
   description?: string;
+  masked_config?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentSettings {
+  id: number;
+  default_currency: string;
+  available_currencies: string[];
+  default_payment_terms?: string;
+  auto_send_receipts: boolean;
+  auto_send_invoices: boolean;
   created_at: string;
   updated_at: string;
 }

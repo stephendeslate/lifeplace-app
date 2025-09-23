@@ -24,6 +24,7 @@ import {
   CheckCircle as SuccessIcon,
 } from '@mui/icons-material';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
+import { PaymentGatewaySelector } from './PaymentGatewaySelector';
 import { StripePaymentForm } from './StripePaymentForm';
 import { PaymentPlanDialog } from './PaymentPlanDialog';
 import { GlassCard } from '../../design-system';
@@ -31,6 +32,7 @@ import FinancialApi from '../../apis/financial.api';
 import type {
   Invoice,
   PaymentMethod,
+  PaymentGateway,
   InvoicePaymentRequest,
   InvoicePaymentResponse
 } from '../../types/financial.types';
@@ -78,6 +80,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -90,6 +93,15 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
 
   const handlePaymentMethodSelect = (method: PaymentMethod | null) => {
     setSelectedPaymentMethod(method);
+    // Auto-select gateway if payment method has one
+    if (method?.gateway_details) {
+      setSelectedGateway(method.gateway_details);
+    }
+    setPaymentError(null);
+  };
+
+  const handleGatewaySelect = (gateway: PaymentGateway | null) => {
+    setSelectedGateway(gateway);
     setPaymentError(null);
   };
 
@@ -99,12 +111,21 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
       return;
     }
 
+    // For payment types that require gateways, ensure one is selected
+    const requiresGateway = ['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod.type);
+    if (requiresGateway && !selectedGateway) {
+      setPaymentError('Please select a payment gateway');
+      return;
+    }
+
     setPaymentLoading(true);
     setPaymentError(null);
 
     try {
+      const gatewayCode = selectedGateway?.code || selectedPaymentMethod.gateway_details?.code || 'stripe';
+
       const paymentData: InvoicePaymentRequest = {
-        gateway_code: selectedPaymentMethod.gateway_details?.code || 'stripe',
+        gateway_code: gatewayCode,
         payment_method_id: selectedPaymentMethod.id,
         notes: `Payment for invoice ${invoice.invoice_id}`,
       };
@@ -313,8 +334,21 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                     disabled={paymentLoading}
                   />
 
+                  {/* Show gateway selector for payment types that require it */}
+                  {selectedPaymentMethod &&
+                   ['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod.type) &&
+                   !selectedPaymentMethod.gateway_details && (
+                    <PaymentGatewaySelector
+                      selectedGateway={selectedGateway}
+                      onGatewaySelect={handleGatewaySelect}
+                      disabled={paymentLoading}
+                      showTitle={true}
+                      required={true}
+                    />
+                  )}
+
                   {selectedPaymentMethod?.type === 'CREDIT_CARD' &&
-                   selectedPaymentMethod?.gateway_details?.code === 'stripe' && (
+                   (selectedPaymentMethod?.gateway_details?.code === 'stripe' || selectedGateway?.code === 'stripe') && (
                     <StripePaymentForm
                       amount={parseFloat(paymentStatus.amountRemaining.toString())}
                       currency={invoice.currency}
@@ -367,7 +401,11 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
               disabled={
                 paymentLoading ||
                 !selectedPaymentMethod ||
-                (selectedPaymentMethod?.type === 'CREDIT_CARD' && selectedPaymentMethod?.gateway_details?.code === 'stripe')
+                (selectedPaymentMethod?.type === 'CREDIT_CARD' &&
+                 (selectedPaymentMethod?.gateway_details?.code === 'stripe' || selectedGateway?.code === 'stripe')) ||
+                (['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod?.type || '') &&
+                 !selectedPaymentMethod?.gateway_details &&
+                 !selectedGateway)
               }
               startIcon={paymentLoading && <CircularProgress size={20} />}
               sx={{ minWidth: 120 }}

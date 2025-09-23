@@ -7,6 +7,8 @@ import type {
   PaymentPlan,
   PaymentInstallment,
   PaymentMethod,
+  PaymentGateway,
+  PaymentSettings,
   Refund,
   PaymentSummary,
   PaginatedResponse,
@@ -70,6 +72,59 @@ export class FinancialApi {
   static async getPaymentSummary(): Promise<PaymentSummary> {
     const response = await api.get<PaymentSummary>('/payments/client/payments/summary/');
     return response.data;
+  }
+
+  /**
+   * Get payment settings including default currency
+   */
+  static async getPaymentSettings(): Promise<PaymentSettings> {
+    const response = await api.get<PaymentSettings>('/payments/settings/');
+    return response.data;
+  }
+
+  /**
+   * Get active payment gateways using public booking flow endpoint
+   * Falls back to admin endpoint if flowId is not provided
+   */
+  static async getActivePaymentGateways(flowId?: number): Promise<PaymentGateway[]> {
+    try {
+      if (flowId) {
+        // Use public booking flow endpoint for client access
+        const response = await api.get<{
+          available_gateways: PaymentGateway[];
+          default_gateway: number | null;
+          require_immediate_payment: boolean;
+        }>(`/bookingflow/public/flows/${flowId}/payment_gateways/`);
+        return response.data.available_gateways || [];
+      } else {
+        // Fall back to admin endpoint when no flowId provided
+        const response = await api.get<PaginatedResponse<PaymentGateway>>('/payments/gateways/?is_active=true');
+        return response.data.results || [];
+      }
+    } catch (error) {
+      // If public endpoint fails, try to fall back to client payment gateways endpoint
+      try {
+        const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
+        return response.data || [];
+      } catch (fallbackError) {
+        console.error('Failed to fetch payment gateways from all endpoints:', fallbackError);
+        throw error; // Throw original error
+      }
+    }
+  }
+
+  /**
+   * Get payment gateways from client-accessible endpoint (fallback)
+   * This attempts to use a client-specific gateway endpoint if it exists
+   */
+  static async getClientPaymentGateways(): Promise<PaymentGateway[]> {
+    try {
+      const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
+      return response.data || [];
+    } catch (error) {
+      console.error('Client payment gateways endpoint not available:', error);
+      throw new Error('Unable to access payment gateways. Please try again or contact support.');
+    }
   }
   
   /**
@@ -363,39 +418,57 @@ export class FinancialApi {
   // ==================== UTILITY METHODS ====================
   
   /**
-   * Format amount based on currency
+   * Format amount based on currency (no hardcoded currencies)
+   * Use getPaymentSettings() to get the default currency if needed
    */
-  static formatAmount(amount: string | number, currency: string = 'PHP'): string {
+  static formatAmount(amount: string | number, currency?: string): string {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    
-    if (currency === 'PHP') {
-      return new Intl.NumberFormat('en-PH', {
-        style: 'currency',
-        currency: 'PHP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      }).format(num);
+
+    // If no currency provided, we need to get it from payment settings
+    if (!currency) {
+      console.warn('Currency not provided to formatAmount. Consider fetching from payment settings.');
+      return num.toString(); // Fallback to plain number
     }
-    
-    return new Intl.NumberFormat('en-US', {
+
+    // Determine locale based on currency
+    let locale = 'en-US';
+    const options: Intl.NumberFormatOptions = {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 2,
-    }).format(num);
+      maximumFractionDigits: 2,
+    };
+
+    // Special handling for specific currencies
+    if (currency === 'PHP') {
+      locale = 'en-PH';
+      options.minimumFractionDigits = 0;
+    }
+
+    return new Intl.NumberFormat(locale, options).format(num);
   }
   
   /**
-   * Get currency symbol
+   * Get currency symbol (dynamic, no hardcoded symbols)
    */
   static getCurrencySymbol(currency: string): string {
-    const symbols: Record<string, string> = {
-      'PHP': '₱',
-      'USD': '$',
-      'EUR': '€',
-      'SGD': 'S$',
-      'HKD': 'HK$',
-    };
-    return symbols[currency] || currency;
+    try {
+      // Use Intl.NumberFormat to get the currency symbol dynamically
+      const formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
+
+      // Format 0 and extract just the symbol
+      const formatted = formatter.format(0);
+      const symbol = formatted.replace(/[\d\s,]/g, '');
+      return symbol || currency;
+    } catch (_error) {
+      // Fallback to currency code if formatting fails
+      return currency;
+    }
   }
   
   /**
@@ -703,6 +776,60 @@ export class FinancialApi {
     
     // Sort by due date (oldest first)
     return overdue.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+  }
+
+  // ==================== CURRENCY UTILITIES WITH BACKEND SETTINGS ====================
+
+  /**
+   * Format amount using payment settings currency
+   */
+  static async formatAmountWithSettings(amount: string | number): Promise<string> {
+    try {
+      const settings = await this.getPaymentSettings();
+      return this.formatAmount(amount, settings.default_currency);
+    } catch (error) {
+      console.error('Failed to get payment settings for formatting:', error);
+      return this.formatAmount(amount); // Fallback without currency
+    }
+  }
+
+  /**
+   * Get currency symbol using payment settings
+   */
+  static async getCurrencySymbolFromSettings(): Promise<string> {
+    try {
+      const settings = await this.getPaymentSettings();
+      return this.getCurrencySymbol(settings.default_currency);
+    } catch (error) {
+      console.error('Failed to get payment settings for currency symbol:', error);
+      return '$'; // Default fallback
+    }
+  }
+
+  /**
+   * Get available currencies from payment settings
+   */
+  static async getAvailableCurrencies(): Promise<string[]> {
+    try {
+      const settings = await this.getPaymentSettings();
+      return settings.available_currencies || [settings.default_currency];
+    } catch (error) {
+      console.error('Failed to get available currencies:', error);
+      return ['USD']; // Default fallback
+    }
+  }
+
+  /**
+   * Get default currency from payment settings
+   */
+  static async getDefaultCurrency(): Promise<string> {
+    try {
+      const settings = await this.getPaymentSettings();
+      return settings.default_currency;
+    } catch (error) {
+      console.error('Failed to get default currency:', error);
+      return 'USD'; // Default fallback
+    }
   }
 }
 

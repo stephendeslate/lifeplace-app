@@ -32,8 +32,9 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GlassCard } from '../../design-system';
+import { PaymentGatewaySelector } from './PaymentGatewaySelector';
 import FinancialApi from '../../apis/financial.api';
-import type { PaymentMethod, PaymentMethodFormData } from '../../types/financial.types';
+import type { PaymentMethod, PaymentMethodFormData, PaymentGateway } from '../../types/financial.types';
 
 interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethod | null;
@@ -67,6 +68,7 @@ const AddPaymentMethodDialog: React.FC<{
     nickname: '',
     instructions: '',
   });
+  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
 
@@ -90,6 +92,7 @@ const AddPaymentMethodDialog: React.FC<{
       nickname: '',
       instructions: '',
     });
+    setSelectedGateway(null);
     setErrors({});
   };
 
@@ -102,12 +105,24 @@ const AddPaymentMethodDialog: React.FC<{
       newErrors.nickname = 'Nickname is required';
     }
 
+    // Require gateway selection for payment types that need it
+    const requiresGateway = ['CREDIT_CARD', 'DIGITAL_WALLET'].includes(formData.type);
+    if (requiresGateway && !selectedGateway) {
+      newErrors.gateway = 'Please select a payment gateway';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    createMutation.mutate(formData);
+    // Include gateway in form data if selected
+    const finalFormData: PaymentMethodFormData = {
+      ...formData,
+      ...(selectedGateway && { gateway: selectedGateway.id }),
+    };
+
+    createMutation.mutate(finalFormData);
   };
 
   const handleClose = () => {
@@ -167,6 +182,24 @@ const AddPaymentMethodDialog: React.FC<{
               placeholder="Special instructions or notes for this payment method..."
               fullWidth
             />
+
+            {/* Show gateway selector for payment types that require it */}
+            {['CREDIT_CARD', 'DIGITAL_WALLET'].includes(formData.type) && (
+              <Box>
+                <PaymentGatewaySelector
+                  selectedGateway={selectedGateway}
+                  onGatewaySelect={setSelectedGateway}
+                  disabled={createMutation.isPending}
+                  showTitle={true}
+                  required={true}
+                />
+                {errors.gateway && (
+                  <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                    {errors.gateway}
+                  </Typography>
+                )}
+              </Box>
+            )}
 
             <FormControlLabel
               control={
