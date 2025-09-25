@@ -160,7 +160,7 @@ class Event(BaseModel):
 
 ### **5.1 Live API Testing Results**
 
-**Server**: http://localhost:8001
+**Server**: http://localhost:8000
 **Authentication**: ✅ Successful
 **Test Scripts**: `duplication_bug_test.py` & `comprehensive_duplication_test.py`
 

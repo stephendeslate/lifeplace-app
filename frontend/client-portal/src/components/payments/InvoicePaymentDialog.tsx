@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/payments/InvoicePaymentDialog.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,6 +15,8 @@ import {
   CircularProgress,
   Tab,
   Tabs,
+  FormControlLabel,
+  Checkbox,
   alpha,
 } from '@mui/material';
 import {
@@ -25,7 +27,12 @@ import {
 } from '@mui/icons-material';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { PaymentGatewaySelector } from './PaymentGatewaySelector';
-import { StripePaymentForm } from './StripePaymentForm';
+import { UnifiedStripePaymentFlow } from './UnifiedStripePaymentFlow';
+import type {
+  InvoiceModeConfig,
+  PaymentFlowResult,
+  PaymentFlowError,
+} from '../../types/unified-payment-flow.types';
 import { PaymentPlanDialog } from './PaymentPlanDialog';
 import { GlassCard } from '../../design-system';
 import FinancialApi from '../../apis/financial.api';
@@ -84,7 +91,9 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
   const [showPaymentPlanDialog, setShowPaymentPlanDialog] = useState(false);
+  const [savePaymentMethod, setSavePaymentMethod] = useState(false);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
@@ -148,34 +157,36 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
     }
   };
 
-  const handleStripePayment = async (paymentIntentId: string) => {
-    setPaymentLoading(true);
-    setPaymentError(null);
+  // Handle unified payment flow success for invoice payments
+  const handleInvoicePaymentSuccess = useCallback((result: PaymentFlowResult) => {
+    if (result.mode === 'invoice' && result.invoiceResult) {
+      setPaymentSuccess(true);
+      setPaymentSuccessMessage(result.message || 'Payment processed successfully');
 
-    try {
-      const paymentData: InvoicePaymentRequest = {
-        gateway_code: 'stripe',
-        payment_data: { payment_intent_id: paymentIntentId },
-        notes: `Stripe payment for invoice ${invoice.invoice_id}`,
+      // Convert unified result to expected format
+      const response: InvoicePaymentResponse = {
+        payment: result.invoiceResult.payment,
+        invoice: result.invoiceResult.invoice,
+        success: true,
+        message: result.message || 'Payment processed successfully'
       };
 
-      const response = await FinancialApi.payInvoice(invoice.id, paymentData);
-
-      setPaymentSuccess(true);
       onPaymentSuccess?.(response);
 
       // Close dialog after a brief success display
       setTimeout(() => {
         onClose();
         setPaymentSuccess(false);
+        setPaymentSuccessMessage(null);
       }, 2000);
-
-    } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : 'Payment failed');
-    } finally {
-      setPaymentLoading(false);
     }
-  };
+  }, [onPaymentSuccess, onClose]);
+
+  // Handle unified payment flow error
+  const handleInvoicePaymentError = useCallback((error: PaymentFlowError) => {
+    setPaymentError(error.message);
+    setPaymentLoading(false);
+  }, []);
 
   const handlePaymentPlanClick = () => {
     setShowPaymentPlanDialog(true);
@@ -206,7 +217,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
               Payment Successful!
             </Typography>
             <Typography variant="body1" color="text.secondary" textAlign="center">
-              Your payment has been processed successfully. You should receive a confirmation email shortly.
+              {paymentSuccessMessage || 'Your payment has been processed successfully.'} You should receive a confirmation email shortly.
             </Typography>
           </Box>
         </DialogContent>
@@ -332,6 +343,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                     selectedMethod={selectedPaymentMethod}
                     onMethodSelect={handlePaymentMethodSelect}
                     disabled={paymentLoading}
+                    showAddNew={false}
                   />
 
                   {/* Show gateway selector for payment types that require it */}
@@ -347,15 +359,44 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                     />
                   )}
 
-                  {selectedPaymentMethod?.type === 'CREDIT_CARD' &&
-                   (selectedPaymentMethod?.gateway_details?.code === 'stripe' || selectedGateway?.code === 'stripe') && (
-                    <StripePaymentForm
-                      amount={parseFloat(paymentStatus.amountRemaining.toString())}
-                      currency={invoice.currency}
-                      invoiceId={invoice.id}
-                      onPaymentSuccess={handleStripePayment}
-                      disabled={paymentLoading}
-                    />
+                  {/* Show Unified Stripe Payment Flow when Stripe gateway is selected */}
+                  {selectedGateway?.code === 'stripe' && (
+                    <Stack spacing={3}>
+                      {/* Save Card Checkbox */}
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={savePaymentMethod}
+                            onChange={(e) => setSavePaymentMethod(e.target.checked)}
+                            color="primary"
+                            disabled={paymentLoading}
+                          />
+                        }
+                        label="Save this card for future payments"
+                        sx={{
+                          '& .MuiFormControlLabel-label': {
+                            fontSize: '0.875rem',
+                            color: 'text.secondary',
+                          }
+                        }}
+                      />
+
+                      <UnifiedStripePaymentFlow
+                        config={{
+                          mode: 'invoice',
+                          invoice_id: invoice.id,
+                          amount: parseFloat(paymentStatus.amountRemaining.toString()),
+                          currency: invoice.currency,
+                          save_payment_method: savePaymentMethod,
+                          notes: `Payment for invoice ${invoice.invoice_id}`,
+                        } as InvoiceModeConfig}
+                        gateway={selectedGateway}
+                        onSuccess={handleInvoicePaymentSuccess}
+                        onError={handleInvoicePaymentError}
+                        disabled={paymentLoading}
+                        loading={paymentLoading}
+                      />
+                    </Stack>
                   )}
                 </Stack>
               </TabPanel>
@@ -401,8 +442,8 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
               disabled={
                 paymentLoading ||
                 !selectedPaymentMethod ||
-                (selectedPaymentMethod?.type === 'CREDIT_CARD' &&
-                 (selectedPaymentMethod?.gateway_details?.code === 'stripe' || selectedGateway?.code === 'stripe')) ||
+                // Disable if Stripe gateway is selected (user should use Stripe form instead)
+                selectedGateway?.code === 'stripe' ||
                 (['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod?.type || '') &&
                  !selectedPaymentMethod?.gateway_details &&
                  !selectedGateway)

@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/payments/PaymentMethodSelector.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   FormControl,
@@ -33,8 +33,15 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GlassCard } from '../../design-system';
 import { PaymentGatewaySelector } from './PaymentGatewaySelector';
+import { UnifiedStripePaymentFlow } from './UnifiedStripePaymentFlow';
+import type {
+  SaveModeConfig,
+  PaymentFlowResult,
+  PaymentFlowError,
+  PaymentGateway,
+} from '../../types/unified-payment-flow.types';
 import FinancialApi from '../../apis/financial.api';
-import type { PaymentMethod, PaymentMethodFormData, PaymentGateway } from '../../types/financial.types';
+import type { PaymentMethod, PaymentMethodFormData } from '../../types/financial.types';
 
 interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethod | null;
@@ -57,6 +64,60 @@ const PaymentMethodIcon: React.FC<{ type: PaymentMethod['type'] }> = ({ type }) 
   }
 };
 
+// Separate component to prevent object recreation
+const StripePaymentFlowSection: React.FC<{
+  formData: PaymentMethodFormData;
+  selectedGateway: PaymentGateway;
+  savedPaymentMethod: PaymentMethod | null;
+  onSuccess: (result: PaymentFlowResult) => void;
+  onError: (error: PaymentFlowError) => void;
+  disabled: boolean;
+}> = ({ formData, selectedGateway, savedPaymentMethod, onSuccess, onError, disabled }) => {
+
+  // Memoize config to prevent recreation
+  const config = useMemo<SaveModeConfig>(() => ({
+    mode: 'save',
+    save_as_default: formData.is_default,
+    nickname: formData.nickname,
+  }), [formData.is_default, formData.nickname]);
+
+  // Memoize gateway with stable timestamps - use a ref for stable timestamps
+  const gateway = useMemo<PaymentGateway>(() => {
+    if (!selectedGateway) return selectedGateway;
+
+    return {
+      ...selectedGateway,
+      created_at: selectedGateway.created_at || '2023-01-01T00:00:00Z', // Use stable placeholder instead of new Date()
+      updated_at: selectedGateway.updated_at || '2023-01-01T00:00:00Z', // Use stable placeholder instead of new Date()
+    };
+  }, [selectedGateway]);
+
+  return (
+    <Box>
+      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+        Card Details
+      </Typography>
+      <UnifiedStripePaymentFlow
+        config={config}
+        gateway={gateway}
+        onSuccess={onSuccess}
+        onError={onError}
+        disabled={disabled}
+      />
+      {savedPaymentMethod && (
+        <Box sx={{ mt: 2, p: 2, backgroundColor: alpha('#fff', 0.05), borderRadius: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Card saved successfully:
+          </Typography>
+          <Typography variant="body2">
+            •••• •••• •••• {savedPaymentMethod.last_four} ({savedPaymentMethod.gateway_details?.name || 'CARD'})
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
 const AddPaymentMethodDialog: React.FC<{
   open: boolean;
   onClose: () => void;
@@ -70,6 +131,7 @@ const AddPaymentMethodDialog: React.FC<{
   });
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [savedPaymentMethod, setSavedPaymentMethod] = useState<PaymentMethod | null>(null);
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -85,6 +147,19 @@ const AddPaymentMethodDialog: React.FC<{
     },
   });
 
+  // Handle payment method saved from unified flow
+  const handlePaymentMethodSaved = useCallback((result: PaymentFlowResult) => {
+    if (result.mode === 'save' && result.saveResult) {
+      setSavedPaymentMethod(result.saveResult.payment_method);
+      // Mark form as ready for submission
+    }
+  }, []);
+
+  // Handle payment method save error
+  const handlePaymentMethodError = useCallback((error: PaymentFlowError) => {
+    setErrors({ general: error.message });
+  }, []);
+
   const handleReset = () => {
     setFormData({
       type: 'CREDIT_CARD',
@@ -93,6 +168,7 @@ const AddPaymentMethodDialog: React.FC<{
       instructions: '',
     });
     setSelectedGateway(null);
+    setSavedPaymentMethod(null);
     setErrors({});
   };
 
@@ -116,11 +192,26 @@ const AddPaymentMethodDialog: React.FC<{
       return;
     }
 
-    // Include gateway in form data if selected
+    // Use the saved payment method if available from unified flow
+    if (savedPaymentMethod) {
+      // Payment method was already created by unified flow
+      onSuccess(savedPaymentMethod);
+      onClose();
+      handleReset();
+      return;
+    }
+
+    // Fallback to manual creation for non-Stripe gateways
     const finalFormData: PaymentMethodFormData = {
       ...formData,
       ...(selectedGateway && { gateway: selectedGateway.id }),
     };
+
+    console.log('PaymentMethodSelector - Creating payment method manually:', {
+      formData,
+      selectedGateway: selectedGateway?.id,
+      finalFormData
+    });
 
     createMutation.mutate(finalFormData);
   };
@@ -199,6 +290,18 @@ const AddPaymentMethodDialog: React.FC<{
                   </Typography>
                 )}
               </Box>
+            )}
+
+            {/* Show Unified Stripe Payment Flow when Stripe gateway is selected */}
+            {formData.type === 'CREDIT_CARD' && selectedGateway?.code === 'stripe' && (
+              <StripePaymentFlowSection
+                formData={formData}
+                selectedGateway={selectedGateway}
+                savedPaymentMethod={savedPaymentMethod}
+                onSuccess={handlePaymentMethodSaved}
+                onError={handlePaymentMethodError}
+                disabled={createMutation.isPending}
+              />
             )}
 
             <FormControlLabel

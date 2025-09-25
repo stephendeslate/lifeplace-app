@@ -34,16 +34,16 @@ vi.mock('../PaymentMethodSelector', () => ({
   ),
 }));
 
-// Mock the StripePaymentForm component
-vi.mock('../StripePaymentForm', () => ({
-  StripePaymentForm: ({ onPaymentSuccess, disabled }: any) => (
-    <div data-testid="stripe-payment-form">
+// Mock the UnifiedStripePaymentFlow component
+vi.mock('../UnifiedStripePaymentFlow', () => ({
+  UnifiedStripePaymentFlow: ({ onSuccess, disabled }: any) => (
+    <div data-testid="unified-stripe-payment-flow">
       <button
-        onClick={() => onPaymentSuccess('pi_test_123')}
+        onClick={() => onSuccess({ paymentMethodId: 'pm_test_123' })}
         disabled={disabled}
-        data-testid="stripe-pay-button"
+        data-testid="unified-stripe-pay-button"
       >
-        Pay with Stripe
+        Pay with Unified Stripe
       </button>
     </div>
   ),
@@ -284,7 +284,7 @@ describe('InvoicePaymentDialog', () => {
     const selectButton = screen.getByTestId('select-payment-method');
     await user.click(selectButton);
 
-    expect(screen.getByTestId('stripe-payment-form')).toBeInTheDocument();
+    expect(screen.getByTestId('unified-stripe-payment-flow')).toBeInTheDocument();
   });
 
   it('processes Stripe payment successfully', async () => {
@@ -298,7 +298,7 @@ describe('InvoicePaymentDialog', () => {
     await user.click(selectButton);
 
     // Click Stripe pay button
-    const stripePayButton = screen.getByTestId('stripe-pay-button');
+    const stripePayButton = screen.getByTestId('unified-stripe-pay-button');
     await user.click(stripePayButton);
 
     await waitFor(() => {

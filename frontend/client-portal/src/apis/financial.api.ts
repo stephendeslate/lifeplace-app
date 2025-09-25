@@ -19,6 +19,7 @@ import type {
   FinancialAPIError,
   InvoicePaymentRequest,
   PaymentIntentResponse,
+  SetupIntentResponse,
   PaymentPlanRequest,
   InvoicePaymentResponse,
 } from '../types/financial.types';
@@ -83,13 +84,13 @@ export class FinancialApi {
   }
 
   /**
-   * Get active payment gateways using public booking flow endpoint
-   * Falls back to admin endpoint if flowId is not provided
+   * Get active payment gateways with multiple fallback strategies
+   * Priority: 1) Booking flow endpoint (if flowId), 2) Public endpoint, 3) Client endpoint
    */
   static async getActivePaymentGateways(flowId?: number): Promise<PaymentGateway[]> {
     try {
       if (flowId) {
-        // Use public booking flow endpoint for client access
+        // Priority 1: Use public booking flow endpoint for client access
         const response = await api.get<{
           available_gateways: PaymentGateway[];
           default_gateway: number | null;
@@ -97,18 +98,37 @@ export class FinancialApi {
         }>(`/bookingflow/public/flows/${flowId}/payment_gateways/`);
         return response.data.available_gateways || [];
       } else {
-        // Fall back to admin endpoint when no flowId provided
-        const response = await api.get<PaginatedResponse<PaymentGateway>>('/payments/gateways/?is_active=true');
-        return response.data.results || [];
+        // Priority 2: Use new public payment gateways endpoint when no flowId provided
+        try {
+          const response = await api.get<PaymentGateway[]>('/payments/public/gateways/');
+          return response.data || [];
+        } catch (_publicError) {
+          // Priority 3: Fall back to client endpoint if public endpoint fails
+          try {
+            const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
+            return response.data || [];
+          } catch (_clientError) {
+            // Priority 4: Final fallback to admin endpoint (might require auth)
+            const response = await api.get<PaginatedResponse<PaymentGateway>>('/payments/gateways/?is_active=true');
+            return response.data.results || [];
+          }
+        }
       }
     } catch (error) {
-      // If public endpoint fails, try to fall back to client payment gateways endpoint
+      // If all endpoints fail, try the remaining fallback endpoints
       try {
-        const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
+        // Try public endpoint as final fallback
+        const response = await api.get<PaymentGateway[]>('/payments/public/gateways/');
         return response.data || [];
-      } catch (fallbackError) {
-        console.error('Failed to fetch payment gateways from all endpoints:', fallbackError);
-        throw error; // Throw original error
+      } catch (_publicFallbackError) {
+        try {
+          // Try client endpoint as final fallback
+          const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
+          return response.data || [];
+        } catch (_clientFallbackError) {
+          console.error('Failed to fetch payment gateways from all endpoints:', error);
+          throw error; // Throw original error
+        }
       }
     }
   }
@@ -269,6 +289,21 @@ export class FinancialApi {
   }
 
   /**
+   * Create Stripe setup intent for saving payment methods
+   */
+  static async createStripeSetupIntent(): Promise<SetupIntentResponse> {
+    try {
+      const response = await api.post<SetupIntentResponse>(
+        `/payments/client/payment-methods/setup_intent/`,
+        { gateway_code: 'stripe' }
+      );
+      return response.data;
+    } catch (error: unknown) {
+      throw new Error(this.handleError(error));
+    }
+  }
+
+  /**
    * Setup a payment plan for an invoice
    */
   static async setupInvoicePaymentPlan(
@@ -400,10 +435,17 @@ export class FinancialApi {
   // ==================== REFUNDS ====================
   
   /**
-   * Get client's refunds
+   * Get client's refunds with pagination support
    */
-  static async getRefunds(): Promise<Refund[]> {
-    const response = await api.get<Refund[]>('/payments/client/refunds/');
+  static async getRefunds(page?: number, pageSize?: number): Promise<PaginatedResponse<Refund>> {
+    const params = new URLSearchParams();
+
+    if (page) params.append('page', page.toString());
+    if (pageSize) params.append('page_size', pageSize.toString());
+
+    const response = await api.get<PaginatedResponse<Refund>>(
+      `/payments/client/refunds/?${params.toString()}`
+    );
     return response.data;
   }
   

@@ -11,17 +11,40 @@ class PaymentMethodService:
     @staticmethod
     def create_payment_method(data, user):
         """Create a new payment method"""
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"PaymentMethodService.create_payment_method - Received data: {data}")
+        logger.info(f"PaymentMethodService.create_payment_method - User: {user.id}")
+
         user_id = data.get('user', user.id)
-        
+
         # Validate type
         method_type = data.get('type')
         if not method_type or method_type not in [choice[0] for choice in PaymentMethod._meta.get_field('type').choices]:
             raise ValueError(f"Invalid payment method type: {method_type}")
-        
+
         # Handle credit card validation if needed
         if method_type == 'CREDIT_CARD':
-            if not data.get('last_four'):
-                raise ValueError("Last four digits required for credit card")
+            # For Stripe payment methods, we don't require last_four if we have stripe_payment_method_id
+            has_stripe_payment_method = data.get('stripe_payment_method_id')
+            last_four = data.get('last_four')
+
+            logger.info(f"Credit card validation - last_four: '{last_four}', has_stripe_payment_method: '{has_stripe_payment_method}'")
+
+            # Be more lenient for Stripe payment methods - if we have a Stripe payment method ID,
+            # we should allow it even if last_four is empty (Stripe may not always provide it)
+            if not has_stripe_payment_method and not last_four:
+                logger.error(f"Validation failed - missing stripe_payment_method_id and last_four")
+                raise ValueError("Either Stripe payment method ID or last four digits required for credit card")
+
+            # If we have a Stripe payment method but no last_four, try to get it from metadata or allow empty
+            if has_stripe_payment_method and not last_four:
+                logger.info(f"Stripe payment method provided but no last_four - this is acceptable")
+                # Could attempt to extract from metadata if available
+                metadata = data.get('metadata', {})
+                if 'last_four' in metadata:
+                    data['last_four'] = metadata['last_four']
+                    logger.info(f"Extracted last_four from metadata: {metadata['last_four']}")
         
         # Get gateway if provided
         gateway = None
@@ -32,6 +55,28 @@ class PaymentMethodService:
             except PaymentGateway.DoesNotExist:
                 raise ValueError(f"Payment gateway with ID {gateway_id} not found")
         
+        # Handle Stripe payment method data
+        stripe_payment_method_id = data.get('stripe_payment_method_id')
+        token_reference = data.get('token_reference', stripe_payment_method_id or '')
+
+        # Build metadata for additional card information
+        metadata = data.get('metadata', {})
+        if data.get('card_brand'):
+            metadata['card_brand'] = data.get('card_brand')
+        if data.get('exp_month'):
+            metadata['exp_month'] = data.get('exp_month')
+        if data.get('exp_year'):
+            metadata['exp_year'] = data.get('exp_year')
+
+        # Set expiry date from exp_month and exp_year if provided
+        expiry_date = data.get('expiry_date')
+        if not expiry_date and data.get('exp_month') and data.get('exp_year'):
+            from datetime import date
+            try:
+                expiry_date = date(int(data.get('exp_year')), int(data.get('exp_month')), 1)
+            except (ValueError, TypeError):
+                pass
+
         # Create the payment method
         with transaction.atomic():
             payment_method = PaymentMethod.objects.create(
@@ -41,10 +86,10 @@ class PaymentMethodService:
                 nickname=data.get('nickname', ''),
                 instructions=data.get('instructions', ''),
                 gateway=gateway,
-                token_reference=data.get('token_reference', ''),
+                token_reference=token_reference,
                 last_four=data.get('last_four', ''),
-                expiry_date=data.get('expiry_date'),
-                metadata=data.get('metadata', {})
+                expiry_date=expiry_date,
+                metadata=metadata
             )
             
             return payment_method

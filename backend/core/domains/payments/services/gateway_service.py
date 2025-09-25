@@ -237,6 +237,13 @@ class PaymentGatewayService:
                 if intent.status == 'succeeded':
                     transaction_record.status = 'COMPLETED'
                     transaction_record.save()
+
+                    # Save payment method if requested and not already saved
+                    if payment_data.get('save_payment_method', False) and intent.payment_method:
+                        PaymentGatewayService._save_stripe_payment_method(
+                            intent.payment_method, payment.event.client, gateway
+                        )
+
                     payment.complete_payment()
                 elif intent.status == 'requires_action':
                     # Handle 3D Secure or other authentication
@@ -374,3 +381,146 @@ class PaymentGatewayService:
             raise ValueError("Cannot delete a gateway that is in use")
         
         gateway.delete()
+
+    @staticmethod
+    def create_setup_intent(user, gateway_code='stripe'):
+        """Create a setup intent for saving payment methods"""
+        try:
+            # Get the specified gateway
+            try:
+                gateway = PaymentGateway.objects.get(code=gateway_code, is_active=True)
+            except PaymentGateway.DoesNotExist:
+                raise PaymentGatewayException(f"Gateway '{gateway_code}' not found or inactive")
+
+            if gateway_code.lower() == 'stripe':
+                return PaymentGatewayService._create_stripe_setup_intent(user, gateway)
+            else:
+                raise PaymentGatewayException(f"Setup intent not supported for gateway '{gateway_code}'")
+
+        except Exception as e:
+            logger.error(f"Failed to create setup intent: {str(e)}")
+            raise
+
+    @staticmethod
+    def _create_stripe_setup_intent(user, gateway):
+        """Create Stripe setup intent for saving payment methods"""
+        try:
+            import stripe
+
+            # Get Stripe configuration from gateway
+            config = gateway.get_decrypted_config()
+            stripe_secret_key = config.get('secret_key')
+
+            if not stripe_secret_key:
+                raise PaymentGatewayException("Stripe secret key not configured")
+
+            stripe.api_key = stripe_secret_key
+
+            # Create setup intent for future payments
+            # This will create a reusable payment method
+            setup_intent = stripe.SetupIntent.create(
+                usage='off_session',  # For future payments
+                payment_method_types=['card'],  # Specify payment method types
+                metadata={
+                    'user_id': user.id,
+                    'user_email': user.email,
+                    'purpose': 'save_payment_method'
+                }
+            )
+
+            logger.info(f"Created Stripe setup intent {setup_intent.id} for user {user.id}")
+
+            return {
+                'success': True,
+                'setup_intent_id': setup_intent.id,
+                'client_secret': setup_intent.client_secret,
+                'status': setup_intent.status,
+                'gateway': gateway.code
+            }
+
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error creating setup intent: {str(e)}")
+            raise PaymentGatewayException(f"Stripe error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error creating Stripe setup intent: {str(e)}")
+            raise PaymentGatewayException(f"Failed to create setup intent: {str(e)}")
+
+    @staticmethod
+    def _save_stripe_payment_method(stripe_payment_method_id, user, gateway):
+        """Save Stripe payment method for future use"""
+        try:
+            import stripe
+            from .payment_method_service import PaymentMethodService
+
+            # Get Stripe configuration from gateway
+            config = gateway.get_decrypted_config()
+            stripe_secret_key = config.get('secret_key')
+
+            if not stripe_secret_key:
+                logger.error("Stripe secret key not configured")
+                return
+
+            stripe.api_key = stripe_secret_key
+
+            # Retrieve payment method from Stripe
+            stripe_pm = stripe.PaymentMethod.retrieve(stripe_payment_method_id)
+
+            # Check if we already have this payment method saved
+            existing_pm = PaymentMethod.objects.filter(
+                user=user,
+                token_reference=stripe_payment_method_id,
+                gateway=gateway
+            ).first()
+
+            if existing_pm:
+                logger.info(f"Payment method {stripe_payment_method_id} already exists for user {user.id}")
+                return existing_pm
+
+            # Determine payment method type
+            pm_type = 'CREDIT_CARD'
+            if stripe_pm.type == 'card':
+                pm_type = 'CREDIT_CARD'
+            elif stripe_pm.type in ['us_bank_account', 'sepa_debit']:
+                pm_type = 'BANK_TRANSFER'
+
+            # Extract card information if available
+            last_four = ''
+            card_brand = ''
+            exp_month = None
+            exp_year = None
+
+            if stripe_pm.card:
+                last_four = stripe_pm.card.last4
+                card_brand = stripe_pm.card.brand
+                exp_month = stripe_pm.card.exp_month
+                exp_year = stripe_pm.card.exp_year
+
+            # Create payment method data
+            pm_data = {
+                'type': pm_type,
+                'user': user.id,
+                'gateway': gateway.id,
+                'token_reference': stripe_payment_method_id,
+                'last_four': last_four,
+                'nickname': f"{card_brand.capitalize()} ending in {last_four}" if card_brand and last_four else "Saved Payment Method",
+                'is_default': not PaymentMethod.objects.filter(user=user).exists(),  # First payment method is default
+                'metadata': {
+                    'card_brand': card_brand,
+                    'exp_month': exp_month,
+                    'exp_year': exp_year,
+                    'stripe_payment_method_type': stripe_pm.type
+                },
+                'exp_month': exp_month,
+                'exp_year': exp_year
+            }
+
+            # Create the payment method
+            payment_method = PaymentMethodService.create_payment_method(pm_data, user)
+
+            logger.info(f"Successfully saved Stripe payment method {stripe_payment_method_id} for user {user.id}")
+            return payment_method
+
+        except Exception as e:
+            logger.error(f"Failed to save Stripe payment method: {str(e)}", exc_info=True)
+            # Don't raise exception - saving payment method failure shouldn't break payment flow
+            return None

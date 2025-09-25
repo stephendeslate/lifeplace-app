@@ -23,6 +23,7 @@ import ContractsPage from './pages/contracts/ContractsPage';
 import { ClientMessagesPage } from './pages/messages/ClientMessagesPage';
 import { RecordsPage } from './pages/records/RecordsPage';
 
+
 // Import booking components
 
 

@@ -9,6 +9,7 @@ export interface PaymentGateway {
   is_active: boolean;
   description?: string;
   masked_config?: Record<string, unknown>;
+  public_config?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -148,6 +149,7 @@ export interface PaymentInstallment {
   installment_number: number;
   description?: string;
   payment_details?: BasicPayment;
+  paid_on?: string; // ISO date string
   created_at: string;
   updated_at: string;
 }
@@ -345,6 +347,12 @@ export interface PaymentMethodFormData {
   nickname?: string;
   instructions?: string;
   gateway?: number;
+  // Stripe card setup data (when adding credit card with Stripe)
+  stripe_payment_method_id?: string;
+  last_four?: string;
+  card_brand?: string;
+  exp_month?: number;
+  exp_year?: number;
 }
 
 export interface InstallmentPaymentData {
@@ -437,6 +445,14 @@ export interface PaymentIntentResponse {
   metadata?: Record<string, unknown>;
 }
 
+export interface SetupIntentResponse {
+  id: string;
+  client_secret: string;
+  status: string;
+  payment_method_types: string[];
+  metadata?: Record<string, unknown>;
+}
+
 export interface PaymentPlanRequest {
   down_payment_amount: string;
   number_of_installments: number;
@@ -453,4 +469,5 @@ export interface InvoicePaymentResponse {
   message?: string;
 }
 
-// All types are already exported above, no need to re-export
+// Export unified payment flow types
+export * from './unified-payment-flow.types';

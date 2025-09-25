@@ -355,7 +355,7 @@ describe('Payment Flow Integration Tests', () => {
     }
 
     // Click Pay Now to open payment dialog
-    await waitFor(() => {
+    await waitFor(async () => {
       const payButton = screen.getByText('Pay Now');
       await user.click(payButton);
     });

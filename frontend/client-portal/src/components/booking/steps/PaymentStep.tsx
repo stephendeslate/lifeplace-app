@@ -22,7 +22,13 @@ import {
   useGatewaySelection
 } from '../../../hooks/booking/usePayment';
 import { useCurrentCurrency } from '../../../hooks/useCurrency';
-import { StripePaymentForm } from '../payment/StripePaymentForm';
+import { UnifiedStripePaymentFlow } from '../../payments/UnifiedStripePaymentFlow';
+import type {
+  BookingModeConfig,
+  PaymentFlowResult,
+  PaymentFlowError,
+  PaymentGateway,
+} from '../../../types/unified-payment-flow.types';
 import type { 
   PaymentStepData, 
   PaymentInfoStepConfiguration,
@@ -156,18 +162,30 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     });
   }, [setSelectedGateway, updateData]);
 
-  // Handle Stripe payment success
-  const handleStripePaymentSuccess = useCallback((paymentMethodId: string) => {
-    updateData({ 
-      payment_method_id: paymentMethodId,
-      payment_method: 'CREDIT_CARD' 
-    });
-    setPaymentMethodCreated(true);
+  // Handle unified payment flow success
+  const handlePaymentFlowSuccess = useCallback((result: PaymentFlowResult) => {
+    if (result.mode === 'booking' && result.bookingResult) {
+      // Extract payment method information from booking result
+      const { payment_method_saved, payment_method } = result.bookingResult;
+
+      if (payment_method_saved && payment_method) {
+        // Use the Stripe payment method ID or fall back to the DB ID
+        const paymentMethodId = payment_method.gateway_details?.code === 'stripe'
+          ? payment_method.id.toString() // In unified flow, the ID is already the correct reference
+          : payment_method.id.toString();
+
+        updateData({
+          payment_method_id: paymentMethodId,
+          payment_method: 'CREDIT_CARD'
+        });
+        setPaymentMethodCreated(true);
+      }
+    }
   }, [updateData]);
 
-  // Handle Stripe payment error
-  const handleStripePaymentError = useCallback((error: string) => {
-    console.error('Stripe payment error:', error);
+  // Handle unified payment flow error
+  const handlePaymentFlowError = useCallback((error: PaymentFlowError) => {
+    console.error('Payment flow error:', error);
     // You might want to show this error to the user
   }, []);
 
@@ -547,15 +565,26 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         </RadioGroup>
       </Paper>
 
-      {/* Stripe Payment Form */}
+      {/* Unified Stripe Payment Flow */}
       {selectedGateway?.code === 'stripe' && amounts.dueNow > 0 && !paymentMethodCreated && (
-        <StripePaymentForm
-          publishableKey={String(selectedGateway.public_config?.publishable_key || '')}
-          amount={Math.round(amounts.dueNow * 100)} // Convert to cents
-          currency={currentCurrency.toLowerCase()}
-          onPaymentSuccess={handleStripePaymentSuccess}
-          onPaymentError={handleStripePaymentError}
-          isProcessing={isValidating}
+        <UnifiedStripePaymentFlow
+          config={{
+            mode: 'booking',
+            total_amount: amounts.dueNow,
+            currency: currentCurrency.toLowerCase(),
+            create_payment_intent: true,
+            save_payment_method: true,
+            ...(flowId && { booking_session_id: flowId.toString() }),
+          } as BookingModeConfig}
+          gateway={{
+            ...selectedGateway,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as PaymentGateway}
+          onSuccess={handlePaymentFlowSuccess}
+          onError={handlePaymentFlowError}
+          disabled={isValidating}
+          loading={isValidating}
         />
       )}
 

@@ -582,12 +582,15 @@ class ClientPaymentMethodViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """Create a new payment method"""
+        # Prepare data with user validation
+        data = request.data.copy()
+
         # Ensure user can only create payment methods for themselves
         if request.user.role != 'ADMIN' and not request.user.is_superuser:
-            request.data['user'] = request.user.id
+            data['user'] = request.user.id
 
         try:
-            method = PaymentMethodService.create_payment_method(request.data, request.user)
+            method = PaymentMethodService.create_payment_method(data, request.user)
             serializer = self.get_serializer(method)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -611,6 +614,44 @@ class ClientPaymentMethodViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'])
+    def setup_intent(self, request):
+        """Create a setup intent for saving payment methods"""
+        try:
+            # Get gateway code from request, default to stripe
+            gateway_code = request.data.get('gateway_code', 'stripe')
+
+            # Create setup intent using the gateway service
+            setup_intent_result = PaymentGatewayService.create_setup_intent(
+                request.user, gateway_code
+            )
+
+            if setup_intent_result.get('success'):
+                # Import the serializer at the function level to avoid circular imports
+                from .serializers import SetupIntentResponseSerializer
+
+                # Serialize and return the response
+                response_data = SetupIntentResponseSerializer({
+                    'setup_intent_id': setup_intent_result.get('setup_intent_id'),
+                    'client_secret': setup_intent_result.get('client_secret'),
+                    'status': setup_intent_result.get('status'),
+                    'gateway': setup_intent_result.get('gateway')
+                }).data
+
+                return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"detail": "Failed to create setup intent"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except Exception as e:
+            logger.error(f"Error creating setup intent: {str(e)}")
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class ClientRefundViewSet(viewsets.ReadOnlyModelViewSet):
