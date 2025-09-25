@@ -45,16 +45,22 @@ import {
   CalendarToday as CalendarIcon,
   PlayArrow as PayIcon,
   Close as CloseIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
-import { useFinancialOverview, useDownloadPaymentReceipt, useDownloadInvoicePdf, usePayInstallment } from '../../hooks/useFinancial';
+import { useFinancialOverview, useDownloadPaymentReceipt, useDownloadInvoicePdf, usePayInstallment, usePaymentMethods } from '../../hooks/useFinancial';
 import { useInvoicePayments } from '../../hooks/useInvoicePayments';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 import FinancialApi from '../../apis/financial.api';
-import type { PaymentInstallment, Payment, Invoice, InvoicePaymentResponse } from '../../types/financial.types';
+import type { PaymentInstallment, Payment, Invoice, InvoicePaymentResponse, PaymentMethod } from '../../types/financial.types';
 import { PaymentViewer } from '../../components/payments/PaymentViewer';
 import { InvoiceViewer } from '../../components/payments/InvoiceViewer';
 import { InvoicePaymentDialog } from '../../components/payments/InvoicePaymentDialog';
+import PaymentMethodEditDialog from '../../components/payments/PaymentMethodEditDialog';
+import PaymentMethodDeleteDialog from '../../components/payments/PaymentMethodDeleteDialog';
+import AddPaymentMethodDialog from '../../components/payments/AddPaymentMethodDialog';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -85,6 +91,15 @@ const FinancialPortal: React.FC = () => {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoicePaymentDialogOpen, setInvoicePaymentDialogOpen] = useState(false);
 
+  // Payment method dialog states
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [editPaymentMethodOpen, setEditPaymentMethodOpen] = useState(false);
+  const [deletePaymentMethodOpen, setDeletePaymentMethodOpen] = useState(false);
+  const [addPaymentMethodOpen, setAddPaymentMethodOpen] = useState(false);
+
+  // Currency formatting hook
+  const { formatAmount } = useCurrencySettings();
+
   // Fetch financial data
   const { 
     payments, 
@@ -112,6 +127,14 @@ const FinancialPortal: React.FC = () => {
     getDaysUntilDue,
     getInvoicePaymentStatus
   } = useInvoicePayments();
+
+  // Payment methods
+  const {
+    data: paymentMethods,
+    isLoading: paymentMethodsLoading,
+    error: paymentMethodsError,
+    refetch: refetchPaymentMethods
+  } = usePaymentMethods();
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -209,6 +232,39 @@ const FinancialPortal: React.FC = () => {
     refetch();
   };
 
+  // Payment method handlers
+  const handleEditPaymentMethod = (method: PaymentMethod) => {
+    setSelectedPaymentMethod(method);
+    setEditPaymentMethodOpen(true);
+  };
+
+  const handleDeletePaymentMethod = (method: PaymentMethod) => {
+    setSelectedPaymentMethod(method);
+    setDeletePaymentMethodOpen(true);
+  };
+
+  const handleCloseEditPaymentMethod = () => {
+    setEditPaymentMethodOpen(false);
+    setSelectedPaymentMethod(null);
+  };
+
+  const handleCloseDeletePaymentMethod = () => {
+    setDeletePaymentMethodOpen(false);
+    setSelectedPaymentMethod(null);
+  };
+
+  const handlePaymentMethodSuccess = () => {
+    refetchPaymentMethods();
+  };
+
+  const handleAddPaymentMethodOpen = () => {
+    setAddPaymentMethodOpen(true);
+  };
+
+  const handleAddPaymentMethodClose = () => {
+    setAddPaymentMethodOpen(false);
+  };
+
   if (error) {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
@@ -294,7 +350,7 @@ const FinancialPortal: React.FC = () => {
               </Box>
               <Box>
                 <Typography variant="h4" sx={{ fontWeight: 600, color: theme.palette.success.main }}>
-                  {FinancialApi.formatAmount(getTotalPaid())}
+                  {formatAmount(getTotalPaid())}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Total Paid
@@ -336,7 +392,7 @@ const FinancialPortal: React.FC = () => {
               </Box>
               <Box>
                 <Typography variant="h4" sx={{ fontWeight: 600, color: theme.palette.warning.main }}>
-                  {FinancialApi.formatAmount(getTotalPending())}
+                  {formatAmount(getTotalPending())}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Pending Payments
@@ -390,7 +446,7 @@ const FinancialPortal: React.FC = () => {
               </Box>
               <Box>
                 <Typography variant="h4" sx={{ fontWeight: 600, color: theme.palette.error.main }}>
-                  {FinancialApi.formatAmount(getTotalOverdue())}
+                  {formatAmount(getTotalOverdue())}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Overdue Amount
@@ -481,12 +537,19 @@ const FinancialPortal: React.FC = () => {
                 id="financial-tab-1"
                 aria-controls="financial-tabpanel-1"
               />
-              <Tab 
+              <Tab
                 label={`Payment Plans (${Array.isArray(paymentPlans) ? paymentPlans.length : 0})`}
-                icon={<ScheduleIcon />} 
+                icon={<ScheduleIcon />}
                 iconPosition="start"
                 id="financial-tab-2"
                 aria-controls="financial-tabpanel-2"
+              />
+              <Tab
+                label={`Payment Methods (${Array.isArray(paymentMethods) ? paymentMethods.length : 0})`}
+                icon={<CreditCardIcon />}
+                iconPosition="start"
+                id="financial-tab-3"
+                aria-controls="financial-tabpanel-3"
               />
             </Tabs>
           </Box>
@@ -1045,7 +1108,7 @@ const FinancialPortal: React.FC = () => {
                                       Paid
                                     </Typography>
                                     <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
-                                      {FinancialApi.formatAmount(progress.totalPaid)}
+                                      {formatAmount(progress.totalPaid)}
                                     </Typography>
                                   </Box>
                                   <Box>
@@ -1053,7 +1116,7 @@ const FinancialPortal: React.FC = () => {
                                       Pending
                                     </Typography>
                                     <Typography variant="body2" sx={{ fontWeight: 600, color: 'warning.main' }}>
-                                      {FinancialApi.formatAmount(progress.totalPending)}
+                                      {formatAmount(progress.totalPending)}
                                     </Typography>
                                   </Box>
                                   {progress.totalOverdue > 0 && (
@@ -1062,7 +1125,7 @@ const FinancialPortal: React.FC = () => {
                                         Overdue
                                       </Typography>
                                       <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
-                                        {FinancialApi.formatAmount(progress.totalOverdue)}
+                                        {formatAmount(progress.totalOverdue)}
                                       </Typography>
                                     </Box>
                                   )}
@@ -1081,7 +1144,7 @@ const FinancialPortal: React.FC = () => {
                                     {progress.progressPercentage.toFixed(1)}% Complete
                                   </Typography>
                                   <Typography variant="caption" color="text.secondary">
-                                    {FinancialApi.formatAmount(parseFloat(plan.total_amount) - progress.totalPaid)} remaining
+                                    {formatAmount(parseFloat(plan.total_amount) - progress.totalPaid)} remaining
                                   </Typography>
                                 </Box>
                               </Box>
@@ -1234,9 +1297,9 @@ const FinancialPortal: React.FC = () => {
                                               </Typography>
                                             )}
 
-                                            {isPaid && (installment as any).paid_on && (
+                                            {isPaid && installment.paid_on && (
                                               <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 500 }}>
-                                                Paid on {new Date((installment as any).paid_on).toLocaleDateString()}
+                                                Paid on {new Date(installment.paid_on).toLocaleDateString()}
                                               </Typography>
                                             )}
                                           </Stack>
@@ -1286,6 +1349,211 @@ const FinancialPortal: React.FC = () => {
                     );
                   })}
                 </Stack>
+              )}
+            </Box>
+          </TabPanel>
+
+          {/* Payment Methods Tab */}
+          <TabPanel value={activeTab} index={3}>
+            <Box sx={{ p: 3 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Saved Payment Methods
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<CreditCardIcon />}
+                  size="small"
+                  onClick={handleAddPaymentMethodOpen}
+                  sx={{
+                    backgroundColor: alpha('#fff', 0.1),
+                    backdropFilter: 'blur(10px)',
+                    border: `1px solid ${alpha('#fff', 0.2)}`,
+                    '&:hover': {
+                      backgroundColor: alpha('#fff', 0.15),
+                    },
+                  }}
+                >
+                  Add New
+                </Button>
+              </Box>
+
+              {paymentMethodsError ? (
+                <GlassCard
+                  variant="light"
+                  intensity="subtle"
+                  sx={{
+                    p: 4,
+                    textAlign: 'center',
+                    border: `1px solid ${alpha('#fff', 0.1)}`,
+                  }}
+                >
+                  <ErrorIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Error Loading Payment Methods
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Unable to load your saved payment methods. Please try again later.
+                  </Typography>
+                </GlassCard>
+              ) : !Array.isArray(paymentMethods) || paymentMethods.length === 0 ? (
+                <GlassCard
+                  variant="light"
+                  intensity="subtle"
+                  sx={{
+                    p: 8,
+                    textAlign: 'center',
+                    border: `1px solid ${alpha('#fff', 0.1)}`,
+                  }}
+                >
+                  <CreditCardIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                    No Payment Methods
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
+                    You haven't saved any payment methods yet. Add a payment method to make future transactions faster and easier.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<CreditCardIcon />}
+                    size="large"
+                    onClick={handleAddPaymentMethodOpen}
+                    sx={{
+                      backgroundColor: theme.palette.primary.main,
+                      '&:hover': {
+                        backgroundColor: theme.palette.primary.dark,
+                      },
+                    }}
+                  >
+                    Add Payment Method
+                  </Button>
+                </GlassCard>
+              ) : (
+                <AnimatedElement animation="slideUp" delay={400}>
+                  <GlassCard
+                    variant="light"
+                    intensity="subtle"
+                    sx={{
+                      border: `1px solid ${alpha('#fff', 0.1)}`,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <TableContainer sx={{ backgroundColor: 'transparent' }}>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Payment Method</TableCell>
+                            <TableCell>Type</TableCell>
+                            <TableCell>Details</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Created</TableCell>
+                            <TableCell width="120">Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {(Array.isArray(paymentMethods) ? paymentMethods : []).map((method) => (
+                            <TableRow key={method.id} hover>
+                              <TableCell>
+                                <Box display="flex" alignItems="center" gap={2}>
+                                  {getPaymentMethodIcon(method.type)}
+                                  <Box>
+                                    <Typography variant="body2" fontWeight="medium">
+                                      {method.nickname || method.type_display}
+                                    </Typography>
+                                    {method.is_default && (
+                                      <Chip
+                                        label="Default"
+                                        size="small"
+                                        color="primary"
+                                        variant="outlined"
+                                        sx={{
+                                          mt: 0.5,
+                                          height: 20,
+                                          fontSize: '0.7rem',
+                                          backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                        }}
+                                      />
+                                    )}
+                                  </Box>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {method.type_display}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" color="text.secondary">
+                                  {method.last_four ? `•••• ${method.last_four}` : 'No details'}
+                                </Typography>
+                                {method.expiry_date && (
+                                  <Typography variant="caption" display="block" color="text.secondary">
+                                    Expires: {new Date(method.expiry_date).toLocaleDateString('en-US', {
+                                      month: '2-digit',
+                                      year: '2-digit'
+                                    })}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label="Active"
+                                  size="small"
+                                  color="success"
+                                  variant="outlined"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" color="text.secondary">
+                                  {new Date(method.created_at).toLocaleDateString()}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Stack direction="row" spacing={1}>
+                                  <Tooltip title="Edit Method">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleEditPaymentMethod(method)}
+                                      sx={{
+                                        backgroundColor: alpha('#fff', 0.1),
+                                        '&:hover': {
+                                          backgroundColor: alpha('#fff', 0.2),
+                                        },
+                                      }}
+                                    >
+                                      <EditIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Delete Method">
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() => handleDeletePaymentMethod(method)}
+                                      sx={{
+                                        backgroundColor: alpha(theme.palette.error.main, 0.1),
+                                        '&:hover': {
+                                          backgroundColor: alpha(theme.palette.error.main, 0.2),
+                                        },
+                                      }}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+
+                    {paymentMethodsLoading && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                        <CircularProgress size={24} />
+                      </Box>
+                    )}
+                  </GlassCard>
+                </AnimatedElement>
               )}
             </Box>
           </TabPanel>
@@ -1374,6 +1642,30 @@ const FinancialPortal: React.FC = () => {
           onPaymentPlanCreated={handlePaymentPlanCreated}
         />
       )}
+
+      {/* Payment Method Edit Dialog */}
+      <PaymentMethodEditDialog
+        open={editPaymentMethodOpen}
+        paymentMethod={selectedPaymentMethod}
+        onClose={handleCloseEditPaymentMethod}
+        onSuccess={handlePaymentMethodSuccess}
+      />
+
+      {/* Payment Method Delete Dialog */}
+      <PaymentMethodDeleteDialog
+        open={deletePaymentMethodOpen}
+        paymentMethod={selectedPaymentMethod}
+        onClose={handleCloseDeletePaymentMethod}
+        onSuccess={handlePaymentMethodSuccess}
+        isOnlyMethod={Array.isArray(paymentMethods) && paymentMethods.length === 1}
+      />
+
+      {/* Add Payment Method Dialog */}
+      <AddPaymentMethodDialog
+        open={addPaymentMethodOpen}
+        onClose={handleAddPaymentMethodClose}
+        onSuccess={handlePaymentMethodSuccess}
+      />
     </Box>
   );
 };

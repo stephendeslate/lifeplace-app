@@ -200,6 +200,44 @@ class PaymentGatewayAdminSerializer(serializers.ModelSerializer):
         return f"{key_value[:8]}{'*' * (len(key_value) - 12)}{key_value[-4:]}"
 
 
+class PublicPaymentGatewaySerializer(serializers.ModelSerializer):
+    """Public serializer for payment gateways - only safe fields exposed"""
+
+    class Meta:
+        model = PaymentGateway
+        fields = [
+            'id', 'name', 'code', 'is_active', 'description',
+        ]
+        read_only_fields = ['id', 'name', 'code', 'is_active', 'description']
+
+    def to_representation(self, instance):
+        """Custom representation to include only essential public config if needed"""
+        data = super().to_representation(instance)
+
+        # Add minimal public configuration (no sensitive data)
+        public_config = {}
+
+        if instance.code == 'stripe':
+            # Include safe public fields for Stripe integration
+            config = instance.config or {}
+            public_config['test_mode'] = config.get('test_mode', False)
+            # Include publishable_key for Stripe Elements initialization
+            if 'publishable_key' in config:
+                public_config['publishable_key'] = config['publishable_key']
+        elif instance.code == 'paypal':
+            config = instance.config or {}
+            public_config['environment'] = config.get('environment', 'sandbox')
+        elif instance.code == 'paymongo':
+            config = instance.config or {}
+            public_config['test_mode'] = config.get('test_mode', False)
+
+        # Only add public_config if it has content
+        if public_config:
+            data['public_config'] = public_config
+
+        return data
+
+
 class PaymentMethodSerializer(serializers.ModelSerializer):
     user_details = UserSerializer(source='user', read_only=True)
     gateway_details = PaymentGatewaySerializer(source='gateway', read_only=True)
@@ -606,3 +644,11 @@ class PaymentPlanRequestSerializer(serializers.Serializer):
                 )
 
         return data
+
+
+class SetupIntentResponseSerializer(serializers.Serializer):
+    """Serializer for setup intent response from gateways"""
+    setup_intent_id = serializers.CharField(help_text="Setup intent ID from gateway")
+    client_secret = serializers.CharField(help_text="Client secret for frontend setup confirmation")
+    status = serializers.CharField(help_text="Current status of setup intent")
+    gateway = serializers.CharField(help_text="Gateway code used for setup intent")

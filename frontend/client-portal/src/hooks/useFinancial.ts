@@ -275,10 +275,10 @@ export const useDeletePaymentMethod = () => {
 
 // ==================== REFUNDS ====================
 
-export const useRefunds = () => {
+export const useRefunds = (page?: number, pageSize?: number) => {
   return useQuery({
-    queryKey: financialKeys.refunds(),
-    queryFn: () => FinancialApi.getRefunds(),
+    queryKey: [...financialKeys.refunds(), page, pageSize],
+    queryFn: () => FinancialApi.getRefunds(page, pageSize),
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };
@@ -343,7 +343,7 @@ export const useFinancialOverview = () => {
   const payments = Array.isArray(paymentsQuery.data?.results) ? paymentsQuery.data.results : [];
   const invoices = Array.isArray(invoicesQuery.data?.results) ? invoicesQuery.data.results : [];
   const paymentPlans = Array.isArray(paymentPlansQuery.data) ? paymentPlansQuery.data : [];
-  const refunds = Array.isArray(refundsQuery.data) ? refundsQuery.data : [];
+  const refunds = Array.isArray(refundsQuery.data?.results) ? refundsQuery.data.results : [];
 
   // Log non-array data for debugging
   if (paymentsQuery.data?.results && !Array.isArray(paymentsQuery.data.results)) {
@@ -355,7 +355,7 @@ export const useFinancialOverview = () => {
   if (paymentPlansQuery.data && !Array.isArray(paymentPlansQuery.data)) {
     console.warn('Payment plans data is not an array:', paymentPlansQuery.data);
   }
-  if (refundsQuery.data && !Array.isArray(refundsQuery.data)) {
+  if (refundsQuery.data?.results && !Array.isArray(refundsQuery.data.results)) {
     console.warn('Refunds data is not an array:', refundsQuery.data);
   }
 

@@ -2,8 +2,8 @@
 
 export { InvoicePaymentDialog } from './InvoicePaymentDialog';
 export { PaymentMethodSelector } from './PaymentMethodSelector';
-export { StripePaymentForm } from './StripePaymentForm';
 export { PaymentPlanDialog } from './PaymentPlanDialog';
+export { UnifiedStripePaymentFlow } from './UnifiedStripePaymentFlow';
 
 // Re-export existing payment components
 export { InvoiceViewer } from './InvoiceViewer';

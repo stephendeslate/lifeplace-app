@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/payments/PaymentGatewaySelector.tsx
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Box,
   FormControl,
@@ -82,6 +82,13 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
       )
     : [];
 
+  // Auto-select single gateway when available
+  useEffect(() => {
+    if (filteredGateways.length === 1 && !selectedGateway) {
+      onGatewaySelect(filteredGateways[0]);
+    }
+  }, [filteredGateways, selectedGateway, onGatewaySelect]);
+
   const handleGatewayChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const gatewayId = parseInt(event.target.value);
     const gateway = filteredGateways.find(g => g.id === gatewayId) || null;
@@ -125,10 +132,6 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
     );
   }
 
-  // If only one gateway is available, auto-select it and show a simple display
-  if (filteredGateways.length === 1 && !selectedGateway) {
-    onGatewaySelect(filteredGateways[0]);
-  }
 
   return (
     <Box>

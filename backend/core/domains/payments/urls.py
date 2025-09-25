@@ -25,6 +25,9 @@ from .client_views import (
     ClientPaymentPlanViewSet,
     ClientRefundViewSet,
 )
+from .public_views import (
+    PublicPaymentGatewayViewSet,
+)
 
 # Admin routers (existing functionality)
 router = DefaultRouter()
@@ -51,7 +54,12 @@ client_router.register(r'installments', ClientPaymentInstallmentViewSet, basenam
 client_router.register(r'payment-methods', ClientPaymentMethodViewSet, basename='client-payment-method')
 client_router.register(r'refunds', ClientRefundViewSet, basename='client-refund')
 
+# Public routers (no authentication required)
+public_router = DefaultRouter()
+public_router.register(r'gateways', PublicPaymentGatewayViewSet, basename='public-payment-gateway')
+
 urlpatterns = [
     path('', include(router.urls)),
     path('client/', include(client_router.urls)),
+    path('public/', include(public_router.urls)),
 ]
