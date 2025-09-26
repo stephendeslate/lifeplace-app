@@ -755,20 +755,28 @@ class BookingSessionService:
             description = f'Deposit payment for invoice {invoice.invoice_id}'
         else:
             description = f'Full payment for invoice {invoice.invoice_id}'
-        
-        payment = Payment.objects.create(
-            event=event,
+
+        # Create payment using PaymentOrchestrator
+        from core.domains.payments.services.payment_orchestrator import PaymentOrchestrator, PaymentRequest
+
+        request = PaymentRequest(
+            event_id=event.id,
             amount=amount_to_charge,
             currency=invoice.currency or 'PHP',
-            status='PENDING',
             due_date=timezone.now().date() + timedelta(days=due_days),
-            payment_method=None,  # Will be determined by gateway
             description=description,
-            invoice=invoice,  # Link to invoice
-            quote=invoice.quote,  # Link to quote if available
-            is_manual=False
+            invoice_id=invoice.id,
+            quote_id=invoice.quote.id if invoice.quote else None,
+            payment_type=payment_type,
+            is_deposit=(payment_type == 'DEPOSIT'),
+            created_by='booking_session_service'
         )
-        
+
+        response = PaymentOrchestrator.create_payment(request)
+        if not response.success:
+            raise ValueError(f"Failed to create payment for booking: {response.message}")
+
+        payment = Payment.objects.get(id=response.payment_id)
         logger.info(f"Created payment record: {payment.payment_number}")
         
         # Process the payment through the gateway

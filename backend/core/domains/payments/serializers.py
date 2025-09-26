@@ -549,6 +549,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 # New serializers for invoice payment endpoints
 class InvoicePaymentRequestSerializer(serializers.Serializer):
     """Serializer for invoice payment request data"""
+    payment_method = serializers.IntegerField(required=False, help_text="Saved payment method ID")
     payment_method_id = serializers.CharField(required=False, help_text="Stripe payment method ID or token")
     payment_method_token = serializers.CharField(required=False, help_text="Payment method token from frontend")
     gateway_id = serializers.IntegerField(required=False, help_text="Payment gateway ID to use")
@@ -560,18 +561,30 @@ class InvoicePaymentRequestSerializer(serializers.Serializer):
 
     def validate(self, data):
         """Validate payment request data"""
-        # Require either payment method ID/token or manual payment
+        import logging
+        logger = logging.getLogger(__name__)
+
+        logger.info(f"🔍 PAYMENT VALIDATION - Received data: {data}")
+
+        # Require either payment method ID/token/saved method or manual payment
         if not data.get('is_manual', False):
-            if not data.get('payment_method_id') and not data.get('payment_method_token'):
+            payment_method = data.get('payment_method')
+            payment_method_id = data.get('payment_method_id')
+            payment_method_token = data.get('payment_method_token')
+
+            logger.info(f"🔍 PAYMENT VALIDATION - Checking fields: payment_method={payment_method}, payment_method_id={payment_method_id}, payment_method_token={payment_method_token}")
+
+            if not payment_method_id and not payment_method_token and not payment_method:
+                logger.error(f"❌ PAYMENT VALIDATION ERROR - No payment method provided. Received data: {data}")
                 raise serializers.ValidationError(
-                    "payment_method_id or payment_method_token is required for non-manual payments"
+                    "No payment method provided. Either payment_method, payment_method_id, or payment_method_token is required for non-manual payments"
                 )
 
-        # Require gateway for non-manual payments
-        if not data.get('is_manual', False):
+        # Require gateway for non-manual payments (except when using saved payment methods)
+        if not data.get('is_manual', False) and not data.get('payment_method'):
             if not data.get('gateway_id') and not data.get('gateway_code'):
                 raise serializers.ValidationError(
-                    "gateway_id or gateway_code is required for non-manual payments"
+                    "gateway_id or gateway_code is required for non-manual payments with new payment methods"
                 )
 
         return data

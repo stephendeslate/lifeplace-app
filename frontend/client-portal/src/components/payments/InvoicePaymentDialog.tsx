@@ -94,6 +94,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
   const [showPaymentPlanDialog, setShowPaymentPlanDialog] = useState(false);
   const [savePaymentMethod, setSavePaymentMethod] = useState(false);
+  const [isAddingNewMethod, setIsAddingNewMethod] = useState(false);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
@@ -101,11 +102,35 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   };
 
   const handlePaymentMethodSelect = (method: PaymentMethod | null) => {
+    console.log('🔍 PAYMENT METHOD SELECT - Method changed:', {
+      previousMethod: selectedPaymentMethod ? {
+        id: selectedPaymentMethod.id,
+        type: selectedPaymentMethod.type,
+        nickname: selectedPaymentMethod.nickname
+      } : null,
+      newMethod: method ? {
+        id: method.id,
+        type: method.type,
+        nickname: method.nickname,
+        gateway_details: !!method.gateway_details
+      } : null,
+      wasAddingNew: isAddingNewMethod
+    });
+
     setSelectedPaymentMethod(method);
-    // Auto-select gateway if payment method has one
-    if (method?.gateway_details) {
-      setSelectedGateway(method.gateway_details);
+
+    // When selecting a saved method, exit "add new method" flow
+    if (method) {
+      setIsAddingNewMethod(false);
+      // For saved methods, clear gateway state to prevent interference
+      setSelectedGateway(null);
+      console.log('✅ PAYMENT METHOD SELECT - Selected saved method, clearing gateway state');
+    } else {
+      // When clearing method selection, reset states
+      setSelectedGateway(null);
+      console.log('🔄 PAYMENT METHOD SELECT - Cleared method selection');
     }
+
     setPaymentError(null);
   };
 
@@ -115,29 +140,78 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   };
 
   const handleFullPayment = async () => {
+    console.log('🔍 PAYMENT DEBUG - handleFullPayment called with state:', {
+      selectedPaymentMethod: selectedPaymentMethod ? {
+        id: selectedPaymentMethod.id,
+        type: selectedPaymentMethod.type,
+        nickname: selectedPaymentMethod.nickname,
+        gateway_details: selectedPaymentMethod.gateway_details,
+        last_four: selectedPaymentMethod.last_four
+      } : null,
+      selectedGateway: selectedGateway ? {
+        id: selectedGateway.id,
+        code: selectedGateway.code,
+        name: selectedGateway.name
+      } : null,
+      isAddingNewMethod,
+      invoice: {
+        id: invoice.id,
+        invoice_id: invoice.invoice_id,
+        total_amount: invoice.total_amount
+      }
+    });
+
     if (!selectedPaymentMethod) {
+      console.error('❌ PAYMENT ERROR - No payment method selected');
       setPaymentError('Please select a payment method');
       return;
     }
 
-    // For payment types that require gateways, ensure one is selected
-    const requiresGateway = ['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod.type);
-    if (requiresGateway && !selectedGateway) {
-      setPaymentError('Please select a payment gateway');
-      return;
+    // Only validate gateway requirements when explicitly adding new methods
+    if (isAddingNewMethod) {
+      const requiresGateway = ['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod.type);
+      console.log('🔍 PAYMENT DEBUG - New method validation:', {
+        requiresGateway,
+        selectedGateway: !!selectedGateway,
+        paymentMethodType: selectedPaymentMethod.type
+      });
+
+      if (requiresGateway && !selectedGateway) {
+        console.error('❌ PAYMENT ERROR - Gateway required but not selected');
+        setPaymentError('Please select a payment gateway');
+        return;
+      }
     }
 
     setPaymentLoading(true);
     setPaymentError(null);
 
     try {
-      const gatewayCode = selectedGateway?.code || selectedPaymentMethod.gateway_details?.code || 'stripe';
+      let paymentData: InvoicePaymentRequest;
 
-      const paymentData: InvoicePaymentRequest = {
-        gateway_code: gatewayCode,
-        payment_method_id: selectedPaymentMethod.id,
-        notes: `Payment for invoice ${invoice.invoice_id}`,
-      };
+      if (isAddingNewMethod) {
+        // For new payment methods - send gateway info and let Stripe form handle payment method creation
+        paymentData = {
+          gateway_code: selectedGateway?.code || 'stripe',
+          gateway_id: selectedGateway?.id,
+          notes: `Payment for invoice ${invoice.invoice_id}`,
+        };
+        console.log('🔍 PAYMENT DEBUG - New method payment data:', paymentData);
+      } else {
+        // For saved payment methods - send the saved payment method ID using 'payment_method' field
+        paymentData = {
+          payment_method: selectedPaymentMethod.id,
+          notes: `Payment for invoice ${invoice.invoice_id}`,
+        };
+        console.log('🔍 PAYMENT DEBUG - Saved method payment data:', paymentData);
+      }
+
+      console.log('🚀 PAYMENT DEBUG - About to call FinancialApi.payInvoice:', {
+        invoiceId: invoice.id,
+        paymentData,
+        selectedPaymentMethodValid: !!selectedPaymentMethod?.id,
+        isAddingNewMethod
+      });
 
       const response = await FinancialApi.payInvoice(invoice.id, paymentData);
 
@@ -343,60 +417,92 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                     selectedMethod={selectedPaymentMethod}
                     onMethodSelect={handlePaymentMethodSelect}
                     disabled={paymentLoading}
-                    showAddNew={false}
+                    showAddNew={true}
+                    onAddNewClick={() => setIsAddingNewMethod(true)}
                   />
 
-                  {/* Show gateway selector for payment types that require it */}
-                  {selectedPaymentMethod &&
-                   ['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod.type) &&
-                   !selectedPaymentMethod.gateway_details && (
-                    <PaymentGatewaySelector
-                      selectedGateway={selectedGateway}
-                      onGatewaySelect={handleGatewaySelect}
-                      disabled={paymentLoading}
-                      showTitle={true}
-                      required={true}
-                    />
+                  {/* Show new payment method flow only when explicitly adding new method */}
+                  {isAddingNewMethod && (
+                    <>
+                      <PaymentGatewaySelector
+                        selectedGateway={selectedGateway}
+                        onGatewaySelect={handleGatewaySelect}
+                        disabled={paymentLoading}
+                        showTitle={true}
+                        required={true}
+                      />
+
+                      {/* Show Unified Stripe Payment Flow only when adding new method with Stripe */}
+                      {selectedGateway?.code === 'stripe' && (
+                        <Stack spacing={3}>
+                          {/* Save Card Checkbox */}
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={savePaymentMethod}
+                                onChange={(e) => setSavePaymentMethod(e.target.checked)}
+                                color="primary"
+                                disabled={paymentLoading}
+                              />
+                            }
+                            label="Save this card for future payments"
+                            sx={{
+                              '& .MuiFormControlLabel-label': {
+                                fontSize: '0.875rem',
+                                color: 'text.secondary',
+                              }
+                            }}
+                          />
+
+                          <UnifiedStripePaymentFlow
+                            config={{
+                              mode: 'invoice',
+                              invoice_id: invoice.id,
+                              amount: parseFloat(paymentStatus.amountRemaining.toString()),
+                              currency: invoice.currency,
+                              save_payment_method: savePaymentMethod,
+                              notes: `Payment for invoice ${invoice.invoice_id}`,
+                            } as InvoiceModeConfig}
+                            gateway={selectedGateway}
+                            onSuccess={handleInvoicePaymentSuccess}
+                            onError={handleInvoicePaymentError}
+                            disabled={paymentLoading}
+                            loading={paymentLoading}
+                          />
+                        </Stack>
+                      )}
+
+                      {/* Cancel adding new method */}
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          setIsAddingNewMethod(false);
+                          setSelectedGateway(null);
+                        }}
+                        disabled={paymentLoading}
+                        sx={{ alignSelf: 'flex-start' }}
+                      >
+                        Back to Saved Methods
+                      </Button>
+                    </>
                   )}
 
-                  {/* Show Unified Stripe Payment Flow when Stripe gateway is selected */}
-                  {selectedGateway?.code === 'stripe' && (
-                    <Stack spacing={3}>
-                      {/* Save Card Checkbox */}
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={savePaymentMethod}
-                            onChange={(e) => setSavePaymentMethod(e.target.checked)}
-                            color="primary"
-                            disabled={paymentLoading}
-                          />
-                        }
-                        label="Save this card for future payments"
-                        sx={{
-                          '& .MuiFormControlLabel-label': {
-                            fontSize: '0.875rem',
-                            color: 'text.secondary',
-                          }
-                        }}
-                      />
-
-                      <UnifiedStripePaymentFlow
-                        config={{
-                          mode: 'invoice',
-                          invoice_id: invoice.id,
-                          amount: parseFloat(paymentStatus.amountRemaining.toString()),
-                          currency: invoice.currency,
-                          save_payment_method: savePaymentMethod,
-                          notes: `Payment for invoice ${invoice.invoice_id}`,
-                        } as InvoiceModeConfig}
-                        gateway={selectedGateway}
-                        onSuccess={handleInvoicePaymentSuccess}
-                        onError={handleInvoicePaymentError}
-                        disabled={paymentLoading}
-                        loading={paymentLoading}
-                      />
-                    </Stack>
+                  {/* Show message for saved payment methods */}
+                  {selectedPaymentMethod && selectedPaymentMethod.gateway_details && (
+                    <Box sx={{
+                      p: 2,
+                      backgroundColor: alpha('#4caf50', 0.1),
+                      borderRadius: 1,
+                      border: `1px solid ${alpha('#4caf50', 0.3)}`
+                    }}>
+                      <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 500 }}>
+                        ✓ Using saved payment method: {selectedPaymentMethod.nickname || selectedPaymentMethod.type_display}
+                        {selectedPaymentMethod.last_four && ` ending in ${selectedPaymentMethod.last_four}`}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Click "Pay Now" to complete your payment with this method.
+                      </Typography>
+                    </Box>
                   )}
                 </Stack>
               </TabPanel>
@@ -441,12 +547,10 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
               onClick={handleFullPayment}
               disabled={
                 paymentLoading ||
-                !selectedPaymentMethod ||
-                // Disable if Stripe gateway is selected (user should use Stripe form instead)
-                selectedGateway?.code === 'stripe' ||
-                (['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod?.type || '') &&
-                 !selectedPaymentMethod?.gateway_details &&
-                 !selectedGateway)
+                // For saved methods: just need a payment method selected
+                (!isAddingNewMethod && !selectedPaymentMethod) ||
+                // For new methods: need both gateway and to not be in Stripe flow (Stripe handles its own submission)
+                (isAddingNewMethod && (!selectedGateway || selectedGateway?.code === 'stripe'))
               }
               startIcon={paymentLoading && <CircularProgress size={20} />}
               sx={{ minWidth: 120 }}

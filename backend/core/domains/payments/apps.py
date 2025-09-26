@@ -9,9 +9,16 @@ class PaymentsConfig(AppConfig):
     verbose_name = 'Payments'
     
     def ready(self):
-        """Connect cache invalidation signals when app is ready"""
+        """Connect payment signals and event handlers when app is ready"""
         try:
             from . import signals
             signals.connect_payments_signals()
+        except ImportError:
+            pass
+
+        # Connect payment domain event handlers
+        try:
+            from .services.payment_events import PaymentEventHandlers
+            PaymentEventHandlers.setup_event_handlers()
         except ImportError:
             pass

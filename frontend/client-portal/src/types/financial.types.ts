@@ -429,9 +429,17 @@ export interface InstallmentAction {
 
 // Invoice payment operation types
 export interface InvoicePaymentRequest {
-  gateway_code: string;
-  payment_method_id?: number;
+  gateway_code?: string;
+  gateway_id?: number;
+  // For saved payment methods (PaymentMethod DB record) - backend expects 'payment_method'
+  payment_method?: number;
+  // For new payment methods (Stripe payment method ID, token, etc.)
+  payment_method_id?: string;
+  payment_method_token?: string;
   payment_data?: Record<string, unknown>;
+  save_payment_method?: boolean;
+  is_manual?: boolean;
+  reference_number?: string;
   notes?: string;
 }
 

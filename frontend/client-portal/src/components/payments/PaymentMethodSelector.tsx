@@ -49,6 +49,7 @@ interface PaymentMethodSelectorProps {
   disabled?: boolean;
   showAddNew?: boolean;
   allowedTypes?: PaymentMethod['type'][];
+  onAddNewClick?: () => void;
 }
 
 const PaymentMethodIcon: React.FC<{ type: PaymentMethod['type'] }> = ({ type }) => {
@@ -344,6 +345,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   disabled = false,
   showAddNew = true,
   allowedTypes,
+  onAddNewClick,
 }) => {
   const theme = useTheme();
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -473,7 +475,13 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                     <Button
                       variant="outlined"
                       startIcon={<AddIcon />}
-                      onClick={() => setShowAddDialog(true)}
+                      onClick={() => {
+                        if (onAddNewClick) {
+                          onAddNewClick();
+                        } else {
+                          setShowAddDialog(true);
+                        }
+                      }}
                       disabled={disabled}
                       sx={{
                         justifyContent: 'flex-start',
