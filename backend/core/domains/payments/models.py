@@ -126,10 +126,15 @@ class PaymentSettings(BaseModel):
 
 class Payment(BaseModel):
     """Records of payments for events"""
+    # Updated to include all state machine states
     PAYMENT_STATUS_CHOICES = [
+        ('CREATED', 'Created'),
         ('PENDING', 'Pending'),
+        ('PROCESSING', 'Processing'),
         ('COMPLETED', 'Completed'),
         ('FAILED', 'Failed'),
+        ('CANCELLED', 'Cancelled'),
+        ('REFUNDED', 'Refunded'),
     ]
 
     # Changed from invoice_id to payment_number to avoid conflict with invoice ForeignKey
@@ -137,7 +142,7 @@ class Payment(BaseModel):
     event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='PHP', help_text="Payment currency (ISO 4217 code)")
-    status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
+    status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='CREATED')
     due_date = models.DateField()
     paid_on = models.DateField(null=True, blank=True)
     payment_method = models.ForeignKey('PaymentMethod', on_delete=models.SET_NULL, null=True, related_name='payments')
@@ -162,13 +167,17 @@ class Payment(BaseModel):
     installment = models.ForeignKey('PaymentInstallment', on_delete=models.SET_NULL, null=True, blank=True, related_name='payment')
 
     def save(self, *args, **kwargs):
+        # Use the new atomic payment number service for generation
         if not self.payment_number:
-            self.payment_number = self.generate_payment_number()
-        
+            from .services.payment_number_service import PaymentNumberService
+            self.payment_number = PaymentNumberService.generate_unique_payment_number(
+                event_id=self.event_id if self.event_id else None
+            )
+
         super().save(*args, **kwargs)
         # Update event payment status
         self.event.update_payment_status()
-        
+
         # Update workflow if applicable - trigger PAYMENT_RECEIVED event
         if self.status == 'COMPLETED' and hasattr(self.event, 'workflow_template') and self.event.workflow_template:
             from core.domains.workflows.models import WorkflowTrigger
@@ -185,12 +194,12 @@ class Payment(BaseModel):
                     'payment_method': self.payment_method.type if self.payment_method else 'Unknown'
                 }
             )
-            
+
             # Check for stages triggered by payment
             next_stages = self.event.workflow_template.stages.filter(
                 trigger_on_payment_received=True
             ).order_by('stage', 'order')
-            
+
             if next_stages.exists():
                 next_stage = next_stages.first()
                 # Check if the event meets all criteria for this stage
@@ -232,9 +241,6 @@ class Payment(BaseModel):
         # Auto-create payment plan for deposit payments
         self._create_payment_plan_for_deposit()
 
-    def generate_payment_number(self):
-        """Generate a unique payment number"""
-        return f"PAY-{timezone.now().strftime('%Y%m%d')}-{self.event.id}-{self.pk or 0}"
         
     def generate_receipt(self):
         """Generate receipt number and update receipt fields"""
@@ -368,6 +374,65 @@ class Payment(BaseModel):
     def __str__(self):
         return f"Payment {self.payment_number} for Event {self.event.id}"
 
+    # State Machine Integration Methods
+    def transition_to_state(self, new_state: str, reason: str, triggered_by: str = 'system', metadata: dict = None):
+        """
+        Transition payment to new state using PaymentStateMachine.
+
+        This is the preferred method for changing payment status.
+        It provides atomic transitions, validation, and audit logging.
+        """
+        from .services.payment_state_machine import PaymentStateMachine, PaymentState
+
+        try:
+            target_state = PaymentState(new_state)
+            return PaymentStateMachine.transition_payment_state(
+                payment=self,
+                to_state=target_state,
+                reason=reason,
+                triggered_by=triggered_by,
+                metadata=metadata
+            )
+        except ValueError as e:
+            raise ValidationError(f"Invalid payment state: {new_state}")
+
+    def can_transition_to(self, new_state: str) -> bool:
+        """Check if payment can transition to the specified state"""
+        from .services.payment_state_machine import PaymentStateMachine, PaymentState
+
+        try:
+            current_state = PaymentState(self.status)
+            target_state = PaymentState(new_state)
+            return target_state in PaymentStateMachine.get_valid_transitions(current_state)
+        except ValueError:
+            return False
+
+    def get_valid_transitions(self) -> list:
+        """Get list of valid state transitions from current state"""
+        from .services.payment_state_machine import PaymentStateMachine, PaymentState
+
+        try:
+            current_state = PaymentState(self.status)
+            valid_states = PaymentStateMachine.get_valid_transitions(current_state)
+            return [state.value for state in valid_states]
+        except ValueError:
+            return []
+
+    def is_terminal_state(self) -> bool:
+        """Check if payment is in a terminal state (no further processing possible)"""
+        from .services.payment_state_machine import PaymentStateMachine, PaymentState
+
+        try:
+            current_state = PaymentState(self.status)
+            return PaymentStateMachine.is_terminal_state(current_state)
+        except ValueError:
+            return False
+
+    def get_state_history(self) -> list:
+        """Get complete state transition history"""
+        from .services.payment_state_machine import PaymentStateMachine
+        return PaymentStateMachine.get_payment_state_history(self)
+
     class Meta:
         ordering = ['-due_date']
 
@@ -472,11 +537,15 @@ class PaymentTransaction(BaseModel):
         return f"Transaction {self.transaction_id} - {self.status}"
     
     def save(self, *args, **kwargs):
+        from django.db import transaction
+
         super().save(*args, **kwargs)
-        
+
         # Update payment status based on transaction status
         if self.status == 'COMPLETED' and self.payment.status != 'COMPLETED':
-            self.payment.complete_payment()
+            # Defer payment completion until after the atomic transaction completes
+            # This prevents nested transaction issues
+            transaction.on_commit(lambda: self.payment.complete_payment())
         elif self.status == 'FAILED' and self.payment.status == 'PENDING':
             self.payment.status = 'FAILED'
             self.payment.save(update_fields=['status'])
@@ -772,18 +841,26 @@ class PaymentInstallment(BaseModel):
         # Check if payment already exists
         if hasattr(self, 'payment') and self.payment.exists():
             return self.payment.first()
-        
-        # Create payment for this installment
-        payment = Payment.objects.create(
-            event=self.payment_plan.event,
+
+        # Create payment for this installment using PaymentOrchestrator
+        from .services.payment_orchestrator import PaymentOrchestrator, PaymentRequest
+
+        request = PaymentRequest(
+            event_id=self.payment_plan.event.id,
             amount=self.amount,
-            status='PENDING',
+            currency=getattr(self.payment_plan, 'currency', 'PHP'),
             due_date=self.due_date,
             description=f"Payment for {self.description}",
-            installment=self
+            payment_type='INSTALLMENT',
+            installment_id=self.id,
+            created_by='installment_model'
         )
-        
-        return payment
+
+        response = PaymentOrchestrator.create_payment(request)
+        if not response.success:
+            raise ValueError(f"Failed to create payment for installment: {response.message}")
+
+        return Payment.objects.get(id=response.payment_id)
 
     @property
     def paid_amount(self):
@@ -1105,3 +1182,304 @@ class PaymentNotification(BaseModel):
     
     class Meta:
         ordering = ['-sent_at']
+
+
+class PaymentNumberSequence(BaseModel):
+    """
+    Atomic sequence counter for generating unique payment numbers.
+
+    This model ensures payment numbers are globally unique by maintaining
+    a per-year counter that's incremented atomically using select_for_update.
+    """
+    year = models.PositiveIntegerField(
+        unique=True,
+        help_text="Year for which this sequence applies"
+    )
+    next_number = models.PositiveIntegerField(
+        default=1,
+        help_text="Next sequence number to use for this year"
+    )
+
+    def __str__(self):
+        return f"Payment sequence for {self.year}: next number {self.next_number}"
+
+    class Meta:
+        verbose_name = "Payment Number Sequence"
+        verbose_name_plural = "Payment Number Sequences"
+        ordering = ['-year']
+
+
+class PaymentStateHistory(BaseModel):
+    """
+    State transition history for payments.
+
+    Provides audit trail and rollback capability for payment state changes.
+    Part of the PaymentStateMachine service architecture.
+    """
+    payment = models.ForeignKey(
+        'Payment',
+        on_delete=models.CASCADE,
+        related_name='state_history'
+    )
+    from_state = models.CharField(
+        max_length=20,
+        help_text="Previous payment state"
+    )
+    to_state = models.CharField(
+        max_length=20,
+        help_text="New payment state"
+    )
+    reason = models.CharField(
+        max_length=255,
+        help_text="Reason for state transition"
+    )
+    triggered_by = models.CharField(
+        max_length=100,
+        default='system',
+        help_text="Who or what triggered the state change"
+    )
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Additional context data for the transition"
+    )
+    timestamp = models.DateTimeField(
+        default=timezone.now,
+        help_text="When the state transition occurred"
+    )
+
+    def __str__(self):
+        return f"Payment {self.payment.payment_number}: {self.from_state} → {self.to_state}"
+
+    class Meta:
+        verbose_name = "Payment State History"
+        verbose_name_plural = "Payment State Histories"
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['payment', '-timestamp']),
+            models.Index(fields=['to_state', '-timestamp']),
+        ]
+
+
+class PaymentEventStore(BaseModel):
+    """
+    Persistent storage for payment domain events.
+
+    Provides event sourcing capabilities including event replay,
+    audit trails, and cross-system integration support.
+    """
+    # Event identification
+    event_id = models.CharField(
+        max_length=255,
+        unique=True,
+        help_text="Unique identifier for this domain event"
+    )
+    event_type = models.CharField(
+        max_length=100,
+        help_text="Type of domain event (PaymentCompletedEvent, etc.)"
+    )
+
+    # Payment context
+    payment = models.ForeignKey(
+        'Payment',
+        on_delete=models.CASCADE,
+        related_name='stored_events'
+    )
+    payment_number = models.CharField(
+        max_length=50,
+        help_text="Payment number for easy lookup"
+    )
+
+    # Event payload
+    event_data = models.JSONField(
+        help_text="Complete event data including transition details"
+    )
+
+    # State transition context
+    from_state = models.CharField(
+        max_length=20,
+        help_text="Previous payment state"
+    )
+    to_state = models.CharField(
+        max_length=20,
+        help_text="New payment state"
+    )
+    transition_reason = models.CharField(
+        max_length=255,
+        help_text="Reason for state transition"
+    )
+    triggered_by = models.CharField(
+        max_length=100,
+        help_text="Who or what triggered the state change"
+    )
+
+    # Event processing status
+    processed = models.BooleanField(
+        default=False,
+        help_text="Whether this event has been processed by all handlers"
+    )
+    processing_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When event processing started"
+    )
+    processing_completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When event processing completed"
+    )
+
+    # Cross-system integration
+    external_system_refs = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="References to external systems that need to be notified"
+    )
+
+    # Error tracking
+    processing_errors = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Any errors encountered during event processing"
+    )
+    retry_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of processing retry attempts"
+    )
+
+    def __str__(self):
+        return f"Event {self.event_type} for Payment {self.payment_number}"
+
+    def mark_processing_started(self):
+        """Mark event as starting processing"""
+        self.processing_started_at = timezone.now()
+        self.save(update_fields=['processing_started_at'])
+
+    def mark_processing_completed(self):
+        """Mark event as fully processed"""
+        self.processed = True
+        self.processing_completed_at = timezone.now()
+        self.save(update_fields=['processed', 'processing_completed_at'])
+
+    def add_processing_error(self, error_message: str, error_details: dict = None):
+        """Add processing error to the event"""
+        error_entry = {
+            'message': error_message,
+            'details': error_details or {},
+            'timestamp': timezone.now().isoformat(),
+            'retry_attempt': self.retry_count + 1
+        }
+
+        self.processing_errors.append(error_entry)
+        self.retry_count += 1
+        self.save(update_fields=['processing_errors', 'retry_count'])
+
+    def can_retry(self, max_retries: int = 3) -> bool:
+        """Check if event processing can be retried"""
+        return self.retry_count < max_retries and not self.processed
+
+    class Meta:
+        verbose_name = "Payment Event Store"
+        verbose_name_plural = "Payment Event Store"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['payment', '-created_at']),
+            models.Index(fields=['event_type', '-created_at']),
+            models.Index(fields=['processed', '-created_at']),
+            models.Index(fields=['to_state', '-created_at']),
+        ]
+
+
+class PaymentWebhookLog(BaseModel):
+    """
+    Log of payment webhook events received from gateways.
+
+    This model tracks all webhook events for monitoring,
+    debugging, and ensuring proper processing.
+    """
+    # Gateway and event identification
+    gateway_code = models.CharField(
+        max_length=50,
+        help_text="Payment gateway code (stripe, paypal, etc.)"
+    )
+    event_type = models.CharField(
+        max_length=100,
+        help_text="Gateway-specific event type"
+    )
+    event_id = models.CharField(
+        max_length=255,
+        unique=True,
+        help_text="Unique event identifier from gateway"
+    )
+
+    # Transaction context
+    transaction_id = models.CharField(
+        max_length=255,
+        help_text="Gateway transaction identifier"
+    )
+
+    # Webhook payload
+    raw_data = models.JSONField(
+        help_text="Complete webhook payload from gateway"
+    )
+
+    # Processing status
+    received_at = models.DateTimeField(
+        default=timezone.now,
+        help_text="When webhook was received"
+    )
+    processed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When webhook was processed"
+    )
+    processed_successfully = models.BooleanField(
+        default=False,
+        help_text="Whether webhook was processed successfully"
+    )
+
+    # Processing details
+    action_taken = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Action taken during processing"
+    )
+    error_message = models.TextField(
+        blank=True,
+        help_text="Error message if processing failed"
+    )
+
+    # Retry tracking
+    retry_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of processing retry attempts"
+    )
+
+    def __str__(self):
+        return f"{self.gateway_code} {self.event_type} - {self.event_id}"
+
+    def mark_processed(self, success: bool, action: str = None, error: str = None):
+        """Mark webhook as processed"""
+        self.processed_at = timezone.now()
+        self.processed_successfully = success
+        if action:
+            self.action_taken = action
+        if error:
+            self.error_message = error
+        self.save()
+
+    def increment_retry(self):
+        """Increment retry count"""
+        self.retry_count += 1
+        self.save(update_fields=['retry_count'])
+
+    class Meta:
+        verbose_name = "Payment Webhook Log"
+        verbose_name_plural = "Payment Webhook Logs"
+        ordering = ['-received_at']
+        indexes = [
+            models.Index(fields=['gateway_code', '-received_at']),
+            models.Index(fields=['event_type', '-received_at']),
+            models.Index(fields=['processed_successfully', '-received_at']),
+            models.Index(fields=['transaction_id']),
+        ]

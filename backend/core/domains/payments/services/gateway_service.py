@@ -201,6 +201,74 @@ class PaymentGatewayService:
                     # Use existing payment method
                     intent_data['payment_method'] = payment_data['payment_method_id']
                     logger.info(f"Using payment method ID: {payment_data['payment_method_id']}")
+                elif payment_data.get('payment_method'):
+                    # Use saved payment method from database
+                    from ..models import PaymentMethod
+                    try:
+                        saved_payment_method = PaymentMethod.objects.get(id=payment_data['payment_method'])
+                        logger.info(f"Found saved payment method: {saved_payment_method.nickname or saved_payment_method.type_display}")
+
+                        # Extract the Stripe payment method ID from the saved payment method
+                        if saved_payment_method.token_reference:
+                            stripe_payment_method_id = saved_payment_method.token_reference
+                            logger.info(f"Using saved payment method token reference: {stripe_payment_method_id}")
+
+                            # For saved payment methods, we need to ensure they're attached to a customer
+                            # Create or get a Stripe customer for this user
+                            user_email = payment.event.client.email if payment.event.client else ''
+                            user_name = f"{payment.event.client.first_name} {payment.event.client.last_name}".strip() if payment.event.client else ''
+
+                            logger.info(f"Creating/getting Stripe customer for user: {user_email}")
+
+                            try:
+                                # Try to find existing customer by email
+                                customers = stripe.Customer.list(email=user_email, limit=1)
+                                if customers.data:
+                                    customer = customers.data[0]
+                                    logger.info(f"Found existing Stripe customer: {customer.id}")
+                                else:
+                                    # Create new customer
+                                    customer = stripe.Customer.create(
+                                        email=user_email,
+                                        name=user_name,
+                                        metadata={
+                                            'user_id': payment.event.client.id if payment.event.client else '',
+                                            'created_by': 'lifeplace_invoice_payment'
+                                        }
+                                    )
+                                    logger.info(f"Created new Stripe customer: {customer.id}")
+
+                                # Attach payment method to customer if not already attached
+                                try:
+                                    payment_method_obj = stripe.PaymentMethod.retrieve(stripe_payment_method_id)
+                                    if not payment_method_obj.customer:
+                                        stripe.PaymentMethod.attach(
+                                            stripe_payment_method_id,
+                                            customer=customer.id
+                                        )
+                                        logger.info(f"Attached payment method {stripe_payment_method_id} to customer {customer.id}")
+                                    else:
+                                        logger.info(f"Payment method {stripe_payment_method_id} already attached to customer")
+
+                                except stripe.error.StripeError as attach_error:
+                                    logger.warning(f"Could not attach payment method to customer: {attach_error}")
+                                    # Continue anyway - maybe it's already attached
+
+                                # Use the customer in the payment intent
+                                intent_data['customer'] = customer.id
+                                intent_data['payment_method'] = stripe_payment_method_id
+
+                            except stripe.error.StripeError as customer_error:
+                                logger.error(f"Failed to create/get Stripe customer: {customer_error}")
+                                # Fallback: try without customer (may fail, but let's try)
+                                intent_data['payment_method'] = stripe_payment_method_id
+
+                        else:
+                            logger.error(f"Saved payment method {saved_payment_method.id} has no token_reference")
+                            raise PaymentGatewayException(f"Saved payment method has no external Stripe ID")
+                    except PaymentMethod.DoesNotExist:
+                        logger.error(f"Payment method with ID {payment_data['payment_method']} not found")
+                        raise PaymentGatewayException(f"Payment method with ID {payment_data['payment_method']} not found")
                 else:
                     logger.error("No payment method provided in payment data")
                     raise PaymentGatewayException("No payment method provided")
@@ -244,7 +312,8 @@ class PaymentGatewayService:
                             intent.payment_method, payment.event.client, gateway
                         )
 
-                    payment.complete_payment()
+                    # Defer payment completion until after atomic transaction
+                    transaction.on_commit(lambda: payment.complete_payment())
                 elif intent.status == 'requires_action':
                     # Handle 3D Secure or other authentication
                     transaction_record.status = 'PENDING'

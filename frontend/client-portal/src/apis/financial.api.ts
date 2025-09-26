@@ -873,6 +873,92 @@ export class FinancialApi {
       return 'USD'; // Default fallback
     }
   }
+
+  // ==================== PHASE 3: MULTI-GATEWAY SUPPORT ====================
+
+  /**
+   * Get available payment gateways
+   */
+  static async getAvailableGateways(): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const response = await api.get('/payments/client/gateways/available/');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        message: this.handleError(error)
+      };
+    }
+  }
+
+  /**
+   * Create payment intent for multi-gateway support
+   */
+  static async createPaymentIntent(intentData: {
+    amount: number;
+    currency?: string;
+    gatewayCode?: string;
+    eventId?: number;
+    invoiceId?: number;
+    metadata?: Record<string, any>;
+    savePaymentMethod?: boolean;
+  }): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const response = await api.post('/payments/client/create-payment-intent/', intentData);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        message: this.handleError(error)
+      };
+    }
+  }
+
+  /**
+   * Confirm payment intent
+   */
+  static async confirmPaymentIntent(intentId: string, confirmationData: {
+    paymentMethodId?: string;
+    gatewayCode?: string;
+    metadata?: Record<string, any>;
+  }): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const response = await api.post(`/payments/client/confirm-payment-intent/${intentId}/`, confirmationData);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        message: this.handleError(error)
+      };
+    }
+  }
+
+  /**
+   * Get payment gateway health status
+   */
+  static async getGatewayHealth(): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const response = await api.get('/payments/client/gateways/health/');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        message: this.handleError(error)
+      };
+    }
+  }
 }
 
 export default FinancialApi;

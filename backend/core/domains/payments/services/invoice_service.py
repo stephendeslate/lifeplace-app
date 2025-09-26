@@ -250,79 +250,79 @@ class InvoiceService:
             # Validate payment amount matches invoice total
             payment_amount = invoice.total_amount
 
-            with transaction.atomic():
-                # Create payment record
-                payment_creation_data = {
-                    'event': invoice.event.id,
-                    'amount': str(payment_amount),
-                    'currency': invoice.currency,
-                    'due_date': invoice.due_date,
-                    'description': f'Payment for invoice {invoice.invoice_id}',
-                    'invoice': invoice.id,
-                    'is_manual': payment_data.get('is_manual', False),
-                    'reference_number': payment_data.get('reference_number', ''),
-                    'notes': payment_data.get('notes', '')
+            # Create payment record
+            payment_creation_data = {
+                'event': invoice.event.id,
+                'amount': str(payment_amount),
+                'currency': invoice.currency,
+                'due_date': invoice.due_date,
+                'description': f'Payment for invoice {invoice.invoice_id}',
+                'invoice': invoice.id,
+                'is_manual': payment_data.get('is_manual', False),
+                'reference_number': payment_data.get('reference_number', ''),
+                'notes': payment_data.get('notes', '')
+            }
+
+            # Create the payment
+            payment = PaymentService.create_payment(payment_creation_data, user)
+
+            # If manual payment, mark as completed
+            if payment_data.get('is_manual', False):
+                payment.status = 'COMPLETED'
+                payment.save()
+                payment.complete_payment()
+
+                # Mark invoice as paid
+                invoice.mark_as_paid()
+
+                return {
+                    'success': True,
+                    'payment': payment,
+                    'message': 'Manual payment recorded successfully'
                 }
 
-                # Create the payment
-                payment = PaymentService.create_payment(payment_creation_data, user)
+            # Process through payment gateway
+            gateway_data = {
+                'payment_method': payment_data.get('payment_method'),
+                'payment_method_id': payment_data.get('payment_method_id'),
+                'payment_method_token': payment_data.get('payment_method_token'),
+                'gateway_id': payment_data.get('gateway_id'),
+                'gateway_code': payment_data.get('gateway_code', 'stripe'),
+                'save_payment_method': payment_data.get('save_payment_method', False)
+            }
 
-                # If manual payment, mark as completed
-                if payment_data.get('is_manual', False):
-                    payment.status = 'COMPLETED'
-                    payment.save()
-                    payment.complete_payment()
+            # Process payment through gateway
+            transaction_result = PaymentGatewayService.process_payment(
+                payment.id, gateway_data, user
+            )
 
-                    # Mark invoice as paid
-                    invoice.mark_as_paid()
-
-                    return {
-                        'success': True,
-                        'payment': payment,
-                        'message': 'Manual payment recorded successfully'
-                    }
-
-                # Process through payment gateway
-                gateway_data = {
-                    'payment_method_id': payment_data.get('payment_method_id'),
-                    'payment_method_token': payment_data.get('payment_method_token'),
-                    'gateway_id': payment_data.get('gateway_id'),
-                    'gateway_code': payment_data.get('gateway_code', 'stripe'),
-                    'save_payment_method': payment_data.get('save_payment_method', False)
+            # Check transaction result
+            if transaction_result.status == 'COMPLETED':
+                # Payment successful - invoice should already be marked as paid
+                # through the payment.complete_payment() call
+                return {
+                    'success': True,
+                    'payment': payment,
+                    'transaction': transaction_result,
+                    'message': 'Payment processed successfully'
                 }
-
-                # Process payment through gateway
-                transaction_result = PaymentGatewayService.process_payment(
-                    payment.id, gateway_data, user
-                )
-
-                # Check transaction result
-                if transaction_result.status == 'COMPLETED':
-                    # Payment successful - invoice should already be marked as paid
-                    # through the payment.complete_payment() call
-                    return {
-                        'success': True,
-                        'payment': payment,
-                        'transaction': transaction_result,
-                        'message': 'Payment processed successfully'
-                    }
-                elif transaction_result.status == 'PENDING':
-                    # Payment requires additional action (e.g., 3D Secure)
-                    return {
-                        'success': True,
-                        'payment': payment,
-                        'transaction': transaction_result,
-                        'requires_action': True,
-                        'message': 'Payment requires additional authentication'
-                    }
-                else:
-                    # Payment failed
-                    return {
-                        'success': False,
-                        'payment': payment,
-                        'transaction': transaction_result,
-                        'error': transaction_result.error_message or 'Payment processing failed'
-                    }
+            elif transaction_result.status == 'PENDING':
+                # Payment requires additional action (e.g., 3D Secure)
+                return {
+                    'success': True,
+                    'payment': payment,
+                    'transaction': transaction_result,
+                    'requires_action': True,
+                    'message': 'Payment requires additional authentication'
+                }
+            else:
+                # Payment failed
+                return {
+                    'success': False,
+                    'payment': payment,
+                    'transaction': transaction_result,
+                    'error': transaction_result.error_message or 'Payment processing failed'
+                }
 
         except Exception as e:
             logger.error(f"Invoice payment processing failed: {e}", exc_info=True)
@@ -334,7 +334,11 @@ class InvoiceService:
 
     @staticmethod
     def create_payment_intent_for_invoice(invoice, gateway_code='stripe'):
-        """Create payment intent for invoice without immediately processing payment"""
+        """Create payment intent for invoice without immediately processing payment
+
+        This method is idempotent - it will reuse existing pending payments
+        for the same invoice to prevent duplicate payment creation.
+        """
         from .gateway_service import PaymentGatewayService
         from ..models import PaymentGateway, Payment
 
@@ -356,16 +360,37 @@ class InvoiceService:
                 }
 
             with transaction.atomic():
-                # Create a pending payment record
-                payment = Payment.objects.create(
-                    event=invoice.event,
-                    amount=invoice.total_amount,
-                    currency=invoice.currency,
-                    due_date=invoice.due_date,
-                    description=f'Payment for invoice {invoice.invoice_id}',
+                # CRITICAL FIX: Check for existing pending payment for this invoice
+                # This prevents duplicate payment creation when API is called multiple times
+                existing_payment = Payment.objects.filter(
                     invoice=invoice,
                     status='PENDING'
-                )
+                ).select_for_update().first()
+
+                if existing_payment:
+                    logger.info(f"Reusing existing pending payment {existing_payment.payment_number} for invoice {invoice.invoice_id}")
+                    payment = existing_payment
+                else:
+                    # Create a new pending payment record using PaymentOrchestrator
+                    from .payment_orchestrator import PaymentOrchestrator, PaymentRequest
+
+                    request = PaymentRequest(
+                        event_id=invoice.event.id,
+                        amount=invoice.total_amount,
+                        currency=invoice.currency,
+                        due_date=invoice.due_date,
+                        description=f'Payment for invoice {invoice.invoice_id}',
+                        invoice_id=invoice.id,
+                        payment_type='INVOICE',
+                        created_by='invoice_service'
+                    )
+
+                    response = PaymentOrchestrator.create_payment(request)
+                    if not response.success:
+                        raise ValueError(f"Failed to create payment for invoice: {response.message}")
+
+                    payment = Payment.objects.get(id=response.payment_id)
+                    logger.info(f"Created new pending payment {payment.payment_number} for invoice {invoice.invoice_id}")
 
                 # Create payment intent through gateway service
                 if gateway_code == 'stripe':
@@ -380,32 +405,69 @@ class InvoiceService:
 
                     stripe.api_key = gateway.config['secret_key']
 
-                    # Create payment intent
-                    intent_data = {
-                        'amount': int(invoice.total_amount * 100),  # Convert to cents
-                        'currency': invoice.currency.lower(),
-                        'automatic_payment_methods': {'enabled': True},
-                        'metadata': {
-                            'invoice_id': invoice.id,
-                            'invoice_number': invoice.invoice_id,
-                            'payment_id': payment.id,
-                            'event_id': invoice.event.id
-                        }
-                    }
-
-                    intent = stripe.PaymentIntent.create(**intent_data)
-
-                    # Create transaction record
+                    # Check for existing transaction record for this payment
                     from ..models import PaymentTransaction
-                    transaction_record = PaymentTransaction.objects.create(
+                    existing_transaction = PaymentTransaction.objects.filter(
                         payment=payment,
                         gateway=gateway,
-                        transaction_id=intent.id,
-                        amount=invoice.total_amount,
-                        currency=invoice.currency,
-                        status='PROCESSING',
-                        response_data=intent
-                    )
+                        status__in=['PROCESSING', 'PENDING']
+                    ).first()
+
+                    if existing_transaction:
+                        # Reuse existing payment intent
+                        logger.info(f"Reusing existing transaction {existing_transaction.transaction_id} for payment {payment.payment_number}")
+
+                        try:
+                            # Retrieve existing Stripe payment intent
+                            intent = stripe.PaymentIntent.retrieve(existing_transaction.transaction_id)
+                            transaction_record = existing_transaction
+                        except stripe.error.StripeError as e:
+                            logger.error(f"Failed to retrieve existing Stripe payment intent: {e}")
+                            # Create new intent if existing one is invalid
+                            intent_data = {
+                                'amount': int(invoice.total_amount * 100),
+                                'currency': invoice.currency.lower(),
+                                'automatic_payment_methods': {'enabled': True},
+                                'metadata': {
+                                    'invoice_id': invoice.id,
+                                    'invoice_number': invoice.invoice_id,
+                                    'payment_id': payment.id,
+                                    'event_id': invoice.event.id
+                                }
+                            }
+                            intent = stripe.PaymentIntent.create(**intent_data)
+
+                            # Update existing transaction record
+                            existing_transaction.transaction_id = intent.id
+                            existing_transaction.response_data = intent
+                            existing_transaction.save()
+                            transaction_record = existing_transaction
+                    else:
+                        # Create new payment intent
+                        intent_data = {
+                            'amount': int(invoice.total_amount * 100),  # Convert to cents
+                            'currency': invoice.currency.lower(),
+                            'automatic_payment_methods': {'enabled': True},
+                            'metadata': {
+                                'invoice_id': invoice.id,
+                                'invoice_number': invoice.invoice_id,
+                                'payment_id': payment.id,
+                                'event_id': invoice.event.id
+                            }
+                        }
+
+                        intent = stripe.PaymentIntent.create(**intent_data)
+
+                        # Create transaction record
+                        transaction_record = PaymentTransaction.objects.create(
+                            payment=payment,
+                            gateway=gateway,
+                            transaction_id=intent.id,
+                            amount=invoice.total_amount,
+                            currency=invoice.currency,
+                            status='PROCESSING',
+                            response_data=intent
+                        )
 
                     return {
                         'success': True,

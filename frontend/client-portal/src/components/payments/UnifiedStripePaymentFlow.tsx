@@ -160,6 +160,7 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
           }
         } else if (isInvoiceMode(config)) {
           // Create payment intent for invoice mode
+          // CRITICAL FIX: Add debouncing to prevent rapid successive API calls
           const response = await FinancialApi.createInvoicePaymentIntent(
             config.invoice_id,
             'stripe'
@@ -191,7 +192,21 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
       }
     };
 
-    initializeIntent();
+    // CRITICAL FIX: Add abort controller and debouncing to prevent duplicate calls
+    let timeoutId: NodeJS.Timeout;
+    const abortController = new AbortController();
+
+    // Debounce the initialization to prevent rapid successive calls
+    timeoutId = setTimeout(() => {
+      if (!abortController.signal.aborted) {
+        initializeIntent();
+      }
+    }, 100); // 100ms debounce
+
+    return () => {
+      clearTimeout(timeoutId);
+      abortController.abort();
+    };
   }, [config.mode, debugMode, isInvoiceMode(config) ? config.invoice_id : null]);
 
   // Handle card element changes
