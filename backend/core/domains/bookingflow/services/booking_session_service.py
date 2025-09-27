@@ -781,18 +781,43 @@ class BookingSessionService:
         
         # Process the payment through the gateway
         try:
-            # Prepare gateway data
+            # Prepare gateway data with proper payment method resolution
             gateway_data = {
                 'amount': float(amount_to_charge),
                 'currency': payment.currency,
                 'description': description,
-                'payment_method_token': payment_data.get('payment_method_token'),
-                'payment_method_id': payment_data.get('payment_method_id'),
                 'client_email': session.client.email,
                 'client_name': session.client.get_full_name(),
                 'invoice_id': invoice.invoice_id,
                 'event_id': event.id
             }
+
+            # Handle payment method data properly - distinguish between saved methods and tokens
+            if payment_data.get('payment_method_token'):
+                # Direct Stripe token provided
+                gateway_data['payment_method_token'] = payment_data['payment_method_token']
+            elif payment_data.get('payment_method_id'):
+                # Check if this is a database ID (numeric string) or Stripe token (starts with pm_)
+                payment_method_id = payment_data['payment_method_id']
+                if isinstance(payment_method_id, str) and payment_method_id.isdigit():
+                    # This is a database ID for saved payment method - pass to gateway service as 'payment_method'
+                    gateway_data['payment_method'] = int(payment_method_id)
+                    logger.info(f"Using saved payment method database ID: {payment_method_id}")
+                elif isinstance(payment_method_id, str) and payment_method_id.startswith('pm_'):
+                    # This is a Stripe payment method token - pass as payment_method_id
+                    gateway_data['payment_method_id'] = payment_method_id
+                    logger.info(f"Using Stripe payment method token: {payment_method_id}")
+                else:
+                    # Assume it's a database ID if numeric, otherwise treat as token
+                    try:
+                        db_id = int(payment_method_id)
+                        gateway_data['payment_method'] = db_id
+                        logger.info(f"Converted payment method to database ID: {db_id}")
+                    except (ValueError, TypeError):
+                        gateway_data['payment_method_id'] = payment_method_id
+                        logger.info(f"Using payment method as token: {payment_method_id}")
+
+            logger.info(f"Gateway data prepared: {gateway_data}")
             
             # Process payment via gateway service
             transaction_result = PaymentGatewayService.process_gateway_payment(

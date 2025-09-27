@@ -206,7 +206,7 @@ class PaymentGatewayService:
                     from ..models import PaymentMethod
                     try:
                         saved_payment_method = PaymentMethod.objects.get(id=payment_data['payment_method'])
-                        logger.info(f"Found saved payment method: {saved_payment_method.nickname or saved_payment_method.type_display}")
+                        logger.info(f"Found saved payment method: {saved_payment_method.nickname or saved_payment_method.get_type_display()}")
 
                         # Extract the Stripe payment method ID from the saved payment method
                         if saved_payment_method.token_reference:
