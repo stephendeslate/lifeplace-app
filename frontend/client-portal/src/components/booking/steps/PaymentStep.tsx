@@ -17,23 +17,25 @@ import {
   CardActions,
 } from '@mui/material';
 import { CreditCard, Security, Schedule, CheckCircle } from '@mui/icons-material';
-import { 
+import {
   useFlowPaymentGateways,
   useGatewaySelection
 } from '../../../hooks/booking/usePayment';
 import { useCurrentCurrency } from '../../../hooks/useCurrency';
 import { UnifiedStripePaymentFlow } from '../../payments/UnifiedStripePaymentFlow';
+import { PaymentMethodSelector } from '../../payments/PaymentMethodSelector';
 import type {
   BookingModeConfig,
   PaymentFlowResult,
   PaymentFlowError,
   PaymentGateway,
 } from '../../../types/unified-payment-flow.types';
-import type { 
-  PaymentStepData, 
+import type {
+  PaymentStepData,
   PaymentInfoStepConfiguration,
   StepValidationResult
 } from '../../../types/booking';
+import type { PaymentMethod } from '../../../types/financial.types';
 
 interface PaymentStepProps {
   stepData?: PaymentStepData;
@@ -62,6 +64,9 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   const [completionChoice, setCompletionChoice] = useState<CompletionChoice>(null);
   // State for tracking payment method success
   const [paymentMethodCreated, setPaymentMethodCreated] = useState<boolean>(false);
+  // State for managing saved payment method selection
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [isAddingNewMethod, setIsAddingNewMethod] = useState<boolean>(false);
   
   // Payment hooks
   const { 
@@ -132,11 +137,48 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     }
   }, [paymentData, onDataChange, onValidate]);
 
+  // Handle payment method selection (saved vs new)
+  const handlePaymentMethodSelect = useCallback((method: PaymentMethod | null) => {
+    setSelectedPaymentMethod(method);
+
+    if (method) {
+      // When selecting a saved method, exit "add new method" flow
+      setIsAddingNewMethod(false);
+      setSelectedGateway(null);
+
+      // Update step data with saved payment method info
+      updateData({
+        payment_method_id: method.id.toString(),
+        payment_method: method.type,
+        payment_gateway_id: method.gateway || undefined,
+      });
+    } else {
+      // When clearing method selection, reset states
+      setSelectedGateway(null);
+      updateData({
+        payment_method_id: '',
+        payment_method: '',
+        payment_gateway_id: undefined,
+      });
+    }
+  }, [updateData]);
+
+  const handleAddNewMethodClick = useCallback(() => {
+    setIsAddingNewMethod(true);
+    setSelectedPaymentMethod(null);
+    // Clear saved method data when switching to new method flow
+    updateData({
+      payment_method_id: '',
+      payment_method: '',
+      payment_gateway_id: undefined,
+    });
+  }, [updateData]);
+
   const handleGatewaySelect = useCallback((gateway: Record<string, unknown>) => {
     // Payment gateway objects have dynamic structure requiring any type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setSelectedGateway(gateway as any);
-    
+
     // Auto-set payment method based on gateway
     let defaultMethod = 'CREDIT_CARD';
     switch (gateway.code) {
@@ -155,10 +197,10 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         defaultMethod = 'MANUAL';
         break;
     }
-    
-    updateData({ 
+
+    updateData({
       payment_gateway_id: gateway.id as number,
-      payment_method: defaultMethod 
+      payment_method: defaultMethod
     });
   }, [setSelectedGateway, updateData]);
 
@@ -192,7 +234,15 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   // Track if payment method is already available (from session restore)
   React.useEffect(() => {
     if (stepData.payment_method_id) {
-      setPaymentMethodCreated(true);
+      // Check if this is a saved payment method (numeric ID) or new method
+      const isNumericId = /^\d+$/.test(stepData.payment_method_id);
+      if (isNumericId) {
+        // This is a saved payment method, don't mark as created
+        setPaymentMethodCreated(false);
+      } else {
+        // This is a new payment method that was created in this session
+        setPaymentMethodCreated(true);
+      }
     }
   }, [stepData.payment_method_id]);
 
@@ -529,44 +579,96 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         </Box>
       </Paper>
 
-      {/* Payment Gateway Selection */}
+      {/* Payment Method Selection */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Payment Method
         </Typography>
 
-        <RadioGroup
-          value={selectedGateway?.id || ''}
-          onChange={(e) => {
-            const gateway = flowGateways.find(g => g.id === parseInt(e.target.value));
-            // Payment gateway objects have dynamic structure requiring any type
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if (gateway) handleGatewaySelect(gateway as any);
-          }}
-        >
-          {filteredGateways.map((gateway) => (
-            <FormControlLabel
-              key={gateway.id}
-              value={gateway.id}
-              control={<Radio />}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CreditCard />
-                  <Typography>{gateway.name}</Typography>
-                  {gateway.description && (
-                    <Typography variant="caption" color="text.secondary">
-                      {gateway.description}
-                    </Typography>
-                  )}
-                </Box>
-              }
-            />
-          ))}
-        </RadioGroup>
+        <PaymentMethodSelector
+          selectedMethod={selectedPaymentMethod}
+          onMethodSelect={handlePaymentMethodSelect}
+          disabled={isValidating}
+          showAddNew={true}
+          onAddNewClick={handleAddNewMethodClick}
+        />
+
+        {/* Show message for saved payment methods */}
+        {selectedPaymentMethod && selectedPaymentMethod.gateway_details && (
+          <Box sx={{
+            mt: 2,
+            p: 2,
+            backgroundColor: 'success.50',
+            borderRadius: 1,
+            border: '1px solid',
+            borderColor: 'success.200'
+          }}>
+            <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 500 }}>
+              ✓ Using saved payment method: {selectedPaymentMethod.nickname || selectedPaymentMethod.type_display}
+              {selectedPaymentMethod.last_four && ` ending in ${selectedPaymentMethod.last_four}`}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              This payment method will be used when you complete your booking.
+            </Typography>
+          </Box>
+        )}
+
+        {/* Show new payment method flow only when explicitly adding new method */}
+        {isAddingNewMethod && (
+          <>
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Select Payment Gateway
+              </Typography>
+
+              <RadioGroup
+                value={selectedGateway?.id || ''}
+                onChange={(e) => {
+                  const gateway = flowGateways.find(g => g.id === parseInt(e.target.value));
+                  // Payment gateway objects have dynamic structure requiring any type
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  if (gateway) handleGatewaySelect(gateway as any);
+                }}
+              >
+                {filteredGateways.map((gateway) => (
+                  <FormControlLabel
+                    key={gateway.id}
+                    value={gateway.id}
+                    control={<Radio />}
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CreditCard />
+                        <Typography>{gateway.name}</Typography>
+                        {gateway.description && (
+                          <Typography variant="caption" color="text.secondary">
+                            {gateway.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                  />
+                ))}
+              </RadioGroup>
+            </Box>
+
+            {/* Cancel adding new method */}
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setIsAddingNewMethod(false);
+                setSelectedGateway(null);
+              }}
+              disabled={isValidating}
+              sx={{ mt: 2 }}
+            >
+              Back to Saved Methods
+            </Button>
+          </>
+        )}
       </Paper>
 
-      {/* Unified Stripe Payment Flow */}
-      {selectedGateway?.code === 'stripe' && amounts.dueNow > 0 && !paymentMethodCreated && (
+      {/* Unified Stripe Payment Flow - Only show when adding new method */}
+      {isAddingNewMethod && selectedGateway?.code === 'stripe' && amounts.dueNow > 0 && !paymentMethodCreated && (
         <UnifiedStripePaymentFlow
           config={{
             mode: 'booking',
@@ -588,7 +690,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         />
       )}
 
-      {/* Payment Method Success Feedback */}
+      {/* Payment Method Success Feedback - For newly created methods */}
       {paymentMethodCreated && selectedGateway?.code === 'stripe' && (
         <Paper sx={{ p: 3, mb: 3, backgroundColor: 'success.50', border: 1, borderColor: 'success.200' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -623,12 +725,20 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
           {/* Option to change payment method */}
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               size="small"
               onClick={() => {
                 setPaymentMethodCreated(false);
-                updateData({ payment_method_id: '', payment_method_token: '' });
+                setSelectedPaymentMethod(null);
+                setIsAddingNewMethod(false);
+                setSelectedGateway(null);
+                updateData({
+                  payment_method_id: '',
+                  payment_method_token: '',
+                  payment_gateway_id: undefined,
+                  payment_method: ''
+                });
               }}
               sx={{ textTransform: 'none' }}
             >
