@@ -200,8 +200,8 @@ class EventService:
             for product_data in event_products_data:
                 print("EventService creating EventProductOption with data:", product_data)  # Debug
                 
-                # FIX: Get product option by ID if it's an ID
-                product_option = product_data.get('product_option')
+                # FIX: Get product option by ID - handle both 'product_option_id' and 'product_option' keys
+                product_option = product_data.get('product_option_id') or product_data.get('product_option')
                 if isinstance(product_option, int):
                     try:
                         from core.domains.products.models import ProductOption
@@ -209,6 +209,9 @@ class EventService:
                     except ProductOption.DoesNotExist:
                         logger.warning(f"ProductOption with ID {product_option} not found")
                         continue
+                elif product_option is None:
+                    logger.warning(f"No product_option or product_option_id found in product_data: {product_data}")
+                    continue
                 
                 # Create EventProductOption with proper data
                 from decimal import Decimal
