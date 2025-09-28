@@ -396,6 +396,15 @@ class BookingSessionService:
                 invoice = InvoiceService.create_from_quote(quote)
                 logger.info(f"Created invoice {invoice.invoice_id} from quote")
 
+                # FIX: Synchronize invoice total with correct event pricing
+                if event.total_price and event.total_price > 0:
+                    original_total = invoice.total_amount
+                    invoice.total_amount = event.total_price
+                    invoice.save(update_fields=['total_amount'])
+                    logger.info(f"Synchronized invoice total: {invoice.total_amount} (was {original_total}) to match event.total_price")
+                else:
+                    logger.warning(f"Event total_price is invalid: {event.total_price}, keeping invoice.total_amount: {invoice.total_amount}")
+
                 # FIXED: Handle quote requests FIRST to avoid payment processing
 
                 if completion_type == 'quote':
@@ -709,7 +718,15 @@ class BookingSessionService:
             raise ValueError(f"Payment gateway {gateway_id} not found or inactive")
         
         # Calculate amount to charge based on payment type
+        # NOTE: invoice.total_amount is now synchronized with event.total_price during invoice creation
         full_amount = invoice.total_amount
+        logger.info(f"Payment amount source - invoice.total_amount: {invoice.total_amount} (synchronized with event.total_price: {event.total_price})")
+
+        # Validation: Ensure we have a valid amount
+        if not full_amount or full_amount <= 0:
+            logger.error(f"Invalid payment amount: invoice.total_amount={invoice.total_amount}, event.total_price={event.total_price}")
+            raise ValueError("Invalid payment amount: invoice total amount is zero or missing")
+
         payment_type = payment_data.get('payment_type', 'FULL')
         
         if payment_type == 'DEPOSIT':
