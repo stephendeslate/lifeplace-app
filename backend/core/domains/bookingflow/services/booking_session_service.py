@@ -3,7 +3,7 @@ import logging
 import uuid
 from datetime import timedelta
 from decimal import Decimal
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from django.db import transaction
 from django.utils import timezone
@@ -1064,85 +1064,18 @@ class BookingSessionService:
                             event_data['end_date'] = end_date
                         # If invalid format or empty string, don't set end_date (optional field)
         
-        # Prepare event products with correct structure
-        event_products = []
-        total_price = Decimal('0.00')
+        # Use centralized calculation instead of manual calculation
+        # This ensures consistency with BookingSession.calculate_total_price() and includes tax
+        total_price = session.calculate_total_price()
+        logger.info(f"PREPARE_EVENT_DATA: session.calculate_total_price() returned: ₱{total_price}")
 
-        # FIX: Get packages and addons from root level first (single source of truth)
-        selected_packages = booking_data.get('selected_packages', [])
-        selected_addons = booking_data.get('selected_addons', [])
+        # Extract event products for junction table creation
+        event_products = BookingSessionService._extract_event_products(booking_data)
+        logger.info(f"PREPARE_EVENT_DATA: extracted {len(event_products)} event products")
 
-        # If not found at root, look in step data (but only take first occurrence)
-        if not selected_packages:
-            for step_key, step_data in booking_data.items():
-                if isinstance(step_data, dict) and 'selected_packages' in step_data:
-                    selected_packages = step_data['selected_packages']
-                    break  # CRITICAL: Only take the first occurrence
-
-        if not selected_addons:
-            for step_key, step_data in booking_data.items():
-                if isinstance(step_data, dict) and 'selected_addons' in step_data:
-                    selected_addons = step_data['selected_addons']
-                    break  # CRITICAL: Only take the first occurrence
-
-        # Process packages
-        for package_data in selected_packages:
-            try:
-                product_option = ProductOption.objects.get(id=package_data['product_id'])
-                quantity = package_data.get('quantity', 1)
-                price = Decimal(str(package_data.get('price', product_option.base_price)))
-                
-                # Calculate excess hours if applicable
-                excess_hours = None
-                excess_cost = Decimal('0')
-                event_duration = BookingSessionService._get_event_duration_from_booking_data(booking_data)
-                if product_option.has_excess_hours and product_option.included_hours and event_duration:
-                    if event_duration > product_option.included_hours:
-                        import math
-                        excess_hours = math.ceil(event_duration - product_option.included_hours)
-                        
-                        # Calculate excess cost
-                        if product_option.excess_hour_price:
-                            excess_hour_price = Decimal(str(product_option.excess_hour_price))
-                            excess_cost = excess_hour_price * Decimal(str(excess_hours))
-                
-                # Calculate final price including excess hours
-                final_price = price + excess_cost
-                
-                event_product_data = {
-                    'product_option': product_option.id,  # Pass ID, not object
-                    'quantity': quantity,
-                    'final_price': final_price,
-                    'num_participants': event_data.get('guest_count'),
-                }
-                
-                # Only add excess_hours if there are any
-                if excess_hours:
-                    event_product_data['excess_hours'] = excess_hours
-                
-                event_products.append(event_product_data)
-                total_price += final_price * Decimal(str(quantity))
-            except (ProductOption.DoesNotExist, KeyError, ValueError) as e:
-                logger.warning(f"Error processing package {package_data}: {e}")
-
-        # Process addons
-        for addon_data in selected_addons:  
-            try:
-                product_option = ProductOption.objects.get(id=addon_data['product_id'])
-                quantity = addon_data.get('quantity', 1)
-                price = Decimal(str(addon_data.get('price', product_option.base_price)))
-                
-                event_products.append({
-                    'product_option': product_option.id,  # Pass ID, not object
-                    'quantity': quantity,
-                    'final_price': price,
-                })
-                total_price += price * Decimal(str(quantity))
-            except (ProductOption.DoesNotExist, KeyError, ValueError) as e:
-                logger.warning(f"Error processing addon {addon_data}: {e}")
-        
         event_data['total_price'] = total_price
         event_data['event_products'] = event_products
+        logger.info(f"PREPARE_EVENT_DATA: setting event_data total_price to ₱{total_price}")
         
         # CRITICAL VALIDATION: Only allow known Event model fields
         # NOTE: 'id' is explicitly excluded since Django auto-generates it
@@ -1731,5 +1664,58 @@ class BookingSessionService:
                 logger.warning(f"Discount code not found: {discount_code}")
             except Exception as e:
                 logger.warning(f"Error applying discount: {e}")
-        
+
         logger.info(f"Completed creating line items for quote {quote.id}")
+
+    @staticmethod
+    def _extract_event_products(booking_data: Dict[str, Any]) -> list[Dict[str, Any]]:
+        """Extract event products from booking data for EventProductOption creation"""
+        from core.domains.sales.pricing_service import PricingCalculationService
+
+        # Use the same extraction logic as the pricing service
+        selected_packages = PricingCalculationService._extract_selected_items(booking_data, 'selected_packages')
+        selected_addons = PricingCalculationService._extract_selected_items(booking_data, 'selected_addons')
+
+        event_products = []
+
+        # Process packages
+        for package_data in selected_packages:
+            try:
+                product_id = package_data.get('product_id')
+                if not product_id:
+                    continue  # Skip items without product_id
+
+                event_product = {
+                    'product_option_id': product_id,
+                    'quantity': int(package_data.get('quantity', 1)),
+                    'final_price': Decimal(str(package_data.get('price', 0))),
+                    'num_participants': package_data.get('num_participants'),
+                    'num_nights': package_data.get('num_nights'),
+                    'excess_hours': package_data.get('excess_hours'),
+                }
+                event_products.append(event_product)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error processing package data: {e}")
+                continue
+
+        # Process addons
+        for addon_data in selected_addons:
+            try:
+                product_id = addon_data.get('product_id')
+                if not product_id:
+                    continue  # Skip items without product_id
+
+                event_product = {
+                    'product_option_id': product_id,
+                    'quantity': int(addon_data.get('quantity', 1)),
+                    'final_price': Decimal(str(addon_data.get('price', 0))),
+                    'num_participants': addon_data.get('num_participants'),
+                    'num_nights': addon_data.get('num_nights'),
+                    'excess_hours': addon_data.get('excess_hours'),
+                }
+                event_products.append(event_product)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error processing addon data: {e}")
+                continue
+
+        return event_products

@@ -189,6 +189,31 @@ class Event(BaseModel):
         """Backward compatibility property"""
         return self.get_next_task()
 
+    def get_duration_hours(self):
+        """Get event duration in hours for pricing calculations"""
+        # Method 1: If duration is explicitly stored
+        if hasattr(self, 'duration_hours') and self.duration_hours:
+            return self.duration_hours
+
+        # Method 2: Calculate from start/end dates
+        if self.start_date and self.end_date:
+            delta = self.end_date - self.start_date
+            return int(delta.total_seconds() // 3600)
+
+        # Method 3: Try to get from original booking session
+        try:
+            from core.domains.bookingflow.models import BookingSession
+            latest_session = BookingSession.objects.filter(
+                booking_data__contains={'event_id': self.id}
+            ).order_by('-created_at').first()
+
+            if latest_session:
+                return latest_session._get_event_duration()
+        except Exception:
+            pass
+
+        return None
+
     def __str__(self):
         event_name = self.name or f"{self.event_type} for {self.client}"
         return f"{event_name} on {self.start_date}"
