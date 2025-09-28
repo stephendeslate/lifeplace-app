@@ -1024,35 +1024,32 @@ class Invoice(BaseModel):
         return f"Invoice {self.invoice_id}"
     
     def calculate_totals(self):
-        """Calculate invoice totals using centralized pricing service"""
-        from core.domains.sales.pricing_service import PricingCalculationService, PricingLineItem
+        """Calculate invoice totals using EXACT SAME method as BookingSession"""
+        from core.domains.sales.pricing_service import PricingCalculationService
         from decimal import Decimal
-        
-        # Convert line items to pricing format
-        pricing_line_items = []
-        for item in self.line_items.all():
-            pricing_line_items.append(PricingLineItem(
-                product_id=item.id,  # Use line item ID as identifier
-                name=item.description,
-                description=item.description,
-                base_unit_price=item.unit_price,
-                quantity=item.quantity,
-                tax_rate=item.tax_rate if item.tax_rate else Decimal('12.0')  # Use line item tax rate or default 12% VAT
-            ))
-        
-        # Calculate pricing breakdown using centralized service
-        if pricing_line_items:
-            breakdown = PricingCalculationService.calculate_pricing_breakdown(pricing_line_items)
-            
-            self.subtotal = breakdown.subtotal
-            self.tax_amount = breakdown.tax_amount
-            self.total_amount = breakdown.total_amount
-        else:
-            # No line items, reset to zero
+
+        if not self.line_items.exists():
+            # No line items
             self.subtotal = Decimal('0.00')
             self.tax_amount = Decimal('0.00')
             self.total_amount = Decimal('0.00')
-        
+        else:
+            # Reconstruct booking data from line items
+            booking_data = self.reconstruct_booking_data()
+
+            # Get event duration
+            event_duration_hours = self.get_event_duration_hours()
+
+            # Use EXACT SAME method as BookingSession
+            breakdown = PricingCalculationService.calculate_from_booking_data(
+                booking_data,
+                event_duration_hours
+            )
+
+            self.subtotal = breakdown.subtotal
+            self.tax_amount = breakdown.tax_amount
+            self.total_amount = breakdown.total_amount
+
         self.save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
     
     def mark_as_paid(self):
@@ -1124,6 +1121,52 @@ class Invoice(BaseModel):
             )
         
         return invoice
+
+    def reconstruct_booking_data(self):
+        """Convert line items back to booking_data format for centralized calculation"""
+        booking_data = {
+            'selected_packages': [],
+            'selected_addons': []
+        }
+
+        for item in self.line_items.all():
+            if not item.product:
+                continue
+
+            item_data = {
+                'product_id': item.product.id,
+                'name': item.description,
+                'price': item.unit_price,
+                'quantity': item.quantity
+            }
+
+            # Determine if package or addon based on product category
+            if self._is_package_product(item.product):
+                booking_data['selected_packages'].append(item_data)
+            else:
+                booking_data['selected_addons'].append(item_data)
+
+        return booking_data
+
+    def _is_package_product(self, product):
+        """Determine if product is a package based on product type and category"""
+        # Primary check: Use the authoritative product.type field
+        if hasattr(product, 'type') and product.type:
+            return product.type == 'PACKAGE'
+
+        # Fallback check: Category-based logic for backwards compatibility
+        if not product.category:
+            return False
+
+        package_categories = ['Packages', 'Wedding Packages', 'Event Packages', 'Package']
+        return product.category.name in package_categories
+
+    def get_event_duration_hours(self):
+        """Get event duration for pricing calculations"""
+        if not self.event:
+            return None
+
+        return self.event.get_duration_hours()
 
 
 class InvoiceLineItem(BaseModel):

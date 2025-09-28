@@ -43,46 +43,33 @@ class EventQuote(BaseModel):
         return f"Quote {self.version} for Event {self.event.id}"
     
     def calculate_totals(self):
-        """Calculate quote totals using centralized pricing service"""
-        from core.domains.sales.pricing_service import PricingCalculationService, PricingLineItem
-        
-        # Convert line items to pricing format
-        pricing_line_items = []
-        for item in self.line_items.all():
-            pricing_line_items.append(PricingLineItem(
-                product_id=item.id,  # Use line item ID as identifier
-                name=item.description,
-                description=item.description,
-                base_unit_price=item.unit_price,
-                quantity=item.quantity,
-                tax_rate=Decimal('12.0')  # Default to 12% VAT
-            ))
-        
-        # Calculate pricing breakdown using centralized service
-        if pricing_line_items:
-            breakdown = PricingCalculationService.calculate_pricing_breakdown(pricing_line_items)
-            
-            self.subtotal = breakdown.subtotal
-            self.tax_amount = breakdown.tax_amount
-            
-            # Apply discount if present
-            if self.discount:
-                if self.discount.discount_type == 'PERCENTAGE':
-                    self.discount_amount = self.subtotal * (self.discount.value / 100)
-                else:  # FIXED
-                    self.discount_amount = min(self.discount.value, self.subtotal)
-            else:
-                self.discount_amount = Decimal('0.00')
-            
-            # Calculate final total
-            self.total_amount = self.subtotal - self.discount_amount + self.tax_amount
-        else:
-            # No line items, reset to zero
+        """Calculate quote totals using EXACT SAME method as BookingSession"""
+        from core.domains.sales.pricing_service import PricingCalculationService
+
+        if not self.line_items.exists():
+            # No line items
             self.subtotal = Decimal('0.00')
-            self.tax_amount = Decimal('0.00') 
+            self.tax_amount = Decimal('0.00')
             self.discount_amount = Decimal('0.00')
             self.total_amount = Decimal('0.00')
-        
+        else:
+            # Reconstruct booking data from line items
+            booking_data = self.reconstruct_booking_data()
+
+            # Get event duration
+            event_duration_hours = self.get_event_duration_hours()
+
+            # Use EXACT SAME method as BookingSession
+            breakdown = PricingCalculationService.calculate_from_booking_data(
+                booking_data,
+                event_duration_hours
+            )
+
+            self.subtotal = breakdown.subtotal
+            self.tax_amount = breakdown.tax_amount
+            self.discount_amount = breakdown.discount_amount
+            self.total_amount = breakdown.total_amount
+
         self.save(update_fields=['subtotal', 'discount_amount', 'tax_amount', 'total_amount'])
     
     def accept(self, signature_data=None):
@@ -205,6 +192,52 @@ class EventQuote(BaseModel):
         )
         
         return new_quote
+
+    def reconstruct_booking_data(self):
+        """Convert line items back to booking_data format for centralized calculation"""
+        booking_data = {
+            'selected_packages': [],
+            'selected_addons': []
+        }
+
+        for item in self.line_items.all():
+            if not item.product:
+                continue
+
+            item_data = {
+                'product_id': item.product.id,
+                'name': item.description,
+                'price': item.unit_price,
+                'quantity': item.quantity
+            }
+
+            # Determine if package or addon based on product category
+            if self._is_package_product(item.product):
+                booking_data['selected_packages'].append(item_data)
+            else:
+                booking_data['selected_addons'].append(item_data)
+
+        return booking_data
+
+    def _is_package_product(self, product):
+        """Determine if product is a package based on product type and category"""
+        # Primary check: Use the authoritative product.type field
+        if hasattr(product, 'type') and product.type:
+            return product.type == 'PACKAGE'
+
+        # Fallback check: Category-based logic for backwards compatibility
+        if not product.category:
+            return False
+
+        package_categories = ['Packages', 'Wedding Packages', 'Event Packages', 'Package']
+        return product.category.name in package_categories
+
+    def get_event_duration_hours(self):
+        """Get event duration for pricing calculations"""
+        if not self.event:
+            return None
+
+        return self.event.get_duration_hours()
 
 
 class QuoteTemplate(BaseModel):
