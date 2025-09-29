@@ -97,12 +97,19 @@ export interface InvoiceLineItem {
   invoice: number;
   description: string;
   quantity: number;
-  unit_price: string; // Decimal as string
+  unit_price: string; // Decimal as string - total unit price (base + excess per unit)
   tax_rate: string; // Decimal as string
   total: string; // Decimal as string
   product?: number;
   created_at: string;
   updated_at: string;
+  // Enhanced pricing fields (DRY compliance)
+  item_type: 'PACKAGE' | 'ADDON';
+  item_type_display: string;
+  base_unit_price: string | null; // Base price before excess hours
+  excess_hours: number | null; // Number of excess hours
+  excess_hour_price: string | null; // Price per excess hour
+  excess_cost: string; // Total excess cost (excess_hours * excess_hour_price)
 }
 
 export interface InvoiceTax {

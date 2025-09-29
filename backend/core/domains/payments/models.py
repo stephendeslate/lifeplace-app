@@ -1024,8 +1024,7 @@ class Invoice(BaseModel):
         return f"Invoice {self.invoice_id}"
     
     def calculate_totals(self):
-        """Calculate invoice totals using EXACT SAME method as BookingSession"""
-        from core.domains.sales.pricing_service import PricingCalculationService
+        """Calculate invoice totals from preserved line item data (DRY compliant)"""
         from decimal import Decimal
 
         if not self.line_items.exists():
@@ -1034,21 +1033,23 @@ class Invoice(BaseModel):
             self.tax_amount = Decimal('0.00')
             self.total_amount = Decimal('0.00')
         else:
-            # Reconstruct booking data from line items
-            booking_data = self.reconstruct_booking_data()
+            # Simple totaling from preserved pricing data (no recalculation needed)
+            line_items = self.line_items.all()
 
-            # Get event duration
-            event_duration_hours = self.get_event_duration_hours()
-
-            # Use EXACT SAME method as BookingSession
-            breakdown = PricingCalculationService.calculate_from_booking_data(
-                booking_data,
-                event_duration_hours
+            # Calculate subtotal from line item totals (before tax)
+            self.subtotal = sum(
+                item.quantity * item.unit_price
+                for item in line_items
             )
 
-            self.subtotal = breakdown.subtotal
-            self.tax_amount = breakdown.tax_amount
-            self.total_amount = breakdown.total_amount
+            # Calculate tax amount from preserved tax rates
+            self.tax_amount = sum(
+                (item.quantity * item.unit_price) * (item.tax_rate / 100)
+                for item in line_items
+            )
+
+            # Total amount is subtotal + tax
+            self.total_amount = self.subtotal + self.tax_amount
 
         self.save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
     
@@ -1109,68 +1110,34 @@ class Invoice(BaseModel):
             quote=quote
         )
         
-        # Create line items from quote
+        # Create enhanced line items from quote with backward compatibility
         for quote_item in quote.line_items.all():
+            # Try to infer item type from product type if available
+            item_type = 'PACKAGE'  # Default
+            if quote_item.product and hasattr(quote_item.product, 'type'):
+                item_type = 'ADDON' if quote_item.product.type == 'PRODUCT' else 'PACKAGE'
+
             InvoiceLineItem.objects.create(
                 invoice=invoice,
                 description=quote_item.description,
                 quantity=quote_item.quantity,
                 unit_price=quote_item.unit_price,
+                base_unit_price=quote_item.unit_price,  # Use unit_price as base (backward compatibility)
                 tax_rate=quote_item.tax_rate,
-                total=quote_item.total
+                total=quote_item.total,
+                product=quote_item.product,
+                item_type=item_type,
+                excess_hours=None,  # Will be populated when we have richer quote data
+                excess_hour_price=None,
+                excess_cost=Decimal('0.00')
             )
         
         return invoice
 
-    def reconstruct_booking_data(self):
-        """Convert line items back to booking_data format for centralized calculation"""
-        booking_data = {
-            'selected_packages': [],
-            'selected_addons': []
-        }
-
-        for item in self.line_items.all():
-            if not item.product:
-                continue
-
-            item_data = {
-                'product_id': item.product.id,
-                'name': item.description,
-                'price': item.unit_price,
-                'quantity': item.quantity
-            }
-
-            # Determine if package or addon based on product category
-            if self._is_package_product(item.product):
-                booking_data['selected_packages'].append(item_data)
-            else:
-                booking_data['selected_addons'].append(item_data)
-
-        return booking_data
-
-    def _is_package_product(self, product):
-        """Determine if product is a package based on product type and category"""
-        # Primary check: Use the authoritative product.type field
-        if hasattr(product, 'type') and product.type:
-            return product.type == 'PACKAGE'
-
-        # Fallback check: Category-based logic for backwards compatibility
-        if not product.category:
-            return False
-
-        package_categories = ['Packages', 'Wedding Packages', 'Event Packages', 'Package']
-        return product.category.name in package_categories
-
-    def get_event_duration_hours(self):
-        """Get event duration for pricing calculations"""
-        if not self.event:
-            return None
-
-        return self.event.get_duration_hours()
 
 
 class InvoiceLineItem(BaseModel):
-    """Line items on an invoice"""
+    """Line items on an invoice with preserved pricing calculation details"""
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='line_items')
     description = models.CharField(max_length=255)
     quantity = models.PositiveIntegerField()
@@ -1179,12 +1146,50 @@ class InvoiceLineItem(BaseModel):
     total = models.DecimalField(max_digits=10, decimal_places=2)
     product = models.ForeignKey('products.ProductOption', on_delete=models.SET_NULL, null=True, blank=True)
 
+    # Enhanced fields to preserve PricingLineItem data (DRY compliance)
+    item_type = models.CharField(
+        max_length=20,
+        choices=[('PACKAGE', 'Package'), ('ADDON', 'Add-on')],
+        default='PACKAGE',
+        help_text="Type of item to distinguish packages from addons"
+    )
+    base_unit_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Base price before excess hours (unit_price = base_unit_price + excess per unit)"
+    )
+    excess_hours = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Number of excess hours for this item"
+    )
+    excess_hour_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Price per excess hour"
+    )
+    excess_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Total excess cost (excess_hours * excess_hour_price)"
+    )
+
     def save(self, *args, **kwargs):
         # Auto-calculate total if not set
         if not self.total:
             self.total = self.quantity * self.unit_price
+
+        # Ensure backward compatibility: if base_unit_price not set, use unit_price
+        if self.base_unit_price is None:
+            self.base_unit_price = self.unit_price
+
         super().save(*args, **kwargs)
-        
+
         # Update invoice totals
         self.invoice.calculate_totals()
 

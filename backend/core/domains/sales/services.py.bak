@@ -214,41 +214,8 @@ class QuoteService:
                     quote.terms_and_conditions = quote.template.terms_and_conditions
                     quote.save(update_fields=['terms_and_conditions'])
             
-            # Calculate totals using centralized pricing service (DRY approach)
-            from core.domains.sales.pricing_service import PricingCalculationService
-
-            # Convert quote line items to booking data format for centralized calculation
-            booking_data = {
-                'selected_packages': [],
-                'selected_addons': []
-            }
-
-            for item in quote.line_items.all():
-                if item.product:
-                    item_data = {
-                        'product_id': item.product.id,
-                        'name': item.description,
-                        'price': item.unit_price,
-                        'quantity': item.quantity
-                    }
-
-                    # Determine if package or addon based on product type
-                    if item.product.type == 'PACKAGE':
-                        booking_data['selected_packages'].append(item_data)
-                    else:
-                        booking_data['selected_addons'].append(item_data)
-
-            # Use centralized pricing calculation
-            event_duration = quote.event.get_duration_hours() if quote.event else 8
-            breakdown = PricingCalculationService.calculate_from_booking_data(
-                booking_data,
-                event_duration
-            )
-
-            quote.subtotal = breakdown.subtotal
-            quote.tax_amount = breakdown.tax_amount
-            quote.total_amount = breakdown.total_amount
-            quote.save(update_fields=["subtotal", "tax_amount", "total_amount"])
+            # Calculate totals
+            quote.calculate_totals()
             
             logger.info(f"Created new quote for event {event.id}")
             return quote
@@ -330,41 +297,8 @@ class QuoteService:
                     notes=f"Quote updated: {', '.join(changes)}"
                 )
             
-            # DRY: Use centralized pricing calculation service
-            from core.domains.sales.pricing_service import PricingCalculationService
-
-            # Convert quote line items to booking data format for centralized calculation
-            booking_data = {
-                'selected_packages': [],
-                'selected_addons': []
-            }
-
-            for item in quote.line_items.all():
-                if item.product:
-                    item_data = {
-                        'product_id': item.product.id,
-                        'name': item.description,
-                        'price': item.unit_price,
-                        'quantity': item.quantity
-                    }
-
-                    # Determine if package or addon based on product type
-                    if item.product.type == 'PACKAGE':
-                        booking_data['selected_packages'].append(item_data)
-                    else:
-                        booking_data['selected_addons'].append(item_data)
-
-            # Use centralized pricing calculation
-            event_duration = quote.event.get_duration_hours() if quote.event else 8
-            breakdown = PricingCalculationService.calculate_from_booking_data(
-                booking_data,
-                event_duration
-            )
-
-            quote.subtotal = breakdown.subtotal
-            quote.tax_amount = breakdown.tax_amount
-            quote.total_amount = breakdown.total_amount
-            quote.save(update_fields=["subtotal", "tax_amount", "total_amount"])
+            # Recalculate totals if needed
+            quote.calculate_totals()
             
             logger.info(f"Updated quote: {quote}")
             return quote
@@ -491,41 +425,8 @@ class QuoteService:
             description = line_item.description
             line_item.delete()
             
-            # DRY: Use centralized pricing calculation service
-            from core.domains.sales.pricing_service import PricingCalculationService
-
-            # Convert quote line items to booking data format for centralized calculation
-            booking_data = {
-                'selected_packages': [],
-                'selected_addons': []
-            }
-
-            for item in quote.line_items.all():
-                if item.product:
-                    item_data = {
-                        'product_id': item.product.id,
-                        'name': item.description,
-                        'price': item.unit_price,
-                        'quantity': item.quantity
-                    }
-
-                    # Determine if package or addon based on product type
-                    if item.product.type == 'PACKAGE':
-                        booking_data['selected_packages'].append(item_data)
-                    else:
-                        booking_data['selected_addons'].append(item_data)
-
-            # Use centralized pricing calculation
-            event_duration = quote.event.get_duration_hours() if quote.event else 8
-            breakdown = PricingCalculationService.calculate_from_booking_data(
-                booking_data,
-                event_duration
-            )
-
-            quote.subtotal = breakdown.subtotal
-            quote.tax_amount = breakdown.tax_amount
-            quote.total_amount = breakdown.total_amount
-            quote.save(update_fields=["subtotal", "tax_amount", "total_amount"])
+            # Recalculate totals
+            quote.calculate_totals()
             
             # Record activity
             QuoteActivity.objects.create(

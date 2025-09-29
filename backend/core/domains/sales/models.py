@@ -42,35 +42,6 @@ class EventQuote(BaseModel):
     def __str__(self):
         return f"Quote {self.version} for Event {self.event.id}"
     
-    def calculate_totals(self):
-        """Calculate quote totals using EXACT SAME method as BookingSession"""
-        from core.domains.sales.pricing_service import PricingCalculationService
-
-        if not self.line_items.exists():
-            # No line items
-            self.subtotal = Decimal('0.00')
-            self.tax_amount = Decimal('0.00')
-            self.discount_amount = Decimal('0.00')
-            self.total_amount = Decimal('0.00')
-        else:
-            # Reconstruct booking data from line items
-            booking_data = self.reconstruct_booking_data()
-
-            # Get event duration
-            event_duration_hours = self.get_event_duration_hours()
-
-            # Use EXACT SAME method as BookingSession
-            breakdown = PricingCalculationService.calculate_from_booking_data(
-                booking_data,
-                event_duration_hours
-            )
-
-            self.subtotal = breakdown.subtotal
-            self.tax_amount = breakdown.tax_amount
-            self.discount_amount = breakdown.discount_amount
-            self.total_amount = breakdown.total_amount
-
-        self.save(update_fields=['subtotal', 'discount_amount', 'tax_amount', 'total_amount'])
     
     def accept(self, signature_data=None):
         """Mark quote as accepted and create contract/invoice if needed"""
@@ -193,51 +164,6 @@ class EventQuote(BaseModel):
         
         return new_quote
 
-    def reconstruct_booking_data(self):
-        """Convert line items back to booking_data format for centralized calculation"""
-        booking_data = {
-            'selected_packages': [],
-            'selected_addons': []
-        }
-
-        for item in self.line_items.all():
-            if not item.product:
-                continue
-
-            item_data = {
-                'product_id': item.product.id,
-                'name': item.description,
-                'price': item.unit_price,
-                'quantity': item.quantity
-            }
-
-            # Determine if package or addon based on product category
-            if self._is_package_product(item.product):
-                booking_data['selected_packages'].append(item_data)
-            else:
-                booking_data['selected_addons'].append(item_data)
-
-        return booking_data
-
-    def _is_package_product(self, product):
-        """Determine if product is a package based on product type and category"""
-        # Primary check: Use the authoritative product.type field
-        if hasattr(product, 'type') and product.type:
-            return product.type == 'PACKAGE'
-
-        # Fallback check: Category-based logic for backwards compatibility
-        if not product.category:
-            return False
-
-        package_categories = ['Packages', 'Wedding Packages', 'Event Packages', 'Package']
-        return product.category.name in package_categories
-
-    def get_event_duration_hours(self):
-        """Get event duration for pricing calculations"""
-        if not self.event:
-            return None
-
-        return self.event.get_duration_hours()
 
 
 class QuoteTemplate(BaseModel):
@@ -286,8 +212,16 @@ class QuoteTemplate(BaseModel):
                 product=template_product.product
             )
         
-        # Calculate totals
-        quote.calculate_totals()
+        # Calculate totals manually (legacy template quotes don't go through booking flow)
+        line_items = quote.line_items.all()
+        subtotal = sum(item.total for item in line_items)
+        tax_amount = sum(item.total * (item.tax_rate / 100) for item in line_items)
+        total_amount = subtotal + tax_amount
+
+        quote.subtotal = subtotal
+        quote.tax_amount = tax_amount
+        quote.total_amount = total_amount
+        quote.save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
         
         # Record activity
         QuoteActivity.objects.create(
@@ -324,15 +258,53 @@ class QuoteLineItem(BaseModel):
     total = models.DecimalField(max_digits=10, decimal_places=2)
     product = models.ForeignKey('products.ProductOption', on_delete=models.SET_NULL, null=True, blank=True)
     notes = models.TextField(blank=True)
+
+    # Enhanced pricing fields for DRY compliance (same as InvoiceLineItem)
+    item_type = models.CharField(
+        max_length=20,
+        choices=[('PACKAGE', 'Package'), ('ADDON', 'Add-on')],
+        default='PACKAGE',
+        help_text='Type of item to distinguish packages from addons'
+    )
+    base_unit_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Base price before excess hours (unit_price = base_unit_price + excess per unit)'
+    )
+    excess_hours = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Number of excess hours for this item'
+    )
+    excess_hour_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Price per excess hour'
+    )
+    excess_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text='Total excess cost (excess_hours * excess_hour_price)'
+    )
+
+    @property
+    def item_type_display(self):
+        """Get display name for item type"""
+        return dict(self._meta.get_field('item_type').choices).get(self.item_type, self.item_type)
     
     def save(self, *args, **kwargs):
         # Auto-calculate total if not set
         if not self.total:
             self.total = self.quantity * self.unit_price
         super().save(*args, **kwargs)
-        
-        # Update quote totals
-        self.quote.calculate_totals()
+
+        # Note: Quote totals are now directly assigned from PricingCalculationService
+        # No need to recalculate as it violates DRY principle
     
     def __str__(self):
         return f"{self.description} - Quote {self.quote.id}"
