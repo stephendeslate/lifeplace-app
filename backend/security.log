@@ -1698,3 +1698,10 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-09-30 01:17:59,593 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
 🔒 SECURITY 2025-09-30 01:45:09,473 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
 🔒 SECURITY 2025-09-30 01:54:37,879 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-30 02:33:28,382 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-30 02:41:34,003 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-30 03:10:47,767 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-30 03:15:17,483 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-30 03:32:19,537 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-30 03:40:29,719 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-09-30 04:08:55,727 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully

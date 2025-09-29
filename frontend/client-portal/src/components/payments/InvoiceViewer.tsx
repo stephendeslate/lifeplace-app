@@ -243,7 +243,7 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                   Invoice Items
                 </Typography>
-                <TableContainer component={Paper} sx={{ 
+                <TableContainer component={Paper} sx={{
                   backgroundColor: alpha('#fff', 0.05),
                   backdropFilter: 'blur(10px)',
                 }}>
@@ -327,6 +327,79 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                     </TableBody>
                   </Table>
                 </TableContainer>
+              </>
+            )}
+
+            {/* Tax Summary Section */}
+            {showLineItems && (parseFloat(invoice.tax_amount || '0') > 0 || parseFloat(invoice.subtotal || '0') > 0) && (
+              <>
+                <Divider sx={{ my: 2, borderColor: alpha('#fff', 0.1) }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                  Invoice Summary
+                </Typography>
+                <Box sx={{
+                  backgroundColor: alpha('#fff', 0.05),
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: 2,
+                  p: 3,
+                  border: `1px solid ${alpha('#fff', 0.1)}`,
+                }}>
+                  <Stack spacing={2}>
+                    {/* Subtotal */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body1" color="text.secondary">
+                        Subtotal
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {FinancialApi.formatAmount(invoice.subtotal || 0, invoice.currency)}
+                      </Typography>
+                    </Box>
+
+                    {/* Tax Amount */}
+                    {parseFloat(invoice.tax_amount || '0') > 0 && (
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body1" color="text.secondary">
+                          Tax Amount
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500, color: 'warning.main' }}>
+                          {FinancialApi.formatAmount(invoice.tax_amount, invoice.currency)}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {/* Tax Breakdown (if detailed tax info available) */}
+                    {Array.isArray(invoice.taxes) && invoice.taxes.length > 0 && (
+                      <>
+                        <Divider sx={{ borderColor: alpha('#fff', 0.1) }} />
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                          Tax Details:
+                        </Typography>
+                        {invoice.taxes.map((tax, index) => (
+                          <Box key={index} display="flex" justifyContent="space-between" alignItems="center" sx={{ pl: 2 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              {tax.tax_rate_details?.name || `Tax Rate ${index + 1}`} ({parseFloat(tax.tax_rate_details?.rate || '0')}%)
+                            </Typography>
+                            <Typography variant="body2">
+                              {FinancialApi.formatAmount(tax.tax_amount, invoice.currency)}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </>
+                    )}
+
+                    <Divider sx={{ borderColor: alpha('#fff', 0.2) }} />
+
+                    {/* Total Amount */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Total Amount
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                        {FinancialApi.formatAmount(invoice.total_amount, invoice.currency)}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
               </>
             )}
 

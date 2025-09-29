@@ -810,8 +810,20 @@ const FinancialPortal: React.FC = () => {
                             )}
                           </Box>
                           <Box textAlign="right">
+                            {/* Tax Breakdown */}
+                            {parseFloat(invoice.tax_amount || '0') > 0 && (
+                              <Stack spacing={0.5} sx={{ mb: 1 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  Subtotal: {FinancialApi.formatAmount(invoice.subtotal, invoice.currency)}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  Tax: {FinancialApi.formatAmount(invoice.tax_amount, invoice.currency)}
+                                </Typography>
+                                <Divider sx={{ my: 0.5, borderColor: alpha('#fff', 0.2) }} />
+                              </Stack>
+                            )}
                             <Typography variant="h5" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                              {FinancialApi.formatAmount(invoice.total_amount, invoice.currency)}
+                              Total: {FinancialApi.formatAmount(invoice.total_amount, invoice.currency)}
                             </Typography>
                             {(() => {
                               const displayStatus = getInvoiceDisplayStatus(invoice);
