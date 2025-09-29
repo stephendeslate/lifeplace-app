@@ -88,10 +88,6 @@ class InvoiceService:
                     total=Decimal(str(item_data.get('total', '0'))),
                     product_id=item_data.get('product')
                 )
-            
-            # Calculate totals
-            invoice.calculate_totals()
-            
             # Issue the invoice if status is ISSUED
             if invoice.status == 'ISSUED':
                 invoice.issue()
@@ -162,10 +158,6 @@ class InvoiceService:
                             total=Decimal(str(item_data.get('total', '0'))),
                             product_id=item_data.get('product')
                         )
-                
-                # Recalculate totals if line items changed
-                if line_items:
-                    invoice.calculate_totals()
             
             return invoice
     
@@ -231,7 +223,7 @@ class InvoiceService:
                 total=quote_item.total,
                 product=quote_item.product,
                 # Enhanced pricing fields for DRY compliance
-                item_type=getattr(quote_item, 'item_type', 'PACKAGE'),
+                item_type='ADDON' if quote_item.product and quote_item.product.type == 'PRODUCT' else 'PACKAGE',
                 base_unit_price=getattr(quote_item, 'base_unit_price', None),
                 excess_hours=getattr(quote_item, 'excess_hours', None),
                 excess_hour_price=getattr(quote_item, 'excess_hour_price', None),

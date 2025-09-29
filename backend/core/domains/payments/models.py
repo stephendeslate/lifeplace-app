@@ -1023,36 +1023,6 @@ class Invoice(BaseModel):
     def __str__(self):
         return f"Invoice {self.invoice_id}"
     
-    def calculate_totals(self):
-        """Calculate invoice totals from preserved line item data (DRY compliant)"""
-        from decimal import Decimal
-
-        if not self.line_items.exists():
-            # No line items
-            self.subtotal = Decimal('0.00')
-            self.tax_amount = Decimal('0.00')
-            self.total_amount = Decimal('0.00')
-        else:
-            # Simple totaling from preserved pricing data (no recalculation needed)
-            line_items = self.line_items.all()
-
-            # Calculate subtotal from line item totals (before tax)
-            self.subtotal = sum(
-                item.quantity * item.unit_price
-                for item in line_items
-            )
-
-            # Calculate tax amount from preserved tax rates
-            self.tax_amount = sum(
-                (item.quantity * item.unit_price) * (item.tax_rate / 100)
-                for item in line_items
-            )
-
-            # Total amount is subtotal + tax
-            self.total_amount = self.subtotal + self.tax_amount
-
-        self.save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
-    
     def mark_as_paid(self):
         """Mark invoice as paid"""
         self.status = 'PAID'
@@ -1089,50 +1059,6 @@ class Invoice(BaseModel):
             action_data={'invoice_id': self.id}
         )
     
-    @classmethod
-    def create_from_quote(cls, quote, due_days=14):
-        """Create an invoice from an accepted quote"""
-        if not quote or not quote.event:
-            return None
-        
-        # Create invoice
-        invoice = cls.objects.create(
-            invoice_id=f"INV-{timezone.now().strftime('%Y%m%d')}-{quote.event.id}-{quote.id}",
-            event=quote.event,
-            client=quote.event.client,
-            subtotal=quote.subtotal,
-            tax_amount=quote.tax_amount,
-            total_amount=quote.total_amount,
-            issue_date=timezone.now().date(),
-            due_date=timezone.now().date() + timedelta(days=due_days),
-            status='DRAFT',
-            notes=f"Invoice generated from quote #{quote.id}",
-            quote=quote
-        )
-        
-        # Create enhanced line items from quote with backward compatibility
-        for quote_item in quote.line_items.all():
-            # Try to infer item type from product type if available
-            item_type = 'PACKAGE'  # Default
-            if quote_item.product and hasattr(quote_item.product, 'type'):
-                item_type = 'ADDON' if quote_item.product.type == 'PRODUCT' else 'PACKAGE'
-
-            InvoiceLineItem.objects.create(
-                invoice=invoice,
-                description=quote_item.description,
-                quantity=quote_item.quantity,
-                unit_price=quote_item.unit_price,
-                base_unit_price=quote_item.unit_price,  # Use unit_price as base (backward compatibility)
-                tax_rate=quote_item.tax_rate,
-                total=quote_item.total,
-                product=quote_item.product,
-                item_type=item_type,
-                excess_hours=None,  # Will be populated when we have richer quote data
-                excess_hour_price=None,
-                excess_cost=Decimal('0.00')
-            )
-        
-        return invoice
 
 
 
@@ -1190,8 +1116,7 @@ class InvoiceLineItem(BaseModel):
 
         super().save(*args, **kwargs)
 
-        # Update invoice totals
-        self.invoice.calculate_totals()
+        # Note: Invoice totals are preserved from quote - no recalculation needed to maintain single source of truth
 
     def __str__(self):
         return f"{self.description} - {self.invoice.invoice_id}"
