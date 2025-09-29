@@ -220,7 +220,7 @@ class InvoiceService:
             quote=quote
         )
         
-        # Create line items from quote
+        # Create line items from quote - preserve all data including enhanced pricing fields
         for quote_item in quote.line_items.all():
             InvoiceLineItem.objects.create(
                 invoice=invoice,
@@ -228,7 +228,14 @@ class InvoiceService:
                 quantity=quote_item.quantity,
                 unit_price=quote_item.unit_price,
                 tax_rate=quote_item.tax_rate,
-                total=quote_item.total
+                total=quote_item.total,
+                product=quote_item.product,
+                # Enhanced pricing fields for DRY compliance
+                item_type=getattr(quote_item, 'item_type', 'PACKAGE'),
+                base_unit_price=getattr(quote_item, 'base_unit_price', None),
+                excess_hours=getattr(quote_item, 'excess_hours', None),
+                excess_hour_price=getattr(quote_item, 'excess_hour_price', None),
+                excess_cost=getattr(quote_item, 'excess_cost', Decimal('0.00'))
             )
 
         return invoice

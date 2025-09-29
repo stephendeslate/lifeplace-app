@@ -851,39 +851,6 @@ class BookingSessionService:
         
         return payment
     
-    @staticmethod
-    def _generate_quote_from_session(session, event):
-        """Generate a quote from booking session data"""
-        from core.domains.sales.services import QuoteService
-        from datetime import date, timedelta
-        from decimal import Decimal
-        
-        # Calculate pricing from session
-        total_amount = session.calculate_total_price()
-        
-        # Create quote data
-        quote_data = {
-            'event': event,
-            'status': 'DRAFT',
-            'total_amount': total_amount,
-            'subtotal': total_amount,  # Base calculation - will be recalculated by quote service
-            'valid_until': (date.today() + timedelta(days=30)),  # Valid for 30 days
-            'notes': f'Quote generated from booking session {session.session_id}',
-            'terms_and_conditions': 'Standard terms and conditions apply.',
-            'created_by': None  # System generated
-        }
-        
-        # Create the quote
-        from core.domains.sales.models import EventQuote
-        quote = EventQuote.objects.create(**quote_data)
-        
-        # Add line items from session booking data
-        BookingSessionService._add_line_items_to_quote(quote, session)
-        
-        # Recalculate totals after line items are added
-        quote.calculate_totals()
-        
-        return quote
     
     @staticmethod
     def _add_line_items_to_quote(quote, session):
@@ -1490,11 +1457,15 @@ class BookingSessionService:
         
         # Create line items from pricing breakdown
         BookingSessionService._create_quote_line_items_from_pricing_breakdown(quote, pricing_breakdown, session)
-        
-        # IMPORTANT: Recalculate totals after line items are created (includes tax calculation)
-        quote.calculate_totals()
 
-        logger.info(f"Quote {quote.id} final total after recalculation: ₱{quote.total_amount}")
+        # DRY APPROACH: Directly assign totals from centralized pricing service
+        # This preserves the correct calculations and prevents double taxation
+        quote.subtotal = pricing_breakdown.subtotal
+        quote.tax_amount = pricing_breakdown.tax_amount
+        quote.total_amount = pricing_breakdown.total_amount
+        quote.save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
+
+        logger.info(f"Quote {quote.id} final total from pricing breakdown: ₱{quote.total_amount} (subtotal: ₱{quote.subtotal}, tax: ₱{quote.tax_amount})")
 
         # Record quote activity based on status
         from core.domains.sales.models import QuoteActivity
@@ -1537,7 +1508,13 @@ class BookingSessionService:
                 tax_rate=pricing_item.tax_rate,
                 total=pricing_item.line_total,
                 product_id=pricing_item.product_id,
-                notes=f"Generated from booking session {session.session_id}"
+                notes=f"Generated from booking session {session.session_id}",
+                # Enhanced pricing fields for DRY compliance
+                item_type=getattr(pricing_item, 'item_type', 'PACKAGE'),
+                base_unit_price=getattr(pricing_item, 'base_unit_price', None),
+                excess_hours=getattr(pricing_item, 'excess_hours', None),
+                excess_hour_price=getattr(pricing_item, 'excess_hour_price', None),
+                excess_cost=getattr(pricing_item, 'excess_cost', Decimal('0.00'))
             )
             
             logger.info(

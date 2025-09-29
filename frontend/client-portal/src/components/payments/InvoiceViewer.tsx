@@ -26,16 +26,8 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
-import type { Invoice } from '../../types/financial.types';
+import type { Invoice, InvoiceLineItem } from '../../types/financial.types';
 import FinancialApi from '../../apis/financial.api';
-
-interface InvoiceLineItem {
-  description?: string;
-  name?: string;
-  quantity?: number;
-  unit_price?: number;
-  price?: number;
-}
 
 interface InvoiceViewerProps {
   invoice: Invoice;
@@ -259,39 +251,79 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Unit Price</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 600 }}>Type</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>Qty</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {lineItems.map((item: InvoiceLineItem, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <Typography variant="body2">
-                              {item.description || item.name}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body2">
-                              {item.quantity || 1}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body2">
-                              {FinancialApi.formatAmount(item.unit_price || item.price || 0, invoice.currency)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                              {FinancialApi.formatAmount(
-                                (item.quantity || 1) * (item.unit_price || item.price || 0), 
-                                invoice.currency
-                              )}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {lineItems.map((item: InvoiceLineItem, index: number) => {
+                        const basePrice = item.base_unit_price ? parseFloat(item.base_unit_price) : null;
+                        const unitPrice = parseFloat(item.unit_price);
+                        const hasExcessHours = item.excess_hours && item.excess_hours > 0;
+                        const excessCost = item.excess_cost ? parseFloat(item.excess_cost) : 0;
+
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>
+                              <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                  {item.description}
+                                </Typography>
+                                {hasExcessHours && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                    Base: {FinancialApi.formatAmount(basePrice || 0, invoice.currency)}
+                                    {item.excess_hours && item.excess_hour_price && (
+                                      <> + {item.excess_hours}h excess @ {FinancialApi.formatAmount(item.excess_hour_price, invoice.currency)}/h</>
+                                    )}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={item.item_type_display || item.item_type}
+                                size="small"
+                                variant="outlined"
+                                color={item.item_type === 'PACKAGE' ? 'primary' : 'secondary'}
+                                sx={{
+                                  backgroundColor: alpha(
+                                    item.item_type === 'PACKAGE'
+                                      ? theme.palette.primary.main
+                                      : theme.palette.secondary.main,
+                                    0.1
+                                  ),
+                                  fontSize: '0.7rem',
+                                  height: '20px'
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2">
+                                {item.quantity}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Box>
+                                <Typography variant="body2">
+                                  {FinancialApi.formatAmount(unitPrice, invoice.currency)}
+                                </Typography>
+                                {hasExcessHours && excessCost > 0 && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                    (+{FinancialApi.formatAmount(excessCost / item.quantity, invoice.currency)} excess)
+                                  </Typography>
+                                )}
+                              </Box>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                {FinancialApi.formatAmount(item.total, invoice.currency)}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </TableContainer>

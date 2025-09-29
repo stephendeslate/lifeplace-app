@@ -299,13 +299,18 @@ class PaymentNotificationSerializer(serializers.ModelSerializer):
 
 
 class InvoiceLineItemSerializer(serializers.ModelSerializer):
+    item_type_display = serializers.CharField(source='get_item_type_display', read_only=True)
+
     class Meta:
         model = InvoiceLineItem
         fields = [
             'id', 'invoice', 'description', 'quantity', 'unit_price',
             'tax_rate', 'total', 'product', 'created_at', 'updated_at',
+            # Enhanced pricing fields (DRY compliance)
+            'item_type', 'item_type_display', 'base_unit_price',
+            'excess_hours', 'excess_hour_price', 'excess_cost',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'item_type_display']
 
 
 class InvoiceTaxSerializer(serializers.ModelSerializer):
