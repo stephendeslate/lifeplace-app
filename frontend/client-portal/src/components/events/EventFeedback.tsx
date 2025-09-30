@@ -25,7 +25,7 @@ import {
   Star as StarIcon,
   Reply as ReplyIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useEvents } from '../../hooks/useEvents';
 import type { FeedbackSubmission } from '../../types/events.types';
 
@@ -48,6 +48,7 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
   eventStatus,
   showEmpty = true,
 }) => {
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const { 
     useEventFeedback, 
     useSubmitEventFeedback, 
@@ -239,7 +240,7 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
                     Your Feedback
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Submitted on {format(new Date(feedback.created_at), 'MMM dd, yyyy')}
+                    Submitted on {formatInTimeZone(feedback.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                   </Typography>
                 </Box>
                 {!feedback.response && (

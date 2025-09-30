@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatInTimeZone } from 'date-fns-tz';
 import {
   Box,
   Typography,
@@ -43,6 +44,7 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const [rejectionDialog, setRejectionDialog] = useState<{
     open: boolean;
     quoteId: number | null;
@@ -282,7 +284,7 @@ const Dashboard: React.FC = () => {
                               {task.title || task.description || 'Urgent Task'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {task.eventName} - Due: {new Date(task.due_date).toLocaleDateString()}
+                              {task.eventName} - Due: {formatInTimeZone(task.due_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                             </Typography>
                           </Box>
                           <Button
@@ -382,8 +384,10 @@ const Dashboard: React.FC = () => {
                               {dashboardData.eventStatus.nextUpcomingEvent.name}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                              {new Date(dashboardData.eventStatus.nextUpcomingEvent.start_date).toLocaleDateString()} -
-                              {new Date(dashboardData.eventStatus.nextUpcomingEvent.end_date).toLocaleDateString()}
+                              {formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                              {formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
+                                ` - ${formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}`
+                              }
                             </Typography>
                             <Chip
                               label={dashboardData.eventStatus.nextUpcomingEvent.status.replace('_', ' ')}
@@ -527,7 +531,7 @@ const Dashboard: React.FC = () => {
                                 <Typography variant="caption" color="text.secondary">
                                   {plan.progressPercentage}% complete
                                   {plan.nextDueDate && (
-                                    <> • Next payment: {new Date(plan.nextDueDate).toLocaleDateString()}</>
+                                    <> • Next payment: {formatInTimeZone(plan.nextDueDate, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}</>
                                   )}
                                 </Typography>
                               </Box>
@@ -602,7 +606,7 @@ const Dashboard: React.FC = () => {
                               {message.subject || 'No Subject'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {new Date(message.created_at).toLocaleDateString()}
+                              {formatInTimeZone(message.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                             </Typography>
                           </Box>
                           <Chip

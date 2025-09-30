@@ -1,6 +1,9 @@
 // frontend/client-portal/src/utils/eventHelpers.ts
 
+import { formatInTimeZone } from 'date-fns-tz';
 import type { EventStatus, PaymentStatus } from '../types/events.types';
+
+const PHILIPPINE_TIMEZONE = 'Asia/Manila';
 
 export const getStatusColor = (status: EventStatus | PaymentStatus): string => {
   const colors: Record<string, string> = {
@@ -87,21 +90,24 @@ export const isEventToday = (eventDate: string): boolean => {
 };
 
 export const formatEventDateRange = (startDate: string, endDate?: string): string => {
-  const start = new Date(startDate);
-  
+  const startFormatted = formatInTimeZone(startDate, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy');
+
   if (!endDate) {
-    return start.toLocaleDateString();
+    return startFormatted;
   }
-  
-  const end = new Date(endDate);
-  
+
+  // Check if same day by comparing date strings
+  const startDateOnly = formatInTimeZone(startDate, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd');
+  const endDateOnly = formatInTimeZone(endDate, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd');
+
   // Same day
-  if (start.toDateString() === end.toDateString()) {
-    return start.toLocaleDateString();
+  if (startDateOnly === endDateOnly) {
+    return startFormatted;
   }
-  
+
   // Different days
-  return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+  const endFormatted = formatInTimeZone(endDate, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy');
+  return `${startFormatted} - ${endFormatted}`;
 };
 
 // Validation helpers for forms

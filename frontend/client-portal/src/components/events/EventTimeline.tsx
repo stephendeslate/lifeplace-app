@@ -27,6 +27,7 @@ import {
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
+import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import { useEvents } from '../../hooks/useEvents';
 
 interface EventTimelineProps {
@@ -35,11 +36,12 @@ interface EventTimelineProps {
   showEmpty?: boolean;
 }
 
-const EventTimeline: React.FC<EventTimelineProps> = ({ 
-  eventId, 
+const EventTimeline: React.FC<EventTimelineProps> = ({
+  eventId,
   maxItems,
-  showEmpty = true 
+  showEmpty = true
 }) => {
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const { useEventTimeline } = useEvents();
   const { data: timeline, isLoading, error } = useEventTimeline(eventId);
 
@@ -192,12 +194,12 @@ const EventTimeline: React.FC<EventTimelineProps> = ({
                       {item.actor_name}
                     </Typography>
                     
-                    <Typography 
-                      variant="caption" 
+                    <Typography
+                      variant="caption"
                       color="text.secondary"
-                      title={new Date(item.created_at).toLocaleString()}
+                      title={formatInTimeZone(item.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy h:mm a')}
                     >
-                      {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+                      {formatDistanceToNow(toZonedTime(item.created_at, PHILIPPINE_TIMEZONE), { addSuffix: true })}
                     </Typography>
                   </Stack>
                 </Stack>
