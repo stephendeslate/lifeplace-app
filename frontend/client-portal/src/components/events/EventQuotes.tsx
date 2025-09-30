@@ -41,6 +41,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { format, isBefore } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useEventQuotes, useQuoteActions } from '../../hooks/useEventQuotes';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import type { EventQuote, QuoteRejectionData } from '../../types/quotes.types';
@@ -70,6 +71,7 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
   isDownloading,
   formatAmount,
 }) => {
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -168,10 +170,10 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
                   )}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Created: {format(new Date(quote.created_at), 'MMM dd, yyyy')}
+                  Created: {formatInTimeZone(quote.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                   {quote.sent_at && (
                     <>
-                      {' • '}Sent: {format(new Date(quote.sent_at), 'MMM dd, yyyy')}
+                      {' • '}Sent: {formatInTimeZone(quote.sent_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                     </>
                   )}
                 </Typography>

@@ -74,6 +74,8 @@ class PaymentGatewayService:
         
         # Get payment method and gateway
         payment_method_id = payment_data.get('payment_method')
+        gateway = None
+
         if payment_method_id:
             try:
                 payment_method = PaymentMethod.objects.get(pk=payment_method_id)
@@ -81,16 +83,28 @@ class PaymentGatewayService:
                 payment.save(update_fields=['payment_method'])
             except PaymentMethod.DoesNotExist:
                 raise PaymentMethodNotFoundException(f"Payment method with ID {payment_method_id} not found")
-        
+
             # Get the gateway from the payment method
             gateway = payment_method.gateway
+
+            # If payment method doesn't have a gateway, try to infer it
+            if not gateway:
+                logger.warning(f"Payment method {payment_method_id} has no gateway configured. Attempting to infer gateway.")
+
+                # For saved payment methods with token_reference, assume Stripe
+                if payment_method.token_reference:
+                    gateway = PaymentGateway.objects.filter(code='stripe', is_active=True).first()
+                    if gateway:
+                        logger.info(f"Inferred Stripe gateway for payment method {payment_method_id} based on token_reference")
+                    else:
+                        logger.error("No active Stripe gateway found for payment method with token_reference")
         else:
             # Get gateway directly from payment data
             gateway_id = payment_data.get('gateway_id')
             logger.info(f"process_payment: gateway_id={gateway_id} (type: {type(gateway_id)})")
             if not gateway_id:
                 raise PaymentGatewayException("No payment gateway or method specified")
-            
+
             try:
                 # CRITICAL FIX: Ensure gateway_id is integer for database lookup
                 if isinstance(gateway_id, str) and gateway_id.isdigit():
@@ -105,12 +119,12 @@ class PaymentGatewayService:
                 else:
                     # gateway_id should be integer at this point
                     pass
-                
+
                 if not isinstance(gateway_id, str) or gateway_id.isdigit():
                     gateway = PaymentGateway.objects.get(id=int(gateway_id), is_active=True)
             except PaymentGateway.DoesNotExist:
                 raise PaymentGatewayException(f"Payment gateway with ID {gateway_id} not found or inactive")
-        
+
         if not gateway:
             raise PaymentGatewayException("No payment gateway configured")
         

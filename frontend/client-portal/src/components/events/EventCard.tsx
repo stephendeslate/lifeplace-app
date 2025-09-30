@@ -16,7 +16,7 @@ import {
   CalendarToday as CalendarIcon,
   ArrowForward as ArrowIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import type { Event } from '../../types/events.types';
 import EventStatusBadge from './EventStatusBadge';
 import EventCountdown from './EventCountdown';
@@ -30,15 +30,16 @@ interface EventCardProps {
 
 const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }) => {
   const theme = useTheme();
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
 
   if (loading) {
     return (
-      <GlassCard 
-        variant="light" 
+      <GlassCard
+        variant="light"
         intensity="medium"
-        sx={{ 
-          height: '100%', 
-          display: 'flex', 
+        sx={{
+          height: '100%',
+          display: 'flex',
           flexDirection: 'column',
           border: `1px solid ${alpha('#fff', 0.1)}`,
         }}
@@ -53,9 +54,6 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
       </GlassCard>
     );
   }
-
-  const eventDate = event.start_date ? new Date(event.start_date) : null;
-  const endDate = event.end_date ? new Date(event.end_date) : null;
 
   return (
     <GlassCard 
@@ -134,13 +132,13 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
           </Stack>
 
           <Box>
-            {eventDate && (
+            {event.start_date && (
               <Stack direction="row" spacing={1} alignItems="center" mb={1}>
                 <CalendarIcon fontSize="small" color="action" />
                 <Typography variant="body2" color="text.secondary">
-                  {format(eventDate, 'MMM dd, yyyy')}
-                  {endDate && eventDate.getTime() !== endDate.getTime() && 
-                    ` - ${format(endDate, 'MMM dd, yyyy')}`
+                  {formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                  {event.end_date && formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
+                    ` - ${formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}`
                   }
                 </Typography>
               </Stack>

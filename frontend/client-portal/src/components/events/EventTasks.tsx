@@ -36,6 +36,7 @@ import {
   PlayArrow as StartIcon,
 } from '@mui/icons-material';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
+import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import { useEvents } from '../../hooks/useEvents';
 import type { EventTask, TaskStatus, TaskPriority, TaskUpdate } from '../../types/events.types';
 
@@ -46,12 +47,13 @@ interface EventTasksProps {
   maxItems?: number;
 }
 
-const EventTasks: React.FC<EventTasksProps> = ({ 
-  eventId, 
-  loading: externalLoading = false, 
+const EventTasks: React.FC<EventTasksProps> = ({
+  eventId,
+  loading: externalLoading = false,
   showEmpty = true,
-  maxItems 
+  maxItems
 }) => {
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const { useEventTasks, useUpdateEventTask } = useEvents();
   const { data: tasks, isLoading, error, refetch } = useEventTasks(eventId);
   const updateTaskMutation = useUpdateEventTask();
@@ -148,15 +150,19 @@ const EventTasks: React.FC<EventTasksProps> = ({
     if (!task.due_date || task.status === 'COMPLETED' || task.status === 'CANCELLED') {
       return false;
     }
-    return isBefore(new Date(task.due_date), new Date());
+    const dueDate = toZonedTime(task.due_date, PHILIPPINE_TIMEZONE);
+    const now = toZonedTime(new Date(), PHILIPPINE_TIMEZONE);
+    return isBefore(dueDate, now);
   };
 
   const isTaskDueSoon = (task: EventTask): boolean => {
     if (!task.due_date || task.status === 'COMPLETED' || task.status === 'CANCELLED') {
       return false;
     }
-    const threeDaysFromNow = addDays(new Date(), 3);
-    return isBefore(new Date(task.due_date), threeDaysFromNow) && isAfter(new Date(task.due_date), new Date());
+    const dueDate = toZonedTime(task.due_date, PHILIPPINE_TIMEZONE);
+    const now = toZonedTime(new Date(), PHILIPPINE_TIMEZONE);
+    const threeDaysFromNow = addDays(now, 3);
+    return isBefore(dueDate, threeDaysFromNow) && isAfter(dueDate, now);
   };
 
   if (loading) {
@@ -267,12 +273,12 @@ const EventTasks: React.FC<EventTasksProps> = ({
                   {task.due_date && (
                     <Stack direction="row" alignItems="center" spacing={0.5}>
                       <ScheduleIcon fontSize="small" color="action" />
-                      <Typography 
-                        variant="caption" 
+                      <Typography
+                        variant="caption"
                         color={isTaskOverdue(task) ? 'error' : 'text.secondary'}
                         sx={{ fontWeight: isTaskOverdue(task) ? 600 : 400 }}
                       >
-                        Due: {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                        Due: {formatInTimeZone(task.due_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                       </Typography>
                     </Stack>
                   )}

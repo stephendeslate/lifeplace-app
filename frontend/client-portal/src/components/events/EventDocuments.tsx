@@ -33,7 +33,7 @@ import {
   CloudUpload as UploadIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useEvents } from '../../hooks/useEvents';
 import FileUpload from './FileUpload';
 import type { EventFile } from '../../types/events.types';
@@ -43,10 +43,11 @@ interface EventDocumentsProps {
   showEmpty?: boolean;
 }
 
-const EventDocuments: React.FC<EventDocumentsProps> = ({ 
-  eventId, 
-  showEmpty = true 
+const EventDocuments: React.FC<EventDocumentsProps> = ({
+  eventId,
+  showEmpty = true
 }) => {
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const { useEventDocuments, useDownloadFile } = useEvents();
   const { data: documents, isLoading, error, refetch } = useEventDocuments(eventId);
   const downloadMutation = useDownloadFile();
@@ -217,7 +218,7 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
                     {formatFileSize(document.size)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {format(new Date(document.created_at), 'MMM dd, yyyy')}
+                    {formatInTimeZone(document.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                   </Typography>
                   {document.file_type && (
                     <Chip 

@@ -23,8 +23,10 @@ def handle_quote_acceptance(sender, instance, created, **kwargs):
             logger.info(f"Creating invoice for accepted quote {instance.id}")
             from core.domains.payments.services.invoice_service import InvoiceService
             invoice = InvoiceService.create_from_quote(instance)
-            
-            logger.info(f"Successfully created invoice {invoice.invoice_id} from quote {instance.id}")
+
+            # Issue the invoice so it can be paid by the client
+            invoice.issue()
+            logger.info(f"Successfully created and issued invoice {invoice.invoice_id} from quote {instance.id}")
             
             # Add to event timeline
             from core.domains.events.models import EventTimeline

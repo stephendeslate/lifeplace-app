@@ -41,6 +41,7 @@ import {
   RequestQuote as RequestQuoteIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
 import { useEventQuotes } from '../../hooks/useEventQuotes';
 import {
@@ -186,8 +187,7 @@ const EventDetail: React.FC = () => {
     );
   }
 
-  const eventDate = event.start_date ? new Date(event.start_date) : null;
-  const endDate = event.end_date ? new Date(event.end_date) : null;
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
@@ -234,7 +234,7 @@ const EventDetail: React.FC = () => {
                 {event.name}
               </Typography>
             </Stack>
-            
+
             <Typography variant="h6" color="text.secondary" gutterBottom>
               {event.event_type_name}
             </Typography>
@@ -266,7 +266,7 @@ const EventDetail: React.FC = () => {
             </Stack>
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-              {eventDate && (
+              {event.start_date && (
                 <Box sx={(theme) => ({
                   flexGrow: 0,
                   flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
@@ -274,9 +274,9 @@ const EventDetail: React.FC = () => {
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CalendarIcon fontSize="small" color="action" />
                     <Typography variant="body1">
-                      {format(eventDate, 'EEEE, MMMM dd, yyyy')}
-                      {endDate && eventDate.getTime() !== endDate.getTime() && 
-                        ` - ${format(endDate, 'MMMM dd, yyyy')}`
+                      {formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'EEEE, MMMM dd, yyyy')}
+                      {event.end_date && formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
+                        ` - ${formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'MMMM dd, yyyy')}`
                       }
                     </Typography>
                   </Stack>
