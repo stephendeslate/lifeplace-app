@@ -425,30 +425,14 @@ class BookingSessionService:
                 logger.info(f"Creating quote from booking session for event {event.id}")
                 quote = BookingSessionService.create_quote_from_booking_session(session, event, completion_type)
 
-                # Create invoice from the accepted quote
-                logger.info(f"Creating invoice from quote {quote.id}")
-                from core.domains.payments.services.invoice_service import InvoiceService
-                invoice = InvoiceService.create_from_quote(quote)
-                logger.info(f"Created invoice {invoice.invoice_id} from quote")
-
-                # FIX: Synchronize invoice total with correct event pricing
-                if event.total_price and event.total_price > 0:
-                    original_total = invoice.total_amount
-                    invoice.total_amount = event.total_price
-                    invoice.save(update_fields=['total_amount'])
-                    logger.info(f"Synchronized invoice total: {invoice.total_amount} (was {original_total}) to match event.total_price")
-                else:
-                    logger.warning(f"Event total_price is invalid: {event.total_price}, keeping invoice.total_amount: {invoice.total_amount}")
-
-                # FIXED: Handle quote requests FIRST to avoid payment processing
+                # FIXED: Only create invoice when appropriate based on completion_type
+                # For quote requests, invoice will be created later when quote is accepted (via signal)
 
                 if completion_type == 'quote':
                     logger.info(f"Processing quote completion for session {session.session_id}")
-                    # For quote requests, issue the invoice but don't process payment
-                    invoice.issue()  # Changes status from DRAFT to ISSUED
-
+                    # For quote requests, do NOT create invoice yet - it will be created when quote is accepted
                     # Event stays as LEAD status for quote requests
-                    logger.info(f"Quote request completed - event {event.id} remains as LEAD, invoice {invoice.invoice_id} issued")
+                    logger.info(f"Quote request completed - event {event.id} remains as LEAD, no invoice created yet")
 
                     # Send quote notification
                     try:
@@ -459,6 +443,22 @@ class BookingSessionService:
 
                 elif completion_type == 'payment':
                     logger.info(f"Processing payment completion for session {session.session_id}")
+
+                    # Create invoice from the accepted quote (quote status is ACCEPTED for payment completions)
+                    logger.info(f"Creating invoice from accepted quote {quote.id}")
+                    from core.domains.payments.services.invoice_service import InvoiceService
+                    invoice = InvoiceService.create_from_quote(quote)
+                    logger.info(f"Created invoice {invoice.invoice_id} from quote")
+
+                    # FIX: Synchronize invoice total with correct event pricing
+                    if event.total_price and event.total_price > 0:
+                        original_total = invoice.total_amount
+                        invoice.total_amount = event.total_price
+                        invoice.save(update_fields=['total_amount'])
+                        logger.info(f"Synchronized invoice total: {invoice.total_amount} (was {original_total}) to match event.total_price")
+                    else:
+                        logger.warning(f"Event total_price is invalid: {event.total_price}, keeping invoice.total_amount: {invoice.total_amount}")
+
                     # Handle payment completion - process payment against invoice
                     payment_data = BookingSessionService._extract_payment_data(session)
 
@@ -496,10 +496,12 @@ class BookingSessionService:
                         raise EventCreationFailed("Payment processing failed")
 
                 else:
-                    # Default case: issue invoice but don't process payment immediately
+                    # Default case: create invoice and issue it but don't process payment immediately
                     logger.info(f"Processing default completion type for session {session.session_id}")
+                    from core.domains.payments.services.invoice_service import InvoiceService
+                    invoice = InvoiceService.create_from_quote(quote)
                     invoice.issue()  # Changes status from DRAFT to ISSUED
-                    logger.info(f"Invoice {invoice.invoice_id} issued for later payment")
+                    logger.info(f"Invoice {invoice.invoice_id} created and issued for later payment")
                 
                 # FINALIZE: Link the created event to the session
                 session.created_event = event
