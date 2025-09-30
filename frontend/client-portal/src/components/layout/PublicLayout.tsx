@@ -69,7 +69,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           display: 'flex',
           flexDirection: 'column',
           pt: { xs: '120px', md: '140px' }, // Account for fixed header height + generous breathing room
-          pb: { xs: '60px', md: '80px' }, // Add generous bottom spacing
+          pb: 0, // No bottom spacing - let sections control their own spacing
           ...(fullHeight && {
             minHeight: '100vh',
           }),

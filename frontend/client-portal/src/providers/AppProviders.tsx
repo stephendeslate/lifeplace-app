@@ -8,7 +8,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-import { createClientTheme, injectDesignTokens } from '@shared/design-system';
+import { injectDesignTokens } from '@shared/design-system';
+import { theme as clientPortalTheme } from '../utils/theme';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ContractsProvider } from '../contexts/ContractsContext';
 import { ToastProvider } from '../contexts/ToastContext';
@@ -56,10 +57,9 @@ const CoreApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
-  // Create theme instance with light mode
-  // TODO: Add theme switching capability later if needed
-  const theme = React.useMemo(() => createClientTheme('light'), []);
-  
+  // Use client-portal's custom nature-inspired green theme
+  const theme = React.useMemo(() => clientPortalTheme, []);
+
   // Inject design tokens on mount
   React.useEffect(() => {
     injectDesignTokens();

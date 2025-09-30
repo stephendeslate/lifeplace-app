@@ -31,9 +31,9 @@ const palette = {
     contrastText: '#ffffff',
   },
   info: {
-    main: '#0277bd',
-    light: '#03a9f4',
-    dark: '#01579b',
+    main: tokens.color.base.forest[600], // Deep forest green (matching primary)
+    light: tokens.color.base.forest[400],
+    dark: tokens.color.base.forest[800],
     contrastText: '#ffffff',
   },
   success: {
