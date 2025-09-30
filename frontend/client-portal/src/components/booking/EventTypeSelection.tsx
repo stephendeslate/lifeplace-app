@@ -69,14 +69,14 @@ const getEventTypeFeatures = (eventType: EventType): EventTypeFeature[] => {
 
 const getEventTypeColor = (eventType: EventType) => {
   const colors = [
-    '#1976d2', // Blue
-    '#2e7d32', // Green
+    '#2d5016', // Deep Forest Green
+    '#5a7c47', // Forest Green
     '#ed6c02', // Orange
     '#9c27b0', // Purple
     '#d32f2f', // Red
-    '#0288d1', // Light Blue
+    '#7a9469', // Light Forest Green
   ];
-  
+
   return colors[eventType.id % colors.length];
 };
 

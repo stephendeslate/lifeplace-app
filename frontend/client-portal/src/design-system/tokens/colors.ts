@@ -78,10 +78,10 @@ export const semanticColors = {
     glass: 'rgba(244, 67, 54, 0.1)',
   },
   info: {
-    light: '#64b5f6',
-    main: '#2196f3',
-    dark: '#1976d2',
-    glass: 'rgba(33, 150, 243, 0.1)',
+    light: '#7a9469',
+    main: '#5a7c47',
+    dark: '#2d5016',
+    glass: 'rgba(90, 124, 71, 0.1)',
   },
 };
 
