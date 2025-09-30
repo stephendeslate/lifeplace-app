@@ -108,21 +108,61 @@ class Event(BaseModel):
         ]
 
     def update_payment_status(self):
-        """Update payment status based on completed payments"""
+        """Update payment status based on invoices and completed payments"""
         from decimal import Decimal
-        payments = self.payments.filter(status='COMPLETED')
-        self.total_amount_paid = payments.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
-        
-        # Handle case where total_amount_due is None
-        total_due = self.total_amount_due or Decimal('0')
-        
-        if self.total_amount_paid >= total_due and total_due > 0:
+
+        # Get all issued/paid invoices for this event
+        invoices = self.invoices.filter(status__in=['ISSUED', 'PAID'])
+
+        # Calculate total amount due from invoices (source of truth)
+        total_invoiced = invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+
+        # Calculate total amount paid from completed payments
+        completed_payments = self.payments.filter(status='COMPLETED')
+        total_paid = completed_payments.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+
+        # Update the total_amount_paid field (for backwards compatibility)
+        self.total_amount_paid = total_paid
+
+        # Update payment status based on invoice-payment relationship
+        if total_invoiced == 0:
+            # No invoices yet - treat as unpaid
+            self.payment_status = 'UNPAID'
+        elif total_paid >= total_invoiced:
+            # Fully paid - amount paid covers all invoiced amounts
             self.payment_status = 'PAID'
-        elif self.total_amount_paid > 0:
+        elif total_paid > 0:
+            # Partially paid - some payment received but not covering full invoice total
             self.payment_status = 'PARTIALLY_PAID'
         else:
+            # No payments received for issued invoices
             self.payment_status = 'UNPAID'
+
+        # Sync total_amount_due with invoice totals (for backwards compatibility)
+        if total_invoiced > 0:
+            self.total_amount_due = total_invoiced
+
         self.save()
+
+    @property
+    def computed_total_amount_due(self):
+        """
+        Computed property that calculates total amount due from invoices.
+        This is the new source of truth, replacing the manual total_amount_due field.
+        """
+        from decimal import Decimal
+        invoices = self.invoices.filter(status__in=['ISSUED', 'PAID'])
+        return invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+
+    @property
+    def computed_total_amount_paid(self):
+        """
+        Computed property that calculates total amount paid from completed payments.
+        This replaces reliance on the cached total_amount_paid field.
+        """
+        from decimal import Decimal
+        completed_payments = self.payments.filter(status='COMPLETED')
+        return completed_payments.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
 
     @property
     def notes(self):
