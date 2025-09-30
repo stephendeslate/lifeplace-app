@@ -394,9 +394,11 @@ class PaymentEventHandlers:
             # Only trigger workflow for completed payments
             if hasattr(payment.event, 'workflow_template') and payment.event.workflow_template:
                 from core.domains.workflows.models import WorkflowTrigger
+                from core.domains.workflows.engine import WorkflowEngine
+                from django.utils import timezone
 
                 # Create workflow trigger
-                WorkflowTrigger.objects.create(
+                trigger = WorkflowTrigger.objects.create(
                     event=payment.event,
                     stage=payment.event.current_stage,
                     trigger_type='PAYMENT_RECEIVED',
@@ -409,16 +411,26 @@ class PaymentEventHandlers:
                     }
                 )
 
-                # Check for stages triggered by payment
-                next_stages = payment.event.workflow_template.stages.filter(
-                    trigger_on_payment_received=True
-                ).order_by('stage', 'order')
+                # IMMEDIATE SYNCHRONOUS PROCESSING: Process the trigger right away
+                logger.info(f"Processing PAYMENT_RECEIVED trigger {trigger.id} for event {payment.event.id}")
 
-                if next_stages.exists():
-                    next_stage = next_stages.first()
-                    # Check if the event meets all criteria for this stage
-                    if next_stage.check_advancement_criteria(payment.event):
-                        next_stage.apply_to_event(payment.event)
+                progressed = WorkflowEngine.progress_workflow(
+                    event=payment.event,
+                    trigger_type='PAYMENT_RECEIVED',
+                    data={
+                        'trigger_id': trigger.id,
+                        'payment_data': trigger.result_data
+                    }
+                )
+
+                if progressed:
+                    # Mark trigger as processed
+                    trigger.processed = True
+                    trigger.processed_at = timezone.now()
+                    trigger.save(update_fields=['processed', 'processed_at'])
+                    logger.info(f"✓ Trigger {trigger.id} processed successfully - workflow progressed")
+                else:
+                    logger.info(f"✗ Trigger {trigger.id} - no workflow progression occurred")
 
         except Exception as e:
             logger.warning(f"Failed to trigger workflow advancement: {e}")

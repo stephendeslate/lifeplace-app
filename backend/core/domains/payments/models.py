@@ -178,12 +178,16 @@ class Payment(BaseModel):
         # Update event payment status
         self.event.update_payment_status()
 
-        # Update workflow if applicable - trigger PAYMENT_RECEIVED event
+        # Update workflow if applicable - trigger PAYMENT_RECEIVED event using enhanced system
         if self.status == 'COMPLETED' and hasattr(self.event, 'workflow_template') and self.event.workflow_template:
             from core.domains.workflows.models import WorkflowTrigger
+            from core.domains.workflows.engine import WorkflowEngine
+            from django.utils import timezone
+            import logging
+            logger = logging.getLogger(__name__)
 
             # Create the trigger record
-            WorkflowTrigger.objects.create(
+            trigger = WorkflowTrigger.objects.create(
                 event=self.event,
                 stage=self.event.current_stage,
                 trigger_type='PAYMENT_RECEIVED',
@@ -195,16 +199,26 @@ class Payment(BaseModel):
                 }
             )
 
-            # Check for stages triggered by payment
-            next_stages = self.event.workflow_template.stages.filter(
-                trigger_on_payment_received=True
-            ).order_by('stage', 'order')
+            # ENHANCED: Use WorkflowEngine for consistent workflow progression
+            logger.info(f"Processing PAYMENT_RECEIVED trigger {trigger.id} for event {self.event.id} (Payment model)")
 
-            if next_stages.exists():
-                next_stage = next_stages.first()
-                # Check if the event meets all criteria for this stage
-                if next_stage.check_advancement_criteria(self.event):
-                    next_stage.apply_to_event(self.event)
+            progressed = WorkflowEngine.progress_workflow(
+                event=self.event,
+                trigger_type='PAYMENT_RECEIVED',
+                data={
+                    'trigger_id': trigger.id,
+                    'payment_data': trigger.result_data
+                }
+            )
+
+            if progressed:
+                # Mark trigger as processed
+                trigger.processed = True
+                trigger.processed_at = timezone.now()
+                trigger.save(update_fields=['processed', 'processed_at'])
+                logger.info(f"✓ Trigger {trigger.id} processed successfully - workflow progressed (Payment model)")
+            else:
+                logger.info(f"✗ Trigger {trigger.id} - no workflow progression occurred (Payment model)")
 
     def complete_payment(self):
         """Mark payment as complete and handle related processes"""

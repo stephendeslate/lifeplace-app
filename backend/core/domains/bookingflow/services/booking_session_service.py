@@ -258,14 +258,19 @@ class BookingSessionService:
                             # Create event immediately with completion safeguard
                             logger.info(f"🔥 IMMEDIATE_CREATION proceeding for session {session.session_id}")
                             event = BookingSessionService._create_event_from_session(session)
+
+                            # CRITICAL FIX: Link the event to session immediately within transaction
                             session.created_event = event
 
                             # IMPORTANT: Mark session as completed to prevent duplicate completion
                             session.is_completed = True
                             session.completed_at = timezone.now()
 
+                            # CRITICAL FIX: Save the session with the linked event immediately
+                            session.save(update_fields=['created_event', 'is_completed', 'completed_at'])
+
                             print(f"DEBUG: Event created immediately: {event.id}")
-                            logger.info(f"🔥 IMMEDIATE_CREATION completed for session {session.session_id}, event {event.id}")
+                            logger.info(f"🔥 IMMEDIATE_CREATION completed for session {session.session_id}, event {event.id}, linked properly")
                         except Exception as e:
                             print(f"DEBUG: Failed to create event immediately: {str(e)}")
                             logger.error(f"Failed to create event immediately for session {session.session_id}: {str(e)}")
@@ -326,6 +331,36 @@ class BookingSessionService:
             # ENHANCED DUPLICATE PROTECTION: Check completion status with detailed logging
             if session.is_completed:
                 logger.warning(f"🔥 DUPLICATE COMPLETION ATTEMPT BLOCKED: session_id={session_id}, "f"completion_type='{completion_type}', original_completed_at={session.completed_at}, "f"existing_event={session.created_event.id if session.created_event else 'None'}")
+
+                # CRITICAL FIX: Check if event exists but link is missing (repair scenario)
+                if not session.created_event:
+                    # Try to find orphaned event created from this session
+                    potential_event = None
+                    completion_result = session.booking_data.get('booking_completion_result', {})
+
+                    # Also check in step data for booking_completion_result
+                    if not completion_result:
+                        for step_key, step_data in session.booking_data.items():
+                            if isinstance(step_data, dict) and 'booking_completion_result' in step_data:
+                                completion_result = step_data['booking_completion_result']
+                                break
+
+                    if completion_result and 'event' in completion_result:
+                        event_id = completion_result['event'].get('id')
+                        if event_id:
+                            try:
+                                from core.domains.events.models import Event
+                                potential_event = Event.objects.get(id=event_id)
+                                logger.info(f"🔧 LINK REPAIR: Found orphaned event {event_id} for session {session_id}")
+
+                                # Repair the link
+                                session.created_event = potential_event
+                                session.save(update_fields=['created_event'])
+                                logger.info(f"🔧 LINK REPAIR: Successfully linked session {session_id} to event {event_id}")
+
+                                return potential_event
+                            except Event.DoesNotExist:
+                                logger.warning(f"🔧 LINK REPAIR FAILED: Event {event_id} referenced in session data no longer exists")
 
                 # Log which endpoint/path triggered this duplicate attempt
                 import traceback
@@ -1058,8 +1093,9 @@ class BookingSessionService:
         logger.info(f"PREPARE_EVENT_DATA: extracted {len(event_products)} event products")
 
         event_data['total_price'] = total_price
+        # NOTE: total_amount_due is now automatically computed from invoices, no manual setting needed
         event_data['event_products'] = event_products
-        logger.info(f"PREPARE_EVENT_DATA: setting event_data total_price to ₱{total_price}")
+        logger.info(f"PREPARE_EVENT_DATA: setting event_data total_price to ₱{total_price} (total_amount_due computed from invoices)")
         
         # CRITICAL VALIDATION: Only allow known Event model fields
         # NOTE: 'id' is explicitly excluded since Django auto-generates it

@@ -130,17 +130,29 @@ class WorkflowEngine:
                 template=event.workflow_template,
                 stage='PRODUCTION'
             ).order_by('order')
-            
+
             if next_stages.exists():
                 return [next_stages.first()]
-                
+
+        elif current_stage.stage == 'LEAD' and trigger_type == 'PAYMENT_RECEIVED':
+            # CRITICAL FIX: Move from LEAD to PRODUCTION when payment is received
+            # Check if we have a PRODUCTION stage that triggers on payment
+            next_stages = WorkflowStage.objects.filter(
+                template=event.workflow_template,
+                stage='PRODUCTION',
+                trigger_on_payment_received=True
+            ).order_by('order')
+
+            if next_stages.exists():
+                return [next_stages.first()]
+
         elif current_stage.stage == 'PRODUCTION' and trigger_type == 'STATUS_CHANGE' and event.status == 'COMPLETED':
             # Move from PRODUCTION to POST_PRODUCTION when status becomes COMPLETED
             next_stages = WorkflowStage.objects.filter(
                 template=event.workflow_template,
                 stage='POST_PRODUCTION'
             ).order_by('order')
-            
+
             if next_stages.exists():
                 return [next_stages.first()]
         
