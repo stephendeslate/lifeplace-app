@@ -22,12 +22,16 @@ from .models import (
 
 
 class PaymentSettingsSerializer(serializers.ModelSerializer):
-    """Serializer for PaymentSettings with validation"""
+    """Serializer for PaymentSettings with validation
+
+    CONSOLIDATED: Now includes refund policy and payment gateway defaults
+    """
 
     class Meta:
         model = PaymentSettings
         fields = [
             'id',
+            # Payment plan settings
             'balance_due_days',
             'grace_period_days',
             'default_installments',
@@ -35,9 +39,20 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
             'late_fee_enabled',
             'default_late_fee_amount',
             'default_deposit_percentage',
+            # Currency settings
             'default_currency',
+            # Auto retry settings
             'auto_payment_retry_attempts',
             'auto_payment_retry_delay_days',
+            # CONSOLIDATED: Refund policy settings
+            'allow_refunds',
+            'refund_deadline_hours',
+            'refund_percentage',
+            'refund_policy_text',
+            # CONSOLIDATED: Payment gateway defaults
+            'default_payment_gateways',
+            'primary_payment_gateway',
+            # Timestamps
             'created_at',
             'updated_at',
         ]
@@ -48,6 +63,14 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
         if not (0 <= value <= 100):
             raise serializers.ValidationError(
                 "Default deposit percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_refund_percentage(self, value):
+        """Validate refund percentage is between 0 and 100"""
+        if not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Refund percentage must be between 0 and 100."
             )
         return value
 
@@ -236,6 +259,45 @@ class PublicPaymentGatewaySerializer(serializers.ModelSerializer):
             data['public_config'] = public_config
 
         return data
+
+
+class PublicPaymentSettingsSerializer(serializers.ModelSerializer):
+    """
+    Public serializer for payment settings - only safe fields exposed.
+
+    Used for client-facing booking flows and guest checkout.
+    Excludes internal/admin-only fields like grace periods, late fees, and retry settings.
+    """
+
+    class Meta:
+        model = PaymentSettings
+        fields = [
+            'id',
+            # Client-facing payment configuration
+            'balance_due_days',
+            'default_deposit_percentage',
+            'default_currency',
+            # Refund policy (public transparency)
+            'allow_refunds',
+            'refund_deadline_hours',
+            'refund_percentage',
+            'refund_policy_text',
+            # Payment gateway defaults (IDs only, no sensitive config)
+            'default_payment_gateways',
+            'primary_payment_gateway',
+        ]
+        read_only_fields = [
+            'id',
+            'balance_due_days',
+            'default_deposit_percentage',
+            'default_currency',
+            'allow_refunds',
+            'refund_deadline_hours',
+            'refund_percentage',
+            'refund_policy_text',
+            'default_payment_gateways',
+            'primary_payment_gateway',
+        ]
 
 
 class PaymentMethodSerializer(serializers.ModelSerializer):

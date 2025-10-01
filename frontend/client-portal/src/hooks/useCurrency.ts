@@ -1,8 +1,10 @@
 // Currency management hooks for client portal
 // Simplified version focused on display and formatting
+// CONSOLIDATED: Uses global PaymentPlanSettings for currency (DRY compliance)
 
 import { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_CURRENCY, getCurrencyConfig, formatCurrency } from '../utils/currency';
+import { usePaymentPlanSettings } from './usePaymentPlanSettings';
 
 export interface CurrencySettings {
   defaultCurrency: string;
@@ -80,15 +82,22 @@ export const useCurrencySettings = () => {
 
 /**
  * Hook for current currency context
+ * CONSOLIDATED: Gets currency from global PaymentPlanSettings (DRY compliance)
  */
 export const useCurrentCurrency = () => {
-  const { settings, isLoading, formatAmount } = useCurrencySettings();
-  
+  const { settings, isLoading: settingsLoading, formatAmount } = useCurrencySettings();
+  const { data: paymentPlanSettings, isLoading: paymentSettingsLoading } = usePaymentPlanSettings();
+
+  // Use currency from global PaymentPlanSettings (DRY compliance)
+  // Fall back to localStorage settings if PaymentPlanSettings not loaded yet
+  const currentCurrency = paymentPlanSettings?.default_currency || settings.defaultCurrency;
+
   return {
-    currentCurrency: settings.defaultCurrency,
-    currencyConfig: getCurrencyConfig(settings.defaultCurrency),
+    currentCurrency,
+    currencyConfig: getCurrencyConfig(currentCurrency),
     settings,
-    isLoading,
-    formatAmount,
+    isLoading: settingsLoading || paymentSettingsLoading,
+    formatAmount: (amount: string | number, currency?: string) =>
+      formatAmount(amount, currency || currentCurrency),
   };
 };

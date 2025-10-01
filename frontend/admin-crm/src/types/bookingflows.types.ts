@@ -329,42 +329,29 @@ export interface ContactInfoStepConfiguration {
   updated_at: string;
 }
 
-// FIXED: Updated PaymentInfoStepConfiguration to match evolved backend
+// FULLY CONSOLIDATED: ALL payment business logic now in PaymentSettings (payments domain)
+// This configuration contains ONLY UI/UX flags and custom text
+//
+// REMOVED and moved to PaymentSettings (Phase 2 - Full DRY Compliance):
+// - deposit_type, deposit_amount, balance_due_days (payment plan calculation)
+// - allow_refunds, refund_deadline_days, refund_percentage, refund_policy_text (refund policy)
+// - allowed_gateways, default_gateway, available_payment_methods (payment gateway defaults)
 export interface PaymentInfoStepConfiguration {
   id: number;
   step: number;
-  
-  // Payment options
+
+  // UI/UX FLAGS ONLY - what payment options to show
   accept_full_payment: boolean;
   accept_deposit: boolean;
-  deposit_type: 'PERCENTAGE' | 'FIXED';
-  deposit_amount: string;
-  balance_due_days: number;
-  
-  // Refund configuration
-  allow_refunds: boolean;
-  refund_deadline_days: number;
-  refund_percentage: number;
-  refund_policy_text: string;
-  
-  // Payment methods
-  available_payment_methods: string[];
-  
-  // Payment processing - UPDATED
-  require_immediate_payment: boolean;
-  
-  // Payment gateways - NEW fields from evolved backend
-  allowed_gateways: number[];
-  default_gateway: number | null;
-  
   allow_payment_plans: boolean;
-  payment_terms: string;
-  
-  // Quote request options - NEW
   allow_quote_request: boolean;
+  require_immediate_payment: boolean;
+
+  // UI TEXT CUSTOMIZATION ONLY
+  payment_terms: string;
   quote_request_button_text: string;
   quote_request_description: string;
-  
+
   created_at: string;
   updated_at: string;
 }

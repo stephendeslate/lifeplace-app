@@ -307,8 +307,9 @@ class PaymentEventProcessor:
         try:
             if hasattr(payment.event, 'workflow_template') and payment.event.workflow_template:
                 from core.domains.workflows.models import WorkflowTrigger
+                from core.domains.workflows.engine import WorkflowEngine
 
-                # Create workflow trigger
+                # Create workflow trigger record
                 WorkflowTrigger.objects.create(
                     event=payment.event,
                     stage=payment.event.current_stage,
@@ -322,15 +323,18 @@ class PaymentEventProcessor:
                     }
                 )
 
-                # Check for stages triggered by payment
-                next_stages = payment.event.workflow_template.stages.filter(
-                    trigger_on_payment_received=True
-                ).order_by('stage', 'order')
-
-                if next_stages.exists():
-                    next_stage = next_stages.first()
-                    if next_stage.check_advancement_criteria(payment.event):
-                        next_stage.apply_to_event(payment.event)
+                # Use WorkflowEngine to properly progress the workflow
+                # This ensures proper stage ordering and validation
+                WorkflowEngine.progress_workflow(
+                    event=payment.event,
+                    trigger_type='PAYMENT_RECEIVED',
+                    data={
+                        'payment_id': payment.id,
+                        'payment_number': payment.payment_number,
+                        'amount': str(payment.amount),
+                        'currency': payment.currency
+                    }
+                )
 
                 logger.debug(f"Triggered workflow advancement for payment {payment.payment_number}")
 

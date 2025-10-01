@@ -6,8 +6,8 @@ from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from django.core.cache import cache
 import logging
 
-from .models import PaymentGateway
-from .serializers import PublicPaymentGatewaySerializer
+from .models import PaymentGateway, PaymentSettings
+from .serializers import PublicPaymentGatewaySerializer, PublicPaymentSettingsSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -93,5 +93,69 @@ class PublicPaymentGatewayViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(gateway)
         cache.set(cache_key, serializer.data, cache_timeout)
         logger.info(f"Public payment gateway {gateway_id} cached after database query")
+
+        return Response(serializer.data)
+
+
+class PublicPaymentSettingsThrottle(AnonRateThrottle):
+    """Custom throttle for public payment settings endpoint"""
+    rate = '100/hour'
+
+
+class PublicPaymentSettingsViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Public ViewSet for payment settings.
+
+    This endpoint provides public access to payment configuration
+    without requiring authentication. Only safe, non-sensitive data is exposed.
+
+    Use cases:
+    - Client booking flows (deposit calculations, currency)
+    - Guest checkout flows
+    - Public refund policy display
+    - Payment gateway defaults for booking forms
+
+    Security features:
+    - Only safe fields exposed (no admin/internal settings)
+    - Sensitive configuration data excluded
+    - Rate limiting applied
+    - Cached responses for performance
+    """
+    serializer_class = PublicPaymentSettingsSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [PublicPaymentSettingsThrottle]
+
+    def get_queryset(self):
+        """Return the singleton payment settings instance"""
+        settings = PaymentSettings.get_default_settings()
+        return PaymentSettings.objects.filter(id=settings.id)
+
+    def list(self, request, *args, **kwargs):
+        """
+        Return payment settings as array (for backwards compatibility)
+        """
+        return self.retrieve(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve the payment settings with caching.
+        Always returns the singleton settings instance regardless of ID provided.
+        """
+        cache_key = 'public_payment_settings'
+        cache_timeout = 300  # 5 minutes
+
+        # Try to get cached response
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            logger.debug("Public payment settings served from cache")
+            return Response(cached_data)
+
+        # Cache miss - get from database
+        settings = PaymentSettings.get_default_settings()
+        serializer = self.get_serializer(settings)
+
+        # Cache the response
+        cache.set(cache_key, serializer.data, cache_timeout)
+        logger.info("Public payment settings cached after database query")
 
         return Response(serializer.data)

@@ -121,11 +121,30 @@ class WorkflowStage(BaseModel):
         return True
     
     def apply_to_event(self, event):
-        """Apply this stage to an event"""
+        """Apply this stage to an event with validation"""
+        # Validation: prevent moving backwards within the same category
+        if event.current_stage:
+            current_order = event.current_stage.order
+            current_category = event.current_stage.stage
+
+            # Prevent moving backwards within same category
+            if self.stage == current_category and self.order < current_order:
+                logger.warning(
+                    f"Attempted to move event {event.id} backwards from "
+                    f"'{event.current_stage.name}' (order {current_order}) to "
+                    f"'{self.name}' (order {self.order}). Ignoring."
+                )
+                return
+
+            # Prevent skipping to same stage
+            if event.current_stage.id == self.id:
+                logger.debug(f"Event {event.id} already at stage '{self.name}'")
+                return
+
         # Update event's current stage
         event.current_stage = self
         event.save()
-        
+
         # Execute automation if configured
         if self.is_automated:
             self._execute_automation(event)
@@ -178,51 +197,92 @@ class WorkflowStage(BaseModel):
                 logger.error(f"Failed to create workflow task: {e}")
         
         elif self.automation_type == 'CONTRACT':
-            # Generate and send contract
+            # Generate and send contract using proper service (DRY compliance)
             try:
                 from core.domains.contracts.models import EventContract, ContractTemplate
-                
+                from core.domains.contracts.services import EventContractService
+
                 contract_template_id = self.metadata.get('contract_template_id')
-                if contract_template_id:
-                    contract_template = ContractTemplate.objects.get(id=contract_template_id)
-                    
-                    # Create contract
-                    contract = EventContract.objects.create(
-                        event=event,
-                        template=contract_template,
-                        status='DRAFT',
-                        contract_value=event.total_amount_due or 0
+                if not contract_template_id:
+                    logger.error(
+                        f"No contract template ID configured in metadata for stage '{self.name}' "
+                        f"(stage_id={self.id}). Skipping contract generation."
                     )
-                    
-                    # Send email with contract link (if email template is also configured)
-                    if self.email_template:
+                    return
+
+                # Validate contract template exists
+                try:
+                    contract_template = ContractTemplate.objects.get(id=contract_template_id)
+                except ContractTemplate.DoesNotExist:
+                    logger.error(
+                        f"Contract template ID {contract_template_id} not found for stage '{self.name}'. "
+                        f"Available templates: {list(ContractTemplate.objects.values_list('id', 'name'))}. "
+                        f"Skipping contract generation."
+                    )
+                    return
+
+                # Check if contract already exists for this event
+                existing_contract = EventContract.objects.filter(
+                    event=event,
+                    template=contract_template,
+                    is_amendment=False
+                ).first()
+
+                if existing_contract:
+                    logger.info(
+                        f"Contract {existing_contract.id} already exists for event {event.id}. "
+                        f"Skipping duplicate contract generation."
+                    )
+                    return
+
+                # Calculate valid_until date
+                signature_deadline_hours = self.metadata.get('signature_deadline_hours', 48)
+                valid_until = (timezone.now() + timedelta(hours=signature_deadline_hours)).date()
+
+                # Use EventContractService to create properly initialized contract
+                # This ensures content is rendered, context is generated, and all fields are set
+                contract = EventContractService.create_contract_from_template(
+                    event_id=event.id,
+                    template_id=contract_template_id,
+                    valid_until=valid_until,
+                    contract_value=event.total_amount_due or 0
+                )
+
+                # Update status to SENT and set sent_at timestamp
+                contract.status = 'SENT'
+                contract.sent_at = timezone.now()
+                contract.save(update_fields=['status', 'sent_at'])
+
+                # Send email with contract link (if email template is configured)
+                if self.email_template:
+                    try:
                         from core.domains.communications.services import CommunicationService
-                        
-                        signature_deadline_hours = self.metadata.get('signature_deadline_hours', 48)
-                        signature_deadline = timezone.now() + timedelta(hours=signature_deadline_hours)
-                        
+
                         context_data = {
                             'client_name': event.client.get_full_name(),
                             'event_date': event.start_date.strftime('%B %d, %Y'),
                             'venue_name': 'LifePlace Retreat & Events Center',
                             'total_amount': str(event.total_amount_due) if event.total_amount_due else '0',
                             'contract_link': f'/contracts/{contract.id}/sign',
-                            'signature_deadline': signature_deadline.strftime('%B %d, %Y at %I:%M %p'),
+                            'signature_deadline': valid_until.strftime('%B %d, %Y'),
                             'event': event,
                             'stage': self,
                             'contract': contract
                         }
-                        
+
                         CommunicationService.send_communication_by_template(
                             template=self.email_template,
                             recipient=event.client.email,
                             context_data=context_data
                         )
-                    
-                    logger.info(f"Generated contract {contract.id} for event {event.id}")
-                    
+                        logger.info(f"Sent contract email for event {event.id}")
+                    except Exception as email_error:
+                        logger.warning(f"Contract generated but failed to send email: {email_error}")
+
+                logger.info(f"Successfully generated contract {contract.id} for event {event.id}")
+
             except Exception as e:
-                logger.error(f"Failed to generate/send contract: {e}")
+                logger.error(f"Failed to generate/send contract: {e}", exc_info=True)
 
         elif self.automation_type == 'PAYMENT_PLAN':
             # Create payment plan
@@ -233,15 +293,15 @@ class WorkflowStage(BaseModel):
                 payment_plan_config = self.metadata.get('payment_plan_config', {})
 
                 # Default payment plan configuration
+                from decimal import Decimal
                 total_amount = payment_plan_config.get('total_amount', event.total_amount_due or 0)
                 down_payment_percent = payment_plan_config.get('down_payment_percent', 30)
-                down_payment_amount = total_amount * (down_payment_percent / 100)
+                down_payment_amount = Decimal(str(total_amount)) * (Decimal(str(down_payment_percent)) / Decimal('100'))
                 number_of_installments = payment_plan_config.get('number_of_installments', 3)
                 frequency = payment_plan_config.get('frequency', 'MONTHLY')
                 grace_period_days = payment_plan_config.get('grace_period_days', 7)
 
                 # Calculate due dates
-                from datetime import timedelta
                 today = timezone.now().date()
                 down_payment_due_date = today + timedelta(days=payment_plan_config.get('down_payment_due_days', 7))
 

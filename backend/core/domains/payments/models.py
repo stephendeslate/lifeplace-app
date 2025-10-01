@@ -83,6 +83,44 @@ class PaymentSettings(BaseModel):
         help_text="Days to wait between automatic payment retry attempts"
     )
 
+    # REFUND POLICY SETTINGS - CONSOLIDATED from bookingflow domain
+    allow_refunds = models.BooleanField(
+        default=True,
+        help_text="Allow refunds globally"
+    )
+
+    refund_deadline_hours = models.PositiveIntegerField(
+        default=48,
+        help_text="Hours before event when refunds are no longer allowed"
+    )
+
+    refund_percentage = models.PositiveIntegerField(
+        default=100,
+        help_text="Percentage of payment that can be refunded (0-100)"
+    )
+
+    refund_policy_text = models.TextField(
+        blank=True,
+        help_text="Default refund policy text to display to clients"
+    )
+
+    # PAYMENT GATEWAY DEFAULTS - CONSOLIDATED from bookingflow domain
+    default_payment_gateways = models.ManyToManyField(
+        'PaymentGateway',
+        blank=True,
+        related_name='global_default_settings',
+        help_text="Default payment gateways available globally"
+    )
+
+    primary_payment_gateway = models.ForeignKey(
+        'PaymentGateway',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='primary_for_global_settings',
+        help_text="Primary payment gateway (pre-selected by default)"
+    )
+
     class Meta:
         verbose_name = "Payment Settings"
         verbose_name_plural = "Payment Settings"
@@ -95,6 +133,9 @@ class PaymentSettings(BaseModel):
         # Validate percentage fields
         if not (0 <= self.default_deposit_percentage <= 100):
             raise ValidationError("Default deposit percentage must be between 0 and 100.")
+
+        if not (0 <= self.refund_percentage <= 100):
+            raise ValidationError("Refund percentage must be between 0 and 100.")
 
     def save(self, *args, **kwargs):
         """Ensure singleton pattern"""
@@ -116,6 +157,12 @@ class PaymentSettings(BaseModel):
                 'default_currency': 'PHP',
                 'auto_payment_retry_attempts': 3,
                 'auto_payment_retry_delay_days': 2,
+                # CONSOLIDATED: Refund policy defaults
+                'allow_refunds': True,
+                'refund_deadline_hours': 48,
+                'refund_percentage': 100,
+                'refund_policy_text': '',
+                # Note: ManyToMany and ForeignKey fields set after creation
             }
         )
         return settings
@@ -174,51 +221,43 @@ class Payment(BaseModel):
                 event_id=self.event_id if self.event_id else None
             )
 
+        is_new = self.pk is None
+        old_status = None
+
+        # Track status changes for existing records
+        if not is_new:
+            try:
+                old_instance = Payment.objects.get(pk=self.pk)
+                old_status = old_instance.status
+            except Payment.DoesNotExist:
+                pass
+
         super().save(*args, **kwargs)
         # Update event payment status
         self.event.update_payment_status()
 
-        # Update workflow if applicable - trigger PAYMENT_RECEIVED event using enhanced system
-        if self.status == 'COMPLETED' and hasattr(self.event, 'workflow_template') and self.event.workflow_template:
-            from core.domains.workflows.models import WorkflowTrigger
+        # Trigger workflow ONLY when payment transitions to COMPLETED
+        # (not on every save, and not if already was completed)
+        if (self.status == 'COMPLETED' and old_status != 'COMPLETED' and
+            hasattr(self.event, 'workflow_template') and self.event.workflow_template):
+
             from core.domains.workflows.engine import WorkflowEngine
-            from django.utils import timezone
             import logging
             logger = logging.getLogger(__name__)
 
-            # Create the trigger record
-            trigger = WorkflowTrigger.objects.create(
-                event=self.event,
-                stage=self.event.current_stage,
-                trigger_type='PAYMENT_RECEIVED',
-                details=f"Payment of {self.format_amount_with_currency()} received",
-                result_data={
-                    'payment_id': self.id,
-                    'amount': str(self.amount),
-                    'payment_method': self.payment_method.type if self.payment_method else 'Unknown'
-                }
-            )
+            logger.info(f"Payment {self.payment_number} completed - triggering workflow progression for event {self.event.id}")
 
-            # ENHANCED: Use WorkflowEngine for consistent workflow progression
-            logger.info(f"Processing PAYMENT_RECEIVED trigger {trigger.id} for event {self.event.id} (Payment model)")
-
-            progressed = WorkflowEngine.progress_workflow(
+            # Use WorkflowEngine directly - it has built-in idempotency protection
+            WorkflowEngine.progress_workflow(
                 event=self.event,
                 trigger_type='PAYMENT_RECEIVED',
                 data={
-                    'trigger_id': trigger.id,
-                    'payment_data': trigger.result_data
+                    'payment_id': self.id,
+                    'payment_number': self.payment_number,
+                    'amount': str(self.amount),
+                    'currency': self.currency
                 }
             )
-
-            if progressed:
-                # Mark trigger as processed
-                trigger.processed = True
-                trigger.processed_at = timezone.now()
-                trigger.save(update_fields=['processed', 'processed_at'])
-                logger.info(f"✓ Trigger {trigger.id} processed successfully - workflow progressed (Payment model)")
-            else:
-                logger.info(f"✗ Trigger {trigger.id} - no workflow progression occurred (Payment model)")
 
     def complete_payment(self):
         """Mark payment as complete and handle related processes"""
@@ -331,7 +370,10 @@ class Payment(BaseModel):
             return f"{symbol}{float(self.amount):,.2f}"
     
     def _create_payment_plan_for_deposit(self):
-        """Create payment plan for remaining balance if this is a deposit payment"""
+        """Create payment plan for remaining balance if this is a deposit payment
+
+        CONSOLIDATED: Uses global PaymentSettings for all configuration.
+        """
         # Only create payment plan for deposit payments
         if 'deposit' not in self.description.lower():
             return
@@ -355,34 +397,28 @@ class Payment(BaseModel):
             # Import here to avoid circular imports
             from core.domains.payments.services.payment_plan_service import PaymentPlanService
 
-            # Try to find the booking session that created this payment
+            # Try to find the booking session (for audit trail only)
             booking_session = None
             try:
                 from core.domains.bookingflow.models import BookingSession
-                # Look for recent session associated with this event
                 booking_session = BookingSession.objects.filter(
                     created_event=self.event
                 ).order_by('-created_at').first()
             except:
                 pass
 
-            # Create payment plan for remaining balance
+            # Create payment plan using global settings (consolidated approach)
             payment_plan = PaymentPlanService.create_payment_plan_from_deposit(
                 event=self.event,
                 deposit_payment=self,
                 remaining_amount=remaining_amount,
-                booking_session=booking_session
+                booking_session=booking_session  # Audit trail only, doesn't affect configuration
             )
 
-            # Log successful creation
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.info(f"Auto-created payment plan {payment_plan.id} for event {self.event.id} after deposit payment")
+            logger.info(f"Auto-created payment plan {payment_plan.id} for event {self.event.id} "
+                       f"after deposit payment (using global PaymentSettings)")
 
         except Exception as e:
-            # Log error but don't fail the payment completion
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Failed to auto-create payment plan for deposit payment {self.id}: {e}")
 
     def __str__(self):

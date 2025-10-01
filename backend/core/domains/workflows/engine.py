@@ -51,34 +51,37 @@ class WorkflowEngine:
     def progress_workflow(cls, event, trigger_type=None, data=None):
         """
         Progress an event through its workflow based on current state and triggers
-        
+
         Args:
             event: The event to progress
             trigger_type: The type of trigger (STATUS_CHANGE, PAYMENT, etc.)
             data: Additional data relevant to the trigger
-            
+
         Returns:
             bool: Whether progression occurred
         """
         if not event.workflow_template or not event.current_stage:
             return False
-            
+
         current_stage = event.current_stage
-        
+
         # Determine eligible next stages
         next_stages = cls._get_eligible_next_stages(event, trigger_type, data)
-        
+
         if not next_stages:
             return False
-            
-        # Move to next stage
-        next_stage = next_stages[0]  # Take the first eligible stage
-        
+
+        # Idempotency check: if next stage is same as current, don't re-progress
+        next_stage = next_stages[0]
+        if next_stage.id == current_stage.id:
+            logger.debug(f"Event {event.id} already at stage '{current_stage.name}' - skipping duplicate progression")
+            return False
+
         with transaction.atomic():
             # Update event stage
             event.current_stage = next_stage
             event.save(update_fields=['current_stage'])
-            
+
             # Log the stage transition
             EventTimeline.objects.create(
                 event=event,
@@ -90,10 +93,10 @@ class WorkflowEngine:
                 },
                 is_public=True
             )
-            
+
             # Execute stage actions
             cls.execute_stage_actions(event, next_stage)
-            
+
             logger.info(f"Event {event.id} progressed from '{current_stage.name}' to '{next_stage.name}'")
             return True
     
@@ -101,53 +104,85 @@ class WorkflowEngine:
     def _get_eligible_next_stages(cls, event, trigger_type=None, data=None):
         """
         Determine eligible next stages based on current conditions
-        
+
         This is where business rules for stage progression are defined
         """
         if not event.current_stage:
             return []
-            
+
         current_stage = event.current_stage
-        
-        # Find stages in the same category with the next order
+
+        # Check if current stage is waiting for this specific trigger
+        # If so, execute automation but don't progress yet
+        if trigger_type:
+            if trigger_type == 'PAYMENT_RECEIVED' and current_stage.trigger_on_payment_received:
+                logger.info(f"Current stage '{current_stage.name}' triggered by payment - executing automation")
+                current_stage._execute_automation(event)
+                return []  # Stay on current stage
+
+            if trigger_type == 'QUOTE_ACCEPTED' and current_stage.trigger_on_quote_accepted:
+                logger.info(f"Current stage '{current_stage.name}' triggered by quote acceptance - executing automation")
+                current_stage._execute_automation(event)
+                return []  # Stay on current stage
+
+            if trigger_type == 'CONTRACT_SIGNED' and current_stage.trigger_on_contract_signed:
+                logger.info(f"Current stage '{current_stage.name}' triggered by contract signing - executing automation")
+                current_stage._execute_automation(event)
+                return []  # Stay on current stage
+
+        # Normal sequential flow: next stage in the same category
         next_order = current_stage.order + 1
-        
-        # Normal flow: next stage in the same category
+
         next_stages = WorkflowStage.objects.filter(
             template=event.workflow_template,
             stage=current_stage.stage,
             order=next_order
         )
-        
-        # If we found a next stage in the same category, return it
+
+        # If we found a next stage in the same category, check if eligible
         if next_stages.exists():
-            return list(next_stages)
-        
-        # If we've reached the end of a category, try moving to the next category
-        if current_stage.stage == 'LEAD' and trigger_type == 'STATUS_CHANGE' and event.status == 'CONFIRMED':
-            # Move from LEAD to PRODUCTION when status becomes CONFIRMED
-            next_stages = WorkflowStage.objects.filter(
-                template=event.workflow_template,
-                stage='PRODUCTION'
-            ).order_by('order')
+            next_stage = next_stages.first()
+            # Check advancement criteria before progressing
+            if next_stage.check_advancement_criteria(event):
+                return [next_stage]
+            else:
+                logger.info(f"Event {event.id} blocked at '{current_stage.name}' - next stage criteria not met")
+                return []  # Blocked by progression criteria
 
-            if next_stages.exists():
-                return [next_stages.first()]
+        # Cross-category progression: LEAD -> PRODUCTION -> POST_PRODUCTION
+        if current_stage.stage == 'LEAD':
+            # Move from LEAD to PRODUCTION when:
+            # 1. Event status is CONFIRMED, or
+            # 2. Payment is received (for paid bookings)
+            if trigger_type == 'STATUS_CHANGE' and event.status == 'CONFIRMED':
+                next_stages = WorkflowStage.objects.filter(
+                    template=event.workflow_template,
+                    stage='PRODUCTION'
+                ).order_by('order')
 
-        elif current_stage.stage == 'LEAD' and trigger_type == 'PAYMENT_RECEIVED':
-            # CRITICAL FIX: Move from LEAD to PRODUCTION when payment is received
-            # Check if we have a PRODUCTION stage that triggers on payment
-            next_stages = WorkflowStage.objects.filter(
-                template=event.workflow_template,
-                stage='PRODUCTION',
-                trigger_on_payment_received=True
-            ).order_by('order')
+                if next_stages.exists():
+                    next_stage = next_stages.first()
+                    if next_stage.check_advancement_criteria(event):
+                        return [next_stage]
+                    return []
 
-            if next_stages.exists():
-                return [next_stages.first()]
+            elif trigger_type == 'PAYMENT_RECEIVED':
+                # Payment received - move to first PRODUCTION stage
+                next_stages = WorkflowStage.objects.filter(
+                    template=event.workflow_template,
+                    stage='PRODUCTION'
+                ).order_by('order')
+
+                if next_stages.exists():
+                    next_stage = next_stages.first()
+                    if next_stage.check_advancement_criteria(event):
+                        return [next_stage]
+                    else:
+                        logger.info(f"Event {event.id} cannot progress to PRODUCTION - criteria not met")
+                        return []
 
         elif current_stage.stage == 'PRODUCTION' and trigger_type == 'STATUS_CHANGE' and event.status == 'COMPLETED':
-            # Move from PRODUCTION to POST_PRODUCTION when status becomes COMPLETED
+            # Move from PRODUCTION to POST_PRODUCTION when event is completed
             next_stages = WorkflowStage.objects.filter(
                 template=event.workflow_template,
                 stage='POST_PRODUCTION'
@@ -155,7 +190,7 @@ class WorkflowEngine:
 
             if next_stages.exists():
                 return [next_stages.first()]
-        
+
         # No eligible next stages found
         return []
     
@@ -163,13 +198,13 @@ class WorkflowEngine:
     def execute_stage_actions(cls, event, stage):
         """
         Execute actions for a workflow stage
-        
+
         This method dispatches to appropriate action handlers based on stage configuration
         """
         if stage.is_automated:
-            # Immediate actions
-            cls._execute_immediate_actions(event, stage)
-            
+            # Execute the stage's automation (handles all automation types)
+            stage._execute_automation(event)
+
             # Schedule delayed actions if needed
             if stage.trigger_time and stage.trigger_time.startswith('AFTER_'):
                 schedule_stage_actions.delay(event.id, stage.id)

@@ -25,6 +25,43 @@ export interface PaymentSettings {
   updated_at: string;
 }
 
+// Payment Plan Settings - CONSOLIDATED from bookingflow domain
+// Phase 2: Now includes refund policy and payment gateway defaults
+export interface PaymentPlanSettings {
+  id: number;
+
+  // Payment plan settings
+  balance_due_days: number;
+  grace_period_days: number;
+  default_installments: number;
+  default_installment_frequency: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+
+  // Deposit settings
+  default_deposit_percentage: number;
+
+  // Late fee settings
+  late_fee_enabled: boolean;
+  default_late_fee_amount: number;
+
+  // Auto retry settings
+  auto_payment_retry_attempts: number;
+  auto_payment_retry_delay_days: number;
+
+  // REFUND POLICY - CONSOLIDATED Phase 2
+  allow_refunds: boolean;
+  refund_deadline_hours: number;
+  refund_percentage: number;
+  refund_policy_text: string;
+
+  // PAYMENT GATEWAY DEFAULTS - CONSOLIDATED Phase 2
+  default_payment_gateways: number[];
+  primary_payment_gateway: number | null;
+
+  // Timestamps
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface TaxRate {
   id: number;
   name: string;

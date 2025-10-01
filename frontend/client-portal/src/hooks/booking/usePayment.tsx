@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PaymentApi } from '../../apis/booking/payment.api';
+import { usePaymentPlanSettings } from '../usePaymentPlanSettings';
 import type {
   PaymentGateway,
   PaymentGatewayResponse,
@@ -43,17 +44,21 @@ export const usePaymentGateways = () => {
 };
 
 // Hook for managing flow-specific payment gateways
+// CONSOLIDATED: Filters gateways by global default_payment_gateways (DRY compliance)
 export const useFlowPaymentGateways = (flowId?: number) => {
   const [paymentData, setPaymentData] = useState<PaymentGatewayResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Get global payment plan settings to filter gateways (DRY compliance)
+  const { data: paymentPlanSettings, isLoading: isLoadingSettings } = usePaymentPlanSettings();
+
   const fetchFlowGateways = useCallback(async () => {
     if (!flowId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await PaymentApi.getFlowPaymentGateways(flowId);
       setPaymentData(data);
@@ -71,21 +76,35 @@ export const useFlowPaymentGateways = (flowId?: number) => {
     fetchFlowGateways();
   }, [fetchFlowGateways]);
 
-  // Get default gateway
-  const defaultGateway = useMemo(() => {
-    if (!paymentData || !paymentData.default_gateway) return null;
-    
-    return paymentData.available_gateways.find(
-      gateway => gateway.id === paymentData.default_gateway
+  // Filter gateways by global default_payment_gateways (DRY compliance)
+  const filteredGateways = useMemo(() => {
+    if (!paymentData || !paymentPlanSettings) return [];
+
+    const globalGatewayIds = paymentPlanSettings.default_payment_gateways || [];
+
+    // Filter: only show gateways that are in global defaults AND available in flow
+    return paymentData.available_gateways.filter(gateway =>
+      globalGatewayIds.includes(gateway.id)
+    );
+  }, [paymentData, paymentPlanSettings]);
+
+  // Get primary gateway from global settings (DRY compliance)
+  const primaryGateway = useMemo(() => {
+    if (!paymentPlanSettings?.primary_payment_gateway || filteredGateways.length === 0) {
+      return null;
+    }
+
+    return filteredGateways.find(
+      gateway => gateway.id === paymentPlanSettings.primary_payment_gateway
     ) || null;
-  }, [paymentData]);
+  }, [paymentPlanSettings, filteredGateways]);
 
   return {
     paymentData,
-    gateways: paymentData?.available_gateways || [],
-    defaultGateway,
+    gateways: filteredGateways, // ✅ Now filtered by global defaults
+    defaultGateway: primaryGateway, // ✅ Now using global primary gateway
     requireImmediatePayment: paymentData?.require_immediate_payment || false,
-    loading,
+    loading: loading || isLoadingSettings,
     error,
     refetch: fetchFlowGateways,
   };
@@ -166,11 +185,13 @@ export const usePaymentCalculations = () => {
     return PaymentApi.calculateRemainingBalance(totalAmount, depositAmount);
   }, []);
 
+  // DEPRECATED: Use useCurrentCurrency hook instead for DRY compliance
+  // This is kept for backward compatibility with legacy code
   const formatAmount = useCallback((
     amount: string | number,
-    currency: string = 'PHP'
+    currency?: string
   ) => {
-    return PaymentApi.formatAmount(amount, currency);
+    return PaymentApi.formatAmount(amount, currency || 'PHP');
   }, []);
 
   const validateAmount = useCallback((

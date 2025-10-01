@@ -9,6 +9,7 @@ import type {
   PaymentMethod,
   PaymentGateway,
   PaymentSettings,
+  PaymentPlanSettings,
   Refund,
   PaymentSummary,
   PaginatedResponse,
@@ -80,6 +81,17 @@ export class FinancialApi {
    */
   static async getPaymentSettings(): Promise<PaymentSettings> {
     const response = await api.get<PaymentSettings>('/payments/settings/');
+    return response.data;
+  }
+
+  /**
+   * Get payment plan settings (deposit percentage, balance due days, etc.)
+   * CONSOLIDATED: Single source of truth for payment plan configuration
+   * Uses public endpoint (no authentication required) for booking flows
+   */
+  static async getPaymentPlanSettings(): Promise<PaymentPlanSettings> {
+    const response = await api.get<PaymentPlanSettings>('/payments/public/settings/1/');
+    // Public endpoint returns single object (singleton settings)
     return response.data;
   }
 

@@ -22,6 +22,7 @@ import {
   useGatewaySelection
 } from '../../../hooks/booking/usePayment';
 import { useCurrentCurrency } from '../../../hooks/useCurrency';
+import { usePaymentPlanSettings } from '../../../hooks/usePaymentPlanSettings';
 import { UnifiedStripePaymentFlow } from '../../payments/UnifiedStripePaymentFlow';
 import { PaymentMethodSelector } from '../../payments/PaymentMethodSelector';
 import type {
@@ -51,7 +52,7 @@ interface PaymentStepProps {
 type CompletionChoice = 'payment' | 'quote' | null;
 
 export const PaymentStep: React.FC<PaymentStepProps> = ({
-  stepData = { payment_method: '', payment_type: 'FULL' },
+  stepData = { payment_method: '', payment_type: '' },
   config,
   onDataChange,
   validationErrors,
@@ -69,13 +70,20 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   const [isAddingNewMethod, setIsAddingNewMethod] = useState<boolean>(false);
   
   // Payment hooks
-  const { 
-    gateways: flowGateways, 
-    loading: gatewaysLoading, 
-    error: gatewaysError 
+  const {
+    gateways: flowGateways,
+    loading: gatewaysLoading,
+    error: gatewaysError
   } = useFlowPaymentGateways(flowId);
 
   const { currentCurrency, formatAmount: currencyFormatAmount } = useCurrentCurrency();
+
+  // Get global payment plan settings (CONSOLIDATED from bookingflow domain)
+  const {
+    data: paymentPlanSettings,
+    isLoading: isLoadingPaymentSettings,
+    error: paymentSettingsError
+  } = usePaymentPlanSettings();
 
   // Gateway selection hook
   const {
@@ -97,17 +105,35 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   }), [stepData, config]);
 
   // Calculate amounts based on payment type
+  // CONSOLIDATED: Uses global PaymentPlanSettings for deposit percentage (NO HARDCODED VALUES)
   const amounts = useMemo(() => {
     const total = parseFloat(totalAmount || '0');
-    
-    // Always calculate deposit amount if deposits are accepted (for display purposes)
+
+    // paymentPlanSettings should always be loaded (checked in loading state above)
+    // If not loaded, this code shouldn't execute
+    if (!paymentPlanSettings) {
+      console.error('PaymentPlanSettings not loaded - should be caught by loading state');
+      return {
+        total: 0,
+        deposit: 0,
+        depositPercentage: 0,
+        balanceDueDays: 0,
+        dueNow: 0,
+        remaining: 0,
+        formattedTotal: currencyFormatAmount(0),
+        formattedDeposit: currencyFormatAmount(0),
+        formattedDueNow: currencyFormatAmount(0),
+        formattedRemaining: currencyFormatAmount(0),
+      };
+    }
+
+    // Use global payment plan settings (single source of truth) - NO HARDCODED FALLBACKS
+    const depositPercentage = paymentPlanSettings.default_deposit_percentage;
+    const balanceDueDays = paymentPlanSettings.balance_due_days;
+
     let depositAmount = 0;
     if (config?.accept_deposit) {
-      if (config.deposit_type === 'PERCENTAGE') {
-        depositAmount = (total * parseFloat(config.deposit_amount || '0')) / 100;
-      } else {
-        depositAmount = parseFloat(config.deposit_amount || '0');
-      }
+      depositAmount = (total * depositPercentage) / 100;
     }
 
     const dueNow = paymentData.payment_type === 'DEPOSIT' ? depositAmount : total;
@@ -116,6 +142,8 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     return {
       total,
       deposit: depositAmount,
+      depositPercentage,
+      balanceDueDays,
       dueNow,
       remaining,
       formattedTotal: currencyFormatAmount(total),
@@ -123,7 +151,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
       formattedDueNow: currencyFormatAmount(dueNow),
       formattedRemaining: currencyFormatAmount(remaining),
     };
-  }, [totalAmount, paymentData.payment_type, config, currencyFormatAmount]);
+  }, [totalAmount, paymentData.payment_type, config, paymentPlanSettings, currencyFormatAmount]);
 
   // Update data helper
   const updateData = useCallback((updates: Partial<PaymentStepData>) => {
@@ -137,43 +165,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     }
   }, [paymentData, onDataChange, onValidate]);
 
-  // Handle payment method selection (saved vs new)
-  const handlePaymentMethodSelect = useCallback((method: PaymentMethod | null) => {
-    setSelectedPaymentMethod(method);
-
-    if (method) {
-      // When selecting a saved method, exit "add new method" flow
-      setIsAddingNewMethod(false);
-      setSelectedGateway(null);
-
-      // Update step data with saved payment method info
-      updateData({
-        payment_method_id: method.id.toString(),
-        payment_method: method.type,
-        payment_gateway_id: method.gateway || undefined,
-      });
-    } else {
-      // When clearing method selection, reset states
-      setSelectedGateway(null);
-      updateData({
-        payment_method_id: '',
-        payment_method: '',
-        payment_gateway_id: undefined,
-      });
-    }
-  }, [updateData]);
-
-  const handleAddNewMethodClick = useCallback(() => {
-    setIsAddingNewMethod(true);
-    setSelectedPaymentMethod(null);
-    // Clear saved method data when switching to new method flow
-    updateData({
-      payment_method_id: '',
-      payment_method: '',
-      payment_gateway_id: undefined,
-    });
-  }, [updateData]);
-
+  // Handle gateway selection - MUST be defined before useEffect that uses it
   const handleGatewaySelect = useCallback((gateway: Record<string, unknown>) => {
     // Payment gateway objects have dynamic structure requiring any type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -203,6 +195,63 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
       payment_method: defaultMethod
     });
   }, [setSelectedGateway, updateData]);
+
+  // Handle payment method selection (saved vs new)
+  const handlePaymentMethodSelect = useCallback((method: PaymentMethod | null) => {
+    setSelectedPaymentMethod(method);
+
+    if (method) {
+      // When selecting a saved method, exit "add new method" flow
+      setIsAddingNewMethod(false);
+      setSelectedGateway(null);
+
+      // Update step data with saved payment method info
+      updateData({
+        payment_method_id: method.id.toString(),
+        payment_method: method.type,
+        payment_gateway_id: method.gateway || undefined,
+      });
+    } else {
+      // When clearing method selection, reset states
+      setSelectedGateway(null);
+      updateData({
+        payment_method_id: '',
+        payment_method: '',
+        payment_gateway_id: undefined,
+      });
+    }
+  }, [updateData, setSelectedGateway]);
+
+  const handleAddNewMethodClick = useCallback(() => {
+    setIsAddingNewMethod(true);
+    setSelectedPaymentMethod(null);
+    // Clear saved method data when switching to new method flow
+    updateData({
+      payment_method_id: '',
+      payment_method: '',
+      payment_gateway_id: undefined,
+    });
+  }, [updateData]);
+
+  // Auto-select primary payment gateway from global settings (DRY compliance)
+  React.useEffect(() => {
+    if (
+      isAddingNewMethod &&
+      !selectedGateway &&
+      paymentPlanSettings?.primary_payment_gateway &&
+      filteredGateways.length > 0
+    ) {
+      const primaryGateway = filteredGateways.find(
+        g => g.id === paymentPlanSettings.primary_payment_gateway
+      );
+      if (primaryGateway) {
+        handleGatewaySelect(primaryGateway);
+      } else if (filteredGateways.length === 1) {
+        // If no primary but only 1 gateway available, auto-select it
+        handleGatewaySelect(filteredGateways[0]);
+      }
+    }
+  }, [isAddingNewMethod, paymentPlanSettings, filteredGateways, selectedGateway, handleGatewaySelect]);
 
   // Handle unified payment flow success
   const handlePaymentFlowSuccess = useCallback((result: PaymentFlowResult) => {
@@ -246,10 +295,13 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     }
   }, [stepData.payment_method_id]);
 
-  if (gatewaysLoading) {
+  if (gatewaysLoading || isLoadingPaymentSettings) {
     return (
-      <Box display="flex" justifyContent="center" p={3}>
+      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" p={3}>
         <CircularProgress />
+        <Typography sx={{ mt: 2 }} variant="body2" color="text.secondary">
+          Loading payment options...
+        </Typography>
       </Box>
     );
   }
@@ -258,6 +310,22 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     return (
       <Alert severity="error">
         {gatewaysError}
+      </Alert>
+    );
+  }
+
+  if (paymentSettingsError) {
+    return (
+      <Alert severity="error">
+        Unable to load payment settings. Please refresh the page or contact support.
+      </Alert>
+    );
+  }
+
+  if (!paymentPlanSettings) {
+    return (
+      <Alert severity="warning">
+        Payment settings are not configured. Please contact support.
       </Alert>
     );
   }
@@ -291,15 +359,15 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
                   Secure Your Date
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Reserve with {config?.accept_deposit ? amounts.formattedDeposit : amounts.formattedTotal}
+                  Reserve with {config?.accept_deposit ? `${amounts.formattedDeposit} (${amounts.depositPercentage}% deposit)` : amounts.formattedTotal}
                 </Typography>
               </Box>
             </Box>
 
             <Box sx={{ mb: 3 }}>
               <Typography variant="body1" sx={{ mb: 2 }}>
-                {config?.accept_deposit 
-                  ? `Pay a ${config.deposit_type === 'PERCENTAGE' ? config.deposit_amount + '%' : amounts.formattedDeposit} deposit now, balance due later`
+                {config?.accept_deposit
+                  ? `Pay a ${amounts.depositPercentage}% deposit now, balance due ${amounts.balanceDueDays} days before event`
                   : 'Complete payment now for instant confirmation'
                 }
               </Typography>
@@ -340,10 +408,10 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
                   • Your date is immediately reserved<br/>
                   • Receive instant booking confirmation<br/>
                   {config?.accept_deposit && (
-                    <>• Balance of {currencyFormatAmount(amounts.total - amounts.deposit)} due {config?.balance_due_days || 30} days before event<br/></>
+                    <>• Balance of {amounts.formattedRemaining} due {amounts.balanceDueDays} days before event<br/></>
                   )}
-                  {config?.allow_refunds && (
-                    <>• {config.refund_percentage}% refund if cancelled within {config.refund_deadline_days} hours</>
+                  {paymentPlanSettings?.allow_refunds && (
+                    <>• {paymentPlanSettings.refund_percentage}% refund if cancelled within {paymentPlanSettings.refund_deadline_hours} hours</>
                   )}
                 </Typography>
               </Box>
@@ -518,7 +586,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
                       💰 Pay Deposit ({amounts.formattedDeposit}) - Recommended
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Balance of {amounts.formattedRemaining} due {config?.balance_due_days || 30} days before event
+                      Balance of {amounts.formattedRemaining} due {amounts.balanceDueDays} days before event
                     </Typography>
                   </Box>
                 }
@@ -552,12 +620,12 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
         {paymentData.payment_type === 'DEPOSIT' && amounts.remaining > 0 && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            Remaining balance of {amounts.formattedRemaining} will be due {config?.balance_due_days || 30} days before your event.
+            Remaining balance of {amounts.formattedRemaining} will be due {amounts.balanceDueDays} days before your event.
           </Alert>
         )}
 
         {/* Trust Signals */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CheckCircle color="success" sx={{ fontSize: 16 }} />
             <Typography variant="body2" color="success.main">
@@ -577,6 +645,29 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
             </Typography>
           </Box>
         </Box>
+
+        {/* Refund Policy - CONSOLIDATED from global settings (DRY compliance) */}
+        {paymentPlanSettings?.allow_refunds && (
+          <Alert
+            severity="info"
+            sx={{
+              backgroundColor: 'rgba(33, 150, 243, 0.05)',
+              border: '1px solid rgba(33, 150, 243, 0.2)'
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+              Refund Policy
+            </Typography>
+            <Typography variant="body2">
+              {paymentPlanSettings.refund_percentage}% refund available if cancelled within {paymentPlanSettings.refund_deadline_hours} hours of booking.
+            </Typography>
+            {paymentPlanSettings.refund_policy_text && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                {paymentPlanSettings.refund_policy_text}
+              </Typography>
+            )}
+          </Alert>
+        )}
       </Paper>
 
       {/* Payment Method Selection */}
