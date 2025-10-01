@@ -490,11 +490,13 @@ class BookingSessionService:
                     )
 
                     if payment_successful:
-                        # Payment successful - mark invoice as paid (event already confirmed via quote.accept())
-                        invoice.status = 'PAID'
-                        invoice.save()
+                        # Payment successful - update invoice payment status intelligently
+                        # This will set status to PAID or PARTIALLY_PAID based on actual payment amount
+                        invoice.mark_as_paid()
 
-                        logger.info(f"Invoice {invoice.invoice_id} marked as paid (event {event.id} already confirmed)")
+                        logger.info(f"Invoice {invoice.invoice_id} payment status updated to '{invoice.status}' "
+                                   f"(paid: {invoice.paid_amount}, remaining: {invoice.remaining_amount}) "
+                                   f"for event {event.id}")
                     else:
                         logger.error(f"Payment processing failed - payment status: {payment.status}")
                         raise EventCreationFailed("Payment processing failed")

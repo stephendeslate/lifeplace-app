@@ -395,7 +395,13 @@ class InvoiceSerializer(serializers.ModelSerializer):
     taxes = InvoiceTaxSerializer(many=True, read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     related_payments = serializers.SerializerMethodField(read_only=True)
-    
+
+    # Payment tracking fields (calculated from related payments)
+    paid_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    remaining_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    is_fully_paid = serializers.BooleanField(read_only=True)
+    is_partially_paid = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = Invoice
         fields = [
@@ -403,10 +409,15 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'subtotal', 'tax_amount', 'total_amount', 'currency', 'issue_date', 'due_date',
             'status', 'status_display', 'notes', 'payment_terms', 'quote',
             'quote_details', 'invoice_pdf', 'line_items', 'taxes',
-            'related_payments', 'created_at', 'updated_at',
+            'related_payments', 'paid_amount', 'remaining_amount',
+            'is_fully_paid', 'is_partially_paid',
+            'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'invoice_id', 'created_at', 'updated_at']
-    
+        read_only_fields = [
+            'id', 'invoice_id', 'paid_amount', 'remaining_amount',
+            'is_fully_paid', 'is_partially_paid', 'created_at', 'updated_at'
+        ]
+
     def get_related_payments(self, obj):
         payments = obj.related_payments.all()
         return BasicPaymentSerializer(payments, many=True).data

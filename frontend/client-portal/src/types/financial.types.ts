@@ -341,7 +341,7 @@ export interface Invoice {
   currency: string;
   issue_date: string; // ISO date string
   due_date: string; // ISO date string
-  status: 'DRAFT' | 'ISSUED' | 'PAID' | 'VOID' | 'CANCELLED';
+  status: 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'VOID' | 'CANCELLED';
   status_display: string;
   notes?: string;
   payment_terms?: string;
@@ -354,6 +354,11 @@ export interface Invoice {
   line_items: InvoiceLineItem[];
   taxes: InvoiceTax[];
   related_payments: BasicPayment[];
+  // Payment tracking fields (calculated from related payments on backend)
+  paid_amount: string; // Decimal as string - total paid from completed payments
+  remaining_amount: string; // Decimal as string - total_amount - paid_amount
+  is_fully_paid: boolean; // paid_amount >= total_amount
+  is_partially_paid: boolean; // 0 < paid_amount < total_amount
   created_at: string;
   updated_at: string;
 }
