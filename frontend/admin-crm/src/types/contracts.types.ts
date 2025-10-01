@@ -52,6 +52,7 @@ export interface EventContract {
   amendment_number: number;
   signature_count: number;
   is_fully_signed: boolean;
+  is_expired: boolean;
   contract_type: string;
   missing_signatures: string[];
   signature_progress: {

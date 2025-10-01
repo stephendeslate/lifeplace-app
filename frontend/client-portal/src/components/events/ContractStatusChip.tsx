@@ -55,13 +55,13 @@ const ContractStatusChip: React.FC<ContractStatusChipProps> = ({
       };
     }
 
-    // Urgent expiry (within 3 days)
-    if (contractExpiryDays !== null && contractExpiryDays <= 3 && contractExpiryDays >= 0) {
+    // Urgent expiry (within 3 days) - but only for unsigned contracts
+    if (status !== 'SIGNED' && contractExpiryDays !== null && contractExpiryDays <= 3 && contractExpiryDays >= 0) {
       return {
         label: `Expires in ${contractExpiryDays}d`,
         color: 'error' as const,
         icon: <UrgentIcon fontSize="small" />,
-        tooltip: `Contract expires in ${contractExpiryDays} day${contractExpiryDays === 1 ? '' : 's'}`,
+        tooltip: `Contract expires in ${contractExpiryDays} day${contractExpiryDays === 1 ? '' : 's'}. Sign soon to secure your booking.`,
         variant: 'filled' as const,
       };
     }

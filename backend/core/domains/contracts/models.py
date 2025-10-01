@@ -126,11 +126,31 @@ class EventContract(BaseModel):
     
     def update_status_based_on_signatures(self):
         """Update contract status based on signature completeness"""
+        was_signed = self.status == 'SIGNED'
+
         if self.is_fully_signed():
             if self.status != 'SIGNED':
                 self.status = 'SIGNED'
                 self.fully_signed_at = timezone.now()
                 self.save(update_fields=['status', 'fully_signed_at'])
+
+                # Trigger workflow progression when contract becomes fully signed
+                if not was_signed and hasattr(self.event, 'workflow_template') and self.event.workflow_template:
+                    from core.domains.workflows.engine import WorkflowEngine
+                    import logging
+                    logger = logging.getLogger(__name__)
+
+                    logger.info(f"Contract {self.id} fully signed - triggering workflow progression for event {self.event.id}")
+
+                    WorkflowEngine.progress_workflow(
+                        event=self.event,
+                        trigger_type='CONTRACT_SIGNED',
+                        data={
+                            'contract_id': self.id,
+                            'signed_at': str(self.fully_signed_at)
+                        }
+                    )
+
         elif self.signatures.exists() and self.status in ['SENT', 'DRAFT']:
             self.status = 'PARTIALLY_SIGNED'
             self.save(update_fields=['status'])

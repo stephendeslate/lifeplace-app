@@ -43,27 +43,44 @@ class EventContractSerializer(serializers.ModelSerializer):
     signature_count = serializers.SerializerMethodField()
     is_fully_signed = serializers.SerializerMethodField()
     contract_type = serializers.SerializerMethodField()
-    
+    is_expired = serializers.SerializerMethodField()
+
     class Meta:
         model = EventContract
         fields = [
             'id', 'event', 'template', 'template_name', 'status',
             'sent_at', 'fully_signed_at', 'valid_until', 'contract_value',
             'currency', 'is_amendment', 'amendment_number', 'signature_count',
-            'is_fully_signed', 'contract_type', 'created_at', 'updated_at'
+            'is_fully_signed', 'contract_type', 'is_expired', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-    
+
     def get_signature_count(self, obj):
         """Get count of signatures"""
         return obj.signatures.count()
-    
+
     def get_is_fully_signed(self, obj):
         """Check if contract is fully signed"""
         return obj.is_fully_signed()
-    
+
     def get_contract_type(self, obj):
         """Get contract type description"""
         if obj.is_amendment:
             return f"Amendment #{obj.amendment_number}"
         return "Original Contract"
+
+    def get_is_expired(self, obj):
+        """
+        Check if contract is expired.
+        Signed contracts never expire (valid_until only applies to unsigned contracts)
+        """
+        # Signed contracts don't expire
+        if obj.status == 'SIGNED':
+            return False
+
+        # For unsigned contracts, check valid_until date
+        if obj.valid_until:
+            from datetime import date
+            return date.today() > obj.valid_until
+
+        return False
