@@ -705,6 +705,9 @@ export class FinancialApi {
   
   /**
    * Calculate invoice payment status based on related payments
+   *
+   * PRIORITY: Uses backend-calculated values when available (single source of truth)
+   * FALLBACK: Client-side calculation with epsilon tolerance for float precision
    */
   static calculateInvoicePaymentStatus(invoice: Invoice): {
     status: 'UNPAID' | 'PARTIALLY_PAID' | 'FULLY_PAID' | 'OVERPAID';
@@ -712,6 +715,36 @@ export class FinancialApi {
     amountRemaining: number;
     paymentProgress: number;
   } {
+    // PRIORITY: Use backend-calculated values when available (single source of truth)
+    if (invoice.paid_amount !== undefined && invoice.remaining_amount !== undefined) {
+      const paidAmount = parseFloat(invoice.paid_amount);
+      const totalAmount = parseFloat(invoice.total_amount);
+      const remainingAmount = parseFloat(invoice.remaining_amount);
+
+      // Use backend boolean flags for accurate status
+      let status: 'UNPAID' | 'PARTIALLY_PAID' | 'FULLY_PAID' | 'OVERPAID';
+      if (invoice.is_fully_paid) {
+        status = 'FULLY_PAID';
+      } else if (invoice.is_partially_paid) {
+        status = 'PARTIALLY_PAID';
+      } else if (paidAmount === 0) {
+        status = 'UNPAID';
+      } else {
+        // Edge case: paid > 0 but not marked as partial or full (shouldn't happen)
+        status = 'PARTIALLY_PAID';
+      }
+
+      return {
+        status,
+        amountPaid: paidAmount,
+        amountRemaining: remainingAmount,
+        paymentProgress: totalAmount > 0 ? Math.min(100, (paidAmount / totalAmount) * 100) : 0,
+      };
+    }
+
+    // FALLBACK: Client-side calculation for old data without new backend fields
+    // Use epsilon comparison to handle floating-point precision issues
+    const EPSILON = 0.01; // 1 cent tolerance for float comparison
     const totalAmount = parseFloat(invoice.total_amount);
     let amountPaid = 0;
 
@@ -726,11 +759,14 @@ export class FinancialApi {
     const paymentProgress = totalAmount > 0 ? (amountPaid / totalAmount) * 100 : 0;
 
     let status: 'UNPAID' | 'PARTIALLY_PAID' | 'FULLY_PAID' | 'OVERPAID';
-    
-    if (amountPaid === 0) {
+
+    if (amountPaid < EPSILON) {
+      // Less than 1 cent paid = unpaid
       status = 'UNPAID';
-    } else if (amountPaid >= totalAmount) {
-      status = amountPaid > totalAmount ? 'OVERPAID' : 'FULLY_PAID';
+    } else if (amountPaid >= totalAmount - EPSILON) {
+      // Within 1 cent of total = fully paid (fixes float precision bug)
+      // Only mark as OVERPAID if truly exceeds by more than epsilon
+      status = amountPaid > totalAmount + EPSILON ? 'OVERPAID' : 'FULLY_PAID';
     } else {
       status = 'PARTIALLY_PAID';
     }
@@ -770,7 +806,7 @@ export class FinancialApi {
         return {
           label: 'Overpaid',
           color: 'info',
-          description: 'Payment exceeds invoice amount'
+          description: 'Payment exceeds invoice amount (rare - please contact support)'
         };
       case 'UNPAID': {
         // Check if overdue

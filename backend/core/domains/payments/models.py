@@ -1056,7 +1056,8 @@ class Invoice(BaseModel):
     due_date = models.DateField()
     status = models.CharField(max_length=20, choices=[
         ('DRAFT', 'Draft'),
-        ('ISSUED', 'Issued'), 
+        ('ISSUED', 'Issued'),
+        ('PARTIALLY_PAID', 'Partially Paid'),
         ('PAID', 'Paid'),
         ('VOID', 'Void'),
         ('CANCELLED', 'Cancelled')
@@ -1072,12 +1073,59 @@ class Invoice(BaseModel):
     
     def __str__(self):
         return f"Invoice {self.invoice_id}"
-    
+
+    @property
+    def paid_amount(self):
+        """Calculate total paid from related payments - NO DB FIELD"""
+        from django.db.models import Sum
+        total = self.related_payments.filter(
+            status='COMPLETED'
+        ).aggregate(
+            total=Sum('amount')
+        )['total']
+        return total or Decimal('0.00')
+
+    @property
+    def remaining_amount(self):
+        """Calculate remaining amount to be paid - NO DB FIELD"""
+        return self.total_amount - self.paid_amount
+
+    @property
+    def is_fully_paid(self):
+        """Check if invoice is fully paid - NO DB FIELD"""
+        return self.paid_amount >= self.total_amount
+
+    @property
+    def is_partially_paid(self):
+        """Check if invoice has partial payment - NO DB FIELD"""
+        paid = self.paid_amount
+        return Decimal('0.00') < paid < self.total_amount
+
     def mark_as_paid(self):
-        """Mark invoice as paid"""
-        self.status = 'PAID'
+        """Mark invoice as paid or partially paid based on actual payments
+
+        This method intelligently determines the correct invoice status by:
+        1. Calculating total paid amount from related completed payments
+        2. Setting status to PAID only if fully paid
+        3. Setting status to PARTIALLY_PAID if partially paid
+        4. Keeping status as ISSUED if no payments made
+        """
+        paid = self.paid_amount
+
+        # Determine correct status based on payment amount
+        if paid >= self.total_amount:
+            # Fully paid
+            self.status = 'PAID'
+        elif paid > Decimal('0.00'):
+            # Partially paid
+            self.status = 'PARTIALLY_PAID'
+        elif self.status != 'ISSUED':
+            # No payment, but not yet issued
+            # Keep current status (DRAFT, VOID, CANCELLED, etc.)
+            pass
+
         self.save(update_fields=['status'])
-        
+
         # Update event's payment status
         self.event.update_payment_status()
     
