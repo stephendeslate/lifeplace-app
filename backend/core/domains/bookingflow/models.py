@@ -623,84 +623,48 @@ class ContactInfoStepConfiguration(BaseModel):
 
 
 class PaymentInfoStepConfiguration(BaseModel):
-    """Configuration for payment information step - UPDATED"""
+    """Configuration for payment information step
+
+    FULLY CONSOLIDATED: All payment business logic now in PaymentSettings (payments domain).
+    This model contains ONLY UI/UX flags and custom text.
+
+    REMOVED and moved to PaymentSettings:
+    - deposit_type, deposit_amount, balance_due_days (payment plan calculation)
+    - allow_refunds, refund_deadline_hours, refund_percentage, refund_policy_text (refund policy)
+    - allowed_gateways, default_gateway (payment gateway defaults)
+    """
     step = models.OneToOneField(
         BookingFlowStep,
         on_delete=models.CASCADE,
         related_name='payment_config'
     )
-    
-    # Payment options
-    accept_full_payment = models.BooleanField(default=True)
-    accept_deposit = models.BooleanField(default=True)
-    deposit_type = models.CharField(
-        max_length=20,
-        choices=[
-            ('PERCENTAGE', 'Percentage'),
-            ('FIXED', 'Fixed Amount'),
-        ],
-        default='PERCENTAGE'
-    )
-    deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('50.00'))
-    balance_due_days = models.PositiveIntegerField(
-        default=30,
-        help_text="Number of days before the event when the balance is due"
-    )
-    
-    # Refund configuration
-    allow_refunds = models.BooleanField(
+
+    # UI/UX FLAGS ONLY - what payment options to show
+    accept_full_payment = models.BooleanField(
         default=True,
-        help_text="Allow refunds for this booking flow"
+        help_text="Show option to pay in full"
     )
-    refund_deadline_days = models.PositiveIntegerField(
-        default=48,
-        help_text="Number of hours before the event when refunds are no longer allowed"
+    accept_deposit = models.BooleanField(
+        default=True,
+        help_text="Show option to pay deposit (amount from PaymentSettings.default_deposit_percentage)"
     )
-    refund_percentage = models.PositiveIntegerField(
-        default=100,
-        help_text="Percentage of payment that can be refunded (0-100)"
+    allow_payment_plans = models.BooleanField(
+        default=False,
+        help_text="Show payment plan option in UI"
     )
-    refund_policy_text = models.TextField(
-        blank=True,
-        help_text="Custom refund policy text to display to clients"
+    allow_quote_request = models.BooleanField(
+        default=True,
+        help_text="Allow users to request a quote instead of paying immediately"
     )
-    
-    # Payment methods
-    available_payment_methods = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="Available payment methods"
-    )
-    
-    # Payment processing - FIXED
     require_immediate_payment = models.BooleanField(
         default=False,
         help_text="Process payment immediately during booking"
     )
-    
-    # FIX: Use string references to avoid import issues
-    allowed_gateways = models.ManyToManyField(
-        'payments.PaymentGateway',
+
+    # UI TEXT CUSTOMIZATION ONLY
+    payment_terms = models.TextField(
         blank=True,
-        related_name='payment_step_configs',
-        help_text="Payment gateways available for this step"
-    )
-    default_gateway = models.ForeignKey(
-        'payments.PaymentGateway',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='default_payment_steps',
-        help_text="Default payment gateway for this step"
-    )
-    
-    allow_payment_plans = models.BooleanField(default=False)
-    payment_terms = models.TextField(blank=True)
-    
-    # Quote request options
-    allow_quote_request = models.BooleanField(
-        default=True,
-        help_text="Allow users to request a quote instead of paying immediately"
+        help_text="Payment terms text to display to clients"
     )
     quote_request_button_text = models.CharField(
         max_length=100,
@@ -715,24 +679,26 @@ class PaymentInfoStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Payment config for {self.step}"
-    
+
     def get_available_gateways(self):
-        """Get available payment gateways for this step"""
-        if self.allowed_gateways.exists():
-            return self.allowed_gateways.filter(is_active=True)
-        elif self.default_gateway and self.default_gateway.is_active:
-            return [self.default_gateway]
-        elif self.step.booking_flow.allowed_payment_gateways.exists():
-            return self.step.booking_flow.allowed_payment_gateways.filter(is_active=True)
-        elif self.step.booking_flow.default_payment_gateway and self.step.booking_flow.default_payment_gateway.is_active:
-            return [self.step.booking_flow.default_payment_gateway]
-        else:
-            # Fallback to all active gateways
-            try:
-                from core.domains.payments.models import PaymentGateway
-                return PaymentGateway.objects.filter(is_active=True)
-            except ImportError:
-                return []
+        """Get available payment gateways (now from global PaymentSettings)
+
+        CONSOLIDATED: Payment gateways are now globally configured in PaymentSettings.
+        This method now reads from the single source of truth.
+        """
+        try:
+            from core.domains.payments.models import PaymentSettings
+            settings = PaymentSettings.get_default_settings()
+
+            # Return global default gateways if configured
+            if settings.default_payment_gateways.exists():
+                return settings.default_payment_gateways.filter(is_active=True)
+
+            # Fallback to all active gateways if none configured
+            from core.domains.payments.models import PaymentGateway
+            return PaymentGateway.objects.filter(is_active=True)
+        except ImportError:
+            return []
 
 
 class ConfirmationStepConfiguration(BaseModel):

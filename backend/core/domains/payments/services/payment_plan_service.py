@@ -17,37 +17,37 @@ class PaymentPlanService:
     """Service for managing payment plans"""
 
     @staticmethod
-    def get_effective_balance_due_days(booking_session=None):
-        """Get effective balance due days with booking flow override"""
-        # Get global settings
+    def get_effective_balance_due_days():
+        """Get balance due days from global payment settings
+
+        CONSOLIDATED: Now reads only from PaymentSettings (single source of truth).
+        Previously checked booking flow overrides, but this caused configuration
+        fragmentation. All payment logic now centralized in payments domain.
+        """
         settings = PaymentSettings.get_default_settings()
-        default_days = settings.balance_due_days
-
-        # Check for booking flow override
-        if booking_session and hasattr(booking_session, 'booking_flow'):
-            try:
-                # Look for payment step configuration in the booking flow
-                payment_step = booking_session.booking_flow.steps.filter(
-                    step_type='PAYMENT_INFO'
-                ).first()
-
-                if payment_step and hasattr(payment_step, 'payment_config'):
-                    return payment_step.payment_config.balance_due_days
-            except Exception:
-                # If there's any error accessing the configuration, fall back to defaults
-                pass
-
-        return default_days
+        return settings.balance_due_days
 
     @staticmethod
-    def get_effective_grace_period_days(booking_session=None):
-        """Get effective grace period days from global settings"""
+    def get_effective_grace_period_days():
+        """Get grace period days from global payment settings
+
+        CONSOLIDATED: Now reads only from PaymentSettings (single source of truth).
+        """
         settings = PaymentSettings.get_default_settings()
         return settings.grace_period_days
 
     @staticmethod
-    def get_effective_installment_settings(booking_session=None):
-        """Get effective installment settings from global settings"""
+    def get_effective_installment_settings():
+        """Get installment settings from global payment settings
+
+        CONSOLIDATED: Now reads only from PaymentSettings (single source of truth).
+
+        Returns:
+            dict: {
+                'number_of_installments': int,
+                'frequency': str ('WEEKLY', 'BIWEEKLY', or 'MONTHLY')
+            }
+        """
         settings = PaymentSettings.get_default_settings()
         return {
             'number_of_installments': settings.default_installments,
@@ -186,14 +186,26 @@ class PaymentPlanService:
 
     @staticmethod
     def create_payment_plan_from_deposit(event, deposit_payment, remaining_amount, booking_session=None):
-        """Create a payment plan for the remaining balance after a deposit payment"""
-        with transaction.atomic():
-            # Get effective settings with booking flow overrides
-            balance_due_days = PaymentPlanService.get_effective_balance_due_days(booking_session)
-            grace_period_days = PaymentPlanService.get_effective_grace_period_days(booking_session)
-            installment_settings = PaymentPlanService.get_effective_installment_settings(booking_session)
+        """Create a payment plan for the remaining balance after a deposit payment
 
-            # Calculate due date based on effective settings
+        CONSOLIDATED: Now uses global PaymentSettings for all configuration.
+
+        Args:
+            event: Event instance
+            deposit_payment: Payment instance (the deposit payment)
+            remaining_amount: Decimal amount remaining after deposit
+            booking_session: Optional BookingSession for reference (audit trail only)
+
+        Returns:
+            PaymentPlan instance
+        """
+        with transaction.atomic():
+            # Get settings from global payment settings (single source of truth)
+            balance_due_days = PaymentPlanService.get_effective_balance_due_days()
+            grace_period_days = PaymentPlanService.get_effective_grace_period_days()
+            installment_settings = PaymentPlanService.get_effective_installment_settings()
+
+            # Calculate due date based on global settings
             due_date = event.start_date.date() - timezone.timedelta(days=balance_due_days)
 
             # Create payment plan for remaining balance
@@ -207,7 +219,7 @@ class PaymentPlanService:
                 grace_period_days=grace_period_days,
                 status='ACTIVE',  # Already active since deposit is paid
                 notes=f"Payment plan created after deposit payment of {deposit_payment.format_amount_with_currency()}",
-                created_from_booking_session=booking_session
+                created_from_booking_session=booking_session  # Audit trail only
             )
 
             # Update payment plan dates

@@ -422,8 +422,9 @@ class BookingSessionService:
                 event = BookingSessionService._create_event_from_session(session)
 
                 # NEW QUOTE-FIRST APPROACH: Always create quote first
-                logger.info(f"Creating quote from booking session for event {event.id}")
+                logger.info(f"Creating quote from booking session for event {event.id} (current event status: {event.status})")
                 quote = BookingSessionService.create_quote_from_booking_session(session, event, completion_type)
+                logger.info(f"Quote {quote.id} created with status '{quote.status}' for event {event.id} (event status: {event.status})")
 
                 # FIXED: Only create invoice when appropriate based on completion_type
                 # For quote requests, invoice will be created later when quote is accepted (via signal)
@@ -444,7 +445,14 @@ class BookingSessionService:
                 elif completion_type == 'payment':
                     logger.info(f"Processing payment completion for session {session.session_id}")
 
-                    # Create invoice from the accepted quote (quote status is ACCEPTED for payment completions)
+                    # Accept the quote first - this sets event status to CONFIRMED and event.accepted_quote
+                    logger.info(f"Accepting quote {quote.id} for payment completion (event status before: {event.status})")
+                    quote.accept()
+                    # Refresh event to get updated status
+                    event.refresh_from_db()
+                    logger.info(f"Quote {quote.id} accepted - event status after: {event.status}")
+
+                    # Create invoice from the accepted quote
                     logger.info(f"Creating invoice from accepted quote {quote.id}")
                     from core.domains.payments.services.invoice_service import InvoiceService
                     invoice = InvoiceService.create_from_quote(quote)
@@ -482,15 +490,11 @@ class BookingSessionService:
                     )
 
                     if payment_successful:
-                        # Payment successful - confirm the event and mark invoice as paid
-                        event.status = 'CONFIRMED'
-                        event.save()
-
-                        # Update invoice status
+                        # Payment successful - mark invoice as paid (event already confirmed via quote.accept())
                         invoice.status = 'PAID'
                         invoice.save()
 
-                        logger.info(f"Event {event.id} confirmed and invoice {invoice.invoice_id} marked as paid")
+                        logger.info(f"Invoice {invoice.invoice_id} marked as paid (event {event.id} already confirmed)")
                     else:
                         logger.error(f"Payment processing failed - payment status: {payment.status}")
                         raise EventCreationFailed("Payment processing failed")
@@ -607,23 +611,17 @@ class BookingSessionService:
         # Calculate amount to charge based on payment type
         full_amount = session.calculate_total_price()
         payment_type = payment_data.get('payment_type', 'FULL')
-        
+
         if payment_type == 'DEPOSIT':
-            # Get deposit configuration from payment step
-            payment_step = session.booking_flow.steps.filter(step_type='payment_info').first()
-            payment_config = getattr(payment_step, 'paymentinfo_config', None) if payment_step else None
-            
-            if payment_config and payment_config.accept_deposit:
-                if payment_config.deposit_type == 'PERCENTAGE':
-                    deposit_percentage = Decimal(str(payment_config.deposit_amount or 30))  # Default 30%
-                    amount_to_charge = full_amount * (deposit_percentage / Decimal('100'))
-                else:  # FIXED amount
-                    amount_to_charge = Decimal(str(payment_config.deposit_amount)) if payment_config.deposit_amount else (full_amount * Decimal('0.30'))
-            else:
-                # Fallback to 30% if no config found
-                amount_to_charge = full_amount * Decimal('0.30')
-            
-            logger.info(f"Payment type: DEPOSIT - Charging {amount_to_charge} out of total {full_amount}")
+            # CONSOLIDATED: Use global PaymentSettings for deposit percentage
+            from core.domains.payments.models import PaymentSettings
+            payment_settings = PaymentSettings.get_default_settings()
+
+            deposit_percentage = payment_settings.default_deposit_percentage
+            amount_to_charge = full_amount * (deposit_percentage / Decimal('100'))
+
+            logger.info(f"Payment type: DEPOSIT - Charging {amount_to_charge} ({deposit_percentage}% of {full_amount}) "
+                       f"using global PaymentSettings")
         else:
             amount_to_charge = full_amount
             logger.info(f"Payment type: FULL - Charging full amount {amount_to_charge}")
@@ -765,23 +763,17 @@ class BookingSessionService:
             raise ValueError("Invalid payment amount: invoice total amount is zero or missing")
 
         payment_type = payment_data.get('payment_type', 'FULL')
-        
+
         if payment_type == 'DEPOSIT':
-            # Get deposit configuration from payment step
-            payment_step = session.booking_flow.steps.filter(step_type='payment_info').first()
-            payment_config = getattr(payment_step, 'payment_config', None) if payment_step else None
-            
-            if payment_config and payment_config.accept_deposit:
-                if payment_config.deposit_type == 'PERCENTAGE':
-                    deposit_percentage = Decimal(str(payment_config.deposit_amount or 30))  # Default 30%
-                    amount_to_charge = full_amount * (deposit_percentage / Decimal('100'))
-                else:  # FIXED amount
-                    amount_to_charge = Decimal(str(payment_config.deposit_amount)) if payment_config.deposit_amount else (full_amount * Decimal('0.30'))
-            else:
-                # Fallback to 30% if no config found
-                amount_to_charge = full_amount * Decimal('0.30')
-            
-            logger.info(f"Payment type: DEPOSIT - Charging {amount_to_charge} out of total {full_amount}")
+            # CONSOLIDATED: Use global PaymentSettings for deposit percentage
+            from core.domains.payments.models import PaymentSettings
+            payment_settings = PaymentSettings.get_default_settings()
+
+            deposit_percentage = payment_settings.default_deposit_percentage
+            amount_to_charge = full_amount * (deposit_percentage / Decimal('100'))
+
+            logger.info(f"Payment type: DEPOSIT - Charging {amount_to_charge} ({deposit_percentage}% of {full_amount}) "
+                       f"using global PaymentSettings")
         else:
             amount_to_charge = full_amount
             logger.info(f"Payment type: FULL - Charging full amount {amount_to_charge}")

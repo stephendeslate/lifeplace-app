@@ -10,17 +10,6 @@ import {
   Stack,
   Alert,
   Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
-  ListItemText,
-  Chip,
-  RadioGroup,
-  Radio,
-  InputAdornment,
-  Autocomplete,
   CircularProgress,
 } from '@mui/material';
 
@@ -28,19 +17,15 @@ import {
 import { ModernCard } from '../../common/ModernCard';
 import {
   Payment as PaymentIcon,
-  AccountBalance as BankIcon,
-  CreditCard as CreditCardIcon,
   Schedule as PlanIcon,
   AttachMoney as MoneyIcon,
   Security as SecurityIcon,
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
-import { useCurrencySettings } from '../../../hooks/useCurrency';
-import { getCurrencySymbol } from '../../../utils/currency';
-import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
-import type { 
-  BookingFlowStep, 
-  PaymentInfoStepConfiguration 
+import { usePaymentSettings } from '../../../hooks/usePayments';
+import type {
+  BookingFlowStep,
+  PaymentInfoStepConfiguration
 } from '../../../types/bookingflows.types';
 
 interface PaymentInfoStepConfigProps {
@@ -50,43 +35,17 @@ interface PaymentInfoStepConfigProps {
   isLoading?: boolean;
 }
 
-interface PaymentGateway {
-  id: number;
-  name: string;
-  code: string;
-  description: string;
-  supported_methods: string[];
-  public_config: Record<string, unknown>;
-}
-
-interface PaymentOptions {
-  available_gateways: PaymentGateway[];
-  saved_payment_methods: unknown[];
-  require_immediate_payment: boolean;
-  accept_deposit: boolean;
-  deposit_amount: string | null;
-  deposit_type: string | null;
-  allow_payment_plans: boolean;
-  payment_terms: string;
-}
 
 interface PaymentInfoConfigFormData {
+  // UI/UX FLAGS ONLY
   accept_full_payment: boolean;
   accept_deposit: boolean;
-  deposit_type: 'PERCENTAGE' | 'FIXED';
-  deposit_amount: string;
-  balance_due_days: string;
-  allow_refunds: boolean;
-  refund_deadline_days: string;
-  refund_percentage: string;
-  refund_policy_text: string;
-  available_payment_methods: string[];
-  require_immediate_payment: boolean;
-  allowed_gateways: number[];
-  default_gateway: number | null;
   allow_payment_plans: boolean;
-  payment_terms: string;
   allow_quote_request: boolean;
+  require_immediate_payment: boolean;
+
+  // UI TEXT CUSTOMIZATION ONLY
+  payment_terms: string;
   quote_request_button_text: string;
   quote_request_description: string;
 }
@@ -94,31 +53,13 @@ interface PaymentInfoConfigFormData {
 const defaultFormData: PaymentInfoConfigFormData = {
   accept_full_payment: true,
   accept_deposit: true,
-  deposit_type: 'PERCENTAGE',
-  deposit_amount: '30', // Better default for conversion
-  balance_due_days: '30',
-  allow_refunds: true,
-  refund_deadline_days: '48',
-  refund_percentage: '100',
-  refund_policy_text: '',
-  available_payment_methods: ['CREDIT_CARD', 'BANK_TRANSFER'],
-  require_immediate_payment: false,
-  allowed_gateways: [],
-  default_gateway: null,
   allow_payment_plans: false,
-  payment_terms: '',
   allow_quote_request: true,
+  require_immediate_payment: false,
+  payment_terms: '',
   quote_request_button_text: 'Get Custom Quote',
   quote_request_description: 'Perfect for unique celebrations with custom requirements',
 };
-
-const PAYMENT_METHODS = [
-  { value: 'CREDIT_CARD', label: 'Credit ModernCard', icon: <CreditCardIcon /> },
-  { value: 'BANK_TRANSFER', label: 'Bank Transfer', icon: <BankIcon /> },
-  { value: 'CHECK', label: 'Check', icon: <PaymentIcon /> },
-  { value: 'CASH', label: 'Cash', icon: <MoneyIcon /> },
-  { value: 'DIGITAL_WALLET', label: 'Digital Wallet', icon: <PaymentIcon /> },
-];
 
 export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
   step,
@@ -128,45 +69,19 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
 }) => {
   const [formData, setFormData] = useState<PaymentInfoConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [paymentOptions, setPaymentOptions] = useState<PaymentOptions | null>(null);
 
-  const { usePaymentOptions } = useBookingFlowStepConfiguration();
-  
-  // Get user's currency settings
-  const { settings: currencySettings } = useCurrencySettings();
-  
-  // Fetch payment options for this step
-  const {
-    data: paymentOptionsData,
-    isLoading: isLoadingPaymentOptions,
-    error: paymentOptionsError
-  } = usePaymentOptions(step.id);
-
-  useEffect(() => {
-    if (paymentOptionsData) {
-      setPaymentOptions(paymentOptionsData);
-    }
-  }, [paymentOptionsData]);
+  // Get global payment settings
+  const { data: paymentSettings, isLoading: isLoadingPaymentSettings } = usePaymentSettings();
 
   useEffect(() => {
     if (config) {
       setFormData({
         accept_full_payment: config.accept_full_payment ?? true,
         accept_deposit: config.accept_deposit ?? true,
-        deposit_type: config.deposit_type || 'PERCENTAGE',
-        deposit_amount: config.deposit_amount?.toString() || '25',
-        balance_due_days: config.balance_due_days?.toString() || '30',
-        allow_refunds: config.allow_refunds ?? true,
-        refund_deadline_days: config.refund_deadline_days?.toString() || '48',
-        refund_percentage: config.refund_percentage?.toString() || '100',
-        refund_policy_text: config.refund_policy_text || '',
-        available_payment_methods: config.available_payment_methods || ['CREDIT_CARD', 'BANK_TRANSFER'],
-        require_immediate_payment: config.require_immediate_payment ?? false,
-        allowed_gateways: config.allowed_gateways || [],
-        default_gateway: config.default_gateway || null,
         allow_payment_plans: config.allow_payment_plans ?? false,
-        payment_terms: config.payment_terms || '',
         allow_quote_request: config.allow_quote_request ?? true,
+        require_immediate_payment: config.require_immediate_payment ?? false,
+        payment_terms: config.payment_terms || '',
         quote_request_button_text: config.quote_request_button_text || 'Request Quote',
         quote_request_description: config.quote_request_description || 'Get a customized quote for your event',
       });
@@ -201,70 +116,11 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
     }));
   };
 
-  const handleDepositTypeChange = (value: 'PERCENTAGE' | 'FIXED') => {
-    setFormData(prev => ({
-      ...prev,
-      deposit_type: value,
-      deposit_amount: value === 'PERCENTAGE' ? '25' : '100',
-    }));
-  };
-
-  const handlePaymentMethodsChange = (value: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      available_payment_methods: value,
-    }));
-  };
-
-  const handleAllowedGatewaysChange = (gatewayIds: number[]) => {
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        allowed_gateways: gatewayIds,
-      };
-      
-      // Reset default gateway if it's not in the allowed list
-      if (prev.default_gateway && !gatewayIds.includes(prev.default_gateway)) {
-        newData.default_gateway = null;
-      }
-      
-      return newData;
-    });
-  };
-
-  const handleDefaultGatewayChange = (gatewayId: number | null) => {
-    setFormData(prev => ({
-      ...prev,
-      default_gateway: gatewayId,
-    }));
-  };
-
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.accept_full_payment && !formData.accept_deposit) {
       newErrors.payment_options = 'At least one payment option must be enabled';
-    }
-
-    if (formData.accept_deposit) {
-      const amount = parseFloat(formData.deposit_amount);
-      if (isNaN(amount) || amount <= 0) {
-        newErrors.deposit_amount = 'Deposit amount must be a positive number';
-      } else if (formData.deposit_type === 'PERCENTAGE' && amount > 100) {
-        newErrors.deposit_amount = 'Percentage cannot exceed 100%';
-      }
-    }
-
-    if (formData.available_payment_methods.length === 0) {
-      newErrors.payment_methods = 'At least one payment method must be selected';
-    }
-
-    if (formData.require_immediate_payment && formData.allowed_gateways.length === 0) {
-      newErrors.payment_gateways = 'At least one payment gateway must be selected for immediate payment processing';
-    }
-
-    if (formData.default_gateway && !formData.allowed_gateways.includes(formData.default_gateway)) {
-      newErrors.default_gateway = 'Default gateway must be selected from allowed gateways';
     }
 
     setErrors(newErrors);
@@ -277,20 +133,10 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
     const updateData: Partial<PaymentInfoStepConfiguration> = {
       accept_full_payment: formData.accept_full_payment,
       accept_deposit: formData.accept_deposit,
-      deposit_type: formData.deposit_type,
-      deposit_amount: formData.deposit_amount,
-      balance_due_days: parseInt(formData.balance_due_days) || 30,
-      allow_refunds: formData.allow_refunds,
-      refund_deadline_days: parseInt(formData.refund_deadline_days) || 48,
-      refund_percentage: parseInt(formData.refund_percentage) || 100,
-      refund_policy_text: formData.refund_policy_text.trim() || '',
-      available_payment_methods: formData.available_payment_methods,
-      require_immediate_payment: formData.require_immediate_payment,
-      allowed_gateways: formData.allowed_gateways,
-      default_gateway: formData.default_gateway,
       allow_payment_plans: formData.allow_payment_plans,
-      payment_terms: formData.payment_terms.trim() || '',
       allow_quote_request: formData.allow_quote_request,
+      require_immediate_payment: formData.require_immediate_payment,
+      payment_terms: formData.payment_terms.trim() || '',
       quote_request_button_text: formData.quote_request_button_text.trim() || 'Request Quote',
       quote_request_description: formData.quote_request_description.trim() || '',
     };
@@ -298,22 +144,6 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
     onUpdate(updateData);
   };
 
-  const getPaymentMethodIcon = (method: string) => {
-    return PAYMENT_METHODS.find(pm => pm.value === method)?.icon || <PaymentIcon />;
-  };
-
-  const getPaymentMethodLabel = (method: string) => {
-    return PAYMENT_METHODS.find(pm => pm.value === method)?.label || method;
-  };
-
-  const getGatewayDisplayName = (gateway: PaymentGateway) => {
-    return `${gateway.name} (${gateway.code.toUpperCase()})`;
-  };
-
-  const availableGateways = paymentOptions?.available_gateways || [];
-  const allowedGatewayObjects = availableGateways.filter(g => 
-    formData.allowed_gateways.includes(g.id)
-  );
 
   return (
     <Box>
@@ -322,14 +152,8 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
       </Typography>
       
       <Alert severity="info" sx={{ mb: 3 }}>
-        Configure payment options, deposit requirements, and payment gateway settings for the booking flow.
+        <strong>DRY-Compliant Configuration:</strong> This step only configures UI/UX flags. All payment business logic (deposits, refunds, gateways) is managed globally in Payment Settings.
       </Alert>
-
-      {paymentOptionsError && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          Failed to load payment options: {paymentOptionsError.message}
-        </Alert>
-      )}
 
       <Stack spacing={3}>
         {/* Payment Options */}
@@ -379,288 +203,112 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
           </Box>
         </ModernCard>
 
-        {/* Deposit Settings */}
+        {/* Deposit Settings - Now Global */}
         {formData.accept_deposit && (
           <ModernCard variant="glass" size="medium" animation="none">
             <Box sx={{ p: 3 }}>
               <Typography variant="subtitle1" gutterBottom>
                 Deposit Settings
               </Typography>
-        
-              <Stack spacing={2}>
-                <FormControl>
-                  <Typography variant="body2" gutterBottom>
-                    Deposit Type
+
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <strong>Global Setting:</strong> Deposit percentage and balance due days are configured globally in Payment Settings.
+                {paymentSettings && (
+                  <>
+                    <br />
+                    Current deposit: <strong>{paymentSettings.default_deposit_percentage}%</strong>
+                    <br />
+                    Balance due: <strong>{paymentSettings.balance_due_days} days</strong> before event
+                  </>
+                )}
+              </Alert>
+
+              {isLoadingPaymentSettings ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                  <MoneyIcon color="disabled" />
+                  <Typography variant="body2" color="text.secondary">
+                    Loading payment settings...
                   </Typography>
-                  <RadioGroup
-                    value={formData.deposit_type}
-                    onChange={(e) => handleDepositTypeChange(e.target.value as 'PERCENTAGE' | 'FIXED')}
-                  >
-                    <FormControlLabel
-                      value="PERCENTAGE"
-                      control={<Radio />}
-                      label="Percentage of Total (Recommended)"
-                    />
-                    <FormControlLabel
-                      value="FIXED"
-                      control={<Radio />}
-                      label="Fixed Amount"
-                    />
-                  </RadioGroup>
-                </FormControl>
-
-                <TextField
-                  label="Deposit Amount"
-                  value={formData.deposit_amount}
-                  onChange={handleInputChange('deposit_amount')}
-                  error={!!errors.deposit_amount}
-                  helperText={
-                    errors.deposit_amount || 
-                    `${formData.deposit_type === 'PERCENTAGE' 
-                      ? 'Sweet spot: 25-35% for most event types' 
-                      : 'Consider your typical booking value'
-                    }`
-                  }
-                  type="number"
-                  inputProps={{ 
-                    min: 0,
-                    max: formData.deposit_type === 'PERCENTAGE' ? 100 : undefined,
-                    step: formData.deposit_type === 'PERCENTAGE' ? 1 : 0.01
-                  }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        {formData.deposit_type === 'PERCENTAGE' ? '%' : getCurrencySymbol(currencySettings?.defaultCurrency)}
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ maxWidth: 300 }}
-                />
-
-                <TextField
-                  label="Balance Due (Days Before Event)"
-                  value={formData.balance_due_days}
-                  onChange={handleInputChange('balance_due_days')}
-                  helperText="How many days before the event is the balance due?"
-                  type="number"
-                  inputProps={{ min: 1, max: 365 }}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">days</InputAdornment>
-                  }}
-                  sx={{ maxWidth: 300 }}
-                />
-              </Stack>
+                </Box>
+              ) : paymentSettings ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                  <MoneyIcon color="primary" />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Current Deposit: {paymentSettings.default_deposit_percentage}% of total
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Balance due: {paymentSettings.balance_due_days} days before event
+                    </Typography>
+                    <Button
+                      variant="text"
+                      size="small"
+                      href="/settings/commerce/payments"
+                      sx={{ mt: 1, textTransform: 'none', p: 0, minWidth: 'auto' }}
+                    >
+                      Update Global Payment Settings →
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <Alert severity="warning">
+                  Unable to load payment settings. Please check your configuration.
+                </Alert>
+              )}
             </Box>
           </ModernCard>
         )}
 
-        {/* Refund Configuration */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Refund Policy
-            </Typography>
-            
-            <Stack spacing={3}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.allow_refunds}
-                    onChange={handleInputChange('allow_refunds')}
-                  />
-                }
-                label="Allow Refunds"
-                sx={{ mb: 2 }}
-              />
-
-              {formData.allow_refunds && (
-                <Stack spacing={3}>
-                  <TextField
-                    label="Refund Deadline (Hours Before Event)"
-                    value={formData.refund_deadline_days}
-                    onChange={handleInputChange('refund_deadline_days')}
-                    helperText="How many hours before the event are refunds allowed?"
-                    type="number"
-                    inputProps={{ min: 1, max: 8760 }}
-                    InputProps={{
-                      endAdornment: <InputAdornment position="end">hours</InputAdornment>
-                    }}
-                    sx={{ maxWidth: 300 }}
-                  />
-
-                  <TextField
-                    label="Refund Percentage"
-                    value={formData.refund_percentage}
-                    onChange={handleInputChange('refund_percentage')}
-                    helperText="What percentage of the payment can be refunded?"
-                    type="number"
-                    inputProps={{ min: 0, max: 100 }}
-                    InputProps={{
-                      endAdornment: <InputAdornment position="end">%</InputAdornment>
-                    }}
-                    sx={{ maxWidth: 300 }}
-                  />
-
-                  <TextField
-                    label="Custom Refund Policy Text"
-                    value={formData.refund_policy_text}
-                    onChange={handleInputChange('refund_policy_text')}
-                    helperText="Optional custom refund policy text to display to clients"
-                    multiline
-                    rows={3}
-                    placeholder="e.g., Full refund available up to 48 hours before your event..."
-                  />
-                </Stack>
-              )}
-            </Stack>
-          </Box>
-        </ModernCard>
-
-        {/* Payment Methods */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Available Payment Methods
-            </Typography>
-            
-            <Stack spacing={2}>
-              <FormControl fullWidth error={!!errors.payment_methods}>
-                <InputLabel>Payment Methods</InputLabel>
-                <Select
-                  multiple
-                  value={formData.available_payment_methods}
-                  onChange={(e) => handlePaymentMethodsChange(e.target.value as string[])}
-                  label="Payment Methods"
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((method) => (
-                        <Chip 
-                          key={method} 
-                          label={getPaymentMethodLabel(method)} 
-                          size="small"
-                          icon={getPaymentMethodIcon(method)}
-                        />
-                      ))}
-                    </Box>
-                  )}
-                >
-                  {PAYMENT_METHODS.map((method) => (
-                    <MenuItem key={method.value} value={method.value}>
-                      <Checkbox checked={formData.available_payment_methods.includes(method.value)} />
-                      <Box display="flex" alignItems="center" gap={1}>
-                        {method.icon}
-                        <ListItemText primary={method.label} />
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-                {errors.payment_methods && (
-                  <Typography variant="caption" color="error">
-                    {errors.payment_methods}
-                  </Typography>
-                )}
-              </FormControl>
-            </Stack>
-          </Box>
-        </ModernCard>
-
-        {/* Payment Gateways */}
+        {/* Refund & Gateway Settings - Global Configuration Info */}
         <ModernCard variant="glass" size="medium" animation="none">
           <Box sx={{ p: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <SecurityIcon color="primary" />
               <Typography variant="subtitle1">
-                Payment Gateway Configuration
+                Refund & Gateway Settings
               </Typography>
-              {isLoadingPaymentOptions && <CircularProgress size={20} />}
             </Box>
-            
-            <Stack spacing={2}>
-              {availableGateways.length > 0 ? (
-                <>
-                  <FormControl fullWidth error={!!errors.payment_gateways}>
-                    <Autocomplete
-                      multiple
-                      options={availableGateways}
-                      getOptionLabel={(option) => getGatewayDisplayName(option)}
-                      value={allowedGatewayObjects}
-                      onChange={(_, newValue) => {
-                        handleAllowedGatewaysChange(newValue.map(g => g.id));
-                      }}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Allowed Payment Gateways"
-                          helperText={errors.payment_gateways || "Select which payment gateways are available for this step"}
-                          error={!!errors.payment_gateways}
-                        />
-                      )}
-                      renderTags={(value, getTagProps) =>
-                        value.map((option, index) => (
-                          <Chip
-                            variant="outlined"
-                            label={getGatewayDisplayName(option)}
-                            {...getTagProps({ index })}
-                            key={option.id}
-                          />
-                        ))
-                      }
-                      renderOption={(props, option) => (
-                        <Box component="li" {...props}>
-                          <Box>
-                            <Typography variant="body2">
-                              {getGatewayDisplayName(option)}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {option.description}
-                            </Typography>
-                            {option.supported_methods.length > 0 && (
-                              <Typography variant="caption" display="block">
-                                Supports: {option.supported_methods.join(', ')}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Box>
-                      )}
-                    />
-                  </FormControl>
 
-                  {formData.allowed_gateways.length > 0 && (
-                    <FormControl sx={{ maxWidth: 400 }} error={!!errors.default_gateway}>
-                      <InputLabel>Default Gateway</InputLabel>
-                      <Select
-                        value={formData.default_gateway || ''}
-                        onChange={(e) => handleDefaultGatewayChange(e.target.value as number)}
-                        label="Default Gateway"
-                      >
-                        <MenuItem value="">
-                          <em>No default (let user choose)</em>
-                        </MenuItem>
-                        {allowedGatewayObjects.map((gateway) => (
-                          <MenuItem key={gateway.id} value={gateway.id}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <CheckIcon fontSize="small" color="success" />
-                              {getGatewayDisplayName(gateway)}
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.default_gateway && (
-                        <Typography variant="caption" color="error">
-                          {errors.default_gateway}
-                        </Typography>
-                      )}
-                    </FormControl>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <strong>Global Configuration:</strong> Refund policies and payment gateways are configured globally in Payment Settings.
+              {paymentSettings && (
+                <>
+                  <br /><br />
+                  <strong>Current Settings:</strong>
+                  <br />• Refunds: <strong>{paymentSettings.allow_refunds ? 'Enabled' : 'Disabled'}</strong>
+                  {paymentSettings.allow_refunds && (
+                    <>
+                      {' '}({paymentSettings.refund_percentage}% up to {paymentSettings.refund_deadline_hours}h before event)
+                    </>
+                  )}
+                  <br />• Payment Gateways: <strong>{paymentSettings.default_payment_gateways?.length || 0} configured</strong>
+                  {paymentSettings.primary_payment_gateway && (
+                    <> (Primary gateway selected)</>
                   )}
                 </>
-              ) : (
-                <Alert severity="warning">
-                  No payment gateways are configured. Please configure payment gateways in the system settings first.
-                </Alert>
               )}
-            </Stack>
+            </Alert>
+
+            {isLoadingPaymentSettings ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                <CircularProgress size={20} />
+                <Typography variant="body2" color="text.secondary">
+                  Loading payment settings...
+                </Typography>
+              </Box>
+            ) : (
+              <Button
+                variant="outlined"
+                size="small"
+                href="/settings/commerce/payments"
+                sx={{ mt: 1, textTransform: 'none' }}
+              >
+                Update Global Payment Settings →
+              </Button>
+            )}
           </Box>
         </ModernCard>
+
 
         {/* Payment Processing */}
         <ModernCard variant="glass" size="medium" animation="none">
@@ -791,39 +439,22 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
             <Typography variant="subtitle1" gutterBottom>
               Configuration Summary
             </Typography>
-            
+
             <Stack spacing={1}>
               <Typography variant="body2">
                 <strong>Payment Options:</strong>{' '}
                 {[
                   formData.accept_full_payment && 'Full Payment',
-                  formData.accept_deposit && `Deposit (${formData.deposit_amount}${formData.deposit_type === 'PERCENTAGE' ? '%' : ` ${currencySettings?.defaultCurrency || 'PHP'}`})`
+                  formData.accept_deposit && `Deposit (${paymentSettings?.default_deposit_percentage || 50}% from global settings)`
                 ].filter(Boolean).join(', ') || 'None configured'}
               </Typography>
-              
-              <Typography variant="body2">
-                <strong>Payment Methods:</strong> {formData.available_payment_methods.length} enabled
-              </Typography>
-              
-              <Typography variant="body2">
-                <strong>Payment Gateways:</strong>{' '}
-                {formData.allowed_gateways.length > 0 
-                  ? `${formData.allowed_gateways.length} configured`
-                  : 'None selected'
-                }
-                {formData.default_gateway && (
-                  <span> (Default: {
-                    availableGateways.find(g => g.id === formData.default_gateway)?.name || 'Unknown'
-                  })</span>
-                )}
-              </Typography>
-              
+
               <Typography variant="body2">
                 <strong>Processing:</strong>{' '}
                 {formData.require_immediate_payment ? 'Immediate' : 'Deferred'}
                 {formData.allow_payment_plans && ', Payment plans allowed'}
               </Typography>
-              
+
               <Typography variant="body2">
                 <strong>Quote Requests:</strong>{' '}
                 {formData.allow_quote_request ? 'Enabled' : 'Disabled'}
@@ -831,12 +462,18 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                   <span> ("{formData.quote_request_button_text}")</span>
                 )}
               </Typography>
-              
+
               {formData.payment_terms && (
                 <Typography variant="body2">
                   <strong>Terms:</strong> Custom terms configured
                 </Typography>
               )}
+
+              <Alert severity="success" sx={{ mt: 2 }}>
+                <Typography variant="caption">
+                  <strong>DRY Compliance:</strong> Refund policies, payment gateways, and deposit amounts are configured globally in Payment Settings - no duplication across booking flows!
+                </Typography>
+              </Alert>
             </Stack>
           </Box>
         </ModernCard>

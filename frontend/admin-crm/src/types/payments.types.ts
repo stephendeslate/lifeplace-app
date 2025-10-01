@@ -337,10 +337,15 @@ export interface Refund {
 
 /**
  * PaymentSettings interface for configuring payment behavior and defaults
+ *
+ * CONSOLIDATED: Single source of truth for ALL payment-related configuration
+ * including refund policies and payment gateway defaults (Phase 2 consolidation)
  */
 export interface PaymentSettings {
   /** Unique identifier for the payment settings */
   id: number;
+
+  // PAYMENT PLAN SETTINGS
   /** Number of days after event/service date when balance is due */
   balance_due_days: number;
   /** Number of grace period days after due date before late fees apply */
@@ -349,18 +354,44 @@ export interface PaymentSettings {
   default_installments: number;
   /** Default frequency for installment payments */
   default_installment_frequency: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+
+  // DEPOSIT SETTINGS
+  /** Default deposit percentage required for new bookings */
+  default_deposit_percentage: number;
+
+  // LATE FEE SETTINGS
   /** Whether late fees are enabled system-wide */
   late_fee_enabled: boolean;
   /** Default late fee amount when late fees are applied */
   default_late_fee_amount: number;
-  /** Default deposit percentage required for new bookings */
-  default_deposit_percentage: number;
+
+  // CURRENCY SETTINGS
   /** Default currency code for payments */
   default_currency: string;
+
+  // AUTO RETRY SETTINGS
   /** Number of automatic retry attempts for failed payments */
   auto_payment_retry_attempts: number;
   /** Number of days to wait between auto payment retry attempts */
   auto_payment_retry_delay_days: number;
+
+  // REFUND POLICY SETTINGS - CONSOLIDATED Phase 2
+  /** Allow refunds globally */
+  allow_refunds: boolean;
+  /** Hours before event when refunds are no longer allowed */
+  refund_deadline_hours: number;
+  /** Percentage of payment that can be refunded (0-100) */
+  refund_percentage: number;
+  /** Default refund policy text to display to clients */
+  refund_policy_text: string;
+
+  // PAYMENT GATEWAY DEFAULTS - CONSOLIDATED Phase 2
+  /** Default payment gateways available globally (array of gateway IDs) */
+  default_payment_gateways: number[];
+  /** Primary payment gateway (pre-selected by default) */
+  primary_payment_gateway: number | null;
+
+  // TIMESTAMPS
   /** Timestamp when settings were created */
   created_at: string;
   /** Timestamp when settings were last updated */
@@ -530,16 +561,29 @@ export interface CreateRefundData {
 }
 
 export interface UpdatePaymentSettingsData {
+  // Payment plan settings
   balance_due_days?: number;
   grace_period_days?: number;
   default_installments?: number;
   default_installment_frequency?: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+  // Deposit settings
+  default_deposit_percentage?: number;
+  // Late fee settings
   late_fee_enabled?: boolean;
   default_late_fee_amount?: number;
-  default_deposit_percentage?: number;
+  // Currency settings
   default_currency?: string;
+  // Auto retry settings
   auto_payment_retry_attempts?: number;
   auto_payment_retry_delay_days?: number;
+  // REFUND POLICY - CONSOLIDATED Phase 2
+  allow_refunds?: boolean;
+  refund_deadline_hours?: number;
+  refund_percentage?: number;
+  refund_policy_text?: string;
+  // PAYMENT GATEWAYS - CONSOLIDATED Phase 2
+  default_payment_gateways?: number[];
+  primary_payment_gateway?: number | null;
 }
 
 // Filter Types

@@ -315,8 +315,9 @@ export const paymentsApi = {
    * Payment Settings
    */
   getPaymentSettings: async (): Promise<PaymentSettings> => {
-    const response = await api.get<PaymentSettings>('/payments/settings/');
-    return response.data;
+    const response = await api.get<PaymentSettings[]>('/payments/settings/');
+    // Backend returns an array, get the first (and only) settings object
+    return response.data[0];
   },
 
   updatePaymentSettings: async (id: number, data: UpdatePaymentSettingsData): Promise<PaymentSettings> => {

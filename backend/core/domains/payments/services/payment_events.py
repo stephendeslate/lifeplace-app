@@ -397,7 +397,22 @@ class PaymentEventHandlers:
                 from core.domains.workflows.engine import WorkflowEngine
                 from django.utils import timezone
 
-                # Create workflow trigger
+                # Check if trigger already exists for this payment
+                # Deduplicate by finding any unprocessed PAYMENT_RECEIVED trigger for this event
+                # that has this payment_id in its result_data
+                existing_triggers = WorkflowTrigger.objects.filter(
+                    event=payment.event,
+                    trigger_type='PAYMENT_RECEIVED',
+                    processed=False
+                )
+
+                # Check if any existing trigger is for this specific payment
+                for existing_trigger in existing_triggers:
+                    if existing_trigger.result_data.get('payment_id') == payment.id:
+                        logger.debug(f"Trigger for payment {payment.id} already exists (trigger {existing_trigger.id}) - skipping duplicate")
+                        return
+
+                # Create new trigger
                 trigger = WorkflowTrigger.objects.create(
                     event=payment.event,
                     stage=payment.event.current_stage,
