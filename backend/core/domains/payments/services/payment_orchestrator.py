@@ -385,6 +385,22 @@ class PaymentOrchestrator:
                         error_code='INVALID_INVOICE'
                     )
 
+                # OVER-PAYMENT PREVENTION: Check payment amount doesn't exceed remaining balance
+                invoice = Invoice.objects.get(id=request.invoice_id)
+                remaining_balance = invoice.remaining_amount if hasattr(invoice, 'remaining_amount') else invoice.total_amount
+                if request.amount > remaining_balance:
+                    return PaymentResponse(
+                        success=False,
+                        message=f"Payment amount exceeds invoice remaining balance",
+                        error_code='EXCEEDS_BALANCE',
+                        error_details={
+                            'requested_amount': str(request.amount),
+                            'remaining_balance': str(remaining_balance),
+                            'total_amount': str(invoice.total_amount),
+                            'paid_amount': str(invoice.paid_amount)
+                        }
+                    )
+
             # Validate payment method if specified
             if request.payment_method_id:
                 from ..models import PaymentMethod

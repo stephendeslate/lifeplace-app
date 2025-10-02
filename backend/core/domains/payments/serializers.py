@@ -628,9 +628,19 @@ class PaymentSerializer(serializers.ModelSerializer):
 class InvoicePaymentRequestSerializer(serializers.Serializer):
     """Serializer for invoice payment request data"""
     payment_type = serializers.ChoiceField(
-        choices=[('FULL', 'Full Payment'), ('DEPOSIT', 'Deposit Payment')],
+        choices=[
+            ('FULL', 'Full Payment'),
+            ('DEPOSIT', 'Deposit Payment'),
+            ('CUSTOM', 'Custom Amount')
+        ],
         default='FULL',
-        help_text='Payment type - full payment or deposit (deposit uses PaymentSettings.default_deposit_percentage)'
+        help_text='Payment type - full payment, deposit, or custom amount'
+    )
+    amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        help_text='Custom payment amount (required when payment_type=CUSTOM)'
     )
     payment_method = serializers.IntegerField(required=False, help_text="Saved payment method ID")
     payment_method_id = serializers.CharField(required=False, help_text="Stripe payment method ID or token")
@@ -648,6 +658,18 @@ class InvoicePaymentRequestSerializer(serializers.Serializer):
         logger = logging.getLogger(__name__)
 
         logger.info(f"🔍 PAYMENT VALIDATION - Received data: {data}")
+
+        # Validate custom amount if payment_type is CUSTOM
+        if data.get('payment_type') == 'CUSTOM':
+            if not data.get('amount'):
+                raise serializers.ValidationError(
+                    "amount is required when payment_type is CUSTOM"
+                )
+            # Validate amount is positive
+            if data.get('amount') <= 0:
+                raise serializers.ValidationError(
+                    "amount must be greater than 0"
+                )
 
         # Require either payment method ID/token/saved method or manual payment
         if not data.get('is_manual', False):
@@ -720,6 +742,7 @@ class PaymentPlanRequestSerializer(serializers.Serializer):
     )
     notes = serializers.CharField(
         required=False,
+        allow_blank=True,
         max_length=1000,
         help_text="Additional notes for payment plan"
     )

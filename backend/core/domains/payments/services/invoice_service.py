@@ -257,10 +257,67 @@ class InvoiceService:
                 deposit_percentage = settings.default_deposit_percentage
                 payment_amount = (invoice.total_amount * deposit_percentage) / Decimal('100')
                 description = f'Deposit payment for invoice {invoice.invoice_id} ({deposit_percentage}%)'
+            elif payment_type == 'CUSTOM':
+                # Use custom amount from request
+                payment_amount = Decimal(str(payment_data.get('amount')))
+                description = f'Custom payment for invoice {invoice.invoice_id}'
+
+                # Validate against gateway minimum (defensive check)
+                from .gateway_service import get_stripe_minimum
+                gateway_code = payment_data.get('gateway_code', 'stripe')
+
+                if gateway_code == 'stripe':
+                    minimum_charge = get_stripe_minimum(invoice.currency)
+
+                    # Check if payment amount itself is below minimum
+                    if payment_amount < minimum_charge:
+                        return {
+                            'success': False,
+                            'error': f'Payment amount {payment_amount} {invoice.currency} is below minimum charge of {minimum_charge} {invoice.currency}',
+                            'error_code': 'BELOW_MINIMUM_CHARGE',
+                            'details': {
+                                'amount': str(payment_amount),
+                                'minimum': str(minimum_charge),
+                                'currency': invoice.currency
+                            }
+                        }
+
+                    # Check if remaining balance would be below minimum (unless paying full)
+                    remaining_balance = invoice.remaining_amount if hasattr(invoice, 'remaining_amount') else invoice.total_amount
+                    remaining_after_payment = remaining_balance - payment_amount
+
+                    if Decimal('0') < remaining_after_payment < minimum_charge:
+                        return {
+                            'success': False,
+                            'error': f'Remaining balance of {remaining_after_payment} {invoice.currency} would be below minimum charge of {minimum_charge} {invoice.currency}. Please pay the full amount or leave at least {minimum_charge} {invoice.currency} remaining.',
+                            'error_code': 'REMAINING_BELOW_MINIMUM',
+                            'details': {
+                                'payment_amount': str(payment_amount),
+                                'remaining_after_payment': str(remaining_after_payment),
+                                'minimum': str(minimum_charge),
+                                'currency': invoice.currency,
+                                'suggestion': f'Pay full amount of {remaining_balance} {invoice.currency} or maximum of {remaining_balance - minimum_charge} {invoice.currency}'
+                            }
+                        }
             else:
                 # Full payment or remaining balance
                 payment_amount = invoice.remaining_amount if hasattr(invoice, 'remaining_amount') else invoice.total_amount
                 description = f'Payment for invoice {invoice.invoice_id}'
+
+            # OVER-PAYMENT PREVENTION: Validate payment amount doesn't exceed remaining balance
+            remaining_balance = invoice.remaining_amount if hasattr(invoice, 'remaining_amount') else invoice.total_amount
+            if payment_amount > remaining_balance:
+                return {
+                    'success': False,
+                    'error': f'Payment amount ({payment_amount}) exceeds remaining balance ({remaining_balance})',
+                    'error_code': 'EXCEEDS_BALANCE',
+                    'details': {
+                        'requested_amount': str(payment_amount),
+                        'remaining_balance': str(remaining_balance),
+                        'total_amount': str(invoice.total_amount),
+                        'paid_amount': str(invoice.paid_amount)
+                    }
+                }
 
             # Create payment record
             payment_creation_data = {
@@ -346,7 +403,7 @@ class InvoiceService:
             }
 
     @staticmethod
-    def create_payment_intent_for_invoice(invoice, gateway_code='stripe', payment_type='FULL'):
+    def create_payment_intent_for_invoice(invoice, gateway_code='stripe', payment_type='FULL', custom_amount=None):
         """Create payment intent for invoice without immediately processing payment
 
         This method is idempotent - it will reuse existing pending payments
@@ -355,7 +412,8 @@ class InvoiceService:
         Args:
             invoice: Invoice instance
             gateway_code: Payment gateway code (default: 'stripe')
-            payment_type: 'FULL' or 'DEPOSIT' (default: 'FULL')
+            payment_type: 'FULL', 'DEPOSIT', or 'CUSTOM' (default: 'FULL')
+            custom_amount: Custom payment amount (required when payment_type='CUSTOM')
         """
         from .gateway_service import PaymentGatewayService
         from ..models import PaymentGateway, Payment, PaymentSettings
@@ -375,6 +433,40 @@ class InvoiceService:
                 deposit_percentage = settings.default_deposit_percentage
                 payment_amount = (invoice.total_amount * deposit_percentage) / Decimal('100')
                 description = f'Deposit payment for invoice {invoice.invoice_id} ({deposit_percentage}%)'
+            elif payment_type == 'CUSTOM':
+                # Use custom amount from parameter
+                if not custom_amount:
+                    return {
+                        'success': False,
+                        'error': 'custom_amount is required when payment_type is CUSTOM'
+                    }
+                payment_amount = Decimal(str(custom_amount))
+                description = f'Custom payment for invoice {invoice.invoice_id}'
+
+                # Validate against gateway minimum (defensive check)
+                from .gateway_service import get_stripe_minimum
+
+                if gateway_code == 'stripe':
+                    minimum_charge = get_stripe_minimum(invoice.currency)
+
+                    # Check if payment amount itself is below minimum
+                    if payment_amount < minimum_charge:
+                        return {
+                            'success': False,
+                            'error': f'Payment amount {payment_amount} {invoice.currency} is below minimum charge of {minimum_charge} {invoice.currency}',
+                            'error_code': 'BELOW_MINIMUM_CHARGE'
+                        }
+
+                    # Check if remaining balance would be below minimum
+                    remaining_balance = invoice.remaining_amount if hasattr(invoice, 'remaining_amount') else invoice.total_amount
+                    remaining_after_payment = remaining_balance - payment_amount
+
+                    if Decimal('0') < remaining_after_payment < minimum_charge:
+                        return {
+                            'success': False,
+                            'error': f'Remaining balance of {remaining_after_payment} {invoice.currency} would be below minimum charge of {minimum_charge} {invoice.currency}',
+                            'error_code': 'REMAINING_BELOW_MINIMUM'
+                        }
             else:
                 # Full payment or remaining balance
                 payment_amount = invoice.remaining_amount if hasattr(invoice, 'remaining_amount') else invoice.total_amount

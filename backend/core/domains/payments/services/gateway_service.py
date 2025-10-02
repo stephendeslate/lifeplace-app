@@ -1,5 +1,6 @@
 # backend/core/domains/payments/services/gateway_service.py
 import logging
+from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
@@ -18,6 +19,25 @@ from ..models import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Stripe minimum charge amounts by currency
+# Based on Stripe's $0.50 USD minimum requirement
+STRIPE_MINIMUM_CHARGE = {
+    'PHP': Decimal('29.00'),   # ~$0.50 USD at ₱58 = $1
+    'USD': Decimal('0.50'),
+    'EUR': Decimal('0.50'),
+    'GBP': Decimal('0.30'),
+    'SGD': Decimal('0.70'),
+    'MYR': Decimal('2.20'),
+    'AUD': Decimal('0.50'),
+    'CAD': Decimal('0.50'),
+    'JPY': Decimal('50'),      # Zero-decimal currency
+}
+
+
+def get_stripe_minimum(currency: str) -> Decimal:
+    """Get minimum charge for Stripe in given currency"""
+    return STRIPE_MINIMUM_CHARGE.get(currency, Decimal('0.50'))
 
 
 class PaymentGatewayService:
