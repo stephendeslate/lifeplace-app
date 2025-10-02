@@ -283,16 +283,20 @@ export class FinancialApi {
   }
 
   /**
-   * Create a payment intent for Stripe payment processing
+   * Create a payment intent for Stripe payment processing (supports deposit)
    */
   static async createInvoicePaymentIntent(
     invoiceId: number,
-    gatewayCode: string
+    gatewayCode: string,
+    paymentType: 'FULL' | 'DEPOSIT' = 'FULL'
   ): Promise<PaymentIntentResponse> {
     try {
       const response = await api.post<PaymentIntentResponse>(
         `/payments/client/invoices/${invoiceId}/create_payment_intent/`,
-        { gateway_code: gatewayCode }
+        {
+          gateway_code: gatewayCode,
+          payment_type: paymentType
+        }
       );
       return response.data;
     } catch (error: unknown) {

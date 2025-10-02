@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/payments/InvoicePaymentDialog.tsx
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -17,6 +17,8 @@ import {
   Tabs,
   FormControlLabel,
   Checkbox,
+  Radio,
+  RadioGroup,
   alpha,
 } from '@mui/material';
 import {
@@ -36,6 +38,8 @@ import type {
 import { PaymentPlanDialog } from './PaymentPlanDialog';
 import { GlassCard } from '../../design-system';
 import FinancialApi from '../../apis/financial.api';
+import { usePaymentPlanSettings } from '../../hooks/usePaymentPlanSettings';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 import type {
   Invoice,
   PaymentMethod,
@@ -86,6 +90,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   onPaymentPlanCreated,
 }) => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const [paymentType, setPaymentType] = useState<'FULL' | 'DEPOSIT'>('FULL');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -95,6 +100,38 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   const [showPaymentPlanDialog, setShowPaymentPlanDialog] = useState(false);
   const [savePaymentMethod, setSavePaymentMethod] = useState(false);
   const [isAddingNewMethod, setIsAddingNewMethod] = useState(false);
+
+  // Hooks for payment settings and currency
+  const { data: paymentSettings, isLoading: isLoadingPaymentSettings } = usePaymentPlanSettings();
+  const { formatAmount } = useCurrencySettings();
+
+  // Calculate payment amounts based on payment type
+  const paymentAmounts = useMemo(() => {
+    const paymentStatus = FinancialApi.calculateInvoicePaymentStatus(invoice);
+    const remainingAmount = paymentStatus.amountRemaining;
+
+    if (!paymentSettings) {
+      return {
+        full: remainingAmount,
+        deposit: 0,
+        depositPercentage: 0,
+        remaining: 0,
+        balanceDueDays: 0,
+      };
+    }
+
+    const depositPercentage = paymentSettings.default_deposit_percentage;
+    const depositAmount = (parseFloat(invoice.total_amount) * depositPercentage) / 100;
+    const balanceAmount = parseFloat(invoice.total_amount) - depositAmount;
+
+    return {
+      full: remainingAmount,
+      deposit: depositAmount,
+      depositPercentage,
+      remaining: balanceAmount,
+      balanceDueDays: paymentSettings.balance_due_days,
+    };
+  }, [invoice, paymentSettings]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
@@ -192,6 +229,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
       if (isAddingNewMethod) {
         // For new payment methods - send gateway info and let Stripe form handle payment method creation
         paymentData = {
+          payment_type: paymentType,
           gateway_code: selectedGateway?.code || 'stripe',
           gateway_id: selectedGateway?.id,
           notes: `Payment for invoice ${invoice.invoice_id}`,
@@ -200,6 +238,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
       } else {
         // For saved payment methods - send the saved payment method ID using 'payment_method' field
         paymentData = {
+          payment_type: paymentType,
           payment_method: selectedPaymentMethod.id,
           notes: `Payment for invoice ${invoice.invoice_id}`,
         };
@@ -409,6 +448,54 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
               {/* Pay Now Tab */}
               <TabPanel value={selectedTab} index={0}>
                 <Stack spacing={3}>
+                  {/* Payment Type Selector */}
+                  {!isLoadingPaymentSettings && paymentSettings && (
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                        Payment Type
+                      </Typography>
+                      <RadioGroup
+                        value={paymentType}
+                        onChange={(e) => setPaymentType(e.target.value as 'FULL' | 'DEPOSIT')}
+                      >
+                        <FormControlLabel
+                          value="FULL"
+                          control={<Radio />}
+                          label={
+                            <Box>
+                              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                Pay Full Amount
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {formatAmount(paymentStatus.amountRemaining, invoice.currency)}
+                              </Typography>
+                            </Box>
+                          }
+                          sx={{ mb: 1 }}
+                        />
+                        <FormControlLabel
+                          value="DEPOSIT"
+                          control={<Radio />}
+                          label={
+                            <Box>
+                              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                Pay Deposit
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {formatAmount(paymentAmounts.deposit, invoice.currency)} ({paymentAmounts.depositPercentage}%)
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                Remaining balance of {formatAmount(paymentAmounts.remaining, invoice.currency)} will be due {paymentAmounts.balanceDueDays} days before your event
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </RadioGroup>
+                    </Box>
+                  )}
+
+                  <Divider />
+
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Select Payment Method
                   </Typography>
@@ -458,10 +545,10 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                             config={{
                               mode: 'invoice',
                               invoice_id: invoice.id,
-                              amount: parseFloat(paymentStatus.amountRemaining.toString()),
+                              amount: paymentType === 'DEPOSIT' ? paymentAmounts.deposit : parseFloat(paymentStatus.amountRemaining.toString()),
                               currency: invoice.currency,
                               save_payment_method: savePaymentMethod,
-                              notes: `Payment for invoice ${invoice.invoice_id}`,
+                              notes: `${paymentType === 'DEPOSIT' ? 'Deposit payment' : 'Payment'} for invoice ${invoice.invoice_id}`,
                             } as InvoiceModeConfig}
                             gateway={selectedGateway}
                             onSuccess={handleInvoicePaymentSuccess}

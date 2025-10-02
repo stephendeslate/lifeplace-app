@@ -234,20 +234,33 @@ class InvoiceService:
 
     @staticmethod
     def process_invoice_payment(invoice, payment_data, user):
-        """Process payment for an invoice"""
+        """Process payment for an invoice (supports full and deposit payments)"""
         from .payment_service import PaymentService
+        from .payment_plan_service import PaymentPlanService
         from .gateway_service import PaymentGatewayService
+        from ..models import PaymentSettings
 
         try:
-            # Validate invoice status
-            if invoice.status != 'ISSUED':
+            # Validate invoice status (allow PARTIALLY_PAID for subsequent payments)
+            if invoice.status not in ['ISSUED', 'PARTIALLY_PAID']:
                 return {
                     'success': False,
                     'error': f'Cannot pay invoice with status {invoice.get_status_display()}'
                 }
 
-            # Validate payment amount matches invoice total
-            payment_amount = invoice.total_amount
+            # Determine payment amount based on payment type
+            payment_type = payment_data.get('payment_type', 'FULL')
+
+            if payment_type == 'DEPOSIT':
+                # Calculate deposit using PaymentSettings (DRY - same calculation as booking flow)
+                settings = PaymentSettings.get_default_settings()
+                deposit_percentage = settings.default_deposit_percentage
+                payment_amount = (invoice.total_amount * deposit_percentage) / Decimal('100')
+                description = f'Deposit payment for invoice {invoice.invoice_id} ({deposit_percentage}%)'
+            else:
+                # Full payment or remaining balance
+                payment_amount = invoice.remaining_amount if hasattr(invoice, 'remaining_amount') else invoice.total_amount
+                description = f'Payment for invoice {invoice.invoice_id}'
 
             # Create payment record
             payment_creation_data = {
@@ -255,7 +268,7 @@ class InvoiceService:
                 'amount': str(payment_amount),
                 'currency': invoice.currency,
                 'due_date': invoice.due_date,
-                'description': f'Payment for invoice {invoice.invoice_id}',
+                'description': description,
                 'invoice': invoice.id,
                 'is_manual': payment_data.get('is_manual', False),
                 'reference_number': payment_data.get('reference_number', ''),
@@ -271,7 +284,7 @@ class InvoiceService:
                 payment.save()
                 payment.complete_payment()
 
-                # Mark invoice as paid
+                # Mark invoice as paid (will set to PARTIALLY_PAID or PAID automatically)
                 invoice.mark_as_paid()
 
                 return {
@@ -299,6 +312,7 @@ class InvoiceService:
             if transaction_result.status == 'COMPLETED':
                 # Payment successful - invoice should already be marked as paid
                 # through the payment.complete_payment() call
+
                 return {
                     'success': True,
                     'payment': payment,
@@ -332,22 +346,39 @@ class InvoiceService:
             }
 
     @staticmethod
-    def create_payment_intent_for_invoice(invoice, gateway_code='stripe'):
+    def create_payment_intent_for_invoice(invoice, gateway_code='stripe', payment_type='FULL'):
         """Create payment intent for invoice without immediately processing payment
 
         This method is idempotent - it will reuse existing pending payments
         for the same invoice to prevent duplicate payment creation.
+
+        Args:
+            invoice: Invoice instance
+            gateway_code: Payment gateway code (default: 'stripe')
+            payment_type: 'FULL' or 'DEPOSIT' (default: 'FULL')
         """
         from .gateway_service import PaymentGatewayService
-        from ..models import PaymentGateway, Payment
+        from ..models import PaymentGateway, Payment, PaymentSettings
 
         try:
-            # Validate invoice status
-            if invoice.status != 'ISSUED':
+            # Validate invoice status (allow PARTIALLY_PAID for subsequent payments)
+            if invoice.status not in ['ISSUED', 'PARTIALLY_PAID']:
                 return {
                     'success': False,
                     'error': f'Cannot create payment intent for invoice with status {invoice.get_status_display()}'
                 }
+
+            # Calculate payment amount based on payment type
+            if payment_type == 'DEPOSIT':
+                # Calculate deposit using PaymentSettings (DRY)
+                settings = PaymentSettings.get_default_settings()
+                deposit_percentage = settings.default_deposit_percentage
+                payment_amount = (invoice.total_amount * deposit_percentage) / Decimal('100')
+                description = f'Deposit payment for invoice {invoice.invoice_id} ({deposit_percentage}%)'
+            else:
+                # Full payment or remaining balance
+                payment_amount = invoice.remaining_amount if hasattr(invoice, 'remaining_amount') else invoice.total_amount
+                description = f'Payment for invoice {invoice.invoice_id}'
 
             # Get the gateway
             try:
@@ -375,10 +406,10 @@ class InvoiceService:
 
                     request = PaymentRequest(
                         event_id=invoice.event.id,
-                        amount=invoice.total_amount,
+                        amount=payment_amount,
                         currency=invoice.currency,
                         due_date=invoice.due_date,
-                        description=f'Payment for invoice {invoice.invoice_id}',
+                        description=description,
                         invoice_id=invoice.id,
                         payment_type='INVOICE',
                         created_by='invoice_service'

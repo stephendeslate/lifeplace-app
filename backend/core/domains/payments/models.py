@@ -291,10 +291,6 @@ class Payment(BaseModel):
         # Send payment notification
         self.send_receipt_notification()
 
-        # Auto-create payment plan for deposit payments
-        self._create_payment_plan_for_deposit()
-
-        
     def generate_receipt(self):
         """Generate receipt number and update receipt fields"""
         if not self.receipt_number and self.status == 'COMPLETED':
@@ -369,58 +365,6 @@ class Payment(BaseModel):
         else:
             return f"{symbol}{float(self.amount):,.2f}"
     
-    def _create_payment_plan_for_deposit(self):
-        """Create payment plan for remaining balance if this is a deposit payment
-
-        CONSOLIDATED: Uses global PaymentSettings for all configuration.
-        """
-        # Only create payment plan for deposit payments
-        if 'deposit' not in self.description.lower():
-            return
-
-        # Check if event already has a payment plan
-        if hasattr(self.event, 'payment_plan'):
-            return
-
-        # Calculate remaining balance
-        total_amount = self.event.total_amount_due or Decimal('0.00')
-        if total_amount <= self.amount:
-            return  # Full payment, no need for payment plan
-
-        remaining_amount = total_amount - self.amount
-
-        # Only create payment plan if there's a significant remaining balance
-        if remaining_amount < Decimal('100.00'):  # Minimum threshold
-            return
-
-        try:
-            # Import here to avoid circular imports
-            from core.domains.payments.services.payment_plan_service import PaymentPlanService
-
-            # Try to find the booking session (for audit trail only)
-            booking_session = None
-            try:
-                from core.domains.bookingflow.models import BookingSession
-                booking_session = BookingSession.objects.filter(
-                    created_event=self.event
-                ).order_by('-created_at').first()
-            except:
-                pass
-
-            # Create payment plan using global settings (consolidated approach)
-            payment_plan = PaymentPlanService.create_payment_plan_from_deposit(
-                event=self.event,
-                deposit_payment=self,
-                remaining_amount=remaining_amount,
-                booking_session=booking_session  # Audit trail only, doesn't affect configuration
-            )
-
-            logger.info(f"Auto-created payment plan {payment_plan.id} for event {self.event.id} "
-                       f"after deposit payment (using global PaymentSettings)")
-
-        except Exception as e:
-            logger.error(f"Failed to auto-create payment plan for deposit payment {self.id}: {e}")
-
     def __str__(self):
         return f"Payment {self.payment_number} for Event {self.event.id}"
 
