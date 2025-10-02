@@ -1,4 +1,6 @@
 // frontend/client-portal/src/components/payments/PaymentPlanDialog.tsx
+// ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
+// This component is currently disabled and not in use
 
 import React, { useState, useEffect } from 'react';
 import {

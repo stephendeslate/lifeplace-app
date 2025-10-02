@@ -1,5 +1,6 @@
 # backend/core/domains/payments/services/payment_plan_service.py
 from decimal import Decimal
+import logging
 
 from core.domains.events.models import Event, EventTimeline
 from core.domains.sales.models import EventQuote
@@ -11,6 +12,8 @@ from ..exceptions import (
     PaymentPlanNotFoundException,
 )
 from ..models import Payment, PaymentInstallment, PaymentPlan, PaymentSettings
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentPlanService:
@@ -308,6 +311,17 @@ class PaymentPlanService:
         )
 
         for plan in auto_payment_plans:
+            # OVER-PAYMENT PREVENTION: Check if event balance is already paid
+            event = plan.event
+            remaining_balance = event.total_amount_due - event.total_amount_paid if event.total_amount_due else Decimal('0.00')
+
+            if remaining_balance <= 0:
+                # Balance already paid, mark plan as complete and skip
+                plan.status = 'COMPLETED'
+                plan.save()
+                logger.info(f"Auto-completed payment plan {plan.id} - event balance already paid")
+                continue
+
             # Get next due installment
             next_installment = plan.installments.filter(
                 status='PENDING',
@@ -316,8 +330,18 @@ class PaymentPlanService:
 
             if next_installment:
                 try:
+                    # OVER-PAYMENT PREVENTION: Adjust charge amount if it exceeds remaining balance
+                    charge_amount = min(next_installment.amount, remaining_balance)
+
                     # Create payment for the installment
                     payment = next_installment.create_payment()
+
+                    # Use adjusted amount if different from original installment amount
+                    if charge_amount < next_installment.amount:
+                        payment.amount = charge_amount
+                        payment.description = f"{payment.description} (adjusted to remaining balance)"
+                        logger.info(f"Adjusted auto-payment from {next_installment.amount} to {charge_amount} for plan {plan.id}")
+
                     payment.payment_method = plan.auto_payment_method
                     payment.save()
 
@@ -331,8 +355,6 @@ class PaymentPlanService:
 
                 except Exception as e:
                     # Log error but continue processing other plans
-                    import logging
-                    logger = logging.getLogger(__name__)
                     logger.error(f"Auto-payment failed for payment plan {plan.id}: {e}")
 
         return processed_count
@@ -395,3 +417,49 @@ class PaymentPlanService:
 
         except PaymentPlan.DoesNotExist:
             raise PaymentPlanNotFoundException(f"Payment plan with ID {plan_id} not found")
+
+    @staticmethod
+    def complete_plan_if_balance_paid(plan_id):
+        """Auto-complete payment plan if event balance is fully paid
+
+        This method is called after manual payments to automatically complete
+        payment plans when the event balance reaches zero, preventing unnecessary
+        auto-payment attempts.
+
+        Args:
+            plan_id: ID of the payment plan to check
+
+        Returns:
+            bool: True if plan was completed, False otherwise
+        """
+        try:
+            payment_plan = PaymentPlan.objects.get(pk=plan_id)
+
+            # Only process active plans
+            if payment_plan.status != 'ACTIVE':
+                return False
+
+            # Check if event is fully paid
+            event = payment_plan.event
+            if event.payment_status == 'PAID':
+                payment_plan.status = 'COMPLETED'
+                payment_plan.notes += f"\n\nAuto-completed on {timezone.now().date()} - event balance fully paid"
+                payment_plan.save(update_fields=['status', 'notes'])
+
+                # Add to event timeline
+                EventTimeline.objects.create(
+                    event=event,
+                    action_type='SYSTEM_UPDATE',
+                    description="Payment plan auto-completed - balance fully paid",
+                    is_public=False,
+                    action_data={'payment_plan_id': payment_plan.id}
+                )
+
+                logger.info(f"Auto-completed payment plan {plan_id} - event {event.id} fully paid")
+                return True
+
+            return False
+
+        except PaymentPlan.DoesNotExist:
+            logger.warning(f"Payment plan {plan_id} not found for auto-completion check")
+            return False

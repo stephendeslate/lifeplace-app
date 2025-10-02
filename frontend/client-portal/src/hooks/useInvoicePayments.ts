@@ -57,11 +57,15 @@ export const useInvoicePayments = () => {
   });
 
   // Payment plan setup mutation
+  // ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
   const setupPaymentPlanMutation = useMutation({
     mutationFn: ({ invoiceId, planData }: {
       invoiceId: number;
       planData: PaymentPlanRequest
-    }) => FinancialApi.setupInvoicePaymentPlan(invoiceId, planData),
+    }) => {
+      console.warn('⚠️ WIP: Payment plan setup mutation is currently disabled');
+      return FinancialApi.setupInvoicePaymentPlan(invoiceId, planData);
+    },
     onSuccess: (_, { invoiceId }) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: financialKeys.invoices() });
@@ -98,8 +102,10 @@ export const useInvoicePayments = () => {
 
   /**
    * Set up a payment plan for an invoice
+   * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   const setupPaymentPlan = (invoiceId: number, planData: PaymentPlanRequest) => {
+    console.warn('⚠️ WIP: Payment plan setup is currently disabled');
     return setupPaymentPlanMutation.mutate({ invoiceId, planData });
   };
 
@@ -113,13 +119,12 @@ export const useInvoicePayments = () => {
 
   /**
    * Check if an invoice supports payment plans
+   * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
+   * @returns Always returns false as payment plans are currently disabled
    */
-  const canSetupPaymentPlan = (invoice: Invoice): boolean => {
-    // Check if invoice amount is above minimum threshold for payment plans
-    const totalAmount = parseFloat(invoice.total_amount);
-    const minimumAmount = 100; // $100 minimum for payment plans
-
-    return canPayInvoice(invoice) && totalAmount >= minimumAmount;
+  const canSetupPaymentPlan = (_invoice: Invoice): boolean => {
+    // Disabled - WIP: Payment plan feature is being redesigned
+    return false;
   };
 
   /**

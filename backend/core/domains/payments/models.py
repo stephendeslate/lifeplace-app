@@ -287,9 +287,18 @@ class Payment(BaseModel):
         if self.installment:
             self.installment.status = 'PAID'
             self.installment.save()
-        
+
         # Send payment notification
         self.send_receipt_notification()
+
+        # AUTO-COMPLETION: Check if event is fully paid and complete payment plan if exists
+        if self.event.payment_status == 'PAID':
+            # Check if there's an active payment plan
+            if hasattr(self.event, 'payment_plan') and self.event.payment_plan:
+                payment_plan = self.event.payment_plan
+                if payment_plan.status == 'ACTIVE':
+                    from .services.payment_plan_service import PaymentPlanService
+                    PaymentPlanService.complete_plan_if_balance_paid(payment_plan.id)
 
     def generate_receipt(self):
         """Generate receipt number and update receipt fields"""

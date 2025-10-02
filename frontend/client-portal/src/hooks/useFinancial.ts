@@ -111,40 +111,48 @@ export const useDownloadInvoicePdf = () => {
 };
 
 // ==================== PAYMENT PLANS ====================
+// ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
 
 export const usePaymentPlans = () => {
   return useQuery({
     queryKey: financialKeys.paymentPlans(),
     queryFn: async () => {
+      console.warn('⚠️ WIP: Payment plans hook is currently disabled');
       const data = await FinancialApi.getPaymentPlans();
-      return Array.isArray(data) ? data : [];
+      return data.results || [];
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled: false, // Disabled - WIP
   });
 };
 
 export const usePaymentPlan = (planId: number) => {
   return useQuery({
     queryKey: financialKeys.paymentPlan(planId),
-    queryFn: () => FinancialApi.getPaymentPlan(planId),
-    enabled: !!planId,
+    queryFn: () => {
+      console.warn('⚠️ WIP: Payment plan details hook is currently disabled');
+      return FinancialApi.getPaymentPlan(planId);
+    },
+    enabled: false, // Disabled - WIP
   });
 };
 
 export const usePayInstallment = () => {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  
+
   return useMutation({
-    mutationFn: ({ planId, paymentData }: { planId: number; paymentData: InstallmentPaymentData }) =>
-      FinancialApi.payInstallment(planId, paymentData),
+    mutationFn: ({ planId, paymentData }: { planId: number; paymentData: InstallmentPaymentData }) => {
+      console.warn('⚠️ WIP: Payment installment hook is currently disabled');
+      return FinancialApi.payInstallment(planId, paymentData);
+    },
     onSuccess: (_payment, { planId }) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: financialKeys.paymentPlan(planId) });
       queryClient.invalidateQueries({ queryKey: financialKeys.payments() });
       queryClient.invalidateQueries({ queryKey: financialKeys.paymentSummary() });
       queryClient.invalidateQueries({ queryKey: financialKeys.installments() });
-      
+
       showToast({ type: 'success', title: 'Payment processed successfully' });
     },
     onError: (error) => {
@@ -299,50 +307,22 @@ export const useRefund = (refundId: number) => {
 export const useFinancialOverview = () => {
   const paymentsQuery = usePayments(undefined, 1, 5); // Recent payments
   const invoicesQuery = useInvoices(undefined, 1, 5); // Recent invoices
-  const paymentPlansQuery = usePaymentPlans();
   const summaryQuery = usePaymentSummary();
   const refundsQuery = useRefunds();
-  
-  const isLoading = paymentsQuery.isLoading || 
-                   invoicesQuery.isLoading || 
-                   paymentPlansQuery.isLoading || 
+
+  const isLoading = paymentsQuery.isLoading ||
+                   invoicesQuery.isLoading ||
                    summaryQuery.isLoading ||
                    refundsQuery.isLoading;
-  
-  const error = paymentsQuery.error || 
-                invoicesQuery.error || 
-                paymentPlansQuery.error || 
+
+  const error = paymentsQuery.error ||
+                invoicesQuery.error ||
                 summaryQuery.error ||
                 refundsQuery.error;
-  
-  // Get upcoming installments - ensure we have valid data
-  const upcomingInstallments = (() => {
-    try {
-      return (paymentPlansQuery.data && Array.isArray(paymentPlansQuery.data))
-        ? FinancialApi.getUpcomingInstallments(paymentPlansQuery.data)
-        : [];
-    } catch (error) {
-      console.error('Error calculating upcoming installments:', error);
-      return [];
-    }
-  })();
-    
-  // Get overdue installments - ensure we have valid data
-  const overdueInstallments = (() => {
-    try {
-      return (paymentPlansQuery.data && Array.isArray(paymentPlansQuery.data))
-        ? FinancialApi.getOverdueInstallments(paymentPlansQuery.data)
-        : [];
-    } catch (error) {
-      console.error('Error calculating overdue installments:', error);
-      return [];
-    }
-  })();
-  
+
   // Debug logging to help identify data structure issues
   const payments = Array.isArray(paymentsQuery.data?.results) ? paymentsQuery.data.results : [];
   const invoices = Array.isArray(invoicesQuery.data?.results) ? invoicesQuery.data.results : [];
-  const paymentPlans = Array.isArray(paymentPlansQuery.data) ? paymentPlansQuery.data : [];
   const refunds = Array.isArray(refundsQuery.data?.results) ? refundsQuery.data.results : [];
 
   // Log non-array data for debugging
@@ -352,9 +332,6 @@ export const useFinancialOverview = () => {
   if (invoicesQuery.data?.results && !Array.isArray(invoicesQuery.data.results)) {
     console.warn('Invoice data is not an array:', invoicesQuery.data);
   }
-  if (paymentPlansQuery.data && !Array.isArray(paymentPlansQuery.data)) {
-    console.warn('Payment plans data is not an array:', paymentPlansQuery.data);
-  }
   if (refundsQuery.data?.results && !Array.isArray(refundsQuery.data.results)) {
     console.warn('Refunds data is not an array:', refundsQuery.data);
   }
@@ -362,17 +339,13 @@ export const useFinancialOverview = () => {
   return {
     payments,
     invoices,
-    paymentPlans,
     summary: summaryQuery.data,
     refunds,
-    upcomingInstallments,
-    overdueInstallments,
     isLoading,
     error: error ? FinancialApi.handleError(error) : null,
     refetch: () => {
       paymentsQuery.refetch();
       invoicesQuery.refetch();
-      paymentPlansQuery.refetch();
       summaryQuery.refetch();
       refundsQuery.refetch();
     },
@@ -385,39 +358,31 @@ export const useFinancialOverview = () => {
 export const useFinancialAnalytics = () => {
   const paymentsQuery = usePayments();
   const summaryQuery = usePaymentSummary();
-  const paymentPlansQuery = usePaymentPlans();
-  
+
   const analytics = {
     // Payment status breakdown
     paymentStatusBreakdown: summaryQuery.data ? [
-      { 
-        label: 'Paid', 
-        value: parseFloat(summaryQuery.data.total_paid), 
-        color: '#4caf50' 
+      {
+        label: 'Paid',
+        value: parseFloat(summaryQuery.data.total_paid),
+        color: '#4caf50'
       },
-      { 
-        label: 'Pending', 
-        value: parseFloat(summaryQuery.data.total_pending), 
-        color: '#ff9800' 
+      {
+        label: 'Pending',
+        value: parseFloat(summaryQuery.data.total_pending),
+        color: '#ff9800'
       },
-      { 
-        label: 'Overdue', 
-        value: parseFloat(summaryQuery.data.total_overdue), 
-        color: '#f44336' 
+      {
+        label: 'Overdue',
+        value: parseFloat(summaryQuery.data.total_overdue),
+        color: '#f44336'
       },
     ] : [],
-    
-    // Payment plan progress
-    paymentPlanProgress: paymentPlansQuery.data?.map(plan => ({
-      planId: plan.id,
-      eventId: plan.event,
-      progress: FinancialApi.calculatePaymentPlanProgress(plan),
-    })) || [],
   };
-  
+
   return {
     analytics,
-    isLoading: paymentsQuery.isLoading || summaryQuery.isLoading || paymentPlansQuery.isLoading,
+    isLoading: paymentsQuery.isLoading || summaryQuery.isLoading,
   };
 };
 

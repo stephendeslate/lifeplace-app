@@ -314,6 +314,32 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
 
             payment_data = serializer.validated_data
 
+            # OVER-PAYMENT PREVENTION: Pre-validate payment amount against remaining balance
+            payment_type = payment_data.get('payment_type', 'FULL')
+
+            # Calculate requested payment amount
+            if payment_type == 'DEPOSIT':
+                from core.domains.payments.models import PaymentSettings
+                settings = PaymentSettings.get_default_settings()
+                requested_amount = (invoice.total_amount * settings.default_deposit_percentage) / Decimal('100')
+            else:
+                # For FULL payment type, use remaining amount
+                requested_amount = payment_data.get('amount', invoice.remaining_amount)
+
+            # Validate against remaining balance
+            if requested_amount > invoice.remaining_amount:
+                return Response({
+                    'success': False,
+                    'error': 'Payment amount exceeds remaining balance',
+                    'error_code': 'EXCEEDS_BALANCE',
+                    'details': {
+                        'requested_amount': str(requested_amount),
+                        'remaining_balance': str(invoice.remaining_amount),
+                        'total_amount': str(invoice.total_amount),
+                        'paid_amount': str(invoice.paid_amount)
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             try:
                 # Process invoice payment using service (handles both FULL and DEPOSIT)
                 payment_result = InvoiceService.process_invoice_payment(
@@ -370,14 +396,15 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Get gateway code and payment type from request
+            # Get gateway code, payment type, and custom amount from request
             gateway_code = request.data.get('gateway_code', 'stripe')
             payment_type = request.data.get('payment_type', 'FULL')
+            custom_amount = request.data.get('amount')  # For CUSTOM payment type
 
             try:
-                # Create payment intent using service (with payment_type support)
+                # Create payment intent using service (with payment_type and custom amount support)
                 intent_result = InvoiceService.create_payment_intent_for_invoice(
-                    invoice, gateway_code, payment_type
+                    invoice, gateway_code, payment_type, custom_amount
                 )
 
                 if intent_result.get('success'):

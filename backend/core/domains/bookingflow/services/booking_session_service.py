@@ -720,14 +720,12 @@ class BookingSessionService:
         logger.info(f"Starting payment processing for invoice {invoice.invoice_id}")
         logger.info(f"Payment data received: {payment_data}")
 
-        # SAFETY GUARD: This method should never be called for quote requests
-        # This is a defensive check to prevent quote requests from accidentally triggering payment processing
-        current_booking_data = session.booking_data or {}
-        for step_key, step_data in current_booking_data.items():
-            if isinstance(step_data, dict) and step_data.get('completion_type') == 'quote':
-                logger.error(f"CRITICAL ERROR: Payment processing called for quote request! Session: {session.session_id}")
-                raise ValueError("Payment processing should not be called for quote requests")
-        
+        # NOTE: Removed incorrect safety guard that checked session.booking_data for completion_type
+        # BUG: When users navigate back/forward in booking flow (e.g., first click "Request Quote",
+        # then go back and click "Pay Deposit"), the completion_type stored in step data becomes stale
+        # and doesn't represent the current completion attempt. The actual completion_type is passed
+        # as a parameter to complete_booking() method and is validated there - that's the source of truth.
+
         gateway_id = payment_data.get('gateway_id') or payment_data.get('payment_gateway_id')
         logger.info(f"Gateway ID from payment data: {gateway_id}")
         

@@ -13,17 +13,15 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  Tab,
-  Tabs,
   FormControlLabel,
   Checkbox,
   Radio,
   RadioGroup,
+  TextField,
+  InputAdornment,
   alpha,
 } from '@mui/material';
 import {
-  Payment as PaymentIcon,
-  Schedule as PlanIcon,
   Close as CloseIcon,
   CheckCircle as SuccessIcon,
 } from '@mui/icons-material';
@@ -35,7 +33,6 @@ import type {
   PaymentFlowResult,
   PaymentFlowError,
 } from '../../types/unified-payment-flow.types';
-import { PaymentPlanDialog } from './PaymentPlanDialog';
 import { GlassCard } from '../../design-system';
 import FinancialApi from '../../apis/financial.api';
 import { usePaymentPlanSettings } from '../../hooks/usePaymentPlanSettings';
@@ -48,38 +45,11 @@ import type {
   InvoicePaymentResponse
 } from '../../types/financial.types';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`payment-tabpanel-${index}`}
-      aria-labelledby={`payment-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ pt: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
-
 interface InvoicePaymentDialogProps {
   open: boolean;
   invoice: Invoice;
   onClose: () => void;
   onPaymentSuccess?: (response: InvoicePaymentResponse) => void;
-  onPaymentPlanCreated?: () => void;
 }
 
 export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
@@ -87,19 +57,18 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   invoice,
   onClose,
   onPaymentSuccess,
-  onPaymentPlanCreated,
 }) => {
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [paymentType, setPaymentType] = useState<'FULL' | 'DEPOSIT'>('FULL');
+  const [paymentType, setPaymentType] = useState<'FULL' | 'DEPOSIT' | 'CUSTOM'>('FULL');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
-  const [showPaymentPlanDialog, setShowPaymentPlanDialog] = useState(false);
   const [savePaymentMethod, setSavePaymentMethod] = useState(false);
   const [isAddingNewMethod, setIsAddingNewMethod] = useState(false);
+  const [customAmount, setCustomAmount] = useState<string>('');
+  const [customAmountError, setCustomAmountError] = useState<string | null>(null);
 
   // Hooks for payment settings and currency
   const { data: paymentSettings, isLoading: isLoadingPaymentSettings } = usePaymentPlanSettings();
@@ -133,10 +102,61 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
     };
   }, [invoice, paymentSettings]);
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setSelectedTab(newValue);
-    setPaymentError(null);
-  };
+  // Detect if deposit has already been paid
+  const isDepositAlreadyPaid = useMemo(() => {
+    const paymentStatus = FinancialApi.calculateInvoicePaymentStatus(invoice);
+    const depositAmount = paymentAmounts.deposit;
+
+    // If any partial payment >= deposit amount, consider deposit paid
+    return paymentStatus.amountPaid >= depositAmount;
+  }, [invoice, paymentAmounts.deposit]);
+
+  // Single source of truth for payment amount calculation (DRY)
+  const calculatePaymentAmount = useCallback(() => {
+    switch (paymentType) {
+      case 'FULL':
+        return paymentAmounts.full;
+      case 'DEPOSIT':
+        return paymentAmounts.deposit;
+      case 'CUSTOM':
+        return parseFloat(customAmount) || 0;
+    }
+  }, [paymentType, paymentAmounts, customAmount]);
+
+  // Centralized validation for custom amounts (DRY)
+  const validateCustomAmount = useCallback((amount: string) => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return 'Please enter a valid amount';
+    }
+    const minAmount = paymentAmounts.deposit;
+    const maxAmount = paymentAmounts.full;
+
+    if (numAmount < minAmount) {
+      return `Minimum payment is ${formatAmount(minAmount, invoice.currency)}`;
+    }
+    if (numAmount > maxAmount) {
+      return `Amount cannot exceed remaining balance of ${formatAmount(maxAmount, invoice.currency)}`;
+    }
+
+    // Prevent small remaining balances below gateway minimum
+    const remainingAfterPayment = maxAmount - numAmount;
+    const gatewayMinimum = FinancialApi.getMinimumCharge(invoice.currency);
+
+    // If not paying full amount AND remaining would be below minimum
+    if (numAmount < maxAmount && remainingAfterPayment < gatewayMinimum) {
+      return `Remaining balance would be ${formatAmount(remainingAfterPayment, invoice.currency)}, which is below the minimum chargeable amount of ${formatAmount(gatewayMinimum, invoice.currency)}. Please pay the full amount of ${formatAmount(maxAmount, invoice.currency)}, or leave at least ${formatAmount(gatewayMinimum, invoice.currency)} remaining.`;
+    }
+
+    return null;
+  }, [paymentAmounts, invoice.currency, formatAmount]);
+
+  // Auto-adjust payment type if deposit becomes unavailable
+  React.useEffect(() => {
+    if (paymentType === 'DEPOSIT' && isDepositAlreadyPaid) {
+      setPaymentType('FULL');
+    }
+  }, [isDepositAlreadyPaid, paymentType]);
 
   const handlePaymentMethodSelect = (method: PaymentMethod | null) => {
     console.log('🔍 PAYMENT METHOD SELECT - Method changed:', {
@@ -191,12 +211,23 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
         name: selectedGateway.name
       } : null,
       isAddingNewMethod,
+      paymentType,
+      customAmount: paymentType === 'CUSTOM' ? customAmount : null,
       invoice: {
         id: invoice.id,
         invoice_id: invoice.invoice_id,
         total_amount: invoice.total_amount
       }
     });
+
+    // Validate custom amount if selected
+    if (paymentType === 'CUSTOM') {
+      const error = validateCustomAmount(customAmount);
+      if (error) {
+        setPaymentError(error);
+        return;
+      }
+    }
 
     if (!selectedPaymentMethod) {
       console.error('❌ PAYMENT ERROR - No payment method selected');
@@ -232,16 +263,24 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
           payment_type: paymentType,
           gateway_code: selectedGateway?.code || 'stripe',
           gateway_id: selectedGateway?.id,
-          notes: `Payment for invoice ${invoice.invoice_id}`,
+          notes: `${paymentType === 'CUSTOM' ? 'Custom' : paymentType === 'DEPOSIT' ? 'Deposit' : 'Full'} payment for invoice ${invoice.invoice_id}`,
         };
+        // Include custom amount if selected
+        if (paymentType === 'CUSTOM') {
+          paymentData.amount = customAmount;
+        }
         console.log('🔍 PAYMENT DEBUG - New method payment data:', paymentData);
       } else {
         // For saved payment methods - send the saved payment method ID using 'payment_method' field
         paymentData = {
           payment_type: paymentType,
           payment_method: selectedPaymentMethod.id,
-          notes: `Payment for invoice ${invoice.invoice_id}`,
+          notes: `${paymentType === 'CUSTOM' ? 'Custom' : paymentType === 'DEPOSIT' ? 'Deposit' : 'Full'} payment for invoice ${invoice.invoice_id}`,
         };
+        // Include custom amount if selected
+        if (paymentType === 'CUSTOM') {
+          paymentData.amount = customAmount;
+        }
         console.log('🔍 PAYMENT DEBUG - Saved method payment data:', paymentData);
       }
 
@@ -300,16 +339,6 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
     setPaymentError(error.message);
     setPaymentLoading(false);
   }, []);
-
-  const handlePaymentPlanClick = () => {
-    setShowPaymentPlanDialog(true);
-  };
-
-  const handlePaymentPlanSuccess = () => {
-    setShowPaymentPlanDialog(false);
-    onPaymentPlanCreated?.();
-    onClose();
-  };
 
   // Calculate payment status
   const paymentStatus = FinancialApi.calculateInvoicePaymentStatus(invoice);
@@ -423,41 +452,27 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
             </Alert>
           ) : (
             <>
-              {/* Payment Options Tabs */}
-              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                <Tabs
-                  value={selectedTab}
-                  onChange={handleTabChange}
-                  variant="fullWidth"
-                >
-                  <Tab
-                    icon={<PaymentIcon />}
-                    label="Pay Now"
-                    id="payment-tab-0"
-                    aria-controls="payment-tabpanel-0"
-                  />
-                  <Tab
-                    icon={<PlanIcon />}
-                    label="Payment Plan"
-                    id="payment-tab-1"
-                    aria-controls="payment-tabpanel-1"
-                  />
-                </Tabs>
-              </Box>
-
-              {/* Pay Now Tab */}
-              <TabPanel value={selectedTab} index={0}>
-                <Stack spacing={3}>
+              <Stack spacing={3}>
                   {/* Payment Type Selector */}
                   {!isLoadingPaymentSettings && paymentSettings && (
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         Payment Type
                       </Typography>
+
+                      {/* Info alert if deposit already paid */}
+                      {isDepositAlreadyPaid && (
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                          Deposit of {formatAmount(paymentAmounts.deposit, invoice.currency)} has been paid.
+                          You can pay the remaining balance or a custom amount.
+                        </Alert>
+                      )}
+
                       <RadioGroup
                         value={paymentType}
-                        onChange={(e) => setPaymentType(e.target.value as 'FULL' | 'DEPOSIT')}
+                        onChange={(e) => setPaymentType(e.target.value as 'FULL' | 'DEPOSIT' | 'CUSTOM')}
                       >
+                        {/* Pay Full Amount - Always visible */}
                         <FormControlLabel
                           value="FULL"
                           control={<Radio />}
@@ -473,24 +488,88 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                           }
                           sx={{ mb: 1 }}
                         />
+
+                        {/* Pay Deposit - Conditionally hidden if already paid */}
+                        {!isDepositAlreadyPaid && (
+                          <FormControlLabel
+                            value="DEPOSIT"
+                            control={<Radio />}
+                            label={
+                              <Box>
+                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                  Pay Deposit
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {formatAmount(paymentAmounts.deposit, invoice.currency)} ({paymentAmounts.depositPercentage}%)
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  Remaining balance of {formatAmount(paymentAmounts.remaining, invoice.currency)} will be due {paymentAmounts.balanceDueDays} days before your event
+                                </Typography>
+                              </Box>
+                            }
+                            sx={{ mb: 1 }}
+                          />
+                        )}
+
+                        {/* Pay Custom Amount - Always visible */}
                         <FormControlLabel
-                          value="DEPOSIT"
+                          value="CUSTOM"
                           control={<Radio />}
                           label={
                             <Box>
                               <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                Pay Deposit
+                                Custom Amount
                               </Typography>
                               <Typography variant="body2" color="text.secondary">
-                                {formatAmount(paymentAmounts.deposit, invoice.currency)} ({paymentAmounts.depositPercentage}%)
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                Remaining balance of {formatAmount(paymentAmounts.remaining, invoice.currency)} will be due {paymentAmounts.balanceDueDays} days before your event
+                                Pay a custom amount between {formatAmount(paymentAmounts.deposit, invoice.currency)} and {formatAmount(paymentAmounts.full, invoice.currency)}
                               </Typography>
                             </Box>
                           }
                         />
                       </RadioGroup>
+
+                      {/* Custom amount input field - Only visible when CUSTOM selected */}
+                      {paymentType === 'CUSTOM' && (
+                        <TextField
+                          fullWidth
+                          type="number"
+                          label="Custom Payment Amount"
+                          value={customAmount}
+                          onChange={(e) => {
+                            setCustomAmount(e.target.value);
+                            const error = validateCustomAmount(e.target.value);
+                            setCustomAmountError(error);
+                          }}
+                          error={!!customAmountError}
+                          helperText={
+                            customAmountError ||
+                            `Enter amount between ${formatAmount(paymentAmounts.deposit, invoice.currency)} and ${formatAmount(paymentAmounts.full, invoice.currency)}. If not paying in full, must leave at least ${formatAmount(FinancialApi.getMinimumCharge(invoice.currency), invoice.currency)} remaining.`
+                          }
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                {FinancialApi.getCurrencySymbol(invoice.currency)}
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{ mt: 2 }}
+                          inputProps={{
+                            min: paymentAmounts.deposit,
+                            max: paymentAmounts.full,
+                            step: 0.01,
+                          }}
+                        />
+                      )}
+
+                      {/* Informational alert for custom payment minimum */}
+                      {paymentType === 'CUSTOM' && (
+                        <Alert severity="info" sx={{ mt: 1 }}>
+                          <Typography variant="body2">
+                            <strong>Note:</strong> Payment gateway minimum is {formatAmount(FinancialApi.getMinimumCharge(invoice.currency), invoice.currency)}.
+                            {' '}If you're not paying the full amount, you must leave at least this amount as the remaining balance.
+                          </Typography>
+                        </Alert>
+                      )}
                     </Box>
                   )}
 
@@ -545,10 +624,10 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                             config={{
                               mode: 'invoice',
                               invoice_id: invoice.id,
-                              amount: paymentType === 'DEPOSIT' ? paymentAmounts.deposit : parseFloat(paymentStatus.amountRemaining.toString()),
+                              amount: calculatePaymentAmount(), // DRY - single source of truth
                               currency: invoice.currency,
                               save_payment_method: savePaymentMethod,
-                              notes: `${paymentType === 'DEPOSIT' ? 'Deposit payment' : 'Payment'} for invoice ${invoice.invoice_id}`,
+                              notes: `${paymentType === 'CUSTOM' ? 'Custom' : paymentType === 'DEPOSIT' ? 'Deposit' : 'Full'} payment for invoice ${invoice.invoice_id}`,
                             } as InvoiceModeConfig}
                             gateway={selectedGateway}
                             onSuccess={handleInvoicePaymentSuccess}
@@ -592,27 +671,6 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                     </Box>
                   )}
                 </Stack>
-              </TabPanel>
-
-              {/* Payment Plan Tab */}
-              <TabPanel value={selectedTab} index={1}>
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                    Set Up Payment Plan
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Break down your payment into manageable installments
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    onClick={handlePaymentPlanClick}
-                    disabled={paymentLoading}
-                  >
-                    Create Payment Plan
-                  </Button>
-                </Box>
-              </TabPanel>
 
               {/* Error Alert */}
               {paymentError && (
@@ -624,7 +682,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
           )}
         </DialogContent>
 
-        {canPay && selectedTab === 0 && (
+        {canPay && (
           <DialogActions sx={{ p: 3 }}>
             <Button onClick={onClose} disabled={paymentLoading}>
               Cancel
@@ -637,24 +695,22 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                 // For saved methods: just need a payment method selected
                 (!isAddingNewMethod && !selectedPaymentMethod) ||
                 // For new methods: need both gateway and to not be in Stripe flow (Stripe handles its own submission)
-                (isAddingNewMethod && (!selectedGateway || selectedGateway?.code === 'stripe'))
+                (isAddingNewMethod && (!selectedGateway || selectedGateway?.code === 'stripe')) ||
+                // For custom amounts: validate before enabling button
+                (paymentType === 'CUSTOM' && (!!customAmountError || !customAmount))
               }
               startIcon={paymentLoading && <CircularProgress size={20} />}
               sx={{ minWidth: 120 }}
             >
-              {paymentLoading ? 'Processing...' : `Pay ${FinancialApi.formatAmount(paymentStatus.amountRemaining, invoice.currency)}`}
+              {paymentLoading ? 'Processing...' : (
+                paymentType === 'CUSTOM' && !customAmount
+                  ? 'Enter Amount'
+                  : `Pay ${FinancialApi.formatAmount(calculatePaymentAmount(), invoice.currency)}`
+              )}
             </Button>
           </DialogActions>
         )}
       </Dialog>
-
-      {/* Payment Plan Dialog */}
-      <PaymentPlanDialog
-        open={showPaymentPlanDialog}
-        invoice={invoice}
-        onClose={() => setShowPaymentPlanDialog(false)}
-        onSuccess={handlePaymentPlanSuccess}
-      />
     </>
   );
 };

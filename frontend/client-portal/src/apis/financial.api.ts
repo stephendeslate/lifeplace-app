@@ -321,11 +321,13 @@ export class FinancialApi {
 
   /**
    * Setup a payment plan for an invoice
+   * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   static async setupInvoicePaymentPlan(
     invoiceId: number,
     planData: PaymentPlanRequest
   ): Promise<PaymentPlan> {
+    console.warn('⚠️ WIP: Payment plan setup is currently disabled');
     try {
       const response = await api.post<PaymentPlan>(
         `/payments/client/invoices/${invoiceId}/setup_payment_plan/`,
@@ -338,30 +340,37 @@ export class FinancialApi {
   }
   
   // ==================== PAYMENT PLANS ====================
-  
+  // ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
+
   /**
-   * Get client's payment plans
+   * Get client's payment plans (paginated)
+   * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
-  static async getPaymentPlans(): Promise<PaymentPlan[]> {
-    const response = await api.get<PaymentPlan[]>('/payments/client/payment-plans/');
+  static async getPaymentPlans(): Promise<PaginatedResponse<PaymentPlan>> {
+    console.warn('⚠️ WIP: Payment plans API is currently disabled');
+    const response = await api.get<PaginatedResponse<PaymentPlan>>('/payments/client/payment-plans/');
     return response.data;
   }
-  
+
   /**
    * Get single payment plan details
+   * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   static async getPaymentPlan(planId: number): Promise<PaymentPlan> {
+    console.warn('⚠️ WIP: Payment plan details API is currently disabled');
     const response = await api.get<PaymentPlan>(`/payments/client/payment-plans/${planId}/`);
     return response.data;
   }
-  
+
   /**
    * Make a payment for a specific installment in a payment plan
+   * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   static async payInstallment(
-    planId: number, 
+    planId: number,
     paymentData: InstallmentPaymentData
   ): Promise<Payment> {
+    console.warn('⚠️ WIP: Payment installment API is currently disabled');
     const response = await api.post<Payment>(
       `/payments/client/payment-plans/${planId}/pay_installment/`,
       paymentData
@@ -528,7 +537,32 @@ export class FinancialApi {
       return currency;
     }
   }
-  
+
+  /**
+   * Stripe minimum charge amounts by currency
+   * Based on Stripe's $0.50 USD minimum requirement
+   */
+  static readonly STRIPE_MINIMUM_CHARGE: Record<string, number> = {
+    PHP: 29.00,   // ~$0.50 USD at ₱58 = $1
+    USD: 0.50,
+    EUR: 0.50,
+    GBP: 0.30,
+    SGD: 0.70,
+    MYR: 2.20,
+    AUD: 0.50,
+    CAD: 0.50,
+    JPY: 50,      // Zero-decimal currency
+    // Add other currencies as needed
+  };
+
+  /**
+   * Get minimum charge amount for a currency
+   * Defaults to 0.50 (USD equivalent) if currency not found
+   */
+  static getMinimumCharge(currency: string): number {
+    return this.STRIPE_MINIMUM_CHARGE[currency] || 0.50;
+  }
+
   /**
    * Calculate total from payment plan installments
    */
