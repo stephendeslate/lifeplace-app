@@ -627,6 +627,11 @@ class PaymentSerializer(serializers.ModelSerializer):
 # New serializers for invoice payment endpoints
 class InvoicePaymentRequestSerializer(serializers.Serializer):
     """Serializer for invoice payment request data"""
+    payment_type = serializers.ChoiceField(
+        choices=[('FULL', 'Full Payment'), ('DEPOSIT', 'Deposit Payment')],
+        default='FULL',
+        help_text='Payment type - full payment or deposit (deposit uses PaymentSettings.default_deposit_percentage)'
+    )
     payment_method = serializers.IntegerField(required=False, help_text="Saved payment method ID")
     payment_method_id = serializers.CharField(required=False, help_text="Stripe payment method ID or token")
     payment_method_token = serializers.CharField(required=False, help_text="Payment method token from frontend")

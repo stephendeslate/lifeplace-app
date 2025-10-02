@@ -296,18 +296,18 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['post'])
     def pay(self, request, pk=None):
-        """Process full invoice payment"""
+        """Process invoice payment (supports full and deposit payments)"""
         try:
             invoice = self.get_object()
 
-            # Validate invoice can be paid
-            if invoice.status != 'ISSUED':
+            # Validate invoice can be paid (allow PARTIALLY_PAID for subsequent payments)
+            if invoice.status not in ['ISSUED', 'PARTIALLY_PAID']:
                 return Response(
-                    {"detail": f"Cannot pay invoice with status {invoice.get_status_display()}. Only issued invoices can be paid."},
+                    {"detail": f"Cannot pay invoice with status {invoice.get_status_display()}. Only issued or partially paid invoices can be paid."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Validate payment data
+            # Validate payment data (now includes payment_type field)
             serializer = InvoicePaymentRequestSerializer(data=request.data)
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -315,16 +315,18 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
             payment_data = serializer.validated_data
 
             try:
-                # Process invoice payment using service
+                # Process invoice payment using service (handles both FULL and DEPOSIT)
                 payment_result = InvoiceService.process_invoice_payment(
                     invoice, payment_data, request.user
                 )
 
                 if payment_result.get('success'):
                     payment = payment_result.get('payment')
+                    # Refresh invoice from DB to get updated status
+                    invoice.refresh_from_db()
                     return Response({
                         'success': True,
-                        'message': 'Payment processed successfully',
+                        'message': payment_result.get('message', 'Payment processed successfully'),
                         'payment': PaymentSerializer(payment).data,
                         'invoice': InvoiceSerializer(invoice).data
                     }, status=status.HTTP_200_OK)
@@ -357,24 +359,25 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['post'])
     def create_payment_intent(self, request, pk=None):
-        """Create payment intent for invoice payment with Stripe/gateway"""
+        """Create payment intent for invoice payment with Stripe/gateway (supports deposit)"""
         try:
             invoice = self.get_object()
 
-            # Validate invoice can be paid
-            if invoice.status != 'ISSUED':
+            # Validate invoice can be paid (allow PARTIALLY_PAID for subsequent payments)
+            if invoice.status not in ['ISSUED', 'PARTIALLY_PAID']:
                 return Response(
                     {"detail": f"Cannot create payment intent for invoice with status {invoice.get_status_display()}"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Get gateway code from request
+            # Get gateway code and payment type from request
             gateway_code = request.data.get('gateway_code', 'stripe')
+            payment_type = request.data.get('payment_type', 'FULL')
 
             try:
-                # Create payment intent using service
+                # Create payment intent using service (with payment_type support)
                 intent_result = InvoiceService.create_payment_intent_for_invoice(
-                    invoice, gateway_code
+                    invoice, gateway_code, payment_type
                 )
 
                 if intent_result.get('success'):

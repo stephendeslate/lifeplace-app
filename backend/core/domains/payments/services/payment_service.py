@@ -125,7 +125,7 @@ class PaymentService:
             
             return payment
         
-    @staticmethod 
+    @staticmethod
     def process_gateway_payment(payment_id, gateway_code, payment_data, user):
         """Process payment through gateway - delegates to PaymentGatewayService"""
         from .gateway_service import PaymentGatewayService

@@ -478,6 +478,7 @@ export interface InstallmentAction {
 
 // Invoice payment operation types
 export interface InvoicePaymentRequest {
+  payment_type?: 'FULL' | 'DEPOSIT';  // Payment type - full or deposit (default: FULL)
   gateway_code?: string;
   gateway_id?: number;
   // For saved payment methods (PaymentMethod DB record) - backend expects 'payment_method'
