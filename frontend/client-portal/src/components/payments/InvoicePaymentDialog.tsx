@@ -129,7 +129,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
     if (isNaN(numAmount) || numAmount <= 0) {
       return 'Please enter a valid amount';
     }
-    const minAmount = paymentAmounts.deposit;
+    const minAmount = FinancialApi.getMinimumCharge(invoice.currency);
     const maxAmount = paymentAmounts.full;
 
     if (numAmount < minAmount) {
@@ -521,7 +521,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                                 Custom Amount
                               </Typography>
                               <Typography variant="body2" color="text.secondary">
-                                Pay a custom amount between {formatAmount(paymentAmounts.deposit, invoice.currency)} and {formatAmount(paymentAmounts.full, invoice.currency)}
+                                Pay a custom amount between {formatAmount(FinancialApi.getMinimumCharge(invoice.currency), invoice.currency)} and {formatAmount(paymentAmounts.full, invoice.currency)}
                               </Typography>
                             </Box>
                           }
@@ -543,7 +543,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                           error={!!customAmountError}
                           helperText={
                             customAmountError ||
-                            `Enter amount between ${formatAmount(paymentAmounts.deposit, invoice.currency)} and ${formatAmount(paymentAmounts.full, invoice.currency)}. If not paying in full, must leave at least ${formatAmount(FinancialApi.getMinimumCharge(invoice.currency), invoice.currency)} remaining.`
+                            `Enter amount between ${formatAmount(FinancialApi.getMinimumCharge(invoice.currency), invoice.currency)} and ${formatAmount(paymentAmounts.full, invoice.currency)}. If not paying in full, must leave at least ${formatAmount(FinancialApi.getMinimumCharge(invoice.currency), invoice.currency)} remaining.`
                           }
                           InputProps={{
                             startAdornment: (
@@ -554,7 +554,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                           }}
                           sx={{ mt: 2 }}
                           inputProps={{
-                            min: paymentAmounts.deposit,
+                            min: FinancialApi.getMinimumCharge(invoice.currency),
                             max: paymentAmounts.full,
                             step: 0.01,
                           }}

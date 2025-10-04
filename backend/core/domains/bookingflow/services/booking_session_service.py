@@ -399,10 +399,12 @@ class BookingSessionService:
             payment_config = payment_step.payment_config
             if completion_type == 'quote' and not payment_config.allow_quote_request:
                 raise StepValidationError("Quote requests are not allowed for this booking flow")
+            # FIX: Only require payment data for payment completion, not for quote requests
             if completion_type == 'payment' and payment_config.require_immediate_payment:
                 payment_data = BookingSessionService._extract_payment_data(session)
                 if not payment_data:
                     raise StepValidationError("Payment is required but no payment data provided")
+            # Quote requests don't require payment data - they just need the quote message
 
         # ENHANCED SAFEGUARD: Final completion status check before event creation
         # This prevents any remaining race conditions
@@ -567,6 +569,47 @@ class BookingSessionService:
         logger.info(f"Abandoned booking session: {session.session_id}")
         return session
     
+    @staticmethod
+    def _extract_booking_metadata(session):
+        """DRY: Extract all booking metadata from session in a single place
+
+        Returns a dict with:
+            - quote_message: Client message for quote requests
+            - special_requests: Additional special requests from review step
+            - combined_message: Combined message from both sources
+            - payment_type: Payment preference (FULL/DEPOSIT)
+            - completion_type: Flow completion type (payment/quote)
+        """
+        metadata = {
+            'quote_message': '',
+            'special_requests': '',
+            'combined_message': '',
+            'payment_type': 'FULL',
+            'completion_type': 'payment',
+        }
+
+        # Extract from payment step (quote message)
+        payment_data = session.booking_data.get('payment_info', {})
+        if isinstance(payment_data, dict):
+            metadata['quote_message'] = payment_data.get('quote_message', '').strip()
+            metadata['payment_type'] = payment_data.get('payment_type', 'FULL')
+            metadata['completion_type'] = payment_data.get('completion_type', 'payment')
+
+        # Extract from review step (special requests)
+        review_data = session.booking_data.get('review_booking', {})
+        if isinstance(review_data, dict):
+            metadata['special_requests'] = review_data.get('special_requests', '').strip()
+
+        # Combine messages
+        messages = []
+        if metadata['quote_message']:
+            messages.append(metadata['quote_message'])
+        if metadata['special_requests']:
+            messages.append(f"Additional notes:\n{metadata['special_requests']}")
+        metadata['combined_message'] = '\n\n'.join(messages)
+
+        return metadata
+
     @staticmethod
     def _extract_payment_data(session):
         """Extract payment data from session booking data"""
@@ -1437,31 +1480,47 @@ class BookingSessionService:
             EventQuote: The created quote
         """
         logger.info(f"Creating quote from booking session {session.session_id} for event {event.id}")
-        
+
         # Use centralized pricing service for consistent calculations
         from core.domains.sales.pricing_service import PricingCalculationService
-        
+
         # Get event duration for pricing calculations
         event_duration = BookingSessionService._get_event_duration_from_booking_data(session.booking_data)
-        
+
         # Calculate pricing using centralized service
         pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
-            session.booking_data, 
+            session.booking_data,
             event_duration
         )
-        
+
         logger.info(f"Centralized pricing calculated: ₱{pricing_breakdown.total_amount}")
+
+        # Extract booking metadata including client message
+        metadata = BookingSessionService._extract_booking_metadata(session)
 
         # Determine quote status based on completion type
         if completion_type == 'quote':
-            # Quote requests should be pending client acceptance
-            quote_status = 'SENT'
+            # Quote requests stay DRAFT until admin reviews and sends
+            quote_status = 'DRAFT'
             accepted_at = None
-            status_note = "Quote sent to client for review"
+
+            # Store client message in notes field
+            notes = f"Quote Request from {session.client.get_full_name()}\n"
+            notes += f"Booking Session: {session.session_id}\n\n"
+            notes += f"CLIENT MESSAGE:\n{metadata['combined_message']}\n\n" if metadata['combined_message'] else ""
+            notes += f"Status: Awaiting admin review and customization"
+
+            # Also store in client_message field (first 500 chars)
+            client_message = metadata['combined_message'][:500] if metadata['combined_message'] else ""
+
+            status_note = "Quote request - awaiting admin review"
         else:
             # Payment completions auto-accept the quote
             quote_status = 'ACCEPTED'
             accepted_at = timezone.now()
+
+            notes = f"Auto-accepted quote from booking session {session.session_id}"
+            client_message = ""
             status_note = "Quote auto-accepted from booking completion"
 
         logger.info(f"Creating quote with status '{quote_status}' for completion_type '{completion_type}'")
@@ -1479,7 +1538,8 @@ class BookingSessionService:
             valid_until=timezone.now().date() + timedelta(days=30),
             accepted_at=accepted_at,
             created_by=session.client,
-            notes=f"Quote generated from booking session {session.session_id} - {status_note}",
+            notes=notes,  # Use client message in notes
+            client_message=client_message,  # Also store in client_message field
             discount=pricing_breakdown.applied_discount
         )
         

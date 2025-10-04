@@ -87,6 +87,7 @@ export interface PaymentStepData {
   };
   save_payment_method?: boolean;
   completion_type?: 'payment' | 'quote';
+  quote_message?: string; // Client message for quote requests
 }
 
 export type PaymentMethodType = 

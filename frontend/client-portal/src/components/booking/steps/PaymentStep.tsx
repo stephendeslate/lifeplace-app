@@ -15,6 +15,7 @@ import {
   Card,
   CardContent,
   CardActions,
+  TextField,
 } from '@mui/material';
 import { CreditCard, Security, Schedule, CheckCircle } from '@mui/icons-material';
 import {
@@ -102,6 +103,8 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     payment_method_token: stepData.payment_method_token,
     billing_address: stepData.billing_address,
     save_payment_method: stepData.save_payment_method || false,
+    completion_type: stepData.completion_type,  // Preserve completion_type from stepData
+    quote_message: stepData.quote_message,      // Preserve quote_message from stepData
   }), [stepData, config]);
 
   // Calculate amounts based on payment type
@@ -245,10 +248,10 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         g => g.id === paymentPlanSettings.primary_payment_gateway
       );
       if (primaryGateway) {
-        handleGatewaySelect(primaryGateway);
+        handleGatewaySelect(primaryGateway as unknown as Record<string, unknown>);
       } else if (filteredGateways.length === 1) {
         // If no primary but only 1 gateway available, auto-select it
-        handleGatewaySelect(filteredGateways[0]);
+        handleGatewaySelect(filteredGateways[0] as unknown as Record<string, unknown>);
       }
     }
   }, [isAddingNewMethod, paymentPlanSettings, filteredGateways, selectedGateway, handleGatewaySelect]);
@@ -484,68 +487,106 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     );
   }
 
-  // If quote was selected, show confirmation
-  if (completionChoice === 'quote') {
-    return (
-      <Box>
-        <Typography variant="h5" gutterBottom>
-          Quote Request Submitted
-        </Typography>
-        
-        <Alert severity="info" sx={{ mb: 3 }}>
-          You have chosen to request a quote for your event. We'll prepare a customized quote and send it to you for review.
-        </Alert>
-
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Event Summary
-          </Typography>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography>Estimated Total:</Typography>
-            <Typography sx={{ fontWeight: 600 }}>
-              {amounts.formattedTotal}
-            </Typography>
-          </Box>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            This amount is an estimate. Your final quote may include additional customizations or adjustments based on your specific requirements.
-          </Typography>
-        </Paper>
-
-        <Button 
-          variant="outlined" 
-          onClick={() => setCompletionChoice(null)}
-          sx={{ mb: 2 }}
-        >
-          Back to Options
-        </Button>
-      </Box>
-    );
-  }
-
-  // Show payment flow (either immediate payment required or payment was chosen)
+  // Main render - conditionally show quote form or payment form
   return (
     <Box>
-      <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
-        {config?.allow_quote_request ? 'Complete Payment' : 'Secure Your Booking'}
-      </Typography>
-      
-      {config?.allow_quote_request && (
-        <Button 
-          variant="text" 
-          onClick={() => setCompletionChoice(null)}
-          sx={{ mb: 2 }}
-        >
-          ← Back to Options
-        </Button>
+      {/* Show quote message form when quote is selected */}
+      {completionChoice === 'quote' && (
+        <>
+          <Typography variant="h5" gutterBottom>
+            Request Custom Quote
+          </Typography>
+
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Tell us about your special requirements and we'll prepare a customized quote for you within 24 hours.
+          </Alert>
+
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom fontWeight={600}>
+              Your Message to Our Team
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Please describe any special requests, customizations, or questions you have about your event.
+            </Typography>
+
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              value={paymentData.quote_message || ''}
+              onChange={(e) => updateData({ quote_message: e.target.value })}
+              placeholder="Example: I need vegetarian catering options, extended photography hours, custom decorations with specific color themes, or any other special requirements..."
+              variant="outlined"
+              sx={{ mb: 2 }}
+            />
+
+            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+              The more details you provide, the more accurate your custom quote will be.
+            </Typography>
+          </Paper>
+
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Event Summary
+            </Typography>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography>Estimated Total:</Typography>
+              <Typography sx={{ fontWeight: 600 }}>
+                {amounts.formattedTotal}
+              </Typography>
+            </Box>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              This amount is an estimate. Your final quote may include additional customizations or adjustments based on your specific requirements.
+            </Typography>
+          </Paper>
+
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setCompletionChoice(null);
+                updateData({ completion_type: undefined, quote_message: '' });
+              }}
+              sx={{ mr: 2 }}
+            >
+              ← Back to Payment Options
+            </Button>
+
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 2 }}>
+              We'll review your request and send a detailed quote to your email within 24 hours
+            </Typography>
+
+            <Typography variant="caption" color="primary" display="block" sx={{ mt: 1, fontWeight: 600 }}>
+              Click "Continue" below to proceed with your quote request
+            </Typography>
+          </Box>
+        </>
       )}
 
-      {!config?.allow_quote_request && (
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-          Your date is popular - secure it now!
-        </Typography>
-      )}
+      {/* Show payment form when payment is selected or no quote option */}
+      {completionChoice !== 'quote' && (
+        <>
+          <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
+            {config?.allow_quote_request ? 'Complete Payment' : 'Secure Your Booking'}
+          </Typography>
+
+          {config?.allow_quote_request && (
+            <Button
+              variant="text"
+              onClick={() => setCompletionChoice(null)}
+              sx={{ mb: 2 }}
+            >
+              ← Back to Options
+            </Button>
+          )}
+
+          {!config?.allow_quote_request && (
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
+              Your date is popular - secure it now!
+            </Typography>
+          )}
 
       {/* Payment Summary */}
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -858,6 +899,8 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
             </Typography>
           ))}
         </Alert>
+      )}
+        </>
       )}
     </Box>
   );
