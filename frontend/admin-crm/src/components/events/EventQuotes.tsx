@@ -48,6 +48,8 @@ import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { QuoteDetailsDialog } from '../sales/QuoteDetailsDialog';
 import { QuoteCreateDialog } from './QuoteCreateDialog';
+import QuoteEditDialog from '../sales/QuoteEditDialog';
+import QuoteSendConfirmDialog from '../sales/QuoteSendConfirmDialog';
 
 interface EventQuotesProps {
   event: Event;
@@ -118,6 +120,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   const [selectedQuote, setSelectedQuote] = useState<EventQuote | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
   const {
@@ -146,14 +150,15 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   };
 
   const handleEditQuote = (quote: EventQuote) => {
-    navigate(`/sales/quotes/${quote.id}/edit`);
+    setSelectedQuote(quote);
+    setEditDialogOpen(true);
+    setAnchorEl(null); // Only close the menu, keep selectedQuote for dialog
   };
 
   const handleSendQuote = () => {
     if (selectedQuote) {
-      // This would trigger the send action through a mutation
-      console.log('Send quote:', selectedQuote.id);
-      handleMenuClose();
+      setSendDialogOpen(true);
+      setAnchorEl(null); // Only close the menu, keep selectedQuote for dialog
     }
   };
 
@@ -161,7 +166,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
     if (selectedQuote) {
       // This would trigger the duplicate action through a mutation
       console.log('Duplicate quote:', selectedQuote.id);
-      handleMenuClose();
+      setAnchorEl(null);
+      setSelectedQuote(null); // Clear quote since no dialog needs it
     }
   };
 
@@ -169,7 +175,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
     if (selectedQuote) {
       // This would trigger the delete action through a mutation
       console.log('Delete quote:', selectedQuote.id);
-      handleMenuClose();
+      setAnchorEl(null);
+      setSelectedQuote(null); // Clear quote since no dialog needs it
     }
   };
 
@@ -396,6 +403,40 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
           refetch();
         }}
       />
+
+      {/* Quote Edit Dialog */}
+      {selectedQuote && (
+        <QuoteEditDialog
+          open={editDialogOpen}
+          onClose={() => {
+            setEditDialogOpen(false);
+            setSelectedQuote(null);
+          }}
+          quote={selectedQuote}
+          onSuccess={() => {
+            refetch();
+            setEditDialogOpen(false);
+            setSelectedQuote(null);
+          }}
+        />
+      )}
+
+      {/* Quote Send Confirmation Dialog */}
+      {selectedQuote && (
+        <QuoteSendConfirmDialog
+          open={sendDialogOpen}
+          onClose={() => {
+            setSendDialogOpen(false);
+            setSelectedQuote(null);
+          }}
+          quote={selectedQuote}
+          onSuccess={() => {
+            refetch();
+            setSendDialogOpen(false);
+            setSelectedQuote(null);
+          }}
+        />
+      )}
     </Box>
   );
 };

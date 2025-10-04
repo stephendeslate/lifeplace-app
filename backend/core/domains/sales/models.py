@@ -83,11 +83,14 @@ class EventQuote(BaseModel):
         )
     
     def send_to_client(self, user=None):
-        """Mark quote as sent"""
+        """Mark quote as sent, send email notification, and trigger workflow"""
+        import logging
+        logger = logging.getLogger(__name__)
+
         self.status = 'SENT'
         self.sent_at = timezone.now()
-        self.save()
-        
+        self.save()  # This triggers the signal which fires workflow
+
         # Record activity
         QuoteActivity.objects.create(
             quote=self,
@@ -95,7 +98,7 @@ class EventQuote(BaseModel):
             action_by=user,
             notes=f"Quote sent to client {self.event.client}"
         )
-        
+
         # Set a reminder for follow-up
         if self.valid_until:
             reminder_date = self.sent_at + timezone.timedelta(days=3)
@@ -105,6 +108,34 @@ class EventQuote(BaseModel):
                     scheduled_date=reminder_date,
                     message="Follow up on quote sent 3 days ago"
                 )
+
+        # Send email notification to client
+        try:
+            from core.domains.communications.services import CommunicationService
+
+            client = self.event.client
+            if client and client.email:
+                template_data = {
+                    'client_name': client.get_full_name(),
+                    'quote_id': self.id,
+                    'quote_version': self.version,
+                    'total_amount': str(self.total_amount),
+                    'valid_until': self.valid_until.strftime('%B %d, %Y') if self.valid_until else 'N/A',
+                    'event_name': self.event.name or f'Event #{self.event.id}',
+                    'event_date': self.event.start_date.strftime('%B %d, %Y') if self.event.start_date else 'TBD',
+                }
+
+                CommunicationService.send_system_email(
+                    recipient=client.email,
+                    template_name='quote_sent_to_client',
+                    context_data=template_data,
+                    subject=f'Your Quote for {template_data["event_name"]}'
+                )
+
+                logger.info(f"Sent quote notification email to {client.email} for quote {self.id}")
+        except Exception as e:
+            logger.error(f"Failed to send quote notification email: {e}")
+            # Don't fail the quote send operation if email fails
     
     def create_next_version(self):
         """Create a new version based on this quote"""

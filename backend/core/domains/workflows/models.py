@@ -80,7 +80,11 @@ class WorkflowStage(BaseModel):
         default=False,
         help_text="Trigger this stage when event is created"
     )
-    
+    trigger_on_quote_sent = models.BooleanField(
+        default=False,
+        help_text="Trigger this stage when quote is sent to client"
+    )
+
     # Add a field for custom metadata (for different automation types)
     metadata = models.JSONField(default=dict, blank=True)
 
