@@ -35,12 +35,21 @@ def handle_quote_changes(sender, instance, created, **kwargs):
     if not created:
         # Get associated event
         event = instance.event
-        
+
+        # If quote was sent to client
+        if instance.status == 'SENT':
+            # Progress workflow based on quote being sent
+            WorkflowEngine.progress_workflow(
+                event,
+                trigger_type='QUOTE_SENT',
+                data={'quote_id': instance.id}
+            )
+
         # If quote was accepted
-        if instance.status == 'ACCEPTED':
+        elif instance.status == 'ACCEPTED':
             # Progress workflow based on quote acceptance
             WorkflowEngine.progress_workflow(
-                event, 
+                event,
                 trigger_type='QUOTE_ACCEPTED',
                 data={'quote_id': instance.id}
             )

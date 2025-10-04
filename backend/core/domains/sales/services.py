@@ -270,7 +270,10 @@ class QuoteService:
         with transaction.atomic():
             # Track what changed
             changes = []
-            
+
+            # Extract line_items if present (handle separately)
+            line_items_data = data.pop('line_items', None)
+
             # Update simple fields
             for key, value in data.items():
                 if key == 'status' and value != quote.status:
@@ -320,7 +323,34 @@ class QuoteService:
                     changes.append(f"{key} updated")
             
             quote.save()
-            
+
+            # Handle line items updates if provided
+            if line_items_data is not None:
+                from core.domains.sales.models import QuoteLineItem
+
+                # Get list of IDs from incoming data
+                incoming_ids = [item.get('id') for item in line_items_data if item.get('id')]
+
+                # Delete line items that are no longer in the list
+                if incoming_ids:
+                    quote.line_items.exclude(id__in=incoming_ids).delete()
+                else:
+                    # If no IDs provided, delete all existing line items
+                    quote.line_items.all().delete()
+
+                # Update or create line items
+                for item_data in line_items_data:
+                    item_id = item_data.pop('id', None)
+
+                    if item_id:
+                        # Update existing line item
+                        QuoteLineItem.objects.filter(id=item_id, quote=quote).update(**item_data)
+                    else:
+                        # Create new line item
+                        QuoteLineItem.objects.create(quote=quote, **item_data)
+
+                changes.append(f"Updated {len(line_items_data)} line items")
+
             # If there were changes other than status, record general update activity
             if changes and not any(change.startswith("Status changed") for change in changes):
                 QuoteActivity.objects.create(
@@ -329,7 +359,7 @@ class QuoteService:
                     action_by=user,
                     notes=f"Quote updated: {', '.join(changes)}"
                 )
-            
+
             # DRY: Use centralized pricing calculation service
             from core.domains.sales.pricing_service import PricingCalculationService
 

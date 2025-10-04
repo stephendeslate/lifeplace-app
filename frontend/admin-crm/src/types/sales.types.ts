@@ -43,6 +43,7 @@ export interface EventQuote {
     id: number;
     name: string;
     client_name: string;
+    client_email: string | null;
     start_date: string;
     status: string;
   };

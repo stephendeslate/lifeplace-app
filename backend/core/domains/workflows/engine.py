@@ -148,6 +148,11 @@ class WorkflowEngine:
                 current_stage._execute_automation(event)
                 return []  # Stay on current stage
 
+            if trigger_type == 'QUOTE_SENT' and current_stage.trigger_on_quote_sent:
+                logger.info(f"Current stage '{current_stage.name}' triggered by quote sent - executing automation")
+                current_stage._execute_automation(event)
+                return []  # Stay on current stage
+
         # Normal sequential flow: next stage in the same category
         next_order = current_stage.order + 1
 

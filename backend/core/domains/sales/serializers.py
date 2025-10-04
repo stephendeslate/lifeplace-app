@@ -134,6 +134,7 @@ class EventQuoteSerializer(serializers.ModelSerializer):
             'name': obj.event.name,
             'client_name': getattr(obj.event, 'client_name',
                 f"{obj.event.client.first_name} {obj.event.client.last_name}" if obj.event.client else "Unknown"),
+            'client_email': obj.event.client.email if obj.event.client else None,
             'start_date': obj.event.start_date,
             'status': obj.event.status,
         }
