@@ -250,11 +250,24 @@ class EventQuoteViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def send(self, request, pk=None):
-        """Send a quote to the client"""
+        """Send a DRAFT quote to the client (admin only)
+
+        This action is specifically for quote requests that are in DRAFT status.
+        Admin reviews the quote, customizes it if needed, then sends it to the client.
+        """
         try:
-            quote = QuoteService.update_quote(
-                pk, {'status': 'SENT'}, request.user
-            )
+            quote = self.get_object()
+
+            # Validate that quote is in DRAFT status
+            if quote.status != 'DRAFT':
+                return Response(
+                    {"detail": f"Only DRAFT quotes can be sent. This quote is {quote.get_status_display()}."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Use the model's send_to_client method
+            quote.send_to_client(request.user)
+
             serializer = self.get_serializer(quote)
             return Response(serializer.data)
         except Exception as e:
