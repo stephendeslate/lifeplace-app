@@ -18,20 +18,38 @@ class WorkflowEngine:
     
     @classmethod
     def assign_initial_workflow(cls, event):
-        """Assign the initial workflow stage to a new event"""
+        """Assign the initial workflow stage to a new event with context-aware selection"""
         if not event.workflow_template:
             return
-            
-        # Find the first LEAD stage
+
+        # Context-aware stage selection based on completion type
         try:
-            first_stage = event.workflow_template.stages.filter(
-                stage='LEAD'
-            ).order_by('order').first()
-            
+            first_stage = None
+
+            # For quote requests, try to find a quote-specific LEAD stage
+            if event.completion_type == 'quote':
+                # Look for quote-specific stage (marked in metadata)
+                first_stage = event.workflow_template.stages.filter(
+                    stage='LEAD',
+                    metadata__flow_type='quote'
+                ).order_by('order').first()
+
+                if first_stage:
+                    logger.info(f"Found quote-specific LEAD stage '{first_stage.name}' for event {event.id}")
+
+            # Fallback: Find the first LEAD stage (for payment or if no quote stage exists)
+            if not first_stage:
+                first_stage = event.workflow_template.stages.filter(
+                    stage='LEAD'
+                ).order_by('order').first()
+
+                if first_stage and event.completion_type == 'quote':
+                    logger.info(f"No quote-specific stage found, using default LEAD stage '{first_stage.name}' for event {event.id}")
+
             if first_stage:
                 event.current_stage = first_stage
                 event.save(update_fields=['current_stage'])
-                
+
                 # Log the stage assignment
                 EventTimeline.objects.create(
                     event=event,
@@ -39,11 +57,11 @@ class WorkflowEngine:
                     description=f"Initial workflow stage: {first_stage.name}",
                     is_public=True
                 )
-                
+
                 # Execute stage actions
                 cls.execute_stage_actions(event, first_stage)
-                
-                logger.info(f"Assigned initial workflow stage '{first_stage.name}' to event {event.id}")
+
+                logger.info(f"Assigned initial workflow stage '{first_stage.name}' to event {event.id} (completion_type: {event.completion_type})")
         except Exception as e:
             logger.error(f"Error assigning initial workflow: {str(e)}")
     

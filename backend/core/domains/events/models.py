@@ -74,10 +74,21 @@ class Event(BaseModel):
         ('PARTIALLY_PAID', 'Partially Paid'),
         ('PAID', 'Paid'),
     ]
-    
+    COMPLETION_TYPE_CHOICES = [
+        ('payment', 'Payment Completion'),
+        ('quote', 'Quote Request'),
+    ]
+
     client = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='events')
     event_type = models.ForeignKey(EventType, on_delete=models.PROTECT, null=True, blank=True)
     status = models.CharField(max_length=20, choices=EVENT_STATUSES, default='LEAD')
+    completion_type = models.CharField(
+        max_length=20,
+        choices=COMPLETION_TYPE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="How this event was completed in the booking flow"
+    )
     name = models.CharField(max_length=255, blank=True)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField(null=True, blank=True)

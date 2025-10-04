@@ -257,7 +257,15 @@ class BookingSessionService:
 
                             # Create event immediately with completion safeguard
                             logger.info(f"🔥 IMMEDIATE_CREATION proceeding for session {session.session_id}")
-                            event = BookingSessionService._create_event_from_session(session)
+
+                            # Extract completion_type from session data
+                            completion_type = 'payment'  # Default
+                            for step_data in session.booking_data.values():
+                                if isinstance(step_data, dict) and 'completion_type' in step_data:
+                                    completion_type = step_data['completion_type']
+                                    break
+
+                            event = BookingSessionService._create_event_from_session(session, completion_type)
 
                             # CRITICAL FIX: Link the event to session immediately within transaction
                             session.created_event = event
@@ -420,8 +428,8 @@ class BookingSessionService:
             logger.info(f"🔥 COMPLETION_LOCK: Session {session_id} marked as completed at {session.completed_at}")
 
             try:
-                # Create event from booking data
-                event = BookingSessionService._create_event_from_session(session)
+                # Create event from booking data, passing completion_type for workflow context
+                event = BookingSessionService._create_event_from_session(session, completion_type)
 
                 # NEW QUOTE-FIRST APPROACH: Always create quote first
                 logger.info(f"Creating quote from booking session for event {event.id} (current event status: {event.status})")
@@ -994,18 +1002,24 @@ class BookingSessionService:
         return None
     
     @staticmethod
-    def _create_event_from_session(session):
-        """Create an event from booking session data"""
+    def _create_event_from_session(session, completion_type='payment'):
+        """Create an event from booking session data
+
+        Args:
+            session: BookingSession instance
+            completion_type: 'payment' for immediate payment, 'quote' for quote request
+        """
         from core.domains.events.services import EventService
-        
+
         # Extract event data from session
         booking_data = session.booking_data
-        
+
         # Build event data with required fields
         event_data = {
             'client': session.client,
             'event_type': session.booking_flow.event_type,
             'status': 'LEAD',
+            'completion_type': completion_type,  # Track how event was completed (payment/quote)
             'workflow_template': session.booking_flow.workflow_template,
             'name': 'Booking from Client Portal',  # Default name
             'start_date': timezone.now(),  # Default start date - will be overridden if provided
@@ -1137,7 +1151,7 @@ class BookingSessionService:
         # CRITICAL VALIDATION: Only allow known Event model fields
         # NOTE: 'id' is explicitly excluded since Django auto-generates it
         allowed_event_fields = {
-            'client', 'event_type', 'status', 'name', 'start_date', 'end_date',
+            'client', 'event_type', 'status', 'completion_type', 'name', 'start_date', 'end_date',
             'workflow_template', 'current_stage', 'lead_source', 'last_contacted',
             'total_price', 'event_products', 'payment_status', 'total_amount_due',
             'total_amount_paid', 'preferences', 'guest_count', 'description'
