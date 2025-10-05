@@ -596,17 +596,24 @@ class BookingSessionService:
             'completion_type': 'payment',
         }
 
-        # Extract from payment step (quote message)
-        payment_data = session.booking_data.get('payment_info', {})
-        if isinstance(payment_data, dict):
-            metadata['quote_message'] = payment_data.get('quote_message', '').strip()
-            metadata['payment_type'] = payment_data.get('payment_type', 'FULL')
-            metadata['completion_type'] = payment_data.get('completion_type', 'payment')
+        # FIXED: Iterate through step data to find payment and review step data
+        # Session data is stored as step_XX keys, not as step_type keys
+        for step_key, step_data in session.booking_data.items():
+            if isinstance(step_data, dict):
+                # Extract from payment step (contains quote_message, completion_type, payment_type)
+                # Payment step data has quote_message and/or completion_type fields
+                if 'quote_message' in step_data or 'completion_type' in step_data:
+                    if step_data.get('quote_message'):
+                        metadata['quote_message'] = step_data.get('quote_message', '').strip()
+                    if step_data.get('payment_type'):
+                        metadata['payment_type'] = step_data.get('payment_type', 'FULL')
+                    if step_data.get('completion_type'):
+                        metadata['completion_type'] = step_data.get('completion_type', 'payment')
 
-        # Extract from review step (special requests)
-        review_data = session.booking_data.get('review_booking', {})
-        if isinstance(review_data, dict):
-            metadata['special_requests'] = review_data.get('special_requests', '').strip()
+                # Extract from review step (contains special_requests and terms_accepted)
+                # Review step data has both special_requests and terms_accepted fields
+                if 'special_requests' in step_data and 'terms_accepted' in step_data:
+                    metadata['special_requests'] = step_data.get('special_requests', '').strip()
 
         # Combine messages
         messages = []

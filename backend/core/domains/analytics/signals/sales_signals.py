@@ -12,6 +12,14 @@ logger = logging.getLogger(__name__)
 def track_quote_events(sender, instance, created, **kwargs):
     """Track quote creation and status changes"""
     if created:
+        # Handle valid_until as either date object or string (no timezone conversion)
+        valid_until_str = None
+        if instance.valid_until:
+            if hasattr(instance.valid_until, 'isoformat'):
+                valid_until_str = instance.valid_until.isoformat()
+            else:
+                valid_until_str = str(instance.valid_until)
+
         EventTrackingService.track_event(
             event_name='quote_created',
             event_category='BUSINESS_EVENT',
@@ -23,7 +31,7 @@ def track_quote_events(sender, instance, created, **kwargs):
                 'event_id': instance.event.id if instance.event else None,
                 'total_amount': str(instance.total_amount),
                 'status': instance.status,
-                'valid_until': instance.valid_until.isoformat() if instance.valid_until else None,
+                'valid_until': valid_until_str,
                 'version': instance.version,
                 'template_name': instance.template.name if instance.template else None,
             },

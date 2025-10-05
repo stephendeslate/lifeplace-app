@@ -1,9 +1,9 @@
 # backend/core/domains/sales/signals.py
 import logging
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
-from .models import EventQuote
+from .models import EventQuote, QuoteLineItem
 
 logger = logging.getLogger(__name__)
 
@@ -104,3 +104,46 @@ def handle_quote_acceptance(sender, instance, created, **kwargs):
         except Exception as e:
             logger.error(f"Failed to create contract/invoice for accepted quote {instance.id}: {e}")
             # Don't raise exception to avoid breaking quote acceptance
+
+
+@receiver(post_save, sender=QuoteLineItem)
+def recalculate_quote_totals_on_line_item_save(sender, instance, **kwargs):
+    """Recalculate quote totals when a line item is created or updated"""
+    _recalculate_quote_totals(instance.quote)
+
+
+@receiver(post_delete, sender=QuoteLineItem)
+def recalculate_quote_totals_on_line_item_delete(sender, instance, **kwargs):
+    """Recalculate quote totals when a line item is deleted"""
+    _recalculate_quote_totals(instance.quote)
+
+
+def _recalculate_quote_totals(quote):
+    """Helper function to recalculate quote subtotal, tax, and total from line items"""
+    from decimal import Decimal
+
+    # Calculate totals from line items
+    subtotal = Decimal('0.00')
+    tax_amount = Decimal('0.00')
+
+    for item in quote.line_items.all():
+        item_subtotal = item.unit_price * item.quantity
+        item_tax = item_subtotal * (item.tax_rate / Decimal('100'))
+
+        subtotal += item_subtotal
+        tax_amount += item_tax
+
+    total_amount = subtotal + tax_amount
+
+    # Apply discount if present
+    if quote.discount_amount:
+        total_amount -= quote.discount_amount
+
+    # Update quote (avoid triggering signals again)
+    EventQuote.objects.filter(pk=quote.pk).update(
+        subtotal=subtotal,
+        tax_amount=tax_amount,
+        total_amount=total_amount
+    )
+
+    logger.info(f"Recalculated quote {quote.id} totals: subtotal=₱{subtotal}, tax=₱{tax_amount}, total=₱{total_amount}")

@@ -413,10 +413,20 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
             setSelectedQuote(null);
           }}
           quote={selectedQuote}
-          onSuccess={() => {
-            refetch();
+          onSuccess={async () => {
+            const { data: updatedQuotes } = await refetch();
+            // Update selectedQuote with fresh data if detail dialog is open
+            if (detailDialogOpen && selectedQuote && updatedQuotes) {
+              const freshQuote = updatedQuotes.find(q => q.id === selectedQuote.id);
+              if (freshQuote) {
+                setSelectedQuote(freshQuote);
+              }
+            }
             setEditDialogOpen(false);
-            setSelectedQuote(null);
+            // Don't clear selectedQuote if detail dialog is open
+            if (!detailDialogOpen) {
+              setSelectedQuote(null);
+            }
           }}
         />
       )}
@@ -430,10 +440,20 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
             setSelectedQuote(null);
           }}
           quote={selectedQuote}
-          onSuccess={() => {
-            refetch();
+          onSuccess={async () => {
+            const { data: updatedQuotes } = await refetch();
+            // Update selectedQuote with fresh data if detail dialog is open
+            if (detailDialogOpen && selectedQuote && updatedQuotes) {
+              const freshQuote = updatedQuotes.find(q => q.id === selectedQuote.id);
+              if (freshQuote) {
+                setSelectedQuote(freshQuote);
+              }
+            }
             setSendDialogOpen(false);
-            setSelectedQuote(null);
+            // Don't clear selectedQuote if detail dialog is open
+            if (!detailDialogOpen) {
+              setSelectedQuote(null);
+            }
           }}
         />
       )}
