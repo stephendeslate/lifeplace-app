@@ -120,6 +120,21 @@ export interface EnhancedPaymentStepData {
   payment_status?: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 }
 
+// Line item for pricing breakdown (matches backend PricingLineItem)
+export interface PricingLineItem {
+  product_id: number | null;
+  name: string;
+  description: string;
+  quantity: number;
+  base_unit_price: string;
+  total_unit_price: string;
+  line_total: string;
+  tax_rate: string;
+  excess_hours: number | null;
+  excess_hour_price: string | null;
+  excess_cost: string;
+}
+
 // Server response for pricing calculation
 export interface PricingCalculation {
   subtotal: string;
@@ -133,6 +148,7 @@ export interface PricingCalculation {
     value: string;
     amount: string;
   };
+  line_items?: PricingLineItem[];
 }
 
 export interface ReviewStepData {

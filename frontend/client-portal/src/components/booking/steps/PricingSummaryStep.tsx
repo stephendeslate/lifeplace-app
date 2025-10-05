@@ -240,28 +240,57 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {selectedPackages.map((pkg) => (
-                  <TableRow key={pkg.product_id}>
-                    <TableCell>
-                      {pkg.name}
-                    </TableCell>
-                    <TableCell align="center">{pkg.quantity}</TableCell>
-                    <TableCell align="right">
-                      {isUpdatingPrices ? (
-                        <Skeleton width={60} animation="wave" />
-                      ) : (
-                        formatAmount(pkg.price)
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      {isUpdatingPrices ? (
-                        <Skeleton width={80} animation="wave" />
-                      ) : (
-                        formatAmount((parseFloat(pkg.price) * pkg.quantity).toString())
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {selectedPackages.map((pkg) => {
+                  // Find matching line item for excess hour details
+                  const lineItem = pricing.lineItems?.find(item => item.product_id === pkg.product_id);
+                  const hasExcessHours = lineItem?.excess_hours && lineItem.excess_hours > 0;
+                  const basePrice = lineItem?.base_unit_price ? parseFloat(lineItem.base_unit_price) : parseFloat(pkg.price);
+                  const unitPrice = lineItem?.total_unit_price ? parseFloat(lineItem.total_unit_price) : parseFloat(pkg.price);
+
+                  return (
+                    <TableRow key={pkg.product_id}>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {pkg.name}
+                          </Typography>
+                          {hasExcessHours && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                              Base: {formatAmount(basePrice.toString())}
+                              {lineItem.excess_hours && lineItem.excess_hour_price && (
+                                <> + {lineItem.excess_hours}h excess @ {formatAmount(lineItem.excess_hour_price)}/h</>
+                              )}
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center">{pkg.quantity}</TableCell>
+                      <TableCell align="right">
+                        <Box>
+                          <Typography variant="body2">
+                            {isUpdatingPrices ? (
+                              <Skeleton width={60} animation="wave" />
+                            ) : (
+                              formatAmount(unitPrice.toString())
+                            )}
+                          </Typography>
+                          {hasExcessHours && lineItem.excess_cost && parseFloat(lineItem.excess_cost) > 0 && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              (+{formatAmount((parseFloat(lineItem.excess_cost) / pkg.quantity).toString())} excess)
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        {isUpdatingPrices ? (
+                          <Skeleton width={80} animation="wave" />
+                        ) : (
+                          formatAmount((unitPrice * pkg.quantity).toString())
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
@@ -285,26 +314,32 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {selectedAddons.map((addon) => (
-                  <TableRow key={addon.product_id}>
-                    <TableCell>{addon.name}</TableCell>
-                    <TableCell align="center">{addon.quantity}</TableCell>
-                    <TableCell align="right">
-                      {isUpdatingPrices ? (
-                        <Skeleton width={60} animation="wave" />
-                      ) : (
-                        formatAmount(addon.price)
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      {isUpdatingPrices ? (
-                        <Skeleton width={80} animation="wave" />
-                      ) : (
-                        formatAmount((parseFloat(addon.price) * addon.quantity).toString())
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {selectedAddons.map((addon) => {
+                  // Find matching line item (for future-proofing if addons support excess hours)
+                  const lineItem = pricing.lineItems?.find(item => item.product_id === addon.product_id);
+                  const unitPrice = lineItem?.total_unit_price ? parseFloat(lineItem.total_unit_price) : parseFloat(addon.price);
+
+                  return (
+                    <TableRow key={addon.product_id}>
+                      <TableCell>{addon.name}</TableCell>
+                      <TableCell align="center">{addon.quantity}</TableCell>
+                      <TableCell align="right">
+                        {isUpdatingPrices ? (
+                          <Skeleton width={60} animation="wave" />
+                        ) : (
+                          formatAmount(unitPrice.toString())
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {isUpdatingPrices ? (
+                          <Skeleton width={80} animation="wave" />
+                        ) : (
+                          formatAmount((unitPrice * addon.quantity).toString())
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

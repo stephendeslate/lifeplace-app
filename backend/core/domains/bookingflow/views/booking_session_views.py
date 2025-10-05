@@ -567,13 +567,32 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             logger.info(f"CENTRALIZED PRICING RESULT: subtotal=₱{pricing_breakdown.subtotal}, "
                        f"tax=₱{pricing_breakdown.tax_amount}, discount=₱{pricing_breakdown.discount_amount}, "
                        f"total=₱{pricing_breakdown.total_amount}")
-            
+
+            # Serialize line items with excess hour details
+            line_items_data = []
+            for item in pricing_breakdown.line_items:
+                line_item_dict = {
+                    'product_id': item.product_id,
+                    'name': item.name,
+                    'description': item.description,
+                    'quantity': item.quantity,
+                    'base_unit_price': str(item.base_unit_price.quantize(Decimal('0.01'))),
+                    'total_unit_price': str(item.total_unit_price.quantize(Decimal('0.01'))),
+                    'line_total': str(item.line_total.quantize(Decimal('0.01'))),
+                    'tax_rate': str(item.tax_rate.quantize(Decimal('0.01'))),
+                    'excess_hours': item.excess_hours,
+                    'excess_hour_price': str(item.excess_hour_price.quantize(Decimal('0.01'))) if item.excess_hour_price else None,
+                    'excess_cost': str(item.excess_cost.quantize(Decimal('0.01'))),
+                }
+                line_items_data.append(line_item_dict)
+
             return Response({
                 'subtotal': str(pricing_breakdown.subtotal.quantize(Decimal('0.01'))),
                 'tax': str(pricing_breakdown.tax_amount.quantize(Decimal('0.01'))),
                 'discount': str(pricing_breakdown.discount_amount.quantize(Decimal('0.01'))),
                 'total': str(pricing_breakdown.total_amount.quantize(Decimal('0.01'))),
-                'discount_details': discount_details
+                'discount_details': discount_details,
+                'line_items': line_items_data
             })
             
         except BookingSession.DoesNotExist:
