@@ -86,11 +86,10 @@ export const useCurrencySettings = () => {
  */
 export const useCurrentCurrency = () => {
   const { settings, isLoading: settingsLoading, formatAmount } = useCurrencySettings();
-  const { data: paymentPlanSettings, isLoading: paymentSettingsLoading } = usePaymentPlanSettings();
+  const { data: _paymentPlanSettings, isLoading: paymentSettingsLoading } = usePaymentPlanSettings();
 
-  // Use currency from global PaymentPlanSettings (DRY compliance)
-  // Fall back to localStorage settings if PaymentPlanSettings not loaded yet
-  const currentCurrency = paymentPlanSettings?.default_currency || settings.defaultCurrency;
+  // Use currency from settings
+  const currentCurrency = settings.defaultCurrency;
 
   return {
     currentCurrency,

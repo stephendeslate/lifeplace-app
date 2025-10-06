@@ -40,7 +40,6 @@ import {
   AccessTime as ExpiredIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
 import { useQuotesForEvent } from '../../hooks/useSales';
 import type { Event } from '../../types/events.types';
 import type { EventQuote } from '../../types/sales.types';
@@ -115,7 +114,6 @@ const getStatusStyles = (status: string) => {
 };
 
 export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
-  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<EventQuote | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);

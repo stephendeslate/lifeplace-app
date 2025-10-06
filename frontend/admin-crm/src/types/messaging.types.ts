@@ -9,7 +9,21 @@ import type {
   Message,
   MessagePriority,
   MessageThreadStatus,
+  CreateThreadRequest,
 } from '@shared/types/messaging';
+
+// ============================================================================
+// Admin-Specific Data Types
+// ============================================================================
+
+// Thread creation data for admin messaging
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface CreateThreadData extends CreateThreadRequest {
+  // Admin-specific fields can be added here if needed in the future
+}
+
+// Bulk operation value type
+export type BulkOperationValue = string | null;
 
 // ============================================================================
 // Admin-Specific Filter Extensions
@@ -139,7 +153,7 @@ export interface ThreadManagementProps {
   mode: 'single' | 'bulk' | 'create';
 
   // Event handlers
-  onThreadCreated?: (threadId: string) => void;
+  onThreadCreated?: (threadData: CreateThreadData) => Promise<void>;
   onThreadUpdated?: (threadId: string) => void;
   onBulkOperationComplete?: (operation: string, count: number) => void;
   onClose?: () => void;
@@ -182,7 +196,7 @@ export interface MessagingContextType {
 
   // Admin operations
   performBulkOperation: (operation: string, threadIds: string[], targetValue?: string) => Promise<void>;
-  createNewThread: (data: any) => Promise<string>;
+  createNewThread: (data: CreateThreadData) => Promise<string>;
   assignThread: (threadId: string, adminId: string | null) => Promise<void>;
 }
 

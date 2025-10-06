@@ -53,6 +53,18 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
     setError(null);
   };
 
+  const handleClose = useCallback(() => {
+    // Reset all state when closing
+    setSelectedGateway(null);
+    setSaveAsDefault(false);
+    setNickname('');
+    setLoading(false);
+    setError(null);
+    setSuccess(false);
+    setSuccessMessage(null);
+    onClose();
+  }, [onClose]);
+
   const handleSuccess = useCallback((result: PaymentFlowResult) => {
     if (result.mode === 'save' && result.saveResult) {
       setSuccess(true);
@@ -64,24 +76,12 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
         handleClose();
       }, 2000);
     }
-  }, [onSuccess]);
+  }, [onSuccess, handleClose]);
 
   const handleError = useCallback((error: PaymentFlowError) => {
     setError(error.message);
     setLoading(false);
   }, []);
-
-  const handleClose = () => {
-    // Reset all state when closing
-    setSelectedGateway(null);
-    setSaveAsDefault(false);
-    setNickname('');
-    setLoading(false);
-    setError(null);
-    setSuccess(false);
-    setSuccessMessage(null);
-    onClose();
-  };
 
   // Success state display
   if (success) {

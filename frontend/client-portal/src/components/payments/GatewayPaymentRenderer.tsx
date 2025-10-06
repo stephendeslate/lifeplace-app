@@ -27,8 +27,9 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
+import type { Stripe } from '@stripe/stripe-js';
 import { GlassCard } from '../../design-system';
-import { PaymentFlowManager, PaymentConfig, PaymentSession, PaymentResult, PaymentError } from '../../services/PaymentFlowManager';
+import { PaymentFlowManager, type PaymentConfig, type PaymentSession, type PaymentResult, type PaymentError } from '../../services/PaymentFlowManager';
 
 // ===========================
 // Types and Interfaces
@@ -68,7 +69,7 @@ interface PaymentState {
  */
 interface StripePaymentFormProps {
   session: PaymentSession;
-  onSubmit: (paymentData: any) => void;
+  onSubmit: (paymentData: unknown) => void;
   isProcessing: boolean;
   error?: PaymentError;
 }
@@ -109,7 +110,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     onSubmit(paymentData);
   }, [stripe, elements, onSubmit]);
 
-  const handleCardChange = useCallback((event: any) => {
+  const handleCardChange = useCallback((event: { error?: { message: string }; complete: boolean }) => {
     setCardError(event.error ? event.error.message : null);
     setCardComplete(event.complete);
   }, []);
@@ -203,17 +204,12 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
  */
 interface PayPalPaymentFormProps {
   session: PaymentSession;
-  onSubmit: (paymentData: any) => void;
+  onSubmit: (paymentData: unknown) => void;
   isProcessing: boolean;
   error?: PaymentError;
 }
 
-const PayPalPaymentForm: React.FC<PayPalPaymentFormProps> = ({
-  session,
-  onSubmit,
-  isProcessing,
-  error
-}) => {
+const PayPalPaymentForm: React.FC<PayPalPaymentFormProps> = () => {
   return (
     <Box>
       <Alert severity="info">
@@ -235,16 +231,13 @@ const PayPalPaymentForm: React.FC<PayPalPaymentFormProps> = ({
  */
 interface GenericPaymentFormProps {
   session: PaymentSession;
-  onSubmit: (paymentData: any) => void;
+  onSubmit: (paymentData: unknown) => void;
   isProcessing: boolean;
   error?: PaymentError;
 }
 
 const GenericPaymentForm: React.FC<GenericPaymentFormProps> = ({
-  session,
-  onSubmit,
-  isProcessing,
-  error
+  session
 }) => {
   return (
     <Box>
@@ -310,14 +303,16 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
         session,
         availableGateways: gateways,
         selectedGateway: session.gatewayCode,
-        isProcessing: false
+        isProcessing: false,
+        error: null
       }));
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to initialize session:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize payment';
       const paymentError = {
         code: 'initialization_failed',
-        message: error.message || 'Failed to initialize payment'
+        message: errorMessage
       };
       setState(prev => ({ ...prev, error: paymentError, isProcessing: false }));
       onError(paymentError);
@@ -330,7 +325,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
   }, [initializeSession]);
 
   // Handle payment submission
-  const handlePaymentSubmit = useCallback(async (paymentData: any) => {
+  const handlePaymentSubmit = useCallback(async (paymentData: unknown) => {
     if (!state.session || disabled) return;
 
     try {
@@ -339,20 +334,21 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
       const result = await paymentManager.processPayment(state.session, paymentData);
 
       if (result.success) {
-        setState(prev => ({ ...prev, isProcessing: false }));
+        setState(prev => ({ ...prev, isProcessing: false, error: null }));
         onSuccess(result);
       } else {
-        setState(prev => ({ ...prev, error: result.error, isProcessing: false }));
+        setState(prev => ({ ...prev, error: result.error ?? null, isProcessing: false }));
         if (result.error) {
           onError(result.error);
         }
       }
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Payment processing failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
       const paymentError = {
         code: 'processing_failed',
-        message: error.message || 'Payment processing failed'
+        message: errorMessage
       };
       setState(prev => ({ ...prev, error: paymentError, isProcessing: false }));
       onError(paymentError);
@@ -376,20 +372,21 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
       const result = await paymentManager.retryPayment(state.session, useAlternativeGateway);
 
       if (result.success) {
-        setState(prev => ({ ...prev, isProcessing: false }));
+        setState(prev => ({ ...prev, isProcessing: false, error: null }));
         onSuccess(result);
       } else {
-        setState(prev => ({ ...prev, error: result.error, isProcessing: false }));
+        setState(prev => ({ ...prev, error: result.error ?? null, isProcessing: false }));
         if (result.error) {
           onError(result.error);
         }
       }
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Payment retry failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Payment retry failed';
       const paymentError = {
         code: 'retry_failed',
-        message: error.message || 'Payment retry failed'
+        message: errorMessage
       };
       setState(prev => ({ ...prev, error: paymentError, isProcessing: false }));
       onError(paymentError);
@@ -545,7 +542,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
  * Wrapper component that provides Stripe Elements context when needed
  */
 export const GatewayPaymentRendererWithContext: React.FC<GatewayPaymentRendererProps> = (props) => {
-  const [stripePromise, setStripePromise] = useState<any>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [needsStripeContext, setNeedsStripeContext] = useState(false);
 
   // Check if we need Stripe context

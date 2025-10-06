@@ -43,13 +43,14 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
   validationErrors,
   isValidating,
 }) => {
-  const availableAddons = config?.available_addons_details || [];
+  // Memoize config values to prevent unnecessary re-renders
+  const availableAddons = useMemo(() => config?.available_addons_details || [], [config?.available_addons_details]);
   const minSelection = config?.min_selection || 0;
   const maxSelection = config?.max_selection || 0; // 0 means unlimited
   const groupByCategory = config?.group_by_category || false;
 
-  // Use props stepData as single source of truth
-  const selectedAddons = stepData.selected_addons || [];
+  // Use props stepData as single source of truth - memoize to stabilize reference
+  const selectedAddons = useMemo(() => stepData.selected_addons || [], [stepData.selected_addons]);
 
   // Group addons by category if enabled
   const groupedAddons = useMemo(() => {

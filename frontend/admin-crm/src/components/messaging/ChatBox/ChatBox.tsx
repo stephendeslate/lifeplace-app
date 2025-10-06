@@ -42,11 +42,30 @@ interface Message {
   id: string;
   content: string;
   created_at: string;
+  is_internal_note?: boolean;
+  attachments?: Array<{ id: string; filename: string; file_url: string }>;
+  sender: { id: string; first_name: string; last_name: string; display_name: string; role: string };
+}
+
+interface ThreadDetail {
+  subject: string;
+  status: string;
+  priority: string;
+  event_name?: string | null;
 }
 
 // Temporary mock hooks for build compatibility
-const useThreadDetail = () => ({ data: null, isLoading: false, error: null });
-const useMessages = () => ({ data: [], isLoading: false, error: null });
+const useThreadDetail = (_threadId: string) => ({
+  data: null as ThreadDetail | null,
+  isLoading: false,
+  error: null
+});
+const useMessages = (_params: { thread_id: string; limit: number }) => ({
+  data: { results: [] as Message[] },
+  isLoading: false,
+  isError: false,
+  error: null
+});
 
 export const ChatBox: React.FC<ChatBoxProps> = ({
   threadId,
@@ -144,7 +163,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
     setAttachmentFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleMessageMenu = (event: React.MouseEvent<HTMLElement>, message: Message) => {
+  const handleMessageMenu = (event: React.MouseEvent<HTMLElement>, _message: Message) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
   };
@@ -264,7 +283,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
               </Typography>
 
               {/* Attachments */}
-              {message.attachments.map((attachment) => (
+              {message.attachments?.map((attachment) => (
                 <Box
                   key={attachment.id}
                   sx={{

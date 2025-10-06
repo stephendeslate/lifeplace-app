@@ -428,11 +428,11 @@ const StepPreview: React.FC<StepPreviewProps> = ({
                     <Chip label="Full Payment" size="small" color="success" variant="outlined" />
                   )}
                   {paymentConfig.accept_deposit && (
-                    <Chip 
-                      label={`${paymentConfig.deposit_type === 'PERCENTAGE' ? 'Percentage' : 'Fixed'} Deposit`} 
-                      size="small" 
-                      color="info" 
-                      variant="outlined" 
+                    <Chip
+                      label="Deposit Payment"
+                      size="small"
+                      color="info"
+                      variant="outlined"
                     />
                   )}
                   {paymentConfig.require_immediate_payment && (

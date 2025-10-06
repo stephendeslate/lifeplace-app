@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useEvents } from './useEvents';
-import { useQuotes, usePendingQuotes } from './useEventQuotes';
+import { usePendingQuotes } from './useEventQuotes';
 import { useFinancialOverview } from './useFinancial';
 import { useCommunications } from './useCommunications';
 import type { Event, EventTask } from '../types/events.types';
@@ -121,6 +121,52 @@ const calculateDaysUntilExpiry = (dateString: string | null): number => {
   return Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 };
 
+// Type guard for signature progress data structure
+interface SignatureProgressVariantA {
+  total_required: number;
+  signed_count: number;
+  percentage: number;
+}
+
+interface SignatureProgressVariantB {
+  total: number;
+  completed: number;
+  percentage: number;
+}
+
+type SignatureProgressData = SignatureProgressVariantA | SignatureProgressVariantB;
+
+// Helper to normalize signature progress from different backend formats
+const normalizeSignatureProgress = (progress: SignatureProgressData | undefined): {
+  total_required: number;
+  signed_count: number;
+  percentage: number;
+} => {
+  if (!progress) {
+    return { total_required: 0, signed_count: 0, percentage: 0 };
+  }
+
+  // Check if it's variant A (has total_required)
+  if ('total_required' in progress && 'signed_count' in progress) {
+    return {
+      total_required: progress.total_required,
+      signed_count: progress.signed_count,
+      percentage: progress.percentage
+    };
+  }
+
+  // Otherwise it's variant B (has total and completed)
+  if ('total' in progress && 'completed' in progress) {
+    return {
+      total_required: progress.total,
+      signed_count: progress.completed,
+      percentage: progress.percentage
+    };
+  }
+
+  return { total_required: 0, signed_count: 0, percentage: 0 };
+};
+
 // Helper function to calculate days past due
 const calculateDaysPastDue = (dueDateString: string): number => {
   const now = new Date();
@@ -158,7 +204,6 @@ export const useDashboardData = (): DashboardData => {
   const upcomingEventsQuery = useUpcomingEvents();
 
   const pendingQuotesQuery = usePendingQuotes();
-  const allQuotesQuery = useQuotes();
 
   const financialOverview = useFinancialOverview();
 
@@ -193,7 +238,6 @@ export const useDashboardData = (): DashboardData => {
     // Get financial data
     const payments = financialOverview.payments || [];
     const invoices = financialOverview.invoices || [];
-    const paymentPlans = financialOverview.paymentPlans || [];
 
     // Get communications data
     const communications = Array.isArray(communicationsQuery.data) ? communicationsQuery.data : [];
@@ -273,7 +317,16 @@ export const useDashboardData = (): DashboardData => {
 
     allEvents.forEach((event: Event) => {
       // Check if event has contracts (from EventDetail interface)
-      const eventDetail = event as Event & { contracts?: Array<{ id: number; can_client_sign: boolean; status: string; template_name: string; expires_at?: string; signature_progress?: { completed: number; total: number; percentage: number } }> }; // Type assertion for accessing contracts
+      const eventDetail = event as Event & {
+        contracts?: Array<{
+          id: number;
+          can_client_sign: boolean;
+          status: string;
+          template_name: string;
+          expires_at?: string;
+          signature_progress?: SignatureProgressData;
+        }>;
+      };
       if (eventDetail.contracts && eventDetail.pending_signature_required && Array.isArray(eventDetail.contracts)) {
         eventDetail.contracts.forEach((contract) => {
           if (contract.can_client_sign && contract.status === 'SENT') {
@@ -284,11 +337,7 @@ export const useDashboardData = (): DashboardData => {
               templateName: contract.template_name,
               expiresAt: contract.expires_at || null,
               daysUntilExpiry: contract.expires_at ? calculateDaysUntilExpiry(contract.expires_at) : null,
-              signatureProgress: contract.signature_progress ? {
-                total_required: (contract.signature_progress as any).total_required || (contract.signature_progress as any).total || 0,
-                signed_count: (contract.signature_progress as any).signed_count || (contract.signature_progress as any).completed || 0,
-                percentage: contract.signature_progress.percentage || 0
-              } : { total_required: 0, signed_count: 0, percentage: 0 }
+              signatureProgress: normalizeSignatureProgress(contract.signature_progress)
             });
           }
         });
@@ -318,7 +367,7 @@ export const useDashboardData = (): DashboardData => {
     );
 
     if (currentEvent) {
-      const currentEventDetail = currentEvent as any; // Type assertion for accessing upcoming_tasks
+      const currentEventDetail = currentEvent as Event & { upcoming_tasks?: EventTask[] };
       if (currentEventDetail.upcoming_tasks && Array.isArray(currentEventDetail.upcoming_tasks)) {
         const totalTasks = currentEventDetail.upcoming_tasks.length;
         const completedTasks = currentEventDetail.upcoming_tasks.filter((task: EventTask) => task.status === 'COMPLETED').length;
@@ -365,31 +414,18 @@ export const useDashboardData = (): DashboardData => {
 
     // ============ FINANCIAL SUMMARY ============
 
-    // Process payment plan progress
-    const paymentPlanProgress = paymentPlans.map(plan => {
-      const paidInstallments = plan.installments.filter(inst => inst.status === 'PAID');
-      const paidAmount = paidInstallments.reduce((sum, inst) => sum + parseFloat(inst.amount), 0);
-      const totalAmount = parseFloat(plan.total_amount);
-      const remainingAmount = totalAmount - paidAmount;
-      const progressPercentage = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
-
-      // Find next due installment
-      const nextDueInstallment = plan.installments
-        .filter(inst => inst.status === 'PENDING')
-        .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
-
-      return {
-        planId: plan.id,
-        eventId: plan.event,
-        eventName: plan.event_details?.name || `Event ${plan.event}`,
-        totalAmount: plan.total_amount,
-        paidAmount: paidAmount.toFixed(2),
-        remainingAmount: remainingAmount.toFixed(2),
-        progressPercentage,
-        nextDueDate: nextDueInstallment?.due_date || null,
-        nextDueAmount: nextDueInstallment?.amount || null
-      };
-    });
+    // Process payment plan progress (empty for now as paymentPlans not available in financialOverview)
+    const paymentPlanProgress: Array<{
+      planId: number;
+      eventId: number;
+      eventName: string;
+      totalAmount: string;
+      paidAmount: string;
+      remainingAmount: string;
+      progressPercentage: number;
+      nextDueDate: string | null;
+      nextDueAmount: string | null;
+    }> = [];
 
     // Process outstanding invoices
     const outstandingInvoices = invoices
@@ -505,7 +541,6 @@ export const useDashboardData = (): DashboardData => {
     eventsQuery.data,
     upcomingEventsQuery.data,
     pendingQuotesQuery.data,
-    allQuotesQuery.data,
     financialOverview,
     communicationsQuery.data
   ]);

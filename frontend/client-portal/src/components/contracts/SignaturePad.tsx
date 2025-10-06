@@ -57,58 +57,6 @@ export const SignaturePadComponent: React.FC<SignaturePadComponentProps> = ({
   // Merge default config with provided config
   const finalConfig = { ...DEFAULT_SIGNATURE_CONFIG, ...config };
 
-  // Initialize signature pad
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const signaturePad = new SignaturePad(canvas, {
-      backgroundColor: finalConfig.backgroundColor,
-      penColor: finalConfig.penColor,
-      minWidth: finalConfig.minWidth,
-      maxWidth: finalConfig.maxWidth,
-      throttle: finalConfig.throttle,
-      minDistance: finalConfig.minPointDistance,
-    });
-
-    padRef.current = signaturePad;
-
-    // Set up event handlers
-    const handleBeginStroke = () => {
-      setHasBeenTouched(true);
-    };
-
-    const handleEndStroke = () => {
-      const currentIsEmpty = signaturePad.isEmpty();
-      setIsEmpty(currentIsEmpty);
-      
-      if (!currentIsEmpty) {
-        const signatureData = signaturePad.toDataURL('image/png');
-        onSignatureChange(signatureData);
-      } else {
-        onSignatureChange(null);
-      }
-    };
-
-    signaturePad.addEventListener('beginStroke', handleBeginStroke);
-    signaturePad.addEventListener('endStroke', handleEndStroke);
-
-    // Handle resize
-    const handleResize = () => {
-      resizeCanvas();
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    // Initial resize
-    resizeCanvas();
-
-    return () => {
-      signaturePad.off();
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [finalConfig, onSignatureChange]);
-
   // Resize canvas to match display size
   const resizeCanvas = useCallback(() => {
     if (!canvasRef.current || !padRef.current) return;
@@ -142,6 +90,58 @@ export const SignaturePadComponent: React.FC<SignaturePadComponentProps> = ({
       pad.fromData(data);
     }
   }, [width, height]);
+
+  // Initialize signature pad
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const signaturePad = new SignaturePad(canvas, {
+      backgroundColor: finalConfig.backgroundColor,
+      penColor: finalConfig.penColor,
+      minWidth: finalConfig.minWidth,
+      maxWidth: finalConfig.maxWidth,
+      throttle: finalConfig.throttle,
+      minDistance: finalConfig.minPointDistance,
+    });
+
+    padRef.current = signaturePad;
+
+    // Set up event handlers
+    const handleBeginStroke = () => {
+      setHasBeenTouched(true);
+    };
+
+    const handleEndStroke = () => {
+      const currentIsEmpty = signaturePad.isEmpty();
+      setIsEmpty(currentIsEmpty);
+
+      if (!currentIsEmpty) {
+        const signatureData = signaturePad.toDataURL('image/png');
+        onSignatureChange(signatureData);
+      } else {
+        onSignatureChange(null);
+      }
+    };
+
+    signaturePad.addEventListener('beginStroke', handleBeginStroke);
+    signaturePad.addEventListener('endStroke', handleEndStroke);
+
+    // Handle resize
+    const handleResize = () => {
+      resizeCanvas();
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Initial resize
+    resizeCanvas();
+
+    return () => {
+      signaturePad.off();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [finalConfig, onSignatureChange, resizeCanvas]);
 
   // Clear signature
   const handleClear = useCallback(() => {

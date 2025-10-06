@@ -104,7 +104,7 @@ export const ThreadManagement: React.FC<ThreadManagementProps> = ({
   // Event Handlers
   // ============================================================================
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | MessagePriority | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -130,8 +130,8 @@ export const ThreadManagement: React.FC<ThreadManagementProps> = ({
         initial_message: formData.initial_message || undefined
       };
 
-      const newThreadId = await createNewThread(threadData);
-      onThreadCreated?.(newThreadId);
+      await createNewThread(threadData);
+      onThreadCreated?.(threadData);
       onClose?.();
     } catch (err) {
       setError('Failed to create thread. Please try again.');
@@ -372,7 +372,7 @@ export const ThreadManagement: React.FC<ThreadManagementProps> = ({
         <InputLabel>Operation</InputLabel>
         <Select
           value={bulkOperation || ''}
-          onChange={(e) => setBulkOperation(e.target.value as any)}
+          onChange={(e) => setBulkOperation(e.target.value as 'assign' | 'status' | 'priority' | null)}
           label="Operation"
         >
           <MenuItem value="assign">Assign to Admin</MenuItem>

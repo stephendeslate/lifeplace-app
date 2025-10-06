@@ -18,7 +18,7 @@ const mockFinancialApi = vi.mocked(FinancialApi);
 
 // Mock the PaymentMethodSelector component
 vi.mock('../PaymentMethodSelector', () => ({
-  PaymentMethodSelector: ({ selectedMethod, onMethodSelect, disabled }: any) => (
+  PaymentMethodSelector: ({ selectedMethod, onMethodSelect, disabled }: { selectedMethod: unknown; onMethodSelect: (method: unknown) => void; disabled: boolean }) => (
     <div data-testid="payment-method-selector">
       <button
         onClick={() => onMethodSelect(mockPaymentMethod)}
@@ -36,7 +36,7 @@ vi.mock('../PaymentMethodSelector', () => ({
 
 // Mock the UnifiedStripePaymentFlow component
 vi.mock('../UnifiedStripePaymentFlow', () => ({
-  UnifiedStripePaymentFlow: ({ onSuccess, disabled }: any) => (
+  UnifiedStripePaymentFlow: ({ onSuccess, disabled }: { onSuccess: (result: unknown) => void; disabled: boolean }) => (
     <div data-testid="unified-stripe-payment-flow">
       <button
         onClick={() => onSuccess({ paymentMethodId: 'pm_test_123' })}
@@ -51,7 +51,7 @@ vi.mock('../UnifiedStripePaymentFlow', () => ({
 
 // Mock the PaymentPlanDialog component
 vi.mock('../PaymentPlanDialog', () => ({
-  PaymentPlanDialog: ({ open, onClose, onSuccess }: any) => (
+  PaymentPlanDialog: ({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) => (
     open ? (
       <div data-testid="payment-plan-dialog">
         <button onClick={onSuccess} data-testid="create-payment-plan">
@@ -154,7 +154,7 @@ describe('InvoicePaymentDialog', () => {
       amountPaid: 0,
       isPaid: false
     });
-    mockFinancialApi.formatAmount.mockImplementation((amount, currency) =>
+    mockFinancialApi.formatAmount.mockImplementation((amount, _currency) =>
       `₱${parseFloat(amount.toString()).toLocaleString()}`
     );
   });

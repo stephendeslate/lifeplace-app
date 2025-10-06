@@ -195,7 +195,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         completion_status: 'failed'
       });
     }
-  }, [isCompleted, isProcessing, confirmationData, onDataChange, completeBooking]);
+  }, [isCompleted, isProcessing, confirmationData, onDataChange, completeBooking, state.stepData.payment_info?.completion_type]);
 
   // Handle email sending
   const handleSendEmail = useCallback(async () => {
@@ -218,31 +218,31 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
   // Update step data when completion result is available (STABLE VERSION)
   React.useEffect(() => {
-    if (completionResult && 
-        stepData.completion_status === 'completed' && 
+    if (completionResult &&
+        stepData.completion_status === 'completed' &&
         !completionProcessedRef.current) {
-      
+
       completionProcessedRef.current = true;
-      
+
       onDataChange({
         ...stepData,
         booking_reference: completionResult.session_id || bookingReference,
         booking_completion_result: completionResult as unknown as Record<string, unknown>,
       });
     }
-  }, [completionResult?.session_id, stepData.completion_status]); // Only depend on stable values
+  }, [completionResult, stepData, bookingReference, onDataChange]);
 
   // Auto-send email when booking is completed (STABLE VERSION)
   React.useEffect(() => {
-    if (isCompleted && 
-        stepData.booking_reference && 
-        !stepData.confirmation_email_sent && 
+    if (isCompleted &&
+        stepData.booking_reference &&
+        !stepData.confirmation_email_sent &&
         !emailSentRef.current) {
-      
+
       emailSentRef.current = true;
       handleSendEmail();
     }
-  }, [isCompleted, stepData.booking_reference, stepData.confirmation_email_sent]); // Remove unstable handleSendEmail
+  }, [isCompleted, stepData.booking_reference, stepData.confirmation_email_sent, handleSendEmail]);
 
   // Reset refs when stepData changes significantly
   React.useEffect(() => {

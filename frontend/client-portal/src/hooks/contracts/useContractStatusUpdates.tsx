@@ -1,6 +1,6 @@
 // frontend/client-portal/src/hooks/contracts/useContractStatusUpdates.tsx
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { contractsApi } from '../../apis/contracts.api';
 import type { Contract, DetailedContractStatus, ContractStatus } from '../../types/contracts.types';
 
@@ -209,21 +209,21 @@ export const useRealTimeContractUpdates = ({
 }: UseRealTimeContractUpdatesOptions) => {
   const [isConnected, setIsConnected] = useState(false);
 
-  const startListening = () => {
+  const startListening = useCallback(() => {
     setIsConnected(true);
     console.log(`Started listening for real-time updates on contract ${contractId}`);
-  };
+  }, [contractId]);
 
-  const stopListening = () => {
+  const stopListening = useCallback(() => {
     setIsConnected(false);
     console.log(`Stopped listening for real-time updates on contract ${contractId}`);
-  };
+  }, [contractId]);
 
-  const simulateUpdate = (eventType: string, data: unknown) => {
+  const simulateUpdate = useCallback((eventType: string, data: unknown) => {
     if (onUpdate) {
       onUpdate(eventType, data);
     }
-  };
+  }, [onUpdate]);
 
   // Auto-connect if requested
   useEffect(() => {
@@ -237,7 +237,7 @@ export const useRealTimeContractUpdates = ({
         stopListening();
       }
     };
-  }, [autoConnect, contractId, isConnected]); // Add isConnected to dependencies
+  }, [autoConnect, contractId, isConnected, startListening, stopListening]);
 
   return {
     isConnected,

@@ -27,7 +27,7 @@ import { useAdminMessaging } from '../../../hooks/useAdminMessaging';
 import { ThreadList } from '../ThreadList/ThreadList';
 import { ChatBox } from '../ChatBox/ChatBox';
 import { ThreadManagement } from '../ThreadManagement/ThreadManagement';
-import type { MessageInterfaceProps } from '../../../types/messaging.types';
+import type { MessageInterfaceProps, CreateThreadData } from '../../../types/messaging.types';
 
 export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   clientId,
@@ -61,7 +61,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
     stats,
     createNewThread,
     refetchThreadList,
-    getThreadById
+    getThreadById: _getThreadById
   } = useAdminMessaging({
     clientId,
     eventId,
@@ -96,7 +96,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
     onThreadSelect?.(threadId);
   };
 
-  const handleThreadCreate = async (threadData: any) => {
+  const handleThreadCreate = async (threadData: CreateThreadData) => {
     try {
       const newThreadId = await createNewThread(threadData);
       setSelectedThreadId(newThreadId);

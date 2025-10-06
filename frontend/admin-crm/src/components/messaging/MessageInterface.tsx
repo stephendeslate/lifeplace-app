@@ -20,12 +20,6 @@ interface MessageThreadListItem {
   unread_count: number;
 }
 
-interface Message {
-  id: string;
-  content: string;
-  created_at: string;
-}
-
 export interface MessageInterfaceProps {
   clientId?: string;
   eventId?: string;
@@ -37,7 +31,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
   eventId,
   className,
 }) => {
-  const [selectedThread, setSelectedThread] = useState<string | null>(null);
+  const [_selectedThread, _setSelectedThread] = useState<string | null>(null);
 
   // For now, using placeholder data until shared hooks are verified working
   const threads: MessageThreadListItem[] = [];
@@ -132,7 +126,7 @@ export const MessageInterface: React.FC<MessageInterfaceProps> = ({
 
         {/* Chat Area */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {selectedThread ? (
+          {_selectedThread ? (
             <>
               {/* Messages Area */}
               <Box sx={{ flex: 1, p: 2, overflow: 'auto' }}>

@@ -33,9 +33,9 @@ export default defineConfig({
           'vendor-editor': ['@tiptap/core', '@tiptap/react', '@tiptap/starter-kit', 'mui-tiptap'],
           'vendor-utils': ['axios', 'date-fns', 'date-fns-tz', 'dompurify'],
           'vendor-charts': ['recharts'],
-          // Shared components
-          'shared-messaging': ['../shared/contexts/MessagingContext', '../shared/contexts/WebSocketContext'],
-          'shared-hooks': ['../shared/hooks/useRealTimeUpdates', '../shared/hooks/useMemoryManagement'],
+          // Shared components - Commented out WIP features
+          // 'shared-messaging': ['../shared/contexts/MessagingContext', '../shared/contexts/WebSocketContext'],
+          // 'shared-hooks': ['../shared/hooks/useRealTimeUpdates', '../shared/hooks/useMemoryManagement'],
         },
         // Optimize chunk naming
         chunkFileNames: (chunkInfo) => {

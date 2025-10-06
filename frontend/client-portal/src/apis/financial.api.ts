@@ -965,7 +965,7 @@ export class FinancialApi {
   /**
    * Get available payment gateways
    */
-  static async getAvailableGateways(): Promise<{ success: boolean; data?: any; message?: string }> {
+  static async getAvailableGateways(): Promise<{ success: boolean; data?: unknown; message?: string }> {
     try {
       const response = await api.get('/payments/client/gateways/available/');
       return {
@@ -989,9 +989,9 @@ export class FinancialApi {
     gatewayCode?: string;
     eventId?: number;
     invoiceId?: number;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     savePaymentMethod?: boolean;
-  }): Promise<{ success: boolean; data?: any; message?: string }> {
+  }): Promise<{ success: boolean; data?: unknown; message?: string }> {
     try {
       const response = await api.post('/payments/client/create-payment-intent/', intentData);
       return {
@@ -1012,8 +1012,8 @@ export class FinancialApi {
   static async confirmPaymentIntent(intentId: string, confirmationData: {
     paymentMethodId?: string;
     gatewayCode?: string;
-    metadata?: Record<string, any>;
-  }): Promise<{ success: boolean; data?: any; message?: string }> {
+    metadata?: Record<string, unknown>;
+  }): Promise<{ success: boolean; data?: unknown; message?: string }> {
     try {
       const response = await api.post(`/payments/client/confirm-payment-intent/${intentId}/`, confirmationData);
       return {
@@ -1031,7 +1031,7 @@ export class FinancialApi {
   /**
    * Get payment gateway health status
    */
-  static async getGatewayHealth(): Promise<{ success: boolean; data?: any; message?: string }> {
+  static async getGatewayHealth(): Promise<{ success: boolean; data?: unknown; message?: string }> {
     try {
       const response = await api.get('/payments/client/gateways/health/');
       return {

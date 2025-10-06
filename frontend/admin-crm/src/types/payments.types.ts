@@ -182,6 +182,11 @@ export interface PaymentPlan {
     total_amount: string;
   };
   installments: PaymentInstallment[];
+  paid_amount: string;
+  remaining_balance: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  is_overdue: boolean;
+  next_payment_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -192,7 +197,14 @@ export interface PaymentInstallment {
   payment_plan_details?: {
     id: number;
     event_id: number;
+    event_details?: {
+      id: number;
+      name: string;
+      client_name: string;
+      start_date: string;
+    };
     total_amount: string;
+    number_of_installments: number;
   };
   amount: string;
   due_date: string;
@@ -205,6 +217,9 @@ export interface PaymentInstallment {
     payment_number: string;
     status: string;
   };
+  paid_amount: string;
+  late_fee_amount: string;
+  days_overdue_count: number;
   created_at: string;
   updated_at: string;
 }

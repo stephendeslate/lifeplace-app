@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/payments/PaymentGatewaySelector.tsx
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   Box,
   FormControl,
@@ -75,12 +75,15 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
     },
   });
 
-  // Filter gateways by allowed codes with defensive programming
-  const filteredGateways = Array.isArray(gateways)
-    ? gateways.filter(gateway =>
-        gateway.is_active && (!allowedGateways || allowedGateways.includes(gateway.code))
-      )
-    : [];
+  // Filter gateways by allowed codes with defensive programming - memoize to stabilize reference
+  const filteredGateways = useMemo(() =>
+    Array.isArray(gateways)
+      ? gateways.filter(gateway =>
+          gateway.is_active && (!allowedGateways || allowedGateways.includes(gateway.code))
+        )
+      : [],
+    [gateways, allowedGateways]
+  );
 
   // Auto-select single gateway when available
   useEffect(() => {

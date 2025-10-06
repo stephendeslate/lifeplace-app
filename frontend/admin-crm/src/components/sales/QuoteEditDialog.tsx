@@ -138,7 +138,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
 
     try {
       const updateData = {
-        valid_until: validUntil ? validUntil.toISOString().split('T')[0] : null,
+        ...(validUntil && { valid_until: validUntil.toISOString().split('T')[0] }),
         notes,
         terms_and_conditions: termsAndConditions,
         client_message: clientMessage,
