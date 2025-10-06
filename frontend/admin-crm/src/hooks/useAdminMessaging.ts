@@ -5,12 +5,12 @@
 // Admin-specific messaging hook that wraps shared functionality
 
 import { useMemo, useCallback } from 'react';
-import type { UseQueryOptions } from '@tanstack/react-query';
-import {
-  useThreads,
-  messagingQueryKeys
-} from '@shared/hooks/useMessagingQueries';
-import type { ThreadListResponse } from '@shared/types/messaging';
+// import type { UseQueryOptions } from '@tanstack/react-query';
+// import {
+//   useThreads,
+//   messagingQueryKeys
+// } from '@shared/hooks/useMessagingQueries';
+// import type { ThreadListResponse } from '@shared/types/messaging';
 import type {
   UseAdminMessagingOptions,
   AdminMessagingStats,
