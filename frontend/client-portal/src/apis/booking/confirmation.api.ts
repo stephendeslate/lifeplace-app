@@ -1,33 +1,26 @@
 // frontend/client-portal/src/apis/booking/confirmation.api.ts
 
 import api from '../../utils/api';
-import type {
-  BookingCompletionResult
-} from '../../types/booking';
 
 /**
  * Confirmation step API functions
+ *
+ * Note: The completeBooking method has been consolidated into BookingCoreApi to avoid duplication.
+ * All booking completion should use BookingCoreApi.completeBooking() instead.
+ *
+ * This API class now focuses on confirmation-specific utilities like session details,
+ * email sending, and data formatting.
  */
 export class ConfirmationApi {
-  
-  /**
-   * Complete the booking
-   */
-  static async completeBooking(sessionId: string): Promise<BookingCompletionResult> {
-    const response = await api.post<BookingCompletionResult>(
-      `/bookingflow/public/flows/session/${sessionId}/complete/`
-    );
-    return response.data;
-  }
 
   /**
    * Get session details for confirmation display
    */
-  static async getSessionDetails(sessionId: string): Promise<any> {
+  static async getSessionDetails(sessionId: string): Promise<Record<string, unknown>> {
     const response = await api.get(
       `/bookingflow/public/flows/session/${sessionId}/`
     );
-    return response.data;
+    return response.data as Record<string, unknown>;
   }
 
   /**
@@ -53,7 +46,7 @@ export class ConfirmationApi {
   /**
    * Format confirmation data for display
    */
-  static formatConfirmationData(session: any): {
+  static formatConfirmationData(session: Record<string, unknown>): {
     bookingReference: string;
     eventDetails: {
       date?: string;
@@ -80,62 +73,68 @@ export class ConfirmationApi {
     const bookingData = session.booking_data || {};
     
     // Extract event details from various steps
-    const eventDetails: any = {};
-    const contactInfo: any = {};
-    let packages: any[] = [];
-    let addons: any[] = [];
+    const eventDetails: Record<string, unknown> = {};
+    const contactInfo: Record<string, unknown> = {};
+    let packages: Record<string, unknown>[] = [];
+    let addons: Record<string, unknown>[] = [];
 
     // Parse booking data from different steps
-    Object.values(bookingData).forEach((stepData: any) => {
+    Object.values(bookingData).forEach((stepData: unknown) => {
       if (typeof stepData === 'object' && stepData !== null) {
+        const data = stepData as Record<string, unknown>;
         // Extract event date/time info
-        if (stepData.start_date) {
-          eventDetails.date = stepData.start_date;
+        if (data.start_date) {
+          eventDetails.date = data.start_date;
         }
-        if (stepData.start_time) {
-          eventDetails.time = stepData.start_time;
+        if (data.start_time) {
+          eventDetails.time = data.start_time;
         }
-        if (stepData.duration) {
-          eventDetails.duration = stepData.duration;
+        if (data.duration) {
+          eventDetails.duration = data.duration;
         }
         // Extract contact info
-        if (stepData.full_name) {
-          contactInfo.name = stepData.full_name;
+        if (data.full_name) {
+          contactInfo.name = data.full_name;
         }
-        if (stepData.email) {
-          contactInfo.email = stepData.email;
+        if (data.email) {
+          contactInfo.email = data.email;
         }
-        if (stepData.phone) {
-          contactInfo.phone = stepData.phone;
+        if (data.phone) {
+          contactInfo.phone = data.phone;
         }
 
         // Extract packages
-        if (stepData.selected_packages) {
-          packages = stepData.selected_packages;
+        if (data.selected_packages) {
+          // Dynamic package data structure requires any type
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          packages = data.selected_packages as any;
         }
 
         // Extract addons
-        if (stepData.selected_addons) {
-          addons = stepData.selected_addons;
+        if (data.selected_addons) {
+          // Dynamic addon data structure requires any type
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          addons = data.selected_addons as any;
         }
       }
     });
 
     return {
-      bookingReference: this.generateBookingReference(session.session_id),
+      bookingReference: this.generateBookingReference((session.session_id as string)),
       eventDetails,
       contactInfo,
-      packages: packages.map((pkg: any) => ({
-        name: pkg.name || 'Package',
-        price: this.formatPrice(pkg.price || '0'),
-        quantity: pkg.quantity || 1,
+      packages: packages.map((pkg: Record<string, unknown>) => ({
+        name: (pkg.name as string) || 'Package',
+        price: this.formatPrice((pkg.price as string | number) || '0'),
+        quantity: (pkg.quantity as number) || 1,
       })),
-      addons: addons.map((addon: any) => ({
-        name: addon.name || 'Add-on',
-        price: this.formatPrice(addon.price || '0'),
-        quantity: addon.quantity || 1,
+      addons: addons.map((addon: Record<string, unknown>) => ({
+        name: (addon.name as string) || 'Add-on',
+        price: this.formatPrice((addon.price as string | number) || '0'),
+        quantity: (addon.quantity as number) || 1,
       })),
-      totalPrice: this.formatPrice(session.total_price || '0'),
+      // API returns total_price at root level, not nested in session
+      totalPrice: this.formatPrice((session.total_price as string | number) || '0'),
     };
   }
 
@@ -193,7 +192,7 @@ export class ConfirmationApi {
   /**
    * Get next steps content based on configuration
    */
-  static getNextStepsContent(config: any): Array<{
+  static getNextStepsContent(config: Record<string, unknown>): Array<{
     title: string;
     description: string;
     icon: string;
@@ -211,7 +210,7 @@ export class ConfirmationApi {
       },
       {
         title: 'Event Preparation',
-        description: "We'll work with you to ensure every detail is perfect for your special day.",
+        description: "We'll work with you to ensure every detail is perfect for your event.",
         icon: 'calendar'
       }
     ];
@@ -219,7 +218,7 @@ export class ConfirmationApi {
     // If config has custom next steps content, try to parse it
     if (config?.next_steps_content) {
       try {
-        const customSteps = JSON.parse(config.next_steps_content);
+        const customSteps = JSON.parse(config.next_steps_content as string);
         if (Array.isArray(customSteps)) {
           return customSteps;
         }
@@ -249,29 +248,32 @@ export class ConfirmationApi {
   /**
    * Handle API errors
    */
-  static handleApiError(error: any): string {
-    if (error.response?.data?.detail) {
-      return error.response.data.detail;
+  static handleApiError(error: unknown): string {
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.detail) {
+      return errorObj.response.data.detail;
     }
 
-    if (error.response?.data?.message) {
-      return error.response.data.message;
+    if (errorObj.response?.data?.message) {
+      return errorObj.response.data.message;
     }
 
-    if (error.response?.status === 400) {
+    if (errorObj.response?.status === 400) {
       return 'Unable to complete booking. Please check your information.';
     }
 
-    if (error.response?.status === 409) {
+    if (errorObj.response?.status === 409) {
       return 'Booking completion failed due to a conflict. Please try again.';
     }
 
-    if (error.response?.status === 422) {
+    if (errorObj.response?.status === 422) {
       return 'Booking validation failed. Please review your information.';
     }
 
-    if (error.message) {
-      return error.message;
+    if (errorObj.message) {
+      return errorObj.message;
     }
 
     return 'An error occurred while completing your booking.';
@@ -280,19 +282,22 @@ export class ConfirmationApi {
   /**
    * Extract validation errors from API response
    */
-  static extractValidationErrors(error: any): Record<string, string[]> {
+  static extractValidationErrors(error: unknown): Record<string, string[]> {
     const validationErrors: Record<string, string[]> = {};
 
-    if (error.response?.data?.validation_errors) {
-      return error.response.data.validation_errors;
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.validation_errors) {
+      return errorObj.response.data.validation_errors;
     }
 
-    if (error.response?.data?.errors) {
-      const errors = error.response.data.errors;
+    if (errorObj.response?.data?.errors) {
+      const errors = errorObj.response.data.errors;
       
       if (typeof errors === 'object') {
         Object.keys(errors).forEach(field => {
-          const fieldErrors = errors[field];
+          const fieldErrors = (errors as Record<string, unknown>)[field];
           
           if (Array.isArray(fieldErrors)) {
             validationErrors[field] = fieldErrors;

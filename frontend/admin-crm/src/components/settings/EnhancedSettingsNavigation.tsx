@@ -23,7 +23,6 @@ import {
   StarBorder as StarBorderIcon,
   ExpandLess,
   ExpandMore,
-  History as HistoryIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Dashboard as DashboardIcon,
@@ -54,23 +53,14 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
     favorites,
     addFavorite,
     removeFavorite,
-    recentItems,
-    addRecentItem,
   } = useEnhancedSettings();
 
   const [expandedGroups, setExpandedGroups] = useState<string[]>(() => 
     settingsNavigationConfig.map(g => g.id)
   );
-  const [showRecent] = useState(true);
 
   const handleItemClick = (item: SettingsNavigationItem) => {
     navigate(item.path);
-    addRecentItem({
-      id: item.id,
-      path: item.path,
-      label: item.label,
-      visitedAt: new Date().toISOString(),
-    });
     onItemClick?.();
   };
 
@@ -303,47 +293,6 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
           </Box>
         )}
 
-        {/* Recent Items */}
-        {recentItems.length > 0 && showRecent && (
-          <Box>
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                color: 'text.secondary',
-                fontWeight: 600,
-                mb: 1,
-              }}
-            >
-              <HistoryIcon fontSize="small" />
-              Recent
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              {recentItems.slice(0, 3).map(recent => {
-                const item = settingsNavigationConfig
-                  .flatMap(g => g.items)
-                  .find(i => i.id === recent.id);
-                return item ? (
-                  <Chip
-                    key={recent.id}
-                    label={item.label}
-                    size="small"
-                    variant="outlined"
-                    onClick={() => handleItemClick(item)}
-                    sx={{
-                      justifyContent: 'flex-start',
-                      '&:hover': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.08),
-                      },
-                    }}
-                  />
-                ) : null;
-              })}
-            </Box>
-          </Box>
-        )}
       </Box>
     );
   };

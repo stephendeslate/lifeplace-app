@@ -14,6 +14,7 @@ import { ToastProvider } from '../contexts/ToastContext';
 import { LayoutProvider } from '../contexts/LayoutContext';
 import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
 
+
 interface AppProvidersProps {
   children: React.ReactNode;
 }
@@ -40,6 +41,21 @@ const queryClient = new QueryClient({
   },
 });
 
+// App wrapper with core providers
+const CoreApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <LayoutProvider>
+      <ToastProvider>
+        <ConfirmDialogProvider>
+          {children}
+          {/* Only show React Query devtools in development */}
+          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+        </ConfirmDialogProvider>
+      </ToastProvider>
+    </LayoutProvider>
+  );
+};
+
 // Inner component that has access to our theme context
 const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { theme } = useTheme();
@@ -49,15 +65,9 @@ const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <CssBaseline enableColorScheme />
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <AuthProvider>
-          <LayoutProvider>
-            <ToastProvider>
-              <ConfirmDialogProvider>
-                {children}
-                {/* Only show React Query devtools in development */}
-                {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-              </ConfirmDialogProvider>
-            </ToastProvider>
-          </LayoutProvider>
+          <CoreApp>
+            {children}
+          </CoreApp>
         </AuthProvider>
       </LocalizationProvider>
     </MuiThemeProvider>

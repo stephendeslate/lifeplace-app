@@ -74,7 +74,7 @@ export const currencyApi = {
       success: boolean;
       data: CurrencySettingsResponse;
       message: string;
-    }>('/api/settings/currency/');
+    }>('/settings/currency/');
     
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch currency settings');
@@ -92,7 +92,7 @@ export const currencyApi = {
       data: CurrencySettingsResponse;
       message: string;
       errors?: Record<string, string[]>;
-    }>('/api/settings/currency/', transformFormData(settings));
+    }>('/settings/currency/', transformFormData(settings));
     
     if (!response.data.success) {
       if (response.data.errors) {
@@ -113,7 +113,7 @@ export const currencyApi = {
       success: boolean;
       data: CurrencySettingsResponse;
       message: string;
-    }>('/api/settings/currency/');
+    }>('/settings/currency/');
     
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to reset currency settings');
@@ -130,7 +130,7 @@ export const currencyApi = {
       success: boolean;
       data: CurrencySettingsResponse;
       message: string;
-    }>('/api/settings/currency/system/');
+    }>('/settings/currency/system/');
     
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch system currency settings');
@@ -148,7 +148,7 @@ export const currencyApi = {
       data: CurrencySettingsResponse;
       message: string;
       errors?: Record<string, string[]>;
-    }>('/api/settings/currency/system/', transformFormData(settings));
+    }>('/settings/currency/system/', transformFormData(settings));
     
     if (!response.data.success) {
       if (response.data.errors) {
@@ -169,7 +169,7 @@ export const currencyApi = {
       success: boolean;
       data: SupportedCurrency[];
       message: string;
-    }>('/api/settings/currency/supported/');
+    }>('/settings/currency/supported/');
     
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch supported currencies');
@@ -186,7 +186,7 @@ export const currencyApi = {
       success: boolean;
       data: CurrencyFormatSettings;
       message: string;
-    }>('/api/settings/currency/format/');
+    }>('/settings/currency/format/');
     
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch currency format settings');

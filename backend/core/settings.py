@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'core.domains.notifications',
     'core.domains.analytics',
     'core.domains.settings',  # Currency and application settings management
+    'core.domains.messaging',  # Real-time messaging system
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -78,6 +79,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'channels',  # Django Channels for WebSocket support
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',  # SECURITY: JWT token blacklisting
@@ -114,6 +116,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+
+# Django Channels ASGI Configuration
+ASGI_APPLICATION = 'core.asgi.application'
 
 
 # Database
@@ -243,15 +248,15 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # This enables the browsable API
     ],
-    # Throttling rates
+    # Throttling rates - disabled in development
     'DEFAULT_THROTTLE_RATES': {
-        'analytics': '1000/hour',
-        'public_tracking': '100/hour', 
-        'admin_analytics': '2000/hour',
-        'anon': '100/hour',
-        'user': '1000/hour',
-        'notifications': '200/hour',
-        'notifications_admin': '500/hour',
+        'analytics': '999999/hour' if DEBUG else '1000/hour',
+        'public_tracking': '999999/hour' if DEBUG else '100/hour', 
+        'admin_analytics': '999999/hour' if DEBUG else '2000/hour',
+        'anon': '999999/hour' if DEBUG else '100/hour',
+        'user': '999999/hour' if DEBUG else '1000/hour',
+        'notifications': '999999/hour' if DEBUG else '200/hour',
+        'notifications_admin': '999999/hour' if DEBUG else '500/hour',
     },
 }
 
@@ -305,6 +310,19 @@ CACHES = {
 # Use Redis for session storage (much faster than database)
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'sessions'
+
+# Django Channels Layer Configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_URL + '/5'],  # Use Redis database 5 for channels
+            'capacity': 1500,  # Maximum number of messages to buffer in each channel
+            'expiry': 60,  # How long to keep message in seconds
+        },
+    },
+}
+
 
 # JWT settings - SECURITY ENHANCED
 # SECURITY FIX: Use dedicated JWT signing key
@@ -522,3 +540,4 @@ SITE_NAME = os.getenv('SITE_NAME', 'LifePlace')
 BUSINESS_TIMEZONE = 'Asia/Manila'  # Primary business location (Philippines)
 BUSINESS_TIMEZONE_DISPLAY = 'PHT'  # Display abbreviation
 BUSINESS_TIMEZONE_OFFSET = '+08:00'  # UTC offset
+

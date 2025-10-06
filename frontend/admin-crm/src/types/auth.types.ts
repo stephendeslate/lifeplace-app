@@ -9,6 +9,7 @@ export interface User {
   is_active: boolean;
   date_joined: string;
   profile: UserProfile;
+  token?: string; // Authentication token for WebSocket connections
 }
 
 export interface UserProfile {

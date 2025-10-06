@@ -8,26 +8,31 @@ import {
   Tab,
   Button,
   Alert,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Payment as PaymentIcon,
   AccountBalance as TaxIcon,
+  Search as SearchIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { usePaymentGateways, useTaxRates } from '../../../hooks/usePayments';
-import { 
-  PaymentGatewayTable, 
+import {
+  PaymentGatewayTable,
   PaymentGatewayFormDialog,
   TaxRateTable,
   TaxRateFormDialog,
+  PaymentPlanSettings,
 } from '../../../components/payments';
 import type { PaymentGateway, TaxRate } from '../../../types/payments.types';
 
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
 import { ModernCard } from '../../../components/common/ModernCard';
-import { ModernPageHeader, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
+import { ModernPageHeader, type HeaderAction, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import { createTransition } from '../../../design-system/utils/animations';
@@ -63,6 +68,10 @@ export const Payments: React.FC = () => {
   // Tax rate management state
   const [taxRateDialogOpen, setTaxRateDialogOpen] = useState(false);
   const [selectedTaxRate, setSelectedTaxRate] = useState<TaxRate | null>(null);
+  
+  // Search functionality
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchField, setShowSearchField] = useState(false);
 
   // Data fetching
   const { data: gateways = [], isLoading: gatewaysLoading, refetch: refetchGateways } = usePaymentGateways();
@@ -112,6 +121,22 @@ export const Payments: React.FC = () => {
     setSelectedTaxRate(null);
   };
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleRefresh = () => {
+    refetchGateways();
+    refetchTaxRates();
+  };
+
+  const handleToggleSearch = () => {
+    setShowSearchField(!showSearchField);
+    if (!showSearchField) {
+      setSearchQuery('');
+    }
+  };
+
   const hasPayMongo = gateways.some(g => g.code === 'paymongo' && g.is_active);
   
   // Calculate stats
@@ -119,18 +144,22 @@ export const Payments: React.FC = () => {
   const activeTaxRates = taxRates.length; // TaxRate doesn't have is_active property
   
   // Header actions
-  const headerActions = [
-    createRefreshAction(() => {
-      refetchGateways();
-      refetchTaxRates();
-    }),
+  const headerActions: HeaderAction[] = [
+    {
+      icon: <SearchIcon />,
+      label: showSearchField ? 'Hide Search' : 'Search',
+      onClick: handleToggleSearch,
+      variant: 'icon',
+      tooltip: showSearchField ? 'Hide search field' : 'Search payment gateways and tax rates',
+    },
+    createRefreshAction(handleRefresh),
   ];
 
-  const primaryAction = createAddAction(
-    activeTab === 0 ? 'New Gateway' : 'New Tax Rate', 
-    activeTab === 0 ? handleAddGateway : handleAddTaxRate, 
+  const primaryAction = activeTab !== 1 ? createAddAction(
+    activeTab === 0 ? 'New Gateway' : 'New Tax Rate',
+    activeTab === 0 ? handleAddGateway : handleAddTaxRate,
     'primary'
-  );
+  ) : undefined;
 
   return (
     <ModernSettingsLayout>
@@ -155,6 +184,78 @@ export const Payments: React.FC = () => {
         gradient
         glass
       />
+
+      {/* Search Field - Conditionally Shown */}
+      {showSearchField && (
+        <Box sx={{ mb: 4 }}>
+          <ModernCard
+            variant="glass"
+            size="large"
+            color="primary"
+            animation="fade"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
+              },
+            }}
+          >
+            <Box sx={{ position: 'relative' }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: tokens.color.neutral[800],
+                  fontWeight: 600,
+                  mb: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                }}
+              >
+                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                Search Payment Configuration
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: tokens.color.neutral[600],
+                  mb: 3,
+                }}
+              >
+                Find payment gateways and tax rates by name, type, or configuration details
+              </Typography>
+
+              <TextField
+                fullWidth
+                placeholder="Search by name, type, or configuration..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                autoFocus
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    ...glassPresets.light,
+                    borderRadius: tokens.spacing.radius.lg,
+                    border: `1px solid ${tokens.color.borders.glass}`,
+                    '&:hover': {
+                      border: `1px solid ${tokens.color.primary[300]}`,
+                    },
+                    '&.Mui-focused': {
+                      border: `1px solid ${tokens.color.primary[500]}`,
+                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                    },
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+          </ModernCard>
+        </Box>
+      )}
 
       {/* Quick Setup Alert */}
       {!hasPayMongo && (
@@ -241,13 +342,18 @@ export const Payments: React.FC = () => {
               },
             }}
           >
-            <Tab 
-              label="Payment Gateways" 
+            <Tab
+              label="Payment Gateways"
               icon={<PaymentIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Tax Rates" 
+            <Tab
+              label="Payment Plans"
+              icon={<SettingsIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Tax Rates"
               icon={<TaxIcon />}
               iconPosition="start"
             />
@@ -310,8 +416,36 @@ export const Payments: React.FC = () => {
             />
           </TabPanel>
 
-          {/* Tax Rates Tab */}
+          {/* Payment Plans Tab */}
           <TabPanel value={activeTab} index={1}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Box>
+                <Typography
+                  variant="h6"
+                  fontWeight="700"
+                  sx={{
+                    color: tokens.color.neutral[800],
+                    mb: 0.5,
+                  }}
+                >
+                  Payment Plan Settings
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: tokens.color.neutral[600],
+                  }}
+                >
+                  Configure default payment plan behavior, installment settings, and late fee policies
+                </Typography>
+              </Box>
+            </Box>
+
+            <PaymentPlanSettings />
+          </TabPanel>
+
+          {/* Tax Rates Tab */}
+          <TabPanel value={activeTab} index={2}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
               <Box>
                 <Typography 

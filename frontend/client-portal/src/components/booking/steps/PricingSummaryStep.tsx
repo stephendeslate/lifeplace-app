@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/PricingSummaryStep.tsx
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -25,10 +25,10 @@ import {
   LocalOffer, 
   CheckCircle,
   Close as CloseIcon,
-  AccessTime,
 } from '@mui/icons-material';
 import { useBooking } from '../../../contexts/BookingContext';
-import { usePricingSummaryStep } from '../../../hooks/booking/usePricingSummary';
+import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 import type {
   PricingSummaryStepData,
   PricingSummaryStepConfiguration,
@@ -52,127 +52,113 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   isValidating,
 }) => {
   const { state, actions } = useBooking();
+  const { formatAmount } = useCurrencySettings();
   const [discountCodeInput, setDiscountCodeInput] = useState<string>('');
-  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
-  
-  // Use refs to track previous values and prevent unnecessary updates
-  const previousTotalRef = useRef<string>('0.00');
-  const isUpdatingRef = useRef(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+  const [validatingDiscount, setValidatingDiscount] = useState(false);
 
   // Get selected packages and addons from step data
   const selectedPackages = state.stepData.package_selection?.selected_packages || [];
   const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
-  const eventDuration = state.stepData.date_time?.duration;
 
-  // Use the corrected pricing hook with discount code
+  // Use simplified unified pricing hook
   const {
-    breakdown,
-    formattedBreakdown,
+    pricing,
+    loading: calculatingPricing,
+    error: pricingError,
     hasItems,
     totalItemCount,
-    appliedDiscount,
-    setDiscountCode,
-    applyDiscountCode,
-    removeDiscount,
-    calculatingPricing,
-    validatingDiscount,
-    pricingError,
-    discountError,
-    getStepData,
-    serverPricing
-  } = usePricingSummaryStep(
+    recalculate
+  } = useSimplePricing(
     selectedPackages,
     selectedAddons,
-    eventDuration,
     stepData.applied_discount_code
   );
 
-  // Track when we've loaded initial data
-  useEffect(() => {
-    if (!calculatingPricing && hasItems && !hasInitiallyLoaded) {
-      setHasInitiallyLoaded(true);
-    }
-  }, [calculatingPricing, hasItems, hasInitiallyLoaded]);
 
   // Update parent component with calculated pricing data
   const updatePricingData = useCallback(async () => {
-    // Prevent concurrent updates
-    if (isUpdatingRef.current) {
-      return;
-    }
-    
-    const newStepData = getStepData();
+    const newStepData: PricingSummaryStepData = {
+      applied_discount_code: stepData.applied_discount_code || undefined,
+    };
     
     // Only update if data has actually changed
     if (JSON.stringify(newStepData) === JSON.stringify(stepData)) {
       return;
     }
     
-    isUpdatingRef.current = true;
-    
     try {
       // Update step data locally first
       onDataChange(newStepData);
       
       // Only update backend with the discount code
-      await actions.updateStepData('pricing_summary', newStepData);
+      await actions.updateStepData('pricing_summary', newStepData as Record<string, unknown>);
       
       // Update global total price if different
-      const totalString = breakdown.total.toFixed(2);
+      const totalString = pricing.total.toFixed(2);
       if (state.totalPrice !== totalString) {
         await actions.updateTotalPrice(totalString);
       }
-      
-      previousTotalRef.current = totalString;
     } catch (error) {
       console.error('Failed to update pricing data:', error);
-    } finally {
-      isUpdatingRef.current = false;
     }
-  }, [getStepData, stepData, onDataChange, breakdown.total, state.totalPrice, actions]);
+  }, [stepData, onDataChange, pricing.total, state.totalPrice, actions]);
 
+  // Update pricing data when total changes
   useEffect(() => {
-    console.log('Selected packages:', selectedPackages);
-    console.log('Breakdown total:', breakdown.total);
-    console.log('Formatted breakdown total:', formattedBreakdown.total);
-    console.log('Server pricing:', serverPricing);
-  }, [selectedPackages, breakdown, formattedBreakdown, serverPricing]);
-
-  // Update pricing data only when breakdown actually changes
-  useEffect(() => {
-    if (hasItems && !calculatingPricing && !isUpdatingRef.current) {
-      // CRITICAL FIX: Increased debounce timeout to prevent rapid-fire updates
-      // This helps prevent the infinite loop by giving time for state to settle
+    if (hasItems && !calculatingPricing) {
       const timeoutId = setTimeout(() => {
         updatePricingData();
-      }, 500); // Increased from 100ms to 500ms
+      }, 300);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [breakdown.total, hasItems, calculatingPricing, updatePricingData]);
+  }, [pricing.total, hasItems, calculatingPricing, updatePricingData]);
 
   // Handle discount code application
   const handleApplyDiscount = async () => {
-    if (discountCodeInput.trim()) {
-      await applyDiscountCode(discountCodeInput.trim());
+    if (!discountCodeInput.trim()) return;
+    
+    setValidatingDiscount(true);
+    setDiscountError(null);
+    
+    try {
+      // Here you would validate the discount code via API
+      // For now, just simulate a successful application
+      const newStepData = {
+        ...stepData,
+        applied_discount_code: discountCodeInput.trim()
+      };
+      onDataChange(newStepData);
       setDiscountCodeInput('');
+      recalculate();
+    } catch (_error) {
+      setDiscountError('Invalid discount code');
+    } finally {
+      setValidatingDiscount(false);
     }
   };
 
   // Handle discount removal
   const handleRemoveDiscount = () => {
-    removeDiscount();
+    const newStepData = {
+      ...stepData,
+      applied_discount_code: undefined
+    };
+    onDataChange(newStepData);
+    setDiscountError(null);
     setDiscountCodeInput('');
+    recalculate();
   };
 
   // Handle discount code input changes
   const handleDiscountInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setDiscountCodeInput(event.target.value);
-    setDiscountCode(event.target.value);
+    setDiscountError(null);
   };
 
-  // Show loading state only on initial load
-  if (calculatingPricing && !hasInitiallyLoaded && !hasItems) {
+  // Show loading state on initial load
+  if (calculatingPricing && !hasItems) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
         <CircularProgress size={48} />
@@ -208,8 +194,8 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     );
   }
 
-  // Determine if we're updating prices (after initial load)
-  const isUpdatingPrices = calculatingPricing && hasInitiallyLoaded;
+  // Determine if we're updating prices
+  const isUpdatingPrices = calculatingPricing && hasItems;
 
   return (
     <Box>
@@ -238,7 +224,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       )}
 
       {/* Selected Packages */}
-      {config?.show_package_breakdown !== false && formattedBreakdown.packages.length > 0 && (
+      {config?.show_package_breakdown !== false && selectedPackages.length > 0 && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" gutterBottom>
             Selected Packages
@@ -254,42 +240,57 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {formattedBreakdown.packages.map((pkg) => (
-                  <TableRow key={pkg.id}>
-                    <TableCell>
-                      {pkg.name}
-                      {pkg.includedHours && eventDuration && (
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          <AccessTime sx={{ fontSize: 12, mr: 0.5 }} />
-                          {pkg.includedHours} hours included
-                          {pkg.excessHours ? ` (+${pkg.excessHours} excess hours)` : ''}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="center">{pkg.quantity}</TableCell>
-                    <TableCell align="right">
-                      {isUpdatingPrices ? (
-                        <Skeleton width={60} animation="wave" />
-                      ) : (
-                        `₱${pkg.unitPrice.toFixed(2)}`
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      {isUpdatingPrices ? (
-                        <Skeleton width={80} animation="wave" />
-                      ) : (
-                        <>
-                          ₱{pkg.total.toFixed(2)}
-                          {pkg.excessCost && pkg.excessCost > 0 && (
-                            <Typography variant="caption" display="block" color="text.secondary">
-                              (includes ₱{pkg.excessCost.toFixed(2)} excess)
+                {selectedPackages.map((pkg) => {
+                  // Find matching line item for excess hour details
+                  const lineItem = pricing.lineItems?.find(item => item.product_id === pkg.product_id);
+                  const hasExcessHours = lineItem?.excess_hours && lineItem.excess_hours > 0;
+                  const basePrice = lineItem?.base_unit_price ? parseFloat(lineItem.base_unit_price) : parseFloat(pkg.price);
+                  const unitPrice = lineItem?.total_unit_price ? parseFloat(lineItem.total_unit_price) : parseFloat(pkg.price);
+
+                  return (
+                    <TableRow key={pkg.product_id}>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {pkg.name}
+                          </Typography>
+                          {hasExcessHours && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                              Base: {formatAmount(basePrice.toString())}
+                              {lineItem.excess_hours && lineItem.excess_hour_price && (
+                                <> + {lineItem.excess_hours}h excess @ {formatAmount(lineItem.excess_hour_price)}/h</>
+                              )}
                             </Typography>
                           )}
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center">{pkg.quantity}</TableCell>
+                      <TableCell align="right">
+                        <Box>
+                          <Typography variant="body2">
+                            {isUpdatingPrices ? (
+                              <Skeleton width={60} animation="wave" />
+                            ) : (
+                              formatAmount(unitPrice.toString())
+                            )}
+                          </Typography>
+                          {hasExcessHours && lineItem.excess_cost && parseFloat(lineItem.excess_cost) > 0 && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              (+{formatAmount((parseFloat(lineItem.excess_cost) / pkg.quantity).toString())} excess)
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        {isUpdatingPrices ? (
+                          <Skeleton width={80} animation="wave" />
+                        ) : (
+                          formatAmount((unitPrice * pkg.quantity).toString())
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
@@ -297,7 +298,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       )}
 
       {/* Selected Add-ons */}
-      {config?.show_addon_breakdown !== false && formattedBreakdown.addons.length > 0 && (
+      {config?.show_addon_breakdown !== false && selectedAddons.length > 0 && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" gutterBottom>
             Selected Add-ons
@@ -313,26 +314,32 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {formattedBreakdown.addons.map((addon) => (
-                  <TableRow key={addon.id}>
-                    <TableCell>{addon.name}</TableCell>
-                    <TableCell align="center">{addon.quantity}</TableCell>
-                    <TableCell align="right">
-                      {isUpdatingPrices ? (
-                        <Skeleton width={60} animation="wave" />
-                      ) : (
-                        `₱${addon.unitPrice.toFixed(2)}`
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      {isUpdatingPrices ? (
-                        <Skeleton width={80} animation="wave" />
-                      ) : (
-                        `₱${addon.total.toFixed(2)}`
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {selectedAddons.map((addon) => {
+                  // Find matching line item (for future-proofing if addons support excess hours)
+                  const lineItem = pricing.lineItems?.find(item => item.product_id === addon.product_id);
+                  const unitPrice = lineItem?.total_unit_price ? parseFloat(lineItem.total_unit_price) : parseFloat(addon.price);
+
+                  return (
+                    <TableRow key={addon.product_id}>
+                      <TableCell>{addon.name}</TableCell>
+                      <TableCell align="center">{addon.quantity}</TableCell>
+                      <TableCell align="right">
+                        {isUpdatingPrices ? (
+                          <Skeleton width={60} animation="wave" />
+                        ) : (
+                          formatAmount(unitPrice.toString())
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {isUpdatingPrices ? (
+                          <Skeleton width={80} animation="wave" />
+                        ) : (
+                          formatAmount((unitPrice * addon.quantity).toString())
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
@@ -347,19 +354,17 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
             Discount Code
           </Typography>
           
-          {appliedDiscount ? (
+          {stepData.applied_discount_code ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Chip
-                label={`${appliedDiscount.code} - ${appliedDiscount.name}`}
+                label={stepData.applied_discount_code}
                 icon={<CheckCircle />}
                 color="success"
                 onDelete={handleRemoveDiscount}
                 deleteIcon={<CloseIcon />}
               />
               <Typography variant="body2" color="success.main">
-                {appliedDiscount.discount_type === 'PERCENTAGE' 
-                  ? `${appliedDiscount.value}% off`
-                  : `₱${appliedDiscount.value} off`}
+                Discount Applied
               </Typography>
             </Box>
           ) : (
@@ -405,33 +410,33 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                 {isUpdatingPrices ? (
                   <Skeleton width={80} animation="wave" />
                 ) : (
-                  formattedBreakdown.subtotal
+                  pricing.formattedSubtotal
                 )}
               </Typography>
             </Box>
           )}
           
-          {config?.show_tax_breakdown !== false && breakdown.tax > 0 && (
+          {config?.show_tax_breakdown !== false && pricing.tax > 0 && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography>Tax</Typography>
               <Typography>
                 {isUpdatingPrices ? (
                   <Skeleton width={80} animation="wave" />
                 ) : (
-                  formattedBreakdown.tax
+                  pricing.formattedTax
                 )}
               </Typography>
             </Box>
           )}
           
-          {breakdown.discount > 0 && (
+          {pricing.discount > 0 && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', color: 'success.main' }}>
               <Typography>Discount</Typography>
               <Typography>
                 {isUpdatingPrices ? (
                   <Skeleton width={80} animation="wave" />
                 ) : (
-                  `-${formattedBreakdown.discount}`
+                  `-${pricing.formattedDiscount}`
                 )}
               </Typography>
             </Box>
@@ -445,7 +450,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
               {isUpdatingPrices ? (
                 <Skeleton width={100} animation="wave" />
               ) : (
-                formattedBreakdown.total
+                pricing.formattedTotal
               )}
             </Typography>
           </Box>

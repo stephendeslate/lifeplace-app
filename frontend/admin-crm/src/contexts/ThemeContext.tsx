@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useCallback, useEffect, useState } from 'react';
 import type { Theme } from '@mui/material/styles';
 import { createModernTheme } from '../design-system/theme/modernTheme';
-import { cssVariables, darkModeCssVariables } from '../design-system/tokens/colors';
+// WIP: Shared design system temporarily disabled for deployment
+// import { injectDesignTokens } from '@shared/design-system';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -74,13 +75,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       // Set theme attribute and color scheme
       root.setAttribute('data-theme', effectiveMode);
       root.style.colorScheme = effectiveMode;
-      
-      // Inject CSS custom properties
-      const variables = effectiveMode === 'dark' ? { ...cssVariables, ...darkModeCssVariables } : cssVariables;
-      
-      Object.entries(variables).forEach(([property, value]) => {
-        root.style.setProperty(property, value);
-      });
+
+      // WIP: Inject design system tokens - temporarily disabled
+      // injectDesignTokens();
     }
   }, [effectiveMode]);
 

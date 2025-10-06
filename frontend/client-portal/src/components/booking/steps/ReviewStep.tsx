@@ -20,7 +20,7 @@ import type {
 interface ReviewStepProps {
   stepData?: ReviewStepData;
   allStepData: StepData;
-  config: any;
+  config: Record<string, unknown>;
   onDataChange: (data: ReviewStepData) => void;
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
@@ -84,7 +84,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
       </Typography>
 
       {/* Event Details */}
-      <Box sx={{ maxWidth: { xs: '100%', md: '50%' } }}>
+      <Box>
         <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider', height: 'fit-content' }}>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
             Event Details
@@ -127,7 +127,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
       </Box>
 
       {/* Contact Information */}
-      <Box sx={{ maxWidth: { xs: '100%', md: '50%' } }}>
+      <Box>
         <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider', height: 'fit-content' }}>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
             Contact Information

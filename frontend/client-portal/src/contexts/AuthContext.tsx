@@ -45,8 +45,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Get updated user info
       const userData = await getCurrentUser();
       if (userData) {
-        setUser(userData);
-        storage.setUser(userData);
+        const userWithToken = { ...userData, token: newTokens.access };
+        setUser(userWithToken);
+        storage.setUser(userWithToken);
       }
     } catch (error) {
       console.error('Error refreshing token:', error);
@@ -65,8 +66,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Store tokens and user data
       storage.setTokens(data.tokens);
-      storage.setUser(data.user);
-      setUser(data.user);
+      const userWithToken = { ...data.user, token: data.tokens.access };
+      storage.setUser(userWithToken);
+      setUser(userWithToken);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -80,8 +82,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Store tokens and user data
       storage.setTokens(data.tokens);
-      storage.setUser(data.user);
-      setUser(data.user);
+      const userWithToken = { ...data.user, token: data.tokens.access };
+      storage.setUser(userWithToken);
+      setUser(userWithToken);
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -110,6 +113,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
+      // Preserve token if not provided in userData
+      if (!userData.token && user.token) {
+        updatedUser.token = user.token;
+      }
       setUser(updatedUser);
       storage.setUser(updatedUser);
     }
@@ -119,6 +126,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Skip auth initialization if on login/register pages to prevent API calls that could cause loops
+        const currentPath = window.location.pathname;
+        const isOnAuthPage = currentPath === '/login' || currentPath === '/register' || currentPath.startsWith('/accept-invitation');
+        
         // Check if storage is available
         if (!storage.isStorageAvailable()) {
           console.warn('localStorage is not available');
@@ -129,13 +140,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const tokens = storage.getTokens();
         const storedUser = storage.getUser();
         
+        // If on auth page and no tokens, just set loading to false without making API calls
+        if (isOnAuthPage && !tokens?.access) {
+          setIsLoading(false);
+          return;
+        }
+        
         if (tokens?.access && storedUser) {
           // Try to get fresh user data
           try {
             const userData = await getCurrentUser();
             if (userData) {
-              setUser(userData);
-              storage.setUser(userData);
+              const userWithToken = { ...userData, token: tokens.access };
+              setUser(userWithToken);
+              storage.setUser(userWithToken);
             } else {
               // Token is invalid
               storage.clearAuth();

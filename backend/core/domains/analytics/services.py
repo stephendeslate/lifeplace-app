@@ -19,7 +19,6 @@ from .exceptions import (
     DuplicateMetricName,
     DuplicateReportName,
     InvalidMetricConfiguration,
-    InvalidTimeRange,
     MetricCalculationError,
     MetricDefinitionNotFound,
     ReportExecutionNotFound,
@@ -760,17 +759,40 @@ class EventTrackingService:
                    event_data=None, numeric_value=None, ip_address=None, user_agent=None):
         """Track an analytics event"""
         try:
+            # Handle UUID or non-integer source_id values
+            processed_source_id = None
+            processed_event_data = event_data or {}
+            
+            if source_id is not None:
+                # Handle UUID objects and other non-integer types
+                if hasattr(source_id, 'hex'):  # UUID object
+                    processed_event_data = processed_event_data.copy()  # Don't mutate original
+                    processed_event_data['original_source_id'] = str(source_id)
+                    logger.debug(f"UUID source_id {source_id} stored in event_data")
+                else:
+                    try:
+                        # Try to convert to integer for PositiveIntegerField
+                        processed_source_id = int(source_id)
+                        # Check if the integer is within valid range for PositiveIntegerField
+                        if processed_source_id > 2147483647 or processed_source_id < 0:
+                            raise ValueError(f"Integer {processed_source_id} out of range for PositiveIntegerField")
+                    except (ValueError, TypeError, OverflowError) as e:
+                        # If it's not an integer or out of range, store it in event_data instead
+                        processed_event_data = processed_event_data.copy()  # Don't mutate original
+                        processed_event_data['original_source_id'] = str(source_id)
+                        logger.debug(f"Non-integer or out-of-range source_id {source_id} stored in event_data: {e}")
+            
             event = AnalyticsEvent.objects.create(
                 event_name=event_name,
                 event_category=event_category,
                 source_domain=source_domain or '',
                 source_model=source_model or '',
-                source_id=source_id,
+                source_id=processed_source_id,
                 user=user,
                 session_id=session_id or '',
                 ip_address=ip_address,
                 user_agent=user_agent or '',
-                event_data=event_data or {},
+                event_data=processed_event_data,
                 numeric_value=numeric_value
             )
             
@@ -780,7 +802,18 @@ class EventTrackingService:
             return event
             
         except Exception as e:
-            logger.error(f"Error tracking event {event_name}: {str(e)}")
+            # Log more detailed error information for debugging
+            error_details = {
+                'event_name': event_name,
+                'event_category': event_category,
+                'source_domain': source_domain,
+                'source_model': source_model,
+                'source_id': source_id,
+                'source_id_type': type(source_id).__name__,
+                'error': str(e),
+                'error_type': type(e).__name__
+            }
+            logger.error(f"Error tracking event {event_name}: {str(e)} - Details: {error_details}")
             # Don't raise exception to avoid breaking the main flow
             return None
     
@@ -1264,16 +1297,28 @@ class DataAggregationService:
                     logger.warning("Payment model not found, skipping payments metrics")
             
             if Payment:
+                # For revenue metrics, use paid_on date for completed payments
+                # This shows actual revenue received during the period
                 payments_qs = Payment.objects.filter(
                     created_at__gte=start_date,
                     created_at__lte=end_date
                 )
                 
+                # Count all payments created in the period
                 metrics['total_payments'] = payments_qs.count()
-                metrics['completed_payments'] = payments_qs.filter(status='COMPLETED').count()
                 
-                # Calculate total revenue
-                total_revenue = payments_qs.filter(status='COMPLETED').aggregate(
+                # For completed payments and revenue, use paid_on date
+                # This reflects actual money received during the period
+                completed_payments_qs = Payment.objects.filter(
+                    status='COMPLETED',
+                    paid_on__gte=start_date.date() if hasattr(start_date, 'date') else start_date,
+                    paid_on__lte=end_date.date() if hasattr(end_date, 'date') else end_date
+                )
+                
+                metrics['completed_payments'] = completed_payments_qs.count()
+                
+                # Calculate total revenue from payments actually paid during the period
+                total_revenue = completed_payments_qs.aggregate(
                     total=Sum('amount')
                 )['total'] or Decimal('0.00')
                 metrics['total_revenue'] = total_revenue

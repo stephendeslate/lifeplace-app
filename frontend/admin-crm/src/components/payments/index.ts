@@ -5,3 +5,4 @@ export { PaymentGatewayFormDialog } from './PaymentGatewayFormDialog';
 export { PaymentGatewayTable } from './PaymentGatewayTable';
 export { TaxRateFormDialog } from './TaxRateFormDialog';
 export { TaxRateTable } from './TaxRateTable';
+export { PaymentPlanSettings } from './PaymentPlanSettings';

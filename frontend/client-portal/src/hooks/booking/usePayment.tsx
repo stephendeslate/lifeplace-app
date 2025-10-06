@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PaymentApi } from '../../apis/booking/payment.api';
+import { usePaymentPlanSettings } from '../usePaymentPlanSettings';
 import type {
   PaymentGateway,
   PaymentGatewayResponse,
@@ -21,7 +22,9 @@ export const usePaymentGateways = () => {
       const data = await PaymentApi.getPaymentGateways();
       setGateways(data);
     } catch (err) {
-      const errorMessage = PaymentApi.handlePaymentError(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = PaymentApi.handlePaymentError(err as any);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -41,22 +44,28 @@ export const usePaymentGateways = () => {
 };
 
 // Hook for managing flow-specific payment gateways
+// CONSOLIDATED: Filters gateways by global default_payment_gateways (DRY compliance)
 export const useFlowPaymentGateways = (flowId?: number) => {
   const [paymentData, setPaymentData] = useState<PaymentGatewayResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Get global payment plan settings to filter gateways (DRY compliance)
+  const { data: paymentPlanSettings, isLoading: isLoadingSettings } = usePaymentPlanSettings();
+
   const fetchFlowGateways = useCallback(async () => {
     if (!flowId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await PaymentApi.getFlowPaymentGateways(flowId);
       setPaymentData(data);
     } catch (err) {
-      const errorMessage = PaymentApi.handlePaymentError(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = PaymentApi.handlePaymentError(err as any);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -67,21 +76,35 @@ export const useFlowPaymentGateways = (flowId?: number) => {
     fetchFlowGateways();
   }, [fetchFlowGateways]);
 
-  // Get default gateway
-  const defaultGateway = useMemo(() => {
-    if (!paymentData || !paymentData.default_gateway) return null;
-    
-    return paymentData.available_gateways.find(
-      gateway => gateway.id === paymentData.default_gateway
+  // Filter gateways by global default_payment_gateways (DRY compliance)
+  const filteredGateways = useMemo(() => {
+    if (!paymentData || !paymentPlanSettings) return [];
+
+    const globalGatewayIds = paymentPlanSettings.default_payment_gateways || [];
+
+    // Filter: only show gateways that are in global defaults AND available in flow
+    return paymentData.available_gateways.filter(gateway =>
+      globalGatewayIds.includes(gateway.id)
+    );
+  }, [paymentData, paymentPlanSettings]);
+
+  // Get primary gateway from global settings (DRY compliance)
+  const primaryGateway = useMemo(() => {
+    if (!paymentPlanSettings?.primary_payment_gateway || filteredGateways.length === 0) {
+      return null;
+    }
+
+    return filteredGateways.find(
+      gateway => gateway.id === paymentPlanSettings.primary_payment_gateway
     ) || null;
-  }, [paymentData]);
+  }, [paymentPlanSettings, filteredGateways]);
 
   return {
     paymentData,
-    gateways: paymentData?.available_gateways || [],
-    defaultGateway,
+    gateways: filteredGateways, // ✅ Now filtered by global defaults
+    defaultGateway: primaryGateway, // ✅ Now using global primary gateway
     requireImmediatePayment: paymentData?.require_immediate_payment || false,
-    loading,
+    loading: loading || isLoadingSettings,
     error,
     refetch: fetchFlowGateways,
   };
@@ -103,7 +126,9 @@ export const usePaymentGateway = (gatewayId?: number) => {
       const data = await PaymentApi.getPaymentGateway(gatewayId);
       setGateway(data);
     } catch (err) {
-      const errorMessage = PaymentApi.handlePaymentError(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = PaymentApi.handlePaymentError(err as any);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -160,11 +185,13 @@ export const usePaymentCalculations = () => {
     return PaymentApi.calculateRemainingBalance(totalAmount, depositAmount);
   }, []);
 
+  // DEPRECATED: Use useCurrentCurrency hook instead for DRY compliance
+  // This is kept for backward compatibility with legacy code
   const formatAmount = useCallback((
     amount: string | number,
-    currency: string = 'PHP'
+    currency?: string
   ) => {
-    return PaymentApi.formatAmount(amount, currency);
+    return PaymentApi.formatAmount(amount, currency || 'PHP');
   }, []);
 
   const validateAmount = useCallback((
@@ -188,6 +215,8 @@ export const usePaymentValidation = () => {
 
   const validatePaymentMethod = useCallback((
     gateway: PaymentGateway,
+    // Payment handler data structures need any for dynamic field types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     paymentData: Record<string, any>
   ) => {
     const validation = PaymentApi.validatePaymentMethod(gateway, paymentData);
@@ -199,6 +228,8 @@ export const usePaymentValidation = () => {
     gateway: PaymentGateway,
     paymentMethod: string,
     paymentType: 'FULL' | 'DEPOSIT',
+    // Payment handler data structures need any for dynamic field types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     additionalData: Record<string, any> = {}
   ) => {
     return PaymentApi.formatPaymentData(gateway, paymentMethod, paymentType, additionalData);
@@ -228,6 +259,8 @@ export const usePaymentValidation = () => {
 
 // Hook for payment gateway configuration
 export const useGatewayConfig = (gatewayCode?: string) => {
+  // Gateway configuration data has dynamic structure requiring any type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [config, setConfig] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -242,7 +275,9 @@ export const useGatewayConfig = (gatewayCode?: string) => {
       const data = await PaymentApi.getGatewayPublicConfig(gatewayCode);
       setConfig(data);
     } catch (err) {
-      const errorMessage = PaymentApi.handlePaymentError(err);
+      // Error objects from API calls have dynamic structure requiring any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = PaymentApi.handlePaymentError(err as any);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -273,6 +308,8 @@ export const usePaymentFlow = (
 ) => {
   const [selectedPaymentType, setSelectedPaymentType] = useState<'FULL' | 'DEPOSIT'>('FULL');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
+  // Payment handler data structures need any for dynamic field types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [paymentData, setPaymentData] = useState<Record<string, any>>({});
 
   const { calculateDeposit, calculateRemaining, formatAmount, validateAmount } = usePaymentCalculations();
@@ -338,6 +375,8 @@ export const usePaymentFlow = (
   }, [gateway, selectedPaymentMethod, selectedPaymentType, paymentData, formatPaymentData]);
 
   // Update payment data
+  // Payment handler data structures need any for dynamic field types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updatePaymentData = useCallback((newData: Record<string, any>) => {
     setPaymentData(prev => ({ ...prev, ...newData }));
   }, []);

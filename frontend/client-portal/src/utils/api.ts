@@ -44,6 +44,11 @@ const isPublicEndpoint = (url: string): boolean => {
     '/bookingflow/public/flows/questionnaires/',
   ];
   
+  // Contracts endpoints should NOT be public - they require authentication
+  if (url.includes('/contracts/')) {
+    return false;
+  }
+  
   return publicPaths.some(path => url.includes(path));
 };
 
@@ -52,18 +57,19 @@ const isBookingPage = (): boolean => {
   return window.location.pathname.startsWith('/booking');
 };
 
+
 // Add request interceptor to add authorization header and CSRF token
 api.interceptors.request.use(
-  (config: any) => {
+  (config) => {
     // Add Authorization header if token exists (but not required for public endpoints)
     const tokens = storage.getTokens();
-    if (tokens?.access) {
+    if (tokens?.access && config.headers) {
       config.headers.Authorization = `Bearer ${tokens.access}`;
     }
 
     // Add CSRF token for unsafe methods
     const unsafeMethods = ["post", "put", "patch", "delete"];
-    if (config.method && unsafeMethods.includes(config.method.toLowerCase())) {
+    if (config.method && unsafeMethods.includes(config.method.toLowerCase()) && config.headers) {
       const csrfToken = getCsrfToken();
       if (csrfToken) {
         config.headers["X-CSRFToken"] = csrfToken;
@@ -104,11 +110,9 @@ api.interceptors.response.use(
         const tokens = storage.getTokens();
 
         if (!tokens?.refresh) {
-          // No refresh token, clear tokens but don't redirect if on booking page
+          // No refresh token, clear tokens
           storage.clearAuth();
-          if (!isBookingPage()) {
-            window.location.href = "/login";
-          }
+          // Don't redirect from interceptor - let React Router handle this
           return Promise.reject(error);
         }
 
@@ -133,11 +137,9 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch {
-        // If refresh fails, clear tokens but don't redirect if on booking page
+        // If refresh fails, clear tokens
         storage.clearAuth();
-        if (!isBookingPage()) {
-          window.location.href = "/login";
-        }
+        // Don't redirect from interceptor - let React Router handle this
         return Promise.reject(error);
       }
     }

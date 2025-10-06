@@ -12,9 +12,13 @@ export interface WorkflowStage {
 export interface EventTask {
   id: number;
   title: string;
+  description?: string;
   due_date: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'BLOCKED';
+  requires_client_input?: boolean;
+  can_update?: boolean;
+  completed_at?: string;
 }
 
 // Event Timeline interface matching backend ClientEventTimelineSerializer
@@ -55,6 +59,12 @@ export interface Event {
   current_stage_name: string;
   payment_status: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE';
   days_until_event?: number | null;
+  // Contract information (optional for backward compatibility)
+  contract_status?: 'DRAFT' | 'SENT' | 'PARTIALLY_SIGNED' | 'SIGNED' | 'EXPIRED' | 'VOID' | 'AMENDED';
+  has_contracts?: boolean;
+  contracts_count?: number;
+  pending_signature_required?: boolean;
+  contract_expiry_days?: number | null;
 }
 
 // Detailed Event interface matching backend ClientEventDetailSerializer
@@ -66,6 +76,28 @@ export interface EventDetail extends Event {
   recent_updates: RecentUpdate[];
   accessible_documents_count: number;
   has_notes: boolean;
+  // Detailed contract information
+  contracts?: EventContractSummary[];
+  contract_signature_progress?: {
+    total_required: number;
+    signed_count: number;
+    percentage: number;
+  };
+}
+
+// Contract summary for events
+export interface EventContractSummary {
+  id: string;
+  status: 'DRAFT' | 'SENT' | 'PARTIALLY_SIGNED' | 'SIGNED' | 'EXPIRED' | 'VOID' | 'AMENDED';
+  template_name: string;
+  can_client_sign: boolean;
+  expires_at: string | null;
+  signature_progress: {
+    total_required: number;
+    signed_count: number;
+    percentage: number;
+  };
+  is_urgent?: boolean;
 }
 
 // Event filters for list queries
@@ -89,6 +121,44 @@ export interface EventNote {
   is_private: boolean;
 }
 
+// Event feedback interface matching backend ClientEventFeedbackSerializer
+export interface EventFeedback {
+  id: number;
+  overall_rating: number;
+  categories: Record<string, number>;
+  comments: string;
+  testimonial: string;
+  is_public: boolean;
+  response: string;
+  created_at: string;
+  submitted_by_name: string;
+  response_by_name: string;
+  has_response: boolean;
+}
+
+// Feedback submission interface
+export interface FeedbackSubmission {
+  overall_rating: number;
+  categories?: Record<string, number>;
+  comments?: string;
+  testimonial?: string;
+  is_public?: boolean;
+}
+
+// Task update interface
+export interface TaskUpdate {
+  status?: 'IN_PROGRESS' | 'COMPLETED';
+  completion_notes?: string;
+}
+
+// File upload interface  
+export interface FileUpload {
+  name: string;
+  category: 'CONTRACT' | 'QUOTE' | 'PAYMENT' | 'REQUIREMENTS' | 'PHOTO' | 'OTHER';
+  description?: string;
+  file: File;
+}
+
 // API Response types
 export interface EventsListResponse {
   count: number;
@@ -107,7 +177,7 @@ export type PaymentStatus = 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 // Task status type
-export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'BLOCKED';
 
 // Workflow stage type
 export type WorkflowStageType = 'LEAD' | 'PRODUCTION' | 'POST_PRODUCTION';

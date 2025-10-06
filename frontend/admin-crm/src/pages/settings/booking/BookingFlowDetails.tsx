@@ -32,7 +32,7 @@ import {
   NavigateNext as NavigateNextIcon,
   PlayArrow as PlayIcon,
 } from '@mui/icons-material';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { 
   useBookingFlows, 
@@ -45,10 +45,10 @@ import {
 } from '../../../components/bookingflows/flows';
 import { 
   BookingFlowStepFormDialog,
-  BookingFlowStepsTable,
   StepConfigurationPanel,
   ImprovedStepReorderList 
 } from '../../../components/bookingflows/steps';
+import BookingFlowSteps from './BookingFlowSteps';
 import type { 
   BookingFlowStep,
   CreateBookingFlowStepData,
@@ -98,6 +98,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 export const BookingFlowDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { setBreadcrumbs } = useLayout();
   const [activeTab, setActiveTab] = useState(0);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -151,8 +152,8 @@ export const BookingFlowDetails: React.FC = () => {
 
   const { 
     data: steps = [], 
-    isLoading: isLoadingSteps,
-    error: stepsError,
+    isLoading: _isLoadingSteps,
+    error: _stepsError,
     refetch: refetchSteps 
   } = useFlowSteps(flowId);
 
@@ -171,6 +172,16 @@ export const BookingFlowDetails: React.FC = () => {
       ]);
     }
   }, [flow, setBreadcrumbs]);
+
+  // Handle navigation state to auto-open tabs
+  useEffect(() => {
+    const state = location.state as { activeTab?: number } | null;
+    if (state?.activeTab !== undefined) {
+      setActiveTab(state.activeTab);
+      // Clear the navigation state to prevent issues with back/forward navigation
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -292,22 +303,6 @@ export const BookingFlowDetails: React.FC = () => {
     }, 100);
   };
 
-  const handleCreateStep = () => {
-    lastFocusedElementRef.current = document.activeElement as HTMLElement;
-    setEditingStep(null);
-    setStepDialogOpen(true);
-  };
-
-  const handleEditStep = (step: BookingFlowStep) => {
-    lastFocusedElementRef.current = document.activeElement as HTMLElement;
-    setEditingStep(step);
-    setStepDialogOpen(true);
-  };
-
-  const handleConfigureStep = (step: BookingFlowStep) => {
-    setSelectedStepForConfig(step);
-    setActiveTab(2);
-  };
 
   const handleStepDialogClose = () => {
     const activeElement = document.activeElement as HTMLElement;
@@ -359,9 +354,6 @@ export const BookingFlowDetails: React.FC = () => {
     }
   };
 
-  const handleStepReorder = () => {
-    setReorderDialogOpen(true);
-  };
 
 
   // FIXED: Add step configuration update handler
@@ -421,7 +413,7 @@ export const BookingFlowDetails: React.FC = () => {
   }
 
   return (
-    <ModernSettingsLayout>
+    <ModernSettingsLayout maxWidth="xl">
       {/* Enhanced Error Display */}
       <ErrorDisplay 
         errors={{
@@ -763,66 +755,8 @@ export const BookingFlowDetails: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <Stack spacing={3}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">
-              Booking Flow Steps ({steps.length})
-            </Typography>
-            <Box display="flex" gap={1}>
-              {steps.length > 1 && (
-                <Button
-                  variant="outlined"
-                  onClick={handleStepReorder}
-                  disabled={isReorderingSteps}
-                >
-                  {isReorderingSteps ? 'Reordering...' : 'Reorder Steps'}
-                </Button>
-              )}
-              <Button
-                ref={addStepButtonRef}
-                variant="contained"
-                startIcon={<StepsIcon />}
-                onClick={handleCreateStep}
-                disabled={isCreatingStep}
-              >
-                {isCreatingStep ? 'Adding...' : 'Add Step'}
-              </Button>
-            </Box>
-          </Box>
-
-          {stepsError && (
-            <Alert severity="error">
-              Failed to load steps: {stepsError instanceof Error ? stepsError.message : 'Unknown error'}
-            </Alert>
-          )}
-
-          {steps.length === 0 && !isLoadingSteps ? (
-            <ModernEmptyState
-              icon={StepsIcon}
-              title="No steps configured"
-              description="Add steps to guide clients through the booking process and create a seamless booking experience."
-              primaryAction={{
-                label: isCreatingStep ? 'Adding...' : 'Add First Step',
-                onClick: handleCreateStep,
-                icon: <StepsIcon />,
-                color: 'primary'
-              }}
-              tip={{
-                text: "Start with basic steps like Contact Info, DateTime, and Package Selection for a complete booking flow.",
-                type: 'info'
-              }}
-              size="medium"
-              color="primary"
-            />
-          ) : (
-            <BookingFlowStepsTable
-              flowId={flowId}
-              onEdit={handleEditStep}
-              onConfigure={handleConfigureStep}
-              onReorder={handleStepReorder}
-            />
-          )}
-        </Stack>
+        {/* Embedded Steps Management */}
+        <BookingFlowSteps embedded={true} />
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>

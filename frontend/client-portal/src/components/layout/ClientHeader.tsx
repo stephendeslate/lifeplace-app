@@ -1,304 +1,236 @@
 // components/layout/ClientHeader.tsx
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
   Typography,
-  Button,
-  Box,
   IconButton,
   Avatar,
   Menu,
   MenuItem,
-  Badge,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Box,
   useTheme,
   alpha,
-  Divider,
+  Tooltip,
 } from '@mui/material';
 import {
-  Notifications,
-  AccountCircle,
+  Menu as MenuIcon,
   Settings,
   ExitToApp,
-  Dashboard,
-  Event,
-  Receipt,
+  Person,
 } from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { NotificationCenter } from '../notifications';
+import { GlobalSearch } from '../search';
 
-export const ClientHeader: React.FC = () => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationAnchor, setNotificationAnchor] = useState<null | HTMLElement>(null);
-  const { user, logout } = useAuth();
+interface ClientHeaderProps {
+  onMenuClick: () => void;
+  sidebarOpen: boolean;
+}
+
+export const ClientHeader: React.FC<ClientHeaderProps> = ({ 
+  onMenuClick
+}) => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+  const { user, logout } = useAuth();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleClose = () => {
+  const handleProfileMenuClose = () => {
     setAnchorEl(null);
   };
 
-  const handleNotifications = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchor(event.currentTarget);
-  };
-
-  const handleNotificationClose = () => {
-    setNotificationAnchor(null);
+  const handleProfileClick = () => {
+    handleProfileMenuClose();
+    navigate('/profile');
   };
 
   const handleLogout = async () => {
+    handleProfileMenuClose();
     await logout();
-    navigate('/');
-    handleClose();
+    navigate('/login');
   };
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    handleClose();
+  const getInitials = (firstName?: string, lastName?: string) => {
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
-
-  const navigationItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
-    { label: 'My Events', path: '/events', icon: <Event /> },
-    { label: 'Bookings', path: '/bookings', icon: <Receipt /> },
-  ];
 
   return (
-    <AnimatedElement animation="fadeIn" delay={0}>
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          background: `linear-gradient(135deg, 
-            ${alpha(theme.palette.background.paper, 0.95)}, 
-            ${alpha(theme.palette.background.paper, 0.9)})`,
-          backdropFilter: 'blur(20px)',
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          color: theme.palette.text.primary,
-        }}
-      >
-        <Toolbar sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          {/* Logo */}
-          <Typography
-            variant="h6"
-            component="div"
-            onClick={() => navigate('/dashboard')}
-            sx={{
-              flexGrow: 1,
-              fontWeight: 700,
-              cursor: 'pointer',
-              color: 'primary.main',
-              fontSize: { xs: '1.1rem', md: '1.25rem' },
+    <AppBar 
+      position="fixed" 
+      sx={{
+        zIndex: theme.zIndex.drawer + 1,
+        backgroundColor: alpha('#fff', 0.1),
+        backdropFilter: 'blur(20px)',
+        borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+      }}
+    >
+      <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
+        {/* Menu Button */}
+        <AnimatedElement animation="fadeIn" delay={100}>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={onMenuClick}
+            sx={{ 
+              mr: 2,
+              color: theme.palette.primary.main,
+              backgroundColor: alpha('#fff', 0.1),
               '&:hover': {
-                opacity: 0.8,
+                backgroundColor: alpha('#fff', 0.2),
+                transform: 'scale(1.05)',
               },
-              transition: 'opacity 0.2s',
+              transition: 'all 0.2s ease',
             }}
           >
-            LifePlace Alfonso
-          </Typography>
+            <MenuIcon />
+          </IconButton>
+        </AnimatedElement>
 
-          {/* Desktop Navigation */}
-          <Box sx={{ 
-            display: { xs: 'none', md: 'flex' }, 
-            gap: 1, 
-            mr: 3,
-            alignItems: 'center',
-          }}>
-            {navigationItems.map((item) => (
-              <Button
-                key={item.label}
-                onClick={() => handleNavigation(item.path)}
-                startIcon={item.icon}
-                sx={{
-                  color: location.pathname === item.path ? 'primary.main' : 'text.primary',
-                  fontWeight: location.pathname === item.path ? 600 : 400,
-                  px: 2,
-                  py: 1,
-                  borderRadius: 2,
-                  '&:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.05),
-                  },
-                  ...(location.pathname === item.path && {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                  }),
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </Box>
+        {/* Logo/Brand */}
+        <AnimatedElement animation="slideRight" delay={200}>
+          <Typography 
+            variant="h5" 
+            component="div" 
+            sx={{ 
+              fontWeight: 600,
+              color: theme.palette.primary.main,
+              textShadow: '0 2px 10px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
+            }}
+            onClick={() => navigate('/dashboard')}
+          >
+            LifePlace
+            <Typography 
+              component="span" 
+              variant="body2" 
+              sx={{ 
+                ml: 1,
+                color: alpha(theme.palette.primary.main, 0.7),
+                fontWeight: 400,
+              }}
+            >
+              Client Portal
+            </Typography>
+          </Typography>
+        </AnimatedElement>
+
+        {/* Action Icons - Right Aligned */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
+          {/* Global Search */}
+          <AnimatedElement animation="fadeIn" delay={250}>
+            <GlobalSearch />
+          </AnimatedElement>
 
           {/* Notifications */}
-          <IconButton
-            size="large"
-            aria-label="notifications"
-            color="inherit"
-            onClick={handleNotifications}
-            sx={{ 
-              mr: 1,
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.05),
-              },
-            }}
-          >
-            <Badge badgeContent={3} color="error">
-              <Notifications />
-            </Badge>
-          </IconButton>
+          <AnimatedElement animation="fadeIn" delay={300}>
+            <NotificationCenter />
+          </AnimatedElement>
 
-          {/* User Menu */}
-          <GlassCard 
-            variant="light" 
-            intensity="subtle"
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              px: 2,
-              py: 0.5,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': {
-                transform: 'translateY(-1px)',
-              },
-            }}
-            onClick={handleMenu}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Avatar
+
+          {/* Profile Menu */}
+          <AnimatedElement animation="fadeIn" delay={400}>
+            <Tooltip title="Account">
+              <IconButton
+                onClick={handleProfileMenuOpen}
                 sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: 'primary.main',
-                  fontSize: '0.875rem',
+                  ml: 1,
+                  backgroundColor: alpha('#fff', 0.1),
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.2),
+                    transform: 'scale(1.05)',
+                  },
+                  transition: 'all 0.2s ease',
                 }}
               >
-                {user?.first_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-              </Avatar>
-              <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {user?.first_name || user?.email}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Client Portal
-                </Typography>
-              </Box>
-            </Box>
-          </GlassCard>
+                <Avatar
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    backgroundColor: theme.palette.primary.main,
+                    color: 'white',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {getInitials(user?.first_name, user?.last_name)}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+          </AnimatedElement>
+        </Box>
 
-          {/* User Menu Dropdown */}
-          <Menu
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-            PaperProps={{
-              sx: {
-                background: `linear-gradient(135deg, 
-                  ${alpha(theme.palette.background.paper, 0.95)}, 
-                  ${alpha(theme.palette.background.paper, 0.9)})`,
-                backdropFilter: 'blur(20px)',
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                minWidth: 200,
-                mt: 1,
-              },
-            }}
-          >
-            <MenuItem onClick={() => handleNavigation('/profile')}>
-              <AccountCircle sx={{ mr: 2 }} />
-              Profile
-            </MenuItem>
-            <MenuItem onClick={() => handleNavigation('/settings')}>
-              <Settings sx={{ mr: 2 }} />
-              Settings
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleLogout}>
-              <ExitToApp sx={{ mr: 2 }} />
-              Sign Out
-            </MenuItem>
-          </Menu>
+        {/* Profile Menu */}
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleProfileMenuClose}
+          onClick={handleProfileMenuClose}
+          PaperProps={{
+            sx: {
+              backgroundColor: alpha('#fff', 0.95),
+              backdropFilter: 'blur(20px)',
+              border: `1px solid ${alpha('#fff', 0.2)}`,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+              borderRadius: 2,
+              mt: 1.5,
+              minWidth: 200,
+            },
+          }}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        >
+          {/* User Info */}
+          <Box sx={{ px: 2, py: 1.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              {user?.first_name} {user?.last_name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {user?.email}
+            </Typography>
+          </Box>
+          
+          <Divider />
 
-          {/* Notifications Menu */}
-          <Menu
-            anchorEl={notificationAnchor}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(notificationAnchor)}
-            onClose={handleNotificationClose}
-            PaperProps={{
-              sx: {
-                background: `linear-gradient(135deg, 
-                  ${alpha(theme.palette.background.paper, 0.95)}, 
-                  ${alpha(theme.palette.background.paper, 0.9)})`,
-                backdropFilter: 'blur(20px)',
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                maxWidth: 320,
-                mt: 1,
-              },
-            }}
-          >
-            <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Notifications
-              </Typography>
-            </Box>
-            <MenuItem>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  Booking Confirmed
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Your wedding event booking has been confirmed for March 15th
-                </Typography>
-              </Box>
-            </MenuItem>
-            <MenuItem>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  Payment Reminder
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Final payment is due in 7 days
-                </Typography>
-              </Box>
-            </MenuItem>
-            <MenuItem>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  Event Update
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Your event coordinator has shared new details
-                </Typography>
-              </Box>
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
-    </AnimatedElement>
+          {/* Profile */}
+          <MenuItem onClick={handleProfileClick}>
+            <ListItemIcon>
+              <Person fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>My Profile</ListItemText>
+          </MenuItem>
+
+          {/* Settings */}
+          <MenuItem onClick={() => navigate('/settings')}>
+            <ListItemIcon>
+              <Settings fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Settings</ListItemText>
+          </MenuItem>
+
+          <Divider />
+
+          {/* Logout */}
+          <MenuItem onClick={handleLogout}>
+            <ListItemIcon>
+              <ExitToApp fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Logout</ListItemText>
+          </MenuItem>
+        </Menu>
+      </Toolbar>
+    </AppBar>
   );
 };

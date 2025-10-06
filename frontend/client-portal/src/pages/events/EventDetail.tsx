@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 import {
   Box,
   Typography,
@@ -34,15 +35,25 @@ import {
   Note as NotesIcon,
   CalendarToday as CalendarIcon,
   Payment as PaymentIcon,
+  Assignment as ContractIcon,
+  Assignment as QuestionnaireIcon,
+  Feedback as FeedbackIcon,
+  RequestQuote as RequestQuoteIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { useEvents } from '../../hooks/useEvents';
-import { 
-  EventStatusBadge, 
-  EventCountdown, 
-  EventTimeline, 
-  EventDocuments, 
-  EventTasks 
+import { formatInTimeZone } from 'date-fns-tz';
+import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
+import { useEventQuotes } from '../../hooks/useEventQuotes';
+import {
+  EventStatusBadge,
+  EventCountdown,
+  EventTimeline,
+  EventDocuments,
+  EventTasks,
+  EventFeedback,
+  EventQuestionnaires,
+  EventQuotes,
+  ContractStatusChip
 } from '../../components/events';
 
 interface TabPanelProps {
@@ -73,26 +84,41 @@ const EventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { formatAmount } = useCurrencySettings();
   
   // State management
   const [activeTab, setActiveTab] = useState(0);
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false);
   const [preferencesData, setPreferencesData] = useState<Record<string, unknown>>({});
 
-  // Data fetching
+  // Data fetching with contract integration
   const eventId = parseInt(id || '0');
-  const { useEvent, useEventNotes, useUpdatePreferences } = useEvents();
+  const { useEventWithContracts, useEventNotes, useUpdatePreferences, useEventContracts } = useEventsWithContracts();
   
   const { 
     data: event, 
     isLoading: isLoadingEvent, 
     error: eventError 
-  } = useEvent(eventId);
+  } = useEventWithContracts(eventId);
   
   const { 
     data: notes = [], 
     isLoading: isLoadingNotes 
   } = useEventNotes(eventId);
+  
+  // Get contracts for this event
+  const {
+    contracts: eventContracts,
+    isLoading: isLoadingContracts,
+    hasContracts,
+    needsSignature
+  } = useEventContracts(eventId);
+
+  // Get quotes for this event
+  const {
+    data: quotesData
+  } = useEventQuotes(eventId);
+  const quotesCount = quotesData?.results?.length || 0;
 
   // Mutations
   const updatePreferencesMutation = useUpdatePreferences();
@@ -161,8 +187,7 @@ const EventDetail: React.FC = () => {
     );
   }
 
-  const eventDate = event.start_date ? new Date(event.start_date) : null;
-  const endDate = event.end_date ? new Date(event.end_date) : null;
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
@@ -209,7 +234,7 @@ const EventDetail: React.FC = () => {
                 {event.name}
               </Typography>
             </Stack>
-            
+
             <Typography variant="h6" color="text.secondary" gutterBottom>
               {event.event_type_name}
             </Typography>
@@ -229,10 +254,19 @@ const EventDetail: React.FC = () => {
                   variant="outlined"
                 />
               )}
+              <ContractStatusChip
+                status={event.contract_status}
+                hasContracts={event.has_contracts}
+                contractsCount={event.contracts_count}
+                pendingSignatureRequired={event.pending_signature_required}
+                contractExpiryDays={event.contract_expiry_days}
+                size="medium"
+                showCount={true}
+              />
             </Stack>
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-              {eventDate && (
+              {event.start_date && (
                 <Box sx={(theme) => ({
                   flexGrow: 0,
                   flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
@@ -240,9 +274,9 @@ const EventDetail: React.FC = () => {
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CalendarIcon fontSize="small" color="action" />
                     <Typography variant="body1">
-                      {format(eventDate, 'EEEE, MMMM dd, yyyy')}
-                      {endDate && eventDate.getTime() !== endDate.getTime() && 
-                        ` - ${format(endDate, 'MMMM dd, yyyy')}`
+                      {formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'EEEE, MMMM dd, yyyy')}
+                      {event.end_date && formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
+                        ` - ${formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'MMMM dd, yyyy')}`
                       }
                     </Typography>
                   </Stack>
@@ -266,7 +300,7 @@ const EventDetail: React.FC = () => {
                   flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
                 })}>
                   <Typography variant="body1">
-                    <strong>Total Price:</strong> ${event.total_price.toLocaleString()}
+                    <strong>Total Price:</strong> {formatAmount(event.total_price)}
                   </Typography>
                 </Box>
               )}
@@ -361,34 +395,64 @@ const EventDetail: React.FC = () => {
           allowScrollButtonsMobile
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
-          <Tab 
-            label="Timeline" 
-            icon={<TimelineIcon />} 
+          <Tab
+            label="Timeline"
+            icon={<TimelineIcon />}
             iconPosition="start"
             id="event-tab-0"
             aria-controls="event-tabpanel-0"
           />
-          <Tab 
-            label={`Documents (${event.accessible_documents_count})`}
-            icon={<DocumentsIcon />} 
+          <Tab
+            label="Questionnaires"
+            icon={<QuestionnaireIcon />}
             iconPosition="start"
             id="event-tab-1"
             aria-controls="event-tabpanel-1"
           />
-          <Tab 
-            label={`Tasks (${event.upcoming_tasks.length})`}
-            icon={<TasksIcon />} 
+          <Tab
+            label={`Documents (${event.accessible_documents_count})`}
+            icon={<DocumentsIcon />}
             iconPosition="start"
             id="event-tab-2"
             aria-controls="event-tabpanel-2"
           />
-          {event.has_notes && (
-            <Tab 
-              label={`Notes (${notes.length})`}
-              icon={<NotesIcon />} 
+          <Tab
+            label="Tasks"
+            icon={<TasksIcon />}
+            iconPosition="start"
+            id="event-tab-3"
+            aria-controls="event-tabpanel-3"
+          />
+          <Tab
+            label="Feedback"
+            icon={<FeedbackIcon />}
+            iconPosition="start"
+            id="event-tab-4"
+            aria-controls="event-tabpanel-4"
+          />
+          <Tab
+            label={`Quotes${quotesCount > 0 ? ` (${quotesCount})` : ''}`}
+            icon={<RequestQuoteIcon />}
+            iconPosition="start"
+            id="event-tab-5"
+            aria-controls="event-tabpanel-5"
+          />
+          {hasContracts && (
+            <Tab
+              label={`Contracts (${eventContracts.length})`}
+              icon={<ContractIcon />}
               iconPosition="start"
-              id="event-tab-3"
-              aria-controls="event-tabpanel-3"
+              id="event-tab-6"
+              aria-controls="event-tabpanel-6"
+            />
+          )}
+          {event.has_notes && (
+            <Tab
+              label={`Notes (${notes.length})`}
+              icon={<NotesIcon />}
+              iconPosition="start"
+              id={hasContracts ? "event-tab-7" : "event-tab-6"}
+              aria-controls={hasContracts ? "event-tabpanel-7" : "event-tabpanel-6"}
             />
           )}
         </Tabs>
@@ -398,15 +462,116 @@ const EventDetail: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
-          <EventDocuments eventId={eventId} />
+          <EventQuestionnaires eventId={eventId} />
         </TabPanel>
 
         <TabPanel value={activeTab} index={2}>
-          <EventTasks tasks={event.upcoming_tasks} />
+          <EventDocuments eventId={eventId} />
         </TabPanel>
 
+        <TabPanel value={activeTab} index={3}>
+          <EventTasks eventId={eventId} />
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={4}>
+          <EventFeedback eventId={eventId} eventStatus={event.status} />
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={5}>
+          <EventQuotes eventId={eventId} />
+        </TabPanel>
+
+        {hasContracts && (
+          <TabPanel value={activeTab} index={6}>
+            {isLoadingContracts ? (
+              <Box>
+                {[1, 2].map((item) => (
+                  <Skeleton key={item} variant="rectangular" height={120} sx={{ mb: 2 }} />
+                ))}
+              </Box>
+            ) : (
+              <Stack spacing={3}>
+                {needsSignature && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      Action Required: Contract Signature Needed
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      You have contracts that require your signature to proceed with your event.
+                    </Typography>
+                  </Alert>
+                )}
+                
+                {eventContracts.map((contract) => (
+                  <Paper key={contract.id} sx={{ p: 3 }}>
+                    <Stack spacing={2}>
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                        <Box>
+                          <Typography variant="h6" gutterBottom>
+                            {contract.template.name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Event: {contract.event.title}
+                          </Typography>
+                        </Box>
+                        <Stack direction="row" spacing={1}>
+                          <ContractStatusChip
+                            status={contract.status}
+                            hasContracts={true}
+                            contractsCount={1}
+                            pendingSignatureRequired={contract.can_client_sign}
+                            size="small"
+                          />
+                        </Stack>
+                      </Box>
+                      
+                      {contract.signature_progress && (
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Signature Progress: {contract.signature_progress.signed_count} of {contract.signature_progress.total_required} signatures
+                          </Typography>
+                          <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, overflow: 'hidden' }}>
+                            <Box
+                              sx={{
+                                width: `${contract.signature_progress.percentage}%`,
+                                bgcolor: contract.signature_progress.percentage === 100 ? 'success.main' : 'warning.main',
+                                height: 8,
+                                transition: 'width 0.3s ease',
+                              }}
+                            />
+                          </Box>
+                        </Box>
+                      )}
+                      
+                      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => navigate(`/contracts/${contract.id}`)}
+                        >
+                          View Details
+                        </Button>
+                        {contract.can_client_sign && (
+                          <Button
+                            variant="contained"
+                            size="small"
+                            color="warning"
+                            onClick={() => navigate(`/contracts/${contract.id}/sign`)}
+                          >
+                            Sign Now
+                          </Button>
+                        )}
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            )}
+          </TabPanel>
+        )}
+
         {event.has_notes && (
-          <TabPanel value={activeTab} index={3}>
+          <TabPanel value={activeTab} index={hasContracts ? 7 : 6}>
             {isLoadingNotes ? (
               <Box>
                 {[1, 2, 3].map((item) => (

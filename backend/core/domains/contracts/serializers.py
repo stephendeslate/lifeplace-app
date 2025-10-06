@@ -156,6 +156,7 @@ class EventContractDetailSerializer(EventContractSerializer):
     is_fully_signed = serializers.BooleanField(read_only=True)
     missing_signatures = serializers.ListField(read_only=True)
     signature_progress = serializers.SerializerMethodField()
+    can_client_sign = serializers.BooleanField(read_only=True)
     
     # Legacy compatibility
     signed_by = UserSerializer(read_only=True)
@@ -166,7 +167,7 @@ class EventContractDetailSerializer(EventContractSerializer):
             'is_amendment', 'original_contract', 'amendment_number',
             'signatures', 'amendment_requests', 'documents', 'notes',
             'is_fully_signed', 'missing_signatures', 'signature_progress',
-            'signed_by', 'signature_data', 'witness_name', 'witness_signature'
+            'can_client_sign', 'signed_by', 'signature_data', 'witness_name', 'witness_signature'
         ]
     
     def get_signature_progress(self, obj):
@@ -288,4 +289,16 @@ class EventContractUpdateSerializer(serializers.ModelSerializer):
         """Validate contract value"""
         if value is not None and value < 0:
             raise serializers.ValidationError("Contract value cannot be negative")
+        return value
+
+
+class PreviewContractSerializer(serializers.Serializer):
+    """Serializer for previewing contract templates"""
+    context_data = serializers.JSONField(required=False, default=dict)
+    event_id = serializers.IntegerField(required=False, allow_null=True)
+    
+    def validate_context_data(self, value):
+        """Validate context data is a dictionary"""
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Context data must be a dictionary")
         return value

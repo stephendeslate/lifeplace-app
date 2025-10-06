@@ -23,6 +23,10 @@ const generateId = () => Math.random().toString(36).substring(2, 15);
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  const hideToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
+
   const showToast = useCallback((options: ShowToastOptions) => {
     const toast: Toast = {
       id: generateId(),
@@ -38,11 +42,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         hideToast(toast.id);
       }, toast.duration);
     }
-  }, []);
-
-  const hideToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  }, []);
+  }, [hideToast]);
 
   const clearAllToasts = useCallback(() => {
     setToasts([]);

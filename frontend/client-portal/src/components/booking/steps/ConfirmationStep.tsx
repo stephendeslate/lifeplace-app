@@ -24,7 +24,8 @@ import {
   Email, 
   AccessTime,
   Group,
-  AttachMoney,
+  Receipt,
+  Payment,
   Info,
   NavigateNext,
   Home,
@@ -32,6 +33,8 @@ import {
 } from '@mui/icons-material';
 import { useBooking } from '../../../contexts/BookingContext';
 import { useConfirmation } from '../../../hooks/booking/useConfirmation';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
+import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
 import type { 
   ConfirmationStepConfiguration,
   ConfirmationStepData,
@@ -46,8 +49,8 @@ interface ConfirmationStepProps {
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
   session?: BookingSession | null;
-  completedBooking?: any;
-  onValidate?: (data: any) => Promise<StepValidationResult>;
+  completedBooking?: Record<string, unknown>;
+  onValidate?: (data: Record<string, unknown>) => Promise<StepValidationResult>;
 }
 
 export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
@@ -63,6 +66,50 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 }) => {
   const { state } = useBooking();
   const currentSession = session || state.currentSession;
+  const { formatAmount } = useCurrencySettings();
+  
+  // Get selected packages and addons from booking state
+  const selectedPackages = state.stepData.package_selection?.selected_packages || [];
+  const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
+  
+  // Get payment info from booking state
+  const paymentInfo = state.stepData.payment_info;
+  const paymentType = paymentInfo?.payment_type || 'FULL';
+  
+  // Calculate pricing using simplified pricing hook
+  const { pricing } = useSimplePricing(
+    selectedPackages,
+    selectedAddons,
+    state.stepData.pricing_summary?.applied_discount_code
+  );
+
+  // Calculate what user pays today based on payment type
+  const paymentAmounts = useMemo(() => {
+    const totalAmount = pricing.total;
+    
+    if (paymentType === 'DEPOSIT') {
+      // Calculate deposit based on payment step configuration (typically 30%)
+      // This should ideally come from the backend payment configuration
+      const depositAmount = totalAmount * 0.30;
+      const remainingAmount = totalAmount - depositAmount;
+      
+      return {
+        totalAmount,
+        paymentAmount: depositAmount,
+        remainingAmount,
+        isDeposit: true,
+        hasRemainingBalance: true,
+      };
+    }
+    
+    return {
+      totalAmount,
+      paymentAmount: totalAmount,
+      remainingAmount: 0,
+      isDeposit: false,
+      hasRemainingBalance: false,
+    };
+  }, [pricing.total, paymentType]);
 
   // Use refs to track if operations have been done
   const completionProcessedRef = useRef(false);
@@ -125,7 +172,8 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         completion_status: 'processing'
       });
 
-      const success = await completeBooking();
+      const completionType = state.stepData.payment_info?.completion_type || 'payment';
+      const success = await completeBooking(completionType);
       
       if (success) {
         onDataChange({
@@ -147,7 +195,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         completion_status: 'failed'
       });
     }
-  }, [isCompleted, isProcessing, confirmationData, onDataChange, completeBooking]);
+  }, [isCompleted, isProcessing, confirmationData, onDataChange, completeBooking, state.stepData.payment_info?.completion_type]);
 
   // Handle email sending
   const handleSendEmail = useCallback(async () => {
@@ -170,31 +218,31 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
   // Update step data when completion result is available (STABLE VERSION)
   React.useEffect(() => {
-    if (completionResult && 
-        stepData.completion_status === 'completed' && 
+    if (completionResult &&
+        stepData.completion_status === 'completed' &&
         !completionProcessedRef.current) {
-      
+
       completionProcessedRef.current = true;
-      
+
       onDataChange({
         ...stepData,
         booking_reference: completionResult.session_id || bookingReference,
-        booking_completion_result: completionResult,
+        booking_completion_result: completionResult as unknown as Record<string, unknown>,
       });
     }
-  }, [completionResult?.session_id, stepData.completion_status]); // Only depend on stable values
+  }, [completionResult, stepData, bookingReference, onDataChange]);
 
   // Auto-send email when booking is completed (STABLE VERSION)
   React.useEffect(() => {
-    if (isCompleted && 
-        stepData.booking_reference && 
-        !stepData.confirmation_email_sent && 
+    if (isCompleted &&
+        stepData.booking_reference &&
+        !stepData.confirmation_email_sent &&
         !emailSentRef.current) {
-      
+
       emailSentRef.current = true;
       handleSendEmail();
     }
-  }, [isCompleted, stepData.booking_reference, stepData.confirmation_email_sent]); // Remove unstable handleSendEmail
+  }, [isCompleted, stepData.booking_reference, stepData.confirmation_email_sent, handleSendEmail]);
 
   // Reset refs when stepData changes significantly
   React.useEffect(() => {
@@ -260,18 +308,54 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
                 </Box>
               </Box>
             )}
-            {eventSummary?.totalPrice && (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <AttachMoney sx={{ mr: 2, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Price
-                  </Typography>
-                  <Typography variant="h6" color="primary">
-                    ${eventSummary.totalPrice}
-                  </Typography>
+            {pricing.total > 0 && (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Receipt sx={{ mr: 2, color: 'text.secondary' }} />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Price
+                    </Typography>
+                    <Typography variant="h6" color="primary">
+                      {formatAmount(paymentAmounts.totalAmount)}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
+                
+                {paymentAmounts.isDeposit && (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Payment sx={{ mr: 2, color: 'success.main' }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        What You Pay Today
+                      </Typography>
+                      <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
+                        {formatAmount(paymentAmounts.paymentAmount)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Deposit payment
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                
+                {!paymentAmounts.isDeposit && paymentType === 'FULL' && (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Payment sx={{ mr: 2, color: 'success.main' }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        What You Pay Today
+                      </Typography>
+                      <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
+                        {formatAmount(paymentAmounts.paymentAmount)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Full payment
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </>
             )}
           </Stack>
         </CardContent>
@@ -448,7 +532,9 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-        {completionResult?.event?.id && (
+        {/* Complex completion result type requires any for safe property access */}
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {(completionResult as any)?.event?.id && (
           <Button 
             variant="contained" 
             onClick={navigateToDashboard}

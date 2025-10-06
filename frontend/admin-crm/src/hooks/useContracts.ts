@@ -16,7 +16,6 @@ import type {
   EventContractFilters,
   ContractSignatureFilters,
   ContractAmendmentFilters,
-  ContractSigningData,
 } from '../types/contracts.types';
 
 // Contract Templates
@@ -234,34 +233,6 @@ export const useDeleteEventContract = () => {
   });
 };
 
-export const useSignContract = () => {
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: ContractSigningData }) =>
-      contractsApi.signContract(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
-      queryClient.invalidateQueries({ queryKey: ['eventContract', id] });
-      showToast({
-        type: 'success',
-        title: 'Contract Signed',
-        message: 'Contract has been signed successfully.',
-      });
-    },
-    onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to sign contract'
-        : 'Failed to sign contract';
-      showToast({
-        type: 'error',
-        title: 'Signing Failed',
-        message,
-      });
-    },
-  });
-};
 
 export const useAddContractSignature = () => {
   const queryClient = useQueryClient();
@@ -528,6 +499,35 @@ export const useAddContractNote = () => {
       showToast({
         type: 'error',
         title: 'Note Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useSendContract = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: (contractId: number) => contractsApi.sendContract(contractId),
+    onSuccess: (updatedContract) => {
+      queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
+      queryClient.invalidateQueries({ queryKey: ['eventContract', updatedContract.id] });
+      queryClient.setQueryData(['eventContract', updatedContract.id], updatedContract);
+      showToast({
+        type: 'success',
+        title: 'Contract Sent',
+        message: 'Contract has been sent to the client for signature.',
+      });
+    },
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to send contract'
+        : 'Failed to send contract';
+      showToast({
+        type: 'error',
+        title: 'Send Failed',
         message,
       });
     },

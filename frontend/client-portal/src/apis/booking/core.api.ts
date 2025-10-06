@@ -73,7 +73,7 @@ export class BookingCoreApi {
   static async updateSessionData(
     sessionId: string,
     stepId: number,
-    data: any,
+    data: Record<string, unknown>,
     proceedToNext: boolean = false
   ): Promise<BookingSessionUpdateResponse> {
     // Ensure we're sending the data in the correct format
@@ -98,7 +98,7 @@ export class BookingCoreApi {
   static async validateStepData(
     sessionId: string,
     stepId: number,
-    stepData: Record<string, any>
+    stepData: Record<string, unknown>
   ): Promise<StepValidationResult> {
     const data = {
       step_id: stepId,
@@ -111,9 +111,25 @@ export class BookingCoreApi {
 
   /**
    * Complete the booking and create event
+   *
+   * This is the primary completion method that should be used by all frontend components.
+   *
+   * @param sessionId - The booking session UUID
+   * @param completionType - 'payment' for immediate payment processing, 'quote' for quote generation only
+   * @returns Promise<BookingCompletionResult> - Contains event details and completion status
+   *
+   * @example
+   * // For immediate payment
+   * const result = await BookingCoreApi.completeBooking(sessionId, 'payment');
+   *
+   * @example
+   * // For quote request
+   * const result = await BookingCoreApi.completeBooking(sessionId, 'quote');
    */
-  static async completeBooking(sessionId: string): Promise<BookingCompletionResult> {
-    const response = await api.post<BookingCompletionResult>(`/bookingflow/public/flows/session/${sessionId}/complete/`);
+  static async completeBooking(sessionId: string, completionType: 'payment' | 'quote' = 'payment'): Promise<BookingCompletionResult> {
+    const response = await api.post<BookingCompletionResult>(`/bookingflow/public/flows/session/${sessionId}/complete/`, {
+      completion_type: completionType
+    });
     return response.data;
   }
 
@@ -168,7 +184,7 @@ export class BookingCoreApi {
   /**
    * Local storage helpers for session persistence
    */
-  static saveSessionToLocal(sessionId: string, sessionData: any): void {
+  static saveSessionToLocal(sessionId: string, sessionData: Record<string, unknown>): void {
     try {
       const storageKey = `booking_session_${sessionId}`;
       const dataToStore = {
@@ -184,7 +200,7 @@ export class BookingCoreApi {
   /**
    * Load session from local storage
    */
-  static loadSessionFromLocal(sessionId: string): any | null {
+  static loadSessionFromLocal(sessionId: string): Record<string, unknown> | null {
     try {
       const storageKey = `booking_session_${sessionId}`;
       const storedData = localStorage.getItem(storageKey);
@@ -249,7 +265,7 @@ export class BookingCoreApi {
   /**
    * Format step data according to backend expectations
    */
-  static formatStepData(stepType: string, data: any): Record<string, any> {
+  static formatStepData(stepType: string, data: Record<string, unknown>): Record<string, unknown> {
     // Ensure required fields are present and properly formatted
     const formatted = { ...data };
 
@@ -335,11 +351,11 @@ export class BookingCoreApi {
     }
   }
   
-  static async goToStep(sessionId: string, stepId: number): Promise<any> {
+  static async goToStep(sessionId: string, stepId: number): Promise<Record<string, unknown>> {
     const response = await api.patch(`/bookingflow/public/flows/session/${sessionId}/go-to-step/`, {
       step_id: stepId
     });
-    return response.data;
+    return response.data as Record<string, unknown>;
   }
 
   // Error handling helpers
@@ -347,33 +363,36 @@ export class BookingCoreApi {
   /**
    * Handle API errors and extract user-friendly messages
    */
-  static handleApiError(error: any): string {
-    if (error.response?.data?.detail) {
-      return error.response.data.detail;
+  static handleApiError(error: unknown): string {
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.detail) {
+      return errorObj.response.data.detail;
     }
 
-    if (error.response?.data?.message) {
-      return error.response.data.message;
+    if (errorObj.response?.data?.message) {
+      return errorObj.response.data.message;
     }
 
-    if (error.response?.status === 404) {
+    if (errorObj.response?.status === 404) {
       return 'The requested resource was not found.';
     }
 
-    if (error.response?.status === 403) {
+    if (errorObj.response?.status === 403) {
       return 'You do not have permission to perform this action.';
     }
 
-    if (error.response?.status === 401) {
+    if (errorObj.response?.status === 401) {
       return 'Authentication required. Please log in to continue.';
     }
 
-    if (error.response?.status >= 500) {
+    if (errorObj.response?.status >= 500) {
       return 'A server error occurred. Please try again later.';
     }
 
-    if (error.message) {
-      return error.message;
+    if (errorObj.message) {
+      return errorObj.message;
     }
 
     return 'An unexpected error occurred. Please try again.';
@@ -382,19 +401,22 @@ export class BookingCoreApi {
   /**
    * Extract validation errors from API response
    */
-  static extractValidationErrors(error: any): Record<string, string[]> {
+  static extractValidationErrors(error: unknown): Record<string, string[]> {
     const validationErrors: Record<string, string[]> = {};
 
-    if (error.response?.data?.validation_errors) {
-      return error.response.data.validation_errors;
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.validation_errors) {
+      return errorObj.response.data.validation_errors;
     }
 
-    if (error.response?.data?.errors) {
-      const errors = error.response.data.errors;
+    if (errorObj.response?.data?.errors) {
+      const errors = errorObj.response.data.errors;
       
       if (typeof errors === 'object') {
         Object.keys(errors).forEach(field => {
-          const fieldErrors = errors[field];
+          const fieldErrors = (errors as Record<string, unknown>)[field];
           
           if (Array.isArray(fieldErrors)) {
             validationErrors[field] = fieldErrors;
@@ -406,12 +428,15 @@ export class BookingCoreApi {
     }
 
     // Check for field-specific errors in the response
-    if (error.response?.data) {
-      const data = error.response.data;
+    if (errorObj.response?.data) {
+      const data = errorObj.response.data;
       
       Object.keys(data).forEach(key => {
-        if (Array.isArray(data[key]) && data[key].every((item: any) => typeof item === 'string')) {
-          validationErrors[key] = data[key];
+        // Dynamic response data requires any for property access
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (Array.isArray((data as any)[key]) && (data as any)[key].every((item: unknown) => typeof item === 'string')) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          validationErrors[key] = (data as any)[key];
         }
       });
     }

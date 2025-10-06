@@ -1,6 +1,7 @@
 # backend/core/domains/contracts/views.py
 from core.utils.permissions import IsAdmin, IsOwnerOrAdmin
 from django.db.models import Prefetch
+from django.http import HttpResponse
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -28,6 +29,7 @@ from .serializers import (
     ContractAmendmentCreateSerializer,
     ContractDocumentSerializer,
     ContractNoteSerializer,
+    PreviewContractSerializer,
 )
 from .services import (
     ContractTemplateService, 
@@ -38,6 +40,7 @@ from .services import (
     ContractNoteService,
     LegacyContractService
 )
+from .pdf_service import ContractPDFService
 
 
 class ContractTemplateViewSet(viewsets.ModelViewSet):
@@ -113,6 +116,25 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(templates, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def preview(self, request, pk=None):
+        """Preview a contract template with sample data"""
+        template = self.get_object()
+        serializer = PreviewContractSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        context_data = serializer.validated_data.get('context_data', {})
+        event_id = serializer.validated_data.get('event_id', None)
+        
+        # Generate preview using the service with optional event context
+        preview_data = ContractTemplateService.preview_template(
+            template.id, 
+            context_data, 
+            event_id=event_id
+        )
+        
+        return Response(preview_data)
 
 
 class EventContractViewSet(viewsets.ModelViewSet):
@@ -153,12 +175,19 @@ class EventContractViewSet(viewsets.ModelViewSet):
         return EventContractSerializer
     
     def retrieve(self, request, *args, **kwargs):
-        """Enhanced retrieve with calculated fields"""
+        """Enhanced retrieve with calculated fields and signature rendering"""
         instance = self.get_object()
         
         # Add calculated fields
         instance.is_fully_signed = instance.is_fully_signed()
         instance.missing_signatures = instance.get_missing_signatures()
+        
+        # Re-render contract content with signatures if any exist
+        if instance.signatures.exists():
+            from .services import ContractTemplateService
+            ContractTemplateService.render_contract_with_signatures(instance.id)
+            # Refresh the instance to get updated content
+            instance.refresh_from_db(fields=['content'])
         
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
@@ -197,26 +226,6 @@ class EventContractViewSet(viewsets.ModelViewSet):
         
         return Response(EventContractDetailSerializer(contract).data)
     
-    @action(detail=True, methods=['post'])
-    def sign(self, request, pk=None):
-        """Legacy sign endpoint for backward compatibility"""
-        contract = self.get_object()
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        # Use legacy service for backward compatibility
-        signed_contract = LegacyContractService.sign_contract(
-            contract_id=contract.id,
-            user_id=request.user.id,
-            signature_data=serializer.validated_data['signature_data'],
-            witness_name=serializer.validated_data.get('witness_name'),
-            witness_signature=serializer.validated_data.get('witness_signature')
-        )
-        
-        return Response(
-            EventContractDetailSerializer(signed_contract).data, 
-            status=status.HTTP_200_OK
-        )
     
     @action(detail=True, methods=['post'])
     def add_signature(self, request, pk=None):
@@ -242,6 +251,10 @@ class EventContractViewSet(viewsets.ModelViewSet):
             role=serializer.validated_data['role'],
             **signature_details
         )
+        
+        # Re-render contract content with the new signature
+        from .services import ContractTemplateService
+        ContractTemplateService.render_contract_with_signatures(contract.id)
         
         return Response(
             ContractSignatureSerializer(signature).data,
@@ -375,8 +388,72 @@ class EventContractViewSet(viewsets.ModelViewSet):
                 )
         
         contracts = EventContractService.get_contracts_for_event(event_id)
-        serializer = EventContractSerializer(contracts, many=True)
+        
+        # Add calculated fields for each contract
+        for contract in contracts:
+            contract.is_fully_signed = contract.is_fully_signed()
+            contract.missing_signatures = contract.get_missing_signatures()
+        
+        # Use detailed serializer to include content field needed for signing
+        serializer = EventContractDetailSerializer(contracts, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def send_contract(self, request, pk=None):
+        """
+        Send contract to client (change status from DRAFT to SENT)
+        """
+        contract = self.get_object()
+        
+        if contract.status != 'DRAFT':
+            return Response(
+                {'error': f'Contract is in {contract.status} status and cannot be sent. Only DRAFT contracts can be sent.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Update contract status to SENT
+            updated_contract = EventContractService.update_contract(
+                contract.id, 
+                {'status': 'SENT'}
+            )
+            
+            return Response(
+                EventContractDetailSerializer(updated_contract).data,
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to send contract: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        """
+        Download contract as PDF (admin version)
+        """
+        contract = self.get_object()
+        
+        try:
+            # Generate PDF
+            pdf_buffer = ContractPDFService.generate_contract_pdf(contract)
+            
+            # Create HTTP response with PDF
+            response = HttpResponse(pdf_buffer, content_type='application/pdf')
+            filename = f"Contract_{contract.id}_{contract.event.name if hasattr(contract.event, 'name') else f'Event_{contract.event.id}'}.pdf"
+            # Clean filename to remove unsafe characters
+            filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_', '.')).rstrip()
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to generate PDF: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class ContractSignatureViewSet(viewsets.ModelViewSet):
@@ -424,6 +501,10 @@ class ContractSignatureViewSet(viewsets.ModelViewSet):
             role=serializer.validated_data['role'],
             **signature_details
         )
+        
+        # Re-render contract content with the new signature
+        from .services import ContractTemplateService
+        ContractTemplateService.render_contract_with_signatures(serializer.validated_data['contract'].id)
         
         return Response(
             ContractSignatureSerializer(signature).data,

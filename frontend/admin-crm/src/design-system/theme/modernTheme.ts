@@ -1,9 +1,152 @@
 // Modern MUI Theme with Glassmorphism Design System
 // Integrating modern design tokens with Material-UI
+// WIP: Shared design system temporarily disabled for deployment
 
 import { createTheme } from '@mui/material/styles';
 import type { ThemeOptions, Components } from '@mui/material/styles';
-import { tokens } from '../tokens';
+// import { designTokens as sharedTokens } from '@shared/design-system';
+
+// Temporary fallback tokens until shared package is fully integrated
+const fallbackTokens = {
+  colors: {
+    brand: {
+      primary: { 50: '#e3f2fd', 100: '#bbdefb', 200: '#90caf9', 300: '#64b5f6', 400: '#42a5f5', 500: '#2196f3', 600: '#1e88e5', 700: '#1976d2', 800: '#1565c0', 900: '#0d47a1', 950: '#0a3a7a' },
+      secondary: { 50: '#fce4ec', 100: '#f8bbd0', 200: '#f48fb1', 300: '#f06292', 400: '#ec407a', 500: '#e91e63', 600: '#d81b60', 700: '#c2185b', 800: '#ad1457', 900: '#880e4f', 950: '#6d0b3e' }
+    },
+    semantic: {
+      error: { 50: '#ffebee', 100: '#ffcdd2', 200: '#ef9a9a', 300: '#e57373', 400: '#ef5350', 500: '#f44336', 600: '#e53935', 700: '#d32f2f', 800: '#c62828', 900: '#b71c1c' },
+      warning: { 50: '#fff3e0', 100: '#ffe0b2', 200: '#ffcc80', 300: '#ffb74d', 400: '#ffa726', 500: '#ff9800', 600: '#fb8c00', 700: '#f57c00', 800: '#ef6c00', 900: '#e65100' },
+      info: { 50: '#e1f5fe', 100: '#b3e5fc', 200: '#81d4fa', 300: '#4fc3f7', 400: '#29b6f6', 500: '#03a9f4', 600: '#039be5', 700: '#0288d1', 800: '#0277bd', 900: '#01579b' },
+      success: { 50: '#e8f5e9', 100: '#c8e6c9', 200: '#a5d6a7', 300: '#81c784', 400: '#66bb6a', 500: '#4caf50', 600: '#43a047', 700: '#388e3c', 800: '#2e7d32', 900: '#1b5e20' }
+    },
+    neutral: { 50: '#fafafa', 100: '#f5f5f5', 200: '#eeeeee', 300: '#e0e0e0', 400: '#bdbdbd', 500: '#9e9e9e', 600: '#757575', 700: '#616161', 800: '#424242', 900: '#212121', 950: '#0f0f0f' }
+  },
+  glass: {
+    light: {
+      subtle: { background: 'rgba(255, 255, 255, 0.6)', border: 'rgba(255, 255, 255, 0.2)' },
+      medium: { background: 'rgba(255, 255, 255, 0.7)', border: 'rgba(255, 255, 255, 0.3)' },
+      strong: { background: 'rgba(255, 255, 255, 0.85)', border: 'rgba(255, 255, 255, 0.4)' }
+    },
+    colored: {
+      primary: { background: 'rgba(33, 150, 243, 0.1)', border: 'rgba(33, 150, 243, 0.2)' },
+      success: { background: 'rgba(76, 175, 80, 0.1)', border: 'rgba(76, 175, 80, 0.2)' },
+      warning: { background: 'rgba(255, 152, 0, 0.1)', border: 'rgba(255, 152, 0, 0.2)' },
+      error: { background: 'rgba(244, 67, 54, 0.1)', border: 'rgba(244, 67, 54, 0.2)' }
+    }
+  },
+  typography: {
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontSize: { xs: '12px', sm: '14px', md: '16px', lg: '18px', xl: '20px' }
+  },
+  spacing: {
+    radius: { none: '0', xs: '2px', sm: '4px', md: '8px', lg: '12px', xl: '16px', xxl: '24px', full: '9999px' },
+    breakpoints: { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536 }
+  },
+  shadows: {
+    glass: { subtle: '0 2px 8px rgba(0,0,0,0.05)', medium: '0 4px 16px rgba(0,0,0,0.08)', strong: '0 8px 32px rgba(0,0,0,0.12)', light: '0 1px 4px rgba(0,0,0,0.03)' },
+    elevation: { none: 'none', xs: '0 1px 2px rgba(0,0,0,0.05)', sm: '0 2px 4px rgba(0,0,0,0.06)', md: '0 4px 8px rgba(0,0,0,0.08)', lg: '0 8px 16px rgba(0,0,0,0.1)', xl: '0 12px 24px rgba(0,0,0,0.12)', xxl: '0 16px 32px rgba(0,0,0,0.15)' }
+  },
+  animations: {
+    transitions: { all: '0.2s ease-in-out' },
+    duration: { fast: '150ms', normal: '250ms', slow: '400ms' }
+  }
+};
+
+const sharedTokens = fallbackTokens;
+
+// Compatibility layer to map shared design tokens to the old structure
+const tokens = {
+  color: {
+    primary: sharedTokens.colors.brand.primary,
+    secondary: sharedTokens.colors.brand.secondary,
+    error: sharedTokens.colors.semantic.error,
+    warning: sharedTokens.colors.semantic.warning,
+    info: sharedTokens.colors.semantic.info,
+    success: sharedTokens.colors.semantic.success,
+    neutral: sharedTokens.colors.neutral,
+    glass: {
+      light: sharedTokens.glass.light.subtle.background,
+      medium: sharedTokens.glass.light.medium.background,
+      strong: sharedTokens.glass.light.strong.background,
+      primaryGlass: sharedTokens.glass.colored.primary.background,
+      successGlass: sharedTokens.glass.colored.success.background,
+      warningGlass: sharedTokens.glass.colored.warning.background,
+      errorGlass: sharedTokens.glass.colored.error.background,
+    },
+    backgrounds: {
+      primaryGradient: `linear-gradient(135deg, ${sharedTokens.colors.brand.primary[500]}, ${sharedTokens.colors.brand.primary[700]})`,
+    },
+    borders: {
+      glass: sharedTokens.glass.light.subtle.border,
+      primary: sharedTokens.glass.colored.primary.border,
+    },
+  },
+  typography: {
+    fontFamily: {
+      body: sharedTokens.typography.fontFamily,
+    },
+    styles: {
+      h1: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 700, lineHeight: 1.2 },
+      h2: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.3 },
+      h3: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.3 },
+      h4: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.4 },
+      h5: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.4 },
+      h6: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.5 },
+      bodyMd: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 400, lineHeight: 1.7 },
+      bodySm: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 400, lineHeight: 1.6 },
+      subtitle1: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 500, lineHeight: 1.5 },
+      subtitle2: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 500, lineHeight: 1.5 },
+      caption: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 400, lineHeight: 1.5 },
+      overline: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.5 },
+      button: { fontFamily: sharedTokens.typography.fontFamily, fontWeight: 600, lineHeight: 1.5 },
+    },
+  },
+  spacing: {
+    radius: {
+      ...sharedTokens.spacing.radius,
+      xxl: '24px',
+      xxxl: '32px',
+    },
+    breakpoints: sharedTokens.spacing.breakpoints,
+  },
+  shadow: {
+    glass: {
+      ...sharedTokens.shadows.glass,
+      floating: sharedTokens.shadows.glass.strong,
+    },
+    elevation: sharedTokens.shadows.elevation,
+    component: {
+      card: sharedTokens.shadows.elevation.md,
+      modal: sharedTokens.shadows.elevation.xl,
+      buttonHover: sharedTokens.shadows.elevation.sm,
+      header: sharedTokens.shadows.elevation.sm,
+      inputFocus: sharedTokens.shadows.elevation.sm,
+      drawer: sharedTokens.shadows.elevation.lg,
+      dropdown: sharedTokens.shadows.elevation.md,
+      popover: sharedTokens.shadows.elevation.lg,
+    },
+  },
+  animation: {
+    transitions: {
+      fast: sharedTokens.animations.transitions.all,
+      normal: sharedTokens.animations.transitions.all,
+      slow: sharedTokens.animations.transitions.all,
+      glass: sharedTokens.animations.transitions.all,
+      button: sharedTokens.animations.transitions.all,
+      card: sharedTokens.animations.transitions.all,
+    },
+    duration: {
+      ...sharedTokens.animations.duration,
+      fastest: '100ms',
+    },
+    easing: {
+      standard: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      decelerate: 'cubic-bezier(0, 0, 0.2, 1)',
+      accelerate: 'cubic-bezier(0.4, 0, 1, 1)',
+      sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
+    },
+  },
+};
 
 // Extend MUI theme interface for custom properties
 declare module '@mui/material/styles' {
@@ -240,11 +383,11 @@ const modernThemeOptions: ThemeOptions = {
   // Breakpoints
   breakpoints: {
     values: {
-      xs: parseInt(tokens.spacing.breakpoints.xs),
-      sm: parseInt(tokens.spacing.breakpoints.sm),
-      md: parseInt(tokens.spacing.breakpoints.md), 
-      lg: parseInt(tokens.spacing.breakpoints.lg),
-      xl: parseInt(tokens.spacing.breakpoints.xl),
+      xs: tokens.spacing.breakpoints.xs,
+      sm: tokens.spacing.breakpoints.sm,
+      md: tokens.spacing.breakpoints.md,
+      lg: tokens.spacing.breakpoints.lg,
+      xl: tokens.spacing.breakpoints.xl,
     },
   },
 
@@ -284,13 +427,13 @@ const modernThemeOptions: ThemeOptions = {
       sharp: tokens.animation.easing.sharp,
     },
     duration: {
-      shortest: tokens.animation.duration.fastest,
-      shorter: tokens.animation.duration.fast,
-      short: tokens.animation.duration.normal,
-      standard: tokens.animation.duration.normal,
-      complex: tokens.animation.duration.slow,
-      enteringScreen: tokens.animation.duration.normal,
-      leavingScreen: tokens.animation.duration.fast,
+      shortest: 100,
+      shorter: 150,
+      short: 250,
+      standard: 250,
+      complex: 350,
+      enteringScreen: 250,
+      leavingScreen: 150,
     },
   },
 

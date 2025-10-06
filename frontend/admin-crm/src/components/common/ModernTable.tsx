@@ -107,7 +107,8 @@ export const ModernTable = <T extends Record<string, unknown>>({
         sx={{ 
           background: 'transparent',
           borderRadius: tokens.spacing.radius.xxl,
-          overflow: 'hidden',
+          overflowX: 'auto',
+          overflowY: 'visible',
           '&::-webkit-scrollbar': {
             width: 8,
             height: 8,

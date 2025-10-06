@@ -1,215 +1,312 @@
 // frontend/admin-crm/src/components/sales/QuoteTemplatesTable.tsx
 
 import React from 'react';
-import { Box, Typography, Chip, Tooltip } from '@mui/material';
 import {
-  Description as QuoteIcon,
-  EventNote as EventIcon,
-  Inventory as ProductIcon,
-  AccessTime as DurationIcon,
-  FileCopy as DuplicateIcon,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Chip,
+  Typography,
+  Box,
+  CircularProgress,
+  Menu,
+  MenuItem,
+} from '@mui/material';
+import {
   Edit as EditIcon,
   Delete as DeleteIcon,
+  MoreVert as MoreIcon,
+  Visibility as ViewIcon,
+  ContentCopy as DuplicateIcon,
+  Assignment as TemplateIcon,
 } from '@mui/icons-material';
-import type { QuoteTemplateTableProps, QuoteTemplate } from '../../types/sales.types';
-import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
-import type { ModernTableColumn, ModernTableAction } from '../common';
+import { formatDistanceToNow } from 'date-fns';
+import type { QuoteTemplate } from '../../types/sales.types';
+import { tokens } from '../../design-system';
 
-export const QuoteTemplatesTable: React.FC<QuoteTemplateTableProps> = ({
+interface QuoteTemplatesTableProps {
+  templates: QuoteTemplate[];
+  isLoading: boolean;
+  onEdit: (template: QuoteTemplate) => void;
+  onDelete: (id: number) => void;
+  onView?: (template: QuoteTemplate) => void;
+  onDuplicate?: (template: QuoteTemplate) => void;
+  isDeleting: boolean;
+}
+
+export const QuoteTemplatesTable: React.FC<QuoteTemplatesTableProps> = ({
   templates,
   isLoading,
   onEdit,
   onDelete,
+  onView,
   onDuplicate,
+  isDeleting,
 }) => {
-  const getStatusChip = (isActive: boolean) => (
-    <Chip
-      label={isActive ? 'Active' : 'Inactive'}
-      size="small"
-      color={isActive ? 'success' : 'default'}
-      variant={isActive ? 'filled' : 'outlined'}
-    />
-  );
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [selectedTemplate, setSelectedTemplate] = React.useState<QuoteTemplate | null>(null);
 
-  const getEventTypeChip = (eventTypeName?: string) => {
-    if (!eventTypeName) {
-      return (
-        <Chip
-          label="Any Event Type"
-          size="small"
-          variant="outlined"
-          color="default"
-        />
-      );
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, template: QuoteTemplate) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+    setSelectedTemplate(template);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedTemplate(null);
+  };
+
+  const handleEdit = () => {
+    if (selectedTemplate) {
+      onEdit(selectedTemplate);
     }
-    
+    handleMenuClose();
+  };
+
+  const handleDelete = () => {
+    if (selectedTemplate) {
+      onDelete(selectedTemplate.id);
+    }
+    handleMenuClose();
+  };
+
+  const handleView = () => {
+    if (selectedTemplate && onView) {
+      onView(selectedTemplate);
+    }
+    handleMenuClose();
+  };
+
+  const handleDuplicate = () => {
+    if (selectedTemplate && onDuplicate) {
+      onDuplicate(selectedTemplate);
+    }
+    handleMenuClose();
+  };
+
+  const getStatusChip = (isActive: boolean) => {
     return (
       <Chip
-        icon={<EventIcon />}
-        label={eventTypeName}
+        label={isActive ? 'Active' : 'Inactive'}
+        color={isActive ? 'success' : 'default'}
         size="small"
-        color="primary"
-        variant="outlined"
+        variant="filled"
+        sx={{
+          fontWeight: 600,
+          fontSize: '0.75rem',
+          height: '24px',
+        }}
       />
     );
   };
 
-  const getValidityChip = (days: number) => (
-    <Chip
-      icon={<DurationIcon />}
-      label={`${days} days`}
-      size="small"
-      color="info"
-      variant="outlined"
-    />
-  );
-
-  const columns: ModernTableColumn[] = [
-    {
-      key: 'name',
-      label: 'Template Name',
-      sortable: true,
-      render: (_, row) => {
-        const template = row as unknown as QuoteTemplate;
-        return (
-        <Box display="flex" alignItems="center" gap={1}>
-          <QuoteIcon color="primary" />
-          <Box>
-            <Typography variant="subtitle2" fontWeight="medium">
-              {template.name}
-            </Typography>
-            {template.introduction && (
-              <Typography variant="caption" color="text.secondary">
-                {template.introduction.length > 60 
-                  ? `${template.introduction.substring(0, 60)}...` 
-                  : template.introduction}
-              </Typography>
-            )}
-          </Box>
-        </Box>
-        );
-      },
-    },
-    {
-      key: 'event_type',
-      label: 'Event Type',
-      render: (_, row) => {
-        const template = row as unknown as QuoteTemplate;
-        return getEventTypeChip(template.event_type_name);
-      },
-    },
-    {
-      key: 'products',
-      label: 'Products',
-      align: 'center',
-      render: (_, row) => {
-        const template = row as unknown as QuoteTemplate;
-        return (
-        <Tooltip title={`${template.products?.length || 0} products in this template`}>
-          <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
-            <ProductIcon fontSize="small" color="action" />
-            <Typography variant="body2" fontWeight="medium">
-              {template.products?.length || 0}
-            </Typography>
-          </Box>
-        </Tooltip>
-        );
-      },
-    },
-    {
-      key: 'validity',
-      label: 'Validity',
-      align: 'center',
-      render: (_, row) => {
-        const template = row as unknown as QuoteTemplate;
-        return getValidityChip(template.default_validity_days);
-      },
-    },
-    {
-      key: 'options',
-      label: 'Options',
-      render: (_, row) => {
-        const template = row as unknown as QuoteTemplate;
-        return (
-        <Chip
-          label={template.has_multiple_options ? 'Multiple Options' : 'Single Option'}
-          size="small"
-          color={template.has_multiple_options ? 'secondary' : 'default'}
-          variant="outlined"
-        />
-        );
-      },
-    },
-    {
-      key: 'is_active',
-      label: 'Status',
-      render: (_, row) => {
-        const template = row as unknown as QuoteTemplate;
-        return getStatusChip(template.is_active);
-      },
-    },
-    {
-      key: 'updated_at',
-      label: 'Last Updated',
-      render: (_, row) => {
-        const template = row as unknown as QuoteTemplate;
-        return (
-        <Box>
-          <Typography variant="body2" color="text.secondary">
-            {new Date(template.updated_at).toLocaleDateString()}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {new Date(template.updated_at).toLocaleTimeString()}
-          </Typography>
-        </Box>
-        );
-      },
-    },
-  ];
-
-  // Custom actions to include duplicate functionality
-  const actions: ModernTableAction[] = [
-    {
-      label: 'Edit Template',
-      icon: <EditIcon fontSize="small" />,
-      onClick: (row) => onEdit(row as unknown as QuoteTemplate),
-    },
-    ...(onDuplicate ? [{
-      label: 'Duplicate Template',
-      icon: <DuplicateIcon fontSize="small" />,
-      onClick: (row: Record<string, unknown>) => onDuplicate && onDuplicate(row as unknown as QuoteTemplate),
-    }] : []),
-    {
-      label: 'Delete Template',
-      icon: <DeleteIcon fontSize="small" />,
-      onClick: (row) => onDelete((row as { id: number }).id),
-      color: 'error' as const,
-    },
-  ];
-
   if (isLoading) {
-    return <ModernLoadingStates.ModernTableSkeleton />;
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (templates.length === 0) {
     return (
-      <ModernEmptyState
-        icon={QuoteIcon}
-        title="No quote templates found"
-        description="Create your first quote template to streamline your sales process"
-        tip={{ text: "Quote templates help you create consistent, professional proposals quickly", type: "info" }}
-      />
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="300px"
+        textAlign="center"
+        p={3}
+      >
+        <TemplateIcon
+          sx={{
+            fontSize: 48,
+            color: tokens.color.neutral[400],
+            mb: 2,
+          }}
+        />
+        <Typography variant="h6" color="text.secondary" gutterBottom>
+          No Quote Templates Found
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Create your first quote template to get started with standardized quotes.
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <ModernTable
-      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
-      data={templates as unknown as Record<string, unknown>[]}
-      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
-      onRowClick={(row) => onEdit(row as unknown as QuoteTemplate)}
-      sortBy="name"
-      sortOrder="asc"
-    />
+    <>
+      <TableContainer 
+        component={Paper} 
+        sx={{ 
+          boxShadow: 'none',
+          border: `1px solid ${tokens.color.borders.subtle}`,
+          borderRadius: tokens.spacing.radius.lg,
+        }}
+      >
+        <Table>
+          <TableHead>
+            <TableRow
+              sx={{
+                '& .MuiTableCell-head': {
+                  backgroundColor: tokens.color.neutral[50],
+                  borderBottom: `1px solid ${tokens.color.borders.subtle}`,
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  color: tokens.color.neutral[700],
+                },
+              }}
+            >
+              <TableCell>Template Name</TableCell>
+              <TableCell>Event Type</TableCell>
+              <TableCell>Products</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Validity Days</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {templates.map((template) => (
+              <TableRow
+                key={template.id}
+                hover
+                sx={{
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: tokens.color.neutral[50],
+                  },
+                  '& .MuiTableCell-root': {
+                    borderBottom: `1px solid ${tokens.color.borders.subtle}`,
+                  },
+                }}
+              >
+                <TableCell>
+                  <Box>
+                    <Typography variant="body2" fontWeight="600" color="text.primary">
+                      {template.name}
+                    </Typography>
+                    {template.introduction && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          display: 'block',
+                          mt: 0.5,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '200px',
+                        }}
+                      >
+                        {template.introduction}
+                      </Typography>
+                    )}
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    {template.event_type_name || 'Any Event Type'}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    {template.products?.length || 0} products
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  {getStatusChip(template.is_active)}
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    {template.default_validity_days} days
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDistanceToNow(new Date(template.created_at), { addSuffix: true })}
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <IconButton
+                    size="small"
+                    onClick={(event) => handleMenuOpen(event, template)}
+                    disabled={isDeleting}
+                  >
+                    <MoreIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            border: `1px solid ${tokens.color.borders.subtle}`,
+            borderRadius: tokens.spacing.radius.md,
+            boxShadow: tokens.shadow.elevation.lg,
+          },
+        }}
+      >
+        {onView && (
+          <MenuItem onClick={handleView} sx={{ fontSize: '0.875rem' }}>
+            <ViewIcon sx={{ mr: 1.5, fontSize: 16 }} />
+            View Template
+          </MenuItem>
+        )}
+        <MenuItem onClick={handleEdit} sx={{ fontSize: '0.875rem' }}>
+          <EditIcon sx={{ mr: 1.5, fontSize: 16 }} />
+          Edit Template
+        </MenuItem>
+        {onDuplicate && (
+          <MenuItem onClick={handleDuplicate} sx={{ fontSize: '0.875rem' }}>
+            <DuplicateIcon sx={{ mr: 1.5, fontSize: 16 }} />
+            Duplicate Template
+          </MenuItem>
+        )}
+        <MenuItem 
+          onClick={handleDelete} 
+          sx={{ 
+            fontSize: '0.875rem',
+            color: tokens.color.error[600],
+            '&:hover': {
+              backgroundColor: tokens.color.error[50],
+            },
+          }}
+        >
+          <DeleteIcon sx={{ mr: 1.5, fontSize: 16 }} />
+          Delete Template
+        </MenuItem>
+      </Menu>
+    </>
   );
 };

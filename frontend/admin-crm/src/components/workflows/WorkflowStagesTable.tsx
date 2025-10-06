@@ -18,7 +18,6 @@ import {
   Typography,
   Box,
   CircularProgress,
-  TableSortLabel,
   Skeleton,
 } from '@mui/material';
 import {
@@ -70,22 +69,6 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
     handleMenuClose();
   };
 
-  const getStageChip = (stage: string, stageDisplay: string) => {
-    const colors = {
-      LEAD: 'primary',
-      PRODUCTION: 'warning',
-      POST_PRODUCTION: 'success',
-    } as const;
-
-    return (
-      <Chip
-        label={stageDisplay}
-        size="small"
-        color={colors[stage as keyof typeof colors] || 'default'}
-        variant="outlined"
-      />
-    );
-  };
 
   const getAutomationIcon = (automationType: string) => {
     const icons = {
@@ -100,7 +83,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
     return icons[automationType as keyof typeof icons] || <TaskIcon fontSize="small" />;
   };
 
-  const getAutomationChip = (isAutomated: boolean, automationType?: string) => {
+  const getAutomationChip = (isAutomated: boolean, automationType?: string, stage?: WorkflowStage) => {
     if (!isAutomated) {
       return (
         <Chip
@@ -113,33 +96,37 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
       );
     }
 
+    let label = automationType || 'Automated';
+    
+    // Add template info for EMAIL and CONTRACT automation
+    if (automationType === 'EMAIL' && stage?.email_template_name) {
+      label = `Email: ${stage.email_template_name}`;
+    } else if (automationType === 'CONTRACT' && stage?.contract_template_name) {
+      label = `Contract: ${stage.contract_template_name}`;
+    }
+
+    const colors = {
+      EMAIL: 'primary',
+      TASK: 'secondary',
+      QUOTE: 'warning',
+      CONTRACT: 'success',
+      REMINDER: 'info',
+      NOTIFICATION: 'default',
+    } as const;
+
     return (
       <Chip
         icon={getAutomationIcon(automationType || '')}
-        label={automationType || 'Automated'}
+        label={label}
         size="small"
-        color="secondary"
+        color={colors[automationType as keyof typeof colors] || 'secondary'}
         variant="outlined"
+        sx={{ maxWidth: 250 }}
+        title={label} // Tooltip for long text
       />
     );
   };
 
-  const getTriggerTimeDisplay = (triggerTime: string) => {
-    const triggerMap: Record<string, string> = {
-      'ON_CREATION': 'Immediately',
-      'AFTER_1_HOUR': 'After 1 Hour',
-      'AFTER_3_HOURS': 'After 3 Hours',
-      'AFTER_6_HOURS': 'After 6 Hours',
-      'AFTER_12_HOURS': 'After 12 Hours',
-      'AFTER_1_DAY': 'After 1 Day',
-      'AFTER_2_DAYS': 'After 2 Days',
-      'AFTER_3_DAYS': 'After 3 Days',
-      'AFTER_1_WEEK': 'After 1 Week',
-      'AFTER_2_WEEKS': 'After 2 Weeks',
-    };
-
-    return triggerMap[triggerTime] || triggerTime;
-  };
 
   if (isLoading) {
     return (
@@ -177,19 +164,8 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
     );
   }
 
-  // Group stages by type
-  const stagesByType = stages.reduce((acc, stage) => {
-    if (!acc[stage.stage]) {
-      acc[stage.stage] = [];
-    }
-    acc[stage.stage].push(stage);
-    return acc;
-  }, {} as Record<string, typeof stages>);
-
-  // Sort stages within each type by order
-  Object.keys(stagesByType).forEach(type => {
-    stagesByType[type].sort((a, b) => a.order - b.order);
-  });
+  // Sort stages by order
+  const sortedStages = [...stages].sort((a, b) => a.order - b.order);
 
   return (
     <>
@@ -197,94 +173,56 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell width="30px"></TableCell>
-              <TableCell>
-                <TableSortLabel>
-                  Stage Name
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>Type</TableCell>
+              <TableCell width="60px">Order</TableCell>
+              <TableCell>Stage Name</TableCell>
               <TableCell>Automation</TableCell>
-              <TableCell>Trigger</TableCell>
-              <TableCell align="center">Order</TableCell>
               <TableCell>Description</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {Object.entries(stagesByType).map(([stageType, stageList]) => (
-              <React.Fragment key={stageType}>
-                {/* Stage Type Header */}
-                <TableRow>
-                  <TableCell colSpan={8} sx={{ bgcolor: 'grey.50', fontWeight: 'bold' }}>
-                    <Typography variant="subtitle2" color="primary">
-                      {stageType.replace('_', ' ')} STAGES
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-                
-                {/* Stages in this type */}
-                {stageList.map((stage) => (
-                  <TableRow 
-                    key={stage.id} 
-                    hover
-                    sx={{ cursor: 'pointer' }}
-                    onClick={() => onEdit(stage)}
+            {sortedStages.map((stage) => (
+              <TableRow 
+                key={stage.id} 
+                hover
+                sx={{ cursor: 'pointer' }}
+                onClick={() => onEdit(stage)}
+              >
+                <TableCell align="center">
+                  <Chip
+                    label={stage.order}
+                    size="small"
+                    variant="outlined"
+                    color="default"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" fontWeight="medium">
+                    {stage.name}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  {getAutomationChip(stage.is_automated, stage.automation_type, stage)}
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 300 }}>
+                    {stage.task_description || 'No description'}
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, stage as unknown as Record<string, unknown>)}
+                    disabled={isDeleting}
                   >
-                    <TableCell>
-                      {stage.order}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
-                        {stage.name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {getStageChip(stage.stage, stage.stage_display)}
-                    </TableCell>
-                    <TableCell>
-                      {getAutomationChip(stage.is_automated, stage.automation_type)}
-                    </TableCell>
-                    <TableCell>
-                      {stage.is_automated && stage.trigger_time ? (
-                        <Typography variant="caption" color="text.secondary">
-                          {getTriggerTimeDisplay(stage.trigger_time)}
-                        </Typography>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          —
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={stage.order}
-                        size="small"
-                        variant="outlined"
-                        color="default"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 200 }}>
-                        {stage.task_description || 'No description'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, stage as unknown as Record<string, unknown>)}
-                        disabled={isDeleting}
-                      >
-                        {isDeleting && selectedStage?.id === stage.id ? (
-                          <CircularProgress size={16} />
-                        ) : (
-                          <MoreVertIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </React.Fragment>
+                    {isDeleting && selectedStage?.id === stage.id ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <MoreVertIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </TableCell>
+              </TableRow>
             ))}
           </TableBody>
         </Table>

@@ -623,78 +623,82 @@ class ContactInfoStepConfiguration(BaseModel):
 
 
 class PaymentInfoStepConfiguration(BaseModel):
-    """Configuration for payment information step - UPDATED"""
+    """Configuration for payment information step
+
+    FULLY CONSOLIDATED: All payment business logic now in PaymentSettings (payments domain).
+    This model contains ONLY UI/UX flags and custom text.
+
+    REMOVED and moved to PaymentSettings:
+    - deposit_type, deposit_amount, balance_due_days (payment plan calculation)
+    - allow_refunds, refund_deadline_hours, refund_percentage, refund_policy_text (refund policy)
+    - allowed_gateways, default_gateway (payment gateway defaults)
+    """
     step = models.OneToOneField(
         BookingFlowStep,
         on_delete=models.CASCADE,
         related_name='payment_config'
     )
-    
-    # Payment options
-    accept_full_payment = models.BooleanField(default=True)
-    accept_deposit = models.BooleanField(default=True)
-    deposit_type = models.CharField(
-        max_length=20,
-        choices=[
-            ('PERCENTAGE', 'Percentage'),
-            ('FIXED', 'Fixed Amount'),
-        ],
-        default='PERCENTAGE'
+
+    # UI/UX FLAGS ONLY - what payment options to show
+    accept_full_payment = models.BooleanField(
+        default=True,
+        help_text="Show option to pay in full"
     )
-    deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('50.00'))
-    
-    # Payment methods
-    available_payment_methods = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="Available payment methods"
+    accept_deposit = models.BooleanField(
+        default=True,
+        help_text="Show option to pay deposit (amount from PaymentSettings.default_deposit_percentage)"
     )
-    
-    # Payment processing - FIXED
+    allow_payment_plans = models.BooleanField(
+        default=False,
+        help_text="Show payment plan option in UI"
+    )
+    allow_quote_request = models.BooleanField(
+        default=True,
+        help_text="Allow users to request a quote instead of paying immediately"
+    )
     require_immediate_payment = models.BooleanField(
         default=False,
         help_text="Process payment immediately during booking"
     )
-    
-    # FIX: Use string references to avoid import issues
-    allowed_gateways = models.ManyToManyField(
-        'payments.PaymentGateway',
+
+    # UI TEXT CUSTOMIZATION ONLY
+    payment_terms = models.TextField(
         blank=True,
-        related_name='payment_step_configs',
-        help_text="Payment gateways available for this step"
+        help_text="Payment terms text to display to clients"
     )
-    default_gateway = models.ForeignKey(
-        'payments.PaymentGateway',
-        on_delete=models.SET_NULL,
-        null=True,
+    quote_request_button_text = models.CharField(
+        max_length=100,
+        default="Request Quote",
         blank=True,
-        related_name='default_payment_steps',
-        help_text="Default payment gateway for this step"
+        help_text="Text displayed on the quote request button"
     )
-    
-    allow_payment_plans = models.BooleanField(default=False)
-    payment_terms = models.TextField(blank=True)
+    quote_request_description = models.TextField(
+        blank=True,
+        help_text="Description shown for the quote request option"
+    )
 
     def __str__(self):
         return f"Payment config for {self.step}"
-    
+
     def get_available_gateways(self):
-        """Get available payment gateways for this step"""
-        if self.allowed_gateways.exists():
-            return self.allowed_gateways.filter(is_active=True)
-        elif self.default_gateway and self.default_gateway.is_active:
-            return [self.default_gateway]
-        elif self.step.booking_flow.allowed_payment_gateways.exists():
-            return self.step.booking_flow.allowed_payment_gateways.filter(is_active=True)
-        elif self.step.booking_flow.default_payment_gateway and self.step.booking_flow.default_payment_gateway.is_active:
-            return [self.step.booking_flow.default_payment_gateway]
-        else:
-            # Fallback to all active gateways
-            try:
-                from core.domains.payments.models import PaymentGateway
-                return PaymentGateway.objects.filter(is_active=True)
-            except ImportError:
-                return []
+        """Get available payment gateways (now from global PaymentSettings)
+
+        CONSOLIDATED: Payment gateways are now globally configured in PaymentSettings.
+        This method now reads from the single source of truth.
+        """
+        try:
+            from core.domains.payments.models import PaymentSettings
+            settings = PaymentSettings.get_default_settings()
+
+            # Return global default gateways if configured
+            if settings.default_payment_gateways.exists():
+                return settings.default_payment_gateways.filter(is_active=True)
+
+            # Fallback to all active gateways if none configured
+            from core.domains.payments.models import PaymentGateway
+            return PaymentGateway.objects.filter(is_active=True)
+        except ImportError:
+            return []
 
 
 class ConfirmationStepConfiguration(BaseModel):
@@ -810,54 +814,107 @@ class BookingSession(BaseModel):
         self.save()
     
     def calculate_total_price(self):
-        """Calculate total price from booking data"""
+        """Calculate total price using centralized pricing service"""
+        logger.info("=== BOOKING SESSION PRICE CALCULATION (Centralized) ===")
+        
+        try:
+            from core.domains.sales.pricing_service import PricingCalculationService
+            
+            # Get event duration
+            event_duration = self._get_event_duration()
+            
+            # Use centralized pricing service
+            pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
+                self.booking_data, 
+                event_duration
+            )
+            
+            logger.info(f"Centralized pricing service result: ₱{pricing_breakdown.total_amount}")
+            return pricing_breakdown.total_amount
+            
+        except Exception as e:
+            logger.error(f"Error in centralized pricing calculation: {e}")
+            # Fallback to basic calculation if centralized service fails
+            logger.warning("Falling back to basic calculation")
+            return self._calculate_total_price_fallback()
+    
+    def _calculate_total_price_fallback(self):
+        """Fallback calculation method in case centralized service fails"""
+        logger.warning("Using fallback pricing calculation")
+        
+        # Simple fallback - just sum up base prices without excess hours
         total = Decimal('0.00')
         
-        # FIXED: Get packages and addons from root level first (single source of truth)
+        # Get packages and addons with single source of truth logic
         selected_packages = self.booking_data.get('selected_packages', [])
         selected_addons = self.booking_data.get('selected_addons', [])
         
-        # If not found at root, look in step data (but only take the first occurrence)
+        # Fallback to step data if not found at root
         if not selected_packages:
             for step_key, step_data in self.booking_data.items():
                 if isinstance(step_data, dict) and 'selected_packages' in step_data:
                     selected_packages = step_data['selected_packages']
-                    break  # CRITICAL: Only take the first occurrence to avoid duplication
+                    break
         
         if not selected_addons:
             for step_key, step_data in self.booking_data.items():
                 if isinstance(step_data, dict) and 'selected_addons' in step_data:
                     selected_addons = step_data['selected_addons']
-                    break  # CRITICAL: Only take the first occurrence to avoid duplication
+                    break
         
-        # Calculate packages total
+        # Sum package prices
         for package_data in selected_packages:
             try:
                 price = Decimal(str(package_data.get('price', 0)))
                 quantity = int(package_data.get('quantity', 1))
-                total += price * quantity
-                
-                # Handle excess hours for packages
-                if 'excess_hours' in package_data and 'excess_hour_price' in package_data:
-                    excess_hours = int(package_data['excess_hours'])
-                    excess_hour_price = Decimal(str(package_data['excess_hour_price']))
-                    excess_cost = excess_hour_price * excess_hours * quantity
-                    total += excess_cost
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Error calculating package price: {e}")
+                total += price * Decimal(str(quantity))
+            except (ValueError, TypeError):
                 continue
         
-        # Calculate addons total
+        # Sum addon prices
         for addon_data in selected_addons:
             try:
                 price = Decimal(str(addon_data.get('price', 0)))
                 quantity = int(addon_data.get('quantity', 1))
-                total += price * quantity
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Error calculating addon price: {e}")
+                total += price * Decimal(str(quantity))
+            except (ValueError, TypeError):
                 continue
         
+        logger.info(f"Fallback calculation result: ₱{total}")
         return total
+    
+    def _get_event_duration(self):
+        """Extract event duration from booking data"""
+        # Look for duration in various places in booking data
+        duration = None
+        
+        # Check root level first
+        if 'duration' in self.booking_data:
+            duration = self.booking_data.get('duration')
+        
+        # Check in step data
+        if not duration:
+            for step_key, step_data in self.booking_data.items():
+                if isinstance(step_data, dict):
+                    if 'duration' in step_data:
+                        duration = step_data['duration']
+                        break
+                    # Also check for end_time and start_time to calculate duration
+                    elif 'start_time' in step_data and 'end_time' in step_data:
+                        try:
+                            from datetime import datetime
+                            start_time = datetime.strptime(step_data['start_time'], '%H:%M')
+                            end_time = datetime.strptime(step_data['end_time'], '%H:%M')
+                            duration_seconds = (end_time - start_time).seconds
+                            duration = int(duration_seconds // 3600)  # Use integer division instead of float division
+                            break
+                        except (ValueError, TypeError):
+                            continue
+        
+        try:
+            return int(duration) if duration else None
+        except (ValueError, TypeError):
+            return None
 
 
 class BookingFlowAnalytics(BaseModel):

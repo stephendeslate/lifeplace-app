@@ -56,8 +56,11 @@ export const useCommunications = () => {
     return useMutation({
       mutationFn: (data: PreviewCommunicationData) => 
         communicationsApi.previewTemplate(data),
-      onError: (error: any) => {
-        const message = error.response?.data?.detail || 'Failed to preview template';
+      onError: (error: unknown) => {
+        // Error objects from axios have dynamic structure requiring any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorObj = error as any;
+        const message = errorObj.response?.data?.detail || 'Failed to preview template';
         showError('Preview Failed', message);
       },
     });
@@ -77,8 +80,11 @@ export const useCommunications = () => {
         // Invalidate records to show new communication
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
       },
-      onError: (error: any) => {
-        const message = error.response?.data?.detail || 'Failed to send message';
+      onError: (error: unknown) => {
+        // Error objects from axios have dynamic structure requiring any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorObj = error as any;
+        const message = errorObj.response?.data?.detail || 'Failed to send message';
         showError('Send Failed', message);
       },
     });
@@ -108,10 +114,12 @@ export const useCommunications = () => {
       mutationFn: (recordId: string) => communicationsApi.markAsRead(recordId),
       onSuccess: (data, recordId) => {
         // Update the specific record in cache
-        queryClient.setQueryData(['communication-records'], (oldData: any) => {
+        queryClient.setQueryData(['communication-records'], (oldData: unknown) => {
           if (!oldData) return oldData;
           
-          return oldData.map((record: any) => 
+          // Dynamic response data requires any for array methods
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return (oldData as any).map((record: Record<string, unknown>) => 
             record.id === recordId 
               ? { 
                   ...record, 
@@ -123,7 +131,7 @@ export const useCommunications = () => {
         });
 
         // Also update single record queries
-        queryClient.setQueryData(['communication-record', recordId], (oldData: any) => {
+        queryClient.setQueryData(['communication-record', recordId], (oldData: unknown) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
@@ -135,8 +143,11 @@ export const useCommunications = () => {
         // Invalidate to ensure fresh data
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
       },
-      onError: (error: any) => {
-        const message = error.response?.data?.error || 'Failed to mark message as read';
+      onError: (error: unknown) => {
+        // Error objects from axios have dynamic structure requiring any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorObj = error as any;
+        const message = errorObj.response?.data?.error || 'Failed to mark message as read';
         showError('Update Failed', message);
       },
     });
@@ -146,13 +157,15 @@ export const useCommunications = () => {
   const useMarkAsUnread = () => {
     return useMutation({
       mutationFn: (recordId: string) => communicationsApi.markAsUnread(recordId),
-      // @ts-ignore
+      // @ts-expect-error - queryClient callback parameters not properly typed
       onSuccess: (data, recordId) => {
         // Update the specific record in cache
-        queryClient.setQueryData(['communication-records'], (oldData: any) => {
+        queryClient.setQueryData(['communication-records'], (oldData: unknown) => {
           if (!oldData) return oldData;
           
-          return oldData.map((record: any) => 
+          // Dynamic response data requires any for array methods
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return (oldData as any).map((record: Record<string, unknown>) => 
             record.id === recordId 
               ? { 
                   ...record, 
@@ -164,7 +177,7 @@ export const useCommunications = () => {
         });
 
         // Also update single record queries
-        queryClient.setQueryData(['communication-record', recordId], (oldData: any) => {
+        queryClient.setQueryData(['communication-record', recordId], (oldData: unknown) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
@@ -176,8 +189,11 @@ export const useCommunications = () => {
         // Invalidate to ensure fresh data
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
       },
-      onError: (error: any) => {
-        const message = error.response?.data?.error || 'Failed to mark message as unread';
+      onError: (error: unknown) => {
+        // Error objects from axios have dynamic structure requiring any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorObj = error as any;
+        const message = errorObj.response?.data?.error || 'Failed to mark message as unread';
         showError('Update Failed', message);
       },
     });

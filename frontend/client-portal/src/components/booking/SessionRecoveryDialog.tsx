@@ -73,7 +73,7 @@ export const SessionRecoveryDialog: React.FC<SessionRecoveryDialogProps> = ({
       } else {
         return formatDistanceToNow(lastUpdate, { addSuffix: true });
       }
-    } catch (error) {
+    } catch (_error) {
       return 'Recently';
     }
   };

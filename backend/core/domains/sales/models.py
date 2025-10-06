@@ -42,29 +42,6 @@ class EventQuote(BaseModel):
     def __str__(self):
         return f"Quote {self.version} for Event {self.event.id}"
     
-    def calculate_totals(self):
-        """Calculate quote totals from line items and options"""
-        # Calculate from line items
-        line_items = self.line_items.all()
-        self.subtotal = sum(item.total for item in line_items)
-        
-        # Apply discount if present
-        if self.discount:
-            if self.discount.discount_type == 'PERCENTAGE':
-                self.discount_amount = self.subtotal * (self.discount.value / 100)
-            else:  # FIXED
-                self.discount_amount = min(self.discount.value, self.subtotal)
-        
-        # Calculate taxes
-        tax_rate = Decimal('0.1')  # Default tax rate
-        if hasattr(self, 'template') and self.template and self.template.default_tax_rate:
-            tax_rate = self.template.default_tax_rate.rate / 100
-        
-        self.tax_amount = (self.subtotal - self.discount_amount) * tax_rate
-        
-        # Calculate total
-        self.total_amount = self.subtotal - self.discount_amount + self.tax_amount
-        self.save(update_fields=['subtotal', 'discount_amount', 'tax_amount', 'total_amount'])
     
     def accept(self, signature_data=None):
         """Mark quote as accepted and create contract/invoice if needed"""
@@ -106,11 +83,14 @@ class EventQuote(BaseModel):
         )
     
     def send_to_client(self, user=None):
-        """Mark quote as sent"""
+        """Mark quote as sent, send email notification, and trigger workflow"""
+        import logging
+        logger = logging.getLogger(__name__)
+
         self.status = 'SENT'
         self.sent_at = timezone.now()
-        self.save()
-        
+        self.save()  # This triggers the signal which fires workflow
+
         # Record activity
         QuoteActivity.objects.create(
             quote=self,
@@ -118,7 +98,7 @@ class EventQuote(BaseModel):
             action_by=user,
             notes=f"Quote sent to client {self.event.client}"
         )
-        
+
         # Set a reminder for follow-up
         if self.valid_until:
             reminder_date = self.sent_at + timezone.timedelta(days=3)
@@ -128,6 +108,34 @@ class EventQuote(BaseModel):
                     scheduled_date=reminder_date,
                     message="Follow up on quote sent 3 days ago"
                 )
+
+        # Send email notification to client
+        try:
+            from core.domains.communications.services import CommunicationService
+
+            client = self.event.client
+            if client and client.email:
+                template_data = {
+                    'client_name': client.get_full_name(),
+                    'quote_id': self.id,
+                    'quote_version': self.version,
+                    'total_amount': str(self.total_amount),
+                    'valid_until': self.valid_until.strftime('%B %d, %Y') if self.valid_until else 'N/A',
+                    'event_name': self.event.name or f'Event #{self.event.id}',
+                    'event_date': self.event.start_date.strftime('%B %d, %Y') if self.event.start_date else 'TBD',
+                }
+
+                CommunicationService.send_system_email(
+                    recipient=client.email,
+                    template_name='quote_sent_to_client',
+                    context_data=template_data,
+                    subject=f'Your Quote for {template_data["event_name"]}'
+                )
+
+                logger.info(f"Sent quote notification email to {client.email} for quote {self.id}")
+        except Exception as e:
+            logger.error(f"Failed to send quote notification email: {e}")
+            # Don't fail the quote send operation if email fails
     
     def create_next_version(self):
         """Create a new version based on this quote"""
@@ -188,6 +196,7 @@ class EventQuote(BaseModel):
         return new_quote
 
 
+
 class QuoteTemplate(BaseModel):
     """Template for standardized quotes that can be applied to events"""
     name = models.CharField(max_length=255)
@@ -234,8 +243,16 @@ class QuoteTemplate(BaseModel):
                 product=template_product.product
             )
         
-        # Calculate totals
-        quote.calculate_totals()
+        # Calculate totals manually (legacy template quotes don't go through booking flow)
+        line_items = quote.line_items.all()
+        subtotal = sum(item.total for item in line_items)
+        tax_amount = sum(item.total * (item.tax_rate / 100) for item in line_items)
+        total_amount = subtotal + tax_amount
+
+        quote.subtotal = subtotal
+        quote.tax_amount = tax_amount
+        quote.total_amount = total_amount
+        quote.save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
         
         # Record activity
         QuoteActivity.objects.create(
@@ -272,15 +289,53 @@ class QuoteLineItem(BaseModel):
     total = models.DecimalField(max_digits=10, decimal_places=2)
     product = models.ForeignKey('products.ProductOption', on_delete=models.SET_NULL, null=True, blank=True)
     notes = models.TextField(blank=True)
+
+    # Enhanced pricing fields for DRY compliance (same as InvoiceLineItem)
+    item_type = models.CharField(
+        max_length=20,
+        choices=[('PACKAGE', 'Package'), ('ADDON', 'Add-on')],
+        default='PACKAGE',
+        help_text='Type of item to distinguish packages from addons'
+    )
+    base_unit_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Base price before excess hours (unit_price = base_unit_price + excess per unit)'
+    )
+    excess_hours = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Number of excess hours for this item'
+    )
+    excess_hour_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Price per excess hour'
+    )
+    excess_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text='Total excess cost (excess_hours * excess_hour_price)'
+    )
+
+    @property
+    def item_type_display(self):
+        """Get display name for item type"""
+        return dict(self._meta.get_field('item_type').choices).get(self.item_type, self.item_type)
     
     def save(self, *args, **kwargs):
         # Auto-calculate total if not set
         if not self.total:
             self.total = self.quantity * self.unit_price
         super().save(*args, **kwargs)
-        
-        # Update quote totals
-        self.quote.calculate_totals()
+
+        # Note: Quote totals are now directly assigned from PricingCalculationService
+        # No need to recalculate as it violates DRY principle
     
     def __str__(self):
         return f"{self.description} - Quote {self.quote.id}"

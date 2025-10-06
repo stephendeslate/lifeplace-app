@@ -91,3 +91,21 @@ export {
 // Existing components
 export { default as ModernLoadingStates } from './ModernLoadingStates';
 export { ModernEmptyState } from './ModernEmptyState';
+
+// Template Preview
+export { TemplatePreviewDialog } from './TemplatePreviewDialog';
+
+// Settings Components System
+export {
+  SettingsTable,
+  SettingsFormDialog,
+  SettingsPage,
+} from './settings';
+export type {
+  SettingsTableProps,
+  SettingsTableColumn,
+  SettingsTableFilter,
+  SettingsFormDialogProps,
+  SettingsPageProps,
+  SettingsPageConfig,
+} from './settings';

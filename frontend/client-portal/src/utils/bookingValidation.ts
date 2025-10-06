@@ -10,7 +10,7 @@ const emailSchema = z
 
 const phoneSchema = z
   .string()
-  .regex(/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number')
+  .regex(/^[+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number')
   .optional()
   .or(z.literal(''));
 

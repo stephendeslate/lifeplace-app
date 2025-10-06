@@ -140,18 +140,21 @@ class SecurityLogger:
         # Handle user information
         username = ''
         if user:
-            if hasattr(user, 'username'):
+            if hasattr(user, 'username') and user.username:
                 username = user.username
-            elif hasattr(user, 'email'):
+            elif hasattr(user, 'email') and user.email:
                 username = user.email
             elif isinstance(user, (int, str)):
                 try:
                     user_obj = User.objects.get(id=user)
-                    username = user_obj.username or user_obj.email
+                    username = user_obj.username or user_obj.email or f"user_{user_obj.id}"
                     user = user_obj
                 except (User.DoesNotExist, ValueError):
                     username = str(user)
                     user = None
+            else:
+                # Fallback for user objects without username or email
+                username = f"user_{getattr(user, 'id', 'unknown')}"
         
         # Prepare details
         if details is None:
@@ -163,6 +166,10 @@ class SecurityLogger:
         # Calculate risk score if not provided
         if risk_score == 0:
             risk_score = self._calculate_risk_score(event_type, severity, ip_address, user)
+        
+        # Ensure username is never None or empty to comply with database constraints
+        if not username:
+            username = 'anonymous'
         
         # Create security event record
         try:
@@ -212,7 +219,7 @@ class SecurityLogger:
     
     def log_login_success(self, request, user):
         """Log successful login"""
-        self.log_event(
+        return self.log_event(
             SecurityEventType.LOGIN_SUCCESS,
             f"User {user.email} logged in successfully",
             request=request,

@@ -9,7 +9,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .exceptions import (
     EmailAlreadyExists,
-    InvitationAlreadyAccepted,
     InvitationExpired,
     UserNotFound,
 )

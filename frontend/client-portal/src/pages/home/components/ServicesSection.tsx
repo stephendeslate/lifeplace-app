@@ -1,17 +1,19 @@
 // pages/home/components/ServicesSection.tsx
 
 import React from 'react';
-import { Box, Typography, Stack, Card, CardContent, alpha } from '@mui/material';
-import { 
-  Favorite, 
-  Groups, 
-  Spa, 
+import { Box, Typography, Stack, Card, CardContent, alpha, useTheme } from '@mui/material';
+import {
+  Favorite,
+  Groups,
+  Spa,
   Nature,
 } from '@mui/icons-material';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import type { ServiceInfo } from '../types/home.types';
 
 export const ServicesSection: React.FC = () => {
+  const theme = useTheme();
+
   const services: ServiceInfo[] = [
     {
       id: 'weddings',
@@ -23,7 +25,7 @@ export const ServicesSection: React.FC = () => {
       id: 'team-building',
       title: 'Team Building',
       description: 'Strengthen bonds and foster creativity through hands-on activities in a peaceful environment.',
-      icon: <Groups sx={{ fontSize: 48, color: '#2196F3' }} />,
+      icon: <Groups sx={{ fontSize: 48, color: theme.palette.info.light }} />,
     },
     {
       id: 'retreats',

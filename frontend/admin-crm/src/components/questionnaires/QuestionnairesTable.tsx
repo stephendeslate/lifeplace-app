@@ -11,9 +11,19 @@ import {
   Delete as DeleteIcon,
   FileCopy as DuplicateIcon,
 } from '@mui/icons-material';
-import type { QuestionnaireTableProps, Questionnaire } from '../../types/questionnaires.types';
+import type { Questionnaire } from '../../types/questionnaires.types';
 import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
 import type { ModernTableColumn, ModernTableAction } from '../common';
+
+interface QuestionnaireTableProps {
+  questionnaires: Questionnaire[];
+  isLoading: boolean;
+  onEdit: (questionnaire: Questionnaire) => void;
+  onPreview?: (questionnaire: Questionnaire) => void;
+  onDelete: (id: number) => void;
+  onDuplicate?: (questionnaire: Questionnaire) => void;
+  isDeleting?: boolean;
+}
 
 export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
   questionnaires,
@@ -22,6 +32,7 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
   onPreview,
   onDelete,
   onDuplicate,
+  isDeleting = false,
 }) => {
   const getStatusChip = (isActive: boolean) => (
     <Chip
@@ -194,6 +205,7 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
       onRowClick={(row) => onEdit(row as unknown as Questionnaire)}
       sortBy="sort_order"
       sortOrder="asc"
+      loading={isDeleting}
     />
   );
 };

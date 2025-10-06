@@ -2,24 +2,25 @@
 
 import React from 'react';
 import {
-  Card,
-  CardContent,
-  CardActions,
   Typography,
   Box,
   Chip,
   Stack,
   Button,
   Skeleton,
+  useTheme,
+  alpha,
 } from '@mui/material';
+import { GlassCard } from '../../design-system/components/GlassCard';
 import {
   CalendarToday as CalendarIcon,
   ArrowForward as ArrowIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import type { Event } from '../../types/events.types';
 import EventStatusBadge from './EventStatusBadge';
 import EventCountdown from './EventCountdown';
+import ContractStatusChip from './ContractStatusChip';
 
 interface EventCardProps {
   event: Event;
@@ -28,34 +29,49 @@ interface EventCardProps {
 }
 
 const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }) => {
+  const theme = useTheme();
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
+
   if (loading) {
     return (
-      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <CardContent sx={{ flexGrow: 1 }}>
+      <GlassCard
+        variant="light"
+        intensity="medium"
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          border: `1px solid ${alpha('#fff', 0.1)}`,
+        }}
+      >
+        <Box sx={{ p: 3, flexGrow: 1 }}>
           <Skeleton variant="text" width="60%" height={32} />
           <Skeleton variant="text" width="40%" height={24} sx={{ mb: 2 }} />
           <Skeleton variant="rectangular" height={60} sx={{ mb: 2 }} />
           <Skeleton variant="text" width="80%" />
           <Skeleton variant="text" width="80%" />
-        </CardContent>
-      </Card>
+        </Box>
+      </GlassCard>
     );
   }
 
-  const eventDate = event.start_date ? new Date(event.start_date) : null;
-  const endDate = event.end_date ? new Date(event.end_date) : null;
-
   return (
-    <Card 
+    <GlassCard 
+      variant="light"
+      intensity="medium"
+      hover={Boolean(onClick)}
       sx={{ 
         height: '100%', 
         display: 'flex', 
         flexDirection: 'column',
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.3s',
+        border: `1px solid ${alpha('#fff', 0.1)}`,
+        transition: 'all 0.3s ease',
         '&:hover': onClick ? {
           transform: 'translateY(-4px)',
-          boxShadow: 4,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+          backgroundColor: alpha('#fff', 0.08),
+          border: `1px solid ${alpha('#fff', 0.2)}`,
         } : {},
       }}
       onClick={onClick}
@@ -69,7 +85,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
       }}
       aria-label={`Event: ${event.name}`}
     >
-      <CardContent sx={{ flexGrow: 1 }}>
+      <Box sx={{ p: 3, flexGrow: 1 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
           <Box flex={1}>
             <Typography variant="h6" component="h3" gutterBottom>
@@ -98,18 +114,31 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
                   'default'
                 }
                 variant="outlined"
+                sx={{
+                  backgroundColor: alpha('#fff', 0.1),
+                  backdropFilter: 'blur(5px)',
+                  border: `1px solid ${alpha('#fff', 0.2)}`,
+                }}
               />
             )}
+            <ContractStatusChip
+              status={event.contract_status}
+              hasContracts={event.has_contracts}
+              contractsCount={event.contracts_count}
+              pendingSignatureRequired={event.pending_signature_required}
+              contractExpiryDays={event.contract_expiry_days}
+              size="small"
+            />
           </Stack>
 
           <Box>
-            {eventDate && (
+            {event.start_date && (
               <Stack direction="row" spacing={1} alignItems="center" mb={1}>
                 <CalendarIcon fontSize="small" color="action" />
                 <Typography variant="body2" color="text.secondary">
-                  {format(eventDate, 'MMM dd, yyyy')}
-                  {endDate && eventDate.getTime() !== endDate.getTime() && 
-                    ` - ${format(endDate, 'MMM dd, yyyy')}`
+                  {formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                  {event.end_date && formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
+                    ` - ${formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}`
                   }
                 </Typography>
               </Stack>
@@ -122,20 +151,33 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
             )}
           </Box>
         </Stack>
-      </CardContent>
+      </Box>
 
       {onClick && (
-        <CardActions sx={{ px: 2, pb: 2 }}>
+        <Box sx={{ px: 3, pb: 3 }}>
           <Button 
             size="small" 
+            variant="outlined"
             endIcon={<ArrowIcon />}
             aria-label={`View details for ${event.name}`}
+            sx={{
+              backgroundColor: alpha('#fff', 0.1),
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+              color: theme.palette.primary.main,
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.5)}`,
+                transform: 'scale(1.02)',
+              },
+              transition: 'all 0.2s ease',
+            }}
           >
             View Details
           </Button>
-        </CardActions>
+        </Box>
       )}
-    </Card>
+    </GlassCard>
   );
 };
 

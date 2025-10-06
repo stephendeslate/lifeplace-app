@@ -74,10 +74,21 @@ class Event(BaseModel):
         ('PARTIALLY_PAID', 'Partially Paid'),
         ('PAID', 'Paid'),
     ]
-    
+    COMPLETION_TYPE_CHOICES = [
+        ('payment', 'Payment Completion'),
+        ('quote', 'Quote Request'),
+    ]
+
     client = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='events')
     event_type = models.ForeignKey(EventType, on_delete=models.PROTECT, null=True, blank=True)
     status = models.CharField(max_length=20, choices=EVENT_STATUSES, default='LEAD')
+    completion_type = models.CharField(
+        max_length=20,
+        choices=COMPLETION_TYPE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="How this event was completed in the booking flow"
+    )
     name = models.CharField(max_length=255, blank=True)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField(null=True, blank=True)
@@ -108,20 +119,61 @@ class Event(BaseModel):
         ]
 
     def update_payment_status(self):
-        """Update payment status based on completed payments"""
-        payments = self.payments.filter(status='COMPLETED')
-        self.total_amount_paid = payments.aggregate(Sum('amount'))['amount__sum'] or 0
-        
-        # Handle case where total_amount_due is None
-        total_due = self.total_amount_due or 0
-        
-        if self.total_amount_paid >= total_due and total_due > 0:
+        """Update payment status based on invoices and completed payments"""
+        from decimal import Decimal
+
+        # Get all issued/paid invoices for this event
+        invoices = self.invoices.filter(status__in=['ISSUED', 'PAID'])
+
+        # Calculate total amount due from invoices (source of truth)
+        total_invoiced = invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+
+        # Calculate total amount paid from completed payments
+        completed_payments = self.payments.filter(status='COMPLETED')
+        total_paid = completed_payments.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+
+        # Update the total_amount_paid field (for backwards compatibility)
+        self.total_amount_paid = total_paid
+
+        # Update payment status based on invoice-payment relationship
+        if total_invoiced == 0:
+            # No invoices yet - treat as unpaid
+            self.payment_status = 'UNPAID'
+        elif total_paid >= total_invoiced:
+            # Fully paid - amount paid covers all invoiced amounts
             self.payment_status = 'PAID'
-        elif self.total_amount_paid > 0:
+        elif total_paid > 0:
+            # Partially paid - some payment received but not covering full invoice total
             self.payment_status = 'PARTIALLY_PAID'
         else:
+            # No payments received for issued invoices
             self.payment_status = 'UNPAID'
+
+        # Sync total_amount_due with invoice totals (for backwards compatibility)
+        if total_invoiced > 0:
+            self.total_amount_due = total_invoiced
+
         self.save()
+
+    @property
+    def computed_total_amount_due(self):
+        """
+        Computed property that calculates total amount due from invoices.
+        This is the new source of truth, replacing the manual total_amount_due field.
+        """
+        from decimal import Decimal
+        invoices = self.invoices.filter(status__in=['ISSUED', 'PAID'])
+        return invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+
+    @property
+    def computed_total_amount_paid(self):
+        """
+        Computed property that calculates total amount paid from completed payments.
+        This replaces reliance on the cached total_amount_paid field.
+        """
+        from decimal import Decimal
+        completed_payments = self.payments.filter(status='COMPLETED')
+        return completed_payments.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
 
     @property
     def notes(self):
@@ -187,6 +239,31 @@ class Event(BaseModel):
     def next_task(self):
         """Backward compatibility property"""
         return self.get_next_task()
+
+    def get_duration_hours(self):
+        """Get event duration in hours for pricing calculations"""
+        # Method 1: If duration is explicitly stored
+        if hasattr(self, 'duration_hours') and self.duration_hours:
+            return self.duration_hours
+
+        # Method 2: Calculate from start/end dates
+        if self.start_date and self.end_date:
+            delta = self.end_date - self.start_date
+            return int(delta.total_seconds() // 3600)
+
+        # Method 3: Try to get from original booking session
+        try:
+            from core.domains.bookingflow.models import BookingSession
+            latest_session = BookingSession.objects.filter(
+                booking_data__contains={'event_id': self.id}
+            ).order_by('-created_at').first()
+
+            if latest_session:
+                return latest_session._get_event_duration()
+        except Exception:
+            pass
+
+        return None
 
     def __str__(self):
         event_name = self.name or f"{self.event_type} for {self.client}"

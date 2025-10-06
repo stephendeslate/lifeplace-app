@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/events/EventDocuments.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -16,6 +16,8 @@ import {
   Alert,
   Tooltip,
   Chip,
+  Button,
+  Fab,
 } from '@mui/material';
 import {
   Download as DownloadIcon,
@@ -28,9 +30,12 @@ import {
   AudioFile as AudioIcon,
   Archive as ArchiveIcon,
   Folder as FolderIcon,
+  CloudUpload as UploadIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useEvents } from '../../hooks/useEvents';
+import FileUpload from './FileUpload';
 import type { EventFile } from '../../types/events.types';
 
 interface EventDocumentsProps {
@@ -38,13 +43,17 @@ interface EventDocumentsProps {
   showEmpty?: boolean;
 }
 
-const EventDocuments: React.FC<EventDocumentsProps> = ({ 
-  eventId, 
-  showEmpty = true 
+const EventDocuments: React.FC<EventDocumentsProps> = ({
+  eventId,
+  showEmpty = true
 }) => {
+  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const { useEventDocuments, useDownloadFile } = useEvents();
-  const { data: documents, isLoading, error } = useEventDocuments(eventId);
+  const { data: documents, isLoading, error, refetch } = useEventDocuments(eventId);
   const downloadMutation = useDownloadFile();
+  
+  // Upload dialog state
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   const getFileIcon = (fileType: string) => {
     const type = fileType.toLowerCase();
@@ -85,6 +94,14 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
     });
   };
 
+  const handleUploadSuccess = () => {
+    refetch(); // Refresh the documents list
+  };
+
+  const handleUploadClick = () => {
+    setUploadDialogOpen(true);
+  };
+
   if (isLoading) {
     return (
       <Box>
@@ -118,26 +135,54 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
 
   if (!documents || documents.length === 0) {
     return showEmpty ? (
-      <Paper 
-        sx={{ 
-          p: 3, 
-          textAlign: 'center',
-          backgroundColor: 'grey.50',
-        }}
-      >
-        <FolderIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          No documents available
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Event documents and files will appear here when they are shared with you.
-        </Typography>
-      </Paper>
+      <Box>
+        <Paper 
+          sx={{ 
+            p: 3, 
+            textAlign: 'center',
+            backgroundColor: 'grey.50',
+          }}
+        >
+          <FolderIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No documents available
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Event documents and files will appear here when they are shared with you.
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<UploadIcon />}
+            onClick={handleUploadClick}
+          >
+            Upload File
+          </Button>
+        </Paper>
+        
+        <FileUpload
+          eventId={eventId}
+          open={uploadDialogOpen}
+          onClose={() => setUploadDialogOpen(false)}
+          onSuccess={handleUploadSuccess}
+        />
+      </Box>
     ) : null;
   }
 
   return (
     <Box role="region" aria-label="Event documents">
+      {/* Upload Button */}
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+        <Button
+          variant="outlined"
+          startIcon={<UploadIcon />}
+          onClick={handleUploadClick}
+          size="small"
+        >
+          Upload File
+        </Button>
+      </Box>
+
       <List sx={{ width: '100%' }}>
         {documents.map((document) => (
           <ListItem
@@ -173,7 +218,7 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
                     {formatFileSize(document.size)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {format(new Date(document.created_at), 'MMM dd, yyyy')}
+                    {formatInTimeZone(document.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                   </Typography>
                   {document.file_type && (
                     <Chip 
@@ -208,6 +253,29 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
           {documents.length} document{documents.length !== 1 ? 's' : ''} available
         </Typography>
       </Box>
+
+      {/* Upload Dialog */}
+      <FileUpload
+        eventId={eventId}
+        open={uploadDialogOpen}
+        onClose={() => setUploadDialogOpen(false)}
+        onSuccess={handleUploadSuccess}
+      />
+      
+      {/* Floating Action Button for Mobile */}
+      <Fab
+        color="primary"
+        aria-label="upload file"
+        sx={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          display: { xs: 'flex', sm: 'none' }, // Only show on mobile
+        }}
+        onClick={handleUploadClick}
+      >
+        <AddIcon />
+      </Fab>
     </Box>
   );
 };

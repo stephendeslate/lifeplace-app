@@ -132,8 +132,47 @@ class EventQuoteSerializer(serializers.ModelSerializer):
         return {
             'id': obj.event.id,
             'name': obj.event.name,
-            'client_name': getattr(obj.event, 'client_name', 
+            'client_name': getattr(obj.event, 'client_name',
                 f"{obj.event.client.first_name} {obj.event.client.last_name}" if obj.event.client else "Unknown"),
+            'client_email': obj.event.client.email if obj.event.client else None,
             'start_date': obj.event.start_date,
+            'status': obj.event.status,
+        }
+
+
+class ClientEventQuoteSerializer(serializers.ModelSerializer):
+    """
+    Client-safe serializer for EventQuote that excludes admin-only fields
+    and includes only necessary information for client viewing
+    """
+    event_details = serializers.SerializerMethodField()
+    line_items = QuoteLineItemSerializer(many=True, read_only=True)
+    options = QuoteOptionSerializer(many=True, read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = EventQuote
+        fields = [
+            'id', 'event_details', 'version', 'status', 'status_display',
+            'subtotal', 'tax_amount', 'discount_amount', 'total_amount',
+            'valid_until', 'sent_at', 'accepted_at', 'rejected_at',
+            'rejection_reason', 'terms_and_conditions', 'client_message',
+            'notes',  # Expose notes for client to see their original message
+            'line_items', 'options', 'created_at'
+        ]
+        read_only_fields = [
+            'id', 'version', 'subtotal', 'tax_amount', 'discount_amount',
+            'total_amount', 'sent_at', 'accepted_at', 'rejected_at',
+            'notes', 'client_message',  # Make notes read-only
+            'created_at'
+        ]
+
+    def get_event_details(self, obj):
+        """Get basic event details for client viewing"""
+        return {
+            'id': obj.event.id,
+            'name': obj.event.name,
+            'start_date': obj.event.start_date,
+            'end_date': obj.event.end_date,
             'status': obj.event.status,
         }

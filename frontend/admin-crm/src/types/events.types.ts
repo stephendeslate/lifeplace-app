@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/types/events.types.ts
 
 import type { Client } from './clients.types';
+import type { WorkflowStage } from './workflows.types';
 
 export interface EventType {
   id: number;
@@ -20,15 +21,27 @@ export interface WorkflowProgress {
   stage_names: string[];
 }
 
+export interface EventTask {
+  id: number;
+  workflow_stage: number;
+  title: string;
+  status: 'PENDING' | 'COMPLETED' | 'ACTIVE';
+  completed_at: string | null;
+  assigned_to: number | null;
+  assigned_to_name: string | null;
+  priority: string | null;
+  due_date: string | null;
+}
+
 export interface Event {
   id: number;
   client: number | Client;
   client_name?: string;
   event_type: number | null;
   event_type_name?: string;
-  workflow_template: number | null;
+  workflow_template: number | null | { id: number };
   workflow_template_name?: string;
-  current_stage: number | null;
+  current_stage: number | null | WorkflowStage;
   current_stage_name?: string;
   status: EventStatus;
   name: string;
@@ -41,6 +54,25 @@ export interface Event {
   total_amount_due: string | null;
   total_amount_paid: string;
   workflow_progress?: number;
+  tasks?: EventTask[];
+  // New single source of truth pricing fields
+  current_total_amount?: string | null;
+  current_quote?: {
+    id: number;
+    version: number;
+    status: string;
+    total_amount: string;
+    created_at: string | null;
+    accepted_at: string | null;
+  } | null;
+  current_invoice?: {
+    id: number;
+    invoice_number: string;
+    status: string;
+    total_amount: string;
+    created_at: string | null;
+    due_date: string | null;
+  } | null;
   created_at: string;
   updated_at: string;
 }

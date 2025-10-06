@@ -20,7 +20,6 @@ import type {
   EventContractFilters,
   ContractSignatureFilters,
   ContractAmendmentFilters,
-  ContractSigningData,
 } from '../types/contracts.types';
 import type { PaginatedResponse } from '../types/common.types';
 
@@ -62,6 +61,44 @@ export const contractsApi = {
     return Array.isArray(data) ? data : data.results || [];
   },
 
+  previewTemplate: async (
+    id: number, 
+    contextData: Record<string, unknown> = {}, 
+    eventId?: number
+  ): Promise<{
+    template_id: number;
+    template_name: string;
+    rendered_content: string;
+    variables: string[];
+    sections: string[];
+    event_type: string | null;
+    context_used: Record<string, unknown>;
+    available_variables?: Record<string, string>;
+  }> => {
+    const requestData: {
+      context_data: Record<string, unknown>;
+      event_id?: number;
+    } = {
+      context_data: contextData
+    };
+    
+    if (eventId) {
+      requestData.event_id = eventId;
+    }
+    
+    const response = await api.post<{
+      template_id: number;
+      template_name: string;
+      rendered_content: string;
+      variables: string[];
+      sections: string[];
+      event_type: string | null;
+      context_used: Record<string, unknown>;
+      available_variables?: Record<string, string>;
+    }>(`/contracts/templates/${id}/preview/`, requestData);
+    return response.data;
+  },
+
   // Event Contracts
   getEventContracts: async (filters?: EventContractFilters): Promise<EventContract[]> => {
     const params = new URLSearchParams();
@@ -100,10 +137,6 @@ export const contractsApi = {
     return Array.isArray(data) ? data : data.results || [];
   },
 
-  signContract: async (id: number, data: ContractSigningData): Promise<EventContract> => {
-    const response = await api.post<EventContract>(`/contracts/contracts/${id}/sign/`, data);
-    return response.data;
-  },
 
   addSignature: async (id: number, data: CreateContractSignatureData): Promise<ContractSignature> => {
     const response = await api.post<ContractSignature>(`/contracts/contracts/${id}/add_signature/`, data);
@@ -275,6 +308,20 @@ export const contractsApi = {
 
   getContractsForClient: async (clientId: number) : Promise<EventContract[]> =>  {
     const response = await api.get<EventContract[]>(`/contracts/contracts/?client_id=${clientId}`);
+    return response.data;
+  },
+
+  // Download contract PDF
+  downloadContractPdf: async (contractId: number): Promise<Blob> => {
+    const response = await api.get(`/contracts/contracts/${contractId}/download_pdf/`, {
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  },
+
+  // Send contract to client (change status to SENT)
+  sendContract: async (contractId: number): Promise<EventContract> => {
+    const response = await api.post<EventContract>(`/contracts/contracts/${contractId}/send_contract/`);
     return response.data;
   },
 };

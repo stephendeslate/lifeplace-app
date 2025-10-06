@@ -85,11 +85,11 @@ export function formatBookingTime(date: string | Date): {
 export function getTimezoneNotice(context: 'booking' | 'confirmation' | 'general' = 'general'): string {
   switch (context) {
     case 'booking':
-      return `Select your preferred date and time. All events take place in the Philippines (${BUSINESS_TIMEZONE_DISPLAY} timezone).`;
+      return `Select your preferred date and time.`;
     case 'confirmation':
-      return `Your event is confirmed for the time shown in ${BUSINESS_TIMEZONE_FULL} (${BUSINESS_TIMEZONE_DISPLAY}).`;
+      return `Your event is confirmed for the time shown.`;
     default:
-      return `All times shown in ${BUSINESS_TIMEZONE_FULL} (${BUSINESS_TIMEZONE_DISPLAY})`;
+      return `All times shown in local timezone.`;
   }
 }
 

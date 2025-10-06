@@ -1,5 +1,5 @@
 # backend/core/domains/contracts/models.py
-from datetime import timezone
+from django.utils import timezone
 from core.utils.models import BaseModel
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -126,11 +126,31 @@ class EventContract(BaseModel):
     
     def update_status_based_on_signatures(self):
         """Update contract status based on signature completeness"""
+        was_signed = self.status == 'SIGNED'
+
         if self.is_fully_signed():
             if self.status != 'SIGNED':
                 self.status = 'SIGNED'
                 self.fully_signed_at = timezone.now()
                 self.save(update_fields=['status', 'fully_signed_at'])
+
+                # Trigger workflow progression when contract becomes fully signed
+                if not was_signed and hasattr(self.event, 'workflow_template') and self.event.workflow_template:
+                    from core.domains.workflows.engine import WorkflowEngine
+                    import logging
+                    logger = logging.getLogger(__name__)
+
+                    logger.info(f"Contract {self.id} fully signed - triggering workflow progression for event {self.event.id}")
+
+                    WorkflowEngine.progress_workflow(
+                        event=self.event,
+                        trigger_type='CONTRACT_SIGNED',
+                        data={
+                            'contract_id': self.id,
+                            'signed_at': str(self.fully_signed_at)
+                        }
+                    )
+
         elif self.signatures.exists() and self.status in ['SENT', 'DRAFT']:
             self.status = 'PARTIALLY_SIGNED'
             self.save(update_fields=['status'])
@@ -174,6 +194,38 @@ class ContractSignature(BaseModel):
         max_length=50, 
         blank=True,
         help_text="Method used to verify signer identity"
+    )
+    
+    # Enhanced security fields
+    device_fingerprint = models.TextField(
+        blank=True,
+        help_text="Device identification for security tracking"
+    )
+    signature_metadata = models.JSONField(
+        default=dict,
+        help_text="Additional metadata about the signing process"
+    )
+    signature_confidence_score = models.DecimalField(
+        max_digits=5, 
+        decimal_places=4, 
+        null=True, 
+        blank=True,
+        help_text="Confidence score for signature authenticity (0.0-1.0)"
+    )
+    
+    # Legal compliance fields
+    legal_disclosure_accepted = models.BooleanField(
+        default=False,
+        help_text="Whether signer accepted electronic signature disclosure"
+    )
+    electronic_consent_timestamp = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when electronic consent was given"
+    )
+    signature_intent_confirmed = models.BooleanField(
+        default=False,
+        help_text="Whether signer confirmed intent to sign electronically"
     )
     
     class Meta:

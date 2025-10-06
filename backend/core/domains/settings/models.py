@@ -242,6 +242,71 @@ class CurrencySettings(BaseModel):
         except cls.DoesNotExist:
             return cls.get_system_settings()
 
+    def format_amount(self, amount, currency=None):
+        """
+        Format an amount according to these currency settings
+        
+        Args:
+            amount: Decimal or float amount to format
+            currency: Currency code (defaults to default_currency)
+            
+        Returns:
+            Formatted currency string
+        """
+        from decimal import Decimal
+        
+        # Use provided currency or default
+        if not currency:
+            currency = self.default_currency
+        
+        # Currency symbols mapping
+        currency_symbols = {
+            'PHP': '₱',
+            'USD': '$',
+            'EUR': '€',
+            'SGD': 'S$',
+            'HKD': 'HK$',
+        }
+        
+        # Get symbol or use currency code
+        symbol = currency_symbols.get(currency, f'{currency} ')
+        
+        # Determine decimal places (PHP defaults to 0, others to 2)
+        if self.decimal_places is not None:
+            decimals = self.decimal_places
+        elif currency == 'PHP':
+            decimals = 0
+        else:
+            decimals = 2
+        
+        # Convert amount to Decimal for precision
+        if not isinstance(amount, Decimal):
+            amount = Decimal(str(amount))
+        
+        # Format the amount
+        if decimals == 0:
+            formatted_amount = f"{int(amount):,}"
+        else:
+            formatted_amount = f"{float(amount):,.{decimals}f}"
+        
+        # Apply thousands separator
+        if self.thousands_separator and self.thousands_separator != ',':
+            formatted_amount = formatted_amount.replace(',', self.thousands_separator)
+        
+        # Apply decimal separator
+        if decimals > 0 and self.decimal_separator and self.decimal_separator != '.':
+            formatted_amount = formatted_amount.replace('.', self.decimal_separator)
+        
+        # Apply display format
+        if self.display_format == 'symbol':
+            return f"{symbol}{formatted_amount}"
+        elif self.display_format == 'code':
+            return f"{currency} {formatted_amount}"
+        elif self.display_format == 'both':
+            return f"{symbol} {formatted_amount} {currency}"
+        else:
+            return f"{symbol}{formatted_amount}"
+    
     def to_dict(self):
         """Convert to dictionary for API responses"""
         return {

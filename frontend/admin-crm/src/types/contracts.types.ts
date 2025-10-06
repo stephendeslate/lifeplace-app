@@ -21,7 +21,14 @@ export interface ContractTemplate {
 
 export interface EventContract {
   id: number;
-  event: number;
+  event: number | {
+    id: number;
+    name: string;
+    client_name?: string;
+    start_date: string;
+    end_date: string | null;
+    status: string;
+  };
   event_details?: {
     id: number;
     name: string;
@@ -45,6 +52,7 @@ export interface EventContract {
   amendment_number: number;
   signature_count: number;
   is_fully_signed: boolean;
+  is_expired: boolean;
   contract_type: string;
   missing_signatures: string[];
   signature_progress: {
@@ -240,6 +248,8 @@ export interface CreateEventContractData {
   payment_schedule_reference?: string;
   currency?: string;
   context_data?: Record<string, unknown>;
+  requires_signature?: boolean;
+  signature_requirements?: string[];
 }
 
 export interface UpdateEventContractData {

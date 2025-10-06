@@ -40,12 +40,15 @@ import {
   AccessTime as ExpiredIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
 import { useQuotesForEvent } from '../../hooks/useSales';
 import type { Event } from '../../types/events.types';
 import type { EventQuote } from '../../types/sales.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { QuoteDetailsDialog } from '../sales/QuoteDetailsDialog';
+import { QuoteCreateDialog } from './QuoteCreateDialog';
+import QuoteEditDialog from '../sales/QuoteEditDialog';
+import QuoteSendConfirmDialog from '../sales/QuoteSendConfirmDialog';
 
 interface EventQuotesProps {
   event: Event;
@@ -68,32 +71,61 @@ const getStatusIcon = (status: string) => {
   }
 };
 
-const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
+
+const getStatusStyles = (status: string) => {
   switch (status) {
     case 'DRAFT':
-      return 'default';
+      return {
+        backgroundColor: '#e3f2fd',
+        color: '#1976d2',
+        '& .MuiChip-icon': { color: '#1976d2' }
+      };
     case 'SENT':
-      return 'info';
+      return {
+        backgroundColor: '#e1f5fe',
+        color: '#0277bd',
+        '& .MuiChip-icon': { color: '#0277bd' }
+      };
     case 'ACCEPTED':
-      return 'success';
+      return {
+        backgroundColor: '#e8f5e8',
+        color: '#2e7d32',
+        '& .MuiChip-icon': { color: '#2e7d32' }
+      };
     case 'REJECTED':
-      return 'error';
+      return {
+        backgroundColor: '#ffebee',
+        color: '#c62828',
+        '& .MuiChip-icon': { color: '#c62828' }
+      };
     case 'EXPIRED':
-      return 'warning';
+      return {
+        backgroundColor: '#fff3e0',
+        color: '#f57c00',
+        '& .MuiChip-icon': { color: '#f57c00' }
+      };
     default:
-      return 'default';
+      return {
+        backgroundColor: '#f3e5f5',
+        color: '#7b1fa2',
+        '& .MuiChip-icon': { color: '#7b1fa2' }
+      };
   }
 };
 
 export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
-  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<EventQuote | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
   const {
     data: quotes = [],
     isLoading,
+    refetch,
   } = useQuotesForEvent(event.id);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, quote: EventQuote) => {
@@ -107,22 +139,24 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   };
 
   const handleCreateQuote = () => {
-    navigate(`/sales/quotes/new?eventId=${event.id}`);
+    setCreateDialogOpen(true);
   };
 
   const handleViewQuote = (quote: EventQuote) => {
-    navigate(`/sales/quotes/${quote.id}`);
+    setSelectedQuote(quote);
+    setDetailDialogOpen(true);
   };
 
   const handleEditQuote = (quote: EventQuote) => {
-    navigate(`/sales/quotes/${quote.id}/edit`);
+    setSelectedQuote(quote);
+    setEditDialogOpen(true);
+    setAnchorEl(null); // Only close the menu, keep selectedQuote for dialog
   };
 
   const handleSendQuote = () => {
     if (selectedQuote) {
-      // This would trigger the send action through a mutation
-      console.log('Send quote:', selectedQuote.id);
-      handleMenuClose();
+      setSendDialogOpen(true);
+      setAnchorEl(null); // Only close the menu, keep selectedQuote for dialog
     }
   };
 
@@ -130,7 +164,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
     if (selectedQuote) {
       // This would trigger the duplicate action through a mutation
       console.log('Duplicate quote:', selectedQuote.id);
-      handleMenuClose();
+      setAnchorEl(null);
+      setSelectedQuote(null); // Clear quote since no dialog needs it
     }
   };
 
@@ -138,7 +173,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
     if (selectedQuote) {
       // This would trigger the delete action through a mutation
       console.log('Delete quote:', selectedQuote.id);
-      handleMenuClose();
+      setAnchorEl(null);
+      setSelectedQuote(null); // Clear quote since no dialog needs it
     }
   };
 
@@ -221,8 +257,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
                   <Chip
                     icon={getStatusIcon(quote.status)}
                     label={quote.status_display || quote.status}
-                    color={getStatusColor(quote.status)}
                     size="small"
+                    sx={getStatusStyles(quote.status)}
                   />
                 </TableCell>
                 <TableCell>
@@ -347,6 +383,77 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
             </Stack>
           </CardContent>
         </Card>
+      )}
+
+      {/* Quote Details Dialog */}
+      <QuoteDetailsDialog
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        quote={selectedQuote}
+      />
+
+      {/* Quote Create Dialog */}
+      <QuoteCreateDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        event={event}
+        onSuccess={() => {
+          refetch();
+        }}
+      />
+
+      {/* Quote Edit Dialog */}
+      {selectedQuote && (
+        <QuoteEditDialog
+          open={editDialogOpen}
+          onClose={() => {
+            setEditDialogOpen(false);
+            setSelectedQuote(null);
+          }}
+          quote={selectedQuote}
+          onSuccess={async () => {
+            const { data: updatedQuotes } = await refetch();
+            // Update selectedQuote with fresh data if detail dialog is open
+            if (detailDialogOpen && selectedQuote && updatedQuotes) {
+              const freshQuote = updatedQuotes.find(q => q.id === selectedQuote.id);
+              if (freshQuote) {
+                setSelectedQuote(freshQuote);
+              }
+            }
+            setEditDialogOpen(false);
+            // Don't clear selectedQuote if detail dialog is open
+            if (!detailDialogOpen) {
+              setSelectedQuote(null);
+            }
+          }}
+        />
+      )}
+
+      {/* Quote Send Confirmation Dialog */}
+      {selectedQuote && (
+        <QuoteSendConfirmDialog
+          open={sendDialogOpen}
+          onClose={() => {
+            setSendDialogOpen(false);
+            setSelectedQuote(null);
+          }}
+          quote={selectedQuote}
+          onSuccess={async () => {
+            const { data: updatedQuotes } = await refetch();
+            // Update selectedQuote with fresh data if detail dialog is open
+            if (detailDialogOpen && selectedQuote && updatedQuotes) {
+              const freshQuote = updatedQuotes.find(q => q.id === selectedQuote.id);
+              if (freshQuote) {
+                setSelectedQuote(freshQuote);
+              }
+            }
+            setSendDialogOpen(false);
+            // Don't clear selectedQuote if detail dialog is open
+            if (!detailDialogOpen) {
+              setSelectedQuote(null);
+            }
+          }}
+        />
       )}
     </Box>
   );

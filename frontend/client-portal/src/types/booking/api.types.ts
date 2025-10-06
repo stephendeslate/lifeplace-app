@@ -12,7 +12,7 @@ export interface BookingSessionCreate {
 
 export interface BookingSessionUpdate {
   step_id: number;
-  step_data: Record<string, any>;
+  step_data: Record<string, unknown>;
   mark_completed?: boolean;
 }
 
@@ -38,16 +38,17 @@ export interface BookingSessionUpdateResponse {
   session_id: string;
   current_step: BookingFlowStep | null;
   progress_percentage: number;
-  validation_errors: Record<string, any>;
+  validation_errors: Record<string, unknown>;
   total_price: string;
   updated_at: string;
 }
 
 export interface BookingCompletionResult {
   detail: string;
-  event: any; // Event from events domain
+  event: Record<string, unknown>; // Event from events domain
   session_id: string;
   user_created?: boolean;
+  completion_type?: 'payment' | 'quote';
 }
 
 export interface ValidationError {

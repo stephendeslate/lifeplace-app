@@ -1,0 +1,965 @@
+{
+  "summary": {
+    "files_checked": 70,
+    "imports_found": 74,
+    "broken_imports_count": 13,
+    "circular_dependencies_count": 0
+  },
+  "files": [
+    {
+      "file": "apis/messaging.api.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/ErrorBoundary.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/ConnectionStatus.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/ConversationThread.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/MessageComposer.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/MessageInterface.tsx",
+      "total_imports": 5,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "./ConversationThread",
+          "resolved_path": "components/messaging/ConversationThread.tsx",
+          "line": 39
+        },
+        {
+          "import_path": "./MessageComposer",
+          "resolved_path": "components/messaging/MessageComposer.tsx",
+          "line": 40
+        },
+        {
+          "import_path": "./ThreadList",
+          "resolved_path": "components/messaging/ThreadList.tsx",
+          "line": 41
+        },
+        {
+          "import_path": "./RealTimeIndicators",
+          "resolved_path": "components/messaging/RealTimeIndicators.tsx",
+          "line": 42
+        },
+        {
+          "import_path": "./ConnectionStatus",
+          "resolved_path": "components/messaging/ConnectionStatus.tsx",
+          "line": 43
+        }
+      ]
+    },
+    {
+      "file": "components/messaging/MessageRoutes.tsx",
+      "total_imports": 2,
+      "broken_imports": [
+        {
+          "import_path": "../../types/messaging.types",
+          "line": 15,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": [
+        {
+          "import_path": "../../providers/MessagingProvider",
+          "resolved_path": "providers/MessagingProvider.tsx",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "file": "components/messaging/RealTimeIndicators.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/ThreadList.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/__tests__/MessageInterface.test.tsx",
+      "total_imports": 3,
+      "broken_imports": [
+        {
+          "import_path": "../../../types/messaging.types",
+          "line": 22,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": [
+        {
+          "import_path": "../MessageInterface",
+          "resolved_path": "components/messaging/MessageInterface.tsx",
+          "line": 20
+        },
+        {
+          "import_path": "../MessageInterface",
+          "resolved_path": "components/messaging/MessageInterface.tsx",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "file": "components/messaging/__tests__/integration/MessageSystem.integration.simple.test.tsx",
+      "total_imports": 5,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../../MessageInterface",
+          "resolved_path": "components/messaging/MessageInterface.tsx",
+          "line": 17
+        },
+        {
+          "import_path": "../../performance/VirtualMessageList",
+          "resolved_path": "components/messaging/performance/VirtualMessageList.tsx",
+          "line": 18
+        },
+        {
+          "import_path": "../../realtime/TypingIndicator",
+          "resolved_path": "components/messaging/realtime/TypingIndicator.tsx",
+          "line": 19
+        },
+        {
+          "import_path": "../../realtime/ReadReceipts",
+          "resolved_path": "components/messaging/realtime/ReadReceipts.tsx",
+          "line": 20
+        },
+        {
+          "import_path": "../../realtime/PresenceIndicator",
+          "resolved_path": "components/messaging/realtime/PresenceIndicator.tsx",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "file": "components/messaging/__tests__/integration/MessageSystem.integration.test.tsx",
+      "total_imports": 1,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../../MessageInterface",
+          "resolved_path": "components/messaging/MessageInterface.tsx",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "file": "components/messaging/__tests__/performance/Performance.test.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/accessibility/MessagingA11y.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/animations/MessagingAnimations.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/index.ts",
+      "total_imports": 16,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "./MessageInterface",
+          "resolved_path": "components/messaging/MessageInterface.tsx",
+          "line": 7
+        },
+        {
+          "import_path": "./ConversationThread",
+          "resolved_path": "components/messaging/ConversationThread.tsx",
+          "line": 8
+        },
+        {
+          "import_path": "./MessageComposer",
+          "resolved_path": "components/messaging/MessageComposer.tsx",
+          "line": 9
+        },
+        {
+          "import_path": "./ThreadList",
+          "resolved_path": "components/messaging/ThreadList.tsx",
+          "line": 10
+        },
+        {
+          "import_path": "./RealTimeIndicators",
+          "resolved_path": "components/messaging/RealTimeIndicators.tsx",
+          "line": 11
+        },
+        {
+          "import_path": "./ConnectionStatus",
+          "resolved_path": "components/messaging/ConnectionStatus.tsx",
+          "line": 12
+        },
+        {
+          "import_path": "./MessageRoutes",
+          "resolved_path": "components/messaging/MessageRoutes.tsx",
+          "line": 13
+        },
+        {
+          "import_path": "./performance/VirtualMessageList",
+          "resolved_path": "components/messaging/performance/VirtualMessageList.tsx",
+          "line": 16
+        },
+        {
+          "import_path": "./realtime/TypingIndicator",
+          "resolved_path": "components/messaging/realtime/TypingIndicator.tsx",
+          "line": 19
+        },
+        {
+          "import_path": "./realtime/ReadReceipts",
+          "resolved_path": "components/messaging/realtime/ReadReceipts.tsx",
+          "line": 20
+        },
+        {
+          "import_path": "./realtime/PresenceIndicator",
+          "resolved_path": "components/messaging/realtime/PresenceIndicator.tsx",
+          "line": 21
+        },
+        {
+          "import_path": "./MessageInterface",
+          "resolved_path": "components/messaging/MessageInterface.tsx",
+          "line": 24
+        },
+        {
+          "import_path": "./performance/VirtualMessageList",
+          "resolved_path": "components/messaging/performance/VirtualMessageList.tsx",
+          "line": 25
+        },
+        {
+          "import_path": "./realtime/TypingIndicator",
+          "resolved_path": "components/messaging/realtime/TypingIndicator.tsx",
+          "line": 26
+        },
+        {
+          "import_path": "./realtime/ReadReceipts",
+          "resolved_path": "components/messaging/realtime/ReadReceipts.tsx",
+          "line": 27
+        },
+        {
+          "import_path": "./realtime/PresenceIndicator",
+          "resolved_path": "components/messaging/realtime/PresenceIndicator.tsx",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "file": "components/messaging/performance/VirtualMessageList.tsx",
+      "total_imports": 2,
+      "broken_imports": [
+        {
+          "import_path": "../../../types/messaging.types",
+          "line": 26,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": [
+        {
+          "import_path": "../realtime/ReadReceipts",
+          "resolved_path": "components/messaging/realtime/ReadReceipts.tsx",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "file": "components/messaging/realtime/PresenceIndicator.tsx",
+      "total_imports": 1,
+      "broken_imports": [
+        {
+          "import_path": "../../../types/messaging.types",
+          "line": 30,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/realtime/ReadReceipts.tsx",
+      "total_imports": 1,
+      "broken_imports": [
+        {
+          "import_path": "../../../types/messaging.types",
+          "line": 36,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/realtime/TypingIndicator.tsx",
+      "total_imports": 1,
+      "broken_imports": [
+        {
+          "import_path": "../../../types/messaging.types",
+          "line": 24,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": []
+    },
+    {
+      "file": "components/messaging/responsive/ResponsiveMessagingSystem.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "contexts/MessagingContext.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "contexts/WebSocketContext.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "design-system/components/AccessibleButton.tsx",
+      "total_imports": 1,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../tokens/base",
+          "resolved_path": "design-system/tokens/base.ts",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "file": "design-system/components/GlassCard.tsx",
+      "total_imports": 1,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../tokens/base",
+          "resolved_path": "design-system/tokens/base.ts",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "file": "design-system/examples/integration-example.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "design-system/index.ts",
+      "total_imports": 9,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "./components/AccessibleButton",
+          "resolved_path": "design-system/components/AccessibleButton.tsx",
+          "line": 4
+        },
+        {
+          "import_path": "./components/GlassCard",
+          "resolved_path": "design-system/components/GlassCard.tsx",
+          "line": 5
+        },
+        {
+          "import_path": "./themes/admin",
+          "resolved_path": "design-system/themes/admin.ts",
+          "line": 6
+        },
+        {
+          "import_path": "./themes/client",
+          "resolved_path": "design-system/themes/client.ts",
+          "line": 7
+        },
+        {
+          "import_path": "./tokens/base",
+          "resolved_path": "design-system/tokens/base.ts",
+          "line": 8
+        },
+        {
+          "import_path": "./utils/responsive",
+          "resolved_path": "design-system/utils/responsive.ts",
+          "line": 9
+        },
+        {
+          "import_path": "./tokens/base",
+          "resolved_path": "design-system/tokens/base.ts",
+          "line": 12
+        },
+        {
+          "import_path": "./tokens/base",
+          "resolved_path": "design-system/tokens/base.ts",
+          "line": 64
+        },
+        {
+          "import_path": "./components/AccessibleButton",
+          "resolved_path": "design-system/components/AccessibleButton.tsx",
+          "line": 66
+        }
+      ]
+    },
+    {
+      "file": "design-system/themes/admin.ts",
+      "total_imports": 1,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../tokens/base",
+          "resolved_path": "design-system/tokens/base.ts",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "design-system/themes/client.ts",
+      "total_imports": 1,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../tokens/base",
+          "resolved_path": "design-system/tokens/base.ts",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "design-system/tokens/base.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "design-system/utils/responsive.ts",
+      "total_imports": 1,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../tokens/base",
+          "resolved_path": "design-system/tokens/base.ts",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "file": "hooks/__tests__/useMessageOperations.test.ts",
+      "total_imports": 1,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../useMessageOperations",
+          "resolved_path": "hooks/useMessageOperations.ts",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "file": "hooks/index.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/messaging/index.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/messaging/types.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/messaging/useMessageDrafts.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/messaging/useMessagingQueries.ts",
+      "total_imports": 2,
+      "broken_imports": [
+        {
+          "import_path": "../../apis/messaging.api",
+          "line": 11,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": [
+        {
+          "import_path": "../../queries/messagingKeys",
+          "resolved_path": "queries/messagingKeys.ts",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "file": "hooks/messaging/useOptimisticUpdates.ts",
+      "total_imports": 2,
+      "broken_imports": [
+        {
+          "import_path": "../../apis/messaging.api",
+          "line": 10,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": [
+        {
+          "import_path": "../../queries/messagingKeys",
+          "resolved_path": "queries/messagingKeys.ts",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "file": "hooks/messaging/useRealtimeSync.ts",
+      "total_imports": 2,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../../contexts/WebSocketContext",
+          "resolved_path": "contexts/WebSocketContext.tsx",
+          "line": 6
+        },
+        {
+          "import_path": "../../queries/messagingKeys",
+          "resolved_path": "queries/messagingKeys.ts",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "file": "hooks/messaging/useUnifiedMessagingState.ts",
+      "total_imports": 1,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../../queries/messagingKeys",
+          "resolved_path": "queries/messagingKeys.ts",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "file": "hooks/useAuth.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/useIntersectionObserver.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/useMemoryManagement.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/useMessageOperations.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/useMessaging.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/useRealTimeUpdates.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "hooks/useThreadManagement.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "index.ts",
+      "total_imports": 5,
+      "broken_imports": [
+        {
+          "import_path": "./types/messaging.types",
+          "line": 32,
+          "reason": "File not found"
+        },
+        {
+          "import_path": "./types/messaging.types",
+          "line": 32,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": [
+        {
+          "import_path": "./hooks/messaging",
+          "resolved_path": "hooks/messaging/index.ts",
+          "line": 20
+        },
+        {
+          "import_path": "./hooks/messaging",
+          "resolved_path": "hooks/messaging/index.ts",
+          "line": 20
+        },
+        {
+          "import_path": "./queries/messagingKeys",
+          "resolved_path": "queries/messagingKeys.ts",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "file": "providers/MessagingProvider.tsx",
+      "total_imports": 5,
+      "broken_imports": [
+        {
+          "import_path": "../services/websocket.context",
+          "line": 15,
+          "reason": "File not found"
+        },
+        {
+          "import_path": "../types/messaging.types",
+          "line": 18,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": [
+        {
+          "import_path": "../hooks/useAuth",
+          "resolved_path": "hooks/useAuth.ts",
+          "line": 14
+        },
+        {
+          "import_path": "../hooks/useMessaging",
+          "resolved_path": "hooks/useMessaging.ts",
+          "line": 16
+        },
+        {
+          "import_path": "../hooks/useRealTimeUpdates",
+          "resolved_path": "hooks/useRealTimeUpdates.ts",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "file": "queries/messagingKeys.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "services/__tests__/messaging.websocket.test.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "services/index.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "services/messaging.queries.ts",
+      "total_imports": 1,
+      "broken_imports": [
+        {
+          "import_path": "../apis/messaging.api",
+          "line": 25,
+          "reason": "File not found"
+        }
+      ],
+      "valid_imports": []
+    },
+    {
+      "file": "services/websocket.context.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "services/websocket.service.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "test-utils/__tests__/comprehensive-validation.test.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "test-utils/__tests__/setup.test.ts",
+      "total_imports": 2,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "../test-providers",
+          "resolved_path": "test-utils/test-providers.tsx",
+          "line": 7
+        },
+        {
+          "import_path": "../test-helpers",
+          "resolved_path": "test-utils/test-helpers.ts",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "file": "test-utils/accessibility-helpers.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "test-utils/index.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "test-utils/integration-helpers.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "test-utils/performance-helpers.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "test-utils/test-helpers.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "test-utils/test-providers.tsx",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "test-utils/types.d.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "types/index.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "types/messaging.types.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "utils/index.ts",
+      "total_imports": 2,
+      "broken_imports": [],
+      "valid_imports": [
+        {
+          "import_path": "./query-keys",
+          "resolved_path": "utils/query-keys.ts",
+          "line": 2
+        },
+        {
+          "import_path": "./query-keys",
+          "resolved_path": "utils/query-keys.ts",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "utils/query-keys.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "vitest.config.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    },
+    {
+      "file": "vitest.d.ts",
+      "total_imports": 0,
+      "broken_imports": [],
+      "valid_imports": []
+    }
+  ],
+  "broken_imports": [
+    {
+      "file": "components/messaging/MessageRoutes.tsx",
+      "import_path": "../../types/messaging.types",
+      "line": 15,
+      "reason": "File not found"
+    },
+    {
+      "file": "components/messaging/__tests__/MessageInterface.test.tsx",
+      "import_path": "../../../types/messaging.types",
+      "line": 22,
+      "reason": "File not found"
+    },
+    {
+      "file": "components/messaging/performance/VirtualMessageList.tsx",
+      "import_path": "../../../types/messaging.types",
+      "line": 26,
+      "reason": "File not found"
+    },
+    {
+      "file": "components/messaging/realtime/PresenceIndicator.tsx",
+      "import_path": "../../../types/messaging.types",
+      "line": 30,
+      "reason": "File not found"
+    },
+    {
+      "file": "components/messaging/realtime/ReadReceipts.tsx",
+      "import_path": "../../../types/messaging.types",
+      "line": 36,
+      "reason": "File not found"
+    },
+    {
+      "file": "components/messaging/realtime/TypingIndicator.tsx",
+      "import_path": "../../../types/messaging.types",
+      "line": 24,
+      "reason": "File not found"
+    },
+    {
+      "file": "hooks/messaging/useMessagingQueries.ts",
+      "import_path": "../../apis/messaging.api",
+      "line": 11,
+      "reason": "File not found"
+    },
+    {
+      "file": "hooks/messaging/useOptimisticUpdates.ts",
+      "import_path": "../../apis/messaging.api",
+      "line": 10,
+      "reason": "File not found"
+    },
+    {
+      "file": "index.ts",
+      "import_path": "./types/messaging.types",
+      "line": 32,
+      "reason": "File not found"
+    },
+    {
+      "file": "index.ts",
+      "import_path": "./types/messaging.types",
+      "line": 32,
+      "reason": "File not found"
+    },
+    {
+      "file": "providers/MessagingProvider.tsx",
+      "import_path": "../services/websocket.context",
+      "line": 15,
+      "reason": "File not found"
+    },
+    {
+      "file": "providers/MessagingProvider.tsx",
+      "import_path": "../types/messaging.types",
+      "line": 18,
+      "reason": "File not found"
+    },
+    {
+      "file": "services/messaging.queries.ts",
+      "import_path": "../apis/messaging.api",
+      "line": 25,
+      "reason": "File not found"
+    }
+  ],
+  "circular_dependencies": [],
+  "core_messaging_analysis": {
+    "files_found": [
+      "providers/MessagingProvider.tsx",
+      "services/websocket.service.ts",
+      "services/websocket.context.tsx",
+      "hooks/messaging/index.ts",
+      "hooks/index.ts",
+      "services/index.ts",
+      "index.ts"
+    ],
+    "files_missing": [],
+    "import_issues": [
+      {
+        "file": "providers/MessagingProvider.tsx",
+        "broken_imports": [
+          {
+            "import_path": "../services/websocket.context",
+            "line": 15,
+            "reason": "File not found"
+          },
+          {
+            "import_path": "../types/messaging.types",
+            "line": 18,
+            "reason": "File not found"
+          }
+        ]
+      },
+      {
+        "file": "index.ts",
+        "broken_imports": [
+          {
+            "import_path": "./types/messaging.types",
+            "line": 32,
+            "reason": "File not found"
+          },
+          {
+            "import_path": "./types/messaging.types",
+            "line": 32,
+            "reason": "File not found"
+          }
+        ]
+      }
+    ],
+    "healthy_files": [
+      "services/websocket.service.ts",
+      "services/websocket.context.tsx",
+      "hooks/messaging/index.ts",
+      "hooks/index.ts",
+      "services/index.ts"
+    ]
+  }
+}

@@ -16,6 +16,7 @@ import type {
   Invoice,
   PaymentNotification,
   Refund,
+  PaymentSettings,
   CreatePaymentData,
   UpdatePaymentData,
   CreatePaymentPlanData,
@@ -24,6 +25,7 @@ import type {
   CreateInvoiceData,
   UpdateInvoiceData,
   CreateRefundData,
+  UpdatePaymentSettingsData,
   PaymentFilters,
   PaymentPlanFilters,
   PaymentInstallmentFilters,
@@ -305,7 +307,26 @@ export const paymentsApi = {
   },
 
   getInvoicesForClient: async (clientId: number) : Promise<Invoice[]> =>  {
-    const response = await api.get<Invoice[]>(`/payments/invoices/?client_id=${clientId}`);
+    const response = await api.get<PaginatedResponse<Invoice>>(`/payments/invoices/?client_id=${clientId}`);
+    return response.data.results;
+  },
+
+  /**
+   * Payment Settings
+   */
+  getPaymentSettings: async (): Promise<PaymentSettings> => {
+    const response = await api.get<PaymentSettings[]>('/payments/settings/');
+    // Backend returns an array, get the first (and only) settings object
+    return response.data[0];
+  },
+
+  updatePaymentSettings: async (id: number, data: UpdatePaymentSettingsData): Promise<PaymentSettings> => {
+    const response = await api.put<PaymentSettings>(`/payments/settings/${id}/`, data);
+    return response.data;
+  },
+
+  partialUpdatePaymentSettings: async (id: number, data: UpdatePaymentSettingsData): Promise<PaymentSettings> => {
+    const response = await api.patch<PaymentSettings>(`/payments/settings/${id}/`, data);
     return response.data;
   },
 };

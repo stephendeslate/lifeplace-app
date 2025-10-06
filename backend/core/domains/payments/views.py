@@ -18,6 +18,7 @@ from .models import (
     PaymentMethod,
     PaymentNotification,
     PaymentPlan,
+    PaymentSettings,
     PaymentTransaction,
     Refund,
     TaxRate,
@@ -27,13 +28,16 @@ from .serializers import (
     InvoiceSerializer,
     InvoiceTaxSerializer,
     PaymentGatewaySerializer,
+    PaymentGatewayAdminSerializer,
     PaymentInstallmentSerializer,
     PaymentMethodSerializer,
     PaymentNotificationSerializer,
     PaymentPlanSerializer,
     PaymentSerializer,
+    PaymentSettingsSerializer,
     PaymentTransactionSerializer,
     RefundSerializer,
+    SetupIntentResponseSerializer,
     TaxRateSerializer,
 )
 from .services import (
@@ -47,6 +51,65 @@ from .services import (
 from .cache_service import payments_cache_service
 
 logger = logging.getLogger(__name__)
+
+
+class PaymentSettingsViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing payment settings (singleton pattern)"""
+    queryset = PaymentSettings.objects.all()
+    serializer_class = PaymentSettingsSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        """Always return the single settings instance"""
+        # Ensure settings exist
+        settings = PaymentSettings.get_default_settings()
+        return PaymentSettings.objects.filter(id=settings.id)
+
+    def list(self, request, *args, **kwargs):
+        """Return the single settings instance as a list with one item"""
+        settings = PaymentSettings.get_default_settings()
+        serializer = self.get_serializer(settings)
+        return Response([serializer.data])
+
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve the settings instance, creating it if it doesn't exist"""
+        settings = PaymentSettings.get_default_settings()
+        serializer = self.get_serializer(settings)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        """Prevent creation of new instances"""
+        return Response(
+            {"detail": "Payment settings already exists. Use PUT/PATCH to update."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def update(self, request, *args, **kwargs):
+        """Update the singleton settings instance"""
+        settings = PaymentSettings.get_default_settings()
+        serializer = self.get_serializer(settings, data=request.data, partial=False)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        logger.info(f"Payment settings updated by user {request.user.id}")
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        """Partially update the singleton settings instance"""
+        settings = PaymentSettings.get_default_settings()
+        serializer = self.get_serializer(settings, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        logger.info(f"Payment settings partially updated by user {request.user.id}")
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        """Prevent deletion of settings"""
+        return Response(
+            {"detail": "Payment settings cannot be deleted."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class PaymentViewSet(viewsets.ModelViewSet):
@@ -205,6 +268,12 @@ class PaymentGatewayViewSet(viewsets.ModelViewSet):
     queryset = PaymentGateway.objects.all()
     serializer_class = PaymentGatewaySerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_serializer_class(self):
+        """Use admin-safe serializer for read operations to show masked sensitive fields"""
+        if self.action in ['list', 'retrieve']:
+            return PaymentGatewayAdminSerializer
+        return PaymentGatewaySerializer
     
     def get_queryset(self):
         queryset = super().get_queryset().order_by('name')
@@ -411,6 +480,41 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.data)
 
+    @action(detail=False, methods=['post'])
+    def setup_intent(self, request):
+        """Create a setup intent for saving payment methods"""
+        try:
+            # Get gateway code from request, default to stripe
+            gateway_code = request.data.get('gateway_code', 'stripe')
+
+            # Create setup intent using the gateway service
+            setup_intent_result = PaymentGatewayService.create_setup_intent(
+                request.user, gateway_code
+            )
+
+            if setup_intent_result.get('success'):
+                # Serialize and return the response
+                response_data = SetupIntentResponseSerializer({
+                    'setup_intent_id': setup_intent_result.get('setup_intent_id'),
+                    'client_secret': setup_intent_result.get('client_secret'),
+                    'status': setup_intent_result.get('status'),
+                    'gateway': setup_intent_result.get('gateway')
+                }).data
+
+                return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"detail": "Failed to create setup intent"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except Exception as e:
+            logger.error(f"Error creating setup intent: {str(e)}")
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class PaymentPlanViewSet(viewsets.ModelViewSet):
     """ViewSet for managing payment plans"""
@@ -545,8 +649,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset().order_by('-created_at')
         
         # Apply filters
-        event_id = self.request.query_params.get('event', None)
-        client_id = self.request.query_params.get('client', None)
+        event_id = self.request.query_params.get('event_id', None)
+        client_id = self.request.query_params.get('client_id', None)
         status_filter = self.request.query_params.get('status', None)
         search = self.request.query_params.get('search', None)
         
@@ -562,13 +666,13 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             cached_invoices = payments_cache_service.get_cached_invoices_by_client(int(client_id))
             if cached_invoices is not None:
                 logger.debug(f"Invoices for client {client_id} served from cache")
-                return queryset.filter(client_id=client_id)
+                return queryset.filter(client=client_id)
         
         if event_id:
             queryset = queryset.filter(event_id=event_id)
         
         if client_id:
-            queryset = queryset.filter(client_id=client_id)
+            queryset = queryset.filter(client=client_id)
         
         if status_filter:
             queryset = queryset.filter(status=status_filter)

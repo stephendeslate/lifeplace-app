@@ -37,6 +37,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Person as PersonIcon,
+  Launch as LaunchIcon,
   EventNote as EventNoteIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
@@ -47,10 +48,13 @@ import {
   Description as ContractIcon,
   Receipt as QuoteIcon,
   Payment as InvoiceIcon,
+  AccountBalance as PaymentIcon,
   Assignment as QuestionnaireIcon,
   Folder as FilesIcon,
   Note as NoteIcon,
   Schedule as ScheduleIcon,
+  ContentCopy as ContentCopyIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
@@ -58,6 +62,7 @@ import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuestionnaires } from '../../hooks/useQuestionnaires';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { useWorkflowStages } from '../../hooks/useWorkflows';
 import { formatCurrency } from '../../utils/currency';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
@@ -68,21 +73,19 @@ import { EventQuestionnaires } from '../../components/events/EventQuestionnaires
 import { EventQuotes } from '../../components/events/EventQuotes';
 import { EventContracts } from '../../components/events/EventContracts';
 import { EventInvoices } from '../../components/events/EventInvoices';
+import { EventPaymentPlans } from '../../components/events/EventPaymentPlans';
 import { EventFiles } from '../../components/events/EventFiles';
 import { NotesList } from '../../components/notes';
-import { 
+import { MessageInterface } from '../../components/messaging/MessageInterface';
+import {
   ActivityTimeline,
-  QuickActions,
   FinancialSummary,
-  EntityNavigation,
   WorkflowVisualization,
-  createEventActions,
-  createClientReference,
   calculateEventFinancials,
   type ActivityItem,
-  type QuickAction,
 } from '../../components/common';
 import { EVENT_STATUSES, type UpdateEventData } from '../../types/events.types';
+import type { WorkflowStage as WorkflowStageType } from '../../types/workflows.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -121,6 +124,7 @@ export const EventProfile: React.FC = () => {
   
   const { useClient } = useClients();
   const { useRecords } = useCommunications();
+  const { useStagesForTemplate } = useWorkflowStages();
   
   // Get user's currency settings for proper formatting
   const { settings: currencySettings } = useCurrencySettings();
@@ -152,7 +156,15 @@ export const EventProfile: React.FC = () => {
   }, [event?.client]);
   
   const { data: client } = useClient(clientId);
-  
+
+  // Get workflow stages for the event's template
+  const templateId = typeof event?.workflow_template === 'object' && event.workflow_template !== null
+    ? event.workflow_template.id
+    : typeof event?.workflow_template === 'number'
+    ? event.workflow_template
+    : 0;
+  const { data: workflowStages = [], isLoading: isLoadingStages } = useStagesForTemplate(templateId);
+
   // Get counts for tabs
   const { data: communications = [] } = useRecords({ client_id: clientId });
   const communicationsCount = communications.length;
@@ -167,44 +179,59 @@ export const EventProfile: React.FC = () => {
     ).length;
   }, [allQuestionnaires, event?.event_type]);
 
+  // Transform workflow stages data for visualization component
+  const transformedWorkflowStages = useMemo(() => {
+    if (!workflowStages.length || !event) return [];
+
+    // Get current stage info
+    const currentStageObj = typeof event.current_stage === 'object' && event.current_stage !== null
+      ? event.current_stage
+      : null;
+
+    return workflowStages.map((stage: WorkflowStageType) => {
+      // Determine stage status based on current stage and event progress
+      let status: 'completed' | 'active' | 'pending' | 'blocked' | 'skipped' = 'pending';
+
+      if (currentStageObj && stage.id === currentStageObj.id) {
+        status = 'active';
+      } else if (currentStageObj && stage.order < currentStageObj.order) {
+        status = 'completed';
+      }
+
+      // Find associated tasks for this stage
+      const stageTasks = event.tasks?.filter(task => task.workflow_stage === stage.id) || [];
+
+      return {
+        id: stage.id,
+        name: stage.name,
+        description: stage.task_description,
+        status,
+        order: stage.order,
+        tasks: stageTasks.map(task => ({
+          id: task.id,
+          name: task.title,
+          status: task.status === 'COMPLETED' ? 'completed' as const :
+                  task.status === 'PENDING' ? 'pending' as const : 'active' as const,
+          completedAt: task.completed_at || undefined,
+          assignedTo: task.assigned_to_name ? {
+            id: task.assigned_to || 0,
+            name: task.assigned_to_name,
+          } : undefined,
+          priority: task.priority?.toLowerCase() as 'low' | 'medium' | 'high' | 'urgent' | undefined,
+          dueDate: task.due_date || undefined,
+        })),
+        completedAt: status === 'completed' ? stage.updated_at : undefined,
+        dueDate: stageTasks.find(t => t.due_date)?.due_date || undefined,
+      };
+    }).sort((a, b) => a.order - b.order);
+  }, [workflowStages, event]);
+
   // Enhanced components data
   const financialMetrics = useMemo(() => {
     return event ? calculateEventFinancials(event) : [];
   }, [event]);
 
-  const quickActions: QuickAction[] = useMemo(() => {
-    if (!event) return [];
-    return createEventActions(event.id, (actionType: string, eventId: number) => {
-      // Handle quick actions
-      console.log('Quick action:', actionType, 'for event:', eventId);
-      // In a real implementation, these would trigger actual actions
-      switch (actionType) {
-        case 'send-contract':
-          // Open contract sending dialog
-          break;
-        case 'generate-invoice':
-          // Open invoice generation dialog
-          break;
-        case 'send-message':
-          // Open message dialog
-          break;
-        case 'create-quote':
-          // Navigate to quote creation
-          break;
-        case 'add-note':
-          setTabValue(7); // Switch to notes tab
-          break;
-      }
-    });
-  }, [event]);
 
-  const relatedEntities = useMemo(() => {
-    const entities = [];
-    if (client) {
-      entities.push(createClientReference(client));
-    }
-    return entities;
-  }, [client]);
 
   const activityItems: ActivityItem[] = useMemo(() => {
     const items: ActivityItem[] = [];
@@ -313,11 +340,52 @@ export const EventProfile: React.FC = () => {
       case 'CONFIRMED':
         return 'success';
       case 'COMPLETED':
-        return 'default';
+        return 'primary';
       case 'CANCELLED':
         return 'error';
       default:
-        return 'default';
+        return 'secondary';
+    }
+  };
+
+  const getPaymentStatusColor = (paymentStatus: string) => {
+    switch (paymentStatus) {
+      case 'PAID':
+        return {
+          colorScheme: 'success',
+          background: tokens.color.success[500],
+          textColor: tokens.color.success[700]
+        };
+      case 'PARTIAL':
+        return {
+          colorScheme: 'warning', 
+          background: tokens.color.warning[500],
+          textColor: tokens.color.warning[700]
+        };
+      case 'PENDING':
+        return {
+          colorScheme: 'info',
+          background: tokens.color.info[500], 
+          textColor: tokens.color.info[700]
+        };
+      case 'OVERDUE':
+        return {
+          colorScheme: 'error',
+          background: tokens.color.error[500],
+          textColor: tokens.color.error[700]
+        };
+      case 'REFUNDED':
+        return {
+          colorScheme: 'secondary',
+          background: tokens.color.secondary[500],
+          textColor: tokens.color.secondary[700]
+        };
+      default:
+        return {
+          colorScheme: 'primary',
+          background: tokens.color.primary[500],
+          textColor: tokens.color.primary[700]
+        };
     }
   };
 
@@ -555,15 +623,114 @@ export const EventProfile: React.FC = () => {
                   }}
                 />
 
-                {/* Enhanced More Actions Menu */}
+                {/* Direct Action Buttons */}
+                <Button
+                  variant="outlined"
+                  startIcon={<EditIcon />}
+                  onClick={handleEditEvent}
+                  sx={{
+                    borderColor: tokens.color.primary[500],
+                    color: tokens.color.primary[600],
+                    borderRadius: tokens.spacing.radius.lg,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 2,
+                    py: 1,
+                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+                    '&:hover': {
+                      borderColor: tokens.color.primary[600],
+                      background: `${tokens.color.primary[500]}10`,
+                      transform: 'translateY(-1px)',
+                    }
+                  }}
+                >
+                  Edit
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  startIcon={<ContractIcon />}
+                  onClick={() => {
+                    // Open contract sending dialog
+                  }}
+                  sx={{
+                    borderColor: tokens.color.neutral[300],
+                    color: tokens.color.neutral[700],
+                    borderRadius: tokens.spacing.radius.lg,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    px: 2,
+                    py: 1,
+                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+                    '&:hover': {
+                      borderColor: tokens.color.primary[500],
+                      background: `${tokens.color.primary[500]}05`,
+                      transform: 'translateY(-1px)',
+                    }
+                  }}
+                >
+                  Contract
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  startIcon={<InvoiceIcon />}
+                  onClick={() => {
+                    // Open invoice generation dialog
+                  }}
+                  sx={{
+                    borderColor: tokens.color.neutral[300],
+                    color: tokens.color.neutral[700],
+                    borderRadius: tokens.spacing.radius.lg,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    px: 2,
+                    py: 1,
+                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+                    '&:hover': {
+                      borderColor: tokens.color.success[500],
+                      background: `${tokens.color.success[500]}05`,
+                      transform: 'translateY(-1px)',
+                    }
+                  }}
+                >
+                  Invoice
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  startIcon={<EmailIcon />}
+                  onClick={() => {
+                    // Open message dialog
+                  }}
+                  sx={{
+                    borderColor: tokens.color.neutral[300],
+                    color: tokens.color.neutral[700],
+                    borderRadius: tokens.spacing.radius.lg,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    px: 2,
+                    py: 1,
+                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
+                    '&:hover': {
+                      borderColor: tokens.color.info[500],
+                      background: `${tokens.color.info[500]}05`,
+                      transform: 'translateY(-1px)',
+                    }
+                  }}
+                >
+                  Message
+                </Button>
+
+                {/* More Actions Menu for additional options */}
                 <Tooltip title="More actions">
                   <IconButton 
                     onClick={handleMenuClick}
                     sx={{
                       ...glassPresets.light,
                       borderRadius: tokens.spacing.radius.full,
-                      width: 48,
-                      height: 48,
+                      width: 40,
+                      height: 40,
                       color: tokens.color.neutral[600],
                       transition: createTransition(['transform', 'background'], 'fast'),
                       
@@ -591,25 +758,6 @@ export const EventProfile: React.FC = () => {
                   }}
                 >
                   <MenuItem 
-                    onClick={handleEditEvent}
-                    sx={{
-                      borderRadius: tokens.spacing.radius.lg,
-                      mx: 1,
-                      transition: createTransition('background', 'fast'),
-                      '&:hover': {
-                        background: `${tokens.color.primary[500]}10`,
-                      }
-                    }}
-                  >
-                    <ListItemIcon>
-                      <EditIcon sx={{ color: tokens.color.primary[600] }} />
-                    </ListItemIcon>
-                    <ListItemText>Edit Event</ListItemText>
-                  </MenuItem>
-                  
-                  <Divider sx={{ mx: 1, borderColor: `${tokens.color.borders.glass}` }} />
-                  
-                  <MenuItem 
                     onClick={handleDeleteEvent} 
                     sx={{ 
                       color: tokens.color.error[600],
@@ -625,6 +773,42 @@ export const EventProfile: React.FC = () => {
                       <DeleteIcon sx={{ color: tokens.color.error[600] }} />
                     </ListItemIcon>
                     <ListItemText>Delete Event</ListItemText>
+                  </MenuItem>
+                  
+                  <Divider sx={{ mx: 1, borderColor: `${tokens.color.borders.glass}` }} />
+                  
+                  <MenuItem 
+                    onClick={() => navigate(`/events/${event.id}/duplicate`)}
+                    sx={{
+                      borderRadius: tokens.spacing.radius.lg,
+                      mx: 1,
+                      transition: createTransition('background', 'fast'),
+                      '&:hover': {
+                        background: `${tokens.color.primary[500]}10`,
+                      }
+                    }}
+                  >
+                    <ListItemIcon>
+                      <ContentCopyIcon sx={{ color: tokens.color.primary[600] }} />
+                    </ListItemIcon>
+                    <ListItemText>Duplicate Event</ListItemText>
+                  </MenuItem>
+
+                  <MenuItem 
+                    onClick={() => navigate(`/events/${event.id}/export`)}
+                    sx={{
+                      borderRadius: tokens.spacing.radius.lg,
+                      mx: 1,
+                      transition: createTransition('background', 'fast'),
+                      '&:hover': {
+                        background: `${tokens.color.primary[500]}10`,
+                      }
+                    }}
+                  >
+                    <ListItemIcon>
+                      <DownloadIcon sx={{ color: tokens.color.primary[600] }} />
+                    </ListItemIcon>
+                    <ListItemText>Export Details</ListItemText>
                   </MenuItem>
                 </Menu>
               </Box>
@@ -723,15 +907,56 @@ export const EventProfile: React.FC = () => {
                       >
                         Client Name
                       </Typography>
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          color: tokens.color.neutral[800],
-                          fontWeight: 600
-                        }}
+                      <Tooltip 
+                        title={clientId ? "Click to view client profile" : ""} 
+                        placement="top"
+                        arrow
                       >
-                        {event.client_name || 'Unknown Client'}
-                      </Typography>
+                        <Box
+                          onClick={() => clientId && navigate(`/clients/${clientId}`)}
+                          sx={{
+                            cursor: clientId ? 'pointer' : 'default',
+                            borderRadius: tokens.spacing.radius.lg,
+                            p: 1,
+                            mx: -1,
+                            transition: createTransition(['background', 'transform'], 'fast'),
+                            '&:hover': clientId ? {
+                              background: `${tokens.color.primary[500]}08`,
+                              transform: 'translateX(2px)',
+                            } : {}
+                          }}
+                        >
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ 
+                              color: clientId ? tokens.color.primary[600] : tokens.color.neutral[800],
+                              fontWeight: 600,
+                              textDecoration: clientId ? 'none' : 'none',
+                              '&:hover': clientId ? {
+                                textDecoration: 'underline',
+                              } : {}
+                            }}
+                          >
+                            {event.client_name || 'Unknown Client'}
+                          </Typography>
+                          {clientId && (
+                            <LaunchIcon 
+                              sx={{ 
+                                fontSize: '0.9rem', 
+                                color: tokens.color.primary[600],
+                                opacity: 0.7,
+                                transition: createTransition(['opacity', 'transform'], 'fast'),
+                                '.MuiBox-root:hover &': {
+                                  opacity: 1,
+                                  transform: 'scale(1.1)',
+                                }
+                              }} 
+                            />
+                          )}
+                        </Stack>
+                        </Box>
+                      </Tooltip>
                     </Box>
                   
                   {client?.email && (
@@ -1019,7 +1244,7 @@ export const EventProfile: React.FC = () => {
                               fontWeight: 700
                             }}
                           >
-                            {formatEventPrice(event.total_price)}
+                            {formatEventPrice(event.current_total_amount || event.total_price)}
                           </Typography>
                         </Box>
                       </Box>
@@ -1072,47 +1297,50 @@ export const EventProfile: React.FC = () => {
                       </Box>
                     )}
 
-                    {event.payment_status && (
-                      <Box
-                        sx={{
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.xl,
-                          p: 2.5,
-                          border: `1px solid ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}20`,
-                          background: `linear-gradient(135deg, ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}05 0%, transparent 100%)`,
-                        }}
-                      >
-                        <Typography 
-                          variant="subtitle2" 
-                          sx={{ 
-                            color: tokens.color.neutral[500],
-                            fontWeight: 600,
-                            mb: 1.5,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            fontSize: '0.75rem'
-                          }}
-                        >
-                          Payment Status
-                        </Typography>
-                        <Chip 
-                          label={event.payment_status.replace('_', ' ')} 
+                    {event.payment_status && (() => {
+                      const paymentColors = getPaymentStatusColor(event.payment_status);
+                      return (
+                        <Box
                           sx={{
                             ...glassPresets.light,
-                            background: `linear-gradient(135deg, ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}20 0%, ${event.payment_status === 'PAID' ? tokens.color.success[600] : tokens.color.warning[600]}15 100%)`,
-                            color: event.payment_status === 'PAID' ? tokens.color.success[700] : tokens.color.warning[700],
-                            border: `1px solid ${event.payment_status === 'PAID' ? tokens.color.success[500] : tokens.color.warning[500]}30`,
-                            fontWeight: 600,
+                            borderRadius: tokens.spacing.radius.xl,
+                            p: 2.5,
+                            border: `1px solid ${paymentColors.background}20`,
+                            background: `linear-gradient(135deg, ${paymentColors.background}05 0%, transparent 100%)`,
                           }}
-                        />
-                      </Box>
-                    )}
+                        >
+                          <Typography 
+                            variant="subtitle2" 
+                            sx={{ 
+                              color: tokens.color.neutral[500],
+                              fontWeight: 600,
+                              mb: 1.5,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            Payment Status
+                          </Typography>
+                          <Chip 
+                            label={event.payment_status.replace('_', ' ')} 
+                            sx={{
+                              ...glassPresets.light,
+                              background: `linear-gradient(135deg, ${paymentColors.background}20 0%, ${paymentColors.background}15 100%)`,
+                              color: paymentColors.textColor,
+                              border: `1px solid ${paymentColors.background}30`,
+                              fontWeight: 600,
+                            }}
+                          />
+                        </Box>
+                      );
+                    })()}
                   </Stack>
                 </Stack>
               </CardContent>
             </Card>
 
-            {/* Enhanced Quick Actions */}
+            {/* Enhanced Workflow Visualization */}
             <Card
               elevation={0}
               sx={{
@@ -1130,7 +1358,7 @@ export const EventProfile: React.FC = () => {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.primary[500]}04 100%)`,
+                  background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.info[500]}04 100%)`,
                   borderRadius: tokens.spacing.radius.xxl,
                   pointerEvents: 'none',
                 },
@@ -1142,12 +1370,58 @@ export const EventProfile: React.FC = () => {
               }}
             >
               <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-                <QuickActions 
-                  actions={quickActions}
-                  compactMode={true}
-                />
+                <Stack spacing={3}>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Box
+                      sx={{
+                        ...glassPresets.medium,
+                        borderRadius: tokens.spacing.radius.full,
+                        p: 1.5,
+                        background: `linear-gradient(135deg, ${tokens.color.warning[500]}15 0%, ${tokens.color.warning[600]}10 100%)`,
+                        border: `1px solid ${tokens.color.warning[500]}30`,
+                      }}
+                    >
+                      <ScheduleIcon sx={{ fontSize: 20, color: tokens.color.warning[600] }} />
+                    </Box>
+                    <Typography 
+                      variant="h6" 
+                      fontWeight="bold"
+                      sx={{ color: tokens.color.neutral[800] }}
+                    >
+                      Workflow Progress
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mt: 2 }}>
+                    {isLoadingStages ? (
+                      <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+                        <CircularProgress size={24} />
+                        <Typography variant="body2" sx={{ ml: 2, color: tokens.color.neutral[600] }}>
+                          Loading workflow stages...
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <WorkflowVisualization
+                        workflowName={event.workflow_template_name}
+                        stages={transformedWorkflowStages}
+                        currentStage={
+                          typeof event.current_stage === 'object' && event.current_stage !== null
+                            ? event.current_stage.id
+                            : typeof event.current_stage === 'number'
+                            ? event.current_stage
+                            : undefined
+                        }
+                        overallProgress={event.workflow_progress}
+                        layout="vertical"
+                        showTasks={true}
+                        showProgress={true}
+                      />
+                    )}
+                  </Box>
+                </Stack>
               </CardContent>
             </Card>
+
           </Box>
         </Fade>
 
@@ -1185,198 +1459,39 @@ export const EventProfile: React.FC = () => {
               </Box>
             </Box>
 
-            {/* Enhanced Related Entities & Workflow */}
-            <Box 
-              sx={{ 
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' },
-                gap: 3,
-              }}
-            >
-              {/* Enhanced Related Entities */}
-              <Box
-                sx={{
-                  ...glassPresets.light,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  border: `1px solid ${tokens.color.borders.glass}`,
-                  position: 'relative',
-                  overflow: 'visible',
-                  
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.secondary[500]}04 100%)`,
-                    borderRadius: tokens.spacing.radius.xxl,
-                    pointerEvents: 'none',
-                  }
-                }}
-              >
-                <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-                  <EntityNavigation
-                    title="Related"
-                    entities={relatedEntities}
-                    layout="compact"
-                    maxVisible={5}
-                  />
-                </Box>
-              </Box>
 
-              {/* Enhanced Workflow Visualization */}
-              <Box
-                sx={{
-                  ...glassPresets.light,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  border: `1px solid ${tokens.color.borders.glass}`,
-                  position: 'relative',
-                  overflow: 'visible',
-                  
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.info[500]}04 100%)`,
-                    borderRadius: tokens.spacing.radius.xxl,
-                    pointerEvents: 'none',
-                  }
-                }}
-              >
-                <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-                  <WorkflowVisualization
-                    workflowName={event.workflow_template_name}
-                    stages={[]} // This would come from actual workflow data
-                    currentStage={event.current_stage || undefined}
-                    overallProgress={event.workflow_progress}
-                    layout="horizontal"
-                    showTasks={false}
-                    showProgress={true}
-                  />
-                </Box>
-              </Box>
-            </Box>
-
-            {/* Enhanced Activity Timeline */}
-            <Box
-              sx={{
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.xxl,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                position: 'relative',
-                overflow: 'visible',
-                
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `linear-gradient(135deg, ${tokens.color.info[500]}04 0%, ${tokens.color.success[500]}04 100%)`,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  pointerEvents: 'none',
-                }
-              }}
-            >
-              <Box sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-                <ActivityTimeline
-                  activities={activityItems}
-                  maxHeight="400px"
-                  showFilters={true}
-                  onRefresh={() => {
-                    // Refresh all data
-                    refetch();
-                  }}
-                />
-              </Box>
-            </Box>
           </Stack>
         </Grow>
 
         {/* Enhanced Modern Tabs */}
         <Fade in={isLoaded} timeout={1200}>
-          <Card
-            elevation={0}
-            sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.xxl,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              position: 'relative',
-              overflow: 'visible',
-              
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: `linear-gradient(135deg, ${tokens.color.neutral[500]}02 0%, ${tokens.color.primary[500]}02 100%)`,
-                borderRadius: tokens.spacing.radius.xxl,
-                pointerEvents: 'none',
-              }
-            }}
-          >
-            <Box 
-              sx={{ 
-                borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                position: 'relative',
-                zIndex: 1,
-                background: glassPresets.light.background,
-                borderRadius: `${tokens.spacing.radius.xxl} ${tokens.spacing.radius.xxl} 0 0`,
-              }}
-            >
-              <Tabs 
-                value={tabValue} 
+          <Card>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs
+                value={tabValue}
                 onChange={(_, newValue) => setTabValue(newValue)}
                 variant="scrollable"
                 scrollButtons="auto"
                 allowScrollButtonsMobile
-                sx={{
-                  '& .MuiTabs-indicator': {
-                    background: tokens.color.backgrounds.primaryGradient,
-                    height: 3,
-                    borderRadius: tokens.spacing.radius.full,
-                  },
-                  '& .MuiTab-root': {
-                    color: tokens.color.neutral[600],
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    minHeight: 60,
-                    transition: createTransition(['color', 'background'], 'fast'),
-                    borderRadius: tokens.spacing.radius.lg,
-                    margin: '8px 4px',
-                    
-                    '&:hover': {
-                      color: tokens.color.primary[700],
-                      background: `${tokens.color.primary[500]}08`,
-                    },
-                    
-                    '&.Mui-selected': {
-                      color: tokens.color.primary[700],
-                      background: `${tokens.color.primary[500]}12`,
-                    }
-                  }
-                }}
               >
             <Tab 
               label={`Activity (${activityItems.length})`}
               icon={<ScheduleIcon />} 
               iconPosition="start"
             />
-            <Tab 
-              label={`Communications (${communicationsCount})`} 
-              icon={<MessageIcon />} 
+            <Tab
+              label={`Communications (${communicationsCount})`}
+              icon={<MessageIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Quotes" 
-              icon={<QuoteIcon />} 
+            <Tab
+              label="Messages"
+              icon={<MessageIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Quotes"
+              icon={<QuoteIcon />}
               iconPosition="start"
             />
             <Tab 
@@ -1384,14 +1499,19 @@ export const EventProfile: React.FC = () => {
               icon={<ContractIcon />} 
               iconPosition="start"
             />
-            <Tab 
-              label="Invoices" 
-              icon={<InvoiceIcon />} 
+            <Tab
+              label="Invoices"
+              icon={<InvoiceIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label={`Questionnaires (${questionnairesCount})`} 
-              icon={<QuestionnaireIcon />} 
+            <Tab
+              label="Payment Plans"
+              icon={<PaymentIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label={`Questionnaires (${questionnairesCount})`}
+              icon={<QuestionnaireIcon />}
               iconPosition="start"
             />
             <Tab 
@@ -1407,7 +1527,7 @@ export const EventProfile: React.FC = () => {
           </Tabs>
             </Box>
 
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+            <CardContent>
           {/* Activity Tab */}
           <TabPanel value={tabValue} index={0}>
             <ActivityTimeline
@@ -1430,33 +1550,43 @@ export const EventProfile: React.FC = () => {
             />
           </TabPanel>
 
-          {/* Quotes Tab */}
+          {/* Messages Tab */}
           <TabPanel value={tabValue} index={2}>
+            <MessageInterface eventId={eventId.toString()} />
+          </TabPanel>
+
+          {/* Quotes Tab */}
+          <TabPanel value={tabValue} index={3}>
             <EventQuotes event={event} />
           </TabPanel>
 
           {/* Contracts Tab */}
-          <TabPanel value={tabValue} index={3}>
+          <TabPanel value={tabValue} index={4}>
             <EventContracts event={event} />
           </TabPanel>
 
           {/* Invoices Tab */}
-          <TabPanel value={tabValue} index={4}>
+          <TabPanel value={tabValue} index={5}>
             <EventInvoices event={event} />
           </TabPanel>
 
+          {/* Payment Plans Tab */}
+          <TabPanel value={tabValue} index={6}>
+            <EventPaymentPlans event={event} />
+          </TabPanel>
+
           {/* Questionnaires Tab */}
-          <TabPanel value={tabValue} index={5}>
+          <TabPanel value={tabValue} index={7}>
             <EventQuestionnaires event={event} />
           </TabPanel>
 
           {/* Files Tab */}
-          <TabPanel value={tabValue} index={6}>
+          <TabPanel value={tabValue} index={8}>
             <EventFiles event={event} />
           </TabPanel>
 
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={7}>
+          <TabPanel value={tabValue} index={9}>
             <NotesList
               contentType="event"
               objectId={eventId}
@@ -1583,6 +1713,7 @@ export const EventProfile: React.FC = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
       </Container>
     </Box>
   );

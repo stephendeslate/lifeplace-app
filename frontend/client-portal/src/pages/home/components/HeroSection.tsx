@@ -26,21 +26,23 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       gradient="forest" 
       animated={true}
       sx={{ 
-        minHeight: '100vh',
+        minHeight: { xs: 'calc(100vh - 120px)', md: 'calc(100vh - 140px)' },
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         color: 'white',
+        py: { xs: 9, md: 14 }, // Add generous internal padding top and bottom
+        mt: { xs: '-120px', md: '-140px' }, // Offset the PublicLayout padding
       }}
     >
       <Box
         sx={{
           width: '100%',
-          px: { xs: 2, sm: 3, md: 4 },
+          px: { xs: 3, sm: 4, md: 6 }, // Increased horizontal padding
           textAlign: 'center',
         }}
       >
-        <Stack spacing={4} alignItems="center" sx={{ width: '100%' }}>
+        <Stack spacing={{ xs: 5, md: 9 }} alignItems="center" sx={{ width: '100%' }}>
           <AnimatedElement animation="fadeIn" delay={100}>
             <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
               <Typography

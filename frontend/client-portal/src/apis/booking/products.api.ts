@@ -34,64 +34,94 @@ export class ProductsApi {
    * Get all active product options (packages and products)
    */
   static async getProductOptions(): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: removed ${id} and corrected endpoint
+    const response = await api.get<{
+      count: number;
+      next: string | null;
+      previous: string | null;
+      results: ProductOption[];
+    }>('/products/products/', {  // Fixed: removed ${id} and corrected endpoint
       params: { is_active: true }
     });
-    return response.data;
+    // Handle paginated response structure
+    return response.data.results || [];
   }
 
   /**
    * Get packages only (type = 'PACKAGE')
    */
   static async getPackages(): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: changed from /options/ to /products/
+    const response = await api.get<{
+      count: number;
+      next: string | null;
+      previous: string | null;
+      results: ProductOption[];
+    }>('/products/products/', {  // Fixed: changed from /options/ to /products/
       params: { 
         is_active: true,
         type: 'PACKAGE'
       }
     });
-    return response.data;
+    // Handle paginated response structure
+    return response.data.results || [];
   }
 
   /**
    * Get products/addons only (type = 'PRODUCT')
    */
   static async getAddons(): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: changed from /options/ to /products/
+    const response = await api.get<{
+      count: number;
+      next: string | null;
+      previous: string | null;
+      results: ProductOption[];
+    }>('/products/products/', {  // Fixed: changed from /options/ to /products/
       params: { 
         is_active: true,
         type: 'PRODUCT'
       }
     });
-    return response.data;
+    // Handle paginated response structure
+    return response.data.results || [];
   }
 
   /**
    * Get packages by category
    */
   static async getPackagesByCategory(categoryId: number): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: changed from /options/ to /products/
+    const response = await api.get<{
+      count: number;
+      next: string | null;
+      previous: string | null;
+      results: ProductOption[];
+    }>('/products/products/', {  // Fixed: changed from /options/ to /products/
       params: { 
         is_active: true,
         type: 'PACKAGE',
         category_id: categoryId  // Fixed: changed from 'category' to 'category_id' to match backend
       }
     });
-    return response.data;
+    // Handle paginated response structure
+    return response.data.results || [];
   }
 
   /**
    * Get addons by category
    */
   static async getAddonsByCategory(categoryId: number): Promise<ProductOption[]> {
-    const response = await api.get<ProductOption[]>('/products/products/', {  // Fixed: changed from /options/ to /products/
+    const response = await api.get<{
+      count: number;
+      next: string | null;
+      previous: string | null;
+      results: ProductOption[];
+    }>('/products/products/', {  // Fixed: changed from /options/ to /products/
       params: { 
         is_active: true,
         type: 'PRODUCT',
         category_id: categoryId  // Fixed: changed from 'category' to 'category_id' to match backend
       }
     });
-    return response.data;
+    // Handle paginated response structure
+    return response.data.results || [];
   }
 
   /**
@@ -319,25 +349,28 @@ export class ProductsApi {
   /**
    * Handle products API errors
    */
-  static handleProductsError(error: any): string {
-    if (error.response?.data?.detail) {
-      return error.response.data.detail;
+  static handleProductsError(error: unknown): string {
+    // Error objects from axios have dynamic structure requiring any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorObj = error as any;
+    if (errorObj.response?.data?.detail) {
+      return errorObj.response.data.detail;
     }
 
-    if (error.response?.data?.message) {
-      return error.response.data.message;
+    if (errorObj.response?.data?.message) {
+      return errorObj.response.data.message;
     }
 
-    if (error.response?.status === 404) {
+    if (errorObj.response?.status === 404) {
       return 'Product not found.';
     }
 
-    if (error.response?.status === 403) {
+    if (errorObj.response?.status === 403) {
       return 'You do not have permission to access this product.';
     }
 
-    if (error.message) {
-      return error.message;
+    if (errorObj.message) {
+      return errorObj.message;
     }
 
     return 'An error occurred while loading products.';

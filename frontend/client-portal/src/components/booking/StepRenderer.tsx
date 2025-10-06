@@ -6,15 +6,14 @@ import { useBooking } from '../../contexts/BookingContext';
 import { useBookingSession } from '../../hooks/booking/useBookingCore';
 
 // Import step components
-import { IntroductionStep } from './steps/IntroductionStep';
-// import { DateTimeStep } from './steps/DateTimeStep'; // Replaced with NewDateTimeStep
-import { NewDateTimeStep } from './steps/NewDateTimeStep';
-import { ContactInfoStep } from './steps/ContactInfoStep';
+import { CleanIntroductionStep } from './steps/CleanIntroductionStep';
+import { IntelligentDateTimeStep } from './steps/IntelligentDateTimeStep';
+import { EnhancedContactInfoStep } from './steps/EnhancedContactInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
 import { QuestionnaireStep } from './steps/QuestionnaireStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { ConfirmationStep } from './steps/ConfirmationStep';
-import { PackageSelectionStep } from './steps/PackageSelectionStep';
+import { CleanPackageSelectionStep } from './steps/CleanPackageSelectionStep';
 import { AddonSelectionStep } from './steps/AddonSelectionStep';
 import { PricingSummaryStep } from './steps/PricingSummaryStep';
 import type { 
@@ -43,6 +42,8 @@ export const StepRenderer: React.FC = () => {
   const currentStep = state.currentSession?.current_step;
 
   // Simplified: Only use actions.updateStepData to avoid duplicate updates
+  // Generic handler accepts any step data type for flexibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDataChange = useCallback(async (stepType: string, data: any) => {
     if (!currentStep) return;
     
@@ -55,14 +56,15 @@ export const StepRenderer: React.FC = () => {
     }
   }, [currentStep, actions]);
 
-  // Memoized validation handler
+  // Memoized validation handler - accepts any data type for step validation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleValidation = useCallback(async (data: any): Promise<StepValidationResult> => {
     if (!currentStep) {
       return { isValid: false, errors: [{ field: 'general', message: 'No current step' }] };
     }
     
     try {
-      const result = await validateStep(currentStep.id, data);
+      const result = await validateStep(currentStep.id as number, data);
       return result || { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
     } catch (error) {
       console.error('Failed to validate step:', error);
@@ -70,43 +72,53 @@ export const StepRenderer: React.FC = () => {
     }
   }, [currentStep, validateStep]);
 
-  // Create memoized handlers for each step type
+  // Create memoized handlers for each step type - generic to work with all step data types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleIntroductionChange = useCallback((data: any) => {
     handleDataChange('introduction', data);
   }, [handleDataChange]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDateTimeChange = useCallback((data: any) => {
     handleDataChange('date_time', data);
   }, [handleDataChange]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleQuestionnaireChange = useCallback((data: any) => {
     handleDataChange('questionnaire', data);
   }, [handleDataChange]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleContactInfoChange = useCallback((data: any) => {
     handleDataChange('contact_info', data);
   }, [handleDataChange]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handlePaymentChange = useCallback((data: any) => {
     handleDataChange('payment_info', data);
   }, [handleDataChange]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleReviewChange = useCallback((data: any) => {
     handleDataChange('review_booking', data);
   }, [handleDataChange]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleConfirmationChange = useCallback((data: any) => {
     handleDataChange('confirmation', data);
   }, [handleDataChange]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handlePackageSelectionChange = useCallback((data: any) => {
     handleDataChange('package_selection', data);
   }, [handleDataChange]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleAddonSelectionChange = useCallback((data: any) => {
     handleDataChange('addon_selection', data);
   }, [handleDataChange]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handlePricingSummaryChange = useCallback((data: any) => {
     handleDataChange('pricing_summary', data);
   }, [handleDataChange]);
@@ -134,18 +146,19 @@ export const StepRenderer: React.FC = () => {
   switch (step_type) {
     case 'introduction':
       return (
-        <IntroductionStep
+        <CleanIntroductionStep
           stepData={state.stepData.introduction}
           config={configuration_data as IntroductionStepConfiguration | null}
           onDataChange={handleIntroductionChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
+          eventTypeName={state.selectedEventType?.name}
         />
       );
 
     case 'date_time':
       return (
-        <NewDateTimeStep
+        <IntelligentDateTimeStep
           stepData={state.stepData.date_time}
           config={configuration_data as DateTimeStepConfiguration | null}
           onDataChange={handleDateTimeChange}
@@ -158,7 +171,7 @@ export const StepRenderer: React.FC = () => {
     case 'questionnaire':
       return (
         <QuestionnaireStep
-          stepData={state.stepData.questionnaire}
+          stepData={state.stepData.questionnaire as Record<string, unknown> | undefined}
           config={configuration_data as QuestionnaireStepConfiguration | null}
           onDataChange={handleQuestionnaireChange}
           validationErrors={mergedValidationErrors}
@@ -169,7 +182,7 @@ export const StepRenderer: React.FC = () => {
 
     case 'package_selection':
       return (
-        <PackageSelectionStep
+        <CleanPackageSelectionStep
           stepData={state.stepData.package_selection}
           config={configuration_data as PackageSelectionStepConfiguration | null}
           onDataChange={handlePackageSelectionChange}
@@ -202,7 +215,7 @@ export const StepRenderer: React.FC = () => {
 
     case 'contact_info':
       return (
-        <ContactInfoStep
+        <EnhancedContactInfoStep
           stepData={state.stepData.contact_info}
           config={configuration_data as ContactInfoStepConfiguration | undefined}
           onDataChange={handleContactInfoChange}
@@ -232,7 +245,7 @@ export const StepRenderer: React.FC = () => {
         <ReviewStep
           stepData={state.stepData.review_booking}
           allStepData={state.stepData}
-          config={configuration_data}
+          config={configuration_data as Record<string, unknown>}
           onDataChange={handleReviewChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
@@ -251,7 +264,7 @@ export const StepRenderer: React.FC = () => {
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
           session={state.currentSession}
-          completedBooking={null}
+          completedBooking={null as unknown as Record<string, unknown> | undefined}
           onValidate={handleValidation}
         />
       );
@@ -260,7 +273,7 @@ export const StepRenderer: React.FC = () => {
       return (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            Unknown step type: {step_type}
+            Unknown step type: {step_type as string}
           </Alert>
           <Typography variant="body1" color="text.secondary">
             This step type is not supported. Please contact support.

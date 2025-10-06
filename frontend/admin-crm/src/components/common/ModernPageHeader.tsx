@@ -383,15 +383,32 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
 
                 {/* Stats */}
                 {stats && stats.length > 0 && (
-                  <Stack direction="row" spacing={3} flexWrap="wrap">
+                  <Box 
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: 'clamp(12px, 3vw, 32px)', // Smooth gap scaling
+                      flexWrap: 'nowrap', // Prevent wrapping
+                      overflowX: 'auto', // Handle overflow smoothly
+                      '&::-webkit-scrollbar': { display: 'none' },
+                      scrollbarWidth: 'none',
+                    }}
+                  >
                     {stats.map((stat, index) => (
-                      <Box key={index}>
+                      <Box 
+                        key={index}
+                        sx={{
+                          minWidth: 'fit-content',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         <Typography 
                           variant="h6" 
                           sx={{ 
                             fontWeight: 700,
                             color: tokens.color.neutral[800],
                             lineHeight: 1.2,
+                            fontSize: 'clamp(1rem, 2.5vw, 1.25rem)', // Smooth font scaling
                           }}
                         >
                           {stat.value}
@@ -403,13 +420,14 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                             fontWeight: 500,
+                            fontSize: 'clamp(0.6rem, 1.5vw, 0.75rem)', // Smooth font scaling
                           }}
                         >
                           {stat.label}
                         </Typography>
                       </Box>
                     ))}
-                  </Stack>
+                  </Box>
                 )}
               </Box>
             </Box>

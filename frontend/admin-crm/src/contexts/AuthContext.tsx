@@ -45,8 +45,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Get updated user info
       const userData = await getCurrentUser();
       if (userData) {
-        setUser(userData);
-        storage.setUser(userData);
+        const userWithToken = { ...userData, token: newTokens.access };
+        setUser(userWithToken);
+        storage.setUser(userWithToken);
       }
     } catch (error) {
       console.error('Error refreshing token:', error);
@@ -67,8 +68,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Store tokens and user data
       storage.setTokens(data.tokens);
-      storage.setUser(data.user);
-      setUser(data.user);
+      const userWithToken = { ...data.user, token: data.tokens.access };
+      storage.setUser(userWithToken);
+      setUser(userWithToken);
     } catch (error: unknown) {
       console.error('Login error:', error);
       
@@ -109,6 +111,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
+      // Preserve token if not provided in userData
+      if (!userData.token && user.token) {
+        updatedUser.token = user.token;
+      }
       setUser(updatedUser);
       storage.setUser(updatedUser);
     }
@@ -125,6 +131,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return;
         }
 
+        // Skip auth check if we're on the login page or accept invitation page
+        const currentPath = window.location.pathname;
+        if (currentPath === '/login' || currentPath.startsWith('/accept-invitation/')) {
+          setIsLoading(false);
+          return;
+        }
+
         const tokens = storage.getTokens();
         const storedUser = storage.getUser();
         
@@ -133,8 +146,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           try {
             const userData = await getCurrentUser();
             if (userData && userData.role === 'ADMIN') {
-              setUser(userData);
-              storage.setUser(userData);
+              const userWithToken = { ...userData, token: tokens.access };
+              setUser(userWithToken);
+              storage.setUser(userWithToken);
             } else {
               // User is not admin or token is invalid
               storage.clearAuth();

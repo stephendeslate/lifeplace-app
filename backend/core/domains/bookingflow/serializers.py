@@ -207,15 +207,31 @@ class ContactInfoStepConfigurationSerializer(serializers.ModelSerializer):
 
 
 class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
+    """Serializer for PaymentInfoStepConfiguration
+
+    FULLY CONSOLIDATED: All payment business logic now in PaymentSettings.
+    This serializer only includes UI/UX flags and custom text.
+
+    REMOVED fields (now in PaymentSettings):
+    - deposit_type, deposit_amount, balance_due_days (payment calculations)
+    - allow_refunds, refund_deadline_hours, refund_percentage, refund_policy_text (refund policy)
+    - allowed_gateways, default_gateway, available_payment_methods (payment gateways)
+    """
     class Meta:
         model = PaymentInfoStepConfiguration
         fields = [
-            'id', 'step', 'accept_full_payment', 'accept_deposit',
-            'deposit_type', 'deposit_amount', 'available_payment_methods',
-            'require_immediate_payment', 'allow_payment_plans',
-            'payment_terms', 
-            'allowed_gateways',
-            'default_gateway',   
+            'id', 'step',
+            # UI/UX flags ONLY
+            'accept_full_payment',
+            'accept_deposit',
+            'allow_payment_plans',
+            'allow_quote_request',
+            'require_immediate_payment',
+            # UI text customization ONLY
+            'payment_terms',
+            'quote_request_button_text',
+            'quote_request_description',
+            # Timestamps
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']

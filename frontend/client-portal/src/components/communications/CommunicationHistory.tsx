@@ -3,14 +3,11 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Chip,
   FormControl,
   IconButton,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Stack,
   Table,
@@ -30,7 +27,11 @@ import {
   Alert,
   Tooltip,
   Menu,
+  useTheme,
+  alpha,
 } from '@mui/material';
+import { GlassCard } from '../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import {
   Email as EmailIcon,
   Sms as SmsIcon,
@@ -150,37 +151,53 @@ export const CommunicationHistory: React.FC = () => {
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
 
+  const theme = useTheme();
+
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
+      <AnimatedElement animation="fadeIn">
+        <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Loading communication history...
+          </Typography>
+        </GlassCard>
+      </AnimatedElement>
     );
   }
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        Failed to load communication history. Please try again.
-      </Alert>
+      <AnimatedElement animation="fadeIn">
+        <GlassCard variant="light" intensity="medium" sx={{ p: 3 }}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              backgroundColor: alpha(theme.palette.error.main, 0.1),
+              border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
+            }}
+          >
+            Failed to load communication history. Please try again.
+          </Alert>
+        </GlassCard>
+      </AnimatedElement>
     );
   }
 
   return (
     <Box>
-      {/* Header */}
-      <Box mb={3}>
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
-          Communication History
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          View all messages and communications sent to you
-        </Typography>
-      </Box>
 
       {/* Filters */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <AnimatedElement animation="slideUp" delay={200}>
+        <GlassCard 
+          variant="light" 
+          intensity="medium" 
+          sx={{ 
+            mb: 4, 
+            p: 3,
+            border: `1px solid ${alpha('#fff', 0.1)}`,
+          }}
+        >
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
             <TextField
               size="small"
@@ -243,31 +260,64 @@ export const CommunicationHistory: React.FC = () => {
                   Clear
                 </Button>
               )}
-              <IconButton size="small" onClick={() => refetch()} title="Refresh">
+              <IconButton 
+                size="small" 
+                onClick={() => refetch()} 
+                title="Refresh"
+                sx={{
+                  backgroundColor: alpha('#fff', 0.1),
+                  backdropFilter: 'blur(10px)',
+                  border: `1px solid ${alpha('#fff', 0.1)}`,
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.2),
+                    transform: 'scale(1.05)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
                 <RefreshIcon />
               </IconButton>
             </Box>
           </Stack>
-        </CardContent>
-      </Card>
+        </GlassCard>
+      </AnimatedElement>
 
       {/* Records Table */}
       {records.length === 0 ? (
-        <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-          <HistoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-          <Typography variant="h6" gutterBottom>
-            No Communication History
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {hasActiveFilters 
-              ? 'No communications match your current filters.'
-              : 'No communications have been sent to you yet.'
-            }
-          </Typography>
-        </Paper>
+        <AnimatedElement animation="fadeIn" delay={300}>
+          <GlassCard 
+            variant="light" 
+            intensity="subtle" 
+            sx={{ 
+              p: 4, 
+              textAlign: 'center',
+              backgroundColor: alpha(theme.palette.grey[100], 0.3),
+              border: `1px solid ${alpha('#fff', 0.2)}`,
+            }}
+          >
+            <HistoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+            <Typography variant="h6" gutterBottom>
+              No Communication History
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {hasActiveFilters 
+                ? 'No communications match your current filters.'
+                : 'No communications have been sent to you yet.'
+              }
+            </Typography>
+          </GlassCard>
+        </AnimatedElement>
       ) : (
-        <Card>
-          <TableContainer>
+        <AnimatedElement animation="slideUp" delay={300}>
+          <GlassCard 
+            variant="light" 
+            intensity="medium"
+            sx={{ 
+              border: `1px solid ${alpha('#fff', 0.1)}`,
+              overflow: 'hidden',
+            }}
+          >
+            <TableContainer sx={{ backgroundColor: 'transparent' }}>
             <Table>
               <TableHead>
                 <TableRow>
@@ -303,14 +353,24 @@ export const CommunicationHistory: React.FC = () => {
                         label={record.channel}
                         size="small"
                         variant="outlined"
+                        sx={{
+                          backgroundColor: alpha('#fff', 0.1),
+                          backdropFilter: 'blur(5px)',
+                          border: `1px solid ${alpha('#fff', 0.2)}`,
+                        }}
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
                         label={record.category === 'SYSTEM' ? 'System' : record.category === 'AUTO' ? 'Auto' : 'Manual'}
                         size="small"
-                        color={getCategoryColor(record.category) as any}
+                        color={getCategoryColor(record.category) as 'primary' | 'secondary' | 'default'}
                         variant="outlined"
+                        sx={{
+                          backgroundColor: alpha('#fff', 0.1),
+                          backdropFilter: 'blur(5px)',
+                          border: `1px solid ${alpha('#fff', 0.2)}`,
+                        }}
                       />
                     </TableCell>
                     <TableCell>
@@ -332,8 +392,13 @@ export const CommunicationHistory: React.FC = () => {
                         <Chip
                           label={record.is_opened ? 'Read' : record.delivery_status}
                           size="small"
-                          color={getStatusColor(record.delivery_status) as any}
+                          color={getStatusColor(record.delivery_status) as 'success' | 'info' | 'warning' | 'error' | 'default'}
                           variant="outlined"
+                          sx={{
+                            backgroundColor: alpha('#fff', 0.1),
+                            backdropFilter: 'blur(5px)',
+                            border: `1px solid ${alpha('#fff', 0.2)}`,
+                          }}
                         />
                       </Box>
                     </TableCell>
@@ -350,6 +415,16 @@ export const CommunicationHistory: React.FC = () => {
                         size="small"
                         onClick={() => handleViewDetail(record)}
                         title="View message"
+                        sx={{
+                          backgroundColor: alpha('#fff', 0.1),
+                          backdropFilter: 'blur(10px)',
+                          border: `1px solid ${alpha('#fff', 0.1)}`,
+                          '&:hover': {
+                            backgroundColor: alpha('#fff', 0.2),
+                            transform: 'scale(1.05)',
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
                       >
                         <ViewIcon />
                       </IconButton>
@@ -358,8 +433,9 @@ export const CommunicationHistory: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
-        </Card>
+            </TableContainer>
+          </GlassCard>
+        </AnimatedElement>
       )}
 
       {/* Action Menu */}
@@ -395,6 +471,15 @@ export const CommunicationHistory: React.FC = () => {
         onClose={() => setDetailDialogOpen(false)}
         maxWidth="md" 
         fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: alpha('#fff', 0.95),
+            backdropFilter: 'blur(20px)',
+            border: `1px solid ${alpha('#fff', 0.2)}`,
+            boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
+            borderRadius: 3,
+          },
+        }}
       >
         <DialogTitle>
           Message Details
@@ -418,14 +503,27 @@ export const CommunicationHistory: React.FC = () => {
                   </Box>
                   <Box display="flex" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">Channel:</Typography>
-                    <Chip label={selectedRecord.channel} size="small" />
+                    <Chip 
+                      label={selectedRecord.channel} 
+                      size="small" 
+                      sx={{
+                        backgroundColor: alpha('#fff', 0.1),
+                        backdropFilter: 'blur(5px)',
+                        border: `1px solid ${alpha('#fff', 0.2)}`,
+                      }}
+                    />
                   </Box>
                   <Box display="flex" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">Type:</Typography>
                     <Chip 
                       label={selectedRecord.category === 'SYSTEM' ? 'System' : selectedRecord.category === 'AUTO' ? 'Automated' : 'Manual'} 
                       size="small" 
-                      color={getCategoryColor(selectedRecord.category) as any}
+                      color={getCategoryColor(selectedRecord.category) as 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
+                      sx={{
+                        backgroundColor: alpha('#fff', 0.1),
+                        backdropFilter: 'blur(5px)',
+                        border: `1px solid ${alpha('#fff', 0.2)}`,
+                      }}
                     />
                   </Box>
                 </Stack>
@@ -444,7 +542,12 @@ export const CommunicationHistory: React.FC = () => {
                       <Chip 
                         label={selectedRecord.is_opened ? 'Read' : selectedRecord.delivery_status}
                         size="small" 
-                        color={getStatusColor(selectedRecord.delivery_status) as any}
+                        color={getStatusColor(selectedRecord.delivery_status) as 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
+                        sx={{
+                          backgroundColor: alpha('#fff', 0.1),
+                          backdropFilter: 'blur(5px)',
+                          border: `1px solid ${alpha('#fff', 0.2)}`,
+                        }}
                       />
                     </Box>
                   </Box>
@@ -485,15 +588,33 @@ export const CommunicationHistory: React.FC = () => {
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       Subject:
                     </Typography>
-                    <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    <GlassCard 
+                      variant="light" 
+                      intensity="subtle" 
+                      sx={{ 
+                        p: 2, 
+                        backgroundColor: alpha(theme.palette.grey[50], 0.3),
+                        border: `1px solid ${alpha('#fff', 0.2)}`,
+                      }}
+                    >
                       <Typography variant="body2">{selectedRecord.subject}</Typography>
-                    </Paper>
+                    </GlassCard>
                   </Box>
                 )}
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                   {selectedRecord.channel === 'EMAIL' ? 'Message:' : 'Text Message:'}
                 </Typography>
-                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50', maxHeight: 400, overflow: 'auto' }}>
+                <GlassCard 
+                  variant="light" 
+                  intensity="subtle" 
+                  sx={{ 
+                    p: 2, 
+                    backgroundColor: alpha(theme.palette.grey[50], 0.3),
+                    border: `1px solid ${alpha('#fff', 0.2)}`,
+                    maxHeight: 400, 
+                    overflow: 'auto'
+                  }}
+                >
                   {selectedRecord.channel === 'EMAIL' ? (
                     <Box 
                       dangerouslySetInnerHTML={{ __html: sanitizeHTML(selectedRecord.body, 'email') }}
@@ -504,13 +625,19 @@ export const CommunicationHistory: React.FC = () => {
                       {selectedRecord.body}
                     </Typography>
                   )}
-                </Paper>
+                </GlassCard>
               </Box>
             </Stack>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailDialogOpen(false)}>Close</Button>
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            variant="contained"
+            onClick={() => setDetailDialogOpen(false)}
+            sx={{ textTransform: 'none' }}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -397,13 +397,13 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
                 user_methods = PaymentMethod.objects.filter(user=request.user)
                 saved_methods = PaymentMethodSerializer(user_methods, many=True).data
             
+            # CONSOLIDATED: deposit_amount, deposit_type removed - now from PaymentSettings
             return Response({
                 'available_gateways': available_gateways,
                 'saved_payment_methods': saved_methods,
                 'require_immediate_payment': config.require_immediate_payment,
                 'accept_deposit': config.accept_deposit,
-                'deposit_amount': config.deposit_amount if config.accept_deposit else None,
-                'deposit_type': config.deposit_type if config.accept_deposit else None,
+                # REMOVED: 'deposit_amount', 'deposit_type' - frontend should read from PaymentSettings
                 'allow_payment_plans': config.allow_payment_plans,
                 'payment_terms': config.payment_terms
             })

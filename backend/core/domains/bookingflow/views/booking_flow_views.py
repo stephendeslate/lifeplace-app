@@ -222,9 +222,11 @@ class BookingFlowViewSet(viewsets.ModelViewSet):
                 gateway = gateways.get(id=gateway_item['id'])
                 public_config = {}
                 if gateway.code == 'stripe':
-                    public_config['publishable_key'] = gateway.config.get('publishable_key')
+                    decrypted_config = gateway.get_decrypted_config()
+                    public_config['publishable_key'] = decrypted_config.get('publishable_key')
                 elif gateway.code == 'paypal':
-                    public_config['client_id'] = gateway.config.get('client_id')
+                    decrypted_config = gateway.get_decrypted_config()
+                    public_config['client_id'] = decrypted_config.get('client_id')
                 # Add other gateways as needed
                 
                 safe_gateway['public_config'] = public_config
