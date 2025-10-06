@@ -212,6 +212,7 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
     onSignComplete,
     onError,
     onClose,
+    signContract,
   ]);
 
   const canProceed = useCallback(() => {

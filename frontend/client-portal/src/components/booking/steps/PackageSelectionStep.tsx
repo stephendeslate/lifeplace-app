@@ -51,8 +51,8 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
   const minSelection = config?.min_selection || 1;
   const maxSelection = config?.max_selection || 1;
 
-  // Use props stepData as single source of truth
-  const selectedPackages = stepData.selected_packages || [];
+  // Use props stepData as single source of truth - memoize to stabilize reference
+  const selectedPackages = useMemo(() => stepData.selected_packages || [], [stepData.selected_packages]);
 
   // Check if package is selected - Fixed to use product_id
   const isPackageSelected = useCallback((packageId: number) => {

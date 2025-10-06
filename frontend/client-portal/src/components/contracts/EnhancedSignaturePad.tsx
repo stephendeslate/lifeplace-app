@@ -306,7 +306,7 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
       signaturePad.off();
       window.removeEventListener('resize', handleResize);
     };
-  }, [width, height]); // Only re-initialize when canvas size changes
+  }, [width, height, finalConfig, resizeCanvas]); // Only re-initialize when canvas size changes
 
   // Bind event handlers separately to avoid re-initialization
   React.useEffect(() => {

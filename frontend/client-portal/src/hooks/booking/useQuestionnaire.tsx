@@ -369,7 +369,7 @@ export const useDynamicQuestionnaire = (
   questionnaires: QuestionnaireDetailResponse[],
   // Dynamic questionnaire responses can be string, number, boolean, or array types
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  responses: Record<string, any>
+  _responses: Record<string, any>
 ) => {
   // Get visible questionnaires based on conditions
   const visibleQuestionnaires = useMemo(() => {
@@ -378,7 +378,7 @@ export const useDynamicQuestionnaire = (
       // For now, show all questionnaires
       return true;
     });
-  }, [questionnaires, responses]);
+  }, [questionnaires]);
 
   // Get visible fields for a questionnaire
   const getVisibleFields = useCallback((questionnaire: QuestionnaireDetailResponse) => {
@@ -387,7 +387,7 @@ export const useDynamicQuestionnaire = (
       // For now, show all fields
       return true;
     });
-  }, [responses]);
+  }, []);
 
   // Check if questionnaire should be shown
   const shouldShowQuestionnaire = useCallback((questionnaire: QuestionnaireDetailResponse) => {

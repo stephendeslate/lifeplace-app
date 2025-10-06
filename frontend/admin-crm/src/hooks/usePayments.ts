@@ -10,7 +10,6 @@ import type {
   TaxRate,
   CreateTaxRateData,
   UpdateTaxRateData,
-  PaymentSettings,
   CreatePaymentData,
   UpdatePaymentData,
   CreatePaymentPlanData,

@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/CleanPackageSelectionStep.tsx
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -363,8 +363,11 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     loadPackages();
   }, []);
 
-  // Calculate totals and selection state
-  const selectedPackageIds = stepData.selected_packages?.map(p => p.product_id) || [];
+  // Calculate totals and selection state - memoize to stabilize reference
+  const selectedPackageIds = useMemo(() =>
+    stepData.selected_packages?.map(p => p.product_id) || [],
+    [stepData.selected_packages]
+  );
   const totalSelected = stepData.selected_packages?.length || 0;
   const canSelectMore = selectionType === 'MULTIPLE' && totalSelected < maxSelection;
   const totalPrice = stepData.selected_packages?.reduce((sum, pkg) => {

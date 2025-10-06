@@ -199,13 +199,13 @@ export const useConfirmation = (
 
   // Auto-send confirmation email if configured
   useEffect(() => {
-    if (config?.send_confirmation_email && 
-        isCompleted && 
+    if (config?.send_confirmation_email &&
+        isCompleted &&
         sessionDetails?.client?.email &&
         !emailSent) {
       sendConfirmationEmail();
     }
-  }, [config?.send_confirmation_email, isCompleted, sessionDetails, emailSent]);
+  }, [config?.send_confirmation_email, isCompleted, sessionDetails, emailSent, sendConfirmationEmail]);
 
   // Clear errors
   const clearError = useCallback(() => {

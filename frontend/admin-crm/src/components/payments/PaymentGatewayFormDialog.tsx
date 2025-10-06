@@ -266,7 +266,7 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
                     'rgba(76, 175, 80, 0.1)' : 'rgba(255, 152, 0, 0.1)',
                   borderRadius: tokens.spacing.radius.lg,
                   border: `1px solid ${gateway.masked_config._configured ?
-                    tokens.color.success.main : tokens.color.warning.main}25`,
+                    tokens.color.success[500] : tokens.color.warning[500]}25`,
                 }}
               >
                 <strong>

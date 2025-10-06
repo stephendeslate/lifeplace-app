@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/components/payments/PaymentPlanSettings.test.tsx
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -10,7 +10,7 @@ import { createTheme } from '@mui/material/styles';
 
 import { PaymentPlanSettings } from './PaymentPlanSettings';
 import * as usePaymentsHooks from '../../hooks/usePayments';
-import type { PaymentSettings, UpdatePaymentSettingsData } from '../../types/payments.types';
+import type { PaymentSettings } from '../../types/payments.types';
 
 // Mock the hooks
 vi.mock('../../hooks/usePayments', () => ({
@@ -83,7 +83,7 @@ vi.mock('../../design-system/utils/animations', () => ({
 
 // Mock the ModernCard component
 vi.mock('../common/ModernCard', () => ({
-  ModernCard: ({ children, title, ...props }: any) => (
+  ModernCard: ({ children, title, ...props }: { children?: React.ReactNode; title?: string; [key: string]: unknown }) => (
     <div data-testid="modern-card" {...props}>
       {title && <h3>{title}</h3>}
       {children}

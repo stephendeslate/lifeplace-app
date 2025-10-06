@@ -35,7 +35,7 @@ import {
   Edit as EditIcon,
   PlayArrow as StartIcon,
 } from '@mui/icons-material';
-import { format, isAfter, isBefore, addDays } from 'date-fns';
+import { isAfter, isBefore, addDays } from 'date-fns';
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import { useEvents } from '../../hooks/useEvents';
 import type { EventTask, TaskStatus, TaskPriority, TaskUpdate } from '../../types/events.types';

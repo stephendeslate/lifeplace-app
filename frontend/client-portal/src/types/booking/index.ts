@@ -69,7 +69,8 @@ export type {
   ConfirmationStepData,
   StepData,
   Discount,
-  PricingCalculation
+  PricingCalculation,
+  PricingLineItem
 } from './stepData.types';
 
 // State management types

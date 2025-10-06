@@ -62,7 +62,6 @@ const defaultFormData: PaymentInfoConfigFormData = {
 };
 
 export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
-  step,
   config,
   onUpdate,
   isLoading = false,

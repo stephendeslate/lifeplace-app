@@ -1,6 +1,6 @@
 // frontend/client-portal/src/services/PaymentFlowManager.ts
 
-import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { loadStripe, type Stripe, type ConfirmCardPaymentData } from '@stripe/stripe-js';
 import FinancialApi from '../apis/financial.api';
 
 /**
@@ -13,7 +13,7 @@ export interface PaymentConfig {
   eventId?: number;
   invoiceId?: number;
   gatewayCode?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   savePaymentMethod?: boolean;
   customerId?: string;
 }
@@ -42,7 +42,7 @@ export interface PaymentResult {
   transactionId?: string;
   message: string;
   requiresAction?: boolean;
-  nextAction?: any;
+  nextAction?: unknown;
   error?: PaymentError;
 }
 
@@ -52,7 +52,7 @@ export interface PaymentResult {
 export interface PaymentError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   retryable?: boolean;
 }
 
@@ -87,7 +87,7 @@ interface GatewayConfig {
  */
 export class PaymentFlowManager {
   private static instance: PaymentFlowManager;
-  private gatewayInstances: Map<string, any> = new Map();
+  private gatewayInstances: Map<string, Stripe | unknown> = new Map();
   private activeSessions: Map<string, PaymentSession> = new Map();
   private gatewayConfigs: Map<string, GatewayConfig> = new Map();
   private retryAttempts: Map<string, number> = new Map();
@@ -140,7 +140,7 @@ export class PaymentFlowManager {
   /**
    * Process payment using the session
    */
-  public async processPayment(session: PaymentSession, paymentData?: any): Promise<PaymentResult> {
+  public async processPayment(session: PaymentSession, paymentData?: unknown): Promise<PaymentResult> {
     try {
       console.log('💳 Processing payment for session:', session.sessionId);
 
@@ -259,13 +259,14 @@ export class PaymentFlowManager {
     try {
       const response = await FinancialApi.getAvailableGateways();
 
-      if (response.success && response.data) {
+      if (response.success && response.data && Array.isArray(response.data)) {
         // Update local gateway configs
-        response.data.forEach((config: GatewayConfig) => {
+        const gatewayConfigs = response.data as GatewayConfig[];
+        gatewayConfigs.forEach((config: GatewayConfig) => {
           this.gatewayConfigs.set(config.code, config);
         });
 
-        return response.data;
+        return gatewayConfigs;
       }
 
       return [];
@@ -337,7 +338,7 @@ export class PaymentFlowManager {
   /**
    * Initialize PayPal gateway (placeholder)
    */
-  private async initializePayPal(config: GatewayConfig): Promise<void> {
+  private async initializePayPal(_config: GatewayConfig): Promise<void> {
     // TODO: Implement PayPal initialization
     console.log('⚠️ PayPal gateway not yet implemented');
   }
@@ -414,25 +415,27 @@ export class PaymentFlowManager {
         throw new Error(response.message || 'Failed to create payment intent');
       }
 
-      session.clientSecret = response.data?.client_secret;
-      session.paymentIntentId = response.data?.payment_intent_id;
+      const responseData = response.data as { client_secret?: string; payment_intent_id?: string } | undefined;
+      session.clientSecret = responseData?.client_secret;
+      session.paymentIntentId = responseData?.payment_intent_id;
 
     } catch (error) {
-      throw new Error(`Failed to initialize Stripe session: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to initialize Stripe session: ${errorMessage}`);
     }
   }
 
   /**
    * Initialize PayPal session (placeholder)
    */
-  private async initializePayPalSession(session: PaymentSession): Promise<void> {
+  private async initializePayPalSession(_session: PaymentSession): Promise<void> {
     throw new Error('PayPal gateway not yet implemented');
   }
 
   /**
    * Process payment through gateway
    */
-  private async processGatewayPayment(session: PaymentSession, paymentData?: any): Promise<PaymentResult> {
+  private async processGatewayPayment(session: PaymentSession, paymentData?: unknown): Promise<PaymentResult> {
     switch (session.gatewayCode) {
       case 'stripe':
         return await this.processStripePayment(session, paymentData);
@@ -446,7 +449,7 @@ export class PaymentFlowManager {
   /**
    * Process Stripe payment
    */
-  private async processStripePayment(session: PaymentSession, paymentData?: any): Promise<PaymentResult> {
+  private async processStripePayment(session: PaymentSession, paymentData?: unknown): Promise<PaymentResult> {
     const stripe = this.gatewayInstances.get('stripe') as Stripe;
 
     if (!stripe) {
@@ -462,15 +465,17 @@ export class PaymentFlowManager {
         return await this.processStripePaymentIntent(stripe, session, paymentData);
       }
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Stripe payment failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Payment failed';
+      const errorCode = (error && typeof error === 'object' && 'code' in error) ? String(error.code) : 'stripe_error';
 
       return {
         success: false,
-        message: error.message || 'Payment failed',
+        message: errorMessage,
         error: this.createPaymentError(
-          error.code || 'stripe_error',
-          error.message || 'Stripe payment failed',
+          errorCode,
+          errorMessage,
           error
         )
       };
@@ -480,14 +485,14 @@ export class PaymentFlowManager {
   /**
    * Process Stripe payment intent
    */
-  private async processStripePaymentIntent(stripe: Stripe, session: PaymentSession, paymentData?: any): Promise<PaymentResult> {
+  private async processStripePaymentIntent(stripe: Stripe, session: PaymentSession, paymentData?: unknown): Promise<PaymentResult> {
     if (!session.clientSecret) {
       throw new Error('Client secret not available');
     }
 
     const { error, paymentIntent } = await stripe.confirmCardPayment(
       session.clientSecret,
-      paymentData
+      paymentData as ConfirmCardPaymentData | undefined
     );
 
     if (error) {
@@ -520,7 +525,7 @@ export class PaymentFlowManager {
   /**
    * Process Stripe payment method save
    */
-  private async processStripePaymentMethodSave(stripe: Stripe, session: PaymentSession, paymentData?: any): Promise<PaymentResult> {
+  private async processStripePaymentMethodSave(_stripe: Stripe, _session: PaymentSession, _paymentData?: unknown): Promise<PaymentResult> {
     // Implementation for saving payment methods
     // This would involve setup intents and customer creation
     throw new Error('Payment method save not yet implemented');
@@ -529,7 +534,7 @@ export class PaymentFlowManager {
   /**
    * Process PayPal payment (placeholder)
    */
-  private async processPayPalPayment(session: PaymentSession, paymentData?: any): Promise<PaymentResult> {
+  private async processPayPalPayment(_session: PaymentSession, _paymentData?: unknown): Promise<PaymentResult> {
     throw new Error('PayPal payment processing not yet implemented');
   }
 
@@ -578,7 +583,7 @@ export class PaymentFlowManager {
   /**
    * Create standardized payment error
    */
-  private createPaymentError(code: string, message: string, originalError?: any): PaymentError {
+  private createPaymentError(code: string, message: string, originalError?: unknown): PaymentError {
     return {
       code,
       message,

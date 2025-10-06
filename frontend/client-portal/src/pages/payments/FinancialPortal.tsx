@@ -23,8 +23,6 @@ import {
   Tooltip,
   CircularProgress,
   LinearProgress,
-  Card,
-  CardContent,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -42,7 +40,6 @@ import {
   Error as ErrorIcon,
   Warning as WarningIcon,
   Refresh as RefreshIcon,
-  CalendarToday as CalendarIcon,
   PlayArrow as PayIcon,
   Close as CloseIcon,
   Edit as EditIcon,
@@ -50,11 +47,11 @@ import {
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
-import { useFinancialOverview, useDownloadPaymentReceipt, useDownloadInvoicePdf, usePayInstallment, usePaymentMethods } from '../../hooks/useFinancial';
+import { useFinancialOverview, useDownloadPaymentReceipt, useDownloadInvoicePdf, usePaymentMethods } from '../../hooks/useFinancial';
 import { useInvoicePayments } from '../../hooks/useInvoicePayments';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import FinancialApi from '../../apis/financial.api';
-import type { PaymentInstallment, Payment, Invoice, InvoicePaymentResponse, PaymentMethod } from '../../types/financial.types';
+import type { Payment, Invoice, InvoicePaymentResponse, PaymentMethod } from '../../types/financial.types';
 import { PaymentViewer } from '../../components/payments/PaymentViewer';
 import { InvoiceViewer } from '../../components/payments/InvoiceViewer';
 import { InvoicePaymentDialog } from '../../components/payments/InvoicePaymentDialog';

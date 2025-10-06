@@ -38,7 +38,7 @@ export const useEventTypes = () => {
   // Fetch event types only once on mount
   useEffect(() => {
     fetchEventTypes();
-  }, []);
+  }, [fetchEventTypes]);
 
   return {
     eventTypes,
@@ -76,7 +76,7 @@ export const useBookingFlows = (eventTypeId?: number) => {
     if (eventTypeId !== undefined) {
       fetchFlows();
     }
-  }, [eventTypeId]);
+  }, [eventTypeId, fetchFlows]);
 
   return {
     flows,
@@ -116,7 +116,7 @@ export const useBookingFlow = (flowId?: number) => {
     if (flowId) {
       fetchFlow();
     }
-  }, [flowId]);
+  }, [flowId, fetchFlow]);
 
   return {
     flow,
@@ -310,7 +310,7 @@ export const useBookingSession = (sessionId?: string) => {
     if (sessionId) {
       fetchSession();
     }
-  }, [sessionId]);
+  }, [sessionId, fetchSession]);
 
   return {
     session,
@@ -359,7 +359,7 @@ export const useFlowPaymentGateways = (flowId?: number) => {
     if (flowId) {
       fetchPaymentGateways();
     }
-  }, [flowId]);
+  }, [flowId, fetchPaymentGateways]);
 
   return {
     paymentGateways,

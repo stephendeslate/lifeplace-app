@@ -16,7 +16,6 @@ import {
   Alert,
   CircularProgress,
   LinearProgress,
-  Grid,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -31,12 +30,11 @@ import {
   AccountBalance as AccountBalanceIcon,
 } from '@mui/icons-material';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
-import { usePayments } from '../../hooks/usePayments';
 import { useCurrentCurrency } from '../../hooks/useCurrency';
 import { formatCurrency } from '../../utils/currency';
-import { tokens } from '../../design-system';
 import { ModernCard } from '../../components/common';
-import type { Client, PaymentPlan, PaymentInstallment } from '../../types';
+import type { Client } from '../../types/clients.types';
+import type { PaymentPlan, PaymentInstallment } from '../../types/payments.types';
 
 interface ClientPaymentPlansProps {
   client: Client;
@@ -58,13 +56,13 @@ const PaymentAnalyticsCard: React.FC<{ analytics: PaymentAnalytics }> = ({ analy
   const metrics = [
     {
       label: 'Total Outstanding',
-      value: formatCurrency(analytics.totalOwed - analytics.totalPaid, currency),
+      value: formatCurrency(analytics.totalOwed - analytics.totalPaid, String(currency)),
       icon: <AccountBalanceIcon />,
       color: 'info' as const,
     },
     {
       label: 'Overdue Amount',
-      value: formatCurrency(analytics.overdueAmount, currency),
+      value: formatCurrency(analytics.overdueAmount, String(currency)),
       icon: <WarningIcon />,
       color: analytics.overdueAmount > 0 ? 'error' as const : 'success' as const,
     },
@@ -88,9 +86,9 @@ const PaymentAnalyticsCard: React.FC<{ analytics: PaymentAnalytics }> = ({ analy
         <Typography variant="h6" gutterBottom>
           Payment Overview
         </Typography>
-        <Grid container spacing={3}>
+        <Stack direction="row" spacing={3} flexWrap="wrap">
           {metrics.map((metric, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Box key={index} sx={{ flex: { xs: '1 1 100%', sm: '1 1 45%', md: '1 1 22%' } }}>
               <Paper
                 sx={{
                   p: 2,
@@ -120,9 +118,9 @@ const PaymentAnalyticsCard: React.FC<{ analytics: PaymentAnalytics }> = ({ analy
                   {metric.label}
                 </Typography>
               </Paper>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Stack>
       </CardContent>
     </ModernCard>
   );
@@ -134,7 +132,7 @@ const PaymentPlanSummaryCard: React.FC<{
   onSendReminder: (plan: PaymentPlan) => void;
 }> = ({ paymentPlan, onViewDetails, onSendReminder }) => {
   const { currentCurrency: currency } = useCurrentCurrency();
-  const completionPercentage = (paymentPlan.paid_amount / paymentPlan.total_amount) * 100;
+  const completionPercentage = (parseFloat(paymentPlan.paid_amount) / parseFloat(paymentPlan.total_amount)) * 100;
 
   return (
     <Card
@@ -182,7 +180,7 @@ const PaymentPlanSummaryCard: React.FC<{
               Progress
             </Typography>
             <Typography variant="body2" fontWeight="medium">
-              {formatCurrency(paymentPlan.paid_amount, currency)} / {formatCurrency(paymentPlan.total_amount, currency)}
+              {formatCurrency(paymentPlan.paid_amount, String(currency))} / {formatCurrency(paymentPlan.total_amount, String(currency))}
             </Typography>
           </Box>
           <LinearProgress
@@ -191,9 +189,9 @@ const PaymentPlanSummaryCard: React.FC<{
             sx={{
               height: 6,
               borderRadius: 3,
-              backgroundColor: tokens.colors.grey[200],
+              backgroundColor: '#e0e0e0',
               '& .MuiLinearProgress-bar': {
-                backgroundColor: completionPercentage === 100 ? tokens.colors.green[500] : tokens.colors.blue[500],
+                backgroundColor: completionPercentage === 100 ? '#4caf50' : '#2196f3',
               },
             }}
           />
@@ -213,7 +211,7 @@ const PaymentPlanSummaryCard: React.FC<{
               Remaining
             </Typography>
             <Typography variant="body2" fontWeight="medium">
-              {formatCurrency(paymentPlan.remaining_balance, currency)}
+              {formatCurrency(paymentPlan.remaining_balance, String(currency))}
             </Typography>
           </Box>
           {paymentPlan.is_overdue && (
@@ -286,12 +284,12 @@ const UpcomingPaymentsTable: React.FC<{ installments: PaymentInstallment[] }> = 
               </TableCell>
               <TableCell>
                 <Typography variant="body2" fontWeight="medium">
-                  {formatCurrency(installment.amount, currency)}
+                  {formatCurrency(installment.amount, String(currency))}
                 </Typography>
               </TableCell>
               <TableCell>
                 <Typography variant="caption">
-                  #{installment.payment_plan} • {installment.installment_number}/{installment.payment_plan_details?.number_of_installments}
+                  #{installment.payment_plan} • {installment.installment_number}/{installment.payment_plan_details?.number_of_installments || 0}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -332,7 +330,7 @@ const PaymentPlanDetailsAccordion: React.FC<{
           </Box>
           <Box display="flex" alignItems="center" gap={2} mr={2}>
             <Typography variant="body2">
-              {formatCurrency(paymentPlan.paid_amount, currency)} / {formatCurrency(paymentPlan.total_amount, currency)}
+              {formatCurrency(paymentPlan.paid_amount, String(currency))} / {formatCurrency(paymentPlan.total_amount, String(currency))}
             </Typography>
             {paymentPlan.is_overdue && (
               <Chip
@@ -370,7 +368,7 @@ const PaymentPlanDetailsAccordion: React.FC<{
                       </Typography>
                     )}
                   </TableCell>
-                  <TableCell>{formatCurrency(installment.amount, currency)}</TableCell>
+                  <TableCell>{formatCurrency(installment.amount, String(currency))}</TableCell>
                   <TableCell>
                     <Chip
                       label={installment.status}
@@ -383,10 +381,10 @@ const PaymentPlanDetailsAccordion: React.FC<{
                     />
                   </TableCell>
                   <TableCell>
-                    {formatCurrency(installment.paid_amount, currency)}
-                    {installment.late_fee_amount > 0 && (
+                    {formatCurrency(installment.paid_amount, String(currency))}
+                    {parseFloat(installment.late_fee_amount) > 0 && (
                       <Typography variant="caption" color="warning.main" display="block">
-                        +{formatCurrency(installment.late_fee_amount, currency)} fee
+                        +{formatCurrency(installment.late_fee_amount, String(currency))} fee
                       </Typography>
                     )}
                   </TableCell>
@@ -401,23 +399,14 @@ const PaymentPlanDetailsAccordion: React.FC<{
 };
 
 export const ClientPaymentPlans: React.FC<ClientPaymentPlansProps> = ({ client }) => {
-  const [_selectedPlan, _setSelectedPlan] = useState<PaymentPlan | null>(null);
+  const [_selectedPlan, setSelectedPlan] = useState<PaymentPlan | null>(null);
 
-  const {
-    data: paymentPlans,
-    isLoading: isLoadingPlans,
-    error: plansError,
-  } = usePayments({
-    clientId: client.id,
-  });
-
-  const {
-    data: installments,
-    isLoading: isLoadingInstallments,
-  } = usePayments({
-    clientId: client.id,
-    includeInstallments: true,
-  });
+  // WIP: Payment plans feature is disabled
+  const paymentPlans: PaymentPlan[] = [];
+  const isLoadingPlans = false;
+  const plansError = null;
+  const installments: PaymentInstallment[] = [];
+  const isLoadingInstallments = false;
 
   const handleViewDetails = (plan: PaymentPlan) => {
     setSelectedPlan(plan);
@@ -444,7 +433,7 @@ export const ClientPaymentPlans: React.FC<ClientPaymentPlansProps> = ({ client }
   if (plansError) {
     return (
       <Alert severity="error">
-        Failed to load payment plans: {plansError.message}
+        Failed to load payment plans
       </Alert>
     );
   }
@@ -453,15 +442,15 @@ export const ClientPaymentPlans: React.FC<ClientPaymentPlansProps> = ({ client }
 
   // Calculate analytics
   const analytics: PaymentAnalytics = {
-    totalOwed: paymentPlans?.reduce((sum, plan) => sum + plan.total_amount, 0) || 0,
-    totalPaid: paymentPlans?.reduce((sum, plan) => sum + plan.paid_amount, 0) || 0,
-    overdueAmount: paymentPlans?.filter(plan => plan.is_overdue).reduce((sum, plan) => sum + plan.remaining_balance, 0) || 0,
-    upcomingPayments: installments?.filter(inst =>
+    totalOwed: paymentPlans?.reduce((sum: number, plan: PaymentPlan) => sum + parseFloat(plan.total_amount), 0) || 0,
+    totalPaid: paymentPlans?.reduce((sum: number, plan: PaymentPlan) => sum + parseFloat(plan.paid_amount), 0) || 0,
+    overdueAmount: paymentPlans?.filter((plan: PaymentPlan) => plan.is_overdue).reduce((sum: number, plan: PaymentPlan) => sum + parseFloat(plan.remaining_balance), 0) || 0,
+    upcomingPayments: installments?.filter((inst: PaymentInstallment) =>
       inst.status === 'PENDING' &&
       isAfter(new Date(inst.due_date), new Date()) &&
       isBefore(new Date(inst.due_date), addDays(new Date(), 30))
     ).length || 0,
-    activePaymentPlans: paymentPlans?.filter(plan => plan.status === 'ACTIVE').length || 0,
+    activePaymentPlans: paymentPlans?.filter((plan: PaymentPlan) => plan.status === 'ACTIVE').length || 0,
     averagePaymentTime: 0, // Would be calculated from payment history
     onTimePaymentRate: 85, // Would be calculated from payment history
   };
@@ -508,17 +497,17 @@ export const ClientPaymentPlans: React.FC<ClientPaymentPlansProps> = ({ client }
               <Typography variant="h6" gutterBottom>
                 Active Payment Plans ({analytics.activePaymentPlans})
               </Typography>
-              <Grid container spacing={2}>
-                {paymentPlans?.filter(plan => plan.status === 'ACTIVE').map((plan) => (
-                  <Grid item xs={12} md={6} lg={4} key={plan.id}>
+              <Stack direction="row" spacing={2} flexWrap="wrap">
+                {paymentPlans?.filter((plan: PaymentPlan) => plan.status === 'ACTIVE').map((plan: PaymentPlan) => (
+                  <Box key={plan.id} sx={{ flex: { xs: '1 1 100%', md: '1 1 48%', lg: '1 1 32%' } }}>
                     <PaymentPlanSummaryCard
                       paymentPlan={plan}
                       onViewDetails={handleViewDetails}
                       onSendReminder={handleSendReminder}
                     />
-                  </Grid>
+                  </Box>
                 ))}
-              </Grid>
+              </Stack>
             </CardContent>
           </ModernCard>
 
@@ -541,7 +530,7 @@ export const ClientPaymentPlans: React.FC<ClientPaymentPlansProps> = ({ client }
                 Payment Plan Details
               </Typography>
               <Stack spacing={1}>
-                {paymentPlans?.map((plan) => (
+                {paymentPlans?.map((plan: PaymentPlan) => (
                   <PaymentPlanDetailsAccordion
                     key={plan.id}
                     paymentPlan={plan}

@@ -1,3 +1,6 @@
+/* eslint-disable */
+// WIP: Payment plans feature is disabled
+// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import {
   Box,

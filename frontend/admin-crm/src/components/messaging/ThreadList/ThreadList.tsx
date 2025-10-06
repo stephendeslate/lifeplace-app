@@ -35,7 +35,7 @@ import {
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { useAdminMessaging } from '../../../hooks/useAdminMessaging';
 import type { ThreadListProps, AdminThreadFilters } from '../../../types/messaging.types';
-import type { MessagePriority, MessageThreadStatus } from '@shared/types/messaging';
+import type { MessagePriority, MessageThreadStatus, MessageThreadListItem } from '@shared/types/messaging';
 
 export const ThreadList: React.FC<ThreadListProps> = ({
   clientId,
@@ -86,23 +86,23 @@ export const ThreadList: React.FC<ThreadListProps> = ({
 
     // Apply filters
     if (activeFilters.status) {
-      results = results.filter((thread: any) => thread.status === activeFilters.status);
+      results = results.filter((thread: MessageThreadListItem) => thread.status === activeFilters.status);
     }
 
     if (activeFilters.priority) {
-      results = results.filter((thread: any) => thread.priority === activeFilters.priority);
+      results = results.filter((thread: MessageThreadListItem) => thread.priority === activeFilters.priority);
     }
 
     if (activeFilters.unassigned_only) {
-      results = results.filter((thread: any) => !thread.assigned_admin);
+      results = results.filter((thread: MessageThreadListItem) => !thread.assigned_admin);
     }
 
     if (activeFilters.has_unread) {
-      results = results.filter((thread: any) => thread.unread_count > 0);
+      results = results.filter((thread: MessageThreadListItem) => thread.unread_count > 0);
     }
 
     if (activeFilters.urgent_only) {
-      results = results.filter((thread: any) => thread.priority === 'urgent');
+      results = results.filter((thread: MessageThreadListItem) => thread.priority === 'urgent');
     }
 
     return results;
@@ -127,7 +127,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
     }
   };
 
-  const handleFilterChange = (filterKey: keyof AdminThreadFilters, value: any) => {
+  const handleFilterChange = (filterKey: keyof AdminThreadFilters, value: string | boolean | MessagePriority | MessageThreadStatus | undefined) => {
     setActiveFilters(prev => ({
       ...prev,
       [filterKey]: value
@@ -138,7 +138,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
     setActiveFilters({});
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, threadId: string) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, _threadId: string) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
   };
@@ -299,7 +299,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
     );
   };
 
-  const renderThreadItem = (thread: any) => {
+  const renderThreadItem = (thread: MessageThreadListItem) => {
     const isSelected = bulkMode
       ? selectedThreadIds.includes(thread.id)
       : selectedThreadId === thread.id;
@@ -399,7 +399,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                   <Chip
                     label={thread.status}
                     size="small"
-                    color={getStatusColor(thread.status) as any}
+                    color={getStatusColor(thread.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                     variant="outlined"
                   />
                   <Typography variant="caption" color="text.secondary">

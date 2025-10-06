@@ -158,9 +158,12 @@ export const EventProfile: React.FC = () => {
   const { data: client } = useClient(clientId);
 
   // Get workflow stages for the event's template
-  const { data: workflowStages = [], isLoading: isLoadingStages } = useStagesForTemplate(
-    event?.workflow_template?.id || 0
-  );
+  const templateId = typeof event?.workflow_template === 'object' && event.workflow_template !== null
+    ? event.workflow_template.id
+    : typeof event?.workflow_template === 'number'
+    ? event.workflow_template
+    : 0;
+  const { data: workflowStages = [], isLoading: isLoadingStages } = useStagesForTemplate(templateId);
 
   // Get counts for tabs
   const { data: communications = [] } = useRecords({ client_id: clientId });
@@ -180,13 +183,18 @@ export const EventProfile: React.FC = () => {
   const transformedWorkflowStages = useMemo(() => {
     if (!workflowStages.length || !event) return [];
 
+    // Get current stage info
+    const currentStageObj = typeof event.current_stage === 'object' && event.current_stage !== null
+      ? event.current_stage
+      : null;
+
     return workflowStages.map((stage: WorkflowStageType) => {
       // Determine stage status based on current stage and event progress
       let status: 'completed' | 'active' | 'pending' | 'blocked' | 'skipped' = 'pending';
 
-      if (event.current_stage && stage.id === event.current_stage.id) {
+      if (currentStageObj && stage.id === currentStageObj.id) {
         status = 'active';
-      } else if (event.current_stage && stage.order < event.current_stage.order) {
+      } else if (currentStageObj && stage.order < currentStageObj.order) {
         status = 'completed';
       }
 
@@ -1396,7 +1404,13 @@ export const EventProfile: React.FC = () => {
                       <WorkflowVisualization
                         workflowName={event.workflow_template_name}
                         stages={transformedWorkflowStages}
-                        currentStage={event.current_stage?.id}
+                        currentStage={
+                          typeof event.current_stage === 'object' && event.current_stage !== null
+                            ? event.current_stage.id
+                            : typeof event.current_stage === 'number'
+                            ? event.current_stage
+                            : undefined
+                        }
                         overallProgress={event.workflow_progress}
                         layout="vertical"
                         showTasks={true}
