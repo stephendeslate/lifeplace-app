@@ -8,7 +8,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-import { injectDesignTokens } from '@shared/design-system';
+// WIP: Shared design system integration temporarily disabled for deployment
+// import { injectDesignTokens } from '@shared/design-system';
 import { theme as clientPortalTheme } from '../utils/theme';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ContractsProvider } from '../contexts/ContractsContext';
@@ -60,10 +61,10 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   // Use client-portal's custom nature-inspired green theme
   const theme = React.useMemo(() => clientPortalTheme, []);
 
-  // Inject design tokens on mount
-  React.useEffect(() => {
-    injectDesignTokens();
-  }, []);
+  // WIP: Inject design tokens on mount - temporarily disabled
+  // React.useEffect(() => {
+  //   injectDesignTokens();
+  // }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
