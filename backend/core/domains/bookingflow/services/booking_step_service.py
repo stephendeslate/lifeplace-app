@@ -139,11 +139,11 @@ class BookingFlowStepService:
             step.delete()
             
             # Reorder remaining steps to maintain sequential ordering
-            remaining_steps = BookingFlowStep.objects.filter(
+            remaining_steps = list(BookingFlowStep.objects.filter(
                 booking_flow=flow,
                 order__gt=deleted_order
-            ).select_for_update().order_by('order')
-            
+            ).select_for_update().order_by('order'))
+
             for remaining in remaining_steps:
                 remaining.order -= 1
                 remaining.save(update_fields=['order'])
@@ -158,59 +158,62 @@ class BookingFlowStepService:
             flow = BookingFlow.objects.get(id=flow_id)
         except BookingFlow.DoesNotExist:
             raise BookingFlowNotFound()
-        
+
         with transaction.atomic():
-            steps = BookingFlowStep.objects.filter(
+            # Lock all steps for this flow
+            steps = list(BookingFlowStep.objects.filter(
                 booking_flow=flow
-            ).select_for_update()
-            
+            ).select_for_update().order_by('order'))
+
             # Convert string IDs to integers
             int_order_mapping = {int(k): v for k, v in order_mapping.items()}
-            
-            # Get maximum order for temporary values
-            max_order = steps.aggregate(Max('order'))['order__max'] or 0
+
+            # Get maximum order for temporary values (from in-memory list)
+            max_order = max((s.order for s in steps), default=0)
             temp_start = max_order + 1000
-            
+
             # Phase 1: Assign temporary high orders
             for i, step in enumerate(steps):
                 if step.id in int_order_mapping:
                     step.order = temp_start + i
                     step.save(update_fields=['order'])
-            
+
             # Phase 2: Assign final order values
             for step in steps:
                 if step.id in int_order_mapping:
                     step.order = int_order_mapping[step.id]
                     step.save(update_fields=['order'])
-            
+
             logger.info(f"Reordered steps for flow: {flow.name}")
-            return steps.order_by('order')
+
+            # Return evaluated list (not lazy queryset) to avoid transaction issues
+            return list(BookingFlowStep.objects.filter(booking_flow=flow).order_by('order'))
     
     @staticmethod
     def _reorder_step(step, new_order):
         """Helper method to reorder a single step"""
         flow = step.booking_flow
         old_order = step.order
-        
-        # Get all steps for this flow
-        all_steps = BookingFlowStep.objects.filter(
+
+        # Get all steps for this flow and lock them (evaluate to list)
+        all_steps = list(BookingFlowStep.objects.filter(
             booking_flow=flow
-        ).select_for_update().order_by('order')
-        
-        # Get maximum order for temporary values
-        max_order = all_steps.aggregate(Max('order'))['order__max'] or 0
+        ).select_for_update().order_by('order'))
+
+        # Get maximum order for temporary values (from in-memory list)
+        max_order = max((s.order for s in all_steps), default=0)
         temp_start = max_order + 1000
-        
+
         # Assign temporary orders
         for i, s in enumerate(all_steps):
             s.order = temp_start + i
             s.save(update_fields=['order'])
-        
+
         # Create list in desired order
         step_list = [s for s in all_steps if s.id != step.id]
         insert_position = min(new_order - 1, len(step_list))
         step_list.insert(insert_position, step)
-        
+
         # Assign final sequential orders
         for i, s in enumerate(step_list, start=1):
             s.order = i
