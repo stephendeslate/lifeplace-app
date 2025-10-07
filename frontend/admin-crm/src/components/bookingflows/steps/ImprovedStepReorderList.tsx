@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/bookingflows/steps/ImprovedStepReorderList.tsx
 
-import React from 'react';
+import React, { useRef, forwardRef, useImperativeHandle } from 'react';
 import { Box, Typography, Chip, Stack } from '@mui/material';
 import {
   CheckCircle as EnabledIcon,
@@ -8,7 +8,7 @@ import {
   Star as RequiredIcon,
   StarBorder as OptionalIcon,
 } from '@mui/icons-material';
-import { DraggableList } from '../../common/DraggableList';
+import { DraggableList, type DraggableListRef } from '../../common/DraggableList';
 import type { BookingFlowStep } from '../../../types/bookingflows.types';
 import { useBookingFlowSteps } from '../../../hooks/useBookingFlows';
 
@@ -16,14 +16,28 @@ interface ImprovedStepReorderListProps {
   flowId: number;
   steps: BookingFlowStep[];
   onReorderComplete?: () => void;
+  onHasChangesChange?: (hasChanges: boolean) => void;
 }
 
-export const ImprovedStepReorderList: React.FC<ImprovedStepReorderListProps> = ({
-  flowId,
-  steps,
-  onReorderComplete,
-}) => {
+export interface ImprovedStepReorderListRef {
+  save: () => Promise<void>;
+}
+
+const ImprovedStepReorderListInner: React.ForwardRefRenderFunction<
+  ImprovedStepReorderListRef,
+  ImprovedStepReorderListProps
+> = ({ flowId, steps, onReorderComplete, onHasChangesChange }, ref) => {
   const { reorderSteps } = useBookingFlowSteps();
+  const draggableListRef = useRef<DraggableListRef>(null);
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    save: async () => {
+      if (draggableListRef.current) {
+        await draggableListRef.current.save();
+      }
+    },
+  }), []);
 
   const getStepTypeColor = (stepType: string) => {
     const colors = {
@@ -133,16 +147,21 @@ export const ImprovedStepReorderList: React.FC<ImprovedStepReorderListProps> = (
       </Typography>
       
       <DraggableList<BookingFlowStep>
+        ref={draggableListRef}
         items={steps}
         onReorder={handleReorder}
         renderItem={renderStepItem}
         keyExtractor={(step) => step.id.toString()}
         showSaveButton={true}
+        hideInternalSaveButton={true}
         enableKeyboardReorder={true}
         emptyMessage="No steps to reorder. Add steps to this booking flow first."
         isDragDisabled={() => false} // Could disable based on step properties
         containerProps={{ sx: { mt: 2 } }}
+        onHasChangesChange={onHasChangesChange}
       />
     </Box>
   );
 };
+
+export const ImprovedStepReorderList = forwardRef(ImprovedStepReorderListInner);

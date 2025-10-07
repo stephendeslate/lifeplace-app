@@ -1,15 +1,15 @@
 // Booking Flow Steps Settings Page - Unified Settings System
 // Manages all booking flow steps and their configurations
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { 
+import {
   List as StepsIcon,
   Settings as ConfigIcon,
   DragIndicator as DragIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
-import { 
+import {
   Box,
   Chip,
   Typography,
@@ -17,17 +17,17 @@ import {
   Stack,
   Button,
 } from '@mui/material';
-import { 
-  SettingsPage, 
-  type SettingsPageConfig, 
-  type SettingsTableColumn 
+import {
+  SettingsPage,
+  type SettingsPageConfig,
+  type SettingsTableColumn
 } from '../../../components/common/settings';
 import { Container } from '@mui/material';
-import { 
+import {
   useBookingFlowSteps,
   useBookingFlows,
 } from '../../../hooks/useBookingFlows';
-import type { 
+import type {
   BookingFlowStep,
   CreateBookingFlowStepData,
   UpdateBookingFlowStepData,
@@ -36,7 +36,7 @@ import type {
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 import type { HeaderAction } from '../../../components/common/ModernPageHeader';
 import { StepConfigurationPanel } from '../../../components/bookingflows/steps/StepConfigurationPanel';
-import { ImprovedStepReorderList } from '../../../components/bookingflows/steps/ImprovedStepReorderList';
+import { ImprovedStepReorderList, type ImprovedStepReorderListRef } from '../../../components/bookingflows/steps/ImprovedStepReorderList';
 import { ModernDialog, createStandardActions } from '../../../components/common';
 import { SettingsTable } from '../../../components/common/settings/SettingsTable';
 import { SettingsFormDialog } from '../../../components/common/settings/SettingsFormDialog';
@@ -355,15 +355,17 @@ interface BookingFlowStepsProps {
   embedded?: boolean; // When true, doesn't add its own container
 }
 
-export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({ 
-  embedded = false 
+export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
+  embedded = false
 }) => {
   const { id } = useParams<{ id: string }>();
   const flowId = parseInt(id || '0');
-  
+
   const [selectedStep, setSelectedStep] = useState<BookingFlowStep | null>(null);
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
+  const [hasReorderChanges, setHasReorderChanges] = useState(false);
+  const reorderListRef = useRef<ImprovedStepReorderListRef>(null);
   
   // Hooks
   const { useBookingFlow } = useBookingFlows();
@@ -389,9 +391,12 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
     error: stepsError,
   } = useFlowSteps(flowId);
 
-  // Sort steps by order
-  const sortedSteps = [...steps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  
+  // Sort steps by order (memoized to prevent unnecessary recalculation and reference changes)
+  const sortedSteps = useMemo(() =>
+    [...steps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [steps]
+  );
+
   // Check for deprecated steps
   const hasDeprecatedSteps = sortedSteps.some(step => (step.step_type as string) === 'availability_check');
 
@@ -470,6 +475,13 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
       migrateAvailabilityStep(step.id, {
         onSuccess: () => refetchSteps(),
       });
+    }
+  };
+
+  // Handle save order from dialog button
+  const handleSaveOrder = async () => {
+    if (reorderListRef.current) {
+      await reorderListRef.current.save();
     }
   };
 
@@ -637,27 +649,36 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
             },
             {
               label: isReorderingSteps ? 'Saving...' : 'Save Order',
-              onClick: () => setShowReorder(false),
+              onClick: async () => {
+                await handleSaveOrder();
+                // Only close if save was successful (no error thrown)
+                setShowReorder(false);
+                setHasReorderChanges(false);
+              },
               variant: 'contained',
               color: 'primary',
               loading: isReorderingSteps,
+              disabled: !hasReorderChanges,
             },
           ]}
         >
           <Stack spacing={3}>
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-              Drag and drop steps to change their order in the booking flow. 
+              Drag and drop steps to change their order in the booking flow.
               The order affects how clients progress through your booking process.
             </Typography>
-            
+
             <Box>
-              <ImprovedStepReorderList 
+              <ImprovedStepReorderList
+                ref={reorderListRef}
                 flowId={flowId}
                 steps={sortedSteps}
                 onReorderComplete={() => {
                   refetchSteps();
                   setShowReorder(false);
+                  setHasReorderChanges(false);
                 }}
+                onHasChangesChange={setHasReorderChanges}
               />
             </Box>
           </Stack>

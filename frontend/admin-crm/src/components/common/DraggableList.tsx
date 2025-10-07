@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/common/DraggableList.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
 import {
   DragDropContext,
   Droppable,
@@ -40,23 +40,32 @@ interface DraggableListProps<T extends DraggableItem> {
   renderItem: (item: T, index: number) => React.ReactNode;
   keyExtractor?: (item: T) => string;
   showSaveButton?: boolean;
+  hideInternalSaveButton?: boolean; // Hide the internal save button (still requires manual save)
   enableKeyboardReorder?: boolean;
   emptyMessage?: string;
   isDragDisabled?: (item: T) => boolean;
   containerProps?: Record<string, unknown>;
+  onHasChangesChange?: (hasChanges: boolean) => void; // Callback when hasChanges state changes
 }
 
-export function DraggableList<T extends DraggableItem>({
+export interface DraggableListRef {
+  save: () => Promise<void>;
+  reset: () => void;
+}
+
+function DraggableListInner<T extends DraggableItem>({
   items,
   onReorder,
   renderItem,
   keyExtractor = (item) => String(item.id),
   showSaveButton = true,
+  hideInternalSaveButton = false,
   enableKeyboardReorder = true,
   emptyMessage = 'No items to reorder',
   isDragDisabled = () => false,
   containerProps = {},
-}: DraggableListProps<T>) {
+  onHasChangesChange,
+}: DraggableListProps<T>, ref: React.Ref<DraggableListRef>) {
   const [orderedItems, setOrderedItems] = useState<T[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -67,7 +76,8 @@ export function DraggableList<T extends DraggableItem>({
     const sorted = [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     setOrderedItems(sorted);
     setHasChanges(false);
-  }, [items]);
+    onHasChangesChange?.(false);
+  }, [items, onHasChangesChange]);
 
   const handleDragStart = (result: { draggableId: string }) => {
     setDraggedItem(result.draggableId);
@@ -90,6 +100,7 @@ export function DraggableList<T extends DraggableItem>({
 
     setOrderedItems(newItems);
     setHasChanges(true);
+    onHasChangesChange?.(true);
 
     // If not showing save button, auto-save
     if (!showSaveButton) {
@@ -108,15 +119,16 @@ export function DraggableList<T extends DraggableItem>({
 
     setOrderedItems(newItems);
     setHasChanges(true);
+    onHasChangesChange?.(true);
 
     if (!showSaveButton) {
       handleSave(newItems);
     }
   };
 
-  const handleSave = async (itemsToSave?: T[]) => {
+  const handleSave = useCallback(async (itemsToSave?: T[]) => {
     const finalItems = itemsToSave || orderedItems;
-    
+
     // Update order properties
     const reorderedWithNewOrder = finalItems.map((item, index) => ({
       ...item,
@@ -127,18 +139,28 @@ export function DraggableList<T extends DraggableItem>({
     try {
       await onReorder(reorderedWithNewOrder);
       setHasChanges(false);
+      onHasChangesChange?.(false);
     } catch (error) {
       console.error('Failed to save order:', error);
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [orderedItems, onReorder, onHasChangesChange]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     const sorted = [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     setOrderedItems(sorted);
     setHasChanges(false);
-  };
+    onHasChangesChange?.(false);
+  }, [items, onHasChangesChange]);
+
+  // Expose methods via ref (not hasChanges - use callback instead)
+  useImperativeHandle(ref, () => ({
+    save: async () => {
+      await handleSave();
+    },
+    reset: handleReset,
+  }), [handleSave, handleReset]);
 
   if (orderedItems.length === 0) {
     return (
@@ -162,7 +184,7 @@ export function DraggableList<T extends DraggableItem>({
       </Alert>
 
       {/* Action buttons */}
-      {showSaveButton && (
+      {showSaveButton && !hideInternalSaveButton && (
         <Box display="flex" justifyContent="flex-end" gap={1} mb={2}>
           <Button
             variant="outlined"
@@ -357,3 +379,8 @@ export function DraggableList<T extends DraggableItem>({
     </Box>
   );
 }
+
+// Export the component with forwardRef
+export const DraggableList = forwardRef(DraggableListInner) as <T extends DraggableItem>(
+  props: DraggableListProps<T> & { ref?: React.Ref<DraggableListRef> }
+) => React.ReactElement;
