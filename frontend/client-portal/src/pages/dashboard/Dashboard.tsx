@@ -168,10 +168,13 @@ const Dashboard: React.FC = () => {
                         key={quote.id}
                         variant="light"
                         intensity="subtle"
+                        hover={true}
                         sx={{
                           backgroundColor: alpha(theme.palette.error.main, 0.08),
                           border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
+                          cursor: 'pointer',
                         }}
+                        onClick={() => navigate(`/events/${quote.event_details.id}`, { state: { activeTab: 5 } })}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -197,7 +200,10 @@ const Dashboard: React.FC = () => {
                               variant="contained"
                               color="success"
                               size="small"
-                              onClick={() => handleQuoteAction(quote.id, 'accept')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuoteAction(quote.id, 'accept');
+                              }}
                             >
                               Accept
                             </Button>
@@ -205,7 +211,10 @@ const Dashboard: React.FC = () => {
                               variant="outlined"
                               color="error"
                               size="small"
-                              onClick={() => handleQuoteAction(quote.id, 'reject')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuoteAction(quote.id, 'reject');
+                              }}
                             >
                               Decline
                             </Button>
@@ -263,10 +272,13 @@ const Dashboard: React.FC = () => {
                         key={task.id}
                         variant="light"
                         intensity="subtle"
+                        hover={true}
                         sx={{
                           backgroundColor: alpha(theme.palette.warning.main, 0.08),
                           border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+                          cursor: 'pointer',
                         }}
+                        onClick={() => navigate(`/events/${task.eventId}`, { state: { activeTab: 3 } })}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -290,7 +302,10 @@ const Dashboard: React.FC = () => {
                           <Button
                             variant="outlined"
                             size="small"
-                            onClick={() => handleViewEvent(task.eventId)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewEvent(task.eventId);
+                            }}
                           >
                             View Event
                           </Button>
@@ -304,10 +319,13 @@ const Dashboard: React.FC = () => {
                         key={contract.id}
                         variant="light"
                         intensity="subtle"
+                        hover={true}
                         sx={{
                           backgroundColor: alpha(theme.palette.warning.main, 0.08),
                           border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+                          cursor: 'pointer',
                         }}
+                        onClick={() => navigate(`/events/${contract.eventId}`, { state: { activeTab: 6 } })}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -331,7 +349,10 @@ const Dashboard: React.FC = () => {
                           <Button
                             variant="contained"
                             size="small"
-                            onClick={() => navigate('/contracts')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/events/${contract.eventId}`, { state: { activeTab: 6 } });
+                            }}
                           >
                             Sign Contract
                           </Button>
@@ -473,82 +494,33 @@ const Dashboard: React.FC = () => {
                   Financial Summary
                 </Typography>
 
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3 }}>
-                  {/* Total Outstanding */}
-                  <Box sx={{ flex: { lg: 1 } }}>
-                    <GlassCard
-                      variant="light"
-                      intensity="subtle"
-                      sx={{
-                        backgroundColor: dashboardData.financialSummary.urgencyLevel === 'critical' || dashboardData.financialSummary.urgencyLevel === 'high'
-                          ? alpha(theme.palette.error.main, 0.08)
-                          : alpha(theme.palette.info.main, 0.08),
-                        border: `1px solid ${dashboardData.financialSummary.urgencyLevel === 'critical' || dashboardData.financialSummary.urgencyLevel === 'high'
-                          ? alpha(theme.palette.error.main, 0.3)
-                          : alpha(theme.palette.info.main, 0.3)}`,
-                      }}
-                    >
-                      <CardContent sx={{ textAlign: 'center' }}>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                          Total Outstanding
-                        </Typography>
-                        <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-                          ${dashboardData.financialSummary.totalOutstanding}
-                        </Typography>
-                        <Chip
-                          label={dashboardData.financialSummary.urgencyLevel.toUpperCase()}
-                          color={dashboardData.financialSummary.urgencyLevel === 'critical' || dashboardData.financialSummary.urgencyLevel === 'high' ? 'error' : 'info'}
-                          size="small"
-                        />
-                      </CardContent>
-                    </GlassCard>
-                  </Box>
-
-                  {/* Payment Plan Progress */}
-                  <Box sx={{ flex: { lg: 2 } }}>
-                    <GlassCard variant="light" intensity="subtle" sx={{ height: '100%' }}>
-                      <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                          Payment Plans
-                        </Typography>
-                        {dashboardData.financialSummary.paymentPlanProgress.length > 0 ? (
-                          <Stack spacing={2}>
-                            {dashboardData.financialSummary.paymentPlanProgress.slice(0, 2).map((plan) => (
-                              <Box key={plan.planId}>
-                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                    {plan.eventName}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    ${plan.paidAmount} / ${plan.totalAmount}
-                                  </Typography>
-                                </Box>
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={plan.progressPercentage}
-                                  sx={{ height: 6, borderRadius: 3, mb: 1 }}
-                                />
-                                <Typography variant="caption" color="text.secondary">
-                                  {plan.progressPercentage}% complete
-                                  {plan.nextDueDate && (
-                                    <> • Next payment: {formatInTimeZone(plan.nextDueDate, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}</>
-                                  )}
-                                </Typography>
-                              </Box>
-                            ))}
-                          </Stack>
-                        ) : (
-                          <Box sx={{ textAlign: 'center', py: 3 }}>
-                            <PaymentIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                            <Typography variant="body2" color="text.secondary">
-                              No active payment plans
-                            </Typography>
-                          </Box>
-                        )}
-                      </CardContent>
-                    </GlassCard>
-                  </Box>
-                </Box>
+                {/* Total Outstanding */}
+                <GlassCard
+                  variant="light"
+                  intensity="subtle"
+                  sx={{
+                    backgroundColor: dashboardData.financialSummary.urgencyLevel === 'critical' || dashboardData.financialSummary.urgencyLevel === 'high'
+                      ? alpha(theme.palette.error.main, 0.08)
+                      : alpha(theme.palette.info.main, 0.08),
+                    border: `1px solid ${dashboardData.financialSummary.urgencyLevel === 'critical' || dashboardData.financialSummary.urgencyLevel === 'high'
+                      ? alpha(theme.palette.error.main, 0.3)
+                      : alpha(theme.palette.info.main, 0.3)}`,
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Total Outstanding
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+                      ${dashboardData.financialSummary.totalOutstanding}
+                    </Typography>
+                    <Chip
+                      label={dashboardData.financialSummary.urgencyLevel.toUpperCase()}
+                      color={dashboardData.financialSummary.urgencyLevel === 'critical' || dashboardData.financialSummary.urgencyLevel === 'high' ? 'error' : 'info'}
+                      size="small"
+                    />
+                  </CardContent>
+                </GlassCard>
               </Box>
 
               <Divider />
