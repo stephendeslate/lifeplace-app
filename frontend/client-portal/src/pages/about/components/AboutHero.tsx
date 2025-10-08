@@ -52,9 +52,6 @@ export const AboutHero: React.FC = () => {
                 }}
               >
                 LifePlace Alfonso
-                <Box component="span" sx={{ display: 'block', color: alpha('#fff', 0.9), mt: 2 }}>
-                  Retreat & Event Center
-                </Box>
               </Typography>
             </Box>
           </AnimatedElement>
