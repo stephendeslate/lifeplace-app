@@ -118,7 +118,6 @@ export const STEP_TYPES = [
   { value: 'pricing_summary', label: 'Pricing Summary' },
   { value: 'contact_info', label: 'Contact Information' },
   { value: 'payment_info', label: 'Payment Information' },
-  { value: 'review_booking', label: 'Review Booking' },
   { value: 'confirmation', label: 'Confirmation' },
 ] as const;
 

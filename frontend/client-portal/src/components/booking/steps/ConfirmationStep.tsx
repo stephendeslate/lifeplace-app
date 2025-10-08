@@ -54,10 +54,9 @@ interface ConfirmationStepProps {
 }
 
 export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
-  stepData = { 
-    booking_reference: '', 
+  stepData = {
+    booking_reference: '',
     completion_status: 'pending',
-    confirmation_email_sent: false 
   },
   config,
   onDataChange,
@@ -111,15 +110,13 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     };
   }, [pricing.total, paymentType]);
 
-  // Use refs to track if operations have been done
+  // Use ref to track if completion has been processed
   const completionProcessedRef = useRef(false);
-  const emailSentRef = useRef(false);
 
   // Use stepData as single source of truth
   const confirmationData = useMemo(() => ({
     booking_reference: stepData.booking_reference || '',
     completion_status: stepData.completion_status || 'pending',
-    confirmation_email_sent: stepData.confirmation_email_sent || false,
     completed_at: stepData.completed_at,
     booking_completion_result: stepData.booking_completion_result,
   }), [stepData]);
@@ -132,11 +129,9 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     supportContact,
     confirmationContent,
     completeBooking,
-    sendConfirmationEmail,
     navigateToDashboard,
     navigateToHome,
     completing,
-    sendingEmail,
     error,
     completionResult,
     bookingReference,
@@ -159,7 +154,6 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   // Use config properties with proper fallbacks
   const showBookingSummary = config?.show_booking_summary !== false;
   const showNextSteps = config?.show_next_steps !== false;
-  const shouldSendConfirmationEmail = config?.send_confirmation_email !== false;
 
   // Handle completion with user confirmation
   const handleCompleteBooking = useCallback(async () => {
@@ -197,25 +191,6 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     }
   }, [isCompleted, isProcessing, confirmationData, onDataChange, completeBooking, state.stepData.payment_info?.completion_type]);
 
-  // Handle email sending
-  const handleSendEmail = useCallback(async () => {
-    if (!confirmationData.booking_reference || 
-        confirmationData.confirmation_email_sent || 
-        !shouldSendConfirmationEmail) {
-      return;
-    }
-
-    try {
-      await sendConfirmationEmail();
-      onDataChange({
-        ...confirmationData,
-        confirmation_email_sent: true
-      });
-    } catch (error) {
-      console.error('Failed to send confirmation email:', error);
-    }
-  }, [confirmationData, sendConfirmationEmail, onDataChange, shouldSendConfirmationEmail]);
-
   // Update step data when completion result is available (STABLE VERSION)
   React.useEffect(() => {
     if (completionResult &&
@@ -232,23 +207,10 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     }
   }, [completionResult, stepData, bookingReference, onDataChange]);
 
-  // Auto-send email when booking is completed (STABLE VERSION)
-  React.useEffect(() => {
-    if (isCompleted &&
-        stepData.booking_reference &&
-        !stepData.confirmation_email_sent &&
-        !emailSentRef.current) {
-
-      emailSentRef.current = true;
-      handleSendEmail();
-    }
-  }, [isCompleted, stepData.booking_reference, stepData.confirmation_email_sent, handleSendEmail]);
-
   // Reset refs when stepData changes significantly
   React.useEffect(() => {
     if (stepData.completion_status === 'pending') {
       completionProcessedRef.current = false;
-      emailSentRef.current = false;
     }
   }, [stepData.completion_status]);
 
@@ -433,25 +395,6 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
                   variant="outlined"
                   sx={{ fontSize: '1.1rem', py: 1 }}
                 />
-              </Box>
-            )}
-
-            {/* Email Confirmation Status */}
-            {shouldSendConfirmationEmail && (
-              <Box sx={{ mb: 2 }}>
-                {confirmationData.confirmation_email_sent ? (
-                  <Alert severity="success" icon={<Email />}>
-                    <strong>Confirmation email sent!</strong> Check your inbox for booking details.
-                  </Alert>
-                ) : sendingEmail ? (
-                  <Alert severity="info" icon={<CircularProgress size={16} />}>
-                    Sending confirmation email...
-                  </Alert>
-                ) : (
-                  <Alert severity="warning">
-                    We're having trouble sending your confirmation email, but your booking is confirmed.
-                  </Alert>
-                )}
               </Box>
             )}
           </>

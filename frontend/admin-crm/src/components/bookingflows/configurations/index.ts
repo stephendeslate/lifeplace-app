@@ -8,5 +8,4 @@ export { AddonSelectionStepConfig } from './AddonSelectionStepConfig';
 export { PricingSummaryStepConfig } from './PricingSummaryStepConfig';
 export { ContactInfoStepConfig } from './ContactInfoStepConfig';
 export { PaymentInfoStepConfig } from './PaymentInfoStepConfig';
-export { ReviewBookingStepConfig } from './ReviewBookingStepConfig';
 export { ConfirmationStepConfig } from './ConfirmationStepConfig';

@@ -54,9 +54,12 @@ export interface AddonSelectionStepData {
   selected_addons?: SelectedAddon[];
 }
 
-// Fixed: Changed to match backend expectations - only store discount code
+// Extended: Now includes review fields (terms, consent, special requests)
 export interface PricingSummaryStepData {
-  applied_discount_code?: string; // Changed from applied_discount object to just the code
+  applied_discount_code?: string;
+  terms_accepted?: boolean;
+  marketing_consent?: boolean;
+  special_requests?: string;
 }
 
 export interface ContactInfoStepData {
@@ -151,11 +154,7 @@ export interface PricingCalculation {
   line_items?: PricingLineItem[];
 }
 
-export interface ReviewStepData {
-  terms_accepted: boolean;
-  marketing_consent?: boolean;
-  special_requests?: string;
-}
+// ReviewStepData removed - functionality moved to PricingSummaryStepData
 
 export interface ConfirmationStepData {
   booking_reference: string;
@@ -176,7 +175,6 @@ export interface StepData {
   pricing_summary?: PricingSummaryStepData;
   contact_info?: ContactInfoStepData;
   payment_info?: PaymentStepData;
-  review_booking?: ReviewStepData;
   confirmation?: ConfirmationStepData;
   [key: string]: unknown;
 }

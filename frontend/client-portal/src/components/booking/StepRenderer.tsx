@@ -11,7 +11,6 @@ import { IntelligentDateTimeStep } from './steps/IntelligentDateTimeStep';
 import { EnhancedContactInfoStep } from './steps/EnhancedContactInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
 import { QuestionnaireStep } from './steps/QuestionnaireStep';
-import { ReviewStep } from './steps/ReviewStep';
 import { ConfirmationStep } from './steps/ConfirmationStep';
 import { CleanPackageSelectionStep } from './steps/CleanPackageSelectionStep';
 import { AddonSelectionStep } from './steps/AddonSelectionStep';
@@ -98,10 +97,6 @@ export const StepRenderer: React.FC = () => {
     handleDataChange('payment_info', data);
   }, [handleDataChange]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleReviewChange = useCallback((data: any) => {
-    handleDataChange('review_booking', data);
-  }, [handleDataChange]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleConfirmationChange = useCallback((data: any) => {
@@ -206,10 +201,14 @@ export const StepRenderer: React.FC = () => {
       return (
         <PricingSummaryStep
           stepData={state.stepData.pricing_summary}
+          allStepData={state.stepData}
           config={configuration_data as PricingSummaryStepConfiguration | null}
           onDataChange={handlePricingSummaryChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
+          flow={state.currentFlow}
+          session={state.currentSession}
+          totalPrice={state.totalPrice}
         />
       );
 
@@ -237,21 +236,6 @@ export const StepRenderer: React.FC = () => {
           totalAmount={state.totalPrice}
           flowId={state.currentFlow?.id}
           onValidate={handleValidation}
-        />
-      );
-
-    case 'review_booking':
-      return (
-        <ReviewStep
-          stepData={state.stepData.review_booking}
-          allStepData={state.stepData}
-          config={configuration_data as Record<string, unknown>}
-          onDataChange={handleReviewChange}
-          validationErrors={mergedValidationErrors}
-          isValidating={state.ui.isValidating}
-          flow={state.currentFlow}
-          session={state.currentSession}
-          totalPrice={state.totalPrice}
         />
       );
 
