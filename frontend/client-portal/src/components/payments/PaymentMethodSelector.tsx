@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/payments/PaymentMethodSelector.tsx
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   Box,
   FormControl,
@@ -34,6 +34,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GlassCard } from '../../design-system';
 import { PaymentGatewaySelector } from './PaymentGatewaySelector';
 import { UnifiedStripePaymentFlow } from './UnifiedStripePaymentFlow';
+import { useAuth } from '../../hooks/useAuth';
 import type {
   SaveModeConfig,
   PaymentFlowResult,
@@ -349,6 +350,10 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 }) => {
   const theme = useTheme();
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const { isAuthenticated } = useAuth();
+
+  // Guard to prevent infinite loop from auto-trigger
+  const hasAutoTriggeredRef = useRef(false);
 
   const {
     data: paymentMethods,
@@ -357,6 +362,15 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   } = useQuery({
     queryKey: ['paymentMethods'],
     queryFn: () => FinancialApi.getPaymentMethods(),
+    enabled: isAuthenticated, // Only fetch payment methods if user is authenticated
+    retry: (failureCount, error) => {
+      // Don't retry auth errors for guest users
+      const errorObj = error as { response?: { status?: number } };
+      if (errorObj.response?.status === 401 || errorObj.response?.status === 403) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 
   // Filter payment methods by allowed types with defensive programming
@@ -365,6 +379,21 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         !allowedTypes || allowedTypes.includes(method.type)
       )
     : [];
+
+  // Reset auto-trigger guard when authentication status changes
+  useEffect(() => {
+    hasAutoTriggeredRef.current = false;
+  }, [isAuthenticated]);
+
+  // Auto-trigger "Add New Payment Method" for guest users (ONE TIME ONLY)
+  useEffect(() => {
+    if (!isAuthenticated && showAddNew && onAddNewClick && !hasAutoTriggeredRef.current) {
+      // For guest users, automatically trigger the add new payment method flow
+      // Guard prevents infinite loop by ensuring this only runs once
+      hasAutoTriggeredRef.current = true;
+      onAddNewClick();
+    }
+  }, [isAuthenticated, showAddNew, onAddNewClick]);
 
   const handleMethodChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const methodId = parseInt(event.target.value);
@@ -377,7 +406,8 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
     onMethodSelect(newMethod);
   };
 
-  if (isLoading) {
+  // Only show loading for authenticated users
+  if (isLoading && isAuthenticated) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
         <CircularProgress />
@@ -385,11 +415,27 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
     );
   }
 
-  if (error) {
+  // Only show error for authenticated users (guest users should skip this)
+  if (error && isAuthenticated) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
         Failed to load payment methods. Please try again.
       </Alert>
+    );
+  }
+
+  // For guest users with no methods, show the "add new" UI directly
+  if (!isAuthenticated && showAddNew) {
+    // Guest users should see the add new button immediately
+    // The auto-trigger useEffect will handle opening the flow
+    return (
+      <GlassCard variant="light" intensity="subtle">
+        <Box sx={{ p: 3 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 2 }}>
+            Add a payment method to complete your booking
+          </Typography>
+        </Box>
+      </GlassCard>
     );
   }
 
