@@ -208,28 +208,99 @@ class BookingSessionService:
                             email=step_data['email'],
                             role='CLIENT'
                         ).first()
-                        
+
                         if existing_user:
                             # Use existing client user
                             user = existing_user
                             session.client = user
+                            logger.info(f"Associated existing client user: {user.email} (id: {user.id})")
                             print(f"DEBUG: Associated existing client user: {user.email}")
+
+                            # Log warning if guest tried to create account with existing email
+                            if step_data.get('create_account'):
+                                logger.warning(
+                                    f"⚠️ Guest attempted to create account with existing email: {user.email}. "
+                                    f"Using existing account instead. Password NOT updated for security."
+                                )
                         else:
-                            # Create new user record
+                            # Parse full_name into first_name and last_name
+                            full_name = step_data.get('full_name', '').strip()
+                            name_parts = full_name.split(' ', 1) if full_name else ['', '']
+                            first_name = name_parts[0]
+                            last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+                            # Build base user data
                             user_data = {
                                 'email': step_data['email'],
-                                'first_name': step_data.get('first_name', ''),
-                                'last_name': step_data.get('last_name', ''),
+                                'first_name': first_name,
+                                'last_name': last_name,
                                 'role': 'CLIENT',
                                 'is_active': True,
-                                # Don't set password - UserService will set unusable password
                             }
-                            
+
+                            # CRITICAL FIX: Add password if account creation requested
+                            create_account = step_data.get('create_account', False)
+                            password = step_data.get('password', '')
+
+                            if create_account and password:
+                                user_data['password'] = password
+                                logger.info(f"Creating CLIENT account WITH password for: {user_data['email']}")
+                            else:
+                                # No password provided - UserService will set unusable password
+                                logger.info(f"Creating CLIENT user WITHOUT password (guest booking) for: {user_data['email']}")
+
+                            # Add profile data if provided
+                            profile_data = {}
+                            if step_data.get('phone'):
+                                profile_data['phone'] = step_data['phone']
+                            if step_data.get('address'):
+                                profile_data['address'] = step_data['address']
+                            if step_data.get('company'):
+                                profile_data['company'] = step_data['company']
+
+                            if profile_data:
+                                user_data['profile'] = profile_data
+
+                            # Create user
                             user = UserService.create_user(user_data)
-                            
+
                             # Update session with new user
                             session.client = user
+                            logger.info(f"✅ Successfully created client user: {user.email} (id: {user.id}, has_password: {create_account and bool(password)})")
                             print(f"DEBUG: Created new client user: {user.email}")
+
+                            # Send welcome email for newly created accounts with passwords
+                            if create_account and password:
+                                try:
+                                    from core.domains.communications.services import CommunicationService
+
+                                    # Initialize communication service
+                                    comm_service = CommunicationService()
+
+                                    # Prepare template context
+                                    template_data = {
+                                        'client_name': user.get_full_name() or user.first_name or user.email,
+                                        'email': user.email,
+                                        'first_name': user.first_name,
+                                        'booking_in_progress': True,
+                                    }
+
+                                    # Send welcome email using existing template
+                                    comm_service.send_communication_by_template_name(
+                                        template_name='Welcome Email',
+                                        recipient=user.email,
+                                        context_data=template_data,
+                                        client=user,
+                                        sent_by=None,  # System-generated
+                                        use_async=False  # Synchronous for immediate feedback
+                                    )
+
+                                    logger.info(f"✅ Sent welcome email to new client account: {user.email}")
+
+                                except Exception as email_error:
+                                    # Log warning but don't fail booking if email fails
+                                    logger.warning(f"⚠️ Failed to send welcome email to {user.email}: {email_error}")
+                                    # Don't raise - email failure shouldn't block booking
                         
                     except Exception as e:
                         print(f"DEBUG: Failed to create/associate client user: {str(e)}")
