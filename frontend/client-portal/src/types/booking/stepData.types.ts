@@ -236,3 +236,98 @@ export interface Discount {
   created_at: string;
   updated_at: string;
 }
+
+// Booking Review Summary Types (for confirmation display)
+export interface EventSummary {
+  eventType: string;
+  date: string;
+  time?: string;
+  duration?: number;
+  venue?: string;
+  location?: string;
+}
+
+export interface PackageLineItem {
+  product_id: number;
+  name: string;
+  quantity: number;
+  base_price: string;
+  unit_price: string;
+  line_total: string;
+  included_hours?: number;
+  excess_hours?: number;
+  excess_hour_price?: string;
+  excess_cost?: string;
+}
+
+export interface AddonLineItem {
+  product_id: number;
+  name: string;
+  quantity: number;
+  unit_price: string;
+  line_total: string;
+}
+
+export interface PricingBreakdown {
+  subtotal: string;
+  tax: string;
+  discount: string;
+  total: string;
+  discountDetails?: {
+    name: string;
+    code: string;
+    type: string;
+    value: string;
+    amount: string;
+  };
+  formattedSubtotal: string;
+  formattedTax: string;
+  formattedDiscount: string;
+  formattedTotal: string;
+}
+
+export interface PaymentSummary {
+  paymentType: 'FULL' | 'DEPOSIT';
+  totalAmount: string;
+  amountPaid: string;
+  remainingBalance: string;
+  balanceDueDate?: string;
+  balanceDueDays?: number;
+  paymentMethod?: string;
+  paymentMethodLast4?: string;
+  completionType?: 'payment' | 'quote';
+  quoteMessage?: string;
+}
+
+export interface ContactSummary {
+  fullName: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  address?: string;
+  accountCreated?: boolean;
+}
+
+export interface QuestionnaireResponseSummary {
+  questionnaireId: number;
+  questionnaireName?: string;
+  responses: Array<{
+    fieldId: string;
+    question: string;
+    answer: string | number | boolean | string[];
+    fieldType: string;
+  }>;
+}
+
+export interface BookingReviewSummary {
+  event: EventSummary;
+  packages: PackageLineItem[];
+  addons: AddonLineItem[];
+  pricing: PricingBreakdown;
+  payment: PaymentSummary;
+  contact: ContactSummary;
+  questionnaire?: QuestionnaireResponseSummary[];
+  specialRequests?: string;
+  termsAccepted?: boolean;
+  marketingConsent?: boolean;
+}

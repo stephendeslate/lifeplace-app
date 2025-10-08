@@ -8,38 +8,41 @@ import {
   Button,
   Alert,
   CircularProgress,
-  Card,
-  CardContent,
   Chip,
   Divider,
-  Stack,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import { 
-  CheckCircle, 
-  CalendarToday, 
-  Email, 
-  AccessTime,
-  Group,
-  Receipt,
-  Payment,
+import {
+  CheckCircle,
   Info,
   NavigateNext,
   Home,
   Dashboard,
+  Person,
 } from '@mui/icons-material';
 import { useBooking } from '../../../contexts/BookingContext';
 import { useConfirmation } from '../../../hooks/booking/useConfirmation';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
 import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
-import type { 
+import { usePaymentPlanSettings } from '../../../hooks/usePaymentPlanSettings';
+import { BookingSummaryCard } from '../shared/BookingSummaryCard';
+import { PaymentSummaryCard } from '../shared/PaymentSummaryCard';
+import { QuestionnaireSummaryCard } from '../shared/QuestionnaireSummaryCard';
+import type {
   ConfirmationStepConfiguration,
   ConfirmationStepData,
   StepValidationResult,
-  BookingSession
+  BookingSession,
+  EventSummary,
+  PackageLineItem,
+  AddonLineItem,
+  PricingBreakdown,
+  PaymentSummary,
+  ContactSummary,
+  QuestionnaireResponseSummary,
 } from '../../../types/booking';
 
 interface ConfirmationStepProps {
@@ -66,49 +69,25 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   const { state } = useBooking();
   const currentSession = session || state.currentSession;
   const { formatAmount } = useCurrencySettings();
-  
+
+  // Get payment plan settings for refund policy
+  const { data: paymentPlanSettings } = usePaymentPlanSettings();
+
   // Get selected packages and addons from booking state
   const selectedPackages = state.stepData.package_selection?.selected_packages || [];
   const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
-  
+
   // Get payment info from booking state
   const paymentInfo = state.stepData.payment_info;
   const paymentType = paymentInfo?.payment_type || 'FULL';
-  
+  const completionType = paymentInfo?.completion_type || 'payment';
+
   // Calculate pricing using simplified pricing hook
   const { pricing } = useSimplePricing(
     selectedPackages,
     selectedAddons,
     state.stepData.pricing_summary?.applied_discount_code
   );
-
-  // Calculate what user pays today based on payment type
-  const paymentAmounts = useMemo(() => {
-    const totalAmount = pricing.total;
-    
-    if (paymentType === 'DEPOSIT') {
-      // Calculate deposit based on payment step configuration (typically 30%)
-      // This should ideally come from the backend payment configuration
-      const depositAmount = totalAmount * 0.30;
-      const remainingAmount = totalAmount - depositAmount;
-      
-      return {
-        totalAmount,
-        paymentAmount: depositAmount,
-        remainingAmount,
-        isDeposit: true,
-        hasRemainingBalance: true,
-      };
-    }
-    
-    return {
-      totalAmount,
-      paymentAmount: totalAmount,
-      remainingAmount: 0,
-      isDeposit: false,
-      hasRemainingBalance: false,
-    };
-  }, [pricing.total, paymentType]);
 
   // Use ref to track if completion has been processed
   const completionProcessedRef = useRef(false);
@@ -141,12 +120,12 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   );
 
   // Computed values
-  const isCompleted = useMemo(() => 
+  const isCompleted = useMemo(() =>
     confirmationData.completion_status === 'completed' || !!completionResult,
     [confirmationData.completion_status, completionResult]
   );
 
-  const isProcessing = useMemo(() => 
+  const isProcessing = useMemo(() =>
     confirmationData.completion_status === 'processing' || completing,
     [confirmationData.completion_status, completing]
   );
@@ -166,9 +145,8 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         completion_status: 'processing'
       });
 
-      const completionType = state.stepData.payment_info?.completion_type || 'payment';
       const success = await completeBooking(completionType);
-      
+
       if (success) {
         onDataChange({
           ...confirmationData,
@@ -189,7 +167,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         completion_status: 'failed'
       });
     }
-  }, [isCompleted, isProcessing, confirmationData, onDataChange, completeBooking, state.stepData.payment_info?.completion_type]);
+  }, [isCompleted, isProcessing, confirmationData, onDataChange, completeBooking, completionType]);
 
   // Update step data when completion result is available (STABLE VERSION)
   React.useEffect(() => {
@@ -214,148 +192,208 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     }
   }, [stepData.completion_status]);
 
-  // Render booking summary card
-  const renderBookingSummary = () => {
-    if (!showBookingSummary || !sessionDetails) return null;
+  // Prepare event summary data
+  const eventData: EventSummary | undefined = useMemo(() => {
+    const dateTimeData = state.stepData.date_time;
+    if (!dateTimeData?.start_date) return undefined;
 
-    return (
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Booking Summary
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <Stack spacing={2}>
-            {eventSummary?.date && (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <CalendarToday sx={{ mr: 2, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Event Date
-                  </Typography>
-                  <Typography variant="body1">
-                    {eventSummary.date}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-            {eventSummary?.time && (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <AccessTime sx={{ mr: 2, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Event Time
-                  </Typography>
-                  <Typography variant="body1">
-                    {eventSummary.time}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-            {eventSummary?.contact?.name && (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Group sx={{ mr: 2, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Contact
-                  </Typography>
-                  <Typography variant="body1">
-                    {eventSummary.contact.name}
-                  </Typography>
-                  {eventSummary.contact.email && (
-                    <Typography variant="body2" color="text.secondary">
-                      {eventSummary.contact.email}
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-            )}
-            {pricing.total > 0 && (
-              <>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Receipt sx={{ mr: 2, color: 'text.secondary' }} />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Price
-                    </Typography>
-                    <Typography variant="h6" color="primary">
-                      {formatAmount(paymentAmounts.totalAmount)}
-                    </Typography>
-                  </Box>
-                </Box>
-                
-                {paymentAmounts.isDeposit && (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Payment sx={{ mr: 2, color: 'success.main' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        What You Pay Today
-                      </Typography>
-                      <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
-                        {formatAmount(paymentAmounts.paymentAmount)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Deposit payment
-                      </Typography>
-                    </Box>
-                  </Box>
-                )}
-                
-                {!paymentAmounts.isDeposit && paymentType === 'FULL' && (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Payment sx={{ mr: 2, color: 'success.main' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        What You Pay Today
-                      </Typography>
-                      <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
-                        {formatAmount(paymentAmounts.paymentAmount)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Full payment
-                      </Typography>
-                    </Box>
-                  </Box>
-                )}
-              </>
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
-    );
-  };
+    return {
+      eventType: state.currentFlow?.event_type_name || 'Event',
+      date: new Date(dateTimeData.start_date).toLocaleDateString(),
+      time: dateTimeData.start_time,
+      duration: dateTimeData.duration,
+      venue: dateTimeData.venue_preference,
+    };
+  }, [state.stepData.date_time, state.currentFlow]);
+
+  // Prepare package line items
+  const packageLineItems: PackageLineItem[] = useMemo(() => {
+    return selectedPackages.map(pkg => {
+      const lineItem = pricing.lineItems?.find(item => item.product_id === pkg.product_id);
+      return {
+        product_id: pkg.product_id,
+        name: pkg.name,
+        quantity: pkg.quantity,
+        base_price: pkg.price,
+        unit_price: lineItem?.total_unit_price || pkg.price,
+        line_total: lineItem?.line_total || (parseFloat(pkg.price) * pkg.quantity).toString(),
+        included_hours: pkg.included_hours,
+        excess_hours: lineItem?.excess_hours || undefined,
+        excess_hour_price: lineItem?.excess_hour_price || pkg.excess_hour_price,
+        excess_cost: lineItem?.excess_cost,
+      };
+    });
+  }, [selectedPackages, pricing.lineItems]);
+
+  // Prepare addon line items
+  const addonLineItems: AddonLineItem[] = useMemo(() => {
+    return selectedAddons.map(addon => {
+      const lineItem = pricing.lineItems?.find(item => item.product_id === addon.product_id);
+      return {
+        product_id: addon.product_id,
+        name: addon.name,
+        quantity: addon.quantity,
+        unit_price: lineItem?.total_unit_price || addon.price,
+        line_total: lineItem?.line_total || (parseFloat(addon.price) * addon.quantity).toString(),
+      };
+    });
+  }, [selectedAddons, pricing.lineItems]);
+
+  // Prepare pricing breakdown
+  const pricingBreakdown: PricingBreakdown = useMemo(() => ({
+    subtotal: pricing.subtotal.toString(),
+    tax: pricing.tax.toString(),
+    discount: pricing.discount.toString(),
+    total: pricing.total.toString(),
+    discountDetails: pricing.discountDetails,
+    formattedSubtotal: pricing.formattedSubtotal,
+    formattedTax: pricing.formattedTax,
+    formattedDiscount: pricing.formattedDiscount,
+    formattedTotal: pricing.formattedTotal,
+  }), [pricing]);
+
+  // Prepare payment summary
+  const paymentSummary: PaymentSummary = useMemo(() => {
+    const totalAmount = pricing.total;
+
+    let depositAmount = 0;
+    if (paymentType === 'DEPOSIT' && paymentPlanSettings) {
+      depositAmount = (totalAmount * paymentPlanSettings.default_deposit_percentage) / 100;
+    }
+
+    const amountPaid = paymentType === 'DEPOSIT' ? depositAmount : totalAmount;
+    const remainingBalance = paymentType === 'DEPOSIT' ? totalAmount - depositAmount : 0;
+
+    return {
+      paymentType,
+      totalAmount: totalAmount.toString(),
+      amountPaid: amountPaid.toString(),
+      remainingBalance: remainingBalance.toString(),
+      balanceDueDays: paymentPlanSettings?.balance_due_days,
+      paymentMethod: paymentInfo?.payment_method,
+      completionType,
+      quoteMessage: paymentInfo?.quote_message,
+    };
+  }, [pricing.total, paymentType, paymentPlanSettings, paymentInfo, completionType]);
+
+  // Prepare contact summary
+  const contactSummary: ContactSummary | undefined = useMemo(() => {
+    const contactInfo = state.stepData.contact_info;
+    if (!contactInfo) return undefined;
+
+    return {
+      fullName: contactInfo.full_name,
+      email: contactInfo.email,
+      phone: contactInfo.phone,
+      company: contactInfo.company,
+      accountCreated: contactInfo.create_account,
+    };
+  }, [state.stepData.contact_info]);
+
+  // Prepare questionnaire responses (placeholder - would need actual implementation)
+  const questionnaireResponses: QuestionnaireResponseSummary[] = useMemo(() => {
+    // This would be populated from state.stepData.questionnaire
+    // For now, return empty array as placeholder
+    return [];
+  }, []);
+
+  // Prepare refund policy
+  const refundPolicy = useMemo(() => {
+    if (!paymentPlanSettings?.allow_refunds) return null;
+
+    return {
+      allowRefunds: paymentPlanSettings.allow_refunds,
+      refundPercentage: paymentPlanSettings.refund_percentage,
+      refundDeadlineHours: paymentPlanSettings.refund_deadline_hours,
+      refundPolicyText: paymentPlanSettings.refund_policy_text,
+    };
+  }, [paymentPlanSettings]);
 
   // Render next steps
   const renderNextSteps = () => {
     if (!showNextSteps || !nextSteps?.length) return null;
 
     return (
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            What's Next?
-          </Typography>
-          <List>
-            {nextSteps.map((step, index) => (
-              <ListItem key={index}>
-                <ListItemIcon>
-                  {step.icon ? (
-                    // If icon is a string, you may need to map it to an actual icon component
-                    // For now, fallback to NavigateNext if not provided
-                    typeof step.icon === 'string' ? <NavigateNext color="primary" /> : step.icon
-                  ) : (
-                    <NavigateNext color="primary" />
-                  )}
-                </ListItemIcon>
-                <ListItemText
-                  primary={step.title}
-                  secondary={step.description}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </CardContent>
-      </Card>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          What's Next?
+        </Typography>
+        <List>
+          {nextSteps.map((step, index) => (
+            <ListItem key={index}>
+              <ListItemIcon>
+                {step.icon ? (
+                  typeof step.icon === 'string' ? <NavigateNext color="primary" /> : step.icon
+                ) : (
+                  <NavigateNext color="primary" />
+                )}
+              </ListItemIcon>
+              <ListItemText
+                primary={step.title}
+                secondary={step.description}
+              />
+            </ListItem>
+          ))}
+        </List>
+      </Paper>
+    );
+  };
+
+  // Render contact information card
+  const renderContactInfo = () => {
+    if (!contactSummary) return null;
+
+    return (
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Person />
+          Contact Information
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary">Name:</Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>{contactSummary.fullName}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="body2" color="text.secondary">Email:</Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>{contactSummary.email}</Typography>
+          </Box>
+          {contactSummary.phone && (
+            <Box>
+              <Typography variant="body2" color="text.secondary">Phone:</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>{contactSummary.phone}</Typography>
+            </Box>
+          )}
+          {contactSummary.company && (
+            <Box>
+              <Typography variant="body2" color="text.secondary">Company:</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>{contactSummary.company}</Typography>
+            </Box>
+          )}
+          {contactSummary.accountCreated && (
+            <Chip label="Account Created" color="primary" size="small" sx={{ alignSelf: 'flex-start', mt: 1 }} />
+          )}
+        </Box>
+      </Paper>
+    );
+  };
+
+  // Render special requests
+  const renderSpecialRequests = () => {
+    const specialRequests = state.stepData.pricing_summary?.special_requests;
+    if (!specialRequests) return null;
+
+    return (
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Special Requests
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+          {specialRequests}
+        </Typography>
+      </Paper>
     );
   };
 
@@ -367,31 +405,35 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           <>
             <CircularProgress sx={{ mb: 2 }} />
             <Typography variant="h4" gutterBottom>
-              Processing Your Booking...
+              Processing Your {completionType === 'quote' ? 'Quote Request' : 'Booking'}...
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Please wait while we confirm your booking details.
+              Please wait while we confirm your details.
             </Typography>
           </>
         ) : isCompleted ? (
           <>
             <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
             <Typography variant="h4" gutterBottom color="success.main">
-              {confirmationContent?.title || 'Booking Confirmed!'}
+              {confirmationContent?.title || (completionType === 'quote' ? 'Quote Request Submitted!' : 'Booking Confirmed!')}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              {confirmationContent?.message || 'Thank you for your booking. We\'ll be in touch soon!'}
+              {confirmationContent?.message || (
+                completionType === 'quote'
+                  ? 'Thank you for your request. We\'ll send you a custom quote within 24 hours!'
+                  : 'Thank you for your booking. We\'ll be in touch soon!'
+              )}
             </Typography>
-            
+
             {/* Booking Reference */}
             {bookingReference && (
               <Box sx={{ mb: 3 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Your booking reference:
+                  Your {completionType === 'quote' ? 'request' : 'booking'} reference:
                 </Typography>
-                <Chip 
-                  label={bookingReference} 
-                  color="primary" 
+                <Chip
+                  label={bookingReference}
+                  color="primary"
                   variant="outlined"
                   sx={{ fontSize: '1.1rem', py: 1 }}
                 />
@@ -401,7 +443,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         ) : confirmationData.completion_status === 'failed' ? (
           <>
             <Alert severity="error" sx={{ mb: 3 }}>
-              There was an issue completing your booking. Please try again or contact support.
+              There was an issue completing your {completionType === 'quote' ? 'quote request' : 'booking'}. Please try again or contact support.
             </Alert>
             <Button
               variant="contained"
@@ -417,10 +459,10 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           <>
             <Info sx={{ fontSize: 64, color: 'info.main', mb: 2 }} />
             <Typography variant="h4" gutterBottom>
-              Ready to Complete Your Booking
+              Ready to Complete Your {completionType === 'quote' ? 'Quote Request' : 'Booking'}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              Please review your booking details below and click confirm to complete.
+              Please review your details below and click confirm to complete.
             </Typography>
             <Button
               variant="contained"
@@ -429,7 +471,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
               disabled={isProcessing}
               startIcon={isProcessing ? <CircularProgress size={16} /> : <CheckCircle />}
             >
-              {isProcessing ? 'Processing...' : 'Confirm Booking'}
+              {isProcessing ? 'Processing...' : `Confirm ${completionType === 'quote' ? 'Quote Request' : 'Booking'}`}
             </Button>
           </>
         )}
@@ -457,14 +499,42 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       )}
 
       {/* Booking Summary */}
-      {renderBookingSummary()}
+      {showBookingSummary && (
+        <BookingSummaryCard
+          event={eventData}
+          packages={packageLineItems}
+          addons={addonLineItems}
+          pricing={pricingBreakdown}
+          displayMode="confirmation"
+        />
+      )}
+
+      {/* Payment Summary */}
+      <PaymentSummaryCard
+        payment={paymentSummary}
+        refundPolicy={refundPolicy}
+      />
+
+      {/* Contact Information */}
+      {renderContactInfo()}
+
+      {/* Questionnaire Responses */}
+      {questionnaireResponses.length > 0 && (
+        <QuestionnaireSummaryCard
+          questionnaires={questionnaireResponses}
+          defaultExpanded={false}
+        />
+      )}
+
+      {/* Special Requests */}
+      {renderSpecialRequests()}
 
       {/* Next Steps */}
       {renderNextSteps()}
 
       {/* Support Contact */}
       {supportContact && (
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             Questions? Contact us at{' '}
             <a href={`mailto:${supportContact.email}`}>{supportContact.email}</a>
@@ -475,19 +545,17 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-        {/* Complex completion result type requires any for safe property access */}
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(completionResult as any)?.event?.id && (
-          <Button 
-            variant="contained" 
+        {(completionResult as Record<string, unknown>)?.event && (
+          <Button
+            variant="contained"
             onClick={navigateToDashboard}
             startIcon={<Dashboard />}
           >
             View in Dashboard
           </Button>
         )}
-        <Button 
-          variant="outlined" 
+        <Button
+          variant="outlined"
           onClick={navigateToHome}
           startIcon={<Home />}
         >
