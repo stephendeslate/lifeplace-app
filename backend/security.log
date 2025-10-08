@@ -1846,3 +1846,8 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-10-08 23:46:25,164 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
 🔒 SECURITY 2025-10-08 23:46:54,264 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
 🔒 SECURITY 2025-10-08 23:47:40,579 INFO [LOGIN_SUCCESS] New client registration and auto-login: test.two@gmail.com
+🔒 SECURITY 2025-10-09 00:09:04,061 WARNING [LOGIN_FAILURE] Failed login attempt for jj@gmail.com: Invalid credentials
+🔒 SECURITY 2025-10-09 00:09:10,548 WARNING [LOGIN_FAILURE] Failed login attempt for jj@gmail.com: Invalid credentials
+🔒 SECURITY 2025-10-09 00:09:52,329 WARNING [PASSWORD_CHANGE] Password reset requested for user: jj@gmail.com
+🔒 SECURITY 2025-10-09 00:10:24,699 ERROR [PASSWORD_CHANGE] Password reset completed for user: jj@gmail.com
+🔒 SECURITY 2025-10-09 00:10:36,491 INFO [LOGIN_SUCCESS] User jj@gmail.com logged in successfully
