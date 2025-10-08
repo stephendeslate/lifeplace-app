@@ -263,7 +263,20 @@ REST_FRAMEWORK = {
 # Cache configuration with Redis
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 
-# Parse Redis URL for django-redis
+# Detect if using SSL (Upstash uses rediss:// for secure connections)
+REDIS_USE_SSL = REDIS_URL.startswith('rediss://')
+
+# Base connection pool configuration
+REDIS_CONNECTION_POOL_KWARGS = {
+    'max_connections': 50,
+    'retry_on_timeout': True,  # Automatically retry on timeout errors
+}
+
+# Add SSL configuration for Upstash (production with rediss://)
+if REDIS_USE_SSL:
+    REDIS_CONNECTION_POOL_KWARGS['ssl_cert_reqs'] = None  # Accept Upstash SSL certificates
+
+# Parse Redis URL for additional config if needed
 import urllib.parse
 redis_parsed = urllib.parse.urlparse(REDIS_URL)
 
@@ -273,10 +286,7 @@ CACHES = {
         'LOCATION': REDIS_URL + '/1',  # Use Redis database 1 for cache
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {
-                'max_connections': 50,
-                'retry_on_timeout': True,  # Automatically retry on timeout errors
-            },
+            'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
             # 'PARSER_CLASS': 'redis.connection.HiredisParser',  # Faster parser - disabled until hiredis is properly configured
             'PICKLE_VERSION': -1,  # Use latest pickle protocol
             'SOCKET_CONNECT_TIMEOUT': 10,  # Increased from 5 to 10 seconds for production
@@ -292,6 +302,7 @@ CACHES = {
         'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 for sessions
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
         },
         'KEY_PREFIX': 'session',
         'TIMEOUT': 86400,  # Sessions last 24 hours
@@ -301,6 +312,7 @@ CACHES = {
         'LOCATION': REDIS_URL + '/2',  # Use Redis database 2 for analytics
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
         },
         'KEY_PREFIX': 'analytics',
         'TIMEOUT': 3600,  # Analytics cache for 1 hour
@@ -526,6 +538,11 @@ CELERY_TASK_ALWAYS_EAGER = False  # Set to True for synchronous testing
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_WORKER_SEND_TASK_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
+
+# Add SSL configuration for Celery if using rediss://
+if REDIS_USE_SSL:
+    CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': None}
+    CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': None}
 
 # Notification-specific settings
 NOTIFICATION_RATE_LIMIT = os.getenv('NOTIFICATION_RATE_LIMIT', '100/hour')
