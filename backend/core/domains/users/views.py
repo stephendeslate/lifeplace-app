@@ -130,9 +130,9 @@ class UserLoginAPIView(APIView):
 def client_register(request):
     """
     Public endpoint for client self-registration with enhanced security
-    
+
     This endpoint allows clients to register directly without an invitation.
-    
+
     Security features:
     - Rate limiting (5 registrations per hour per IP)
     - Enhanced input validation and sanitization
@@ -140,6 +140,9 @@ def client_register(request):
     - Email format validation
     - Improved error handling
     """
+    import time
+    start_time = time.time()
+
     client_ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
     
     # Validate request data structure
@@ -189,6 +192,7 @@ def client_register(request):
         }, status=status.HTTP_400_BAD_REQUEST)
     
     try:
+        # Create user in transaction
         with transaction.atomic():
             # Prepare user data
             user_data = {
@@ -198,37 +202,48 @@ def client_register(request):
                 'last_name': sanitize_input(validation_result['cleaned_data']['last_name'], 150),
                 'role': 'CLIENT'
             }
-            
+
             # Add profile data if provided
             profile_data = {}
             if 'phone' in validation_result['cleaned_data']:
                 profile_data['phone'] = sanitize_input(validation_result['cleaned_data']['phone'], 20)
             if 'company' in validation_result['cleaned_data']:
                 profile_data['company'] = sanitize_input(validation_result['cleaned_data']['company'], 200)
-            
+
             if profile_data:
                 user_data['profile'] = profile_data
-            
+
             # Create user
             user = UserService.create_user(user_data)
-            
+
             # Generate tokens for automatic login
             tokens = UserService.get_tokens_for_user(user)
-            
-            # Log successful registration
+
+        # Log successful registration AFTER transaction completes
+        # This prevents blocking the response and avoids nested transaction issues
+        try:
+            elapsed_time = time.time() - start_time
             security_logger.log_event(
                 SecurityEventType.LOGIN_SUCCESS,  # Consider this a login since tokens are generated
                 f"New client registration and auto-login: {user.email}",
                 request=request,
                 user=user,
                 severity='LOW',
-                details={'registration': True, 'user_id': user.id}
+                details={
+                    'registration': True,
+                    'user_id': user.id,
+                    'registration_duration_ms': round(elapsed_time * 1000, 2)
+                }
             )
-            
-            return Response({
-                'tokens': tokens,
-                'user': UserSerializer(user).data
-            }, status=status.HTTP_201_CREATED)
+            logger.info(f"Registration completed for {user.email} in {elapsed_time:.3f}s")
+        except Exception as log_error:
+            # Don't fail the registration if logging fails
+            logger.error(f"Failed to log registration event: {str(log_error)}")
+
+        return Response({
+            'tokens': tokens,
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
             
     except Exception as e:
         logger.error(f"Error during client registration from IP {client_ip}: {str(e)}")

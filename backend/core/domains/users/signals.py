@@ -20,29 +20,42 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver([post_save, post_delete], sender=User)
 def invalidate_user_caches(sender, instance, **kwargs):
     """Invalidate user-related caches when users are modified"""
+    # Use post_save created flag to avoid cache invalidation on new users
+    # New users don't have cache entries yet
+    if kwargs.get('created', False):
+        logger.debug(f"Skipping cache invalidation for new user: {instance.email}")
+        return
+
     try:
         from .cache_service import users_cache_service
         users_cache_service.invalidate_user_caches(
-            user_id=instance.id, 
+            user_id=instance.id,
             email=instance.email
         )
-        logger.info(f"Invalidated user caches for: {instance.email}")
+        logger.debug(f"Invalidated user caches for: {instance.email}")
     except Exception as e:
-        logger.error(f"Failed to invalidate user caches: {e}")
+        # Don't let cache failures block user operations
+        logger.warning(f"Failed to invalidate user caches (non-critical): {e}")
 
 
 @receiver([post_save, post_delete], sender=UserProfile)
 def invalidate_profile_caches(sender, instance, **kwargs):
     """Invalidate user profile caches when profiles are modified"""
+    # Skip cache invalidation for newly created profiles (no cache yet)
+    if kwargs.get('created', False):
+        logger.debug(f"Skipping cache invalidation for new profile: {instance.user.email}")
+        return
+
     try:
         from .cache_service import users_cache_service
         users_cache_service.invalidate_user_caches(
             user_id=instance.user.id,
             email=instance.user.email
         )
-        logger.info(f"Invalidated profile caches for: {instance.user.email}")
+        logger.debug(f"Invalidated profile caches for: {instance.user.email}")
     except Exception as e:
-        logger.error(f"Failed to invalidate profile caches: {e}")
+        # Don't let cache failures block user operations
+        logger.warning(f"Failed to invalidate profile caches (non-critical): {e}")
 
 
 @receiver([post_save, post_delete], sender=AdminInvitation)

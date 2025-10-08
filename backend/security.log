@@ -1842,3 +1842,7 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-10-08 14:10:51,139 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
 🔒 SECURITY 2025-10-08 14:18:40,220 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
 🔒 SECURITY 2025-10-08 16:16:18,792 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-10-08 16:46:33,959 INFO [LOGIN_SUCCESS] New client registration and auto-login: jay.do@gmail.com
+🔒 SECURITY 2025-10-08 23:46:25,164 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-10-08 23:46:54,264 INFO [LOGIN_SUCCESS] User john.doe@gmail.com logged in successfully
+🔒 SECURITY 2025-10-08 23:47:40,579 INFO [LOGIN_SUCCESS] New client registration and auto-login: test.two@gmail.com

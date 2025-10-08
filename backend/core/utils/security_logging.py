@@ -58,8 +58,8 @@ class SecurityEvent(models.Model):
     
     # User information
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    username = models.CharField(max_length=150, blank=True)  # Store even if user is deleted
-    user_agent = models.TextField(blank=True)
+    username = models.CharField(max_length=150, blank=True, default='anonymous')  # Store even if user is deleted
+    user_agent = models.TextField(blank=True, default='')
     
     # Network information
     ip_address = models.GenericIPAddressField(null=True, blank=True)
@@ -172,43 +172,44 @@ class SecurityLogger:
             username = 'anonymous'
         
         # Create security event record
+        # Note: No transaction.atomic() wrapper to avoid nested transaction issues
+        # The caller should handle transactions if needed
         try:
-            with transaction.atomic():
-                event = SecurityEvent.objects.create(
-                    event_type=event_type,
-                    severity=severity,
-                    user=user,
-                    username=username,
-                    user_agent=user_agent,
-                    ip_address=ip_address,
-                    request_method=request_method,
-                    request_path=request_path,
-                    referer=referer,
-                    description=description,
-                    details=details,
-                    risk_score=risk_score,
-                    is_blocked=is_blocked
-                )
-                
-                # Log to Django logger as well
-                log_level = self._get_log_level(severity)
-                self.logger.log(
-                    log_level,
-                    f"[{event_type}] {description}",
-                    extra={
-                        'event_id': event.id,
-                        'user': username,
-                        'ip': ip_address,
-                        'risk_score': risk_score,
-                        'details': details
-                    }
-                )
-                
-                # Check for alerts
-                self._check_security_alerts(event)
-                
-                return event
-                
+            event = SecurityEvent.objects.create(
+                event_type=event_type,
+                severity=severity,
+                user=user,
+                username=username,
+                user_agent=user_agent,
+                ip_address=ip_address,
+                request_method=request_method,
+                request_path=request_path,
+                referer=referer,
+                description=description,
+                details=details,
+                risk_score=risk_score,
+                is_blocked=is_blocked
+            )
+
+            # Log to Django logger as well
+            log_level = self._get_log_level(severity)
+            self.logger.log(
+                log_level,
+                f"[{event_type}] {description}",
+                extra={
+                    'event_id': event.id,
+                    'user': username,
+                    'ip': ip_address,
+                    'risk_score': risk_score,
+                    'details': details
+                }
+            )
+
+            # Check for alerts
+            self._check_security_alerts(event)
+
+            return event
+
         except Exception as e:
             # Fallback to regular logging if database fails
             self.logger.error(f"Failed to log security event: {str(e)}")
