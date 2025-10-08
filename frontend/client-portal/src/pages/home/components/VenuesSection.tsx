@@ -5,8 +5,10 @@ import { Box, Typography, Stack, alpha, useTheme } from '@mui/material';
 import {
   Church,
   Home as HomeIcon,
-  Groups,
   Nature,
+  Hotel,
+  Landscape,
+  Groups,
 } from '@mui/icons-material';
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
@@ -19,30 +21,44 @@ export const VenuesSection: React.FC = () => {
     {
       id: 'sanctuary',
       icon: <Church sx={{ fontSize: 48, color: theme.palette.primary.main }} />,
-      title: 'Sanctuary Chapel',
-      description: 'Say your vows in our picturesque chapel, designed for a truly unforgettable wedding ceremony.',
-      capacity: 'Up to 150 guests',
+      title: 'Sanctuary',
+      description: 'Chapel - Suitable for church weddings',
+      capacity: '',
+    },
+    {
+      id: 'cabanas',
+      icon: <Hotel sx={{ fontSize: 48, color: theme.palette.info.main }} />,
+      title: 'Cabanas',
+      description: '4 total - Each accommodates 6-10 people',
+      capacity: '',
     },
     {
       id: 'pavilion',
       icon: <HomeIcon sx={{ fontSize: 48, color: theme.palette.secondary.main }} />,
       title: 'The Pavilion',
-      description: 'A spacious multipurpose hall perfect for larger celebrations and events.',
-      capacity: 'Up to 200 guests',
+      description: 'Multipurpose hall - Capacity: 100-200 people (depending on setup)',
+      capacity: '',
     },
     {
-      id: 'fields',
-      icon: <Nature sx={{ fontSize: 48, color: theme.palette.success.main }} />,
-      title: 'Open Fields',
-      description: 'The Open-Field and Angelic Field offer stunning natural surroundings for outdoor events.',
-      capacity: 'Flexible outdoor space',
+      id: 'open-field',
+      icon: <Landscape sx={{ fontSize: 48, color: theme.palette.success.main }} />,
+      title: 'Open-Field',
+      description: 'For larger gatherings',
+      capacity: '',
     },
     {
-      id: 'accommodations',
-      icon: <Groups sx={{ fontSize: 48, color: theme.palette.info.main }} />,
-      title: 'Cabanas & Hostel',
-      description: '4 comfortable cabanas (10 guests each) and Havila hostel for overnight accommodations.',
-      capacity: '40+ overnight guests',
+      id: 'angelic-field',
+      icon: <Nature sx={{ fontSize: 48, color: '#4CAF50' }} />,
+      title: 'Angelic Field',
+      description: 'Outdoor event space',
+      capacity: '',
+    },
+    {
+      id: 'havila',
+      icon: <Groups sx={{ fontSize: 48, color: '#FF9800' }} />,
+      title: 'Havila',
+      description: '(newly opened) - Hostel - Accommodates 150-300 people for overnight stays',
+      capacity: '',
     },
   ];
 
@@ -51,30 +67,26 @@ export const VenuesSection: React.FC = () => {
       <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
         <Stack spacing={6}>
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack spacing={3} textAlign="center">
-              <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                Our Beautiful Venues
-              </Typography>
-              <Typography variant="h6" color="text.secondary">
-                From intimate ceremonies to grand celebrations, we have the perfect space for your special occasion
-              </Typography>
-            </Stack>
+            <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main', textAlign: 'center' }}>
+              Facilities & Amenities
+            </Typography>
           </AnimatedElement>
 
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { 
-                xs: '1fr', 
-                md: 'repeat(2, 1fr)',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
               },
               gap: 3,
             }}
           >
             {venues.map((venue, index) => (
-              <AnimatedElement key={venue.id} animation="fadeIn" delay={200 + (index * 100)}>
-                <GlassCard 
-                  variant="light" 
+              <AnimatedElement key={venue.id} animation="fadeIn" delay={200 + index * 100}>
+                <GlassCard
+                  variant="light"
                   intensity="medium"
                   hover={true}
                   sx={{ height: '100%' }}
@@ -90,11 +102,8 @@ export const VenuesSection: React.FC = () => {
                       {venue.icon}
                     </Box>
                     <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
                         {venue.title}
-                      </Typography>
-                      <Typography variant="body2" color="primary.main" sx={{ fontWeight: 500, mb: 2 }}>
-                        {venue.capacity}
                       </Typography>
                       <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
                         {venue.description}
