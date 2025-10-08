@@ -14,6 +14,7 @@ import {
   Checkbox,
   Divider,
   useTheme as useMuiTheme,
+  Link,
 } from '@mui/material';
 import {
   Visibility,
@@ -23,6 +24,7 @@ import {
   LoginOutlined,
   SecurityOutlined,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -36,6 +38,7 @@ interface ModernLoginFormProps {
 }
 
 export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) => {
+  const navigate = useNavigate();
   const { login, isLoading } = useAuth();
   const { showError } = useToastActions();
   const { effectiveMode } = useTheme();
@@ -414,50 +417,87 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         }}
       />
 
-      {/* Remember Me Checkbox */}
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={formData.remember_me}
-            onChange={handleInputChange('remember_me')}
-            disabled={isLoading}
-            sx={{
-              color: tokens.color.neutral[500],
-              '&.Mui-checked': {
-                color: tokens.color.primary[600],
-              },
-              '& .MuiSvgIcon-root': {
-                fontSize: '1.4rem',
-              },
-            }}
-          />
-        }
-        label={
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: tokens.color.neutral[700],
-                fontWeight: 500,
-              }}
-            >
-              Keep me signed in
-            </Typography>
-            <SecurityOutlined 
-              sx={{ 
-                fontSize: '1rem',
-                color: tokens.color.neutral[500],
-              }} 
-            />
-          </Box>
-        }
+      {/* Remember Me and Forgot Password */}
+      <Box
         sx={{
-          marginLeft: 0,
-          '& .MuiFormControlLabel-label': {
-            marginLeft: 1,
-          },
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 1,
         }}
-      />
+      >
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={formData.remember_me}
+              onChange={handleInputChange('remember_me')}
+              disabled={isLoading}
+              sx={{
+                color: tokens.color.neutral[500],
+                '&.Mui-checked': {
+                  color: tokens.color.primary[600],
+                },
+                '& .MuiSvgIcon-root': {
+                  fontSize: '1.4rem',
+                },
+              }}
+            />
+          }
+          label={
+            <Box display="flex" alignItems="center" gap={1}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: tokens.color.neutral[700],
+                  fontWeight: 500,
+                }}
+              >
+                Keep me signed in
+              </Typography>
+              <SecurityOutlined
+                sx={{
+                  fontSize: '1rem',
+                  color: tokens.color.neutral[500],
+                }}
+              />
+            </Box>
+          }
+          sx={{
+            marginLeft: 0,
+            '& .MuiFormControlLabel-label': {
+              marginLeft: 1,
+            },
+          }}
+        />
+
+        <Link
+          component="button"
+          type="button"
+          variant="body2"
+          onClick={() => navigate('/forgot-password')}
+          disabled={isLoading}
+          sx={{
+            color: tokens.color.primary[600],
+            fontWeight: 600,
+            textDecoration: 'none',
+            cursor: 'pointer',
+            ...createTransition(['color']),
+
+            '&:hover': {
+              color: tokens.color.primary[700],
+              textDecoration: 'underline',
+            },
+
+            '&:disabled': {
+              color: tokens.color.neutral[400],
+              cursor: 'not-allowed',
+            },
+          }}
+        >
+          Forgot password?
+        </Link>
+      </Box>
 
       {/* Login Button */}
       <Button

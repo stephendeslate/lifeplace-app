@@ -319,30 +319,64 @@ const Login: React.FC<LoginProps> = ({
                     }}
                   />
 
-                  {/* Remember Me */}
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={formData.remember_me}
-                        onChange={handleInputChange('remember_me')}
-                        disabled={isSubmitting}
-                        sx={{
-                          color: alpha('#fff', 0.7),
-                          '&.Mui-checked': {
-                            color: theme.palette.primary.light,
-                          },
-                        }}
-                      />
-                    }
-                    label="Remember me for 7 days"
-                    sx={{ 
-                      alignSelf: 'flex-start',
-                      color: alpha('#fff', 0.8),
-                      '& .MuiFormControlLabel-label': {
-                        fontSize: '0.875rem',
-                      },
+                  {/* Remember Me and Forgot Password */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 1,
                     }}
-                  />
+                  >
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.remember_me}
+                          onChange={handleInputChange('remember_me')}
+                          disabled={isSubmitting}
+                          sx={{
+                            color: alpha('#fff', 0.7),
+                            '&.Mui-checked': {
+                              color: theme.palette.primary.light,
+                            },
+                          }}
+                        />
+                      }
+                      label="Remember me for 7 days"
+                      sx={{
+                        color: alpha('#fff', 0.8),
+                        '& .MuiFormControlLabel-label': {
+                          fontSize: '0.875rem',
+                        },
+                      }}
+                    />
+
+                    <Link
+                      component="button"
+                      type="button"
+                      variant="body2"
+                      onClick={() => window.location.href = '/forgot-password'}
+                      disabled={isSubmitting}
+                      sx={{
+                        color: alpha('#fff', 0.9),
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        '&:hover': {
+                          color: '#fff',
+                          textDecoration: 'underline',
+                        },
+                        '&:disabled': {
+                          color: alpha('#fff', 0.4),
+                          cursor: 'not-allowed',
+                        },
+                      }}
+                    >
+                      Forgot password?
+                    </Link>
+                  </Box>
 
                   {/* Submit Button */}
                   <Button

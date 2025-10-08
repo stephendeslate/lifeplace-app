@@ -114,7 +114,7 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
       return {
         full_name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
         email: user.email || '',
-        phone: '',
+        phone: user.profile?.phone || '',
         address: '',
         company: '',
         create_account: false,

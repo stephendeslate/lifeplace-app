@@ -37,9 +37,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await authApi.refreshToken(tokens.refresh);
       const newTokens: AuthTokens = {
         access: data.access,
-        refresh: tokens.refresh, // Keep existing refresh token
+        refresh: data.refresh || tokens.refresh, // Use new refresh token if provided, otherwise keep existing
       };
-      
+
       storage.setTokens(newTokens);
       
       // Get updated user info

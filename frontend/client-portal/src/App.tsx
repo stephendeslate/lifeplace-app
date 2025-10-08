@@ -10,7 +10,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { PublicLayout, BookingLayout, ClientLayout } from './components/layout';
 import { ProtectedRoute } from './components/auth';
 import { Home } from './pages/home';
-import { Login, Register } from './pages/auth';
+import { Login, Register, ForgotPassword, ResetPassword } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { EventsList, EventDetail } from './pages/events';
 import { Profile } from './pages/profile';
@@ -269,8 +269,8 @@ const AppRouter: React.FC = () => {
         } 
       />
       
-      <Route 
-        path="/register" 
+      <Route
+        path="/register"
         element={
           isAuthenticated ? (
             <Navigate to="/dashboard" replace />
@@ -286,7 +286,42 @@ const AppRouter: React.FC = () => {
               />
             </PublicLayout>
           )
-        } 
+        }
+      />
+
+      {/* Password Reset Routes - Public */}
+      <Route
+        path="/forgot-password"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <PublicLayout
+              onNavigateToLogin={handleNavigateToLogin}
+              onNavigateToRegister={handleNavigateToRegister}
+            >
+              <ForgotPassword
+                onNavigateToLogin={handleNavigateToLogin}
+                onNavigateToHome={handleNavigateToHome}
+              />
+            </PublicLayout>
+          )
+        }
+      />
+
+      <Route
+        path="/reset-password/:tokenId"
+        element={
+          <PublicLayout
+            onNavigateToLogin={handleNavigateToLogin}
+            onNavigateToRegister={handleNavigateToRegister}
+          >
+            <ResetPassword
+              onNavigateToLogin={handleNavigateToLogin}
+              onNavigateToHome={handleNavigateToHome}
+            />
+          </PublicLayout>
+        }
       />
 
       {/* Accept Client Invitation Route - Public but redirects to dashboard after success */}

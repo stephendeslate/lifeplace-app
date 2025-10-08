@@ -7,8 +7,7 @@ import { AppProviders } from './providers/AppProviders';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
-import { Login } from './pages/auth';
-import { AcceptInvitation } from './pages/auth/AcceptInvitation';
+import { Login, AcceptInvitation, ForgotPassword, ResetPassword } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
 import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
@@ -149,6 +148,20 @@ const AppRouter: React.FC = () => {
             <Login />
           </PublicRoute>
         }
+      />
+
+      {/* Password Reset Routes - Public */}
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPassword />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/reset-password/:tokenId"
+        element={<ResetPassword />}
       />
 
       {/* Accept Invitation Route - Always accessible, no auth required */}
