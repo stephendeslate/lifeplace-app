@@ -207,7 +207,6 @@ class BookingFlowStep(BaseModel):
         ('pricing_summary', 'Pricing Summary'),
         ('contact_info', 'Contact Information'),
         ('payment_info', 'Payment Information'),
-        ('review_booking', 'Review Booking'),
         ('confirmation', 'Confirmation'),
     ]
     

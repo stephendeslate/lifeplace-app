@@ -610,10 +610,11 @@ class BookingSessionService:
                     if step_data.get('completion_type'):
                         metadata['completion_type'] = step_data.get('completion_type', 'payment')
 
-                # Extract from review step (contains special_requests and terms_accepted)
-                # Review step data has both special_requests and terms_accepted fields
-                if 'special_requests' in step_data and 'terms_accepted' in step_data:
-                    metadata['special_requests'] = step_data.get('special_requests', '').strip()
+                # Extract from pricing_summary step (now contains special_requests and terms_accepted)
+                # Pricing summary step data has special_requests, terms_accepted, and marketing_consent fields
+                if 'special_requests' in step_data or 'terms_accepted' in step_data:
+                    if step_data.get('special_requests'):
+                        metadata['special_requests'] = step_data.get('special_requests', '').strip()
 
         # Combine messages
         messages = []
@@ -1289,12 +1290,10 @@ class BookingSessionService:
             )
             return errors
         
-        # Add validation for pricing summary step
+        # Add validation for pricing summary step (now includes review fields)
         if step.step_type == 'pricing_summary':
-            # Pricing summary only stores the discount code
-            # All calculations are done server-side
+            # Validate discount code if provided
             if 'applied_discount_code' in step_data and step_data['applied_discount_code']:
-                # Validate discount code if provided
                 try:
                     from core.domains.products.services import DiscountService
                     discount_code = step_data['applied_discount_code']
@@ -1303,6 +1302,12 @@ class BookingSessionService:
                         errors['applied_discount_code'] = ["Invalid or expired discount code"]
                 except Exception as e:
                     errors['applied_discount_code'] = ["Unable to validate discount code"]
+
+            # Validate terms acceptance (consolidated from review step)
+            config = getattr(step, 'pricing_summary_config', None)
+            if config and getattr(config, 'show_terms_checkbox', True):
+                if not step_data.get('terms_accepted'):
+                    errors['terms_accepted'] = ["You must accept the terms and conditions"]
         
         # Common validation for all step types
         if hasattr(step, f"{step.step_type}_config"):

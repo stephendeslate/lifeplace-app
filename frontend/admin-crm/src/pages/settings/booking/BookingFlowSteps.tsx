@@ -52,7 +52,6 @@ const STEP_TYPE_OPTIONS = [
   { value: 'questionnaire', label: 'Questionnaire' },
   { value: 'pricing_summary', label: 'Pricing Summary' },
   { value: 'payment_info', label: 'Payment Information' },
-  { value: 'review_booking', label: 'Review Booking' },
   { value: 'confirmation', label: 'Confirmation' },
 ];
 

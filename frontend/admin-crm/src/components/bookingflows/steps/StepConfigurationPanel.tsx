@@ -39,7 +39,6 @@ import {
   PricingSummaryStepConfig,
   ContactInfoStepConfig,
   PaymentInfoStepConfig,
-  ReviewBookingStepConfig,
   ConfirmationStepConfig,
 } from '../configurations';
 
@@ -203,17 +202,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             isLoading={isUpdatingConfiguration}
           />
         );
-      
-      case 'review_booking':
-        return (
-          <ReviewBookingStepConfig
-            step={step}
-            config={currentConfig as Record<string, unknown> | undefined}
-            onUpdate={(data: Record<string, unknown>) => handleConfigurationUpdate(data)}
-            isLoading={isUpdatingConfiguration}
-          />
-        );
-      
+
       case 'confirmation':
         return (
           <ConfirmationStepConfig
