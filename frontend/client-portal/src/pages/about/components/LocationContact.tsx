@@ -9,6 +9,7 @@ import {
   ArrowForward,
   Facebook,
   Instagram,
+  MusicNote,
 } from '@mui/icons-material';
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
@@ -29,7 +30,7 @@ export const LocationContact: React.FC<Pick<AboutPageProps, 'onNavigateToBooking
     {
       type: 'phone',
       label: 'Phone',
-      value: '(046) 860 0123 / 0917 123 4567',
+      value: '(046) 889 0844 / (0962) 275 3145 / +639935260943',
       icon: <Phone sx={{ fontSize: 32, color: theme.palette.primary.main }} />,
     },
     {
@@ -51,6 +52,11 @@ export const LocationContact: React.FC<Pick<AboutPageProps, 'onNavigateToBooking
       url: 'https://instagram.com/lifeplacealfonso',
       icon: <Instagram />,
     },
+    {
+      platform: 'TikTok',
+      url: 'https://tiktok.com/@lifeplacealfonso',
+      icon: <MusicNote />,
+    },
   ];
 
   return (
@@ -66,11 +72,11 @@ export const LocationContact: React.FC<Pick<AboutPageProps, 'onNavigateToBooking
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
         <Stack spacing={6}>
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack spacing={3} textAlign="center">
-              <Typography variant="h2" sx={{ fontWeight: 600 }}>
+            <Stack spacing={3} alignItems="center">
+              <Typography variant="h2" sx={{ fontWeight: 600, textAlign: 'center' }}>
                 Visit Us
               </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.9, maxWidth: 700, mx: 'auto' }}>
+              <Typography variant="h6" sx={{ opacity: 0.9, maxWidth: 700, textAlign: 'center' }}>
                 We're located near Tagaytay, easily accessible from Metro Manila.
                 Come visit us or get in touch to start planning your event.
               </Typography>
