@@ -1,7 +1,6 @@
 // frontend/admin-crm/src/components/messaging/ThreadManagement/ThreadManagement.tsx
 // Thread management component for admin operations (create, assign, bulk operations)
 // WIP: Messaging feature temporarily disabled for deployment
-// @ts-nocheck
 
 import React, { useState } from 'react';
 import {
@@ -26,13 +25,15 @@ import {
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { useAdminMessaging } from '../../../hooks/useAdminMessaging';
-import type { ThreadManagementProps } from '../../../types/messaging.types';
-// import type {
-//   CreateThreadRequest,
-//   UpdateThreadRequest,
-//   MessagePriority,
-//   MessageThreadStatus
-// } from '@shared/types/messaging';
+import type { ThreadManagementProps, CreateThreadRequest, MessagePriority, MessageThreadStatus } from '../../../types/messaging.types';
+
+// Type for update thread request (not yet in stubs)
+type UpdateThreadRequest = {
+  assigned_admin?: string | null;
+  priority?: MessagePriority;
+  status?: MessageThreadStatus;
+  subject?: string;
+};
 
 // Mock data for development - replace with real API calls
 const MOCK_CLIENTS = [

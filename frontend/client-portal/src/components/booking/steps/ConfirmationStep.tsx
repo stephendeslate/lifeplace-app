@@ -25,7 +25,6 @@ import {
 } from '@mui/icons-material';
 import { useBooking } from '../../../contexts/BookingContext';
 import { useConfirmation } from '../../../hooks/booking/useConfirmation';
-import { useCurrencySettings } from '../../../hooks/useCurrency';
 import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
 import { usePaymentPlanSettings } from '../../../hooks/usePaymentPlanSettings';
 import { BookingSummaryCard } from '../shared/BookingSummaryCard';
@@ -68,7 +67,6 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 }) => {
   const { state } = useBooking();
   const currentSession = session || state.currentSession;
-  const { formatAmount } = useCurrencySettings();
 
   // Get payment plan settings for refund policy
   const { data: paymentPlanSettings } = usePaymentPlanSettings();
@@ -102,8 +100,6 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
   // Use the confirmation hook for enhanced functionality
   const {
-    sessionDetails,
-    eventSummary,
     nextSteps,
     supportContact,
     confirmationContent,
@@ -142,7 +138,8 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       // Update status to processing
       onDataChange({
         ...confirmationData,
-        completion_status: 'processing'
+        completion_status: 'processing',
+        confirmation_email_sent: false,
       });
 
       const success = await completeBooking(completionType);
@@ -152,19 +149,22 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           ...confirmationData,
           completion_status: 'completed',
           completed_at: new Date().toISOString(),
+          confirmation_email_sent: false,
         });
       } else {
         // Handle completion failure
         onDataChange({
           ...confirmationData,
-          completion_status: 'failed'
+          completion_status: 'failed',
+          confirmation_email_sent: false,
         });
       }
     } catch (error) {
       console.error('Failed to complete booking:', error);
       onDataChange({
         ...confirmationData,
-        completion_status: 'failed'
+        completion_status: 'failed',
+        confirmation_email_sent: false,
       });
     }
   }, [isCompleted, isProcessing, confirmationData, onDataChange, completeBooking, completionType]);
@@ -545,7 +545,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-        {(completionResult as Record<string, unknown>)?.event && (
+        {completionResult?.event && (
           <Button
             variant="contained"
             onClick={navigateToDashboard}

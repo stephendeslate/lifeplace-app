@@ -70,7 +70,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
         };
         setTokenError(errorMessages[response.reason || 'not_found']);
       }
-    } catch (error) {
+    } catch (_error) {
       setIsTokenValid(false);
       setTokenError('Unable to validate reset link. Please try again.');
     } finally {
@@ -139,9 +139,10 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
       setTimeout(() => {
         navigate('/login');
       }, 2000);
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.detail || error.message || 'Failed to reset password. Please try again.';
-      const feedback = error?.response?.data?.password_feedback || [];
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string; password_feedback?: string[] } }; message?: string };
+      const errorMessage = err?.response?.data?.detail || err.message || 'Failed to reset password. Please try again.';
+      const feedback = err?.response?.data?.password_feedback || [];
 
       setSubmitError(errorMessage);
       setPasswordFeedback(feedback);

@@ -32,7 +32,7 @@ import {
   startOfDay,
   parseISO
 } from 'date-fns';
-import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { toZonedTime } from 'date-fns-tz';
 import { tokens } from '../tokens';
 import { GlassCard } from '../components/GlassCard';
 

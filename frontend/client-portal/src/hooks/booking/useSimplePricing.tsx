@@ -14,6 +14,13 @@ export interface SimplePricingBreakdown {
   formattedDiscount: string;
   formattedTotal: string;
   lineItems: PricingLineItem[];
+  discountDetails?: {
+    name: string;
+    code: string;
+    type: string;
+    value: string;
+    amount: string;
+  };
 }
 
 export const useSimplePricing = (
@@ -82,6 +89,7 @@ export const useSimplePricing = (
         formattedDiscount: `₱${discount.toLocaleString()}`,
         formattedTotal: `₱${total.toLocaleString()}`,
         lineItems: result.line_items || [],
+        discountDetails: result.discount_details,
       });
     } catch (err) {
       setError('Failed to calculate pricing');

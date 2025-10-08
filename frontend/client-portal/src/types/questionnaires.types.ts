@@ -9,6 +9,7 @@ export interface QuestionnaireField {
   required: boolean;
   order: number;
   options: string[];
+  help_text?: string;
   created_at: string;
   updated_at: string;
 }

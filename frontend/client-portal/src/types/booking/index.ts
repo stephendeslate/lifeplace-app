@@ -65,7 +65,6 @@ export type {
   PricingSummaryStepData,
   ContactInfoStepData,
   PaymentStepData,
-  ReviewStepData,
   ConfirmationStepData,
   StepData,
   Discount,

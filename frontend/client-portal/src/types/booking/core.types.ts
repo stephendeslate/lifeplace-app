@@ -15,6 +15,7 @@ export interface BookingFlow {
   id: number;
   name: string;
   description: string;
+  event_type?: number;
   event_type_name: string | null;
   allow_guest_booking: boolean;
   require_account_creation: boolean;
