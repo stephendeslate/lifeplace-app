@@ -70,7 +70,15 @@ export type {
   StepData,
   Discount,
   PricingCalculation,
-  PricingLineItem
+  PricingLineItem,
+  EventSummary,
+  PackageLineItem,
+  AddonLineItem,
+  PricingBreakdown,
+  PaymentSummary,
+  ContactSummary,
+  QuestionnaireResponseSummary,
+  BookingReviewSummary,
 } from './stepData.types';
 
 // State management types
