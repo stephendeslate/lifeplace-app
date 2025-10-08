@@ -5,10 +5,14 @@ from django.db import migrations
 
 def cleanup_review_booking_steps(apps, schema_editor):
     """
-    Convert all deprecated 'review_booking' steps to 'pricing_summary'.
+    Remove all deprecated 'review_booking' steps from booking flows.
 
     This fixes production databases that still have the old step type which was
     removed in migration 0015.
+
+    Strategy:
+    - If flow already has a pricing_summary step: DELETE the review_booking (redundant)
+    - If flow has no pricing_summary step: CONVERT review_booking to pricing_summary
     """
     BookingFlowStep = apps.get_model('bookingflow', 'BookingFlowStep')
 
@@ -16,21 +20,39 @@ def cleanup_review_booking_steps(apps, schema_editor):
     review_steps = BookingFlowStep.objects.filter(step_type='review_booking')
 
     if review_steps.exists():
-        print(f"\n[Migration] Found {review_steps.count()} review_booking steps to convert")
+        print(f"\n[Migration] Found {review_steps.count()} review_booking steps to process")
+
+        converted_count = 0
+        deleted_count = 0
 
         for step in review_steps:
-            old_name = step.name
-            # Convert to pricing_summary
-            step.step_type = 'pricing_summary'
+            # Check if this flow already has a pricing_summary step
+            has_pricing_summary = BookingFlowStep.objects.filter(
+                booking_flow=step.booking_flow,
+                step_type='pricing_summary'
+            ).exclude(pk=step.pk).exists()
 
-            # Update name if it still references "review"
-            if 'review' in step.name.lower():
-                step.name = step.name.replace('Review', 'Summary').replace('review', 'summary')
+            if has_pricing_summary:
+                # Delete the redundant review_booking step
+                step_name = step.name
+                flow_name = step.booking_flow.name
+                step.delete()
+                deleted_count += 1
+                print(f"  - Deleted redundant review_booking step '{step_name}' from flow '{flow_name}' (pricing_summary already exists)")
+            else:
+                # Safe to convert - no pricing_summary exists yet
+                old_name = step.name
+                step.step_type = 'pricing_summary'
 
-            step.save()
-            print(f"  - Converted step '{old_name}' to pricing_summary (new name: '{step.name}')")
+                # Update name if it still references "review"
+                if 'review' in step.name.lower():
+                    step.name = step.name.replace('Review', 'Summary').replace('review', 'summary')
 
-        print(f"[Migration] Successfully converted {review_steps.count()} steps\n")
+                step.save()
+                converted_count += 1
+                print(f"  - Converted review_booking to pricing_summary: '{old_name}' → '{step.name}'")
+
+        print(f"[Migration] Completed: {converted_count} converted, {deleted_count} deleted\n")
     else:
         print("[Migration] No review_booking steps found - database already clean\n")
 
