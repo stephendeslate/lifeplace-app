@@ -95,8 +95,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   const updatePricingData = useCallback(async () => {
     const newStepData: PricingSummaryStepData = {
       applied_discount_code: stepData.applied_discount_code || undefined,
+      special_requests: stepData.special_requests || '',
+      terms_accepted: stepData.terms_accepted || false,
+      marketing_consent: stepData.marketing_consent || false,
     };
-    
+
     // Only update if data has actually changed
     if (JSON.stringify(newStepData) === JSON.stringify(stepData)) {
       return;
