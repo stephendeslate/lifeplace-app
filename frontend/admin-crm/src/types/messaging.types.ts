@@ -1,7 +1,6 @@
 // frontend/admin-crm/src/types/messaging.types.ts
 // Admin-specific extensions to shared messaging types
 // WIP: Messaging feature temporarily disabled for deployment
-// @ts-nocheck
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // import type {
@@ -16,14 +15,14 @@
 // } from '@shared/types/messaging';
 
 // Temporary type stubs until shared package is fully integrated
-type ThreadFilters = any;
-type MessageFilters = any;
-type MessageThreadListItem = any;
-type MessageThreadDetail = any;
-type Message = any;
-type MessagePriority = any;
-type MessageThreadStatus = any;
-type CreateThreadRequest = any;
+export type ThreadFilters = any;
+export type MessageFilters = any;
+export type MessageThreadListItem = any;
+export type MessageThreadDetail = any;
+export type Message = any;
+export type MessagePriority = any;
+export type MessageThreadStatus = any;
+export type CreateThreadRequest = any;
 
 // ============================================================================
 // Admin-Specific Data Types
@@ -249,13 +248,5 @@ export interface AdminMessagingStats {
 // Export all types
 // ============================================================================
 
-export type {
-  // Re-export commonly used shared types
-  ThreadFilters,
-  MessageFilters,
-  MessageThreadListItem,
-  MessageThreadDetail,
-  Message,
-  MessagePriority,
-  MessageThreadStatus,
-} from '@shared/types/messaging';
+// Note: Types are already exported above as stubs
+// When @shared/types/messaging is available, uncomment the import at top and remove stubs

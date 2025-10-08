@@ -27,6 +27,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { validateLoginForm } from '../../utils/validation';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type { LoginCredentials } from '../../types/auth.types';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
@@ -43,7 +44,7 @@ const Login: React.FC<LoginProps> = ({
   onLoginSuccess,
 }) => {
   const { login } = useAuth();
-  const { showSuccess, showError } = useToastActions();
+  const { showSuccess } = useToastActions();
   const theme = useTheme();
 
   const [formData, setFormData] = useState<LoginCredentials>({
@@ -97,20 +98,14 @@ const Login: React.FC<LoginProps> = ({
       console.error('Login error:', error);
       
       // Handle different types of errors
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      if (errorObj?.response?.status === 400 || errorObj?.response?.status === 401) {
-        setErrors({ 
-          form: 'Invalid email or password. Please check your credentials and try again.' 
+      const statusCode = ErrorHandler.getStatusCode(error);
+      if (statusCode === 400 || statusCode === 401) {
+        setErrors({
+          form: 'Invalid email or password. Please check your credentials and try again.'
         });
-      } else if (errorObj?.response?.data?.detail) {
-        setErrors({ form: errorObj.response.data.detail });
       } else {
-        showError(
-          'Login Failed',
-          'An unexpected error occurred. Please try again.'
-        );
+        const errorMessage = ErrorHandler.extractMessage(error);
+        setErrors({ form: errorMessage });
       }
     } finally {
       setIsSubmitting(false);
@@ -319,30 +314,64 @@ const Login: React.FC<LoginProps> = ({
                     }}
                   />
 
-                  {/* Remember Me */}
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={formData.remember_me}
-                        onChange={handleInputChange('remember_me')}
-                        disabled={isSubmitting}
-                        sx={{
-                          color: alpha('#fff', 0.7),
-                          '&.Mui-checked': {
-                            color: theme.palette.primary.light,
-                          },
-                        }}
-                      />
-                    }
-                    label="Remember me for 7 days"
-                    sx={{ 
-                      alignSelf: 'flex-start',
-                      color: alpha('#fff', 0.8),
-                      '& .MuiFormControlLabel-label': {
-                        fontSize: '0.875rem',
-                      },
+                  {/* Remember Me and Forgot Password */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 1,
                     }}
-                  />
+                  >
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.remember_me}
+                          onChange={handleInputChange('remember_me')}
+                          disabled={isSubmitting}
+                          sx={{
+                            color: alpha('#fff', 0.7),
+                            '&.Mui-checked': {
+                              color: theme.palette.primary.light,
+                            },
+                          }}
+                        />
+                      }
+                      label="Remember me for 7 days"
+                      sx={{
+                        color: alpha('#fff', 0.8),
+                        '& .MuiFormControlLabel-label': {
+                          fontSize: '0.875rem',
+                        },
+                      }}
+                    />
+
+                    <Link
+                      component="button"
+                      type="button"
+                      variant="body2"
+                      onClick={() => window.location.href = '/forgot-password'}
+                      disabled={isSubmitting}
+                      sx={{
+                        color: alpha('#fff', 0.9),
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        '&:hover': {
+                          color: '#fff',
+                          textDecoration: 'underline',
+                        },
+                        '&:disabled': {
+                          color: alpha('#fff', 0.4),
+                          cursor: 'not-allowed',
+                        },
+                      }}
+                    >
+                      Forgot password?
+                    </Link>
+                  </Box>
 
                   {/* Submit Button */}
                   <Button

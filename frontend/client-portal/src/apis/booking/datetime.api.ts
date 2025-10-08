@@ -1,6 +1,8 @@
 // frontend/client-portal/src/apis/booking/datetime.api.ts
 
 import api from '../../utils/api';
+import { formatInTimeZone } from 'date-fns-tz';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   DateTimeStepData,
   StepValidationResult,
@@ -189,16 +191,10 @@ export class DateTimeApi {
    */
   static formatDate(dateString: string): string {
     if (!dateString) return '';
-    
+
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-PH', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'Asia/Manila'
-      });
+      return formatInTimeZone(date, 'Asia/Manila', 'EEEE, MMMM d, yyyy');
     } catch {
       return dateString;
     }
@@ -209,18 +205,13 @@ export class DateTimeApi {
    */
   static formatTime(timeString: string): string {
     if (!timeString) return '';
-    
+
     try {
       const [hours, minutes] = timeString.split(':');
       const date = new Date();
-      date.setHours(parseInt(hours), parseInt(minutes));
-      
-      const formatted = date.toLocaleTimeString('en-PH', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'Asia/Manila'
-      });
+      date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      const formatted = formatInTimeZone(date, 'Asia/Manila', 'h:mm a');
       return `${formatted} PHT`;
     } catch {
       return timeString;
@@ -229,64 +220,18 @@ export class DateTimeApi {
 
   /**
    * Handle API errors
+   * @deprecated Use ErrorHandler.extractMessage() instead
    */
   static handleApiError(error: unknown): string {
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.detail) {
-      return errorObj.response.data.detail;
-    }
-
-    if (errorObj.response?.data?.message) {
-      return errorObj.response.data.message;
-    }
-
-    if (errorObj.response?.status === 400) {
-      return 'Invalid date/time data provided.';
-    }
-
-    if (errorObj.response?.status === 409) {
-      return 'The selected date/time is not available.';
-    }
-
-    if (errorObj.message) {
-      return errorObj.message;
-    }
-
-    return 'An error occurred while processing the date/time selection.';
+    return ErrorHandler.extractMessage(error);
   }
 
   /**
    * Extract validation errors from API response
+   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
    */
   static extractValidationErrors(error: unknown): Record<string, string[]> {
-    const validationErrors: Record<string, string[]> = {};
-
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.validation_errors) {
-      return errorObj.response.data.validation_errors;
-    }
-
-    if (errorObj.response?.data?.errors) {
-      const errors = errorObj.response.data.errors;
-      
-      if (typeof errors === 'object') {
-        Object.keys(errors).forEach(field => {
-          const fieldErrors = (errors as Record<string, unknown>)[field];
-          
-          if (Array.isArray(fieldErrors)) {
-            validationErrors[field] = fieldErrors;
-          } else if (typeof fieldErrors === 'string') {
-            validationErrors[field] = [fieldErrors];
-          }
-        });
-      }
-    }
-
-    return validationErrors;
+    return ErrorHandler.extractValidationErrorsAsRecord(error);
   }
 }
 

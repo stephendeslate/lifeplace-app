@@ -3,6 +3,7 @@
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
+import { formatInTimeZone } from 'date-fns-tz';
 import { BUSINESS_TIMEZONE_DISPLAY } from '../../utils/timezone';
 import { TimezoneBadge } from './TimezoneDisplay';
 
@@ -92,12 +93,8 @@ export const PhilippinesDateTimePicker: React.FC<PhilippinesDateTimePickerProps>
           }}
         >
           <Typography variant="body2" fontWeight="medium" color="primary.main">
-            Selected Time: {date && time ? 
-              `${date.toLocaleDateString('en-PH')} at ${time.toLocaleTimeString('en-PH', { 
-                hour: 'numeric', 
-                minute: '2-digit',
-                hour12: true 
-              })} ${BUSINESS_TIMEZONE_DISPLAY}` 
+            Selected Time: {date && time ?
+              `${formatInTimeZone(date, 'Asia/Manila', 'EEEE, MMMM d, yyyy')} at ${formatInTimeZone(time, 'Asia/Manila', 'h:mm a')} ${BUSINESS_TIMEZONE_DISPLAY}`
               : 'Please select both date and time'
             }
           </Typography>

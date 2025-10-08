@@ -170,9 +170,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
   // Handle gateway selection - MUST be defined before useEffect that uses it
   const handleGatewaySelect = useCallback((gateway: Record<string, unknown>) => {
-    // Payment gateway objects have dynamic structure requiring any type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setSelectedGateway(gateway as any);
+    setSelectedGateway(gateway as unknown as PaymentGateway);
 
     // Auto-set payment method based on gateway
     let defaultMethod = 'CREDIT_CARD';
@@ -757,9 +755,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
                 value={selectedGateway?.id || ''}
                 onChange={(e) => {
                   const gateway = flowGateways.find(g => g.id === parseInt(e.target.value));
-                  // Payment gateway objects have dynamic structure requiring any type
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  if (gateway) handleGatewaySelect(gateway as any);
+                  if (gateway) handleGatewaySelect(gateway as unknown as Record<string, unknown>);
                 }}
               >
                 {filteredGateways.map((gateway) => (

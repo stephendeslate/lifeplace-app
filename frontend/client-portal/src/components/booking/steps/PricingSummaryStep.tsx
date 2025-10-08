@@ -19,10 +19,12 @@ import {
   Chip,
   Skeleton,
   Fade,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
-import { 
-  Receipt, 
-  LocalOffer, 
+import {
+  Receipt,
+  LocalOffer,
   CheckCircle,
   Close as CloseIcon,
 } from '@mui/icons-material';
@@ -32,24 +34,36 @@ import { useCurrencySettings } from '../../../hooks/useCurrency';
 import type {
   PricingSummaryStepData,
   PricingSummaryStepConfiguration,
+  StepData,
+  BookingFlow,
+  BookingSession,
 } from '../../../types/booking';
 
 interface PricingSummaryStepProps {
   stepData?: PricingSummaryStepData;
-  config: PricingSummaryStepConfiguration | null; // Fixed: Proper type instead of any
+  allStepData?: StepData;
+  config: PricingSummaryStepConfiguration | null;
   onDataChange: (data: PricingSummaryStepData) => void;
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
+  flow?: BookingFlow | null;
+  session?: BookingSession | null;
+  totalPrice?: string;
 }
 
 export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   stepData = {
-    applied_discount_code: undefined, // Fixed: Match backend expectation
+    applied_discount_code: undefined,
+    terms_accepted: false,
+    marketing_consent: false,
+    special_requests: '',
   },
+  allStepData = {},
   config,
   onDataChange,
   validationErrors,
   isValidating,
+  flow,
 }) => {
   const { state, actions } = useBooking();
   const { formatAmount } = useCurrencySettings();
@@ -80,8 +94,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   const updatePricingData = useCallback(async () => {
     const newStepData: PricingSummaryStepData = {
       applied_discount_code: stepData.applied_discount_code || undefined,
+      special_requests: stepData.special_requests || '',
+      terms_accepted: stepData.terms_accepted || false,
+      marketing_consent: stepData.marketing_consent || false,
     };
-    
+
     // Only update if data has actually changed
     if (JSON.stringify(newStepData) === JSON.stringify(stepData)) {
       return;
@@ -155,6 +172,36 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   const handleDiscountInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setDiscountCodeInput(event.target.value);
     setDiscountError(null);
+  };
+
+  // Handle terms acceptance change
+  const handleTermsChange = (accepted: boolean) => {
+    onDataChange({
+      ...stepData,
+      terms_accepted: accepted,
+    });
+  };
+
+  // Handle marketing consent change
+  const handleMarketingConsentChange = (consent: boolean) => {
+    onDataChange({
+      ...stepData,
+      marketing_consent: consent,
+    });
+  };
+
+  // Handle special requests change
+  const handleSpecialRequestsChange = (requests: string) => {
+    onDataChange({
+      ...stepData,
+      special_requests: requests,
+    });
+  };
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Not specified';
+    return new Date(dateString).toLocaleDateString();
   };
 
   // Show loading state on initial load
@@ -456,6 +503,191 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           </Box>
         </Box>
       </Paper>
+
+      {/* Booking Review Section (consolidated from review step) */}
+      {config?.show_booking_review !== false && (
+        <>
+          {/* Event Details */}
+          {config?.show_event_details !== false && (
+            <Box sx={{ mt: 3 }}>
+              <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Event Details
+                </Typography>
+
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Event Type</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {flow?.event_type_name || 'Not specified'}
+                  </Typography>
+                </Box>
+
+                {allStepData?.date_time?.start_date && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">Event Date</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {formatDate(allStepData.date_time.start_date)}
+                    </Typography>
+                  </Box>
+                )}
+
+                {allStepData?.date_time?.start_time && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">Event Time</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {allStepData.date_time.start_time}
+                    </Typography>
+                  </Box>
+                )}
+
+                {allStepData?.date_time?.duration && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">Duration</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {allStepData.date_time.duration} hours
+                    </Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Box>
+          )}
+
+          {/* Contact Information */}
+          {config?.show_contact_details !== false && (
+            <Box sx={{ mt: 3 }}>
+              <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Contact Information
+                </Typography>
+
+                {allStepData?.contact_info?.full_name && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">Name</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {allStepData.contact_info.full_name}
+                    </Typography>
+                  </Box>
+                )}
+
+                {allStepData?.contact_info?.email && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">Email</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {allStepData.contact_info.email}
+                    </Typography>
+                  </Box>
+                )}
+
+                {allStepData?.contact_info?.phone && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">Phone</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {allStepData.contact_info.phone}
+                    </Typography>
+                  </Box>
+                )}
+
+                {allStepData?.contact_info?.company && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">Company</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {allStepData.contact_info.company}
+                    </Typography>
+                  </Box>
+                )}
+
+                {allStepData?.contact_info?.create_account && (
+                  <Chip label="Account will be created" color="primary" size="small" />
+                )}
+              </Paper>
+            </Box>
+          )}
+
+          {/* Special Requests */}
+          {config?.show_special_requests !== false && (
+            <Box sx={{ mt: 3 }}>
+              <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Special Requests
+                </Typography>
+
+                <textarea
+                  placeholder="Any additional requests or special requirements for your event..."
+                  value={stepData.special_requests || ''}
+                  onChange={(e) => handleSpecialRequestsChange(e.target.value)}
+                  style={{
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                  }}
+                />
+              </Paper>
+            </Box>
+          )}
+
+          {/* Terms and Conditions */}
+          {config?.show_terms_checkbox !== false && (
+            <Box sx={{ mt: 3 }}>
+              <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Terms and Conditions
+                </Typography>
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={stepData.terms_accepted || false}
+                      onChange={(e) => handleTermsChange(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2">
+                      {config?.terms_text || (
+                        <>
+                          I agree to the{' '}
+                          <a href={config?.terms_url || '/terms'} target="_blank" rel="noreferrer" style={{ color: 'blue' }}>
+                            Terms of Service
+                          </a>{' '}
+                          and{' '}
+                          <a href={config?.privacy_url || '/privacy'} target="_blank" rel="noreferrer" style={{ color: 'blue' }}>
+                            Privacy Policy
+                          </a>
+                        </>
+                      )}
+                    </Typography>
+                  }
+                  sx={{ mb: 2 }}
+                />
+
+                {config?.show_marketing_consent !== false && (
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={stepData.marketing_consent || false}
+                        onChange={(e) => handleMarketingConsentChange(e.target.checked)}
+                        color="primary"
+                      />
+                    }
+                    label="I would like to receive marketing updates and special offers (optional)"
+                  />
+                )}
+
+                {validationErrors.terms_accepted && (
+                  <Alert severity="error" sx={{ mt: 2 }}>
+                    {validationErrors.terms_accepted[0]}
+                  </Alert>
+                )}
+              </Paper>
+            </Box>
+          )}
+        </>
+      )}
 
       {/* Footer text */}
       {config?.footer_text && (

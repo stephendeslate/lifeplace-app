@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToastActions } from '../contexts/ToastContext';
 import { communicationsApi } from '../apis/communications.api';
+import { ErrorHandler } from '../utils/errorHandler';
 import type {
   CommunicationFilters,
   SendCommunicationData,
@@ -57,10 +58,7 @@ export const useCommunications = () => {
       mutationFn: (data: PreviewCommunicationData) => 
         communicationsApi.previewTemplate(data),
       onError: (error: unknown) => {
-        // Error objects from axios have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorObj = error as any;
-        const message = errorObj.response?.data?.detail || 'Failed to preview template';
+        const message = ErrorHandler.extractMessage(error);
         showError('Preview Failed', message);
       },
     });
@@ -81,10 +79,7 @@ export const useCommunications = () => {
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
       },
       onError: (error: unknown) => {
-        // Error objects from axios have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorObj = error as any;
-        const message = errorObj.response?.data?.detail || 'Failed to send message';
+        const message = ErrorHandler.extractMessage(error);
         showError('Send Failed', message);
       },
     });
@@ -116,10 +111,8 @@ export const useCommunications = () => {
         // Update the specific record in cache
         queryClient.setQueryData(['communication-records'], (oldData: unknown) => {
           if (!oldData) return oldData;
-          
-          // Dynamic response data requires any for array methods
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return (oldData as any).map((record: Record<string, unknown>) => 
+
+          return (oldData as Array<Record<string, unknown>>).map((record: Record<string, unknown>) => 
             record.id === recordId 
               ? { 
                   ...record, 
@@ -144,10 +137,7 @@ export const useCommunications = () => {
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
       },
       onError: (error: unknown) => {
-        // Error objects from axios have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorObj = error as any;
-        const message = errorObj.response?.data?.error || 'Failed to mark message as read';
+        const message = ErrorHandler.extractMessage(error);
         showError('Update Failed', message);
       },
     });
@@ -162,10 +152,8 @@ export const useCommunications = () => {
         // Update the specific record in cache
         queryClient.setQueryData(['communication-records'], (oldData: unknown) => {
           if (!oldData) return oldData;
-          
-          // Dynamic response data requires any for array methods
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return (oldData as any).map((record: Record<string, unknown>) => 
+
+          return (oldData as Array<Record<string, unknown>>).map((record: Record<string, unknown>) => 
             record.id === recordId 
               ? { 
                   ...record, 
@@ -190,10 +178,7 @@ export const useCommunications = () => {
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
       },
       onError: (error: unknown) => {
-        // Error objects from axios have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorObj = error as any;
-        const message = errorObj.response?.data?.error || 'Failed to mark message as unread';
+        const message = ErrorHandler.extractMessage(error);
         showError('Update Failed', message);
       },
     });

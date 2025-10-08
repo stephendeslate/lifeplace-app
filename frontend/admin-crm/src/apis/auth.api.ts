@@ -22,10 +22,11 @@ export const authApi = {
 
   /**
    * Refresh JWT token
+   * Backend may return a new refresh token when rotation is enabled
    */
-  refreshToken: async (refreshToken: string): Promise<{ access: string }> => {
-    const response = await api.post<{ access: string }>('/users/token/refresh/', { 
-      refresh: refreshToken 
+  refreshToken: async (refreshToken: string): Promise<{ access: string; refresh?: string }> => {
+    const response = await api.post<{ access: string; refresh?: string }>('/users/token/refresh/', {
+      refresh: refreshToken
     });
     return response.data;
   },
@@ -88,6 +89,44 @@ export const authApi = {
       };
       detail: string;
     }>(`/users/invitations/${invitationId}/accept/`, data);
+    return response.data;
+  },
+
+  /**
+   * Request password reset - sends email with reset token
+   */
+  requestPasswordReset: async (email: string): Promise<{ detail: string }> => {
+    const response = await api.post<{ detail: string }>('/users/password-reset/request/', { email });
+    return response.data;
+  },
+
+  /**
+   * Validate password reset token
+   */
+  validateResetToken: async (tokenId: string): Promise<{
+    valid: boolean;
+    email?: string;
+    reason?: 'already_used' | 'expired' | 'not_found';
+  }> => {
+    const response = await api.get<{
+      valid: boolean;
+      email?: string;
+      reason?: 'already_used' | 'expired' | 'not_found';
+    }>(`/users/password-reset/validate/${tokenId}/`);
+    return response.data;
+  },
+
+  /**
+   * Confirm password reset with new password
+   */
+  confirmPasswordReset: async (tokenId: string, data: {
+    password: string;
+    confirm_password: string;
+  }): Promise<{ detail: string }> => {
+    const response = await api.post<{ detail: string }>(
+      `/users/password-reset/confirm/${tokenId}/`,
+      data
+    );
     return response.data;
   },
 };

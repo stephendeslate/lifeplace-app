@@ -7,6 +7,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ErrorHandler } from '../utils/errorHandler';
 
 // WIP: Shared design system integration temporarily disabled for deployment
 // import { injectDesignTokens } from '@shared/design-system';
@@ -29,10 +30,7 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
       retry: (failureCount, error: unknown) => {
         // Don't retry on 401/403 errors
-        // Error objects from axios have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorObj = error as any;
-        if (errorObj?.response?.status === 401 || errorObj?.response?.status === 403) {
+        if (ErrorHandler.isAuthError(error) || ErrorHandler.isPermissionError(error)) {
           return false;
         }
         // Retry up to 3 times for other errors

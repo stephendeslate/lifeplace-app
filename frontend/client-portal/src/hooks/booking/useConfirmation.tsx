@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ConfirmationApi } from '../../apis/booking/confirmation.api';
 import { BookingCoreApi } from '../../apis/booking/core.api';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   BookingCompletionResult,
   ConfirmationStepConfiguration,
@@ -15,15 +16,10 @@ export const useConfirmation = (
 ) => {
   const [loading, setLoading] = useState(false);
   const [completing, setCompleting] = useState(false);
-  const [sendingEmail, setSendingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [completionResult, setCompletionResult] = useState<BookingCompletionResult | null>(null);
-  // Session and confirmation data have dynamic structure requiring any type
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [sessionDetails, setSessionDetails] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [confirmationData, setConfirmationData] = useState<any>(null);
-  const [emailSent, setEmailSent] = useState(false);
+  const [sessionDetails, setSessionDetails] = useState<Record<string, unknown> | null>(null);
+  const [confirmationData, setConfirmationData] = useState<Record<string, unknown> | null>(null);
 
   // Load session details for display
   const loadSessionDetails = useCallback(async () => {
@@ -40,9 +36,7 @@ export const useConfirmation = (
       const formatted = ConfirmationApi.formatConfirmationData(details);
       setConfirmationData(formatted);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = ConfirmationApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -98,9 +92,7 @@ export const useConfirmation = (
 
       return true;
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = ConfirmationApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
       return false;
     } finally {
@@ -108,24 +100,6 @@ export const useConfirmation = (
     }
   }, [sessionId, loadSessionDetails, getCompletionType]);
 
-  // Send confirmation email
-  const sendConfirmationEmail = useCallback(async (): Promise<boolean> => {
-    if (!sessionId || emailSent) return false;
-
-    setSendingEmail(true);
-
-    try {
-      await ConfirmationApi.sendConfirmationEmail(sessionId);
-      setEmailSent(true); // Mark as sent
-      return true;
-    } catch (err) {
-      // Email sending is optional, so we don't set error state
-      console.warn('Failed to send confirmation email:', err);
-      return false;
-    } finally {
-      setSendingEmail(false);
-    }
-  }, [sessionId, emailSent]);
 
   // Get booking reference number
   const bookingReference = useMemo(() => {
@@ -135,9 +109,7 @@ export const useConfirmation = (
 
   // Get next steps content
   const nextSteps = useMemo(() => {
-    // Step configuration has dynamic structure requiring any type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ConfirmationApi.getNextStepsContent((config || {}) as any);
+    return ConfirmationApi.getNextStepsContent((config || {}) as Record<string, unknown>);
   }, [config]);
 
   // Get support contact information
@@ -160,17 +132,21 @@ export const useConfirmation = (
   const eventSummary = useMemo(() => {
     if (!confirmationData) return null;
 
-    const { eventDetails, contactInfo, packages, addons, totalPrice } = confirmationData;
+    const eventDetails = confirmationData.eventDetails as Record<string, unknown>;
+    const contactInfo = confirmationData.contactInfo as Record<string, unknown>;
+    const packages = confirmationData.packages as Array<Record<string, unknown>>;
+    const addons = confirmationData.addons as Array<Record<string, unknown>>;
+    const { totalPrice } = confirmationData;
 
     return {
-      date: eventDetails.date ? ConfirmationApi.formatDate(eventDetails.date) : '',
-      time: eventDetails.time ? ConfirmationApi.formatTime(eventDetails.time) : '',
+      date: eventDetails.date ? ConfirmationApi.formatDate(eventDetails.date as string) : '',
+      time: eventDetails.time ? ConfirmationApi.formatTime(eventDetails.time as string) : '',
       duration: eventDetails.duration ? `${eventDetails.duration} hours` : '',
-      venue: eventDetails.venue || '',
+      venue: (eventDetails.venue as string) || '',
       contact: {
-        name: contactInfo.name || '',
-        email: contactInfo.email || '',
-        phone: contactInfo.phone || '',
+        name: (contactInfo.name as string) || '',
+        email: (contactInfo.email as string) || '',
+        phone: (contactInfo.phone as string) || '',
       },
       items: [
         ...packages.map((pkg: Record<string, unknown>) => ({
@@ -196,16 +172,6 @@ export const useConfirmation = (
       loadSessionDetails();
     }
   }, [sessionId, loadSessionDetails]);
-
-  // Auto-send confirmation email if configured
-  useEffect(() => {
-    if (config?.send_confirmation_email &&
-        isCompleted &&
-        sessionDetails?.client?.email &&
-        !emailSent) {
-      sendConfirmationEmail();
-    }
-  }, [config?.send_confirmation_email, isCompleted, sessionDetails, emailSent, sendConfirmationEmail]);
 
   // Clear errors
   const clearError = useCallback(() => {
@@ -234,16 +200,14 @@ export const useConfirmation = (
     
     // Actions
     completeBooking,
-    sendConfirmationEmail,
     loadSessionDetails,
     clearError,
     navigateToDashboard,
     navigateToHome,
-    
+
     // State
     loading,
     completing,
-    sendingEmail,
     error,
     
     // Status
@@ -269,9 +233,7 @@ export const useConfirmationDisplay = (
   }), [config]);
 
   const nextSteps = useMemo(() => {
-    // Step configuration has dynamic structure requiring any type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ConfirmationApi.getNextStepsContent((config || {}) as any);
+    return ConfirmationApi.getNextStepsContent((config || {}) as Record<string, unknown>);
   }, [config]);
 
   const supportContact = useMemo(() => {

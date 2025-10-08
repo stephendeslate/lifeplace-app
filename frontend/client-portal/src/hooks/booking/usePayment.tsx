@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PaymentApi } from '../../apis/booking/payment.api';
 import { usePaymentPlanSettings } from '../usePaymentPlanSettings';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   PaymentGateway,
   PaymentGatewayResponse,
@@ -22,9 +23,7 @@ export const usePaymentGateways = () => {
       const data = await PaymentApi.getPaymentGateways();
       setGateways(data);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = PaymentApi.handlePaymentError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -63,9 +62,7 @@ export const useFlowPaymentGateways = (flowId?: number) => {
       const data = await PaymentApi.getFlowPaymentGateways(flowId);
       setPaymentData(data);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = PaymentApi.handlePaymentError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -126,9 +123,7 @@ export const usePaymentGateway = (gatewayId?: number) => {
       const data = await PaymentApi.getPaymentGateway(gatewayId);
       setGateway(data);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = PaymentApi.handlePaymentError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -215,9 +210,7 @@ export const usePaymentValidation = () => {
 
   const validatePaymentMethod = useCallback((
     gateway: PaymentGateway,
-    // Payment handler data structures need any for dynamic field types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    paymentData: Record<string, any>
+    paymentData: Record<string, unknown>
   ) => {
     const validation = PaymentApi.validatePaymentMethod(gateway, paymentData);
     setValidationErrors(validation.errors);
@@ -228,9 +221,7 @@ export const usePaymentValidation = () => {
     gateway: PaymentGateway,
     paymentMethod: string,
     paymentType: 'FULL' | 'DEPOSIT',
-    // Payment handler data structures need any for dynamic field types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    additionalData: Record<string, any> = {}
+    additionalData: Record<string, unknown> = {}
   ) => {
     return PaymentApi.formatPaymentData(gateway, paymentMethod, paymentType, additionalData);
   }, []);
@@ -259,9 +250,7 @@ export const usePaymentValidation = () => {
 
 // Hook for payment gateway configuration
 export const useGatewayConfig = (gatewayCode?: string) => {
-  // Gateway configuration data has dynamic structure requiring any type
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [config, setConfig] = useState<Record<string, any>>({});
+  const [config, setConfig] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -275,9 +264,7 @@ export const useGatewayConfig = (gatewayCode?: string) => {
       const data = await PaymentApi.getGatewayPublicConfig(gatewayCode);
       setConfig(data);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = PaymentApi.handlePaymentError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -308,9 +295,7 @@ export const usePaymentFlow = (
 ) => {
   const [selectedPaymentType, setSelectedPaymentType] = useState<'FULL' | 'DEPOSIT'>('FULL');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
-  // Payment handler data structures need any for dynamic field types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [paymentData, setPaymentData] = useState<Record<string, any>>({});
+  const [paymentData, setPaymentData] = useState<Record<string, unknown>>({});
 
   const { calculateDeposit, calculateRemaining, formatAmount, validateAmount } = usePaymentCalculations();
   const { validatePaymentMethod, formatPaymentData, validationErrors } = usePaymentValidation();
@@ -375,9 +360,7 @@ export const usePaymentFlow = (
   }, [gateway, selectedPaymentMethod, selectedPaymentType, paymentData, formatPaymentData]);
 
   // Update payment data
-  // Payment handler data structures need any for dynamic field types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updatePaymentData = useCallback((newData: Record<string, any>) => {
+  const updatePaymentData = useCallback((newData: Record<string, unknown>) => {
     setPaymentData(prev => ({ ...prev, ...newData }));
   }, []);
 

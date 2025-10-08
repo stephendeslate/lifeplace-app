@@ -208,28 +208,99 @@ class BookingSessionService:
                             email=step_data['email'],
                             role='CLIENT'
                         ).first()
-                        
+
                         if existing_user:
                             # Use existing client user
                             user = existing_user
                             session.client = user
+                            logger.info(f"Associated existing client user: {user.email} (id: {user.id})")
                             print(f"DEBUG: Associated existing client user: {user.email}")
+
+                            # Log warning if guest tried to create account with existing email
+                            if step_data.get('create_account'):
+                                logger.warning(
+                                    f"⚠️ Guest attempted to create account with existing email: {user.email}. "
+                                    f"Using existing account instead. Password NOT updated for security."
+                                )
                         else:
-                            # Create new user record
+                            # Parse full_name into first_name and last_name
+                            full_name = step_data.get('full_name', '').strip()
+                            name_parts = full_name.split(' ', 1) if full_name else ['', '']
+                            first_name = name_parts[0]
+                            last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+                            # Build base user data
                             user_data = {
                                 'email': step_data['email'],
-                                'first_name': step_data.get('first_name', ''),
-                                'last_name': step_data.get('last_name', ''),
+                                'first_name': first_name,
+                                'last_name': last_name,
                                 'role': 'CLIENT',
                                 'is_active': True,
-                                # Don't set password - UserService will set unusable password
                             }
-                            
+
+                            # CRITICAL FIX: Add password if account creation requested
+                            create_account = step_data.get('create_account', False)
+                            password = step_data.get('password', '')
+
+                            if create_account and password:
+                                user_data['password'] = password
+                                logger.info(f"Creating CLIENT account WITH password for: {user_data['email']}")
+                            else:
+                                # No password provided - UserService will set unusable password
+                                logger.info(f"Creating CLIENT user WITHOUT password (guest booking) for: {user_data['email']}")
+
+                            # Add profile data if provided
+                            profile_data = {}
+                            if step_data.get('phone'):
+                                profile_data['phone'] = step_data['phone']
+                            if step_data.get('address'):
+                                profile_data['address'] = step_data['address']
+                            if step_data.get('company'):
+                                profile_data['company'] = step_data['company']
+
+                            if profile_data:
+                                user_data['profile'] = profile_data
+
+                            # Create user
                             user = UserService.create_user(user_data)
-                            
+
                             # Update session with new user
                             session.client = user
+                            logger.info(f"✅ Successfully created client user: {user.email} (id: {user.id}, has_password: {create_account and bool(password)})")
                             print(f"DEBUG: Created new client user: {user.email}")
+
+                            # Send welcome email for newly created accounts with passwords
+                            if create_account and password:
+                                try:
+                                    from core.domains.communications.services import CommunicationService
+
+                                    # Initialize communication service
+                                    comm_service = CommunicationService()
+
+                                    # Prepare template context
+                                    template_data = {
+                                        'client_name': user.get_full_name() or user.first_name or user.email,
+                                        'email': user.email,
+                                        'first_name': user.first_name,
+                                        'booking_in_progress': True,
+                                    }
+
+                                    # Send welcome email using existing template
+                                    comm_service.send_communication_by_template_name(
+                                        template_name='Welcome Email',
+                                        recipient=user.email,
+                                        context_data=template_data,
+                                        client=user,
+                                        sent_by=None,  # System-generated
+                                        use_async=False  # Synchronous for immediate feedback
+                                    )
+
+                                    logger.info(f"✅ Sent welcome email to new client account: {user.email}")
+
+                                except Exception as email_error:
+                                    # Log warning but don't fail booking if email fails
+                                    logger.warning(f"⚠️ Failed to send welcome email to {user.email}: {email_error}")
+                                    # Don't raise - email failure shouldn't block booking
                         
                     except Exception as e:
                         print(f"DEBUG: Failed to create/associate client user: {str(e)}")
@@ -610,10 +681,11 @@ class BookingSessionService:
                     if step_data.get('completion_type'):
                         metadata['completion_type'] = step_data.get('completion_type', 'payment')
 
-                # Extract from review step (contains special_requests and terms_accepted)
-                # Review step data has both special_requests and terms_accepted fields
-                if 'special_requests' in step_data and 'terms_accepted' in step_data:
-                    metadata['special_requests'] = step_data.get('special_requests', '').strip()
+                # Extract from pricing_summary step (now contains special_requests and terms_accepted)
+                # Pricing summary step data has special_requests, terms_accepted, and marketing_consent fields
+                if 'special_requests' in step_data or 'terms_accepted' in step_data:
+                    if step_data.get('special_requests'):
+                        metadata['special_requests'] = step_data.get('special_requests', '').strip()
 
         # Combine messages
         messages = []
@@ -1289,12 +1361,10 @@ class BookingSessionService:
             )
             return errors
         
-        # Add validation for pricing summary step
+        # Add validation for pricing summary step (now includes review fields)
         if step.step_type == 'pricing_summary':
-            # Pricing summary only stores the discount code
-            # All calculations are done server-side
+            # Validate discount code if provided
             if 'applied_discount_code' in step_data and step_data['applied_discount_code']:
-                # Validate discount code if provided
                 try:
                     from core.domains.products.services import DiscountService
                     discount_code = step_data['applied_discount_code']
@@ -1303,6 +1373,12 @@ class BookingSessionService:
                         errors['applied_discount_code'] = ["Invalid or expired discount code"]
                 except Exception as e:
                     errors['applied_discount_code'] = ["Unable to validate discount code"]
+
+            # Validate terms acceptance (consolidated from review step)
+            config = getattr(step, 'pricing_summary_config', None)
+            if config and getattr(config, 'show_terms_checkbox', True):
+                if not step_data.get('terms_accepted'):
+                    errors['terms_accepted'] = ["You must accept the terms and conditions"]
         
         # Common validation for all step types
         if hasattr(step, f"{step.step_type}_config"):
@@ -1314,10 +1390,52 @@ class BookingSessionService:
                     errors['acknowledged'] = ["Acknowledgment is required"]
                     
             elif step.step_type == 'date_time':
-                if not step_data.get('date'):
-                    errors['date'] = ["Date selection is required"]
-                if config.allow_time_selection and not step_data.get('time'):
-                    errors['time'] = ["Time selection is required"]
+                # Basic validation
+                start_date_str = step_data.get('start_date')
+                if not start_date_str:
+                    errors['start_date'] = ["Date selection is required"]
+                if config.allow_time_selection and not step_data.get('start_time'):
+                    errors['start_time'] = ["Time selection is required"]
+
+                # Availability validation - check if date conflicts with CONFIRMED events
+                if start_date_str and not errors.get('start_date'):
+                    try:
+                        from datetime import datetime
+                        from core.domains.events.services.availability_service import availability_service, AvailabilityRequest
+
+                        # Parse the date
+                        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+
+                        # Get event type and booking flow info
+                        booking_flow_id = session.booking_flow.id if session and session.booking_flow else None
+                        event_type_id = session.booking_flow.event_type_id if session and session.booking_flow and session.booking_flow.event_type else None
+
+                        # Create availability request
+                        availability_request = AvailabilityRequest(
+                            start_date=start_date,
+                            event_type_id=event_type_id,
+                            booking_flow_id=booking_flow_id,
+                            duration_hours=step_data.get('duration', 4),
+                            buffer_before_hours=getattr(config, 'buffer_before_hours', 0),
+                            buffer_after_hours=getattr(config, 'buffer_after_hours', 0),
+                        )
+
+                        # Check availability
+                        availability_info = availability_service.check_date_availability(availability_request)
+
+                        # If date is not available for booking, add error
+                        if not availability_info.can_book_event:
+                            error_message = "This date is not available for booking"
+                            if availability_info.reasons:
+                                error_message = availability_info.reasons[0]
+                            errors['start_date'] = [error_message]
+
+                    except ValueError:
+                        errors['start_date'] = ["Invalid date format"]
+                    except Exception as e:
+                        logger.error(f"Error checking date availability: {e}")
+                        # Don't block booking if availability check fails
+                        pass
                     
             elif step.step_type == 'questionnaire':
                 # Questionnaire validation is handled at the field level

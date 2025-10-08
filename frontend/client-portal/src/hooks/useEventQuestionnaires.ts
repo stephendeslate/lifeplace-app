@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToastActions } from '../contexts/ToastContext';
 import { questionnairesApi } from '../apis/questionnaires.api';
+import { ErrorHandler } from '../utils/errorHandler';
 import type {
   QuestionnaireFilters,
   SaveEventResponsesData,
@@ -48,10 +49,7 @@ export const useEventQuestionnaires = () => {
         });
       },
       onError: (error: unknown) => {
-        // Error objects from axios have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorObj = error as any;
-        const message = errorObj.response?.data?.detail || 'Failed to save responses';
+        const message = ErrorHandler.extractMessage(error);
         showError('Save Failed', message);
       },
     });

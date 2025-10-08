@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth as useAuthContext } from '../contexts/AuthContext';
 import { authApi } from '../apis/auth.api';
 import { useToastActions } from '../contexts/ToastContext';
+import { ErrorHandler } from '../utils/errorHandler';
 import type { LoginCredentials, RegisterCredentials, User } from '../types/auth.types';
 
 export const useAuth = () => {
@@ -24,11 +25,7 @@ export const useAuth = () => {
     },
     onError: (error: unknown) => {
       console.error('Login error:', error);
-      
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      const message = errorObj.response?.data?.detail || errorObj.message || 'Login failed';
+      const message = ErrorHandler.extractMessage(error);
       showError('Login Failed', message);
     },
   });
@@ -47,11 +44,7 @@ export const useAuth = () => {
     },
     onError: (error: unknown) => {
       console.error('Registration error:', error);
-      
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      const message = errorObj.response?.data?.detail || errorObj.message || 'Registration failed';
+      const message = ErrorHandler.extractMessage(error);
       showError('Registration Failed', message);
     },
   });
@@ -68,11 +61,7 @@ export const useAuth = () => {
     },
     onError: (error: unknown) => {
       console.error('Change password error:', error);
-      
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      const message = errorObj.response?.data?.detail || 'Failed to change password';
+      const message = ErrorHandler.extractMessage(error);
       showError('Password Change Failed', message);
     },
   });
@@ -93,11 +82,7 @@ export const useAuth = () => {
     },
     onError: (error: unknown) => {
       console.error('Update profile error:', error);
-      
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      const message = errorObj.response?.data?.detail || 'Failed to update profile';
+      const message = ErrorHandler.extractMessage(error);
       showError('Update Failed', message);
     },
   });
@@ -117,11 +102,7 @@ export const useAuth = () => {
     },
     onError: (error: unknown) => {
       console.error('Upload avatar error:', error);
-      
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      const message = errorObj.response?.data?.detail || 'Failed to upload avatar';
+      const message = ErrorHandler.extractMessage(error);
       showError('Upload Failed', message);
     },
   });
@@ -134,10 +115,7 @@ export const useAuth = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error: unknown) => {
       // Don't retry on auth errors
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      if (errorObj?.response?.status === 401 || errorObj?.response?.status === 403) {
+      if (ErrorHandler.isAuthError(error) || ErrorHandler.isPermissionError(error)) {
         return false;
       }
       return failureCount < 2;

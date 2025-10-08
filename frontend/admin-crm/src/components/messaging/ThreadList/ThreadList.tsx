@@ -1,7 +1,6 @@
 // frontend/admin-crm/src/components/messaging/ThreadList/ThreadList.tsx
 // Thread list component with search, filters, and selection
 // WIP: Messaging feature temporarily disabled for deployment
-// @ts-nocheck
 
 import React, { useState, useMemo } from 'react';
 import {
@@ -36,8 +35,7 @@ import {
 } from '@mui/icons-material';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { useAdminMessaging } from '../../../hooks/useAdminMessaging';
-import type { ThreadListProps, AdminThreadFilters } from '../../../types/messaging.types';
-// import type { MessagePriority, MessageThreadStatus, MessageThreadListItem } from '@shared/types/messaging';
+import type { ThreadListProps, AdminThreadFilters, MessagePriority, MessageThreadStatus, MessageThreadListItem } from '../../../types/messaging.types';
 
 export const ThreadList: React.FC<ThreadListProps> = ({
   clientId,

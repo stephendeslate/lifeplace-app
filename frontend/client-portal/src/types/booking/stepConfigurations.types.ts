@@ -135,6 +135,7 @@ export interface ConfirmationStepConfiguration extends StepConfiguration {
 }
 
 export interface PricingSummaryStepConfiguration extends StepConfiguration {
+  // Pricing display options
   show_package_breakdown: boolean;
   show_addon_breakdown: boolean;
   show_tax_breakdown: boolean;
@@ -145,6 +146,17 @@ export interface PricingSummaryStepConfiguration extends StepConfiguration {
   header_text: string;
   footer_text: string;
   discount_help_text: string;
+
+  // Review/booking summary options (consolidated from review step)
+  show_booking_review?: boolean;
+  show_event_details?: boolean;
+  show_contact_details?: boolean;
+  show_terms_checkbox?: boolean;
+  show_marketing_consent?: boolean;
+  show_special_requests?: boolean;
+  terms_text?: string;
+  terms_url?: string;
+  privacy_url?: string;
 }
 
 // Product types from products domain (needed for package/addon steps)

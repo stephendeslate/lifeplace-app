@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ContactInfoApi } from '../../apis/booking/contact_info.api';
 import { useAuth } from '../useAuth';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   ContactInfoStepData,
   ContactInfoStepConfiguration,
@@ -19,9 +20,7 @@ export const useContactInfo = (config?: ContactInfoStepConfiguration) => {
   // Get initial data based on authentication status
   const getInitialData = useCallback((): ContactInfoStepData => {
     if (isAuthenticated && user) {
-      // User object has dynamic structure requiring any type
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return ContactInfoApi.getDefaultDataFromUser(user as any);
+      return ContactInfoApi.getDefaultDataFromUser(user as unknown as Record<string, unknown>);
     }
     return ContactInfoApi.getDefaultData();
   }, [isAuthenticated, user]);
@@ -31,9 +30,7 @@ export const useContactInfo = (config?: ContactInfoStepConfiguration) => {
     setError(null);
     setValidationErrors({});
 
-    // Step configuration has dynamic structure requiring any type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const validation = ContactInfoApi.validateData(data, config as any);
+    const validation = ContactInfoApi.validateData(data, config as unknown as Record<string, unknown>);
     
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
@@ -63,11 +60,8 @@ export const useContactInfo = (config?: ContactInfoStepConfiguration) => {
       );
       return response;
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = ContactInfoApi.handleApiError(err as any);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const validationErrs = ContactInfoApi.extractValidationErrors(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
+      const validationErrs = ErrorHandler.extractValidationErrorsAsRecord(err);
       
       setError(errorMessage);
       setValidationErrors(validationErrs);
@@ -103,9 +97,7 @@ export const useContactInfo = (config?: ContactInfoStepConfiguration) => {
       
       return result;
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = ContactInfoApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
       return { isValid: false, errors: [{ field: 'general', message: errorMessage }] };
     }
@@ -179,9 +171,7 @@ export const useContactInfoValidation = (config?: ContactInfoStepConfiguration) 
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   const validateData = useCallback((data: ContactInfoStepData) => {
-    // Step configuration has dynamic structure requiring any type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const validation = ContactInfoApi.validateData(data, config as any);
+    const validation = ContactInfoApi.validateData(data, config as unknown as Record<string, unknown>);
     setValidationErrors(validation.errors);
     return validation;
   }, [config]);

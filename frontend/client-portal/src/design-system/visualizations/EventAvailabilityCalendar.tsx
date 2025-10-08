@@ -17,10 +17,10 @@ import {
   Cancel,
   Schedule
 } from '@mui/icons-material';
-import { 
-  format, 
-  startOfMonth, 
-  endOfMonth, 
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
@@ -32,8 +32,12 @@ import {
   startOfDay,
   parseISO
 } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { tokens } from '../tokens';
 import { GlassCard } from '../components/GlassCard';
+
+// Philippines timezone constant
+const PHILIPPINES_TIMEZONE = 'Asia/Manila';
 
 // Based on actual Event model from backend
 export interface EventData {
@@ -59,10 +63,11 @@ interface EventAvailabilityCalendarProps {
   events?: EventData[];
   selectedDate?: Date;
   onDateSelect?: (date: Date, slot: AvailabilitySlot) => void;
+  onMonthChange?: (month: Date) => void; // Callback when month changes
   minAdvanceBookingDays?: number; // From booking flow configuration
   maxAdvanceBookingDays?: number; // From booking flow configuration
-  maxEventsPerDay?: number; // Business rule
-  showEventDetails?: boolean;
+  // maxEventsPerDay removed - ANY CONFIRMED event blocks the date (business requirement)
+  // showEventDetails removed - event details never shown for privacy
   compact?: boolean;
 }
 
@@ -183,10 +188,9 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
   events = [],
   selectedDate,
   onDateSelect,
+  onMonthChange,
   minAdvanceBookingDays = 1,
   maxAdvanceBookingDays = 365,
-  maxEventsPerDay = 3,
-  showEventDetails = true,
   compact = false,
 }) => {
   const theme = useTheme();
@@ -200,9 +204,13 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
     const monthDays = eachDayOfInterval({ start, end });
     
     return monthDays.map(date => {
-      const dayEvents = events.filter(event => 
-        isSameDay(parseISO(event.start_date), date)
-      );
+      // Filter events by converting UTC timestamps to Philippines timezone for comparison
+      const dayEvents = events.filter(event => {
+        // Parse the UTC timestamp and convert to Philippines timezone
+        const eventDateInPhilippines = toZonedTime(parseISO(event.start_date), PHILIPPINES_TIMEZONE);
+        // Compare the date portion only (ignoring time)
+        return isSameDay(eventDateInPhilippines, date);
+      });
       
       // Check booking constraints from backend business rules
       const today = new Date();
@@ -211,7 +219,9 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
       const isPastDate = isBefore(date, startOfDay(today));
       const tooSoon = daysDiff < minAdvanceBookingDays;
       const tooFar = daysDiff > maxAdvanceBookingDays;
-      const fullyBooked = dayEvents.filter(e => e.status !== 'CANCELLED').length >= maxEventsPerDay;
+      // Block date if ANY CONFIRMED event exists (business requirement)
+      const hasConfirmedEvent = dayEvents.some(e => e.status === 'CONFIRMED');
+      const fullyBooked = hasConfirmedEvent;
       
       let isBookable = true;
       let reason = '';
@@ -238,7 +248,7 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
         reason,
       };
     });
-  }, [currentMonth, events, minAdvanceBookingDays, maxAdvanceBookingDays, maxEventsPerDay]);
+  }, [currentMonth, events, minAdvanceBookingDays, maxAdvanceBookingDays]);
   
   const days = useMemo(() => {
     const start = startOfMonth(currentMonth);
@@ -260,11 +270,19 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
   }, [currentMonth]);
   
   const handlePrevMonth = () => {
-    setCurrentMonth(prev => subMonths(prev, 1));
+    const newMonth = subMonths(currentMonth, 1);
+    setCurrentMonth(newMonth);
+    if (onMonthChange) {
+      onMonthChange(newMonth);
+    }
   };
-  
+
   const handleNextMonth = () => {
-    setCurrentMonth(prev => addMonths(prev, 1));
+    const newMonth = addMonths(currentMonth, 1);
+    setCurrentMonth(newMonth);
+    if (onMonthChange) {
+      onMonthChange(newMonth);
+    }
   };
   
   const handleDateClick = (date: Date, slot: AvailabilitySlot) => {
@@ -344,23 +362,7 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
                       <Typography variant="caption" display="block" fontWeight={600}>
                         {format(date, 'EEEE, MMMM d')}
                       </Typography>
-                      {slot.hasEvents.length > 0 && showEventDetails && (
-                        <Box mt={0.5}>
-                          <Typography variant="caption" display="block">
-                            Events ({slot.hasEvents.length}):
-                          </Typography>
-                          {slot.hasEvents.slice(0, 3).map(event => (
-                            <Typography key={event.id} variant="caption" display="block">
-                              • {event.name} ({event.event_type_name})
-                            </Typography>
-                          ))}
-                          {slot.hasEvents.length > 3 && (
-                            <Typography variant="caption" display="block">
-                              + {slot.hasEvents.length - 3} more
-                            </Typography>
-                          )}
-                        </Box>
-                      )}
+                      {/* Event details removed for client privacy */}
                       <Typography variant="caption" display="block" mt={0.5}>
                         {slot.isBookable ? 'Available for booking' : slot.reason}
                       </Typography>

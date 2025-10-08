@@ -17,6 +17,7 @@ from .views.availability_views import (
     ValidateBookingRequestAPIView,
     NextAvailableDateAPIView,
     invalidate_availability_cache,
+    PublicEventAvailabilityAPIView,
 )
 
 router = DefaultRouter()
@@ -34,11 +35,14 @@ router.register(r'client/events', ClientEventViewSet, basename='client-event')
 
 urlpatterns = [
     path('', include(router.urls)),
-    
+
     # Date Availability API endpoints
     path('availability/check/', DateAvailabilityAPIView.as_view(), name='check-availability'),
     path('availability/range/', DateRangeAvailabilityAPIView.as_view(), name='check-range-availability'),
     path('availability/validate/', ValidateBookingRequestAPIView.as_view(), name='validate-booking'),
     path('availability/next/', NextAvailableDateAPIView.as_view(), name='next-available-date'),
     path('availability/cache/invalidate/', invalidate_availability_cache, name='invalidate-availability-cache'),
+
+    # Public availability endpoint for booking flow calendars
+    path('public/availability/', PublicEventAvailabilityAPIView.as_view(), name='public-event-availability'),
 ]

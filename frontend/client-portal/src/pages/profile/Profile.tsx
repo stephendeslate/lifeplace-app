@@ -30,6 +30,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import ChangePasswordDialog from '../../components/profile/ChangePasswordDialog';
+import { useChangePassword } from '../../hooks/useChangePassword';
 
 interface ProfileFormData {
   first_name: string;
@@ -43,7 +45,7 @@ const Profile: React.FC = () => {
   const theme = useTheme();
   const { user, updateUser } = useAuth();
   const { showSuccess, showError } = useToastActions();
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({
     first_name: user?.first_name || '',
@@ -53,6 +55,10 @@ const Profile: React.FC = () => {
     company: user?.profile?.company || '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+
+  // Password change mutation
+  const changePasswordMutation = useChangePassword();
 
   const getInitials = (firstName?: string, lastName?: string) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
@@ -87,7 +93,7 @@ const Profile: React.FC = () => {
       // TODO: Implement API call to update profile
       // await updateProfile(formData);
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
+
       // Update user in context with new data
       if (user) {
         updateUser({
@@ -109,6 +115,15 @@ const Profile: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleChangePassword = async (data: {
+    current_password: string;
+    new_password: string;
+    confirm_password: string;
+  }) => {
+    await changePasswordMutation.mutateAsync(data);
+    setPasswordDialogOpen(false);
   };
 
   if (!user) {
@@ -388,6 +403,7 @@ const Profile: React.FC = () => {
                     variant="outlined"
                     startIcon={<SecurityIcon />}
                     fullWidth
+                    onClick={() => setPasswordDialogOpen(true)}
                     sx={{
                       backgroundColor: alpha('#fff', 0.1),
                       backdropFilter: 'blur(10px)',
@@ -445,8 +461,8 @@ const Profile: React.FC = () => {
       {/* Success/Error Messages */}
       {isLoading && (
         <Box mt={2}>
-          <Alert 
-            severity="info" 
+          <Alert
+            severity="info"
             sx={{
               backgroundColor: alpha(theme.palette.info.main, 0.1),
               border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
@@ -456,6 +472,14 @@ const Profile: React.FC = () => {
           </Alert>
         </Box>
       )}
+
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        open={passwordDialogOpen}
+        onClose={() => setPasswordDialogOpen(false)}
+        onSubmit={handleChangePassword}
+        isLoading={changePasswordMutation.isPending}
+      />
     </Box>
   );
 };

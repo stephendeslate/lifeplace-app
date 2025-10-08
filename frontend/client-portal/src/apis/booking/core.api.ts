@@ -1,6 +1,7 @@
 // frontend/client-portal/src/apis/booking/core.api.ts
 
 import api from '../../utils/api';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   EventType,
   BookingFlow,
@@ -362,86 +363,18 @@ export class BookingCoreApi {
 
   /**
    * Handle API errors and extract user-friendly messages
+   * @deprecated Use ErrorHandler.extractMessage() instead
    */
   static handleApiError(error: unknown): string {
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.detail) {
-      return errorObj.response.data.detail;
-    }
-
-    if (errorObj.response?.data?.message) {
-      return errorObj.response.data.message;
-    }
-
-    if (errorObj.response?.status === 404) {
-      return 'The requested resource was not found.';
-    }
-
-    if (errorObj.response?.status === 403) {
-      return 'You do not have permission to perform this action.';
-    }
-
-    if (errorObj.response?.status === 401) {
-      return 'Authentication required. Please log in to continue.';
-    }
-
-    if (errorObj.response?.status >= 500) {
-      return 'A server error occurred. Please try again later.';
-    }
-
-    if (errorObj.message) {
-      return errorObj.message;
-    }
-
-    return 'An unexpected error occurred. Please try again.';
+    return ErrorHandler.extractMessage(error);
   }
 
   /**
    * Extract validation errors from API response
+   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
    */
   static extractValidationErrors(error: unknown): Record<string, string[]> {
-    const validationErrors: Record<string, string[]> = {};
-
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.validation_errors) {
-      return errorObj.response.data.validation_errors;
-    }
-
-    if (errorObj.response?.data?.errors) {
-      const errors = errorObj.response.data.errors;
-      
-      if (typeof errors === 'object') {
-        Object.keys(errors).forEach(field => {
-          const fieldErrors = (errors as Record<string, unknown>)[field];
-          
-          if (Array.isArray(fieldErrors)) {
-            validationErrors[field] = fieldErrors;
-          } else if (typeof fieldErrors === 'string') {
-            validationErrors[field] = [fieldErrors];
-          }
-        });
-      }
-    }
-
-    // Check for field-specific errors in the response
-    if (errorObj.response?.data) {
-      const data = errorObj.response.data;
-      
-      Object.keys(data).forEach(key => {
-        // Dynamic response data requires any for property access
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (Array.isArray((data as any)[key]) && (data as any)[key].every((item: unknown) => typeof item === 'string')) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          validationErrors[key] = (data as any)[key];
-        }
-      });
-    }
-
-    return validationErrors;
+    return ErrorHandler.extractValidationErrorsAsRecord(error);
   }
 
   /**

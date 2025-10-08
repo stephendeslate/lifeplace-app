@@ -1,6 +1,7 @@
 // frontend/client-portal/src/apis/booking/contact_info.api.ts
 
 import api from '../../utils/api';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   ContactInfoStepData,
   StepValidationResult,
@@ -179,64 +180,18 @@ export class ContactInfoApi {
 
   /**
    * Handle API errors
+   * @deprecated Use ErrorHandler.extractMessage() instead
    */
   static handleApiError(error: unknown): string {
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.detail) {
-      return errorObj.response.data.detail;
-    }
-
-    if (errorObj.response?.data?.message) {
-      return errorObj.response.data.message;
-    }
-
-    if (errorObj.response?.status === 400) {
-      return 'Invalid contact information provided.';
-    }
-
-    if (errorObj.response?.status === 409) {
-      return 'Email address is already in use.';
-    }
-
-    if (errorObj.message) {
-      return errorObj.message;
-    }
-
-    return 'An error occurred while processing contact information.';
+    return ErrorHandler.extractMessage(error);
   }
 
   /**
    * Extract validation errors from API response
+   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
    */
   static extractValidationErrors(error: unknown): Record<string, string[]> {
-    const validationErrors: Record<string, string[]> = {};
-
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.validation_errors) {
-      return errorObj.response.data.validation_errors;
-    }
-
-    if (errorObj.response?.data?.errors) {
-      const errors = errorObj.response.data.errors;
-      
-      if (typeof errors === 'object') {
-        Object.keys(errors).forEach(field => {
-          const fieldErrors = (errors as Record<string, unknown>)[field];
-          
-          if (Array.isArray(fieldErrors)) {
-            validationErrors[field] = fieldErrors;
-          } else if (typeof fieldErrors === 'string') {
-            validationErrors[field] = [fieldErrors];
-          }
-        });
-      }
-    }
-
-    return validationErrors;
+    return ErrorHandler.extractValidationErrorsAsRecord(error);
   }
 }
 

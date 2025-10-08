@@ -1,6 +1,7 @@
 // frontend/client-portal/src/apis/booking/questionnaire.api.ts
 
 import api from '../../utils/api';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   Questionnaire,
   QuestionnaireField,
@@ -376,56 +377,16 @@ export class QuestionnaireApi {
    * Handle questionnaire API errors
    */
   static handleQuestionnaireError(error: unknown): string {
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.detail) {
-      return errorObj.response.data.detail;
-    }
-
-    if (errorObj.response?.status === 404) {
-      return 'Questionnaire not found.';
-    }
-
-    if (errorObj.response?.status === 403) {
-      return 'You do not have permission to access this questionnaire.';
-    }
-
-    if (errorObj.message) {
-      return errorObj.message;
-    }
-
-    return 'An error occurred while loading the questionnaire.';
+    return ErrorHandler.extractMessage(error);
   }
 
   /**
-   * Extract field validation errors
+   * Extract questionnaire field errors
+   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
    */
-  static extractFieldErrors(error: unknown): Record<string, string[]> {
-    const fieldErrors: Record<string, string[]> = {};
-
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.field_errors) {
-      return errorObj.response.data.field_errors;
-    }
-
-    if (errorObj.response?.data?.errors) {
-      const errors = errorObj.response.data.errors;
-      
-      Object.keys(errors).forEach(fieldId => {
-        const fieldError = (errors as Record<string, unknown>)[fieldId];
-        
-        if (Array.isArray(fieldError)) {
-          fieldErrors[fieldId] = fieldError;
-        } else if (typeof fieldError === 'string') {
-          fieldErrors[fieldId] = [fieldError];
-        }
-      });
-    }
-
-    return fieldErrors;
+  static extractQuestionnaireErrors(error: unknown): Record<string, string[]> {
+    const errorData = error as {response?: {data?: {field_errors?: Record<string, string[]>}}};
+    return errorData.response?.data?.field_errors || {};
   }
 }
 

@@ -127,3 +127,33 @@ class AdminInvitation(BaseModel):
 
     def __str__(self):
         return f"Invitation for {self.email}"
+
+
+class PasswordResetToken(BaseModel):
+    """Password reset tokens for secure password recovery"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_tokens')
+    is_used = models.BooleanField(default=False)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        verbose_name = 'Password Reset Token'
+        verbose_name_plural = 'Password Reset Tokens'
+        ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            # Tokens expire after 1 hour
+            self.expires_at = timezone.now() + timedelta(hours=1)
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        """Check if the token has expired"""
+        return timezone.now() > self.expires_at
+
+    def is_valid(self):
+        """Check if token is valid (not used and not expired)"""
+        return not self.is_used and not self.is_expired()
+
+    def __str__(self):
+        return f"Password reset token for {self.user.email}"

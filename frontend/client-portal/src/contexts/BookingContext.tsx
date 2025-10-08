@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { debounce } from 'lodash';
+import { debounce, type DebouncedFunc } from 'lodash';
 import { BookingCoreApi } from '../apis/booking/core.api';
+import { ErrorHandler } from '../utils/errorHandler';
 import type {
   BookingState,
   BookingActions,
@@ -154,9 +155,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const navigate = useNavigate();
   
   // Create a ref to store the debounced update function
-  // Debounced function from lodash has complex type requiring any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const debouncedUpdateRef = useRef<any>(null);
+  const debouncedUpdateRef = useRef<DebouncedFunc<(sessionId: string, stepId: number, bookingDataUpdate: Record<string, unknown>, totalPrice: string) => Promise<void>> | null>(null);
   
   // Create the debounced backend update function
   const createDebouncedBackendUpdate = useCallback(() => {
@@ -190,9 +189,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           booking_data: bookingDataUpdate,
           total_price: response.total_price,
           updated_at: response.updated_at,
-          // Session storage data has dynamic structure requiring any type
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
+        });
         
       } catch (error) {
         console.warn('Background update failed:', error);
@@ -292,9 +289,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const flows = await BookingCoreApi.getAvailableFlows();
         dispatch({ type: 'SET_AVAILABLE_FLOWS', payload: flows });
       } catch (error) {
-        // Error objects from API calls have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorMessage = BookingCoreApi.handleApiError(error as any);
+        const errorMessage = ErrorHandler.extractMessage(error);
         dispatch({ type: 'SET_ERROR', payload: errorMessage });
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -320,9 +315,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await actions.startSession(selectedFlow.id);
         
       } catch (error) {
-        // Error objects from API calls have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorMessage = BookingCoreApi.handleApiError(error as any);
+        const errorMessage = ErrorHandler.extractMessage(error);
         dispatch({ type: 'SET_ERROR', payload: errorMessage });
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -352,16 +345,12 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         
         dispatch({ type: 'SET_CURRENT_SESSION', payload: sessionData });
         
-        // Session data contains dynamic booking data requiring any type
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        BookingCoreApi.saveSessionToLocal(sessionResponse.session_id, sessionData as any);
+        BookingCoreApi.saveSessionToLocal(sessionResponse.session_id, sessionData as unknown as Record<string, unknown>);
         
         await actions.fetchPaymentGateways();
         
       } catch (error) {
-        // Error objects from API calls have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorMessage = BookingCoreApi.handleApiError(error as any);
+        const errorMessage = ErrorHandler.extractMessage(error);
         dispatch({ type: 'SET_ERROR', payload: errorMessage });
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -385,7 +374,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       let formattedData = data;
       
       // Create the booking_data structure
-      const bookingDataUpdate = {
+      const bookingDataUpdate: Record<string, unknown> = {
         ...state.currentSession.booking_data || {},
         ...formattedData
       };
@@ -393,14 +382,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // Special handling for package and addon selection
       if (stepType === 'package_selection' && data.selected_packages) {
         formattedData = { selected_packages: data.selected_packages };
-        // Dynamic package data requires any type for assignment
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (bookingDataUpdate as any).selected_packages = data.selected_packages;
+        bookingDataUpdate.selected_packages = data.selected_packages;
       } else if (stepType === 'addon_selection' && data.selected_addons) {
         formattedData = { selected_addons: data.selected_addons };
-        // Dynamic addon data requires any type for assignment
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (bookingDataUpdate as any).selected_addons = data.selected_addons;
+        bookingDataUpdate.selected_addons = data.selected_addons;
       }
 
       // IMMEDIATELY update local state for responsive UI
@@ -420,7 +405,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (debouncedUpdateRef.current) {
         debouncedUpdateRef.current(
           state.currentSession.session_id,
-          currentStep.id,
+          currentStep.id as number,
           bookingDataUpdate,
           state.totalPrice
         );
@@ -457,9 +442,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         
         return result;
       } catch (error) {
-        // Error objects from API calls have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorMessage = BookingCoreApi.handleApiError(error as any);
+        const errorMessage = ErrorHandler.extractMessage(error);
         dispatch({ type: 'SET_ERROR', payload: errorMessage });
         return { isValid: false, errors: [{ field: 'general', message: errorMessage }] };
       }
@@ -517,18 +500,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           true // mark_completed = true to proceed to next step
         );
 
+        const responseData = response as unknown as Record<string, unknown>;
         const updatedSession: BookingSession = {
           ...state.currentSession,
           booking_data: updatedBookingData,
-          // API response data has dynamic structure requiring any type
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          current_step: (response as any).current_step,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          progress_percentage: (response as any).progress_percentage,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          total_price: (response as any).total_price,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          updated_at: (response as any).updated_at,
+          current_step: responseData.current_step as Record<string, unknown> | undefined,
+          progress_percentage: responseData.progress_percentage as number,
+          total_price: responseData.total_price as string | undefined,
+          updated_at: responseData.updated_at as string,
         };
 
         dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
@@ -537,16 +516,11 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           dispatch({ type: 'SET_TOTAL_PRICE', payload: response.total_price });
         }
 
-        // Session data contains dynamic booking data requiring any type
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, updatedSession as any);
+        BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, updatedSession as unknown as Record<string, unknown>);
 
       } catch (error) {
-        // Error objects from API calls have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorMessage = BookingCoreApi.handleApiError(error as any);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const validationErrors = BookingCoreApi.extractValidationErrors(error as any);
+        const errorMessage = ErrorHandler.extractMessage(error);
+        const validationErrors = BookingCoreApi.extractValidationErrors(error);
         
         dispatch({ type: 'SET_ERROR', payload: errorMessage });
         dispatch({ type: 'SET_VALIDATION_ERRORS', payload: validationErrors });
@@ -572,26 +546,19 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
               targetStep.id
             );
             
-            const updatedSession = {
+            const responseData = response as unknown as Record<string, unknown>;
+            const updatedSession: BookingSession = {
               ...state.currentSession,
-              // API response data has dynamic structure requiring any type
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              current_step: (response as any).current_step,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              progress_percentage: (response as any).progress_percentage,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              updated_at: (response as any).updated_at,
+              current_step: responseData.current_step as Record<string, unknown> | undefined,
+              progress_percentage: responseData.progress_percentage as number,
+              updated_at: responseData.updated_at as string,
             };
-            
+
             dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
-            // Session data contains dynamic booking data requiring any type
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, updatedSession as any);
-            
+            BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, updatedSession as unknown as Record<string, unknown>);
+
           } catch (error) {
-            // Error objects from API calls have dynamic structure requiring any
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const errorMessage = BookingCoreApi.handleApiError(error as any);
+            const errorMessage = BookingCoreApi.handleApiError(error);
             dispatch({ type: 'SET_ERROR', payload: errorMessage });
           } finally {
             dispatch({ type: 'SET_SUBMITTING', payload: false });
@@ -633,9 +600,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         return result;
       } catch (error) {
-        // Error objects from API calls have dynamic structure requiring any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorMessage = BookingCoreApi.handleApiError(error as any);
+        const errorMessage = ErrorHandler.extractMessage(error);
         dispatch({ type: 'SET_ERROR', payload: errorMessage });
         throw error;
       } finally {

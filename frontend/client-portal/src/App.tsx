@@ -10,7 +10,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { PublicLayout, BookingLayout, ClientLayout } from './components/layout';
 import { ProtectedRoute } from './components/auth';
 import { Home } from './pages/home';
-import { Login, Register } from './pages/auth';
+import { Login, Register, ForgotPassword, ResetPassword } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
 import { EventsList, EventDetail } from './pages/events';
 import { Profile } from './pages/profile';
@@ -18,6 +18,8 @@ import { FinancialPortal } from './pages/payments';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
 import ContractsPage from './pages/contracts/ContractsPage';
+import { AboutPage } from './pages/about';
+import { FacilitiesPage } from './pages/facilities';
 
 // Messaging and Records imports
 import { ClientMessagesPage } from './pages/messages/ClientMessagesPage';
@@ -163,17 +165,14 @@ const AppRouter: React.FC = () => {
         } 
       />
       
-      {/* Public placeholder pages */}
-      <Route 
-        path="/about" 
+      {/* Public About page */}
+      <Route
+        path="/about"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="About Us" 
-              description="Learn about our mission to celebrate life's precious moments"
-            />
+          <PublicLayout fullHeight>
+            <AboutPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
       <Route 
@@ -200,16 +199,13 @@ const AppRouter: React.FC = () => {
         } 
       />
       
-      <Route 
-        path="/facilities" 
+      <Route
+        path="/facilities"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Facilities" 
-              description="Discover our beautiful venues and amenities"
-            />
+          <PublicLayout fullHeight>
+            <FacilitiesPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
       <Route 
@@ -269,8 +265,8 @@ const AppRouter: React.FC = () => {
         } 
       />
       
-      <Route 
-        path="/register" 
+      <Route
+        path="/register"
         element={
           isAuthenticated ? (
             <Navigate to="/dashboard" replace />
@@ -286,7 +282,42 @@ const AppRouter: React.FC = () => {
               />
             </PublicLayout>
           )
-        } 
+        }
+      />
+
+      {/* Password Reset Routes - Public */}
+      <Route
+        path="/forgot-password"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <PublicLayout
+              onNavigateToLogin={handleNavigateToLogin}
+              onNavigateToRegister={handleNavigateToRegister}
+            >
+              <ForgotPassword
+                onNavigateToLogin={handleNavigateToLogin}
+                onNavigateToHome={handleNavigateToHome}
+              />
+            </PublicLayout>
+          )
+        }
+      />
+
+      <Route
+        path="/reset-password/:tokenId"
+        element={
+          <PublicLayout
+            onNavigateToLogin={handleNavigateToLogin}
+            onNavigateToRegister={handleNavigateToRegister}
+          >
+            <ResetPassword
+              onNavigateToLogin={handleNavigateToLogin}
+              onNavigateToHome={handleNavigateToHome}
+            />
+          </PublicLayout>
+        }
       />
 
       {/* Accept Client Invitation Route - Public but redirects to dashboard after success */}
@@ -402,21 +433,7 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      <Route 
-        path="/settings" 
-        element={
-          <ProtectedRoute>
-            <ClientLayoutWrapper>
-              <PlaceholderPage 
-                title="Settings" 
-                description="Account settings coming soon!"
-              />
-            </ClientLayoutWrapper>
-          </ProtectedRoute>
-        } 
-      />
-
-      <Route 
+      <Route
         path="/help" 
         element={
           <ProtectedRoute>

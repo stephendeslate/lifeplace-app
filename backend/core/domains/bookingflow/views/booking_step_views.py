@@ -169,11 +169,11 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         flow_id = serializer.validated_data['flow_id']
         order_mapping = serializer.validated_data['order_mapping']
-        
+
         try:
-            with transaction.atomic():
-                steps = BookingFlowStepService.reorder_steps(flow_id, order_mapping)
-            
+            # Service method already handles transaction
+            steps = BookingFlowStepService.reorder_steps(flow_id, order_mapping)
+
             serializer = BookingFlowStepSerializer(steps, many=True, context=self.get_serializer_context())
             return Response(serializer.data)
         except Exception as e:

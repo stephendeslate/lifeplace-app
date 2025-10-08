@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { QuestionnaireApi } from '../../apis/booking/questionnaire.api';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   Questionnaire,
   QuestionnaireField,
@@ -29,9 +30,7 @@ export const useQuestionnaires = (eventTypeId?: number) => {
       
       setQuestionnaires(data);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = QuestionnaireApi.handleQuestionnaireError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -66,9 +65,7 @@ export const useQuestionnaireDetail = (questionnaireId?: number) => {
       const data = await QuestionnaireApi.getQuestionnaireDetail(questionnaireId);
       setQuestionnaire(data);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = QuestionnaireApi.handleQuestionnaireError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -103,9 +100,7 @@ export const useQuestionnaireFields = (questionnaireId?: number) => {
       const data = await QuestionnaireApi.getQuestionnaireFields(questionnaireId);
       setFields(data.sort((a, b) => a.order - b.order));
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = QuestionnaireApi.handleQuestionnaireError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -126,9 +121,7 @@ export const useQuestionnaireFields = (questionnaireId?: number) => {
 
 // Hook for managing questionnaire responses
 export const useQuestionnaireResponses = (fields: QuestionnaireField[] = []) => {
-  // Dynamic questionnaire responses can be string, number, boolean, or array types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [responses, setResponses] = useState<Record<string, any>>({});
+  const [responses, setResponses] = useState<Record<string, unknown>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const [isValid, setIsValid] = useState(false);
 
@@ -141,9 +134,7 @@ export const useQuestionnaireResponses = (fields: QuestionnaireField[] = []) => 
   }, []);
 
   // Update multiple responses
-  // Dynamic questionnaire responses can be string, number, boolean, or array types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateResponses = useCallback((newResponses: Record<string, any>) => {
+  const updateResponses = useCallback((newResponses: Record<string, unknown>) => {
     setResponses(prev => ({
       ...prev,
       ...newResponses,
@@ -273,9 +264,7 @@ export const useQuestionnaireFileUpload = () => {
       
       return uploadedUrls;
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = QuestionnaireApi.handleQuestionnaireError(err as any);
+      const errorMessage = QuestionnaireApi.handleQuestionnaireError(err);
       setUploadErrors(prev => ({ ...prev, [fieldKey]: errorMessage }));
       throw err;
     } finally {
@@ -327,9 +316,7 @@ export const useQuestionnaireFileUpload = () => {
 // Hook for questionnaire summary and display
 export const useQuestionnaireSummary = (
   questionnaires: QuestionnaireDetailResponse[],
-  // Dynamic questionnaire responses can be string, number, boolean, or array types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  responses: Record<string, any>
+  responses: Record<string, unknown>
 ) => {
   const summary = useMemo(() => {
     return QuestionnaireApi.generateResponseSummary(questionnaires, responses);
@@ -367,9 +354,7 @@ export const useQuestionnaireSummary = (
 // Hook for dynamic questionnaire logic
 export const useDynamicQuestionnaire = (
   questionnaires: QuestionnaireDetailResponse[],
-  // Dynamic questionnaire responses can be string, number, boolean, or array types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  _responses: Record<string, any>
+  _responses: Record<string, unknown>
 ) => {
   // Get visible questionnaires based on conditions
   const visibleQuestionnaires = useMemo(() => {
