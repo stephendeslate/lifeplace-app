@@ -275,12 +275,12 @@ CACHES = {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': {
                 'max_connections': 50,
-                'retry_on_timeout': True,
+                'retry_on_timeout': True,  # Automatically retry on timeout errors
             },
             # 'PARSER_CLASS': 'redis.connection.HiredisParser',  # Faster parser - disabled until hiredis is properly configured
             'PICKLE_VERSION': -1,  # Use latest pickle protocol
-            'SOCKET_CONNECT_TIMEOUT': 5,
-            'SOCKET_TIMEOUT': 5,
+            'SOCKET_CONNECT_TIMEOUT': 10,  # Increased from 5 to 10 seconds for production
+            'SOCKET_TIMEOUT': 10,  # Increased from 5 to 10 seconds for production
             'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # Compress cached data
             'IGNORE_EXCEPTIONS': True,  # Fallback gracefully if Redis is down
         },
