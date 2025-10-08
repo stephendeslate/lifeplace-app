@@ -1,23 +1,18 @@
-// Modern Glassmorphic Client Profile
-// Enhanced with professional design patterns and comprehensive client management
+// Modern Client Profile Page
+// Completely modernized with ModernDesignSystem components and consistent patterns
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Typography,
   Chip,
-  IconButton,
   Menu,
   MenuItem,
   ListItemIcon,
   ListItemText,
   Divider,
-  Alert,
-  CircularProgress,
   Stack,
   Dialog,
   DialogActions,
@@ -27,10 +22,13 @@ import {
   Paper,
   Tab,
   Tabs,
-  Fade,
-  Container,
   Avatar,
-  Tooltip,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -48,10 +46,11 @@ import {
   AttachMoney as QuoteIcon,
   Payment as InvoiceIcon,
   Schedule as ScheduleIcon,
-  Star as StarIcon,
   Add as AddIcon,
   Message as MessageIcon,
   AccountBalance as PaymentIcon,
+  Person as PersonIcon,
+  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useClients } from '../../hooks/useClients';
@@ -72,13 +71,26 @@ import {
   ActivityTimeline,
   FinancialSummary,
   EntityNavigation,
+  QuickActions,
   createEventReference,
+  createClientActions,
   calculateClientFinancials,
   type ActivityItem,
+  type QuickAction,
 } from '../../components/common';
+import {
+  ModernPageLayout,
+  ModernCard,
+  ModernEmptyState,
+  ModernLoadingSpinner,
+  ModernPageHeader,
+  createRefreshAction,
+} from '../../components/common/ModernDesignSystem';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -98,41 +110,97 @@ export const ClientProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
-  
+  const { settings: currencySettings } = useCurrencySettings();
+
   // State
   const [tabValue, setTabValue] = useState(0);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  
+
   // Hooks
-  const { 
-    useClient, 
-    useClientEvents, 
-    sendInvitation, 
+  const {
+    useClient,
+    useClientEvents,
+    sendInvitation,
     isSendingInvitation,
     updateClient,
     isUpdatingClient,
     deleteClient,
-    isDeletingClient
+    isDeletingClient,
   } = useClients();
-  
+
   const { useRecords } = useCommunications();
-  
+
   const clientId = parseInt(id || '0');
-  const { data: client, isLoading, error } = useClient(clientId);
+  const { data: client, isLoading, error, refetch: refetchClient } = useClient(clientId);
   const { data: events = [], isLoading: isLoadingEvents } = useClientEvents(clientId);
   const { data: communications = [] } = useRecords({ client_id: clientId });
   const { data: quotes = [] } = useQuotesForClient(clientId);
   const { data: contracts = [] } = useContractsForClient(clientId);
   const { data: invoices = [] } = useInvoicesForClient(clientId);
 
+  // Currency formatting
+  const formatClientAmount = useCallback((amount: string | number) => {
+    const currency = currencySettings?.defaultCurrency || 'PHP';
+    return formatCurrency(amount, currency, {
+      showSymbol: currencySettings?.displayFormat !== 'code',
+      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+    });
+  }, [currencySettings]);
+
+  // Menu handlers
+  const handleMenuClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
+
+  const handleSendInvitation = useCallback(() => {
+    if (client) {
+      sendInvitation(client.id);
+    }
+    handleMenuClose();
+  }, [client, sendInvitation, handleMenuClose]);
+
+  const handleEditClient = useCallback(() => {
+    setEditDialogOpen(true);
+    handleMenuClose();
+  }, [handleMenuClose]);
+
+  const handleDeactivateClient = useCallback(() => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
+  }, [handleMenuClose]);
+
   // Enhanced components data
   const financialMetrics = useMemo(() => {
     return calculateClientFinancials(events);
   }, [events]);
 
+  const quickActions: QuickAction[] = useMemo(() => {
+    if (!client) return [];
+    return createClientActions(client.id, (actionType: string, clientId: number) => {
+      console.log('Quick action:', actionType, 'for client:', clientId);
+      switch (actionType) {
+        case 'create-event':
+          navigate(`/events/new?client=${clientId}`);
+          break;
+        case 'send-message':
+          setTabValue(2); // Switch to messages tab
+          break;
+        case 'create-quote':
+          navigate(`/sales/quotes/new?client=${clientId}`);
+          break;
+        case 'send-invitation':
+          handleSendInvitation();
+          break;
+        case 'add-note':
+          setTabValue(7); // Switch to notes tab
+          break;
+      }
+    });
+  }, [client, navigate, handleSendInvitation]);
 
   const relatedEvents = useMemo(() => {
     return events.map(event => createEventReference(event));
@@ -195,480 +263,608 @@ export const ClientProfile: React.FC = () => {
         { label: `${client.first_name} ${client.last_name}` },
       ]);
     }
-    const timer = setTimeout(() => setIsLoaded(true), 100);
-    return () => clearTimeout(timer);
   }, [client, setBreadcrumbs]);
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleSendInvitation = () => {
-    if (client) {
-      sendInvitation(client.id);
-    }
-    handleMenuClose();
-  };
-
-
-  const handleEditClient = () => {
-    setEditDialogOpen(true);
-    handleMenuClose();
-  };
-
-  const handleDeactivateClient = () => {
-    setDeleteDialogOpen(true);
-    handleMenuClose();
-  };
-
-  const handleEdit = (data: UpdateClientData) => {
+  const handleEdit = useCallback((data: UpdateClientData) => {
     updateClient(
       { id: clientId, data },
-      { onSuccess: () => setEditDialogOpen(false) }
+      {
+        onSuccess: () => {
+          setEditDialogOpen(false);
+          refetchClient();
+        }
+      }
     );
-  };
+  }, [clientId, updateClient, refetchClient]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     deleteClient(clientId, {
       onSuccess: () => {
         setDeleteDialogOpen(false);
         navigate('/clients');
       }
     });
-  };
+  }, [clientId, deleteClient, navigate]);
+
+  // Calculate total client value
+  const totalClientValue = useMemo(() => {
+    const total = events.reduce((sum, event) => {
+      const amount = parseFloat(event.current_total_amount || event.total_price || '0');
+      return sum + amount;
+    }, 0);
+    return formatClientAmount(total);
+  }, [events, formatClientAmount]);
 
   if (isLoading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Box 
-          display="flex" 
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          sx={{
-            minHeight: '60vh',
-            ...glassPresets.light,
-            borderRadius: tokens.spacing.radius.xxl,
-            p: 6,
-          }}
-        >
-          <CircularProgress size={48} sx={{ mb: 3, color: tokens.color.primary[500] }} />
-          <Typography variant="h6" sx={{ color: tokens.color.neutral[600] }}>
-            Loading client profile...
-          </Typography>
-        </Box>
-      </Container>
+      <ModernPageLayout backgroundPattern="default">
+        <ModernLoadingSpinner
+          size={48}
+          message="Loading client profile..."
+          variant="circular"
+          glass
+        />
+      </ModernPageLayout>
     );
   }
 
   if (error || !client) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Box 
-          sx={{
-            ...glassPresets.light,
-            borderRadius: tokens.spacing.radius.xxl,
-            p: 6,
-            textAlign: 'center'
+      <ModernPageLayout backgroundPattern="default">
+        <ModernPageHeader
+          title="Client Not Found"
+          subtitle="The requested client could not be located"
+          icon={<PersonIcon />}
+          secondaryActions={[
+            {
+              label: 'Back to Clients',
+              onClick: () => navigate('/clients'),
+              icon: <ArrowBackIcon />
+            }
+          ]}
+        />
+        <ModernEmptyState
+          icon={PersonIcon}
+          title="Client Not Found"
+          description="The client you're looking for doesn't exist or may have been removed."
+          primaryAction={{
+            label: 'Back to Clients',
+            onClick: () => navigate('/clients'),
+            icon: <ArrowBackIcon />,
+            color: 'primary'
           }}
-        >
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 3,
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.xl,
-              border: `1px solid ${tokens.color.error[500]}30`,
-            }}
-          >
-            {error ? 'Error loading client profile' : 'Client not found'}
-          </Alert>
-          <Button 
-            variant="outlined" 
-            size="large"
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/clients')}
-            sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.full,
-              border: `1px solid ${tokens.color.primary[500]}30`,
-              color: tokens.color.primary[600],
-              px: 4,
-              
-              '&:hover': {
-                ...glassPresets.medium,
-                transform: 'translateY(-2px)',
-              }
-            }}
-          >
-            Back to Clients
-          </Button>
-        </Box>
-      </Container>
+          size="medium"
+          illustration="minimal"
+        />
+      </ModernPageLayout>
     );
   }
 
   const statusSummary = getClientStatusSummary(client);
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `
-          radial-gradient(circle at 20% 20%, ${tokens.color.primary[500]}04 0%, transparent 50%),
-          radial-gradient(circle at 80% 80%, ${tokens.color.success[500]}04 0%, transparent 50%)
-        `,
-        pointerEvents: 'none',
-        zIndex: -1,
-      }
-    }}>
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
-        {/* Enhanced Header */}
-        <Fade in={isLoaded} timeout={500}>
-          <Box sx={{ mb: 4 }}>
-            <Box 
-              display="flex" 
-              justifyContent="space-between" 
-              alignItems="flex-start"
-              sx={{
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.xxl,
-                p: { xs: 3, md: 4 },
-                border: `1px solid ${tokens.color.borders.glass}`,
-                position: 'relative',
-                overflow: 'visible',
-                
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}06 0%, ${tokens.color.success[500]}06 100%)`,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  pointerEvents: 'none',
-                }
-              }}
-            >
-              <Box display="flex" alignItems="center" gap={3} sx={{ position: 'relative', zIndex: 1 }}>
-                <Tooltip title="Back to clients">
-                  <IconButton 
-                    onClick={() => navigate('/clients')} 
-                    sx={{
-                      ...glassPresets.light,
-                      borderRadius: tokens.spacing.radius.full,
-                      width: 48,
-                      height: 48,
-                      color: tokens.color.primary[600],
-                      
-                      '&:hover': {
-                        ...glassPresets.medium,
-                        transform: 'translateX(-4px)',
-                      }
-                    }}
-                  >
-                    <ArrowBackIcon />
-                  </IconButton>
-                </Tooltip>
-                
-                <Box display="flex" alignItems="center" gap={3}>
-                  <Avatar
-                    sx={{
-                      width: 80,
-                      height: 80,
-                      background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.secondary[500]} 100%)`,
-                      fontSize: '2rem',
-                      fontWeight: 700,
-                      boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
-                    }}
-                  >
-                    {client.first_name?.charAt(0)}{client.last_name?.charAt(0)}
-                  </Avatar>
-                  
-                  <Box>
-                    <Typography 
-                      variant="h3" 
-                      component="h1" 
-                      sx={{ 
-                        fontWeight: 700,
-                        background: tokens.color.backgrounds.primaryGradient,
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        color: 'transparent',
-                        mb: 1,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {client.first_name} {client.last_name}
-                    </Typography>
-                    
-                    <Box display="flex" alignItems="center" gap={2} mb={1}>
-                      {client.email && (
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <EmailIcon sx={{ fontSize: 16, color: tokens.color.neutral[500] }} />
-                          <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
-                            {client.email}
-                          </Typography>
-                        </Box>
-                      )}
-                      {client.profile?.phone && (
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <PhoneIcon sx={{ fontSize: 16, color: tokens.color.neutral[500] }} />
-                          <Typography variant="body2" sx={{ color: tokens.color.neutral[600] }}>
-                            {client.profile.phone}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                    
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Chip
-                        icon={statusSummary.registration.icon}
-                        label={statusSummary.registration.label}
-                        color={statusSummary.registration.color}
-                        variant="outlined"
-                        sx={{
-                          ...glassPresets.light,
-                          fontWeight: 600,
-                        }}
-                      />
-                      
-                      <Chip
-                        icon={statusSummary.active.icon}
-                        label={statusSummary.active.label}
-                        color={statusSummary.active.color}
-                        variant="outlined"
-                        sx={{
-                          ...glassPresets.light,
-                          fontWeight: 600,
-                        }}
-                      />
-                      
-                      <Chip 
-                        icon={<StarIcon />}
-                        label="VIP Client"
-                        size="small"
-                        color="warning"
-                        variant="outlined"
-                        sx={{
-                          ...glassPresets.light,
-                          fontWeight: 600,
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-        
-        <Box display="flex" alignItems="center" gap={2} sx={{ position: 'relative', zIndex: 1 }}>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              // Navigate to event creation with client pre-selected
-            }}
+    <ModernPageLayout backgroundPattern="default">
+      {/* Modern Page Header */}
+      <ModernPageHeader
+        title={`${client.first_name} ${client.last_name}`}
+        subtitle={client.email}
+        icon={
+          <Avatar
             sx={{
-              borderRadius: tokens.spacing.radius.lg,
-              textTransform: 'none',
-              fontWeight: 600,
-              px: 2,
-              py: 1,
-              background: tokens.color.backgrounds.primaryGradient,
-              transition: createTransition(['transform', 'box-shadow'], 'fast'),
-              '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: `0 8px 24px ${tokens.color.primary[500]}30`,
-              }
+              width: 56,
+              height: 56,
+              background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.secondary[500]} 100%)`,
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
             }}
           >
-            Create Event
-          </Button>
+            {client.first_name?.charAt(0)}{client.last_name?.charAt(0)}
+          </Avatar>
+        }
+        primaryAction={{
+          label: 'Create Event',
+          onClick: () => navigate(`/events/new?client=${clientId}`),
+          icon: <AddIcon />,
+          variant: 'contained',
+          color: 'primary',
+        }}
+        secondaryActions={[
+          {
+            label: 'Back to Clients',
+            onClick: () => navigate('/clients'),
+            icon: <ArrowBackIcon />,
+            variant: 'outlined'
+          },
+          createRefreshAction(() => refetchClient()),
+          {
+            label: 'Message',
+            onClick: () => setTabValue(2),
+            icon: <MessageIcon />,
+            variant: 'outlined',
+          }
+        ]}
+        status={{
+          label: statusSummary.active.label,
+          color: statusSummary.active.color === 'success' ? 'success' : 'error',
+          variant: 'outlined'
+        }}
+        stats={[
+          {
+            label: 'Total Events',
+            value: events.length.toString()
+          },
+          {
+            label: 'Total Value',
+            value: totalClientValue
+          },
+          {
+            label: 'Member Since',
+            value: new Date(client.date_joined).toLocaleDateString()
+          }
+        ]}
+        size="medium"
+      />
 
+      {/* More Options Button */}
+      <Box sx={{ position: 'absolute', top: 24, right: 24 }}>
+        <Button
+          variant="outlined"
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          sx={{
+            minWidth: 'auto',
+            p: 1.5,
+            borderRadius: tokens.spacing.radius.full,
+            ...glassPresets.light,
+            border: `1px solid ${tokens.color.borders.glass}`,
+          }}
+        >
+          <MoreVertIcon />
+        </Button>
+      </Box>
 
-          <Button
-            variant="outlined"
-            startIcon={<PhoneIcon />}
-            onClick={() => {
-              // Initiate phone call
-            }}
-            sx={{
-              borderColor: tokens.color.neutral[300],
-              color: tokens.color.neutral[700],
-              borderRadius: tokens.spacing.radius.lg,
-              textTransform: 'none',
-              fontWeight: 500,
-              px: 2,
-              py: 1,
-              transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
-              '&:hover': {
-                borderColor: tokens.color.success[500],
-                background: `${tokens.color.success[500]}05`,
-                transform: 'translateY(-1px)',
-              }
-            }}
-          >
-            Call
-          </Button>
-
-          <IconButton 
-            onClick={handleMenuClick}
-            sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.full,
-              width: 40,
-              height: 40,
-              color: tokens.color.neutral[600],
-              transition: createTransition(['transform', 'background'], 'fast'),
-              
-              '&:hover': {
-                ...glassPresets.medium,
-                transform: 'rotate(90deg)',
-              }
-            }}
-          >
-            <MoreVertIcon />
-          </IconButton>
-        </Box>
-            </Box>
-          </Box>
-        </Fade>
-
-        {/* Menu */}
+      {/* More Actions Menu */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            borderRadius: tokens.spacing.radius.lg,
+          }
+        }}
       >
         <MenuItem onClick={handleEditClient}>
           <ListItemIcon>
-            <EditIcon fontSize="small" />
+            <EditIcon />
           </ListItemIcon>
           <ListItemText>Edit Client</ListItemText>
         </MenuItem>
         {!client.has_account && (
           <MenuItem onClick={handleSendInvitation} disabled={isSendingInvitation}>
             <ListItemIcon>
-              <PersonAddIcon fontSize="small" />
+              <PersonAddIcon />
             </ListItemIcon>
             <ListItemText>Send Portal Invitation</ListItemText>
           </MenuItem>
         )}
         <Divider />
-        <MenuItem onClick={handleDeactivateClient}>
+        <MenuItem onClick={handleDeactivateClient} sx={{ color: 'error.main' }}>
           <ListItemIcon>
-            <BlockIcon fontSize="small" color="error" />
+            <BlockIcon color="error" />
           </ListItemIcon>
           <ListItemText>Deactivate Client</ListItemText>
         </MenuItem>
       </Menu>
 
-      {/* Contact Info Card */}
-      <Box sx={{ mb: 3 }}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Contact Information
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 3 }}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <EmailIcon color="action" />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Email
-                  </Typography>
-                  <Typography variant="body1">{client.email}</Typography>
+      {/* Client Overview Cards */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', lg: 'row' },
+          gap: 3,
+          mb: 4
+        }}
+      >
+        {/* Contact Information */}
+        <Box sx={{ flex: 1 }}>
+          <ModernCard
+            variant="glass"
+            size="large"
+            interactive={false}
+            animation="none"
+            title="Contact Information"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, ${tokens.color.info[500]}06 100%)`,
+              }
+            }}
+          >
+            <Stack spacing={3}>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: tokens.spacing.radius.lg,
+                    backgroundColor: `${tokens.color.primary[500]}15`,
+                    color: tokens.color.primary[600],
+                  }}
+                >
+                  <PersonIcon />
                 </Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    background: `linear-gradient(135deg, ${tokens.color.primary[600]}, ${tokens.color.primary[700]})`,
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    color: 'transparent',
+                    fontWeight: 600,
+                  }}
+                >
+                  Contact Details
+                </Typography>
               </Box>
-              
-              <Box display="flex" alignItems="center" gap={1}>
-                <PhoneIcon color="action" />
+
+              <Stack spacing={2}>
                 <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Phone
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Email Address
                   </Typography>
-                  <Typography variant="body1">
-                    {client.profile?.phone || 'Not provided'}
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Box
+                      sx={{
+                        p: 1,
+                        borderRadius: tokens.spacing.radius.full,
+                        backgroundColor: `${tokens.color.info[500]}15`,
+                      }}
+                    >
+                      <EmailIcon sx={{ fontSize: 16, color: tokens.color.info[600] }} />
+                    </Box>
+                    <Typography variant="body1" fontWeight="medium">
+                      {client.email}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {client.profile?.phone && (
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Phone Number
+                    </Typography>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Box
+                        sx={{
+                          p: 1,
+                          borderRadius: tokens.spacing.radius.full,
+                          backgroundColor: `${tokens.color.success[500]}15`,
+                        }}
+                      >
+                        <PhoneIcon sx={{ fontSize: 16, color: tokens.color.success[600] }} />
+                      </Box>
+                      <Typography variant="body1" fontWeight="medium">
+                        {client.profile.phone}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+
+                {client.profile?.company && (
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Company
+                    </Typography>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Box
+                        sx={{
+                          p: 1,
+                          borderRadius: tokens.spacing.radius.full,
+                          backgroundColor: `${tokens.color.warning[500]}15`,
+                        }}
+                      >
+                        <BusinessIcon sx={{ fontSize: 16, color: tokens.color.warning[600] }} />
+                      </Box>
+                      <Typography variant="body1" fontWeight="medium">
+                        {client.profile.company}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Stack>
+            </Stack>
+          </ModernCard>
+        </Box>
+
+        {/* Client Statistics */}
+        <Box sx={{ flex: 1 }}>
+          <ModernCard
+            variant="glass"
+            size="large"
+            interactive={false}
+            animation="none"
+            title="Client Statistics"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.success[500]}08 0%, ${tokens.color.secondary[500]}06 100%)`,
+              }
+            }}
+          >
+            <Stack spacing={3}>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: tokens.spacing.radius.lg,
+                    backgroundColor: `${tokens.color.success[500]}15`,
+                    color: tokens.color.success[600],
+                  }}
+                >
+                  <TrendingUpIcon />
+                </Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    background: `linear-gradient(135deg, ${tokens.color.success[600]}, ${tokens.color.success[700]})`,
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    color: 'transparent',
+                    fontWeight: 600,
+                  }}
+                >
+                  Performance
+                </Typography>
+              </Box>
+
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Total Events
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      background: `linear-gradient(135deg, ${tokens.color.primary[600]}, ${tokens.color.success[600]})`,
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      color: 'transparent',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {events.length}
                   </Typography>
                 </Box>
-              </Box>
-              
-              <Box display="flex" alignItems="center" gap={1}>
-                <BusinessIcon color="action" />
+
                 <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Company
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Lifetime Value
                   </Typography>
-                  <Typography variant="body1">
-                    {client.profile?.company || 'Not provided'}
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      background: `linear-gradient(135deg, ${tokens.color.success[600]}, ${tokens.color.primary[600]})`,
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      color: 'transparent',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {totalClientValue}
                   </Typography>
                 </Box>
-              </Box>
-              
-              <Box display="flex" alignItems="center" gap={1}>
-                <CalendarIcon color="action" />
+
                 <Box>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                     Member Since
                   </Typography>
-                  <Typography variant="body1">
-                    {new Date(client.date_joined).toLocaleDateString()}
+                  <Typography variant="body1" fontWeight="medium">
+                    {new Date(client.date_joined).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
                   </Typography>
                 </Box>
+              </Stack>
+            </Stack>
+          </ModernCard>
+        </Box>
+
+        {/* Account Status */}
+        <Box sx={{ flex: 1 }}>
+          <ModernCard
+            variant="glass"
+            size="large"
+            interactive={false}
+            animation="none"
+            title="Account Status"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.secondary[500]}08 0%, ${tokens.color.warning[500]}06 100%)`,
+              }
+            }}
+          >
+            <Stack spacing={3}>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: tokens.spacing.radius.lg,
+                    backgroundColor: `${tokens.color.secondary[500]}15`,
+                    color: tokens.color.secondary[600],
+                  }}
+                >
+                  <CalendarIcon />
+                </Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    background: `linear-gradient(135deg, ${tokens.color.secondary[600]}, ${tokens.color.secondary[700]})`,
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    color: 'transparent',
+                    fontWeight: 600,
+                  }}
+                >
+                  Status & Activity
+                </Typography>
               </Box>
-            </Box>
-          </CardContent>
-        </Card>
+
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                    Account Status
+                  </Typography>
+                  <Chip
+                    label={client.is_active ? 'Active' : 'Inactive'}
+                    color={client.is_active ? 'success' : 'error'}
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
+
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                    Portal Access
+                  </Typography>
+                  <Chip
+                    label={client.has_account ? 'Registered' : 'Not Registered'}
+                    color={client.has_account ? 'primary' : 'warning'}
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
+
+              </Stack>
+            </Stack>
+          </ModernCard>
+        </Box>
       </Box>
 
       {/* Enhanced Sections */}
-      <Stack spacing={3} mb={3}>
-        {/* Financial Summary */}
-        <FinancialSummary
-          title="Client Financials"
-          metrics={financialMetrics}
-          compactMode={false}
-        />
+      <Stack spacing={4} sx={{ mb: 4 }}>
+        {/* Quick Actions & Related Entities */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', lg: 'row' },
+            gap: 3,
+          }}
+        >
+          {/* Quick Actions */}
+          <Box sx={{ flex: 1 }}>
+            <ModernCard
+              variant="glass"
+              size="medium"
+              animation="none"
+              sx={{
+                '&::before': {
+                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.secondary[500]}04 100%)`,
+                }
+              }}
+            >
+              <QuickActions
+                actions={quickActions}
+                title="Client Actions"
+                compactMode={false}
+              />
+            </ModernCard>
+          </Box>
 
-        {/* Related Events */}
-        <Box>
-          <EntityNavigation
-            title="Recent Events"
-            entities={relatedEvents}
-            layout="list"
-            maxVisible={3}
-            showViewAll={true}
-            onViewAll={() => {
-              // Navigate to events filtered by client
-            }}
-          />
+          {/* Related Events */}
+          <Box sx={{ flex: 1 }}>
+            <ModernCard
+              variant="glass"
+              size="medium"
+              animation="none"
+              sx={{
+                '&::before': {
+                  background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.warning[500]}04 100%)`,
+                }
+              }}
+            >
+              <EntityNavigation
+                title="Recent Events"
+                entities={relatedEvents}
+                layout="compact"
+                maxVisible={3}
+                showViewAll={relatedEvents.length > 3}
+                onViewAll={relatedEvents.length > 3 ? () => navigate(`/events?client=${clientId}`) : undefined}
+              />
+            </ModernCard>
+          </Box>
         </Box>
+
+        {/* Financial Summary */}
+        <ModernCard
+          variant="glass"
+          size="large"
+          animation="none"
+          title="Client Financials"
+          sx={{
+            '&::before': {
+              background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.info[500]}04 100%)`,
+            }
+          }}
+        >
+          <FinancialSummary
+            title="Financial Overview"
+            metrics={financialMetrics}
+            compactMode={false}
+          />
+        </ModernCard>
       </Stack>
 
       {/* Tabs */}
-      <Card>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={tabValue} 
+      <ModernCard
+        variant="glass"
+        size="large"
+        animation="none"
+        sx={{
+          '&::before': {
+            background: `linear-gradient(135deg, ${tokens.color.neutral[500]}03 0%, ${tokens.color.primary[500]}03 100%)`,
+          }
+        }}
+      >
+        <Box
+          sx={{
+            borderBottom: `1px solid ${tokens.color.borders.glass}`,
+            backgroundColor: `${tokens.color.neutral[50]}50`,
+            borderRadius: `${tokens.spacing.radius.xxl} ${tokens.spacing.radius.xxl} 0 0`,
+          }}
+        >
+          <Tabs
+            value={tabValue}
             onChange={(_, newValue) => setTabValue(newValue)}
             variant="scrollable"
             scrollButtons="auto"
             allowScrollButtonsMobile
+            sx={{
+              '& .MuiTab-root': {
+                minHeight: 64,
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                color: tokens.color.neutral[600],
+                transition: createTransition(['color', 'background'], 'fast'),
+
+                '&.Mui-selected': {
+                  color: tokens.color.primary[600],
+                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, ${tokens.color.primary[600]}06 100%)`,
+                },
+
+                '&:hover': {
+                  backgroundColor: `${tokens.color.neutral[500]}10`,
+                }
+              },
+              '& .MuiTabs-indicator': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}, ${tokens.color.primary[600]})`,
+                height: 3,
+                borderRadius: tokens.spacing.radius.full,
+              }
+            }}
           >
-            <Tab 
+            <Tab
               label={`Activity (${activityItems.length})`}
-              icon={<ScheduleIcon />} 
+              icon={<ScheduleIcon />}
               iconPosition="start"
             />
             <Tab
@@ -686,9 +882,9 @@ export const ClientProfile: React.FC = () => {
               icon={<QuoteIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label={`Contracts (${contracts.length})`} 
-              icon={<ContractIcon />} 
+            <Tab
+              label={`Contracts (${contracts.length})`}
+              icon={<ContractIcon />}
               iconPosition="start"
             />
             <Tab
@@ -709,56 +905,139 @@ export const ClientProfile: React.FC = () => {
           </Tabs>
         </Box>
 
-        <CardContent>
+        <Box sx={{ p: 3 }}>
           {/* Activity Tab */}
           <TabPanel value={tabValue} index={0}>
             <ActivityTimeline
               activities={activityItems}
               maxHeight="600px"
               showFilters={true}
+              onRefresh={() => refetchClient()}
             />
           </TabPanel>
 
           {/* Events Tab */}
           <TabPanel value={tabValue} index={1}>
             {isLoadingEvents ? (
-              <Box display="flex" justifyContent="center" p={4}>
-                <CircularProgress />
-              </Box>
+              <ModernLoadingSpinner
+                size={32}
+                message="Loading events..."
+                variant="circular"
+              />
             ) : events.length === 0 ? (
-              <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-                <EventIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                <Typography variant="h6" gutterBottom>
-                  No Events Yet
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  This client hasn't been associated with any events yet.
-                </Typography>
-              </Paper>
+              <ModernEmptyState
+                icon={EventIcon}
+                title="No Events Yet"
+                description="This client hasn't been associated with any events yet. Create an event to get started."
+                primaryAction={{
+                  label: 'Create Event',
+                  onClick: () => navigate(`/events/new?client=${clientId}`),
+                  icon: <AddIcon />,
+                  color: 'primary'
+                }}
+                size="small"
+                illustration="minimal"
+                tip={{
+                  text: 'Events help you track client bookings, milestones, and deliverables',
+                  type: 'info'
+                }}
+                sx={{ py: 4 }}
+              />
             ) : (
-              <Stack spacing={2}>
-                {events.map((event) => (
-                  <Card key={event.id} variant="outlined">
-                    <CardContent>
-                      <Box display="flex" justifyContent="space-between" alignItems="start">
-                        <Box>
-                          <Typography variant="h6" gutterBottom>
+              <TableContainer
+                component={Paper}
+                sx={{
+                  ...glassPresets.light,
+                  border: `1px solid ${tokens.color.borders.glass}`,
+                  borderRadius: tokens.spacing.radius.lg,
+                  overflow: 'hidden',
+                }}
+              >
+                <Table>
+                  <TableHead>
+                    <TableRow
+                      sx={{
+                        backgroundColor: `${tokens.color.primary[500]}10`,
+                        '& .MuiTableCell-root': {
+                          fontWeight: 600,
+                          color: tokens.color.primary[700],
+                          borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                        }
+                      }}
+                    >
+                      <TableCell>Event Name</TableCell>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {events.map((event, index) => (
+                      <TableRow
+                        key={event.id}
+                        sx={{
+                          backgroundColor: index % 2 === 0 ? 'transparent' : `${tokens.color.neutral[500]}05`,
+                          '& .MuiTableCell-root': {
+                            borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                            py: 2,
+                          },
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: `${tokens.color.primary[500]}08`,
+                          }
+                        }}
+                        onClick={() => navigate(`/events/${event.id}`)}
+                      >
+                        <TableCell>
+                          <Typography variant="body1" fontWeight="600">
                             {event.name}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            {new Date(event.start_date).toLocaleDateString()} - {event.end_date ? new Date(event.end_date).toLocaleDateString() : 'Ongoing'}
+                          <Typography variant="caption" color="text.secondary">
+                            {event.event_type_name || 'No type'}
                           </Typography>
-                        </Box>
-                        <Chip
-                          label={event.status}
-                          size="small"
-                          color={event.status === 'COMPLETED' ? 'success' : 'primary'}
-                        />
-                      </Box>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">
+                            {new Date(event.start_date).toLocaleDateString()}
+                          </Typography>
+                          {event.end_date && (
+                            <Typography variant="caption" color="text.secondary">
+                              to {new Date(event.end_date).toLocaleDateString()}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={event.status}
+                            size="small"
+                            color={
+                              event.status === 'COMPLETED' ? 'success' :
+                              event.status === 'CONFIRMED' ? 'primary' :
+                              event.status === 'CANCELLED' ? 'error' : 'default'
+                            }
+                            sx={{ fontWeight: 600 }}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Button
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/events/${event.id}`);
+                            }}
+                            sx={{
+                              textTransform: 'none',
+                              fontWeight: 600,
+                            }}
+                          >
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             )}
           </TabPanel>
 
@@ -798,13 +1077,35 @@ export const ClientProfile: React.FC = () => {
               allowDelete={true}
             />
           </TabPanel>
-        </CardContent>
-      </Card>
+        </Box>
+      </ModernCard>
 
       {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Edit Client</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            borderRadius: tokens.spacing.radius.xl,
+            backdropFilter: 'blur(20px)',
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background: `linear-gradient(135deg, ${tokens.color.primary[500]}10, ${tokens.color.secondary[500]}10)`,
+            borderBottom: `1px solid ${tokens.color.borders.glass}`,
+            fontSize: '1.25rem',
+            fontWeight: 600,
+          }}
+        >
+          Edit Client
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
           <ClientForm
             client={client}
             onSubmit={handleEdit}
@@ -814,30 +1115,74 @@ export const ClientProfile: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Deactivate Client</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to deactivate {client.first_name} {client.last_name}? 
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            borderRadius: tokens.spacing.radius.xl,
+            backdropFilter: 'blur(20px)',
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background: `linear-gradient(135deg, ${tokens.color.error[500]}10, ${tokens.color.warning[500]}10)`,
+            borderBottom: `1px solid ${tokens.color.borders.glass}`,
+            fontSize: '1.25rem',
+            fontWeight: 600,
+            color: tokens.color.error[700],
+          }}
+        >
+          Deactivate Client
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <DialogContentText
+            sx={{
+              fontSize: '1rem',
+              color: tokens.color.neutral[600],
+              lineHeight: 1.6,
+            }}
+          >
+            Are you sure you want to deactivate <strong>{client.first_name} {client.last_name}</strong>?
             This will make their account inactive but preserve all data.
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button 
+        <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            sx={{
+              borderRadius: tokens.spacing.radius.full,
+              fontWeight: 600,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
             onClick={handleDelete}
-            color="error" 
+            color="error"
             variant="contained"
             disabled={isDeletingClient}
+            sx={{
+              borderRadius: tokens.spacing.radius.full,
+              fontWeight: 600,
+              background: `linear-gradient(135deg, ${tokens.color.error[500]}, ${tokens.color.error[600]})`,
+              boxShadow: `0 4px 12px ${tokens.color.error[500]}40`,
+
+              '&:hover': {
+                background: `linear-gradient(135deg, ${tokens.color.error[600]}, ${tokens.color.error[700]})`,
+                transform: 'translateY(-1px)',
+                boxShadow: `0 6px 16px ${tokens.color.error[500]}50`,
+              }
+            }}
           >
-            {isDeletingClient ? <CircularProgress size={20} /> : 'Deactivate'}
+            {isDeletingClient ? <ModernLoadingSpinner size={20} variant="circular" /> : 'Deactivate'}
           </Button>
         </DialogActions>
       </Dialog>
-
-
-      </Container>
-    </Box>
+    </ModernPageLayout>
   );
 };
