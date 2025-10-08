@@ -28,20 +28,87 @@ class ClientEventSerializer(serializers.ModelSerializer):
     event_type_name = serializers.CharField(source='event_type.name', read_only=True)
     current_stage_name = serializers.CharField(source='current_stage.name', read_only=True)
     days_until_event = serializers.SerializerMethodField()
-    
+    contracts = serializers.SerializerMethodField()
+    pending_signature_required = serializers.SerializerMethodField()
+
     class Meta:
         model = Event
         fields = [
             'id', 'name', 'event_type_name', 'status', 'start_date', 'end_date',
-            'current_stage_name', 'payment_status', 'days_until_event'
+            'current_stage_name', 'payment_status', 'days_until_event',
+            'contracts', 'pending_signature_required'
         ]
-    
+
     def get_days_until_event(self, obj):
         from django.utils import timezone
         if obj.start_date and obj.start_date > timezone.now():
             delta = obj.start_date - timezone.now()
             return delta.days
         return None
+
+    def get_contracts(self, obj):
+        """Get contract summaries for contracts that need attention"""
+        from core.domains.contracts.models import EventContract
+        from datetime import datetime, timezone as dt_timezone
+
+        # Get contracts that are relevant to the client
+        contracts = obj.contracts.filter(
+            status__in=['SENT', 'PARTIALLY_SIGNED', 'SIGNED']
+        ).select_related('template').prefetch_related('signatures')
+
+        contract_summaries = []
+        for contract in contracts:
+            # Calculate if client can sign (same logic as ClientContractViewSet._can_client_sign)
+            can_client_sign = False
+            if contract.status in ['SENT', 'PARTIALLY_SIGNED']:
+                # Check if client signature already exists
+                client_signature_exists = contract.signatures.filter(role='CLIENT').exists()
+                # Check if CLIENT role is required
+                required_roles = contract.template.get_signature_requirements()
+                can_client_sign = not client_signature_exists and 'CLIENT' in required_roles
+
+            # Calculate signature progress
+            required_roles = contract.template.get_signature_requirements()
+            signed_roles = list(contract.signatures.values_list('role', flat=True))
+
+            signature_progress = {
+                'total_required': len(required_roles),
+                'signed_count': len(signed_roles),
+                'percentage': (len(signed_roles) / len(required_roles)) * 100 if required_roles else 0
+            }
+
+            # Calculate days until expiry
+            expires_at = contract.valid_until.isoformat() if contract.valid_until else None
+
+            contract_summaries.append({
+                'id': str(contract.id),
+                'status': contract.status,
+                'template_name': contract.template.name,
+                'can_client_sign': can_client_sign,
+                'expires_at': expires_at,
+                'signature_progress': signature_progress
+            })
+
+        return contract_summaries
+
+    def get_pending_signature_required(self, obj):
+        """Check if any contracts require client signature"""
+        from core.domains.contracts.models import EventContract
+
+        # Check if there are any contracts where client can sign
+        contracts = obj.contracts.filter(
+            status__in=['SENT', 'PARTIALLY_SIGNED']
+        ).select_related('template').prefetch_related('signatures')
+
+        for contract in contracts:
+            # Check if client signature already exists
+            client_signature_exists = contract.signatures.filter(role='CLIENT').exists()
+            # Check if CLIENT role is required
+            required_roles = contract.template.get_signature_requirements()
+            if not client_signature_exists and 'CLIENT' in required_roles:
+                return True
+
+        return False
 
 
 class ClientEventDetailSerializer(ClientEventSerializer):
@@ -51,7 +118,7 @@ class ClientEventDetailSerializer(ClientEventSerializer):
     recent_updates = serializers.SerializerMethodField()
     accessible_documents_count = serializers.SerializerMethodField()
     has_notes = serializers.SerializerMethodField()
-    
+
     class Meta(ClientEventSerializer.Meta):
         fields = ClientEventSerializer.Meta.fields + [
             'current_stage', 'total_price', 'preferences',
@@ -97,7 +164,7 @@ class ClientEventDetailSerializer(ClientEventSerializer):
         """Check if there are any notes for this event"""
         from core.domains.notes.models import Note
         from django.contrib.contenttypes.models import ContentType
-        
+
         event_ct = ContentType.objects.get_for_model(Event)
         return Note.objects.filter(
             content_type=event_ct,
