@@ -18,6 +18,8 @@ import { FinancialPortal } from './pages/payments';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
 import ContractsPage from './pages/contracts/ContractsPage';
+import { AboutPage } from './pages/about';
+import { FacilitiesPage } from './pages/facilities';
 
 // Messaging and Records imports
 import { ClientMessagesPage } from './pages/messages/ClientMessagesPage';
@@ -163,17 +165,14 @@ const AppRouter: React.FC = () => {
         } 
       />
       
-      {/* Public placeholder pages */}
-      <Route 
-        path="/about" 
+      {/* Public About page */}
+      <Route
+        path="/about"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="About Us" 
-              description="Learn about our mission to celebrate life's precious moments"
-            />
+          <PublicLayout fullHeight>
+            <AboutPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
       <Route 
@@ -200,16 +199,13 @@ const AppRouter: React.FC = () => {
         } 
       />
       
-      <Route 
-        path="/facilities" 
+      <Route
+        path="/facilities"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Facilities" 
-              description="Discover our beautiful venues and amenities"
-            />
+          <PublicLayout fullHeight>
+            <FacilitiesPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
       <Route 

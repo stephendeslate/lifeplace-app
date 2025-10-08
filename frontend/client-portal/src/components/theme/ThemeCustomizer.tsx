@@ -179,9 +179,7 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
     return createTheme({
       ...theme,
       palette: {
-        // Theme palette object has dynamic structure requiring any type
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...(theme.palette as any),
+        ...(theme.palette as object),
         mode: isDark ? 'dark' : 'light',
         primary: {
           main: customization.primaryColor,
@@ -195,36 +193,25 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
         },
       },
       typography: {
-        // Theme typography object has dynamic structure requiring any type
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...(theme.typography as any),
+        ...(theme.typography as object),
         fontSize: customization.fontSize,
-        fontFamily: customization.compactMode 
+        fontFamily: customization.compactMode
           ? '"Inter", "Roboto", "Helvetica", "Arial", sans-serif'
-          // Theme typography object has dynamic structure requiring any type
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          : (theme.typography as any).fontFamily,
+          : (theme.typography as unknown as { fontFamily?: string }).fontFamily,
       },
       shape: {
         borderRadius: customization.borderRadius,
       },
       transitions: {
-        // Theme transitions object has dynamic structure requiring any type
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...(theme.transitions as any),
+        ...(theme.transitions as object),
         duration: {
-          // Theme transitions object has dynamic structure requiring any type
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ...(theme.transitions as any).duration,
+          ...((theme.transitions as unknown as { duration?: object }).duration || {}),
           standard: Math.round(300 / customization.animationSpeed),
           short: Math.round(150 / customization.animationSpeed),
-          long: Math.round(500 / customization.animationSpeed),
         },
       },
       components: {
-        // Theme components object has dynamic structure requiring any type
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...(theme.components as any),
+        ...(theme.components as object),
         MuiButton: {
           styleOverrides: {
             root: {

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useToastActions } from '../contexts/ToastContext';
+import { ErrorHandler } from '../utils/errorHandler';
 import type { AcceptInvitationData } from '../types/clients.types';
 import { clientsApi } from '../apis/clients.api';
 
@@ -24,10 +25,7 @@ export const useClientInvitations = () => {
       showSuccess('Account Activated', 'Your account has been activated successfully!');
     },
     onError: (error: unknown) => {
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      const message = errorObj.response?.data?.detail || 'Failed to accept invitation';
+      const message = ErrorHandler.extractMessage(error);
       showError('Activation Failed', message);
     },
   });

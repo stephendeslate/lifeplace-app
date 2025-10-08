@@ -29,6 +29,7 @@ import {
 import { useClientInvitations } from '../../hooks/useClients';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
+import { ErrorHandler } from '../../utils/errorHandler';
 import { validatePassword, validatePasswordConfirmation, getPasswordStrength, getPasswordStrengthLabel, getPasswordStrengthColor } from '../../utils/validation';
 import type { AcceptInvitationData } from '../../types/clients.types';
 
@@ -101,16 +102,14 @@ const AcceptInvitation: React.FC = () => {
       });
 
       // Auto-login the user with the returned tokens
-      // Response data has dynamic structure requiring any type
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((response as any)?.tokens && (response as any)?.user) {
+      const responseData = response as Record<string, unknown>;
+      if (responseData?.tokens && responseData?.user) {
         // Store user data
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const userData = (response as any).user;
+        const userData = responseData.user as Record<string, unknown>;
 
         // Use the login function to set up the auth context
         await login({
-          email: userData.email,
+          email: userData.email as string,
           password: formData.password,
         });
 
@@ -119,10 +118,7 @@ const AcceptInvitation: React.FC = () => {
       }
     } catch (error: unknown) {
       console.error('Accept invitation error:', error);
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      const message = errorObj.response?.data?.detail || 'Failed to activate account. Please try again.';
+      const message = ErrorHandler.extractMessage(error);
       showError('Activation Failed', message);
     } finally {
       setIsSubmitting(false);

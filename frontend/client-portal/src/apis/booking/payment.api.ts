@@ -1,6 +1,7 @@
 // frontend/client-portal/src/apis/booking/payment.api.ts
 
 import api from '../../utils/api';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   PaymentGateway,
   PaymentGatewayResponse,
@@ -329,74 +330,18 @@ export class PaymentApi {
 
   /**
    * Handle payment API errors
+   * @deprecated Use ErrorHandler.extractMessage() instead
    */
   static handlePaymentError(error: unknown): string {
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.detail) {
-      return errorObj.response.data.detail;
-    }
-
-    if (errorObj.response?.data?.message) {
-      return errorObj.response.data.message;
-    }
-
-    if (errorObj.response?.status === 402) {
-      return 'Payment required. Please check your payment information.';
-    }
-
-    if (errorObj.response?.status === 409) {
-      return 'Payment conflict. This payment may have already been processed.';
-    }
-
-    if (errorObj.response?.status === 422) {
-      return 'Invalid payment data. Please check your information and try again.';
-    }
-
-    if (errorObj.response?.status === 503) {
-      return 'Payment service is temporarily unavailable. Please try again later.';
-    }
-
-    if (errorObj.message) {
-      return errorObj.message;
-    }
-
-    return 'An error occurred while processing payment. Please try again.';
+    return ErrorHandler.extractMessage(error);
   }
 
   /**
    * Extract payment validation errors
+   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
    */
   static extractPaymentErrors(error: unknown): Record<string, string[]> {
-    const validationErrors: Record<string, string[]> = {};
-
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.payment_errors) {
-      return errorObj.response.data.payment_errors;
-    }
-
-    if (errorObj.response?.data?.gateway_errors) {
-      return errorObj.response.data.gateway_errors;
-    }
-
-    if (errorObj.response?.data?.errors) {
-      const errors = errorObj.response.data.errors;
-      
-      Object.keys(errors).forEach(field => {
-        const fieldErrors = (errors as Record<string, unknown>)[field];
-        
-        if (Array.isArray(fieldErrors)) {
-          validationErrors[field] = fieldErrors;
-        } else if (typeof fieldErrors === 'string') {
-          validationErrors[field] = [fieldErrors];
-        }
-      });
-    }
-
-    return validationErrors;
+    return ErrorHandler.extractValidationErrorsAsRecord(error);
   }
 
   // Gateway feature detection
