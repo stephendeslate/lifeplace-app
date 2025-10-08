@@ -437,21 +437,7 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      <Route 
-        path="/settings" 
-        element={
-          <ProtectedRoute>
-            <ClientLayoutWrapper>
-              <PlaceholderPage 
-                title="Settings" 
-                description="Account settings coming soon!"
-              />
-            </ClientLayoutWrapper>
-          </ProtectedRoute>
-        } 
-      />
-
-      <Route 
+      <Route
         path="/help" 
         element={
           <ProtectedRoute>
