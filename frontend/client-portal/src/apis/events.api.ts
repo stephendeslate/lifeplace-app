@@ -202,4 +202,36 @@ export const eventsApi = {
     const response = await api.patch<EventFeedback>(`/client/events/${eventId}/feedback/${feedbackId}/`, data);
     return response.data;
   },
+
+  // Get public event availability for booking flow calendars
+  getPublicEventAvailability: async (params: {
+    start_date: string;
+    end_date: string;
+    event_type_id?: number;
+  }): Promise<{
+    start_date: string;
+    end_date: string;
+    event_count: number;
+    events: Array<{
+      id: number;
+      name: string;
+      event_type_name: string | null;
+      status: string;
+      start_date: string;
+      end_date: string | null;
+      payment_status: string;
+    }>;
+  }> => {
+    const queryParams = new URLSearchParams({
+      start_date: params.start_date,
+      end_date: params.end_date,
+    });
+
+    if (params.event_type_id) {
+      queryParams.append('event_type_id', params.event_type_id.toString());
+    }
+
+    const response = await api.get(`/events/public/availability/?${queryParams.toString()}`);
+    return response.data;
+  },
 };

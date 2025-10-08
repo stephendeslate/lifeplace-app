@@ -1319,10 +1319,52 @@ class BookingSessionService:
                     errors['acknowledged'] = ["Acknowledgment is required"]
                     
             elif step.step_type == 'date_time':
-                if not step_data.get('date'):
-                    errors['date'] = ["Date selection is required"]
-                if config.allow_time_selection and not step_data.get('time'):
-                    errors['time'] = ["Time selection is required"]
+                # Basic validation
+                start_date_str = step_data.get('start_date')
+                if not start_date_str:
+                    errors['start_date'] = ["Date selection is required"]
+                if config.allow_time_selection and not step_data.get('start_time'):
+                    errors['start_time'] = ["Time selection is required"]
+
+                # Availability validation - check if date conflicts with CONFIRMED events
+                if start_date_str and not errors.get('start_date'):
+                    try:
+                        from datetime import datetime
+                        from core.domains.events.services.availability_service import availability_service, AvailabilityRequest
+
+                        # Parse the date
+                        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+
+                        # Get event type and booking flow info
+                        booking_flow_id = session.booking_flow.id if session and session.booking_flow else None
+                        event_type_id = session.booking_flow.event_type_id if session and session.booking_flow and session.booking_flow.event_type else None
+
+                        # Create availability request
+                        availability_request = AvailabilityRequest(
+                            start_date=start_date,
+                            event_type_id=event_type_id,
+                            booking_flow_id=booking_flow_id,
+                            duration_hours=step_data.get('duration', 4),
+                            buffer_before_hours=getattr(config, 'buffer_before_hours', 0),
+                            buffer_after_hours=getattr(config, 'buffer_after_hours', 0),
+                        )
+
+                        # Check availability
+                        availability_info = availability_service.check_date_availability(availability_request)
+
+                        # If date is not available for booking, add error
+                        if not availability_info.can_book_event:
+                            error_message = "This date is not available for booking"
+                            if availability_info.reasons:
+                                error_message = availability_info.reasons[0]
+                            errors['start_date'] = [error_message]
+
+                    except ValueError:
+                        errors['start_date'] = ["Invalid date format"]
+                    except Exception as e:
+                        logger.error(f"Error checking date availability: {e}")
+                        # Don't block booking if availability check fails
+                        pass
                     
             elif step.step_type == 'questionnaire':
                 # Questionnaire validation is handled at the field level

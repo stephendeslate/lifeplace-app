@@ -6,12 +6,13 @@ from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from typing import Dict, Any, List
 
 from ..services.availability_service import (
-    availability_service, 
+    availability_service,
     AvailabilityRequest,
     DateAvailabilityInfo,
     AvailabilityStatus,
@@ -403,7 +404,7 @@ class NextAvailableDateAPIView(APIView):
 def invalidate_availability_cache(request):
     """
     Invalidate availability cache
-    
+
     JSON Body:
     {
         "start_date": "YYYY-MM-DD" (optional),
@@ -412,26 +413,127 @@ def invalidate_availability_cache(request):
     """
     try:
         data = request.data
-        
+
         date_range = None
         if data.get('start_date') and data.get('end_date'):
             start_date = parse_date(data.get('start_date'))
             end_date = parse_date(data.get('end_date'))
-            
+
             if start_date and end_date:
                 date_range = (start_date, end_date)
-        
+
         # Invalidate cache
         availability_service.invalidate_cache(date_range)
-        
+
         return Response(
             {'message': 'Cache invalidated successfully'},
             status=status.HTTP_200_OK
         )
-        
+
     except Exception as e:
         logger.error(f"Error invalidating cache: {e}")
         return Response(
             {'error': 'Internal server error'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+class PublicEventAvailabilityAPIView(APIView):
+    """
+    Public endpoint for retrieving CONFIRMED events within a date range
+    Used by booking flow calendar to show unavailable dates
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        """
+        Get CONFIRMED events for date range to display availability
+
+        Query Parameters:
+        - start_date (required): Start date (YYYY-MM-DD)
+        - end_date (required): End date (YYYY-MM-DD)
+        - event_type_id (optional): Filter by event type
+
+        Returns:
+        List of events with status=CONFIRMED for the date range
+        """
+        try:
+            # Parse required parameters
+            start_date_str = request.query_params.get('start_date')
+            end_date_str = request.query_params.get('end_date')
+
+            if not start_date_str or not end_date_str:
+                return Response(
+                    {'error': 'start_date and end_date parameters are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            start_date = parse_date(start_date_str)
+            end_date = parse_date(end_date_str)
+
+            if not start_date or not end_date:
+                return Response(
+                    {'error': 'Invalid date format. Use YYYY-MM-DD'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if start_date > end_date:
+                return Response(
+                    {'error': 'start_date must be before or equal to end_date'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Limit range to prevent abuse (max 3 months)
+            date_diff = (end_date - start_date).days
+            if date_diff > 90:
+                return Response(
+                    {'error': 'Date range cannot exceed 90 days'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Parse optional event type filter
+            event_type_id = request.query_params.get('event_type_id')
+
+            # Query for CONFIRMED events in the date range
+            events = Event.objects.filter(
+                start_date__date__gte=start_date,
+                start_date__date__lte=end_date,
+                status='CONFIRMED'
+            ).select_related('event_type')
+
+            # Apply event type filter if provided
+            if event_type_id:
+                try:
+                    events = events.filter(event_type_id=int(event_type_id))
+                except (ValueError, TypeError):
+                    return Response(
+                        {'error': 'Invalid event_type_id'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            # Serialize events - return minimal data for public consumption
+            events_data = []
+            for event in events:
+                events_data.append({
+                    'id': event.id,
+                    'name': event.name or 'Reserved',
+                    'event_type_name': event.event_type.name if event.event_type else None,
+                    'status': event.status,
+                    'start_date': event.start_date.isoformat(),
+                    'end_date': event.end_date.isoformat() if event.end_date else None,
+                    'payment_status': event.payment_status,
+                })
+
+            return Response({
+                'start_date': start_date.isoformat(),
+                'end_date': end_date.isoformat(),
+                'event_count': len(events_data),
+                'events': events_data
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error fetching public event availability: {e}")
+            return Response(
+                {'error': 'Internal server error'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
