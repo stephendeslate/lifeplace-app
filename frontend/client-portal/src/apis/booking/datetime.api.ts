@@ -1,6 +1,7 @@
 // frontend/client-portal/src/apis/booking/datetime.api.ts
 
 import api from '../../utils/api';
+import { formatInTimeZone } from 'date-fns-tz';
 import type {
   DateTimeStepData,
   StepValidationResult,
@@ -189,16 +190,10 @@ export class DateTimeApi {
    */
   static formatDate(dateString: string): string {
     if (!dateString) return '';
-    
+
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-PH', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'Asia/Manila'
-      });
+      return formatInTimeZone(date, 'Asia/Manila', 'EEEE, MMMM d, yyyy');
     } catch {
       return dateString;
     }
@@ -209,18 +204,13 @@ export class DateTimeApi {
    */
   static formatTime(timeString: string): string {
     if (!timeString) return '';
-    
+
     try {
       const [hours, minutes] = timeString.split(':');
       const date = new Date();
-      date.setHours(parseInt(hours), parseInt(minutes));
-      
-      const formatted = date.toLocaleTimeString('en-PH', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'Asia/Manila'
-      });
+      date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      const formatted = formatInTimeZone(date, 'Asia/Manila', 'h:mm a');
       return `${formatted} PHT`;
     } catch {
       return timeString;

@@ -21,12 +21,14 @@ import { addHours, format, parseISO } from 'date-fns';
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import { EventAvailabilityCalendar } from '../../../design-system/visualizations/EventAvailabilityCalendar';
-import type { 
-  DateTimeStepData, 
+import { useEventAvailability } from '../../../hooks/useEventAvailability';
+import type {
+  DateTimeStepData,
   DateTimeStepConfiguration,
-  StepValidationResult
+  StepValidationResult,
+  BookingFlow
 } from '../../../types/booking';
-import type { AvailabilitySlot } from '../../../design-system/visualizations/EventAvailabilityCalendar';
+import type { AvailabilitySlot, EventData } from '../../../design-system/visualizations/EventAvailabilityCalendar';
 
 // Philippines timezone display
 const PHILIPPINES_DISPLAY = 'PHT';
@@ -40,6 +42,7 @@ interface IntelligentDateTimeStepProps {
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
   onValidate?: (data: DateTimeStepData) => Promise<StepValidationResult>;
+  flow?: BookingFlow | null;
 }
 
 export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = ({
@@ -49,27 +52,53 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   validationErrors,
   isValidating,
   onValidate: _onValidate,
+  flow,
 }) => {
   const theme = useTheme();
-  
+
   // Use ref to prevent infinite loops with onDataChange
   const onDataChangeRef = useRef(onDataChange);
   onDataChangeRef.current = onDataChange;
-  
+
   // Core state
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     stepData?.start_date ? parseISO(stepData.start_date) : null
   );
   const [selectedTime, setSelectedTime] = useState<Date | null>(
-    stepData?.start_time 
-      ? parseISO(`2000-01-01T${stepData.start_time}`) 
+    stepData?.start_time
+      ? parseISO(`2000-01-01T${stepData.start_time}`)
       : null
   );
   const [duration, setDuration] = useState<number>(
     stepData?.duration || config?.default_duration_hours || 4
   );
-  
-  
+
+  // Track current month for calendar
+  const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate || new Date());
+
+  // Extract event type from flow if available
+  const eventTypeId = flow?.event_type || undefined;
+
+  // Fetch event availability data for the current month
+  const { data: availabilityEvents = [], isLoading: isLoadingAvailability } = useEventAvailability({
+    currentMonth,
+    eventTypeId,
+    enabled: true,
+  });
+
+  // Convert availability events to EventData format for calendar
+  const calendarEvents: EventData[] = useMemo(() => {
+    return availabilityEvents.map(event => ({
+      id: event.id,
+      name: event.name,
+      event_type_name: event.event_type_name || '',
+      status: event.status as 'DRAFT' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
+      start_date: event.start_date,
+      end_date: event.end_date || event.start_date,
+      payment_status: event.payment_status as 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE',
+    }));
+  }, [availabilityEvents]);
+
   // Configuration-based constraints
   const minDuration = config?.min_duration_hours || 1;
   const maxDuration = config?.max_duration_hours || 12;
@@ -199,9 +228,10 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
             
             <Stack spacing={3}>
               <EventAvailabilityCalendar
-                events={[]}
+                events={calendarEvents}
                 selectedDate={selectedDate || undefined}
                 onDateSelect={handleDateSelect}
+                onMonthChange={setCurrentMonth}
                 compact={true}
               />
               

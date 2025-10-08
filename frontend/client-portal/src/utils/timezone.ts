@@ -32,30 +32,8 @@ export function formatPhilippinesTime(
   return formatted;
 }
 
-/**
- * Get the user's local timezone
- */
-export function getUserTimezone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
-}
-
-/**
- * Convert Philippines time to user's local time for reference
- */
-export function convertToUserTime(
-  date: string | Date,
-  userTimezone?: string
-): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  const tz = userTimezone || getUserTimezone();
-  
-  try {
-    return formatInTimeZone(dateObj, tz, 'MMM d, yyyy h:mm a zzz');
-  } catch {
-    // Fallback to Philippines time if conversion fails
-    return formatPhilippinesTime(date);
-  }
-}
+// User timezone functions removed - all times are Philippines time only
+// No user timezone detection or conversion needed for Philippines-based events
 
 /**
  * SIMPLIFIED: Just format Philippines time - user timezone is NOT relevant for bookings
@@ -93,14 +71,7 @@ export function getTimezoneNotice(context: 'booking' | 'confirmation' | 'general
   }
 }
 
-/**
- * For booking purposes, user timezone is irrelevant
- * All selections are Philippines time - this function is deprecated
- * @deprecated - User timezone doesn't matter for event bookings
- */
-export function isUserInDifferentTimezone(): boolean {
-  return false; // Always return false - user timezone is irrelevant
-}
+// isUserInDifferentTimezone() removed - user timezone is always irrelevant for Philippines-only events
 
 /**
  * Format date for date picker (always in Philippines timezone)

@@ -160,6 +160,7 @@ export const StepRenderer: React.FC = () => {
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
           onValidate={handleValidation}
+          flow={state.currentFlow}
         />
       );
 
