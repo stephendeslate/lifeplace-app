@@ -1,7 +1,7 @@
 // pages/about/components/AboutHero.tsx
 
 import React from 'react';
-import { Box, Typography, alpha, Stack } from '@mui/material';
+import { Box, Typography, Stack } from '@mui/material';
 import { KeyboardArrowDown } from '@mui/icons-material';
 import { GradientBackground } from '../../../design-system/components/GradientBackground';
 import { GlassCard } from '../../../design-system/components/GlassCard';

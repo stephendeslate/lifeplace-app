@@ -7,9 +7,9 @@ export interface PaymentGateway {
   name: string;
   code: string;
   is_active: boolean;
-  description?: string;
+  description: string;
   masked_config?: Record<string, unknown>;
-  public_config?: Record<string, unknown>;
+  public_config: Record<string, string | number | boolean>;
   created_at: string;
   updated_at: string;
 }
