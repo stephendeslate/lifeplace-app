@@ -20,7 +20,6 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Settings,
   ExitToApp,
   Person,
 } from '@mui/icons-material';
@@ -210,14 +209,6 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
               <Person fontSize="small" />
             </ListItemIcon>
             <ListItemText>My Profile</ListItemText>
-          </MenuItem>
-
-          {/* Settings */}
-          <MenuItem onClick={() => navigate('/settings')}>
-            <ListItemIcon>
-              <Settings fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Settings</ListItemText>
           </MenuItem>
 
           <Divider />
