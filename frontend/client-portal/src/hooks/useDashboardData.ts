@@ -52,17 +52,6 @@ export interface DashboardData {
 
   // Financial Summary (important - money matters)
   financialSummary: {
-    paymentPlanProgress: Array<{
-      planId: number;
-      eventId: number;
-      eventName: string;
-      totalAmount: string;
-      paidAmount: string;
-      remainingAmount: string;
-      progressPercentage: number;
-      nextDueDate: string | null;
-      nextDueAmount: string | null;
-    }>;
     outstandingInvoices: Array<Invoice & { daysPastDue: number }>;
     recentPayments: Payment[];
     totalOutstanding: string;
@@ -414,19 +403,6 @@ export const useDashboardData = (): DashboardData => {
 
     // ============ FINANCIAL SUMMARY ============
 
-    // Process payment plan progress (empty for now as paymentPlans not available in financialOverview)
-    const paymentPlanProgress: Array<{
-      planId: number;
-      eventId: number;
-      eventName: string;
-      totalAmount: string;
-      paidAmount: string;
-      remainingAmount: string;
-      progressPercentage: number;
-      nextDueDate: string | null;
-      nextDueAmount: string | null;
-    }> = [];
-
     // Process outstanding invoices
     const outstandingInvoices = invoices
       .filter(invoice => invoice.status === 'ISSUED')
@@ -522,7 +498,6 @@ export const useDashboardData = (): DashboardData => {
         recentUpdates: limitedRecentUpdates
       },
       financialSummary: {
-        paymentPlanProgress,
         outstandingInvoices,
         recentPayments,
         totalOutstanding,

@@ -1,7 +1,7 @@
 // frontend/client-portal/src/pages/events/EventDetail.tsx
 
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import {
   Box,
@@ -85,9 +85,12 @@ const EventDetail: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const { formatAmount } = useCurrencySettings();
-  
-  // State management
-  const [activeTab, setActiveTab] = useState(0);
+  const location = useLocation();
+
+  // State management - initialize activeTab from navigation state if present
+  const [activeTab, setActiveTab] = useState(() => {
+    return (location.state as { activeTab?: number })?.activeTab ?? 0;
+  });
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false);
   const [preferencesData, setPreferencesData] = useState<Record<string, unknown>>({});
 
