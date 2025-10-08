@@ -215,7 +215,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         name: pkg.name,
         quantity: pkg.quantity,
         base_price: pkg.price,
-        unit_price: lineItem?.total_unit_price || pkg.price,
+        unit_price: lineItem?.base_unit_price || pkg.price,
         line_total: lineItem?.line_total || (parseFloat(pkg.price) * pkg.quantity).toString(),
         included_hours: pkg.included_hours,
         excess_hours: lineItem?.excess_hours || undefined,
