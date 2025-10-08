@@ -240,6 +240,27 @@ export const StepRenderer: React.FC = () => {
         />
       );
 
+    case 'review_booking':
+      // DEPRECATED: review_booking was removed in migration 0015
+      // This fallback handles legacy production data during migration
+      console.warn(
+        `[StepRenderer] Deprecated 'review_booking' step encountered. ` +
+        `Using PricingSummaryStep as fallback. This step should be migrated to 'pricing_summary'.`
+      );
+      return (
+        <PricingSummaryStep
+          stepData={state.stepData.pricing_summary}
+          allStepData={state.stepData}
+          config={configuration_data as PricingSummaryStepConfiguration | null}
+          onDataChange={handlePricingSummaryChange}
+          validationErrors={mergedValidationErrors}
+          isValidating={state.ui.isValidating}
+          flow={state.currentFlow}
+          session={state.currentSession}
+          totalPrice={state.totalPrice}
+        />
+      );
+
     default:
       return (
         <Box sx={{ textAlign: 'center', py: 4 }}>
