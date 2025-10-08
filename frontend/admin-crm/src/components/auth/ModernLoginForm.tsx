@@ -482,7 +482,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             fontWeight: 600,
             textDecoration: 'none',
             cursor: 'pointer',
-            ...createTransition(['color']),
+            transition: createTransition(['color']),
 
             '&:hover': {
               color: tokens.color.primary[700],

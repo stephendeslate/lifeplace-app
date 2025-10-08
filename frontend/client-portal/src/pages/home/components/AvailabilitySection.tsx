@@ -28,12 +28,10 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
               </Typography>
             </Stack>
             
-            <EventAvailabilityCalendar 
+            <EventAvailabilityCalendar
               onDateSelect={handleDateSelect}
               minAdvanceBookingDays={7}
               maxAdvanceBookingDays={365}
-              maxEventsPerDay={2}
-              showEventDetails={false} // Clean interface without event details popover
             />
           </Stack>
         </AnimatedElement>

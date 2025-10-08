@@ -21,12 +21,13 @@ export const useChangePassword = () => {
         response.detail || 'Your password has been updated successfully.'
       );
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { detail?: string; current_password?: string[]; new_password?: string[]; confirm_password?: string[] } } };
       const errorMessage =
-        error?.response?.data?.detail ||
-        error?.response?.data?.current_password?.[0] ||
-        error?.response?.data?.new_password?.[0] ||
-        error?.response?.data?.confirm_password?.[0] ||
+        err?.response?.data?.detail ||
+        err?.response?.data?.current_password?.[0] ||
+        err?.response?.data?.new_password?.[0] ||
+        err?.response?.data?.confirm_password?.[0] ||
         'Failed to change password. Please try again.';
 
       showError('Password Change Failed', errorMessage);

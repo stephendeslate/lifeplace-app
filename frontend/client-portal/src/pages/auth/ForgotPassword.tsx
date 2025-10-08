@@ -105,7 +105,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
     } catch (error: unknown) {
       console.error('Password reset request error:', error);
 
-      const errorObj = error as any;
+      const errorObj = error as { response?: { data?: { detail?: string } } };
       if (errorObj?.response?.data?.detail) {
         setErrors({ form: errorObj.response.data.detail });
       } else {

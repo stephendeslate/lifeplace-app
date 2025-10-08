@@ -231,7 +231,20 @@ export const eventsApi = {
       queryParams.append('event_type_id', params.event_type_id.toString());
     }
 
-    const response = await api.get(`/events/public/availability/?${queryParams.toString()}`);
+    const response = await api.get<{
+      start_date: string;
+      end_date: string;
+      event_count: number;
+      events: Array<{
+        id: number;
+        name: string;
+        event_type_name: string | null;
+        status: string;
+        start_date: string;
+        end_date: string | null;
+        payment_status: string;
+      }>;
+    }>(`/events/public/availability/?${queryParams.toString()}`);
     return response.data;
   },
 };

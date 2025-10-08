@@ -158,7 +158,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
         confirm_password: confirmPassword,
       });
       // Form will be reset when dialog closes
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the hook
     }
   };

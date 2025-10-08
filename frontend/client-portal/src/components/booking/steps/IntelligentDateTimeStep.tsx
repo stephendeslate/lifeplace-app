@@ -80,7 +80,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   const eventTypeId = flow?.event_type || undefined;
 
   // Fetch event availability data for the current month
-  const { data: availabilityEvents = [], isLoading: isLoadingAvailability } = useEventAvailability({
+  const { data: availabilityEvents = [] } = useEventAvailability({
     currentMonth,
     eventTypeId,
     enabled: true,

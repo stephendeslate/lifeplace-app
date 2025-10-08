@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/events/EventQuestionnaires.tsx
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -258,7 +258,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={value === 'true' || value === true}
+                  checked={value === 'true'}
                   onChange={(e) => handleFieldChange(field.id, e.target.checked ? 'true' : 'false')}
                 />
               }

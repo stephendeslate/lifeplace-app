@@ -64,7 +64,6 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   validationErrors,
   isValidating,
   flow,
-  totalPrice,
 }) => {
   const { state, actions } = useBooking();
   const { formatAmount } = useCurrencySettings();

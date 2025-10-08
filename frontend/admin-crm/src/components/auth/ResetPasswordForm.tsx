@@ -1,7 +1,7 @@
 // Reset Password Form Component
 // Reusable form for confirming password reset with token
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -49,11 +49,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  useEffect(() => {
-    validateToken();
-  }, [tokenId]);
-
-  const validateToken = async () => {
+  const validateToken = useCallback(async () => {
     setIsValidating(true);
     try {
       const response = await authApi.validateResetToken(tokenId);
@@ -69,13 +65,17 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
         };
         setTokenError(errorMessages[response.reason || 'not_found']);
       }
-    } catch (error) {
+    } catch (_error) {
       setIsTokenValid(false);
       setTokenError('Unable to validate reset link. Please try again.');
     } finally {
       setIsValidating(false);
     }
-  };
+  }, [tokenId]);
+
+  useEffect(() => {
+    validateToken();
+  }, [validateToken]);
 
   const validateForm = (): boolean => {
     let isValid = true;
@@ -138,9 +138,10 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
       setTimeout(() => {
         navigate('/login');
       }, 2000);
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.detail || error.message || 'Failed to reset password. Please try again.';
-      const feedback = error?.response?.data?.password_feedback || [];
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string; password_feedback?: string[] } }; message?: string };
+      const errorMessage = err?.response?.data?.detail || err.message || 'Failed to reset password. Please try again.';
+      const feedback = err?.response?.data?.password_feedback || [];
 
       setSubmitError(errorMessage);
       setPasswordFeedback(feedback);
@@ -426,7 +427,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
         sx={{
           '& .MuiOutlinedInput-root': {
             borderRadius: tokens.spacing.radius.lg,
-            ...createTransition(['border-color', 'box-shadow']),
+            transition: createTransition(['border-color', 'box-shadow']),
           },
         }}
       />
@@ -462,7 +463,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
         sx={{
           '& .MuiOutlinedInput-root': {
             borderRadius: tokens.spacing.radius.lg,
-            ...createTransition(['border-color', 'box-shadow']),
+            transition: createTransition(['border-color', 'box-shadow']),
           },
         }}
       />
@@ -481,7 +482,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
           fontSize: '1rem',
           fontWeight: 600,
           boxShadow: `0 4px 12px ${tokens.color.primary[500]}40`,
-          ...createTransition(['all']),
+          transition: createTransition(['all']),
 
           '&:hover': {
             background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
@@ -503,7 +504,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
           textTransform: 'none',
           color: tokens.color.neutral[600],
           fontWeight: 500,
-          ...createTransition(['color']),
+          transition: createTransition(['color']),
 
           '&:hover': {
             color: tokens.color.neutral[900],

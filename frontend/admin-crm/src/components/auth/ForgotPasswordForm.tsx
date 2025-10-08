@@ -162,7 +162,7 @@ export const ForgotPasswordForm: React.FC = () => {
             textTransform: 'none',
             fontSize: '1rem',
             fontWeight: 600,
-            ...createTransition(['all']),
+            transition: createTransition(['all']),
           }}
         >
           Back to Login
@@ -259,7 +259,7 @@ export const ForgotPasswordForm: React.FC = () => {
         sx={{
           '& .MuiOutlinedInput-root': {
             borderRadius: tokens.spacing.radius.lg,
-            ...createTransition(['border-color', 'box-shadow']),
+            transition: createTransition(['border-color', 'box-shadow']),
 
             '&:hover': {
               '& .MuiOutlinedInput-notchedOutline': {
@@ -291,7 +291,7 @@ export const ForgotPasswordForm: React.FC = () => {
           fontSize: '1rem',
           fontWeight: 600,
           boxShadow: `0 4px 12px ${tokens.color.primary[500]}40`,
-          ...createTransition(['all']),
+          transition: createTransition(['all']),
 
           '&:hover': {
             background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
@@ -318,7 +318,7 @@ export const ForgotPasswordForm: React.FC = () => {
           textTransform: 'none',
           color: tokens.color.neutral[600],
           fontWeight: 500,
-          ...createTransition(['color']),
+          transition: createTransition(['color']),
 
           '&:hover': {
             color: tokens.color.neutral[900],
