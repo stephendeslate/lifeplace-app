@@ -292,7 +292,8 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                   const lineItem = pricing.lineItems?.find(item => item.product_id === pkg.product_id);
                   const hasExcessHours = lineItem?.excess_hours && lineItem.excess_hours > 0;
                   const basePrice = lineItem?.base_unit_price ? parseFloat(lineItem.base_unit_price) : parseFloat(pkg.price);
-                  const unitPrice = lineItem?.total_unit_price ? parseFloat(lineItem.total_unit_price) : parseFloat(pkg.price);
+                  const unitPrice = basePrice; // Use base price, not total_unit_price
+                  const totalPrice = lineItem?.total_unit_price ? parseFloat(lineItem.total_unit_price) : parseFloat(pkg.price);
 
                   return (
                     <TableRow key={pkg.product_id}>
@@ -321,9 +322,9 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                               formatAmount(unitPrice.toString())
                             )}
                           </Typography>
-                          {hasExcessHours && lineItem.excess_cost && parseFloat(lineItem.excess_cost) > 0 && (
+                          {hasExcessHours && (
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                              (+{formatAmount((parseFloat(lineItem.excess_cost) / pkg.quantity).toString())} excess)
+                              (+{formatAmount((totalPrice - basePrice).toString())} excess)
                             </Typography>
                           )}
                         </Box>
@@ -332,7 +333,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                         {isUpdatingPrices ? (
                           <Skeleton width={80} animation="wave" />
                         ) : (
-                          formatAmount((unitPrice * pkg.quantity).toString())
+                          formatAmount((totalPrice * pkg.quantity).toString())
                         )}
                       </TableCell>
                     </TableRow>
