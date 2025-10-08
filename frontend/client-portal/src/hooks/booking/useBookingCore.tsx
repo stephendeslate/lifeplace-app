@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { BookingCoreApi } from '../../apis/booking/core.api';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   EventType,
   BookingFlow,
@@ -26,9 +27,7 @@ export const useEventTypes = () => {
       const types = await BookingCoreApi.getEventTypes();
       setEventTypes(types.filter(type => type.is_active));
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = BookingCoreApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -62,9 +61,7 @@ export const useBookingFlows = (eventTypeId?: number) => {
       const flowData = await BookingCoreApi.getAvailableFlows(eventTypeId);
       setFlows(flowData);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = BookingCoreApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -102,9 +99,7 @@ export const useBookingFlow = (flowId?: number) => {
       const flowData = await BookingCoreApi.getFlowById(flowId);
       setFlow(flowData);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = BookingCoreApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -150,9 +145,7 @@ export const useBookingSession = (sessionId?: string) => {
       
       setSession(sessionData);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = BookingCoreApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -180,9 +173,7 @@ export const useBookingSession = (sessionId?: string) => {
       
       return response;
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = BookingCoreApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
       return null;
     } finally {
@@ -192,9 +183,7 @@ export const useBookingSession = (sessionId?: string) => {
 
   const updateSessionData = useCallback(async (
     stepId: number,
-    // Step data contains varying structures across different booking steps
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stepData: Record<string, any>,
+    stepData: Record<string, unknown>,
     markCompleted: boolean = false
   ): Promise<BookingSessionUpdateResponse | null> => {
     if (!sessionId) {
@@ -228,19 +217,14 @@ export const useBookingSession = (sessionId?: string) => {
       
       // Handle validation errors
       if (response.validation_errors && Object.keys(response.validation_errors).length > 0) {
-        // API validation errors have dynamic structure requiring any type
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setValidationErrors(response.validation_errors as any);
+        setValidationErrors(response.validation_errors as Record<string, string[]>);
       }
       
       return response;
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = BookingCoreApi.handleApiError(err as any);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const validationErrs = BookingCoreApi.extractValidationErrors(err as any);
-      
+      const errorMessage = ErrorHandler.extractMessage(err);
+      const validationErrs = ErrorHandler.extractValidationErrorsAsRecord(err);
+
       setError(errorMessage);
       setValidationErrors(validationErrs);
       return null;
@@ -251,9 +235,7 @@ export const useBookingSession = (sessionId?: string) => {
 
   const validateStep = useCallback(async (
     stepId: number,
-    // Step data contains varying structures across different booking steps
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stepData: Record<string, any>
+    stepData: Record<string, unknown>
   ): Promise<StepValidationResult | null> => {
     if (!sessionId) {
       setError('No active session');
@@ -275,9 +257,7 @@ export const useBookingSession = (sessionId?: string) => {
       
       return result;
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = BookingCoreApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
       return null;
     }
@@ -345,9 +325,7 @@ export const useFlowPaymentGateways = (flowId?: number) => {
       const gateways = await BookingCoreApi.getFlowPaymentGateways(flowId);
       setPaymentGateways(gateways);
     } catch (err) {
-      // Error objects from API calls have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorMessage = BookingCoreApi.handleApiError(err as any);
+      const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -417,9 +395,7 @@ export const useSessionTimer = (expiresAt?: string) => {
 
 // Hook for session recovery
 export const useSessionRecovery = () => {
-  // Recovered session data has dynamic structure requiring any type
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [recoveredSession, setRecoveredSession] = useState<any>(null);
+  const [recoveredSession, setRecoveredSession] = useState<Record<string, unknown> | null>(null);
 
   const attemptSessionRecovery = useCallback((sessionId: string) => {
     const sessionData = BookingCoreApi.loadSessionFromLocal(sessionId);

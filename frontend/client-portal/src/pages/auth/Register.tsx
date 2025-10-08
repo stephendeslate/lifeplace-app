@@ -29,6 +29,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { validateRegisterForm } from '../../utils/validation';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type { RegisterCredentials } from '../../types/auth.types';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
@@ -45,7 +46,7 @@ const Register: React.FC<RegisterProps> = ({
   onRegisterSuccess,
 }) => {
   const { register } = useAuth();
-  const { showSuccess, showError } = useToastActions();
+  const { showSuccess } = useToastActions();
   const theme = useTheme();
 
   // Glass morphism TextField styling
@@ -159,43 +160,21 @@ const Register: React.FC<RegisterProps> = ({
       console.error('Registration error:', error);
       
       // Handle different types of errors
-      // Error objects from axios have dynamic structure requiring any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorObj = error as any;
-      if (errorObj?.response?.data) {
-        const errorData = errorObj.response.data;
-        const newErrors: Record<string, string> = {};
+      const validationErrors = ErrorHandler.extractValidationErrors(error);
+      const newErrors: Record<string, string> = {};
 
-        if (errorData.email) {
-          newErrors.email = Array.isArray(errorData.email) ? errorData.email[0] : errorData.email;
-        }
-        if (errorData.password) {
-          newErrors.password = Array.isArray(errorData.password) ? errorData.password[0] : errorData.password;
-        }
-        if (errorData.first_name) {
-          newErrors.first_name = Array.isArray(errorData.first_name) ? errorData.first_name[0] : errorData.first_name;
-        }
-        if (errorData.last_name) {
-          newErrors.last_name = Array.isArray(errorData.last_name) ? errorData.last_name[0] : errorData.last_name;
-        }
-        if (errorData.detail) {
-          newErrors.form = errorData.detail;
-        }
-
-        if (Object.keys(newErrors).length > 0) {
-          setErrors(newErrors);
-        } else {
-          showError(
-            'Registration Failed',
-            'Please check your information and try again.'
-          );
-        }
-      } else {
-        showError(
-          'Registration Failed',
-          'An unexpected error occurred. Please try again.'
-        );
+      // Map validation errors to form fields
+      for (const { field, messages } of validationErrors) {
+        newErrors[field] = messages[0];
       }
+
+      // If no field errors, use the general error message
+      if (Object.keys(newErrors).length === 0) {
+        const errorMessage = ErrorHandler.extractMessage(error);
+        newErrors.form = errorMessage;
+      }
+
+      setErrors(newErrors);
     } finally {
       setIsSubmitting(false);
     }

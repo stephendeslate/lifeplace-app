@@ -41,29 +41,25 @@ export const StepRenderer: React.FC = () => {
   const currentStep = state.currentSession?.current_step;
 
   // Simplified: Only use actions.updateStepData to avoid duplicate updates
-  // Generic handler accepts any step data type for flexibility
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDataChange = useCallback(async (stepType: string, data: any) => {
+  const handleDataChange = useCallback(async (stepType: string, data: unknown) => {
     if (!currentStep) return;
     
     try {
       // Only use the context action to update data
       // The context will handle both local state and backend updates
-      await actions.updateStepData(stepType, data);
+      await actions.updateStepData(stepType, data as Record<string, unknown>);
     } catch (error) {
       console.error('Failed to update step data:', error);
     }
   }, [currentStep, actions]);
 
-  // Memoized validation handler - accepts any data type for step validation
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleValidation = useCallback(async (data: any): Promise<StepValidationResult> => {
+  const handleValidation = useCallback(async (data: unknown): Promise<StepValidationResult> => {
     if (!currentStep) {
       return { isValid: false, errors: [{ field: 'general', message: 'No current step' }] };
     }
     
     try {
-      const result = await validateStep(currentStep.id as number, data);
+      const result = await validateStep(currentStep.id as number, data as Record<string, unknown>);
       return result || { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
     } catch (error) {
       console.error('Failed to validate step:', error);
@@ -71,50 +67,40 @@ export const StepRenderer: React.FC = () => {
     }
   }, [currentStep, validateStep]);
 
-  // Create memoized handlers for each step type - generic to work with all step data types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleIntroductionChange = useCallback((data: any) => {
+  const handleIntroductionChange = useCallback((data: unknown) => {
     handleDataChange('introduction', data);
   }, [handleDataChange]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDateTimeChange = useCallback((data: any) => {
+  const handleDateTimeChange = useCallback((data: unknown) => {
     handleDataChange('date_time', data);
   }, [handleDataChange]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleQuestionnaireChange = useCallback((data: any) => {
+  const handleQuestionnaireChange = useCallback((data: unknown) => {
     handleDataChange('questionnaire', data);
   }, [handleDataChange]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleContactInfoChange = useCallback((data: any) => {
+  const handleContactInfoChange = useCallback((data: unknown) => {
     handleDataChange('contact_info', data);
   }, [handleDataChange]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handlePaymentChange = useCallback((data: any) => {
+  const handlePaymentChange = useCallback((data: unknown) => {
     handleDataChange('payment_info', data);
   }, [handleDataChange]);
 
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleConfirmationChange = useCallback((data: any) => {
+  const handleConfirmationChange = useCallback((data: unknown) => {
     handleDataChange('confirmation', data);
   }, [handleDataChange]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handlePackageSelectionChange = useCallback((data: any) => {
+  const handlePackageSelectionChange = useCallback((data: unknown) => {
     handleDataChange('package_selection', data);
   }, [handleDataChange]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleAddonSelectionChange = useCallback((data: any) => {
+  const handleAddonSelectionChange = useCallback((data: unknown) => {
     handleDataChange('addon_selection', data);
   }, [handleDataChange]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handlePricingSummaryChange = useCallback((data: any) => {
+  const handlePricingSummaryChange = useCallback((data: unknown) => {
     handleDataChange('pricing_summary', data);
   }, [handleDataChange]);
 

@@ -1,6 +1,7 @@
 // frontend/client-portal/src/apis/booking/products.api.ts
 
 import api from '../../utils/api';
+import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   ProductCategory,
   ProductOption,
@@ -350,30 +351,7 @@ export class ProductsApi {
    * Handle products API errors
    */
   static handleProductsError(error: unknown): string {
-    // Error objects from axios have dynamic structure requiring any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorObj = error as any;
-    if (errorObj.response?.data?.detail) {
-      return errorObj.response.data.detail;
-    }
-
-    if (errorObj.response?.data?.message) {
-      return errorObj.response.data.message;
-    }
-
-    if (errorObj.response?.status === 404) {
-      return 'Product not found.';
-    }
-
-    if (errorObj.response?.status === 403) {
-      return 'You do not have permission to access this product.';
-    }
-
-    if (errorObj.message) {
-      return errorObj.message;
-    }
-
-    return 'An error occurred while loading products.';
+    return ErrorHandler.extractMessage(error);
   }
 }
 
