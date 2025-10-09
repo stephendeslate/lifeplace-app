@@ -516,12 +516,12 @@ class BookingSessionService:
                     # Event stays as LEAD status for quote requests
                     logger.info(f"Quote request completed - event {event.id} remains as LEAD, no invoice created yet")
 
-                    # Send quote notification
+                    # Send quote request acknowledgment email (not the final quote)
                     try:
-                        BookingSessionService._send_quote_notification(session, quote)
-                        logger.info(f"Quote notification sent for session {session.session_id}")
+                        BookingSessionService._send_quote_request_acknowledgment(session, event)
+                        logger.info(f"Quote request acknowledgment sent for session {session.session_id}")
                     except Exception as e:
-                        logger.warning(f"Failed to send quote notification: {e}")
+                        logger.warning(f"Failed to send quote request acknowledgment: {e}")
 
                 elif completion_type == 'payment':
                     logger.info(f"Processing payment completion for session {session.session_id}")
@@ -607,26 +607,35 @@ class BookingSessionService:
                 raise EventCreationFailed(f"Failed to create event: {str(e)}")
     
     @staticmethod
-    def _send_quote_notification(session, quote):
-        """Send quote notification to client"""
+    def _send_quote_request_acknowledgment(session, event):
+        """Send acknowledgment email when client submits a quote request
+
+        This is NOT the final quote email - this is just acknowledging receipt of the request.
+        The actual quote email will be sent later when admin reviews and sends the quote.
+        """
         from core.domains.communications.services import CommunicationService
 
-        # Create notification for quote generation
         try:
             # Initialize communication service
             comm_service = CommunicationService()
 
-            # Send email notification about quote
+            # Extract client message from booking session
+            metadata = BookingSessionService._extract_booking_metadata(session)
+
+            # Prepare acknowledgment email context
             template_data = {
                 'client_name': session.client.get_full_name(),
-                'quote_amount': quote.total_amount,
-                'quote_valid_until': quote.valid_until,
-                'quote_id': quote.id
+                'event_name': event.name or f'Event #{event.id}',
+                'event_date': event.start_date.strftime('%B %d, %Y') if event.start_date else 'TBD',
+                'event_time': event.start_date.strftime('%I:%M %p') if event.start_date else 'TBD',
+                'event_type': event.event_type.name if event.event_type else 'Event',
+                'client_message': metadata.get('combined_message', ''),
             }
 
-            # Use a generic email template for now - this should be configurable
+            # Send acknowledgment using "Events - Welcome New Lead" template
+            # This template is designed for initial inquiry acknowledgments
             comm_service.send_communication(
-                template_name='quote_request_confirmation',
+                template_name='Events - Welcome New Lead',
                 recipient=session.client.email,
                 context_data=template_data,
                 client=session.client,
@@ -634,10 +643,10 @@ class BookingSessionService:
                 use_async=False
             )
 
-            logger.info(f"Sent quote notification to {session.client.email} for quote {quote.id}")
+            logger.info(f"Sent quote request acknowledgment to {session.client.email} for event {event.id}")
 
         except Exception as e:
-            logger.error(f"Failed to send quote notification: {e}")
+            logger.error(f"Failed to send quote request acknowledgment: {e}")
             # Don't raise exception as quote was created successfully
     
     @staticmethod

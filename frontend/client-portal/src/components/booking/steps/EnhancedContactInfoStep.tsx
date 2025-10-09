@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/EnhancedContactInfoStep.tsx
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -129,6 +129,14 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     phone: 'idle',
     full_name: 'idle',
   });
+
+  // Sync autofilled data to parent on mount
+  useEffect(() => {
+    // Only sync if we have autofilled data from authenticated user
+    if (isAuthenticated && user && !stepData) {
+      onDataChange(formData);
+    }
+  }, []); // Empty dependency array - only run on mount
 
   const [showPassword, setShowPassword] = useState(false);
   const [emailStrength, setEmailStrength] = useState(0);
