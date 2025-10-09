@@ -578,6 +578,13 @@ class BookingSessionService:
                         logger.info(f"Invoice {invoice.invoice_id} payment status updated to '{invoice.status}' "
                                    f"(paid: {invoice.paid_amount}, remaining: {invoice.remaining_amount}) "
                                    f"for event {event.id}")
+
+                        # Send booking confirmation email after successful payment
+                        try:
+                            BookingSessionService._send_booking_confirmation(session, event)
+                            logger.info(f"Booking confirmation email sent for session {session.session_id}")
+                        except Exception as e:
+                            logger.warning(f"Failed to send booking confirmation email: {e}")
                     else:
                         logger.error(f"Payment processing failed - payment status: {payment.status}")
                         raise EventCreationFailed("Payment processing failed")
@@ -589,7 +596,7 @@ class BookingSessionService:
                     invoice = InvoiceService.create_from_quote(quote)
                     invoice.issue()  # Changes status from DRAFT to ISSUED
                     logger.info(f"Invoice {invoice.invoice_id} created and issued for later payment")
-                
+
                 # FINALIZE: Link the created event to the session
                 session.created_event = event
                 session.save()
@@ -648,7 +655,85 @@ class BookingSessionService:
         except Exception as e:
             logger.error(f"Failed to send quote request acknowledgment: {e}")
             # Don't raise exception as quote was created successfully
-    
+
+    @staticmethod
+    def _send_booking_confirmation(session, event):
+        """Send booking confirmation email after successful payment
+
+        This sends a detailed confirmation email with all booking details including
+        event info, packages, addons, pricing, and dates.
+        """
+        from core.domains.communications.services import CommunicationService
+
+        try:
+            # Check if confirmation email template is configured
+            if not session.booking_flow.confirmation_email_template:
+                logger.warning(f"No confirmation email template configured for booking flow {session.booking_flow.id}")
+                return
+
+            # Instantiate communication service
+            comm_service = CommunicationService()
+
+            # Extract booking data for email context
+            booking_data = session.booking_data
+
+            # Extract date/time info from session data
+            event_date = None
+            event_time = None
+            duration = None
+
+            # Look for date/time data in step data
+            for step_key, step_data in booking_data.items():
+                if isinstance(step_data, dict) and 'start_date' in step_data:
+                    event_date = step_data.get('start_date')
+                    event_time = step_data.get('start_time', '')
+                    duration = step_data.get('duration')
+                    break
+
+            # Format date and time for display
+            if event_date and event.start_date:
+                event_date_formatted = event.start_date.strftime('%B %d, %Y')
+                event_time_formatted = event.start_date.strftime('%I:%M %p')
+            else:
+                event_date_formatted = 'TBD'
+                event_time_formatted = 'TBD'
+
+            # Extract packages and addons
+            selected_packages = booking_data.get('selected_packages', [])
+            selected_addons = booking_data.get('selected_addons', [])
+
+            # Build email context
+            context_data = {
+                'client_name': session.client.get_full_name(),
+                'booking_reference': str(session.session_id)[-8:].upper(),
+                'event_type': event.event_type.name if event.event_type else 'Event',
+                'event_date': event_date_formatted,
+                'event_time': event_time_formatted,
+                'duration': duration,
+                'total_price': str(event.total_price) if event.total_price else '0',
+                'selected_packages': selected_packages,
+                'selected_addons': selected_addons,
+                'email': session.client.email,
+                'phone': booking_data.get('phone', ''),
+                'dashboard_url': 'https://lifeplacealfonso.com/portal',
+            }
+
+            # Send confirmation email
+            comm_service.send_communication(
+                template_name=session.booking_flow.confirmation_email_template.name,
+                recipient=session.client.email,
+                context_data=context_data,
+                client=session.client,
+                sent_by=None,
+                use_async=False
+            )
+
+            logger.info(f"Sent booking confirmation email to {session.client.email} for event {event.id}")
+
+        except Exception as e:
+            logger.error(f"Failed to send booking confirmation email: {e}")
+            # Don't raise exception as booking was created successfully
+
     @staticmethod
     def abandon_session(session_id, reason=None):
         """Mark a session as abandoned"""

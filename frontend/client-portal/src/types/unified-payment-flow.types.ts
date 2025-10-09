@@ -183,8 +183,9 @@ export type PaymentModeConfig = BookingModeConfig | SaveModeConfig | InvoiceMode
 export interface BookingPaymentResult {
   payment_intent_id: string;
   payment_id?: number;
-  payment_method_saved?: boolean;
-  payment_method?: PaymentMethod;
+  payment_method_saved?: boolean; // true if saved to DB (authenticated users only)
+  payment_method?: PaymentMethod; // DB payment method (authenticated users only)
+  stripe_payment_method_id?: string; // Stripe PM ID (for guest users or direct reference)
   booking_session_updated?: boolean;
 
   // Stripe payment intent data
@@ -232,6 +233,9 @@ export interface UnifiedStripePaymentFlowProps {
   onSuccess: (result: PaymentFlowResult) => void;
   onError: (error: PaymentFlowError) => void;
   onCancel?: () => void;
+
+  // Authentication context
+  isAuthenticated?: boolean; // Used to determine whether to save payment method to DB
 
   // UI configuration
   disabled?: boolean;
