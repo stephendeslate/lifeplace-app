@@ -286,7 +286,7 @@ class BookingSessionService:
                                     }
 
                                     # Send welcome email using existing template
-                                    comm_service.send_communication_by_template_name(
+                                    comm_service.send_communication(
                                         template_name='Welcome Email',
                                         recipient=user.email,
                                         context_data=template_data,
@@ -610,9 +610,12 @@ class BookingSessionService:
     def _send_quote_notification(session, quote):
         """Send quote notification to client"""
         from core.domains.communications.services import CommunicationService
-        
+
         # Create notification for quote generation
         try:
+            # Initialize communication service
+            comm_service = CommunicationService()
+
             # Send email notification about quote
             template_data = {
                 'client_name': session.client.get_full_name(),
@@ -620,17 +623,19 @@ class BookingSessionService:
                 'quote_valid_until': quote.valid_until,
                 'quote_id': quote.id
             }
-            
+
             # Use a generic email template for now - this should be configurable
-            CommunicationService.send_system_email(
-                recipient=session.client.email,
+            comm_service.send_communication(
                 template_name='quote_request_confirmation',
+                recipient=session.client.email,
                 context_data=template_data,
-                subject='Your Quote Request - LifePlace'
+                client=session.client,
+                sent_by=None,
+                use_async=False
             )
-            
+
             logger.info(f"Sent quote notification to {session.client.email} for quote {quote.id}")
-            
+
         except Exception as e:
             logger.error(f"Failed to send quote notification: {e}")
             # Don't raise exception as quote was created successfully
@@ -1290,36 +1295,67 @@ class BookingSessionService:
 
         try:
             from core.domains.questionnaires.services import QuestionnaireResponseService
-            
+
             # Extract questionnaire responses from booking data
-            questionnaire_responses = []
-            
+            # Use a dict to deduplicate by field_id (keeps last occurrence)
+            questionnaire_responses_dict = {}
+
             # Check for questionnaire data in various possible locations
             # 1. Direct questionnaire key
             if 'questionnaire' in session.booking_data:
-                questionnaire_responses = session.booking_data['questionnaire']
-            
-            # 2. Step-specific questionnaire data
+                questionnaire_data = session.booking_data['questionnaire']
+                if isinstance(questionnaire_data, list):
+                    for response in questionnaire_data:
+                        if isinstance(response, dict) and 'field' in response:
+                            questionnaire_responses_dict[response['field']] = response
+
+            # 2. Get all questionnaire step IDs from the booking flow
+            questionnaire_step_ids = set(
+                session.booking_flow.steps.filter(step_type='questionnaire')
+                .values_list('id', flat=True)
+            )
+            logger.info(f"Found {len(questionnaire_step_ids)} questionnaire steps: {questionnaire_step_ids}")
+
+            # 3. Extract field responses ONLY from questionnaire steps to avoid duplicates
             for step_key, step_data in session.booking_data.items():
                 if isinstance(step_data, dict) and step_key.startswith('step_'):
-                    # Check if this step contains questionnaire responses
-                    if 'responses' in step_data:
-                        questionnaire_responses.extend(step_data['responses'])
-                    
-                    # FIXED: Check for individual field responses at the correct level
-                    # Look through all keys in step_data for field_ prefix
+                    # Extract step ID from step_key (format: "step_12")
+                    try:
+                        step_id = int(step_key.replace('step_', ''))
+                    except (ValueError, TypeError):
+                        continue
+
+                    # Only process if this is a questionnaire step
+                    if step_id not in questionnaire_step_ids:
+                        continue
+
+                    logger.info(f"Processing questionnaire step {step_id}")
+
+                    # Check if this step contains responses array
+                    if 'responses' in step_data and isinstance(step_data['responses'], list):
+                        for response in step_data['responses']:
+                            if isinstance(response, dict) and 'field' in response:
+                                questionnaire_responses_dict[response['field']] = response
+
+                    # Check for individual field responses (field_<id>: value format)
                     for field_key, value in step_data.items():
                         if field_key.startswith('field_'):
                             field_id = field_key.replace('field_', '')
                             try:
-                                questionnaire_responses.append({
-                                    'field': int(field_id),
+                                field_id_int = int(field_id)
+                                # Use dict to automatically deduplicate by field_id
+                                questionnaire_responses_dict[field_id_int] = {
+                                    'field': field_id_int,
                                     'value': value
-                                })
+                                }
                             except (ValueError, TypeError):
                                 logger.warning(f"Invalid field ID in key: {field_key}")
                                 continue
-            
+
+            # Convert dict back to list for processing
+            questionnaire_responses = list(questionnaire_responses_dict.values())
+            logger.info(f"Extracted {len(questionnaire_responses)} unique questionnaire responses")
+
             # Save the questionnaire responses if any were found
             if questionnaire_responses:
                 responses_data = []
@@ -1329,14 +1365,14 @@ class BookingSessionService:
                             'field': response['field'],
                             'value': str(response['value'])
                         })
-                
+
                 if responses_data:
                     QuestionnaireResponseService.save_event_responses(
                         event.id,
                         responses_data
                     )
                     logger.info(f"Created {len(responses_data)} questionnaire responses for event {event.id}")
-            
+
         except Exception as e:
             logger.warning(f"Could not create questionnaire responses for event: {e}")
         
