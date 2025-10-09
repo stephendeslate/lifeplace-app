@@ -99,7 +99,12 @@ class ProductOption(BaseModel):
     # Booking constraints
     advance_booking_days = models.PositiveIntegerField(default=7, help_text="Minimum days in advance for booking")
     maximum_booking_days = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum days in advance for booking")
-    
+
+    # Guest capacity constraints
+    minimum_guests = models.PositiveIntegerField(null=True, blank=True, help_text="Minimum guest capacity")
+    maximum_guests = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum guest capacity")
+    recommended_guests = models.PositiveIntegerField(null=True, blank=True, help_text="Recommended guest count")
+
     # Business metadata
     sku = models.CharField(max_length=50, unique=True, null=True, blank=True)
     sort_order = models.PositiveIntegerField(default=0)
