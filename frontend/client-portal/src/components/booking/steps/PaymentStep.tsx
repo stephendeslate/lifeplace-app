@@ -1,6 +1,7 @@
 // frontend/client-portal/src/components/booking/steps/PaymentStep.tsx
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
@@ -26,6 +27,7 @@ import { useCurrentCurrency } from '../../../hooks/useCurrency';
 import { usePaymentPlanSettings } from '../../../hooks/usePaymentPlanSettings';
 import { UnifiedStripePaymentFlow } from '../../payments/UnifiedStripePaymentFlow';
 import { PaymentMethodSelector } from '../../payments/PaymentMethodSelector';
+import { useAuth } from '../../../hooks/useAuth';
 import type {
   BookingModeConfig,
   PaymentFlowResult,
@@ -69,7 +71,13 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   // State for managing saved payment method selection
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [isAddingNewMethod, setIsAddingNewMethod] = useState<boolean>(false);
-  
+
+  // React Query client for cache invalidation
+  const queryClient = useQueryClient();
+
+  // Auth hook
+  const { isAuthenticated } = useAuth();
+
   // Payment hooks
   const {
     gateways: flowGateways,
@@ -155,6 +163,16 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
       formattedRemaining: currencyFormatAmount(remaining),
     };
   }, [totalAmount, paymentData.payment_type, config, paymentPlanSettings, currencyFormatAmount]);
+
+  // Memoize payment flow config to prevent unnecessary re-renders
+  const paymentFlowConfig = useMemo<BookingModeConfig>(() => ({
+    mode: 'booking' as const,
+    total_amount: amounts.dueNow,
+    currency: currentCurrency.toLowerCase(),
+    create_payment_intent: true,
+    save_payment_method: true,
+    ...(flowId && { booking_session_id: flowId.toString() }),
+  }), [amounts.dueNow, currentCurrency, flowId]);
 
   // Update data helper
   const updateData = useCallback((updates: Partial<PaymentStepData>) => {
@@ -257,14 +275,15 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   // Handle unified payment flow success
   const handlePaymentFlowSuccess = useCallback((result: PaymentFlowResult) => {
     if (result.mode === 'booking' && result.bookingResult) {
-      // Extract payment method information from booking result
-      const { payment_method_saved, payment_method } = result.bookingResult;
+      const { payment_method_saved, payment_method, stripe_payment_method_id } = result.bookingResult;
 
+      // Handle authenticated users who saved payment method to database
       if (payment_method_saved && payment_method) {
-        // Use the Stripe payment method ID or fall back to the DB ID
-        const paymentMethodId = payment_method.gateway_details?.code === 'stripe'
-          ? payment_method.id.toString() // In unified flow, the ID is already the correct reference
-          : payment_method.id.toString();
+        // Invalidate payment methods query to refresh the list
+        queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
+
+        // Use the DB payment method ID
+        const paymentMethodId = payment_method.id.toString();
 
         updateData({
           payment_method_id: paymentMethodId,
@@ -272,8 +291,17 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         });
         setPaymentMethodCreated(true);
       }
+      // Handle guest users or authenticated users who didn't save to DB
+      else if (stripe_payment_method_id) {
+        // Use the Stripe payment method ID directly via payment_method_token
+        updateData({
+          payment_method_token: stripe_payment_method_id,
+          payment_method: 'CREDIT_CARD'
+        });
+        setPaymentMethodCreated(true);
+      }
     }
-  }, [updateData]);
+  }, [updateData, queryClient]);
 
   // Handle unified payment flow error
   const handlePaymentFlowError = useCallback((error: PaymentFlowError) => {
@@ -709,112 +737,145 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         )}
       </Paper>
 
-      {/* Payment Method Selection */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Payment Method
-        </Typography>
+      {/* Payment Method Selection - Only show for authenticated users */}
+      {isAuthenticated && (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Payment Method
+          </Typography>
 
-        <PaymentMethodSelector
-          selectedMethod={selectedPaymentMethod}
-          onMethodSelect={handlePaymentMethodSelect}
-          disabled={isValidating}
-          showAddNew={true}
-          onAddNewClick={handleAddNewMethodClick}
-        />
+          <PaymentMethodSelector
+            selectedMethod={selectedPaymentMethod}
+            onMethodSelect={handlePaymentMethodSelect}
+            disabled={isValidating}
+            showAddNew={true}
+            onAddNewClick={handleAddNewMethodClick}
+          />
 
-        {/* Show message for saved payment methods */}
-        {selectedPaymentMethod && selectedPaymentMethod.gateway_details && (
-          <Box sx={{
-            mt: 2,
-            p: 2,
-            backgroundColor: 'success.50',
-            borderRadius: 1,
-            border: '1px solid',
-            borderColor: 'success.200'
-          }}>
-            <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 500 }}>
-              ✓ Using saved payment method: {selectedPaymentMethod.nickname || selectedPaymentMethod.type_display}
-              {selectedPaymentMethod.last_four && ` ending in ${selectedPaymentMethod.last_four}`}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              This payment method will be used when you complete your booking.
-            </Typography>
-          </Box>
-        )}
-
-        {/* Show new payment method flow only when explicitly adding new method */}
-        {isAddingNewMethod && (
-          <>
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Select Payment Gateway
+          {/* Show message for saved payment methods */}
+          {selectedPaymentMethod && selectedPaymentMethod.gateway_details && (
+            <Box sx={{
+              mt: 2,
+              p: 2,
+              backgroundColor: 'success.50',
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'success.200'
+            }}>
+              <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 500 }}>
+                ✓ Using saved payment method: {selectedPaymentMethod.nickname || selectedPaymentMethod.type_display}
+                {selectedPaymentMethod.last_four && ` ending in ${selectedPaymentMethod.last_four}`}
               </Typography>
-
-              <RadioGroup
-                value={selectedGateway?.id || ''}
-                onChange={(e) => {
-                  const gateway = flowGateways.find(g => g.id === parseInt(e.target.value));
-                  if (gateway) handleGatewaySelect(gateway as unknown as Record<string, unknown>);
-                }}
-              >
-                {filteredGateways.map((gateway) => (
-                  <FormControlLabel
-                    key={gateway.id}
-                    value={gateway.id}
-                    control={<Radio />}
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CreditCard />
-                        <Typography>{gateway.name}</Typography>
-                        {gateway.description && (
-                          <Typography variant="caption" color="text.secondary">
-                            {gateway.description}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                  />
-                ))}
-              </RadioGroup>
+              <Typography variant="caption" color="text.secondary">
+                This payment method will be used when you complete your booking.
+              </Typography>
             </Box>
+          )}
 
-            {/* Cancel adding new method */}
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setIsAddingNewMethod(false);
-                setSelectedGateway(null);
-              }}
-              disabled={isValidating}
-              sx={{ mt: 2 }}
-            >
-              Back to Saved Methods
-            </Button>
-          </>
-        )}
-      </Paper>
+          {/* Show new payment method flow only when explicitly adding new method */}
+          {isAddingNewMethod && (
+            <>
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Select Payment Gateway
+                </Typography>
 
-      {/* Unified Stripe Payment Flow - Only show when adding new method */}
-      {isAddingNewMethod && selectedGateway?.code === 'stripe' && amounts.dueNow > 0 && !paymentMethodCreated && (
+                <RadioGroup
+                  value={selectedGateway?.id || ''}
+                  onChange={(e) => {
+                    const gateway = flowGateways.find(g => g.id === parseInt(e.target.value));
+                    if (gateway) handleGatewaySelect(gateway as unknown as Record<string, unknown>);
+                  }}
+                >
+                  {filteredGateways.map((gateway) => (
+                    <FormControlLabel
+                      key={gateway.id}
+                      value={gateway.id}
+                      control={<Radio />}
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CreditCard />
+                          <Typography>{gateway.name}</Typography>
+                          {gateway.description && (
+                            <Typography variant="caption" color="text.secondary">
+                              {gateway.description}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
+                    />
+                  ))}
+                </RadioGroup>
+              </Box>
+
+              {/* Cancel adding new method */}
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setIsAddingNewMethod(false);
+                  setSelectedGateway(null);
+                }}
+                disabled={isValidating}
+                sx={{ mt: 2 }}
+              >
+                Back to Saved Methods
+              </Button>
+            </>
+          )}
+        </Paper>
+      )}
+
+      {/* Gateway Selection for Guest Users - Show directly without saved methods section */}
+      {!isAuthenticated && (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Select Payment Gateway
+          </Typography>
+
+          <RadioGroup
+            value={selectedGateway?.id || ''}
+            onChange={(e) => {
+              const gateway = flowGateways.find(g => g.id === parseInt(e.target.value));
+              if (gateway) handleGatewaySelect(gateway as unknown as Record<string, unknown>);
+            }}
+          >
+            {filteredGateways.map((gateway) => (
+              <FormControlLabel
+                key={gateway.id}
+                value={gateway.id}
+                control={<Radio />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CreditCard />
+                    <Typography>{gateway.name}</Typography>
+                    {gateway.description && (
+                      <Typography variant="caption" color="text.secondary">
+                        {gateway.description}
+                      </Typography>
+                    )}
+                  </Box>
+                }
+              />
+            ))}
+          </RadioGroup>
+        </Paper>
+      )}
+
+      {/* Unified Stripe Payment Flow - Show for authenticated users adding new method OR for guest users */}
+      {((isAuthenticated && isAddingNewMethod) || !isAuthenticated) && selectedGateway?.code === 'stripe' && amounts.dueNow > 0 && !paymentMethodCreated && (
         <UnifiedStripePaymentFlow
-          config={{
-            mode: 'booking',
-            total_amount: amounts.dueNow,
-            currency: currentCurrency.toLowerCase(),
-            create_payment_intent: true,
-            save_payment_method: true,
-            ...(flowId && { booking_session_id: flowId.toString() }),
-          } as BookingModeConfig}
+          config={paymentFlowConfig}
           gateway={{
             ...selectedGateway,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           } as PaymentGateway}
+          isAuthenticated={isAuthenticated}
           onSuccess={handlePaymentFlowSuccess}
           onError={handlePaymentFlowError}
           disabled={isValidating}
           loading={isValidating}
+          debugMode={process.env.NODE_ENV === 'development'}
         />
       )}
 
@@ -825,10 +886,13 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
             <CheckCircle color="success" sx={{ fontSize: 32 }} />
             <Box>
               <Typography variant="h6" color="success.main" sx={{ fontWeight: 'bold' }}>
-                Payment Method Secured! 🎉
+                {isAuthenticated ? 'Payment Method Secured! 🎉' : 'Card Validated! 🎉'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Your card has been validated and saved securely
+                {isAuthenticated
+                  ? 'Your card has been validated and saved securely'
+                  : 'Your card has been validated successfully'
+                }
               </Typography>
             </Box>
           </Box>
@@ -838,15 +902,18 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
               ✅ Ready to Complete Your Booking
             </Typography>
             <Typography variant="body2">
-              Your payment method is secured. Continue to the next step to finalize your booking.
-              You'll only be charged <strong>{amounts.formattedDueNow}</strong> after final confirmation.
+              {isAuthenticated
+                ? 'Your payment method is secured. Continue to the next step to finalize your booking.'
+                : 'Your card is validated. Continue to the next step to finalize your booking.'
+              }
+              {' '}You'll only be charged <strong>{amounts.formattedDueNow}</strong> after final confirmation.
             </Typography>
           </Alert>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1, mb: 2 }}>
             <Security color="success" sx={{ fontSize: 20 }} />
             <Typography variant="body2" color="text.secondary">
-              <strong>Secure Payment:</strong> Your card details are safely stored with Stripe. 
+              <strong>Secure Payment:</strong> Your card details are safely stored with Stripe.
               No payment will be processed until you complete your booking.
             </Typography>
           </Box>

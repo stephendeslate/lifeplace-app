@@ -115,6 +115,9 @@ class EventQuote(BaseModel):
 
             client = self.event.client
             if client and client.email:
+                # Initialize communication service
+                comm_service = CommunicationService()
+
                 template_data = {
                     'client_name': client.get_full_name(),
                     'quote_id': self.id,
@@ -125,11 +128,13 @@ class EventQuote(BaseModel):
                     'event_date': self.event.start_date.strftime('%B %d, %Y') if self.event.start_date else 'TBD',
                 }
 
-                CommunicationService.send_system_email(
-                    recipient=client.email,
+                comm_service.send_communication(
                     template_name='quote_sent_to_client',
+                    recipient=client.email,
                     context_data=template_data,
-                    subject=f'Your Quote for {template_data["event_name"]}'
+                    client=client,
+                    sent_by=None,
+                    use_async=False
                 )
 
                 logger.info(f"Sent quote notification email to {client.email} for quote {self.id}")

@@ -50,16 +50,27 @@ import {
 /**
  * Get mode-specific configuration for UI and behavior
  */
-const getModeConfig = (mode: PaymentModeConfig['mode']) => {
+const getModeConfig = (mode: PaymentModeConfig['mode'], isAuthenticated?: boolean) => {
   switch (mode) {
     case 'booking':
-      return {
-        title: 'Booking Payment',
-        description: 'Complete your booking with secure payment',
-        submitText: 'Complete Booking',
-        processingText: 'Processing Booking...',
-        icon: CardIcon,
-      };
+      // Different text for authenticated vs guest users
+      if (isAuthenticated) {
+        return {
+          title: 'Booking Payment',
+          description: 'Complete your booking with secure payment',
+          submitText: 'Save Payment Method',
+          processingText: 'Saving Payment Method...',
+          icon: CardIcon,
+        };
+      } else {
+        return {
+          title: 'Booking Payment',
+          description: 'Complete your booking with secure payment',
+          submitText: 'Continue with Card',
+          processingText: 'Validating Card...',
+          icon: CardIcon,
+        };
+      }
     case 'save':
       return {
         title: 'Save Payment Method',
@@ -113,6 +124,7 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
   onSuccess,
   onError,
   onCancel,
+  isAuthenticated = false,
   disabled = false,
   loading = false,
   showSecurityBadge = true,
@@ -137,8 +149,8 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
   const [intentLoading, setIntentLoading] = useState(true);
   const [intentError, setIntentError] = useState<string | null>(null);
 
-  // Get mode configuration
-  const modeConfig = getModeConfig(config.mode);
+  // Get mode configuration with authentication context
+  const modeConfig = getModeConfig(config.mode, isAuthenticated);
   const amountText = getAmountText(config);
 
   // Extract config properties to stabilize dependencies
@@ -270,7 +282,7 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
       } else if (isInvoiceMode(config)) {
         await processInvoiceMode(stripe, cardElement, config);
       } else if (isBookingMode(config)) {
-        await processBookingMode(stripe, cardElement, config);
+        await processBookingMode(stripe, cardElement, config, isAuthenticated);
       }
 
     } catch (error) {
@@ -601,13 +613,14 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
   const processBookingMode = async (
     stripe: Stripe,
     cardElement: StripeCardElement,
-    config: BookingModeConfig
+    config: BookingModeConfig,
+    isAuthenticated: boolean
   ) => {
     try {
       // For booking mode, we create a payment method and optionally process payment
       // This is more complex and might involve creating payment intents on the backend
 
-      // First, create a payment method
+      // First, create a payment method in Stripe
       const { error: paymentMethodError, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardElement,
@@ -641,9 +654,15 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
         exp_year: card?.exp_year || 0,
       };
 
-      // Create payment method record if requested
+      // Only save payment method to database if user is authenticated
       let savedPaymentMethod = null;
-      if (config.save_payment_method) {
+      const shouldSaveToDb = config.save_payment_method && isAuthenticated;
+
+      if (shouldSaveToDb) {
+        if (debugMode) {
+          console.log('UnifiedStripePaymentFlow - Saving payment method to database (authenticated user)');
+        }
+
         const methodData = {
           type: 'CREDIT_CARD' as const,
           stripe_payment_method_id: paymentMethod.id,
@@ -655,6 +674,8 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
         };
 
         savedPaymentMethod = await FinancialApi.createPaymentMethod(methodData);
+      } else if (debugMode) {
+        console.log('UnifiedStripePaymentFlow - Skipping database save (guest user or save not requested)');
       }
 
       // For booking mode, we might need to create and confirm a payment intent
@@ -664,11 +685,14 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
       const result: PaymentFlowResult = {
         mode: 'booking',
         success: true,
-        message: 'Booking payment method created successfully',
+        message: isAuthenticated
+          ? 'Booking payment method created successfully'
+          : 'Card validated successfully',
         bookingResult: {
           payment_intent_id: '', // Would be populated if payment intent created
-          payment_method_saved: config.save_payment_method,
-          payment_method: savedPaymentMethod || undefined,
+          payment_method_saved: shouldSaveToDb && !!savedPaymentMethod, // Only true if saved to DB
+          payment_method: savedPaymentMethod || undefined, // DB payment method (authenticated only)
+          stripe_payment_method_id: paymentMethod.id, // Always return Stripe PM ID
           booking_session_updated: false, // Would be updated by booking system
           client_secret: '',
           status: 'requires_payment_method',
@@ -875,6 +899,7 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
 
 export const UnifiedStripePaymentFlow: React.FC<UnifiedStripePaymentFlowProps> = ({
   gateway,
+  onError,
   ...props
 }) => {
   // Memoize the publishable key to prevent recreating stripe promise
@@ -897,9 +922,9 @@ export const UnifiedStripePaymentFlow: React.FC<UnifiedStripePaymentFlowProps> =
         type: 'backend',
         message: 'Stripe publishable key not configured',
       };
-      props.onError(errorResult);
+      onError(errorResult);
     }
-  }, [publishableKey]); // Only depend on publishableKey, not the callback
+  }, [publishableKey, onError]);
 
   // Loading state while Stripe initializes
   if (!stripePromise) {
@@ -917,6 +942,7 @@ export const UnifiedStripePaymentFlow: React.FC<UnifiedStripePaymentFlowProps> =
     <Elements stripe={stripePromise}>
       <PaymentFlowInner
         {...props}
+        onError={onError}
         publishableKey={gateway.public_config?.publishable_key as string}
       />
     </Elements>

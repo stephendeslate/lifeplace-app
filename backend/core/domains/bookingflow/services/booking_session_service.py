@@ -286,7 +286,7 @@ class BookingSessionService:
                                     }
 
                                     # Send welcome email using existing template
-                                    comm_service.send_communication_by_template_name(
+                                    comm_service.send_communication(
                                         template_name='Welcome Email',
                                         recipient=user.email,
                                         context_data=template_data,
@@ -516,12 +516,12 @@ class BookingSessionService:
                     # Event stays as LEAD status for quote requests
                     logger.info(f"Quote request completed - event {event.id} remains as LEAD, no invoice created yet")
 
-                    # Send quote notification
+                    # Send quote request acknowledgment email (not the final quote)
                     try:
-                        BookingSessionService._send_quote_notification(session, quote)
-                        logger.info(f"Quote notification sent for session {session.session_id}")
+                        BookingSessionService._send_quote_request_acknowledgment(session, event)
+                        logger.info(f"Quote request acknowledgment sent for session {session.session_id}")
                     except Exception as e:
-                        logger.warning(f"Failed to send quote notification: {e}")
+                        logger.warning(f"Failed to send quote request acknowledgment: {e}")
 
                 elif completion_type == 'payment':
                     logger.info(f"Processing payment completion for session {session.session_id}")
@@ -578,6 +578,13 @@ class BookingSessionService:
                         logger.info(f"Invoice {invoice.invoice_id} payment status updated to '{invoice.status}' "
                                    f"(paid: {invoice.paid_amount}, remaining: {invoice.remaining_amount}) "
                                    f"for event {event.id}")
+
+                        # Send booking confirmation email after successful payment
+                        try:
+                            BookingSessionService._send_booking_confirmation(session, event)
+                            logger.info(f"Booking confirmation email sent for session {session.session_id}")
+                        except Exception as e:
+                            logger.warning(f"Failed to send booking confirmation email: {e}")
                     else:
                         logger.error(f"Payment processing failed - payment status: {payment.status}")
                         raise EventCreationFailed("Payment processing failed")
@@ -589,7 +596,7 @@ class BookingSessionService:
                     invoice = InvoiceService.create_from_quote(quote)
                     invoice.issue()  # Changes status from DRAFT to ISSUED
                     logger.info(f"Invoice {invoice.invoice_id} created and issued for later payment")
-                
+
                 # FINALIZE: Link the created event to the session
                 session.created_event = event
                 session.save()
@@ -607,34 +614,126 @@ class BookingSessionService:
                 raise EventCreationFailed(f"Failed to create event: {str(e)}")
     
     @staticmethod
-    def _send_quote_notification(session, quote):
-        """Send quote notification to client"""
+    def _send_quote_request_acknowledgment(session, event):
+        """Send acknowledgment email when client submits a quote request
+
+        This is NOT the final quote email - this is just acknowledging receipt of the request.
+        The actual quote email will be sent later when admin reviews and sends the quote.
+        """
         from core.domains.communications.services import CommunicationService
-        
-        # Create notification for quote generation
+
         try:
-            # Send email notification about quote
+            # Initialize communication service
+            comm_service = CommunicationService()
+
+            # Extract client message from booking session
+            metadata = BookingSessionService._extract_booking_metadata(session)
+
+            # Prepare acknowledgment email context
             template_data = {
                 'client_name': session.client.get_full_name(),
-                'quote_amount': quote.total_amount,
-                'quote_valid_until': quote.valid_until,
-                'quote_id': quote.id
+                'event_name': event.name or f'Event #{event.id}',
+                'event_date': event.start_date.strftime('%B %d, %Y') if event.start_date else 'TBD',
+                'event_time': event.start_date.strftime('%I:%M %p') if event.start_date else 'TBD',
+                'event_type': event.event_type.name if event.event_type else 'Event',
+                'client_message': metadata.get('combined_message', ''),
             }
-            
-            # Use a generic email template for now - this should be configurable
-            CommunicationService.send_system_email(
+
+            # Send acknowledgment using "Events - Welcome New Lead" template
+            # This template is designed for initial inquiry acknowledgments
+            comm_service.send_communication(
+                template_name='Events - Welcome New Lead',
                 recipient=session.client.email,
-                template_name='quote_request_confirmation',
                 context_data=template_data,
-                subject='Your Quote Request - LifePlace'
+                client=session.client,
+                sent_by=None,
+                use_async=False
             )
-            
-            logger.info(f"Sent quote notification to {session.client.email} for quote {quote.id}")
-            
+
+            logger.info(f"Sent quote request acknowledgment to {session.client.email} for event {event.id}")
+
         except Exception as e:
-            logger.error(f"Failed to send quote notification: {e}")
+            logger.error(f"Failed to send quote request acknowledgment: {e}")
             # Don't raise exception as quote was created successfully
-    
+
+    @staticmethod
+    def _send_booking_confirmation(session, event):
+        """Send booking confirmation email after successful payment
+
+        This sends a detailed confirmation email with all booking details including
+        event info, packages, addons, pricing, and dates.
+        """
+        from core.domains.communications.services import CommunicationService
+
+        try:
+            # Check if confirmation email template is configured
+            if not session.booking_flow.confirmation_email_template:
+                logger.warning(f"No confirmation email template configured for booking flow {session.booking_flow.id}")
+                return
+
+            # Instantiate communication service
+            comm_service = CommunicationService()
+
+            # Extract booking data for email context
+            booking_data = session.booking_data
+
+            # Extract date/time info from session data
+            event_date = None
+            event_time = None
+            duration = None
+
+            # Look for date/time data in step data
+            for step_key, step_data in booking_data.items():
+                if isinstance(step_data, dict) and 'start_date' in step_data:
+                    event_date = step_data.get('start_date')
+                    event_time = step_data.get('start_time', '')
+                    duration = step_data.get('duration')
+                    break
+
+            # Format date and time for display
+            if event_date and event.start_date:
+                event_date_formatted = event.start_date.strftime('%B %d, %Y')
+                event_time_formatted = event.start_date.strftime('%I:%M %p')
+            else:
+                event_date_formatted = 'TBD'
+                event_time_formatted = 'TBD'
+
+            # Extract packages and addons
+            selected_packages = booking_data.get('selected_packages', [])
+            selected_addons = booking_data.get('selected_addons', [])
+
+            # Build email context
+            context_data = {
+                'client_name': session.client.get_full_name(),
+                'booking_reference': str(session.session_id)[-8:].upper(),
+                'event_type': event.event_type.name if event.event_type else 'Event',
+                'event_date': event_date_formatted,
+                'event_time': event_time_formatted,
+                'duration': duration,
+                'total_price': str(event.total_price) if event.total_price else '0',
+                'selected_packages': selected_packages,
+                'selected_addons': selected_addons,
+                'email': session.client.email,
+                'phone': booking_data.get('phone', ''),
+                'dashboard_url': 'https://lifeplacealfonso.com/portal',
+            }
+
+            # Send confirmation email
+            comm_service.send_communication(
+                template_name=session.booking_flow.confirmation_email_template.name,
+                recipient=session.client.email,
+                context_data=context_data,
+                client=session.client,
+                sent_by=None,
+                use_async=False
+            )
+
+            logger.info(f"Sent booking confirmation email to {session.client.email} for event {event.id}")
+
+        except Exception as e:
+            logger.error(f"Failed to send booking confirmation email: {e}")
+            # Don't raise exception as booking was created successfully
+
     @staticmethod
     def abandon_session(session_id, reason=None):
         """Mark a session as abandoned"""
@@ -1290,36 +1389,67 @@ class BookingSessionService:
 
         try:
             from core.domains.questionnaires.services import QuestionnaireResponseService
-            
+
             # Extract questionnaire responses from booking data
-            questionnaire_responses = []
-            
+            # Use a dict to deduplicate by field_id (keeps last occurrence)
+            questionnaire_responses_dict = {}
+
             # Check for questionnaire data in various possible locations
             # 1. Direct questionnaire key
             if 'questionnaire' in session.booking_data:
-                questionnaire_responses = session.booking_data['questionnaire']
-            
-            # 2. Step-specific questionnaire data
+                questionnaire_data = session.booking_data['questionnaire']
+                if isinstance(questionnaire_data, list):
+                    for response in questionnaire_data:
+                        if isinstance(response, dict) and 'field' in response:
+                            questionnaire_responses_dict[response['field']] = response
+
+            # 2. Get all questionnaire step IDs from the booking flow
+            questionnaire_step_ids = set(
+                session.booking_flow.steps.filter(step_type='questionnaire')
+                .values_list('id', flat=True)
+            )
+            logger.info(f"Found {len(questionnaire_step_ids)} questionnaire steps: {questionnaire_step_ids}")
+
+            # 3. Extract field responses ONLY from questionnaire steps to avoid duplicates
             for step_key, step_data in session.booking_data.items():
                 if isinstance(step_data, dict) and step_key.startswith('step_'):
-                    # Check if this step contains questionnaire responses
-                    if 'responses' in step_data:
-                        questionnaire_responses.extend(step_data['responses'])
-                    
-                    # FIXED: Check for individual field responses at the correct level
-                    # Look through all keys in step_data for field_ prefix
+                    # Extract step ID from step_key (format: "step_12")
+                    try:
+                        step_id = int(step_key.replace('step_', ''))
+                    except (ValueError, TypeError):
+                        continue
+
+                    # Only process if this is a questionnaire step
+                    if step_id not in questionnaire_step_ids:
+                        continue
+
+                    logger.info(f"Processing questionnaire step {step_id}")
+
+                    # Check if this step contains responses array
+                    if 'responses' in step_data and isinstance(step_data['responses'], list):
+                        for response in step_data['responses']:
+                            if isinstance(response, dict) and 'field' in response:
+                                questionnaire_responses_dict[response['field']] = response
+
+                    # Check for individual field responses (field_<id>: value format)
                     for field_key, value in step_data.items():
                         if field_key.startswith('field_'):
                             field_id = field_key.replace('field_', '')
                             try:
-                                questionnaire_responses.append({
-                                    'field': int(field_id),
+                                field_id_int = int(field_id)
+                                # Use dict to automatically deduplicate by field_id
+                                questionnaire_responses_dict[field_id_int] = {
+                                    'field': field_id_int,
                                     'value': value
-                                })
+                                }
                             except (ValueError, TypeError):
                                 logger.warning(f"Invalid field ID in key: {field_key}")
                                 continue
-            
+
+            # Convert dict back to list for processing
+            questionnaire_responses = list(questionnaire_responses_dict.values())
+            logger.info(f"Extracted {len(questionnaire_responses)} unique questionnaire responses")
+
             # Save the questionnaire responses if any were found
             if questionnaire_responses:
                 responses_data = []
@@ -1329,14 +1459,14 @@ class BookingSessionService:
                             'field': response['field'],
                             'value': str(response['value'])
                         })
-                
+
                 if responses_data:
                     QuestionnaireResponseService.save_event_responses(
                         event.id,
                         responses_data
                     )
                     logger.info(f"Created {len(responses_data)} questionnaire responses for event {event.id}")
-            
+
         except Exception as e:
             logger.warning(f"Could not create questionnaire responses for event: {e}")
         

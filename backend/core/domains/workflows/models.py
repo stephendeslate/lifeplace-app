@@ -159,6 +159,9 @@ class WorkflowStage(BaseModel):
             # Send email using template
             from core.domains.communications.services import CommunicationService
             try:
+                # Instantiate communication service
+                comm_service = CommunicationService()
+
                 context_data = {
                     'client_name': event.client.get_full_name(),
                     'event_date': event.start_date.strftime('%B %d, %Y'),
@@ -168,11 +171,12 @@ class WorkflowStage(BaseModel):
                     'deposit_amount': str(float(event.total_amount_due) * 0.30) if event.total_amount_due else '0',
                     'booking_reference': f'LP{event.id:05d}',
                     'valid_until': (timezone.now() + timedelta(days=30)).strftime('%B %d, %Y'),
-                    'event': event,
-                    'stage': self
+                    'event_id': event.id,
+                    'event_name': event.name or '',
+                    'stage_name': self.name
                 }
-                
-                CommunicationService.send_communication_by_template(
+
+                comm_service.send_communication_by_template(
                     template=self.email_template,
                     recipient=event.client.email,
                     context_data=context_data
