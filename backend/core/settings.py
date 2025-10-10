@@ -532,8 +532,9 @@ if DEBUG:
     LOGGING['loggers']['']['level'] = 'INFO'
 
 # Celery Configuration
-CELERY_BROKER_URL = REDIS_URL + '/3'  # Use Redis database 3 for Celery broker
-CELERY_RESULT_BACKEND = REDIS_URL + '/4'  # Use Redis database 4 for results
+# NOTE: Upstash Redis free tier only supports database 0
+CELERY_BROKER_URL = REDIS_URL + '/0'  # Use Redis database 0 (Upstash requirement)
+CELERY_RESULT_BACKEND = REDIS_URL + '/0'  # Use Redis database 0 (Upstash requirement)
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['json']
@@ -546,8 +547,15 @@ CELERY_TASK_SEND_SENT_EVENT = True
 # Add SSL configuration for Celery if using rediss://
 if REDIS_USE_SSL:
     import ssl
-    CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}  # Accept any SSL cert (Upstash)
-    CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}
+    # Use CERT_REQUIRED for production security (validates SSL certificates)
+    CELERY_BROKER_USE_SSL = {
+        'ssl_cert_reqs': ssl.CERT_REQUIRED,
+        'ssl_ca_certs': None,  # Use system CA bundle
+    }
+    CELERY_REDIS_BACKEND_USE_SSL = {
+        'ssl_cert_reqs': ssl.CERT_REQUIRED,
+        'ssl_ca_certs': None,  # Use system CA bundle
+    }
 
 # Notification-specific settings
 NOTIFICATION_RATE_LIMIT = os.getenv('NOTIFICATION_RATE_LIMIT', '100/hour')
