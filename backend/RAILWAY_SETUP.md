@@ -12,8 +12,14 @@
 3. **Copy and paste this exact command**:
 
 ```bash
-python manage.py migrate --no-input && python manage.py seed_default_settings && gunicorn -c gunicorn.conf.py core.wsgi:application
+python manage.py prepare_template_seeding --force && python manage.py migrate --no-input && python manage.py seed_default_settings && gunicorn -c gunicorn.conf.py core.wsgi:application
 ```
+
+**What this does:**
+- `prepare_template_seeding --force` - Cleans up any partial/old templates (ensures clean slate)
+- `migrate --no-input` - Runs migrations (triggers post_migrate signals to load templates)
+- `seed_default_settings` - Seeds settings, gateways, contracts, workflows
+- `gunicorn -c gunicorn.conf.py` - Starts the app
 
 4. Click **"Save"** or it auto-saves
 5. **Redeploy** your service
@@ -23,6 +29,11 @@ python manage.py migrate --no-input && python manage.py seed_default_settings &&
 Watch the Railway logs for these success indicators:
 
 ```
+======================================================================
+🧹 COMMUNICATION TEMPLATES CLEANUP
+======================================================================
+✅ Successfully deleted 10 templates
+
 ======================================================================
 📧 COMMUNICATION TEMPLATES SEEDING
 ======================================================================
