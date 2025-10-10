@@ -313,11 +313,15 @@ class WorkflowStage(BaseModel):
             # Send notification
             from core.domains.notifications.services import NotificationService
             NotificationService.create_notification(
-                user=event.client,
-                title=f"Workflow Update: {self.name}",
-                message=f"Your event has progressed to: {self.name}",
-                category='WORKFLOW',
-                related_object=event
+                recipient=event.client,
+                notification_type_code='WORKFLOW_STAGE_CHANGED',
+                context={
+                    'stage_name': self.name,
+                    'event_name': event.name or f"{getattr(event, 'event_type', 'Event')}",
+                    'event_id': event.id,
+                },
+                event=event,
+                client=event.client
             )
 
 
