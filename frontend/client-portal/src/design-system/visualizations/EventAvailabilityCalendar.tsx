@@ -30,14 +30,9 @@ import {
   getDay,
   isBefore,
   startOfDay,
-  parseISO
 } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
 import { tokens } from '../tokens';
 import { GlassCard } from '../components/GlassCard';
-
-// Philippines timezone constant
-const PHILIPPINES_TIMEZONE = 'Asia/Manila';
 
 // Based on actual Event model from backend
 export interface EventData {
@@ -202,14 +197,16 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const monthDays = eachDayOfInterval({ start, end });
-    
+
     return monthDays.map(date => {
-      // Filter events by converting UTC timestamps to Philippines timezone for comparison
+      // Filter events by comparing date portions only
+      // API returns datetimes already in Philippines timezone format (e.g., "2025-10-30T14:00:00")
       const dayEvents = events.filter(event => {
-        // Parse the UTC timestamp and convert to Philippines timezone
-        const eventDateInPhilippines = toZonedTime(parseISO(event.start_date), PHILIPPINES_TIMEZONE);
-        // Compare the date portion only (ignoring time)
-        return isSameDay(eventDateInPhilippines, date);
+        // Extract just the date portion (YYYY-MM-DD) from the event's start_date
+        const eventDateStr = event.start_date.split('T')[0];
+        const calendarDateStr = format(date, 'yyyy-MM-dd');
+        // Compare date strings directly
+        return eventDateStr === calendarDateStr;
       });
       
       // Check booking constraints from backend business rules
