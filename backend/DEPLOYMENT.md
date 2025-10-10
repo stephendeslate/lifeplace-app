@@ -14,23 +14,29 @@
 4. **Enter the following command**:
 
 ```bash
-python manage.py migrate --no-input && python manage.py seed_default_settings && gunicorn -c gunicorn.conf.py core.wsgi:application
+python manage.py prepare_template_seeding --force && python manage.py migrate --no-input && python manage.py seed_default_settings && gunicorn -c gunicorn.conf.py core.wsgi:application
 ```
 
 #### What This Command Does
 
-1. **`python manage.py migrate --no-input`**
+1. **`python manage.py prepare_template_seeding --force`**
+   - Cleans up any existing communication templates
+   - Ensures a clean slate before seeding
+   - Prevents issues with partial/duplicate templates
+   - Uses `--force` to skip confirmation prompt
+
+2. **`python manage.py migrate --no-input`**
    - Runs all pending database migrations
    - Triggers `post_migrate` signals automatically
    - Loads 21 communication templates from fixtures
    - Creates currency, payment, contract, and workflow settings
 
-2. **`python manage.py seed_default_settings`**
+3. **`python manage.py seed_default_settings`**
    - Backup/verification seeding command
    - Ensures all default data is present
    - Safe to run multiple times (idempotent)
 
-3. **`gunicorn -c gunicorn.conf.py core.wsgi:application`**
+4. **`gunicorn -c gunicorn.conf.py core.wsgi:application`**
    - Starts the production server
    - Uses configuration from `gunicorn.conf.py`
    - Only starts if migrations and seeding succeed
@@ -40,6 +46,11 @@ python manage.py migrate --no-input && python manage.py seed_default_settings &&
 When you deploy, you should see logs like:
 
 ```
+======================================================================
+🧹 COMMUNICATION TEMPLATES CLEANUP
+======================================================================
+✅ Successfully deleted XX templates
+
 ======================================================================
 📧 COMMUNICATION TEMPLATES SEEDING
 ======================================================================

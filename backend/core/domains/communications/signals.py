@@ -31,10 +31,21 @@ def create_system_templates(sender, **kwargs):
     CommunicationTemplate = apps.get_model('communications', 'CommunicationTemplate')
 
     # Check if templates already exist
+    # We expect exactly 21 templates from the fixture
+    EXPECTED_TEMPLATE_COUNT = 21
     existing_count = CommunicationTemplate.objects.count()
-    if existing_count > 0:
-        logger.info(f"⏭️  {existing_count} CommunicationTemplates already exist")
+
+    if existing_count >= EXPECTED_TEMPLATE_COUNT:
+        logger.info(f"⏭️  {existing_count} CommunicationTemplates already exist (expected {EXPECTED_TEMPLATE_COUNT})")
         logger.info(f"⏭️  Skipping template loading (data already seeded)")
+        logger.info("=" * 70)
+        logger.info("")
+        return
+    elif existing_count > 0:
+        logger.warning(f"⚠️  Found {existing_count} templates, but expected {EXPECTED_TEMPLATE_COUNT}")
+        logger.info(f"⚠️  This might indicate partial seeding. Consider running:")
+        logger.info(f"⚠️    python manage.py loaddata core/domains/communications/fixtures/default_templates.json")
+        logger.info("⏭️  Skipping automatic loading to avoid duplicates")
         logger.info("=" * 70)
         logger.info("")
         return
