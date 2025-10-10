@@ -292,7 +292,7 @@ class BookingSessionService:
                                         context_data=template_data,
                                         client=user,
                                         sent_by=None,  # System-generated
-                                        use_async=False  # Synchronous for immediate feedback
+                                        use_async=True  # ASYNC: Queue email for background processing
                                     )
 
                                     logger.info(f"✅ Sent welcome email to new client account: {user.email}")
@@ -516,12 +516,12 @@ class BookingSessionService:
                     # Event stays as LEAD status for quote requests
                     logger.info(f"Quote request completed - event {event.id} remains as LEAD, no invoice created yet")
 
-                    # Send quote request acknowledgment email (not the final quote)
+                    # Send quote request acknowledgment email (not the final quote) (async)
                     try:
                         BookingSessionService._send_quote_request_acknowledgment(session, event)
-                        logger.info(f"Quote request acknowledgment sent for session {session.session_id}")
+                        logger.info(f"Quote request acknowledgment queued for session {session.session_id}")
                     except Exception as e:
-                        logger.warning(f"Failed to send quote request acknowledgment: {e}")
+                        logger.warning(f"Failed to queue quote request acknowledgment: {e}")
 
                 elif completion_type == 'payment':
                     logger.info(f"Processing payment completion for session {session.session_id}")
@@ -579,12 +579,12 @@ class BookingSessionService:
                                    f"(paid: {invoice.paid_amount}, remaining: {invoice.remaining_amount}) "
                                    f"for event {event.id}")
 
-                        # Send booking confirmation email after successful payment
+                        # Send booking confirmation email after successful payment (async)
                         try:
                             BookingSessionService._send_booking_confirmation(session, event)
-                            logger.info(f"Booking confirmation email sent for session {session.session_id}")
+                            logger.info(f"Booking confirmation email queued for session {session.session_id}")
                         except Exception as e:
-                            logger.warning(f"Failed to send booking confirmation email: {e}")
+                            logger.warning(f"Failed to queue booking confirmation email: {e}")
                     else:
                         logger.error(f"Payment processing failed - payment status: {payment.status}")
                         raise EventCreationFailed("Payment processing failed")
@@ -600,6 +600,20 @@ class BookingSessionService:
                 # FINALIZE: Link the created event to the session
                 session.created_event = event
                 session.save()
+
+                # ASYNC: Update analytics in background
+                try:
+                    from core.domains.analytics.tasks import update_funnel_analytics
+                    if hasattr(session.booking_flow, 'conversion_funnel_id') and session.booking_flow.conversion_funnel_id:
+                        update_funnel_analytics.delay(
+                            funnel_id=session.booking_flow.conversion_funnel_id,
+                            date_str=timezone.now().date().isoformat()
+                        )
+                        logger.info(f"Queued funnel analytics update for session {session.session_id}")
+                except ImportError:
+                    logger.warning("Analytics tasks not available - skipping async analytics update")
+                except Exception as e:
+                    logger.warning(f"Failed to queue analytics update: {e}")
 
                 logger.info(f"🔥 COMPLETION_SUCCESS: Completed booking session {session.session_id} with {completion_type}, created event: {event.id}")
                 return event
@@ -647,7 +661,7 @@ class BookingSessionService:
                 context_data=template_data,
                 client=session.client,
                 sent_by=None,
-                use_async=False
+                use_async=True  # ASYNC: Queue email for background processing
             )
 
             logger.info(f"Sent quote request acknowledgment to {session.client.email} for event {event.id}")
@@ -725,7 +739,7 @@ class BookingSessionService:
                 context_data=context_data,
                 client=session.client,
                 sent_by=None,
-                use_async=False
+                use_async=True  # ASYNC: Queue email for background processing
             )
 
             logger.info(f"Sent booking confirmation email to {session.client.email} for event {event.id}")
@@ -1388,7 +1402,6 @@ class BookingSessionService:
                 object_id=event.id,
                 text=note_text,
                 created_by=session.client,
-                is_private=False
             )
         except Exception as e:
             logger.warning(f"Could not create note for event: {e}")
