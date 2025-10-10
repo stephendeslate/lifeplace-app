@@ -1,7 +1,7 @@
 # backend/core/domains/bookingflow/services/booking_session_service.py
 import logging
 import uuid
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date, time
 from decimal import Decimal
 from typing import Dict, Any, List
 
@@ -12,6 +12,32 @@ from core.domains.sales.models import EventQuote, QuoteLineItem
 
 # FIX: Simplified import approach to avoid potential path issues
 from core.domains.payments.services import PaymentService
+
+
+def sanitize_for_json(data):
+    """
+    Recursively convert datetime/date/time objects to ISO strings for JSON serialization.
+    This prevents "Object of type datetime is not JSON serializable" errors when storing
+    data in JSONField.
+
+    Args:
+        data: Any data structure (dict, list, datetime, etc.)
+
+    Returns:
+        Same structure with datetime objects converted to ISO strings
+    """
+    if isinstance(data, dict):
+        return {k: sanitize_for_json(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_for_json(item) for item in data]
+    elif isinstance(data, datetime):
+        return data.isoformat()
+    elif isinstance(data, date):
+        return data.isoformat()
+    elif isinstance(data, time):
+        return data.isoformat()
+    else:
+        return data
 from core.domains.payments.services.gateway_service import PaymentGatewayService
 from core.domains.payments.models import PaymentGateway
 from core.domains.payments.exceptions import PaymentGatewayException
@@ -159,26 +185,28 @@ class BookingSessionService:
             # CRITICAL FIX: Handle packages and addons at root level ONLY to avoid duplication
             # This ensures a single source of truth for pricing calculations
             if 'selected_packages' in step_data:
-                # Store at root level only
-                session.booking_data['selected_packages'] = step_data['selected_packages']
+                # Store at root level only (sanitize to prevent JSON serialization errors)
+                session.booking_data['selected_packages'] = sanitize_for_json(step_data['selected_packages'])
                 # Remove from step_data to prevent duplication
                 step_data_copy = step_data.copy()
                 step_data_copy.pop('selected_packages', None)
                 step_data = step_data_copy
-            
+
             if 'selected_addons' in step_data:
-                # Store at root level only
-                session.booking_data['selected_addons'] = step_data['selected_addons']
+                # Store at root level only (sanitize to prevent JSON serialization errors)
+                session.booking_data['selected_addons'] = sanitize_for_json(step_data['selected_addons'])
                 # Remove from step_data to prevent duplication
                 step_data_copy = step_data.copy()
                 step_data_copy.pop('selected_addons', None)
                 step_data = step_data_copy
-            
+
             # Merge remaining step data (excluding packages/addons which are now at root level)
             if current_step_key not in session.booking_data:
                 session.booking_data[current_step_key] = {}
-            
-            session.booking_data[current_step_key].update(step_data)
+
+            # Sanitize step_data to convert datetime objects to ISO strings before storing in JSONField
+            sanitized_step_data = sanitize_for_json(step_data)
+            session.booking_data[current_step_key].update(sanitized_step_data)
             
             # Clear any previous validation errors
             session.validation_errors = {}
