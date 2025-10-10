@@ -280,10 +280,7 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                       {' '}({paymentSettings.refund_percentage}% up to {paymentSettings.refund_deadline_hours}h before event)
                     </>
                   )}
-                  <br />• Payment Gateways: <strong>{paymentSettings.default_payment_gateways?.length || 0} configured</strong>
-                  {paymentSettings.primary_payment_gateway && (
-                    <> (Primary gateway selected)</>
-                  )}
+                  <br />• Default Deposit: <strong>{paymentSettings.default_deposit_percentage}%</strong>
                 </>
               )}
             </Alert>
