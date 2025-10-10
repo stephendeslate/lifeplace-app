@@ -79,6 +79,12 @@ export const useFlowPaymentGateways = (flowId?: number) => {
 
     const globalGatewayIds = paymentPlanSettings.default_payment_gateways || [];
 
+    // If no global defaults configured, show all available gateways
+    // This handles cases where admin hasn't set up payment gateway preferences yet
+    if (globalGatewayIds.length === 0) {
+      return paymentData.available_gateways;
+    }
+
     // Filter: only show gateways that are in global defaults AND available in flow
     return paymentData.available_gateways.filter(gateway =>
       globalGatewayIds.includes(gateway.id)
