@@ -350,9 +350,6 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
             elif step.booking_flow.allowed_payment_gateways.exists():
                 # Use flow's allowed gateways
                 gateways = step.booking_flow.allowed_payment_gateways.filter(is_active=True)
-            elif step.booking_flow.default_payment_gateway:
-                # Use flow's default gateway
-                gateways = [step.booking_flow.default_payment_gateway]
             else:
                 # Fallback to all active gateways
                 from core.domains.payments.models import PaymentGateway

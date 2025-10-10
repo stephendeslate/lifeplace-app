@@ -812,23 +812,26 @@ class BookingSessionService:
         """Process payment for completed booking"""
         logger.info(f"Starting payment processing for session {session.session_id}")
         logger.info(f"Payment data received: {payment_data}")
-        
+
         gateway_id = payment_data.get('gateway_id') or payment_data.get('payment_gateway_id')
         logger.info(f"Gateway ID from payment data: {gateway_id}")
-        
-        # If no gateway specified in payment data, use booking flow default
+
+        # If no gateway specified in payment data, use first available active gateway
         if not gateway_id:
-            if session.booking_flow.default_payment_gateway and session.booking_flow.default_payment_gateway.is_active:
-                gateway_id = session.booking_flow.default_payment_gateway.id
-                logger.info(f"Using default payment gateway: {gateway_id}")
-            elif session.booking_flow.allowed_payment_gateways.filter(is_active=True).exists():
-                # Use first available allowed gateway as fallback
+            # First check if booking flow has allowed gateways configured
+            if session.booking_flow.allowed_payment_gateways.filter(is_active=True).exists():
                 gateway_id = session.booking_flow.allowed_payment_gateways.filter(is_active=True).first().id
-                logger.info(f"Using first allowed payment gateway: {gateway_id}")
+                logger.info(f"Using first allowed payment gateway from booking flow: {gateway_id}")
             else:
-                logger.error("No payment gateway specified and no default gateway configured")
-                raise ValueError("No payment gateway specified and no default gateway configured")
-        
+                # Fall back to any active gateway
+                first_active = PaymentGateway.objects.filter(is_active=True).first()
+                if first_active:
+                    gateway_id = first_active.id
+                    logger.info(f"Using first active payment gateway: {gateway_id}")
+                else:
+                    logger.error("No payment gateway specified and no active gateways available")
+                    raise ValueError("No payment gateway specified and no active gateways available")
+
         if not gateway_id:
             raise ValueError("No payment gateway specified")
         
@@ -957,20 +960,23 @@ class BookingSessionService:
 
         gateway_id = payment_data.get('gateway_id') or payment_data.get('payment_gateway_id')
         logger.info(f"Gateway ID from payment data: {gateway_id}")
-        
-        # If no gateway specified in payment data, use booking flow default
+
+        # If no gateway specified in payment data, use first available active gateway
         if not gateway_id:
-            if session.booking_flow.default_payment_gateway and session.booking_flow.default_payment_gateway.is_active:
-                gateway_id = session.booking_flow.default_payment_gateway.id
-                logger.info(f"Using default payment gateway: {gateway_id}")
-            elif session.booking_flow.allowed_payment_gateways.filter(is_active=True).exists():
-                # Use first available allowed gateway as fallback
+            # First check if booking flow has allowed gateways configured
+            if session.booking_flow.allowed_payment_gateways.filter(is_active=True).exists():
                 gateway_id = session.booking_flow.allowed_payment_gateways.filter(is_active=True).first().id
-                logger.info(f"Using first allowed payment gateway: {gateway_id}")
+                logger.info(f"Using first allowed payment gateway from booking flow: {gateway_id}")
             else:
-                logger.error("No payment gateway specified and no default gateway configured")
-                raise ValueError("No payment gateway specified and no default gateway configured")
-        
+                # Fall back to any active gateway
+                first_active = PaymentGateway.objects.filter(is_active=True).first()
+                if first_active:
+                    gateway_id = first_active.id
+                    logger.info(f"Using first active payment gateway: {gateway_id}")
+                else:
+                    logger.error("No payment gateway specified and no active gateways available")
+                    raise ValueError("No payment gateway specified and no active gateways available")
+
         if not gateway_id:
             raise ValueError("No payment gateway specified")
         
