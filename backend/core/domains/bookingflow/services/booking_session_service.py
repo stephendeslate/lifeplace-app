@@ -1388,7 +1388,6 @@ class BookingSessionService:
                 object_id=event.id,
                 text=note_text,
                 created_by=session.client,
-                is_private=False
             )
         except Exception as e:
             logger.warning(f"Could not create note for event: {e}")
