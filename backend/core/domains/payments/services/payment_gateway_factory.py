@@ -4,6 +4,9 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Tuple
 from decimal import Decimal
+
+import stripe
+
 from django.conf import settings
 from django.utils import timezone
 
@@ -212,12 +215,8 @@ class StripePaymentGateway(BasePaymentGateway):
 
     def _initialize_stripe(self):
         """Initialize Stripe with configuration"""
-        try:
-            import stripe
-            stripe.api_key = self.config.get('secret_key')
-            self.stripe = stripe
-        except ImportError:
-            raise ImportError("Stripe library not installed. Run: pip install stripe")
+        stripe.api_key = self.config.get('secret_key')
+        self.stripe = stripe
 
     def create_payment_intent(self, amount: Decimal, currency: str,
                             payment_data: Dict[str, Any]) -> PaymentGatewayResponse:

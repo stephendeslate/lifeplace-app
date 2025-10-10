@@ -1,6 +1,8 @@
 # backend/core/domains/payments/services/refund_service.py
 from decimal import Decimal
 
+import stripe
+
 from core.domains.events.models import EventTimeline
 from django.db import transaction
 from django.utils import timezone
@@ -99,8 +101,6 @@ class RefundService:
     @staticmethod
     def _process_stripe_refund(refund):
         """Process refund through Stripe"""
-        import stripe
-        
         payment = refund.payment
         
         # Get the original payment transaction
