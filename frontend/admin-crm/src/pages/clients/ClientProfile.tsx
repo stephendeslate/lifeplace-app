@@ -57,6 +57,7 @@ import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuotesForClient } from '../../hooks/useSales';
 import type { UpdateClientData } from '../../types/clients.types';
+import type { Event } from '../../types/events.types';
 import { useContractsForClient } from '../../hooks/useContracts';
 import { useInvoicesForClient } from '../../hooks/usePayments';
 import { getClientStatusSummary } from '../../utils/clientStatus';
@@ -66,7 +67,7 @@ import { ClientContracts } from '../../components/clients/ClientContracts';
 import { ClientInvoices } from '../../components/clients/ClientInvoices';
 import { ClientPaymentPlans } from '../../components/clients/ClientPaymentPlans';
 import { NotesList } from '../../components/notes';
-import { MessageInterface } from '../../components/messaging/MessageInterface';
+import { EventCommunications } from '../../components/events/EventCommunications';
 import {
   ActivityTimeline,
   FinancialSummary,
@@ -187,7 +188,7 @@ export const ClientProfile: React.FC = () => {
           navigate(`/events/new?client=${clientId}`);
           break;
         case 'send-message':
-          setTabValue(2); // Switch to messages tab
+          setTabValue(2); // Switch to communications tab
           break;
         case 'create-quote':
           navigate(`/sales/quotes/new?client=${clientId}`);
@@ -873,7 +874,7 @@ export const ClientProfile: React.FC = () => {
               iconPosition="start"
             />
             <Tab
-              label="Messages"
+              label={`Communications (${communications.length})`}
               icon={<MessageIcon />}
               iconPosition="start"
             />
@@ -1041,9 +1042,14 @@ export const ClientProfile: React.FC = () => {
             )}
           </TabPanel>
 
-          {/* Messages Tab */}
+          {/* Communications Tab */}
           <TabPanel value={tabValue} index={2}>
-            <MessageInterface clientId={clientId.toString()} />
+            <EventCommunications
+              event={{ id: 0, name: '', client: clientId } as Event}
+              clientId={clientId}
+              clientEmail={client.email}
+              clientName={`${client.first_name} ${client.last_name}`}
+            />
           </TabPanel>
 
           {/* Quotes Tab */}
