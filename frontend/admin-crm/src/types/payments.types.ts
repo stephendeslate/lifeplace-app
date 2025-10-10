@@ -390,7 +390,7 @@ export interface PaymentSettings {
   /** Number of days to wait between auto payment retry attempts */
   auto_payment_retry_delay_days: number;
 
-  // REFUND POLICY SETTINGS - CONSOLIDATED Phase 2
+  // REFUND POLICY SETTINGS - CONSOLIDATED
   /** Allow refunds globally */
   allow_refunds: boolean;
   /** Hours before event when refunds are no longer allowed */
@@ -399,12 +399,6 @@ export interface PaymentSettings {
   refund_percentage: number;
   /** Default refund policy text to display to clients */
   refund_policy_text: string;
-
-  // PAYMENT GATEWAY DEFAULTS - CONSOLIDATED Phase 2
-  /** Default payment gateways available globally (array of gateway IDs) */
-  default_payment_gateways: number[];
-  /** Primary payment gateway (pre-selected by default) */
-  primary_payment_gateway: number | null;
 
   // TIMESTAMPS
   /** Timestamp when settings were created */
@@ -591,14 +585,11 @@ export interface UpdatePaymentSettingsData {
   // Auto retry settings
   auto_payment_retry_attempts?: number;
   auto_payment_retry_delay_days?: number;
-  // REFUND POLICY - CONSOLIDATED Phase 2
+  // REFUND POLICY - CONSOLIDATED
   allow_refunds?: boolean;
   refund_deadline_hours?: number;
   refund_percentage?: number;
   refund_policy_text?: string;
-  // PAYMENT GATEWAYS - CONSOLIDATED Phase 2
-  default_payment_gateways?: number[];
-  primary_payment_gateway?: number | null;
 }
 
 // Filter Types

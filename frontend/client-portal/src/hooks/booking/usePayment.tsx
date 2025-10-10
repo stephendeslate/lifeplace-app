@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PaymentApi } from '../../apis/booking/payment.api';
-import { usePaymentPlanSettings } from '../usePaymentPlanSettings';
 import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   PaymentGateway,
@@ -43,14 +42,10 @@ export const usePaymentGateways = () => {
 };
 
 // Hook for managing flow-specific payment gateways
-// CONSOLIDATED: Filters gateways by global default_payment_gateways (DRY compliance)
 export const useFlowPaymentGateways = (flowId?: number) => {
   const [paymentData, setPaymentData] = useState<PaymentGatewayResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Get global payment plan settings to filter gateways (DRY compliance)
-  const { data: paymentPlanSettings, isLoading: isLoadingSettings } = usePaymentPlanSettings();
 
   const fetchFlowGateways = useCallback(async () => {
     if (!flowId) return;
@@ -73,41 +68,15 @@ export const useFlowPaymentGateways = (flowId?: number) => {
     fetchFlowGateways();
   }, [fetchFlowGateways]);
 
-  // Filter gateways by global default_payment_gateways (DRY compliance)
-  const filteredGateways = useMemo(() => {
-    if (!paymentData || !paymentPlanSettings) return [];
-
-    const globalGatewayIds = paymentPlanSettings.default_payment_gateways || [];
-
-    // If no global defaults configured, show all available gateways
-    // This handles cases where admin hasn't set up payment gateway preferences yet
-    if (globalGatewayIds.length === 0) {
-      return paymentData.available_gateways;
-    }
-
-    // Filter: only show gateways that are in global defaults AND available in flow
-    return paymentData.available_gateways.filter(gateway =>
-      globalGatewayIds.includes(gateway.id)
-    );
-  }, [paymentData, paymentPlanSettings]);
-
-  // Get primary gateway from global settings (DRY compliance)
-  const primaryGateway = useMemo(() => {
-    if (!paymentPlanSettings?.primary_payment_gateway || filteredGateways.length === 0) {
-      return null;
-    }
-
-    return filteredGateways.find(
-      gateway => gateway.id === paymentPlanSettings.primary_payment_gateway
-    ) || null;
-  }, [paymentPlanSettings, filteredGateways]);
+  // Use all available gateways from the API response
+  const availableGateways = paymentData?.available_gateways || [];
 
   return {
     paymentData,
-    gateways: filteredGateways, // ✅ Now filtered by global defaults
-    defaultGateway: primaryGateway, // ✅ Now using global primary gateway
+    gateways: availableGateways,
+    defaultGateway: null, // No longer using global primary gateway
     requireImmediatePayment: paymentData?.require_immediate_payment || false,
-    loading: loading || isLoadingSettings,
+    loading,
     error,
     refetch: fetchFlowGateways,
   };
