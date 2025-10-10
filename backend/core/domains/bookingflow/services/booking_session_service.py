@@ -720,20 +720,71 @@ class BookingSessionService:
             selected_packages = booking_data.get('selected_packages', [])
             selected_addons = booking_data.get('selected_addons', [])
 
-            # Build email context
+            # Get invoice and payment data for enhanced context
+            from core.domains.payments.models import Invoice, PaymentSettings
+            from decimal import Decimal
+
+            invoice = None
+            deposit_percentage = Decimal('0')
+            deposit_amount = Decimal('0')
+            balance_amount = Decimal('0')
+            balance_due_date = ''
+            balance_due_days = 0
+
+            try:
+                # Get the invoice for this event
+                invoice = Invoice.objects.filter(event=event).first()
+                if invoice:
+                    # Get payment settings for deposit info
+                    payment_settings = PaymentSettings.get_default_settings()
+                    deposit_percentage = payment_settings.default_deposit_percentage
+
+                    # Calculate deposit and balance
+                    if event.total_price:
+                        deposit_amount = event.total_price * (deposit_percentage / Decimal('100'))
+                        balance_amount = event.total_price - deposit_amount
+
+                    # Get balance due date
+                    if invoice.due_date:
+                        balance_due_date = invoice.due_date.strftime('%B %d, %Y')
+                        # Calculate days until due
+                        from django.utils import timezone
+                        balance_due_days = (invoice.due_date - timezone.now().date()).days
+            except Exception as e:
+                logger.warning(f"Could not fetch invoice data for email context: {e}")
+
+            # Extract guest count from booking data
+            guest_count = booking_data.get('guest_count', '')
+            for step_key, step_data in booking_data.items():
+                if isinstance(step_data, dict) and 'guest_count' in step_data:
+                    guest_count = step_data.get('guest_count', '')
+                    break
+
+            # Build enhanced email context with all required variables
             context_data = {
                 'client_name': session.client.get_full_name(),
                 'booking_reference': str(session.session_id)[-8:].upper(),
                 'event_type': event.event_type.name if event.event_type else 'Event',
                 'event_date': event_date_formatted,
                 'event_time': event_time_formatted,
-                'duration': duration,
+                'duration': duration or '',
+                'guest_count': guest_count or '',
                 'total_price': str(event.total_price) if event.total_price else '0',
                 'selected_packages': selected_packages,
                 'selected_addons': selected_addons,
                 'email': session.client.email,
                 'phone': booking_data.get('phone', ''),
                 'dashboard_url': 'https://lifeplacealfonso.com/portal',
+                # Payment-related context
+                'deposit_percentage': str(deposit_percentage),
+                'deposit_amount': str(deposit_amount),
+                'balance_amount': str(balance_amount),
+                'balance_due_date': balance_due_date,
+                'balance_due_days': str(balance_due_days),
+                # Policy information (use defaults if not configured)
+                'late_fee_amount': '0',  # Default - should be configured in settings
+                'refund_policy_text': 'Please contact us for refund policy details.',
+                'services_description': ', '.join([pkg.get('name', '') for pkg in selected_packages if isinstance(pkg, dict)]) if selected_packages else '',
             }
 
             # Send confirmation email
