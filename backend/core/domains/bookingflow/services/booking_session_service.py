@@ -682,7 +682,11 @@ class BookingSessionService:
         try:
             # Check if confirmation email template is configured
             if not session.booking_flow.confirmation_email_template:
-                logger.warning(f"No confirmation email template configured for booking flow {session.booking_flow.id}")
+                logger.info(
+                    f"No confirmation email template configured for booking flow {session.booking_flow.id} "
+                    f"('{session.booking_flow.name}'). To enable confirmation emails, assign a template in "
+                    f"Django admin: BookingFlow > confirmation_email_template"
+                )
                 return
 
             # Instantiate communication service
@@ -1400,7 +1404,7 @@ class BookingSessionService:
             Note.objects.create(
                 content_type=ContentType.objects.get_for_model(event),
                 object_id=event.id,
-                text=note_text,
+                content=note_text,
                 created_by=session.client,
             )
         except Exception as e:
