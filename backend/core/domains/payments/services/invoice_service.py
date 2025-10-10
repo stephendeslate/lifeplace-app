@@ -3,6 +3,8 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
+import stripe
+
 from core.domains.events.models import Event, EventTimeline
 from core.domains.sales.models import EventQuote
 from django.db import transaction
@@ -516,8 +518,6 @@ class InvoiceService:
 
                 # Create payment intent through gateway service
                 if gateway_code == 'stripe':
-                    import stripe
-
                     # Set up Stripe
                     if not gateway.config or 'secret_key' not in gateway.config:
                         return {

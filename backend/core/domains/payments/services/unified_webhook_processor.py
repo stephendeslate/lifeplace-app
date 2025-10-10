@@ -3,6 +3,9 @@
 import logging
 import json
 from typing import Dict, List, Optional, Any, Tuple
+
+import stripe
+
 from django.db import transaction
 from django.utils import timezone
 from django.http import HttpRequest
@@ -142,7 +145,6 @@ class StripeWebhookHandler(BaseWebhookHandler):
     def verify_signature(self, request: HttpRequest, raw_body: bytes) -> bool:
         """Verify Stripe webhook signature"""
         try:
-            import stripe
             from ..services.payment_gateway_factory import PaymentGatewayFactory
 
             # Get Stripe gateway configuration
