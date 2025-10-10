@@ -110,17 +110,20 @@ class ContractContextService:
                 # Payment terms and conditions (with defaults)
                 'payment_terms': ContractContextService._get_payment_terms(event),
                 'cancellation_policy': ContractContextService._get_cancellation_policy(event),
-                
+
                 # Workflow information
                 'current_stage': event.current_stage.name if event.current_stage else None,
                 'workflow_template': event.workflow_template.name if event.workflow_template else None,
             }
-            
+
             # Add currency formatting
             context.update(ContractContextService._get_currency_formatted_amounts(event))
-            
+
             # Add computed fields
             context.update(ContractContextService._get_computed_fields(event))
+
+            # Add payment/deposit information for contract templates
+            context.update(ContractContextService._get_payment_deposit_info(event))
             
             # Merge additional context if provided
             if additional_context:
@@ -443,3 +446,117 @@ class ContractContextService:
             'partner_signer_title': 'Title of partner signer (displays when signed)',
             'other_signer_title': 'Title of other signer (displays when signed)',
         }
+
+    @staticmethod
+    def _get_payment_deposit_info(event: Event) -> Dict[str, Any]:
+        """
+        Get payment and deposit information for contract templates.
+        This includes deposit percentages, amounts, balance due dates, etc.
+        """
+        try:
+            from core.domains.payments.models import PaymentSettings, Invoice
+
+            # Get payment settings for deposit percentage
+            payment_settings = PaymentSettings.get_default_settings()
+            deposit_percentage = payment_settings.default_deposit_percentage
+
+            # Calculate deposit and balance amounts
+            deposit_amount = Decimal('0')
+            balance_amount = Decimal('0')
+            balance_due_date = ''
+            balance_due_days = 0
+            late_fee_amount = '0'
+
+            if event.total_price:
+                deposit_amount = event.total_price * (deposit_percentage / Decimal('100'))
+                balance_amount = event.total_price - deposit_amount
+
+            # Get invoice for due date information
+            invoice = Invoice.objects.filter(event=event).order_by('-created_at').first()
+            if invoice and invoice.due_date:
+                balance_due_date = invoice.due_date.strftime('%B %d, %Y')
+                days_diff = (invoice.due_date - timezone.now().date()).days
+                balance_due_days = max(0, days_diff)  # Don't show negative days
+
+            # Get late fee info if available
+            if hasattr(payment_settings, 'late_fee_percentage'):
+                late_fee_amount = str(payment_settings.late_fee_percentage)
+            elif hasattr(payment_settings, 'late_fee_amount'):
+                late_fee_amount = str(payment_settings.late_fee_amount)
+
+            # Get guest count from preferences
+            guest_count = ''
+            if event.preferences and isinstance(event.preferences, dict):
+                guest_count = str(event.preferences.get('guest_count', ''))
+
+            # Get services description
+            services_description = ContractContextService._get_services_description(event)
+
+            # Get refund policy (same as cancellation policy)
+            refund_policy_text = ContractContextService._get_cancellation_policy(event)
+
+            return {
+                # Event time (in addition to start_time/end_time that already exist)
+                'event_time': ContractContextService._format_time(event.start_date),
+
+                # Guest information
+                'guest_count': guest_count,
+
+                # Deposit and payment information
+                'deposit_percentage': str(deposit_percentage),
+                'deposit_amount': str(deposit_amount),
+                'balance_amount': str(balance_amount),
+                'balance_due_date': balance_due_date,
+                'balance_due_days': str(balance_due_days),
+
+                # Fee and policy information
+                'late_fee_amount': late_fee_amount,
+                'refund_policy_text': refund_policy_text,
+
+                # Services description
+                'services_description': services_description,
+            }
+
+        except Exception as e:
+            logger.warning(f"Error getting payment/deposit info for event {event.id}: {e}")
+            # Return defaults to prevent template errors
+            return {
+                'event_time': '',
+                'guest_count': '',
+                'deposit_percentage': '50',
+                'deposit_amount': '0',
+                'balance_amount': '0',
+                'balance_due_date': '',
+                'balance_due_days': '0',
+                'late_fee_amount': '0',
+                'refund_policy_text': 'Please contact us regarding our refund policy.',
+                'services_description': 'Event services as agreed',
+            }
+
+    @staticmethod
+    def _get_services_description(event: Event) -> str:
+        """Get description of services/packages for event"""
+        try:
+            # Try to get from accepted quote
+            if hasattr(event, 'accepted_quote') and event.accepted_quote:
+                quote = event.accepted_quote
+                line_items = quote.line_items.all()
+                if line_items.exists():
+                    descriptions = []
+                    for item in line_items:
+                        if item.description:
+                            qty_str = f"({item.quantity}x) " if item.quantity > 1 else ""
+                            descriptions.append(f"{qty_str}{item.description}")
+                    if descriptions:
+                        return '; '.join(descriptions)
+
+            # Try to get from event type
+            if event.event_type:
+                return f"{event.event_type.name} event services"
+
+            # Final fallback
+            return "Event services as agreed"
+
+        except Exception as e:
+            logger.warning(f"Error getting services description for event {event.id}: {e}")
+            return "Event services as agreed"
