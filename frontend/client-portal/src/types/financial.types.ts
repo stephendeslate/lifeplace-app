@@ -26,7 +26,6 @@ export interface PaymentSettings {
 }
 
 // Payment Plan Settings - CONSOLIDATED from bookingflow domain
-// Phase 2: Now includes refund policy and payment gateway defaults
 export interface PaymentPlanSettings {
   id: number;
 
@@ -47,15 +46,11 @@ export interface PaymentPlanSettings {
   auto_payment_retry_attempts: number;
   auto_payment_retry_delay_days: number;
 
-  // REFUND POLICY - CONSOLIDATED Phase 2
+  // REFUND POLICY - CONSOLIDATED
   allow_refunds: boolean;
   refund_deadline_hours: number;
   refund_percentage: number;
   refund_policy_text: string;
-
-  // PAYMENT GATEWAY DEFAULTS - CONSOLIDATED Phase 2
-  default_payment_gateways: number[];
-  primary_payment_gateway: number | null;
 
   // Timestamps
   created_at?: string;

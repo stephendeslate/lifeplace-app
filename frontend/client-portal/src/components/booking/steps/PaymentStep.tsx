@@ -87,11 +87,10 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
   const { currentCurrency, formatAmount: currencyFormatAmount } = useCurrentCurrency();
 
-  // Get global payment plan settings (CONSOLIDATED from bookingflow domain)
+  // Get global payment plan settings
   const {
     data: paymentPlanSettings,
     isLoading: isLoadingPaymentSettings,
-    error: paymentSettingsError
   } = usePaymentPlanSettings();
 
   // Gateway selection hook
@@ -252,25 +251,17 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     });
   }, [updateData]);
 
-  // Auto-select primary payment gateway from global settings (DRY compliance)
+  // Auto-select single gateway when available
   React.useEffect(() => {
     if (
       isAddingNewMethod &&
       !selectedGateway &&
-      paymentPlanSettings?.primary_payment_gateway &&
-      filteredGateways.length > 0
+      filteredGateways.length === 1
     ) {
-      const primaryGateway = filteredGateways.find(
-        g => g.id === paymentPlanSettings.primary_payment_gateway
-      );
-      if (primaryGateway) {
-        handleGatewaySelect(primaryGateway as unknown as Record<string, unknown>);
-      } else if (filteredGateways.length === 1) {
-        // If no primary but only 1 gateway available, auto-select it
-        handleGatewaySelect(filteredGateways[0] as unknown as Record<string, unknown>);
-      }
+      // If only 1 gateway available, auto-select it
+      handleGatewaySelect(filteredGateways[0] as unknown as Record<string, unknown>);
     }
-  }, [isAddingNewMethod, paymentPlanSettings, filteredGateways, selectedGateway, handleGatewaySelect]);
+  }, [isAddingNewMethod, filteredGateways, selectedGateway, handleGatewaySelect]);
 
   // Handle unified payment flow success
   const handlePaymentFlowSuccess = useCallback((result: PaymentFlowResult) => {
@@ -339,14 +330,6 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     return (
       <Alert severity="error">
         {gatewaysError}
-      </Alert>
-    );
-  }
-
-  if (paymentSettingsError) {
-    return (
-      <Alert severity="error">
-        Unable to load payment settings. Please refresh the page or contact support.
       </Alert>
     );
   }

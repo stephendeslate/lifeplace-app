@@ -51,9 +51,6 @@ interface PaymentPlanFormData {
   refund_deadline_hours: string;
   refund_percentage: string;
   refund_policy_text: string;
-  // PHASE 2 - Payment Gateways
-  default_payment_gateways: number[];
-  primary_payment_gateway: string;
 }
 
 
@@ -62,16 +59,12 @@ export const PaymentPlanSettings: React.FC = () => {
   const { mutate: updateSettings, isPending: isUpdating } = useUpdatePaymentSettings();
   const { currencyConfig } = useCurrentCurrency();
 
-  // Fetch available payment gateways
-  const { data: paymentGateways, isLoading: isLoadingGateways } = usePaymentGateways();
-
   const {
     control,
     handleSubmit,
     reset,
     formState: { errors, isDirty },
     watch,
-    setValue,
   } = useForm<PaymentPlanFormData>({
     defaultValues: {
       balance_due_days: '30',
@@ -88,26 +81,11 @@ export const PaymentPlanSettings: React.FC = () => {
       refund_deadline_hours: '48',
       refund_percentage: '100',
       refund_policy_text: '',
-      default_payment_gateways: [],
-      primary_payment_gateway: '',
     },
   });
 
   const lateFeeEnabled = watch('late_fee_enabled');
   const allowRefunds = watch('allow_refunds');
-
-  // Filter to only active gateways
-  const activeGateways = useMemo(() =>
-    (paymentGateways || []).filter(g => g.is_active),
-    [paymentGateways]
-  );
-
-  // Watch selected gateways to update primary gateway options
-  const selectedGatewayIds = watch('default_payment_gateways');
-  const selectedGatewayObjects = useMemo(() =>
-    activeGateways.filter(g => selectedGatewayIds.includes(g.id)),
-    [activeGateways, selectedGatewayIds]
-  );
 
   // Helper function to safely convert values to strings with fallbacks
   const safeStringValue = (value: number | null | undefined, fallback: string): string => {
@@ -135,9 +113,6 @@ export const PaymentPlanSettings: React.FC = () => {
         refund_deadline_hours: safeStringValue(paymentSettings.refund_deadline_hours, '48'),
         refund_percentage: safeStringValue(paymentSettings.refund_percentage, '100'),
         refund_policy_text: paymentSettings.refund_policy_text || '',
-        // PHASE 2 - Payment Gateways
-        default_payment_gateways: paymentSettings.default_payment_gateways || [],
-        primary_payment_gateway: paymentSettings.primary_payment_gateway?.toString() || '',
       });
     }
   }, [paymentSettings, reset]);
@@ -160,9 +135,6 @@ export const PaymentPlanSettings: React.FC = () => {
       refund_deadline_hours: parseInt(data.refund_deadline_hours, 10),
       refund_percentage: parseInt(data.refund_percentage, 10),
       refund_policy_text: data.refund_policy_text.trim() || '',
-      // PHASE 2 - Payment Gateways
-      default_payment_gateways: data.default_payment_gateways,
-      primary_payment_gateway: data.primary_payment_gateway ? parseInt(data.primary_payment_gateway, 10) : null,
     };
 
     updateSettings({ id: paymentSettings.id, data: updateData });
@@ -789,196 +761,6 @@ export const PaymentPlanSettings: React.FC = () => {
                       />
                     )}
                   />
-                </>
-              )}
-            </Stack>
-          </ModernCard>
-
-          {/* PHASE 2: Payment Gateway Defaults - FUNCTIONAL */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Payment Gateway Defaults"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.info[500]}04 0%, ${tokens.color.info[600]}03 100%)`,
-              },
-            }}
-          >
-            <Stack spacing={3}>
-              <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <GatewayIcon sx={{ color: tokens.color.info[600] }} />
-                <Typography variant="subtitle2" color="text.secondary">
-                  Configure which payment gateways are available globally
-                </Typography>
-              </Box>
-
-              {isLoadingGateways ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2 }}>
-                  <CircularProgress size={20} />
-                  <Typography variant="body2" color="text.secondary">
-                    Loading payment gateways...
-                  </Typography>
-                </Box>
-              ) : activeGateways.length === 0 ? (
-                <Alert severity="warning" sx={{ ...glassPresets.light, borderRadius: tokens.spacing.radius.lg }}>
-                  <strong>No Active Gateways:</strong> Please configure and activate at least one payment gateway in the Payment Gateways settings before setting defaults.
-                </Alert>
-              ) : (
-                <>
-                  {/* Multi-Select: Default Payment Gateways */}
-                  <Controller
-                    name="default_payment_gateways"
-                    control={control}
-                    rules={{
-                      validate: (value) => {
-                        if (!value || value.length === 0) {
-                          return 'At least one payment gateway must be selected';
-                        }
-                        return true;
-                      }
-                    }}
-                    render={({ field }) => (
-                      <Autocomplete
-                        {...field}
-                        multiple
-                        options={activeGateways}
-                        value={selectedGatewayObjects}
-                        onChange={(_, newValue) => {
-                          const newIds = newValue.map(g => g.id);
-                          field.onChange(newIds);
-
-                          // Clear primary gateway if it's no longer in selected gateways
-                          const currentPrimary = watch('primary_payment_gateway');
-                          if (currentPrimary && !newIds.includes(parseInt(currentPrimary))) {
-                            setValue('primary_payment_gateway', '');
-                          }
-                        }}
-                        getOptionLabel={(option) => `${option.name} (${option.code.toUpperCase()})`}
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="Default Payment Gateways"
-                            error={!!errors.default_payment_gateways}
-                            helperText={errors.default_payment_gateways?.message || 'Select which payment gateways are available by default'}
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                ...glassPresets.light,
-                                borderRadius: tokens.spacing.radius.lg,
-                                border: `1px solid ${tokens.color.borders.glass}`,
-                                '&:hover': {
-                                  border: `1px solid ${tokens.color.primary[300]}`,
-                                },
-                                '&.Mui-focused': {
-                                  border: `1px solid ${tokens.color.primary[500]}`,
-                                  boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                                },
-                              },
-                            }}
-                          />
-                        )}
-                        renderTags={(value, getTagProps) =>
-                          value.map((option, index) => (
-                            <Chip
-                              variant="outlined"
-                              label={`${option.name} (${option.code.toUpperCase()})`}
-                              {...getTagProps({ index })}
-                              key={option.id}
-                              sx={{
-                                borderColor: tokens.color.info[300],
-                                backgroundColor: `${tokens.color.info[50]}`,
-                              }}
-                            />
-                          ))
-                        }
-                        renderOption={(props, option) => {
-                          const { key: _key, ...otherProps } = props;
-                          return (
-                            <Box component="li" key={option.id} {...otherProps}>
-                              <Box>
-                                <Typography variant="body2" fontWeight="medium">
-                                  {option.name}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {option.code.toUpperCase()} • {option.description || 'Payment gateway'}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          );
-                        }}
-                      />
-                    )}
-                  />
-
-                  {/* Single Select: Primary Payment Gateway */}
-                  {selectedGatewayObjects.length > 0 && (
-                    <Controller
-                      name="primary_payment_gateway"
-                      control={control}
-                      rules={{
-                        validate: (value) => {
-                          if (selectedGatewayIds.length > 1 && !value) {
-                            return 'Please select a primary gateway when multiple gateways are configured';
-                          }
-                          return true;
-                        }
-                      }}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          select
-                          fullWidth
-                          label="Primary Payment Gateway"
-                          error={!!errors.primary_payment_gateway}
-                          helperText={
-                            errors.primary_payment_gateway?.message ||
-                            (selectedGatewayObjects.length === 1
-                              ? 'Only one gateway selected - automatically used as primary'
-                              : 'This gateway will be pre-selected by default for clients')
-                          }
-                          disabled={selectedGatewayObjects.length === 1}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
-                        >
-                          <MenuItem value="">
-                            <em>No primary gateway (let clients choose)</em>
-                          </MenuItem>
-                          {selectedGatewayObjects.map((gateway) => (
-                            <MenuItem key={gateway.id} value={gateway.id.toString()}>
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <GatewayIcon fontSize="small" color="primary" />
-                                {gateway.name} ({gateway.code.toUpperCase()})
-                              </Box>
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      )}
-                    />
-                  )}
-
-                  {/* Info Alert */}
-                  <Alert severity="info" sx={{ ...glassPresets.light, borderRadius: tokens.spacing.radius.lg }}>
-                    <Typography variant="body2">
-                      <strong>Default Gateways:</strong> These gateways will be available for all booking flows unless specifically overridden.
-                      {selectedGatewayObjects.length > 1 && (
-                        <> The primary gateway will be pre-selected for convenience but clients can choose any of the configured gateways.</>
-                      )}
-                    </Typography>
-                  </Alert>
                 </>
               )}
             </Stack>
