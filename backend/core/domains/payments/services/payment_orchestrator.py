@@ -532,11 +532,17 @@ class PaymentOrchestrator:
         try:
             invoice = Invoice.objects.get(id=request.invoice_id)
 
-            # Ensure payment amount matches invoice
+            # Ensure payment amount matches invoice (or is a deposit/partial payment)
             if payment.amount != invoice.total_amount:
-                logger.warning(
-                    f"Payment amount {payment.amount} doesn't match invoice total {invoice.total_amount}"
-                )
+                if payment.amount < invoice.total_amount:
+                    logger.info(
+                        f"Partial/deposit payment {payment.amount} for invoice total {invoice.total_amount} "
+                        f"(payment type: {request.payment_type})"
+                    )
+                else:
+                    logger.warning(
+                        f"Payment amount {payment.amount} exceeds invoice total {invoice.total_amount}"
+                    )
 
             logger.info(f"Linked payment {payment.payment_number} to invoice {invoice.invoice_id}")
 
