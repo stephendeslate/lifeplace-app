@@ -4,15 +4,61 @@
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from django.apps import apps
+from django.core.management import call_command
+import logging
+import os
+
+logger = logging.getLogger(__name__)
 
 
 @receiver(post_migrate)
 def create_system_templates(sender, **kwargs):
-    """Create system communication templates after migrations"""
+    """
+    Create system communication templates after migrations.
+    Loads templates from fixtures/default_templates.json to ensure
+    exact match with development database.
+    """
     if sender.name != 'core.domains.communications':
         return
-    
+
     CommunicationTemplate = apps.get_model('communications', 'CommunicationTemplate')
+
+    # Check if templates already exist
+    existing_count = CommunicationTemplate.objects.count()
+    if existing_count > 0:
+        logger.info(f"⏭️  {existing_count} CommunicationTemplates already exist, skipping fixture load")
+        return
+
+    # Load templates from fixture file
+    fixture_path = os.path.join(
+        os.path.dirname(__file__),
+        'fixtures',
+        'default_templates.json'
+    )
+
+    if not os.path.exists(fixture_path):
+        logger.warning(f"❌ Fixture file not found at {fixture_path}")
+        logger.info("Creating basic templates manually...")
+        create_basic_templates_fallback(CommunicationTemplate)
+        return
+
+    try:
+        logger.info("📧 Loading communication templates from fixture...")
+        call_command('loaddata', fixture_path, verbosity=0)
+        loaded_count = CommunicationTemplate.objects.count()
+        logger.info(f"✅ Successfully loaded {loaded_count} communication templates")
+    except Exception as e:
+        logger.error(f"❌ Failed to load templates from fixture: {e}")
+        logger.info("Falling back to manual template creation...")
+        create_basic_templates_fallback(CommunicationTemplate)
+
+
+def create_basic_templates_fallback(CommunicationTemplate):
+    """
+    Fallback method to create basic templates if fixture loading fails.
+    Creates minimal essential templates.
+    """
+    logger.info("Creating basic fallback templates...")
     
     # Manual Email Template - serves as layout for custom messages
     manual_email_template, created = CommunicationTemplate.objects.get_or_create(

@@ -1,6 +1,9 @@
 # backend/core/domains/payments/services/gateway_service.py
 import logging
+import time
 from decimal import Decimal
+
+import stripe
 
 from django.db import transaction
 from django.utils import timezone
@@ -19,6 +22,11 @@ from ..models import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Configure Stripe client timeout (in seconds)
+# Set to 60s to prevent indefinite hangs while allowing reasonable API response time
+stripe.max_network_retries = 2
+stripe.default_http_client = stripe.http_client.RequestsClient(timeout=60)
 
 # Stripe minimum charge amounts by currency
 # Based on Stripe's $0.50 USD minimum requirement
@@ -156,8 +164,6 @@ class PaymentGatewayService:
     @staticmethod
     def _process_stripe_payment(payment_id, payment_data, user):
         """Process payment through Stripe gateway"""
-        import stripe
-        
         logger.info(f"Starting Stripe payment processing for payment_id={payment_id}")
         logger.info(f"Stripe payment data: {payment_data}")
         logger.info(f"User: {user}")
@@ -256,12 +262,18 @@ class PaymentGatewayService:
 
                             try:
                                 # Try to find existing customer by email
+                                start_time = time.time()
+                                logger.info(f"⏱️  Starting Stripe Customer.list API call for {user_email}")
                                 customers = stripe.Customer.list(email=user_email, limit=1)
+                                elapsed = time.time() - start_time
+                                logger.info(f"⏱️  Stripe Customer.list completed in {elapsed:.2f}s")
                                 if customers.data:
                                     customer = customers.data[0]
                                     logger.info(f"Found existing Stripe customer: {customer.id}")
                                 else:
                                     # Create new customer
+                                    start_time = time.time()
+                                    logger.info(f"⏱️  Starting Stripe Customer.create API call for {user_email}")
                                     customer = stripe.Customer.create(
                                         email=user_email,
                                         name=user_name,
@@ -270,16 +282,27 @@ class PaymentGatewayService:
                                             'created_by': 'lifeplace_invoice_payment'
                                         }
                                     )
+                                    elapsed = time.time() - start_time
+                                    logger.info(f"⏱️  Stripe Customer.create completed in {elapsed:.2f}s")
                                     logger.info(f"Created new Stripe customer: {customer.id}")
 
                                 # Attach payment method to customer if not already attached
                                 try:
+                                    start_time = time.time()
+                                    logger.info(f"⏱️  Starting Stripe PaymentMethod.retrieve API call")
                                     payment_method_obj = stripe.PaymentMethod.retrieve(stripe_payment_method_id)
+                                    elapsed = time.time() - start_time
+                                    logger.info(f"⏱️  Stripe PaymentMethod.retrieve completed in {elapsed:.2f}s")
+
                                     if not payment_method_obj.customer:
+                                        start_time = time.time()
+                                        logger.info(f"⏱️  Starting Stripe PaymentMethod.attach API call")
                                         stripe.PaymentMethod.attach(
                                             stripe_payment_method_id,
                                             customer=customer.id
                                         )
+                                        elapsed = time.time() - start_time
+                                        logger.info(f"⏱️  Stripe PaymentMethod.attach completed in {elapsed:.2f}s")
                                         logger.info(f"Attached payment method {stripe_payment_method_id} to customer {customer.id}")
                                     else:
                                         logger.info(f"Payment method {stripe_payment_method_id} already attached to customer")
@@ -315,9 +338,13 @@ class PaymentGatewayService:
                 }
                 
                 logger.info(f"Creating Stripe PaymentIntent with data: {intent_data}")
-                
+
                 try:
+                    start_time = time.time()
+                    logger.info(f"⏱️  Starting Stripe PaymentIntent.create API call")
                     intent = stripe.PaymentIntent.create(**intent_data)
+                    elapsed = time.time() - start_time
+                    logger.info(f"⏱️  Stripe PaymentIntent.create completed in {elapsed:.2f}s")
                     logger.info(f"PaymentIntent created successfully: {intent.id} (status: {intent.status})")
                 except stripe.error.StripeError as stripe_error:
                     logger.error(f"Stripe API error: {stripe_error}")
@@ -508,8 +535,6 @@ class PaymentGatewayService:
     def _create_stripe_setup_intent(user, gateway):
         """Create Stripe setup intent for saving payment methods"""
         try:
-            import stripe
-
             # Get Stripe configuration from gateway
             config = gateway.get_decrypted_config()
             stripe_secret_key = config.get('secret_key')
@@ -552,7 +577,6 @@ class PaymentGatewayService:
     def _save_stripe_payment_method(stripe_payment_method_id, user, gateway):
         """Save Stripe payment method for future use"""
         try:
-            import stripe
             from .payment_method_service import PaymentMethodService
 
             # Get Stripe configuration from gateway

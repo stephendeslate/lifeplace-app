@@ -91,6 +91,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   const {
     data: paymentPlanSettings,
     isLoading: isLoadingPaymentSettings,
+    error: paymentSettingsError,
   } = usePaymentPlanSettings();
 
   // Gateway selection hook
@@ -332,6 +333,14 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     return (
       <Alert severity="error">
         {gatewaysError}
+      </Alert>
+    );
+  }
+
+  if (paymentSettingsError) {
+    return (
+      <Alert severity="error">
+        Failed to load payment settings: {paymentSettingsError.message || 'Unknown error'}
       </Alert>
     );
   }
