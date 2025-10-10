@@ -278,7 +278,8 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
         updateData({
           payment_method_id: paymentMethodId,
-          payment_method: 'CREDIT_CARD'
+          payment_method: 'CREDIT_CARD',
+          payment_gateway_id: selectedGateway?.id,
         });
         setPaymentMethodCreated(true);
       }
@@ -287,12 +288,13 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         // Use the Stripe payment method ID directly via payment_method_token
         updateData({
           payment_method_token: stripe_payment_method_id,
-          payment_method: 'CREDIT_CARD'
+          payment_method: 'CREDIT_CARD',
+          payment_gateway_id: selectedGateway?.id,
         });
         setPaymentMethodCreated(true);
       }
     }
-  }, [updateData, queryClient]);
+  }, [updateData, queryClient, selectedGateway]);
 
   // Handle unified payment flow error
   const handlePaymentFlowError = useCallback((error: PaymentFlowError) => {
