@@ -22,10 +22,7 @@ from .models import (
 
 
 class PaymentSettingsSerializer(serializers.ModelSerializer):
-    """Serializer for PaymentSettings with validation
-
-    CONSOLIDATED: Now includes refund policy and payment gateway defaults
-    """
+    """Serializer for PaymentSettings with validation"""
 
     class Meta:
         model = PaymentSettings
@@ -44,14 +41,11 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
             # Auto retry settings
             'auto_payment_retry_attempts',
             'auto_payment_retry_delay_days',
-            # CONSOLIDATED: Refund policy settings
+            # Refund policy settings
             'allow_refunds',
             'refund_deadline_hours',
             'refund_percentage',
             'refund_policy_text',
-            # CONSOLIDATED: Payment gateway defaults
-            'default_payment_gateways',
-            'primary_payment_gateway',
             # Timestamps
             'created_at',
             'updated_at',
@@ -282,9 +276,6 @@ class PublicPaymentSettingsSerializer(serializers.ModelSerializer):
             'refund_deadline_hours',
             'refund_percentage',
             'refund_policy_text',
-            # Payment gateway defaults (IDs only, no sensitive config)
-            'default_payment_gateways',
-            'primary_payment_gateway',
         ]
         read_only_fields = [
             'id',
@@ -295,8 +286,6 @@ class PublicPaymentSettingsSerializer(serializers.ModelSerializer):
             'refund_deadline_hours',
             'refund_percentage',
             'refund_policy_text',
-            'default_payment_gateways',
-            'primary_payment_gateway',
         ]
 
 

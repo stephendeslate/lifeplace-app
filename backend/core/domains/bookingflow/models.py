@@ -680,20 +680,8 @@ class PaymentInfoStepConfiguration(BaseModel):
         return f"Payment config for {self.step}"
 
     def get_available_gateways(self):
-        """Get available payment gateways (now from global PaymentSettings)
-
-        CONSOLIDATED: Payment gateways are now globally configured in PaymentSettings.
-        This method now reads from the single source of truth.
-        """
+        """Get all active payment gateways"""
         try:
-            from core.domains.payments.models import PaymentSettings
-            settings = PaymentSettings.get_default_settings()
-
-            # Return global default gateways if configured
-            if settings.default_payment_gateways.exists():
-                return settings.default_payment_gateways.filter(is_active=True)
-
-            # Fallback to all active gateways if none configured
             from core.domains.payments.models import PaymentGateway
             return PaymentGateway.objects.filter(is_active=True)
         except ImportError:
