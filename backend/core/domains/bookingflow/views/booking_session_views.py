@@ -516,7 +516,7 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             
             return Response({
                 'available_gateways': gateway_data,
-                'default_gateway': flow.default_payment_gateway.id if flow.default_payment_gateway else None,
+                'default_gateway': None,
                 'require_immediate_payment': flow.require_immediate_payment
             })
         except Exception as e:
