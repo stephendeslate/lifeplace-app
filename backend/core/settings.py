@@ -164,7 +164,9 @@ TIME_ZONE = 'Asia/Manila'  # All events happen in the Philippines
 
 USE_I18N = True
 
-USE_TZ = True
+# Disable timezone support - all datetimes are treated as Asia/Manila local time
+# This simplifies the codebase since the business operates entirely in one timezone
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
@@ -543,8 +545,9 @@ CELERY_TASK_SEND_SENT_EVENT = True
 
 # Add SSL configuration for Celery if using rediss://
 if REDIS_USE_SSL:
-    CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': None}
-    CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': None}
+    import ssl
+    CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}  # Accept any SSL cert (Upstash)
+    CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}
 
 # Notification-specific settings
 NOTIFICATION_RATE_LIMIT = os.getenv('NOTIFICATION_RATE_LIMIT', '100/hour')
