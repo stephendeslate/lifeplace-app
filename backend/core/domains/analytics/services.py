@@ -1022,13 +1022,14 @@ class AlertService:
         """Send in-app notification"""
         try:
             from core.domains.notifications.services import NotificationService
-            
+
             NotificationService.create_notification(
                 recipient=rule.created_by,
-                title=f"Analytics Alert: {rule.name}",
-                message=message,
-                notification_type='ALERT',
-                priority='HIGH'
+                notification_type_code='ANALYTICS_ALERT',
+                context={
+                    'alert_name': rule.name,
+                    'alert_message': message,
+                }
             )
         except Exception as e:
             logger.error(f"Error sending in-app notification: {str(e)}")
