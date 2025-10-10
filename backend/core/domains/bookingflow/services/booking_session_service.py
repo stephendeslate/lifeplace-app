@@ -1,12 +1,11 @@
 # backend/core/domains/bookingflow/services/booking_session_service.py
 import logging
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime
 from decimal import Decimal
 from typing import Dict, Any, List
 
 from django.db import transaction
-from django.utils import timezone
 from core.domains.events.models import Event, EventProductOption
 from core.domains.products.models import ProductOption
 from core.domains.sales.models import EventQuote, QuoteLineItem
@@ -41,7 +40,7 @@ class BookingSessionService:
             raise BookingFlowNotActive()
         
         # Generate session expiry (24 hours from now)
-        expires_at = timezone.now() + timedelta(hours=24)
+        expires_at = datetime.now() + timedelta(hours=24)
         
         # Get first step
         first_step = flow.enabled_steps.first()
@@ -343,7 +342,7 @@ class BookingSessionService:
 
                             # IMPORTANT: Mark session as completed to prevent duplicate completion
                             session.is_completed = True
-                            session.completed_at = timezone.now()
+                            session.completed_at = datetime.now()
 
                             # CRITICAL FIX: Save the session with the linked event immediately
                             session.save(update_fields=['created_event', 'is_completed', 'completed_at'])
@@ -368,7 +367,7 @@ class BookingSessionService:
                     # ENHANCED SAFEGUARD: Double-check completion status before marking complete
                     if not session.is_completed:
                         session.is_completed = True
-                        session.completed_at = timezone.now()
+                        session.completed_at = datetime.now()
                         logger.info(f"🔥 FLOW_COMPLETION: No more steps - marking session {session.session_id} as completed")
                     else:
                         logger.warning(f"🔥 FLOW_COMPLETION: Session {session.session_id} already marked completed")
@@ -494,7 +493,7 @@ class BookingSessionService:
         with transaction.atomic():
             # ENHANCED ATOMIC PROTECTION: Mark session as being completed to prevent concurrent access
             session.is_completed = True
-            session.completed_at = timezone.now()
+            session.completed_at = datetime.now()
             session.save()
             logger.info(f"🔥 COMPLETION_LOCK: Session {session_id} marked as completed at {session.completed_at}")
 
@@ -607,7 +606,7 @@ class BookingSessionService:
                     if hasattr(session.booking_flow, 'conversion_funnel_id') and session.booking_flow.conversion_funnel_id:
                         update_funnel_analytics.delay(
                             funnel_id=session.booking_flow.conversion_funnel_id,
-                            date_str=timezone.now().date().isoformat()
+                            date_str=datetime.now().date().isoformat()
                         )
                         logger.info(f"Queued funnel analytics update for session {session.session_id}")
                 except ImportError:
@@ -748,8 +747,7 @@ class BookingSessionService:
                     if invoice.due_date:
                         balance_due_date = invoice.due_date.strftime('%B %d, %Y')
                         # Calculate days until due
-                        from django.utils import timezone
-                        balance_due_days = (invoice.due_date - timezone.now().date()).days
+                        balance_due_days = (invoice.due_date - datetime.now().date()).days
             except Exception as e:
                 logger.warning(f"Could not fetch invoice data for email context: {e}")
 
@@ -956,7 +954,7 @@ class BookingSessionService:
             'event': event.id,  # Pass ID, not object
             'amount': amount_to_charge,  # Use calculated amount, not full total
             'status': 'PENDING',
-            'due_date': timezone.now().date() + timedelta(days=due_days),
+            'due_date': datetime.now().date() + timedelta(days=due_days),
             'description': description,
             'is_manual': False,
             'currency': 'PHP',  # Ensure currency is set
@@ -1113,7 +1111,7 @@ class BookingSessionService:
             event_id=event.id,
             amount=amount_to_charge,
             currency=invoice.currency or 'PHP',
-            due_date=timezone.now().date() + timedelta(days=due_days),
+            due_date=datetime.now().date() + timedelta(days=due_days),
             description=description,
             invoice_id=invoice.id,
             quote_id=invoice.quote.id if invoice.quote else None,
@@ -1275,7 +1273,7 @@ class BookingSessionService:
             'completion_type': completion_type,  # Track how event was completed (payment/quote)
             'workflow_template': session.booking_flow.workflow_template,
             'name': 'Booking from Client Portal',  # Default name
-            'start_date': timezone.now(),  # Default start date - will be overridden if provided
+            'start_date': datetime.now(),  # Default start date - will be overridden if provided
         }
         
         # Extract basic event info from various steps (only whitelisted fields)
@@ -1336,16 +1334,16 @@ class BookingSessionService:
                                         continue
                                 else:
                                     # No format matched, fallback to current time
-                                    event_data['start_date'] = timezone.now()
+                                    event_data['start_date'] = datetime.now()
                             except Exception:
                                 # Any other parsing error, use current time
-                                event_data['start_date'] = timezone.now()
+                                event_data['start_date'] = datetime.now()
                         elif hasattr(start_date, 'isoformat'):
                             # Already a datetime or date object
                             event_data['start_date'] = start_date
                         else:
                             # Fallback to current time if invalid format or empty string
-                            event_data['start_date'] = timezone.now()
+                            event_data['start_date'] = datetime.now()
                 
                 if 'end_date' in step_data:
                     end_date = step_data['end_date']
@@ -1860,7 +1858,7 @@ class BookingSessionService:
         else:
             # Payment completions auto-accept the quote
             quote_status = 'ACCEPTED'
-            accepted_at = timezone.now()
+            accepted_at = datetime.now()
 
             notes = f"Auto-accepted quote from booking session {session.session_id}"
             client_message = ""
@@ -1878,7 +1876,7 @@ class BookingSessionService:
             tax_amount=Decimal('0.00'),  # Will be recalculated
             discount_amount=pricing_breakdown.discount_amount,
             total_amount=Decimal('0.00'),  # Will be recalculated
-            valid_until=timezone.now().date() + timedelta(days=30),
+            valid_until=datetime.now().date() + timedelta(days=30),
             accepted_at=accepted_at,
             created_by=session.client,
             notes=notes,  # Use client message in notes
