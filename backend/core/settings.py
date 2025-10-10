@@ -283,7 +283,7 @@ redis_parsed = urllib.parse.urlparse(REDIS_URL)
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/1',  # Use Redis database 1 for cache
+        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 (Railway only supports DB #0)
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
@@ -294,27 +294,27 @@ CACHES = {
             'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # Compress cached data
             'IGNORE_EXCEPTIONS': True,  # Fallback gracefully if Redis is down
         },
-        'KEY_PREFIX': 'lifeplace',  # Prefix all cache keys
+        'KEY_PREFIX': 'lifeplace:cache',  # Prefix all cache keys with namespace
         'TIMEOUT': 300,  # Default timeout 5 minutes
     },
     'sessions': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 for sessions
+        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 (Railway only supports DB #0)
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
         },
-        'KEY_PREFIX': 'session',
+        'KEY_PREFIX': 'lifeplace:session',  # Prefix with namespace to avoid collisions
         'TIMEOUT': 86400,  # Sessions last 24 hours
     },
     'analytics': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/2',  # Use Redis database 2 for analytics
+        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 (Railway only supports DB #0)
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
         },
-        'KEY_PREFIX': 'analytics',
+        'KEY_PREFIX': 'lifeplace:analytics',  # Prefix with namespace to avoid collisions
         'TIMEOUT': 3600,  # Analytics cache for 1 hour
     },
 }
@@ -324,11 +324,12 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'sessions'
 
 # Django Channels Layer Configuration
+# NOTE: Railway's managed Redis only supports database #0
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [REDIS_URL + '/5'],  # Use Redis database 5 for channels
+            'hosts': [REDIS_URL + '/0'],  # Use Redis database 0 (Railway requirement)
             'capacity': 1500,  # Maximum number of messages to buffer in each channel
             'expiry': 60,  # How long to keep message in seconds
         },
