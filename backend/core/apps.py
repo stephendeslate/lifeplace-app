@@ -8,17 +8,15 @@ class CoreConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'core'
     verbose_name = 'Core Application'
-    
+
     def ready(self):
         """
         Run startup tasks when Django is ready.
 
-        This method is triggered by Django's AppConfig signal system when
-        the application initializes. It runs:
-        - Automatic database migrations (in production environments)
-        - Other startup tasks as needed
+        NOTE: Automatic migrations have been moved to Railway's Custom Start Command
+        to avoid RuntimeWarnings about database access during app initialization.
 
-        See core/startup.py for the actual implementation.
+        This hook now only runs lightweight initialization tasks.
         """
         # Import here to avoid circular imports
         try:
