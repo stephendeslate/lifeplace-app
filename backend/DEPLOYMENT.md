@@ -2,6 +2,89 @@
 
 ## Railway.app Deployment
 
+### ⚡ Quick Start: Railway Custom Start Command
+
+**IMPORTANT**: Railway requires a custom start command to run migrations and seeding before starting the application.
+
+#### Setting Up Railway Custom Start Command
+
+1. **Go to Railway Dashboard** → Select your backend service
+2. **Click "Settings" tab**
+3. **Scroll to "Custom Start Command"**
+4. **Enter the following command**:
+
+```bash
+python manage.py migrate --no-input && python manage.py seed_default_settings && gunicorn -c gunicorn.conf.py core.wsgi:application
+```
+
+#### What This Command Does
+
+1. **`python manage.py migrate --no-input`**
+   - Runs all pending database migrations
+   - Triggers `post_migrate` signals automatically
+   - Loads 21 communication templates from fixtures
+   - Creates currency, payment, contract, and workflow settings
+
+2. **`python manage.py seed_default_settings`**
+   - Backup/verification seeding command
+   - Ensures all default data is present
+   - Safe to run multiple times (idempotent)
+
+3. **`gunicorn -c gunicorn.conf.py core.wsgi:application`**
+   - Starts the production server
+   - Uses configuration from `gunicorn.conf.py`
+   - Only starts if migrations and seeding succeed
+
+#### Expected Railway Logs
+
+When you deploy, you should see logs like:
+
+```
+======================================================================
+📧 COMMUNICATION TEMPLATES SEEDING
+======================================================================
+📍 Signal: post_migrate (triggered by: python manage.py migrate)
+📍 App: core.domains.communications
+
+📂 Loading templates from: /app/core/domains/communications/fixtures/default_templates.json
+⏳ This may take a moment...
+
+✅ Successfully loaded 21 communication templates!
+======================================================================
+
+======================================================================
+🔧 PRODUCTION DEFAULT SETTINGS SEEDING
+======================================================================
+📍 Signal: post_migrate (triggered by: python manage.py migrate)
+📍 App: core.domains.settings
+
+✅ Created default CurrencySettings: PHP
+✅ Created default PaymentSettings: deposit 50.00%, grace period 7 days
+✅ Created default PaymentGateway: Stripe (requires configuration)
+✅ Created default ContractTemplate: Standard Event Contract
+✅ Created default WorkflowTemplate: Default Event Workflow
+  ✅ Created workflow stage: LEAD - Initial Inquiry
+  ✅ Created workflow stage: LEAD - Quote Sent
+  ✅ Created workflow stage: LEAD - Quote Accepted
+  ✅ Created workflow stage: PRODUCTION - Contract Signed
+  ✅ Created workflow stage: PRODUCTION - Payment Received
+  ✅ Created workflow stage: PRODUCTION - Event Preparation
+  ✅ Created workflow stage: POST_PRODUCTION - Event Completed
+  ✅ Created workflow stage: POST_PRODUCTION - Archive & Review
+✅ Created 8 workflow stages for default workflow
+
+======================================================================
+🎉 Production default settings initialization complete!
+======================================================================
+
+📋 Next steps:
+  1. Configure Stripe API keys in Django Admin
+  2. Review and customize settings as needed
+
+[2025-10-10 02:28:16 +0000] [4] [INFO] Starting gunicorn 23.0.0
+[2025-10-10 02:28:16 +0000] [4] [INFO] Listening at: http://0.0.0.0:8080 (4)
+```
+
 ### Gunicorn Configuration
 
 The backend uses Gunicorn as the WSGI HTTP server in production. Configuration is managed via `gunicorn.conf.py`.
@@ -82,6 +165,43 @@ If you see API calls consistently taking >30 seconds, investigate:
 3. Database query performance (customer lookups)
 
 ### Troubleshooting
+
+#### Seeding Not Running / Missing Data
+
+If you don't see the seeding logs in Railway:
+
+1. **Check Custom Start Command is set**:
+   - Railway Settings → Custom Start Command
+   - Should be: `python manage.py migrate --no-input && python manage.py seed_default_settings && gunicorn -c gunicorn.conf.py core.wsgi:application`
+
+2. **Check Railway Logs**:
+   - Look for `📧 COMMUNICATION TEMPLATES SEEDING`
+   - Look for `🔧 PRODUCTION DEFAULT SETTINGS SEEDING`
+   - If you see `⏭️ Already exist, skipping` - data was already seeded
+
+3. **Verify data in Railway database**:
+   ```bash
+   railway run python manage.py shell
+
+   from core.domains.communications.models import CommunicationTemplate
+   from core.domains.settings.models import CurrencySettings
+   from core.domains.payments.models import PaymentSettings
+
+   print(f"Templates: {CommunicationTemplate.objects.count()}")  # Should be 21
+   print(f"Currency: {CurrencySettings.objects.filter(user__isnull=True).count()}")  # Should be 1
+   print(f"Payment: {PaymentSettings.objects.count()}")  # Should be 1
+   ```
+
+4. **Force re-seeding** (if needed):
+   ```bash
+   # Delete existing data (CAUTION!)
+   railway run python manage.py shell -c "
+   from core.domains.communications.models import CommunicationTemplate
+   CommunicationTemplate.objects.all().delete()
+   "
+
+   # Redeploy to trigger seeding again
+   ```
 
 #### "WORKER TIMEOUT" Errors
 

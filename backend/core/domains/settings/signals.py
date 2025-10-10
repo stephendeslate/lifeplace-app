@@ -63,7 +63,12 @@ def create_production_default_settings(sender, **kwargs):
     if sender.name != 'core.domains.settings':
         return
 
-    logger.info("🔧 Initializing production default settings...")
+    logger.info("=" * 70)
+    logger.info("🔧 PRODUCTION DEFAULT SETTINGS SEEDING")
+    logger.info("=" * 70)
+    logger.info("📍 Signal: post_migrate (triggered by: python manage.py migrate)")
+    logger.info("📍 App: core.domains.settings")
+    logger.info("")
 
     # ===== 1. CURRENCY SETTINGS =====
     try:
@@ -407,4 +412,12 @@ Company Representative: _________________________ Date: _________
     except Exception as e:
         logger.error(f"❌ Failed to create WorkflowTemplate: {e}")
 
+    logger.info("")
+    logger.info("=" * 70)
     logger.info("🎉 Production default settings initialization complete!")
+    logger.info("=" * 70)
+    logger.info("")
+    logger.info("📋 Next steps:")
+    logger.info("  1. Configure Stripe API keys in Django Admin")
+    logger.info("  2. Review and customize settings as needed")
+    logger.info("")

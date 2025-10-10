@@ -21,12 +21,22 @@ def create_system_templates(sender, **kwargs):
     if sender.name != 'core.domains.communications':
         return
 
+    logger.info("=" * 70)
+    logger.info("📧 COMMUNICATION TEMPLATES SEEDING")
+    logger.info("=" * 70)
+    logger.info("📍 Signal: post_migrate (triggered by: python manage.py migrate)")
+    logger.info("📍 App: core.domains.communications")
+    logger.info("")
+
     CommunicationTemplate = apps.get_model('communications', 'CommunicationTemplate')
 
     # Check if templates already exist
     existing_count = CommunicationTemplate.objects.count()
     if existing_count > 0:
-        logger.info(f"⏭️  {existing_count} CommunicationTemplates already exist, skipping fixture load")
+        logger.info(f"⏭️  {existing_count} CommunicationTemplates already exist")
+        logger.info(f"⏭️  Skipping template loading (data already seeded)")
+        logger.info("=" * 70)
+        logger.info("")
         return
 
     # Load templates from fixture file
@@ -38,19 +48,27 @@ def create_system_templates(sender, **kwargs):
 
     if not os.path.exists(fixture_path):
         logger.warning(f"❌ Fixture file not found at {fixture_path}")
-        logger.info("Creating basic templates manually...")
+        logger.info("📝 Creating basic templates manually as fallback...")
         create_basic_templates_fallback(CommunicationTemplate)
+        logger.info("=" * 70)
+        logger.info("")
         return
 
     try:
-        logger.info("📧 Loading communication templates from fixture...")
+        logger.info(f"📂 Loading templates from: {fixture_path}")
+        logger.info("⏳ This may take a moment...")
         call_command('loaddata', fixture_path, verbosity=0)
         loaded_count = CommunicationTemplate.objects.count()
-        logger.info(f"✅ Successfully loaded {loaded_count} communication templates")
+        logger.info("")
+        logger.info(f"✅ Successfully loaded {loaded_count} communication templates!")
+        logger.info("=" * 70)
+        logger.info("")
     except Exception as e:
         logger.error(f"❌ Failed to load templates from fixture: {e}")
-        logger.info("Falling back to manual template creation...")
+        logger.info("📝 Falling back to manual template creation...")
         create_basic_templates_fallback(CommunicationTemplate)
+        logger.info("=" * 70)
+        logger.info("")
 
 
 def create_basic_templates_fallback(CommunicationTemplate):
