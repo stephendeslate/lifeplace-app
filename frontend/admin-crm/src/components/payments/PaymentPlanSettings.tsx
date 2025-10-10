@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/payments/PaymentPlanSettings.tsx
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -12,9 +12,6 @@ import {
   MenuItem,
   Stack,
   InputAdornment,
-  Autocomplete,
-  Chip,
-  CircularProgress,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -24,11 +21,10 @@ import {
   AttachMoney as MoneyIcon,
   AutorenewRounded as AutoPayIcon,
   CancelPresentation as RefundIcon,
-  AccountBalance as GatewayIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { ModernCard } from '../common/ModernCard';
-import { usePaymentSettings, useUpdatePaymentSettings, usePaymentGateways } from '../../hooks/usePayments';
+import { usePaymentSettings, useUpdatePaymentSettings } from '../../hooks/usePayments';
 import { useCurrentCurrency } from '../../hooks/useCurrency';
 import { PAYMENT_FREQUENCIES } from '../../types/payments.types';
 import type { UpdatePaymentSettingsData } from '../../types/payments.types';
