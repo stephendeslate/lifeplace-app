@@ -1304,19 +1304,17 @@ class BookingSessionService:
                 if 'start_date' in step_data:
                     start_date = step_data['start_date']
                     start_time = step_data.get('start_time')
-                    
+
                     if start_time:
                         # Combine date and time into datetime
-                        from datetime import datetime, time
                         if isinstance(start_date, str):
                             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
                         if isinstance(start_time, str):
                             start_time = datetime.strptime(start_time, '%H:%M').time()
-                        
+
                         event_data['start_date'] = datetime.combine(start_date, start_time)
                     else:
                         # CRITICAL FIX: Ensure start_date is datetime even without time
-                        from datetime import datetime
                         if isinstance(start_date, str) and start_date.strip():
                             try:
                                 # Try multiple date formats
@@ -1348,19 +1346,17 @@ class BookingSessionService:
                 if 'end_date' in step_data:
                     end_date = step_data['end_date']
                     end_time = step_data.get('end_time')
-                    
+
                     if end_time:
                         # Combine date and time into datetime
-                        from datetime import datetime, time
                         if isinstance(end_date, str):
                             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
                         if isinstance(end_time, str):
                             end_time = datetime.strptime(end_time, '%H:%M').time()
-                        
+
                         event_data['end_date'] = datetime.combine(end_date, end_time)
                     else:
                         # CRITICAL FIX: Ensure end_date is datetime even without time
-                        from datetime import datetime
                         if isinstance(end_date, str) and end_date.strip():
                             try:
                                 # Try multiple date formats
