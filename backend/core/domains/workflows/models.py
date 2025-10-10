@@ -156,6 +156,14 @@ class WorkflowStage(BaseModel):
     def _execute_automation(self, event):
         """Execute automation for this stage"""
         if self.automation_type == 'EMAIL' and self.email_template:
+            # Skip workflow email for payment completions (booking confirmation email handles it)
+            if hasattr(event, 'completion_type') and event.completion_type == 'payment':
+                logger.info(
+                    f"Skipping workflow email for event {event.id} - payment completion uses "
+                    f"booking confirmation email instead of workflow email"
+                )
+                return
+
             # Send email using template
             from core.domains.communications.services import CommunicationService
             try:
@@ -179,7 +187,9 @@ class WorkflowStage(BaseModel):
                 comm_service.send_communication_by_template(
                     template=self.email_template,
                     recipient=event.client.email,
-                    context_data=context_data
+                    context_data=context_data,
+                    client=event.client,
+                    sent_by=None
                 )
                 logger.info(f"Sent workflow email '{self.email_template.name}' for event {event.id}")
             except Exception as e:
