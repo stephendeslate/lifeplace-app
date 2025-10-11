@@ -106,7 +106,8 @@ def create_notification_async(
             context=context or {},
             delivery_methods=delivery_methods,
             event=event,
-            client=client
+            client=client,
+            use_async=False  # Already in async task, prevent recursive async call
         )
         
         if notification:
