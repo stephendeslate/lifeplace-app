@@ -55,6 +55,9 @@ import {
   EventQuotes,
   ContractStatusChip
 } from '../../components/events';
+import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
+import { contractsApi } from '../../apis/contracts.api';
+import type { Contract } from '../../types/contracts.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -93,6 +96,8 @@ const EventDetail: React.FC = () => {
   });
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false);
   const [preferencesData, setPreferencesData] = useState<Record<string, unknown>>({});
+  const [signingDialogOpen, setSigningDialogOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
   // Data fetching with contract integration
   const eventId = parseInt(id || '0');
@@ -160,6 +165,33 @@ const EventDetail: React.FC = () => {
       ...prev,
       [key]: value,
     }));
+  };
+
+  const handleSignContract = async (contract: Contract) => {
+    try {
+      // Fetch full contract details with content for signing
+      const fullContract = await contractsApi.getContract(contract.id);
+      setSelectedContract(fullContract);
+      setSigningDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching contract details for signing:', error);
+      // Fallback to showing contract without content
+      setSelectedContract(contract);
+      setSigningDialogOpen(true);
+    }
+  };
+
+  const handleSignComplete = () => {
+    // Contract signing completed successfully
+    setSigningDialogOpen(false);
+    setSelectedContract(null);
+    // Optionally refresh event data to update contract status
+    // The useEventContracts hook should automatically update via React Query
+  };
+
+  const handleSignError = (error: string) => {
+    console.error('Contract signing error:', error);
+    // Error is already shown in the dialog
   };
 
   // Loading state
@@ -559,7 +591,7 @@ const EventDetail: React.FC = () => {
                             variant="contained"
                             size="small"
                             color="warning"
-                            onClick={() => navigate(`/contracts/${contract.id}/sign`)}
+                            onClick={() => handleSignContract(contract)}
                           >
                             Sign Now
                           </Button>
@@ -653,6 +685,18 @@ const EventDetail: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Contract Signing Dialog */}
+      <ContractSigningDialog
+        open={signingDialogOpen}
+        onClose={() => {
+          setSigningDialogOpen(false);
+          setSelectedContract(null);
+        }}
+        contract={selectedContract}
+        onSignComplete={handleSignComplete}
+        onError={handleSignError}
+      />
     </Box>
   );
 };

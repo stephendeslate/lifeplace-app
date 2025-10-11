@@ -472,5 +472,29 @@
       ]
     }
   }
+},
+{
+  "model": "communications.communicationtemplate",
+  "pk": 23,
+  "fields": {
+    "created_at": "2025-10-11T00:00:00.000Z",
+    "updated_at": "2025-10-11T00:00:00.000Z",
+    "name": "Admin Role Upgrade",
+    "channel": "EMAIL",
+    "category": "SYSTEM",
+    "subject_template": "You've been upgraded to LifePlace Admin",
+    "body_template": "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n    <div style=\"background-color: #1976d2; color: white; padding: 24px; text-align: center;\">\n        <h1 style=\"margin: 0; font-size: 24px;\">LifePlace Admin</h1>\n    </div>\n    \n    <div style=\"padding: 32px; background-color: #f5f5f5;\">\n        <div style=\"background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\">\n            <h2 style=\"color: #333; margin-top: 0;\">You've been upgraded to Administrator</h2>\n            \n            <p style=\"color: #666; line-height: 1.5;\">Hello <strong>{{ first_name }} {{ last_name }}</strong>,</p>\n            \n            <p style=\"color: #666; line-height: 1.5;\">\n                Great news! <strong>{{ invited_by }}</strong> has upgraded your LifePlace account to Administrator access.\n            </p>\n            \n            <div style=\"margin: 24px 0; padding: 16px; background-color: #fff3cd; border-left: 4px solid #ffa726; border-radius: 4px;\">\n                <p style=\"margin: 0; color: #e65100;\">\n                    <strong>⚡ What's changing:</strong><br>\n                    Your existing client data and events will remain intact, but you'll now have full administrator privileges to manage the LifePlace platform.\n                </p>\n            </div>\n            \n            <div style=\"margin: 24px 0; padding: 16px; background-color: #e3f2fd; border-left: 4px solid #1976d2; border-radius: 4px;\">\n                <p style=\"margin: 0 0 10px 0; color: #1565c0;\">\n                    <strong>New Admin Capabilities:</strong>\n                </p>\n                <ul style=\"margin: 0; padding-left: 20px; color: #1565c0;\">\n                    <li>Manage all client events and bookings</li>\n                    <li>Access analytics and reporting</li>\n                    <li>Configure system settings</li>\n                    <li>Manage users and invitations</li>\n                    <li>Access all administrative tools</li>\n                </ul>\n            </div>\n            \n            <p style=\"color: #666; line-height: 1.5;\">\n                To complete your upgrade, you'll need to set a new password for admin access. Please visit this link:\n            </p>\n            \n            <div style=\"text-align: center; margin: 32px 0;\">\n                <p style=\"margin: 0 0 12px 0;\">\n                    <a href=\"{{ invitation_link }}\" style=\"background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;\">\n                        Complete Admin Upgrade\n                    </a>\n                </p>\n                <p style=\"margin: 0; font-size: 12px;\">\n                    <a href=\"{{ invitation_link }}\" style=\"color: #1976d2; text-decoration: underline; word-break: break-all;\">\n                        {{ invitation_link }}\n                    </a>\n                </p>\n            </div>\n            \n            <p style=\"color: #999; font-size: 14px; line-height: 1.5;\">\n                This invitation will expire on {{ expiry_date }}. \n                If you have any questions about your new admin role, please contact us.\n            </p>\n        </div>\n    </div>\n    \n    <div style=\"padding: 16px; text-align: center; color: #999; font-size: 12px;\">\n        <p style=\"margin: 0;\">© 2024 LifePlace. All rights reserved.</p>\n    </div>\n</div>",
+    "is_system": true,
+    "variables_schema": {
+      "optional": [],
+      "required": [
+        "first_name",
+        "last_name",
+        "invited_by",
+        "invitation_link",
+        "expiry_date"
+      ]
+    }
+  }
 }
 ]

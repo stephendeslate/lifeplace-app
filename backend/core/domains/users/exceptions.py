@@ -31,3 +31,9 @@ class EmailAlreadyExists(APIException):
     status_code = status.HTTP_400_BAD_REQUEST
     default_detail = "A user with this email already exists."
     default_code = "email_exists"
+
+
+class UserAlreadyAdmin(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = "User is already an admin."
+    default_code = "user_already_admin"

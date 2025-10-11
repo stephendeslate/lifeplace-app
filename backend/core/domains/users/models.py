@@ -108,13 +108,25 @@ class UserProfile(BaseModel):
 
 
 class AdminInvitation(BaseModel):
-    """Invitations for new admin users"""
+    """Invitations for new admin users or upgrading existing CLIENT users to ADMIN"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_invitations')
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='admin_upgrade_invitation',
+        null=True,
+        blank=True,
+        help_text="Link to existing user if this is a role upgrade invitation"
+    )
     is_accepted = models.BooleanField(default=False)
+    is_upgrade = models.BooleanField(
+        default=False,
+        help_text="True if this invitation is to upgrade an existing CLIENT to ADMIN"
+    )
     expires_at = models.DateTimeField()
 
     def save(self, *args, **kwargs):
