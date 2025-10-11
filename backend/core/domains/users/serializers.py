@@ -105,14 +105,31 @@ class AdminInvitationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'invited_by', 'is_accepted', 'expires_at', 'created_at']
         
     def validate_email(self, value):
-        # Check if user with email already exists
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
-            
+        """
+        Validate email for admin invitation
+
+        New behavior (with upgrade support):
+        - If user exists and is ADMIN → error (already admin)
+        - If user exists and is CLIENT → allow (will create upgrade invitation)
+        - If user doesn't exist → allow (will create new invitation)
+        - If pending invitation exists → error (prevents duplicates)
+        """
         # Check if there's an active invitation for this email
+        # This check happens first to prevent duplicate pending invitations
         if AdminInvitation.objects.filter(email=value, is_accepted=False).exists():
             raise serializers.ValidationError("An invitation has already been sent to this email.")
-            
+
+        # Check if user exists
+        try:
+            existing_user = User.objects.get(email=value)
+            # If user is already ADMIN, reject
+            if existing_user.role == 'ADMIN':
+                raise serializers.ValidationError("This user is already an administrator.")
+            # If user is CLIENT, allow - service will create upgrade invitation
+        except User.DoesNotExist:
+            # User doesn't exist - allow, service will create new user invitation
+            pass
+
         return value
 
 
