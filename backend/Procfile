@@ -1,3 +1,0 @@
-web: daphne -p $PORT core.asgi:application
-worker: celery -A core worker --loglevel=info --queues=celery,communications,notifications,analytics
-beat: celery -A core beat --loglevel=info

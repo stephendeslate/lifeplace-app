@@ -168,8 +168,9 @@ class ProviderManager:
     def load_providers(self):
         """Load available providers based on configuration"""
         from .providers import MockProvider, BrevoProvider
-        
-        provider_configs = communication_config.PROVIDER_CONFIG
+
+        # Use dynamic provider configuration based on environment
+        provider_configs = communication_config.get_provider_config_dict()
         
         for provider_name, config in provider_configs.items():
             if not config.get('enabled', False):
