@@ -20,6 +20,40 @@ class CommunicationConfig:
     }
     
     # Provider configuration
+    @classmethod
+    def get_provider_config_dict(cls):
+        """Get provider configuration based on environment"""
+        from django.conf import settings
+
+        # In production, disable MOCK and use only BREVO
+        is_production = getattr(settings, 'IS_PRODUCTION', False)
+
+        if is_production:
+            return {
+                'BREVO': {
+                    'class': 'communications.services.BrevoProvider',
+                    'enabled': True,
+                    'fallback_order': 1,
+                    'api_key_setting': 'BREVO_API_KEY'
+                }
+            }
+        else:
+            # Development: Use MOCK as primary, BREVO as fallback
+            return {
+                'MOCK': {
+                    'class': 'communications.services.MockProvider',
+                    'enabled': True,
+                    'fallback_order': 1
+                },
+                'BREVO': {
+                    'class': 'communications.services.BrevoProvider',
+                    'enabled': True,
+                    'fallback_order': 2,
+                    'api_key_setting': 'BREVO_API_KEY'
+                }
+            }
+
+    # Static fallback for backward compatibility
     PROVIDER_CONFIG = {
         'MOCK': {
             'class': 'communications.services.MockProvider',
@@ -73,11 +107,13 @@ class CommunicationConfig:
     def get_provider_config(cls, provider_name: str) -> Optional[Dict]:
         """Get provider configuration"""
         custom_providers = getattr(settings, 'COMMUNICATION_PROVIDERS', {})
-        
+
         if provider_name in custom_providers:
             return custom_providers[provider_name]
-        
-        return cls.PROVIDER_CONFIG.get(provider_name)
+
+        # Use dynamic configuration based on environment
+        provider_config = cls.get_provider_config_dict()
+        return provider_config.get(provider_name)
     
     @classmethod
     def get_rate_limit(cls, limit_key: str) -> int:
@@ -116,7 +152,8 @@ class CommunicationConfig:
                 errors.append(str(e))
         
         # Check provider configurations
-        for provider_name, config in cls.PROVIDER_CONFIG.items():
+        provider_config = cls.get_provider_config_dict()
+        for provider_name, config in provider_config.items():
             if config.get('enabled', False):
                 api_key_setting = config.get('api_key_setting')
                 if api_key_setting and not getattr(settings, api_key_setting, None):
