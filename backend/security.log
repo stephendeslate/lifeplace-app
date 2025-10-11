@@ -1868,3 +1868,11 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-10-11 04:57:23,315 WARNING [LOGIN_FAILURE] Failed login attempt for john.test@gmail.com: Invalid credentials
 🔒 SECURITY 2025-10-11 04:57:27,717 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
 🔒 SECURITY 2025-10-11 05:40:22,597 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-10-11 12:06:37,195 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-10-11 12:06:47,703 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-10-11 12:06:52,786 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-10-11 12:29:14,284 WARNING [ROLE_UPGRADE] User upgrade@example.com upgraded from CLIENT to ADMIN
+🔒 SECURITY 2025-10-11 12:29:15,686 WARNING [ROLE_UPGRADE] User preserve@example.com upgraded from CLIENT to ADMIN
+🔒 SECURITY 2025-10-11 12:30:15,171 WARNING [ROLE_UPGRADE] User upgrade@example.com upgraded from CLIENT to ADMIN
+🔒 SECURITY 2025-10-11 12:30:16,577 WARNING [ROLE_UPGRADE] User preserve@example.com upgraded from CLIENT to ADMIN
+🔒 SECURITY 2025-10-11 12:31:32,930 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully

@@ -11,6 +11,7 @@ from .exceptions import (
     EmailAlreadyExists,
     InvitationExpired,
     UserNotFound,
+    UserAlreadyAdmin,
 )
 from .models import AdminInvitation, User, UserProfile
 
@@ -117,64 +118,149 @@ class UserService:
 class AdminInvitationService:
     @staticmethod
     def create_invitation(email, first_name, last_name, invited_by):
-        """Create a new admin invitation"""
+        """
+        Create a new admin invitation or upgrade invitation for existing CLIENT users
+
+        Handles three scenarios:
+        1. New user (doesn't exist) → create regular invitation
+        2. Existing CLIENT user → create upgrade invitation
+        3. Existing ADMIN user → raise error (already admin)
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
         # Check if user with email already exists
-        if User.objects.filter(email=email).exists():
-            raise EmailAlreadyExists()
-            
+        existing_user = None
+        try:
+            existing_user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            pass
+
+        # Determine invitation type
+        is_upgrade = False
+        if existing_user:
+            if existing_user.role == 'ADMIN':
+                logger.warning(f"Attempted to invite existing admin user: {email}")
+                raise UserAlreadyAdmin()
+            elif existing_user.role == 'CLIENT':
+                is_upgrade = True
+                logger.info(f"Creating upgrade invitation for CLIENT user: {email}")
+
         # Check if there's an active invitation for this email
         if AdminInvitation.objects.filter(email=email, is_accepted=False).exists():
             # Cancel the existing invitation and create a new one
             AdminInvitation.objects.filter(email=email).delete()
-        
+            logger.info(f"Deleted existing pending invitation for {email}")
+
         # Create new invitation
         invitation = AdminInvitation.objects.create(
             email=email,
             first_name=first_name,
             last_name=last_name,
             invited_by=invited_by,
+            user=existing_user if is_upgrade else None,
+            is_upgrade=is_upgrade,
             expires_at=timezone.now() + timedelta(days=7)
         )
-        
+
+        logger.info(f"Created {'upgrade' if is_upgrade else 'new'} invitation for {email}")
+
         # Try to send invitation email - but don't fail if it doesn't work
         try:
             AdminInvitationService._send_invitation_email(invitation)
-            print(f"✅ Invitation created and email sent to {email}")
+            print(f"✅ {'Upgrade' if is_upgrade else 'New'} invitation created and email sent to {email}")
         except Exception as e:
             # Log the error but don't prevent invitation creation
             print(f"⚠️ Invitation created for {email} but email sending failed: {str(e)}")
-            # You might want to set a flag on the invitation model to track email status
-            # invitation.email_sent = False
-            # invitation.save()
-        
+            logger.error(f"Failed to send invitation email to {email}: {str(e)}")
+
         return invitation
     
     @staticmethod
     def accept_invitation(invitation_id, password):
-        """Accept an invitation and create a user"""
+        """
+        Accept an invitation and create a user or upgrade existing user
+
+        Handles two scenarios:
+        1. New user invitation → create new ADMIN user
+        2. Upgrade invitation → upgrade existing CLIENT to ADMIN and set password
+        """
+        import logging
+        from core.utils.security_logging import SecurityLogger
+
+        logger = logging.getLogger(__name__)
+        security_logger = SecurityLogger()
+
         try:
             invitation = AdminInvitation.objects.get(id=invitation_id, is_accepted=False)
         except AdminInvitation.DoesNotExist:
             raise UserNotFound("Invitation not found or already accepted.")
-        
+
         # Check if invitation is expired
         if invitation.is_expired():
             raise InvitationExpired()
-            
-        # Create new admin user
-        user = User.objects.create_user(
-            email=invitation.email,
-            password=password,
-            first_name=invitation.first_name,
-            last_name=invitation.last_name,
-            role='ADMIN',
-            is_staff=True  # Admin users should have staff access
-        )
-        
+
+        if invitation.is_upgrade and invitation.user:
+            # Upgrade existing user scenario
+            logger.info(f"Upgrading existing CLIENT user {invitation.email} to ADMIN")
+
+            user = invitation.user
+            old_role = user.role
+
+            # Upgrade role and grant staff access
+            user.role = 'ADMIN'
+            user.is_staff = True
+            user.set_password(password)
+            user.save()
+
+            # Log the role upgrade for security audit
+            try:
+                security_logger.log_event(
+                    event_type='ROLE_UPGRADE',
+                    description=f"User {user.email} upgraded from {old_role} to ADMIN",
+                    user=user,
+                    severity='MEDIUM',
+                    details={
+                        'old_role': old_role,
+                        'new_role': 'ADMIN',
+                        'invited_by': invitation.invited_by.email,
+                        'invitation_id': str(invitation.id)
+                    }
+                )
+            except Exception as log_error:
+                logger.error(f"Failed to log role upgrade event: {str(log_error)}")
+
+            # Invalidate user caches after role change
+            try:
+                from .cache_service import users_cache_service
+                users_cache_service.invalidate_user_caches(
+                    user_id=user.id,
+                    email=user.email
+                )
+            except Exception as cache_error:
+                logger.warning(f"Failed to invalidate user caches: {str(cache_error)}")
+
+            logger.info(f"Successfully upgraded user {user.email} to ADMIN")
+
+        else:
+            # New user invitation scenario (existing behavior)
+            logger.info(f"Creating new ADMIN user for {invitation.email}")
+
+            user = User.objects.create_user(
+                email=invitation.email,
+                password=password,
+                first_name=invitation.first_name,
+                last_name=invitation.last_name,
+                role='ADMIN',
+                is_staff=True  # Admin users should have staff access
+            )
+
+            logger.info(f"Successfully created new ADMIN user {user.email}")
+
         # Mark invitation as accepted
         invitation.is_accepted = True
         invitation.save()
-        
+
         return user
     
     @staticmethod
@@ -187,17 +273,27 @@ class AdminInvitationService:
     
     @staticmethod
     def _send_invitation_email(invitation):
-        """Send invitation email using communication service ONLY"""
+        """
+        Send invitation email using communication service
+
+        Uses different email templates based on invitation type:
+        - 'Admin Invitation' for new admin users
+        - 'Admin Role Upgrade' for existing CLIENT users being upgraded to ADMIN
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
         try:
             # Import here to avoid circular imports
             from core.domains.communications.services import CommunicationService
-            
+
             communication_service = CommunicationService()
-            
+
             # Get frontend URL from settings
             frontend_url = getattr(settings, 'ADMIN_FRONTEND_URL', 'http://localhost:5173')
             invitation_link = f"{frontend_url}/accept-invitation/{invitation.id}"
-            
+
             # Prepare context data for template
             context_data = {
                 'first_name': invitation.first_name,
@@ -206,29 +302,44 @@ class AdminInvitationService:
                 'invitation_link': invitation_link,
                 'expiry_date': invitation.expires_at.strftime('%B %d, %Y at %I:%M %p')
             }
-            
+
+            # Choose template based on invitation type
+            if invitation.is_upgrade:
+                template_name = 'Admin Role Upgrade'
+                logger.info(f"Sending role upgrade email to {invitation.email}")
+            else:
+                template_name = 'Admin Invitation'
+                logger.info(f"Sending new admin invitation email to {invitation.email}")
+
             # Send using communication service
             record = communication_service.send_communication(
-                template_name='Admin Invitation',
+                template_name=template_name,
                 recipient=invitation.email,
                 context_data=context_data,
                 sent_by=invitation.invited_by
             )
-            
+
             if record:
-                print(f"✅ Invitation email sent successfully via Brevo to {invitation.email}")
+                print(f"✅ {template_name} email sent successfully via Brevo to {invitation.email}")
                 print(f"   Record ID: {record.id}")
                 print(f"   External ID: {record.external_message_id}")
+                logger.info(f"{template_name} email sent to {invitation.email} - Record ID: {record.id}")
                 return True
             else:
-                print(f"❌ Failed to send invitation email to {invitation.email}")
-                raise Exception("Communication service returned None - email not sent")
-                
+                error_msg = f"Communication service returned None - email not sent to {invitation.email}"
+                print(f"❌ {error_msg}")
+                logger.error(error_msg)
+                raise Exception(error_msg)
+
         except ImportError:
             # Communications domain not available
-            print(f"❌ Communications domain not available for {invitation.email}")
+            error_msg = f"Communications domain not available for {invitation.email}"
+            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             raise Exception("Communications service not available")
         except Exception as e:
             # Re-raise the exception so the caller can handle it
-            print(f"❌ Failed to send invitation via communication service: {str(e)}")
+            error_msg = f"Failed to send invitation via communication service: {str(e)}"
+            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             raise e
