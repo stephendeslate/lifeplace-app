@@ -33,7 +33,6 @@ class WorkflowStage(BaseModel):
         ('TASK', 'Create Task'),
         ('QUOTE', 'Generate Quote'),
         ('CONTRACT', 'Generate Contract'),
-        ('PAYMENT_PLAN', 'Create Payment Plan'),
         ('REMINDER', 'Send Reminder'),
         ('NOTIFICATION', 'Send Notification'),
     ]
@@ -301,23 +300,6 @@ class WorkflowStage(BaseModel):
 
             except Exception as e:
                 logger.error(f"Failed to generate/send contract: {e}", exc_info=True)
-
-        elif self.automation_type == 'PAYMENT_PLAN':
-            # DISABLED: Payment plan auto-creation removed to allow client-controlled payment plans
-            #
-            # RATIONALE:
-            # Payment plans are optional auto-pay convenience features that should be created
-            # manually by clients via the financial portal. Auto-creating them via workflows:
-            # 1. Prevents clients from creating their own payment plans (OneToOne relationship)
-            # 2. Removes client choice in payment approach (manual vs. auto-pay)
-            # 3. May create plans with settings the client doesn't want
-            #
-            # ALTERNATIVE:
-            # Use EMAIL or NOTIFICATION automation to remind clients to set up a payment plan
-            # if they prefer auto-pay convenience, with a link to the financial portal.
-            #
-            logger.info(f"Payment plan automation skipped for event {event.id} - "
-                       f"clients should create payment plans manually via financial portal")
 
         elif self.automation_type == 'NOTIFICATION':
             # Send notification
