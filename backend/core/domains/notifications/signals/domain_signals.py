@@ -575,22 +575,4 @@ def _connect_client_invitation_signals(NotificationService):
 
 
 # Future domain signal connections can be added here following the same pattern
-def _connect_future_domain_signals(NotificationService):
-    """Template for connecting future domain signals"""
-    # Example for a new domain:
-    # if not apps.is_installed('core.domains.new_domain'):
-    #     return
-    # 
-    # try:
-    #     NewModel = apps.get_model('new_domain', 'NewModel')
-    #     
-    #     @receiver(post_save, sender=NewModel)
-    #     def new_model_notifications(sender, instance, created, **kwargs):
-    #         # Notification logic here
-    #         pass
-    #         
-    # except LookupError:
-    #     logger.info("NewModel not found, skipping new domain signal connections")
-    # except Exception as e:
-    #     logger.error(f"Failed to connect new domain signals: {str(e)}")
-    pass
+# See documentation for template on how to add new domain signal connections

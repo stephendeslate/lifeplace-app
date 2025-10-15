@@ -1,6 +1,5 @@
 # core/domains/questionnaires/models.py
 from core.utils.models import BaseModel
-# from django.contrib.postgres.fields import ArrayField  # Removed for SQLite compatibility
 from django.db import models
 
 

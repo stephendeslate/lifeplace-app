@@ -205,7 +205,7 @@ class Discount(BaseModel):
         
         # Check client usage limits
         if self.max_uses_per_client:
-            # from core.domains.orders.models import Order  # Assuming future orders domain
+            # TODO: Implement per-client tracking when orders domain is created
             client_usage = self.current_uses  # Simplified for now
             if client_usage >= self.max_uses_per_client:
                 return False

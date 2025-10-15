@@ -165,12 +165,7 @@ class BookingFlow(BaseModel):
             return None
         except BookingFlowStep.DoesNotExist:
             return None
-    
-    @property
-    def enabled_steps(self):
-        """Get all enabled steps in order"""
-        return self.steps.filter(is_enabled=True).order_by('order')
-    
+
     def calculate_total_steps(self):
         """Calculate total number of enabled steps"""
         return self.enabled_steps.count()

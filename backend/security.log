@@ -1876,3 +1876,4 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-10-11 12:30:15,171 WARNING [ROLE_UPGRADE] User upgrade@example.com upgraded from CLIENT to ADMIN
 🔒 SECURITY 2025-10-11 12:30:16,577 WARNING [ROLE_UPGRADE] User preserve@example.com upgraded from CLIENT to ADMIN
 🔒 SECURITY 2025-10-11 12:31:32,930 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-10-11 12:56:59,107 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully

@@ -95,7 +95,6 @@ class BookingFlowStepConfigurationService:
                 'pricing_summary': BookingFlowStepConfigurationService._update_pricing_summary_config,
                 'contact_info': BookingFlowStepConfigurationService._update_contact_config,
                 'payment_info': BookingFlowStepConfigurationService._update_payment_config,
-                'review_booking': BookingFlowStepConfigurationService._update_review_booking_config,
                 'confirmation': BookingFlowStepConfigurationService._update_confirmation_config,
             }
             
@@ -462,12 +461,3 @@ class BookingFlowStepConfigurationService:
                 setattr(config, key, value)
         config.save()
         return config
-    
-    @staticmethod
-    def _update_review_booking_config(step, config_data):
-        """Update review booking step configuration using generic configuration field"""
-        # Since review_booking doesn't have a specific configuration model,
-        # we store the configuration in the step's generic configuration JSONField
-        step.configuration.update(config_data)
-        step.save()
-        return step.configuration

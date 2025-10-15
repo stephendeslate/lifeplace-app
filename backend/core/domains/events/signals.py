@@ -12,10 +12,6 @@ def invalidate_event_cache_on_save(sender, instance, created, **kwargs):
     
     # Also invalidate availability cache when event changes
     _invalidate_availability_cache_for_event(instance)
-    
-    # NOTE: MessageThread auto-creation removed during messaging cleanup
-    # if created:
-    #     _create_message_thread_for_event(instance)
 
 @receiver(post_delete, sender=Event)
 def invalidate_event_cache_on_delete(sender, instance, **kwargs):
@@ -59,9 +55,3 @@ def invalidate_event_type_cache_on_save(sender, instance, created, **kwargs):
 def invalidate_event_type_cache_on_delete(sender, instance, **kwargs):
     """Invalidate event type cache when deleted"""
     CacheInvalidator.on_event_type_change(sender, instance, False, **kwargs)
-
-
-# def _create_message_thread_for_event(event):
-#     """Create a MessageThread for a new event - REMOVED during messaging cleanup"""
-#     # Messaging domain removed - this function is no longer needed
-#     pass
