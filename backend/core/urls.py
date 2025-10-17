@@ -5,8 +5,13 @@ from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
+from core.views import health_check, readiness_check
 
 urlpatterns = [
+    # Health check endpoints (no auth required)
+    path('health/', health_check, name='health_check'),
+    path('ready/', readiness_check, name='readiness_check'),
+
     path('admin/', admin.site.urls),
     path('api/users/', include('core.domains.users.urls')),
     path('api/communications/', include('core.domains.communications.urls')),
