@@ -609,9 +609,6 @@ celery -A core beat -l info         # Start scheduler
 ## Documentation References
 
 - `CLAUDE.md`: Project instructions for AI assistance
-- `DEPLOYMENT.md`: Detailed deployment procedures
-- `RAILWAY_SETUP.md`: Railway-specific setup
-- `PAYMENT_GATEWAY_DOCUMENTATION.md`: Payment integration guide
 - `ENV_VARS.md`: Environment variables reference
 
 ---
