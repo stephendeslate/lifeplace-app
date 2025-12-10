@@ -149,9 +149,10 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
       type: formData.type,
       required: formData.required,
       order: formData.order || 1,
-      options: (formData.type === 'select' || formData.type === 'multi-select') 
-        ? formData.options.filter(opt => opt.trim()) 
-        : null,
+      // Use empty array for non-select fields instead of null
+      options: (formData.type === 'select' || formData.type === 'multi-select')
+        ? formData.options.filter(opt => opt.trim())
+        : [],
     };
 
     if (questionnaireId && !editingField) {

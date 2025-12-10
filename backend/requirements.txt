@@ -76,3 +76,9 @@ websockets==15.0.1
 whitenoise==6.9.0
 yarl==1.20.1
 zope.interface==7.2
+
+# Process Manager for running multiple services in demo/development
+honcho==1.1.0
+
+# Error tracking and monitoring (production)
+sentry-sdk[django]==2.19.2

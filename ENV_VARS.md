@@ -166,6 +166,8 @@ VITE_APP_ENV=development
 
 ### Production (Railway Backend)
 
+**📖 Setup Guide:** See [infrastructure/DEMO_SETUP.md](./infrastructure/DEMO_SETUP.md) for complete deployment instructions.
+
 Set these in Railway dashboard under your service > Variables:
 
 ```bash
@@ -173,16 +175,18 @@ Set these in Railway dashboard under your service > Variables:
 ENV=production
 DEBUG=False
 SECRET_KEY=<generate-secure-key>
-DATABASE_URL=<railway-provides>
+DATABASE_URL=${{Postgres.DATABASE_URL}}  # Auto-set by Railway PostgreSQL plugin
 JWT_SIGNING_KEY=<generate-secure-key>
+PORT=${{RAILWAY_SERVICE_PORT}}  # Auto-set by Railway
 
 # Hosts (REQUIRED)
 ALLOWED_HOSTS=your-backend.railway.app,yourdomain.com
 CSRF_TRUSTED_ORIGINS=https://your-backend.railway.app,https://yourdomain.com
 CORS_ALLOWED_ORIGINS=https://admin-crm.netlify.app,https://client-portal.netlify.app
 
-# Redis (REQUIRED)
-REDIS_URL=<upstash-or-railway-provides>
+# Redis (REQUIRED) - Use Railway Redis Plugin
+REDIS_URL=${{Redis.REDIS_URL}}  # Auto-set by Railway Redis plugin
+# ⚠️ Important: Use Railway Redis, NOT Upstash (Railway Redis supports multiple databases)
 
 # Frontend URLs (REQUIRED)
 ADMIN_FRONTEND_URL=https://admin-crm.netlify.app
@@ -210,7 +214,21 @@ ENCRYPTION_SALT=<random-string>
 GUNICORN_WORKERS=4
 GUNICORN_TIMEOUT=120
 LOG_LEVEL=info
+
+# Monitoring (Optional but recommended)
+SENTRY_DSN=https://<key>@o<org>.ingest.sentry.io/<project>  # From sentry.io
 ```
+
+**📝 Redis Database Usage:**
+The system uses Railway Redis with proper database separation:
+- DB 0: Django cache (default)
+- DB 1: Celery broker
+- DB 2: Celery results
+- DB 3: Django Channels (WebSocket)
+- DB 4: Sessions cache
+- DB 5: Analytics cache
+
+This requires Railway Redis (supports DB 0-15). Upstash free tier only supports DB 0.
 
 ---
 

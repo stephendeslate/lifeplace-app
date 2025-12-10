@@ -1,0 +1,19 @@
+# Procfile for running all LifePlace backend services
+# Used with Honcho process manager for demo/development
+# In production, these can be split into separate Railway services
+
+# Django HTTP API (Gunicorn)
+web: gunicorn -c gunicorn.conf.py core.wsgi:application
+
+# Django WebSocket Server (Daphne)
+# Note: Runs on port 8001 internally, not exposed externally in demo setup
+websocket: daphne -b 127.0.0.1 -p 8001 core.asgi:application
+
+# Celery Worker (Background tasks)
+# Handles: emails, PDFs, Stripe webhooks, etc.
+worker: celery -A core worker --loglevel=info --queues=celery,communications,notifications,analytics
+
+# Celery Beat (Scheduled tasks)
+# Handles: cleanup jobs, periodic reports, etc.
+# WARNING: Only run ONE instance of beat to avoid duplicate tasks
+beat: celery -A core beat --loglevel=info
