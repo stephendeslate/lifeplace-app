@@ -218,10 +218,8 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
   const canProceed = useCallback(() => {
     switch (currentStep) {
       case 'review_contract':
-        console.log('✅ canProceed: review_contract - always true');
-        return true; // Always can proceed from review
+        return true;
       case 'legal_disclosure':
-        console.log('✅ canProceed: legal_disclosure', { legalDisclosureAccepted });
         return legalDisclosureAccepted;
       case 'signature_capture': {
         const hasSignatureData = !!signatureData;
@@ -229,27 +227,11 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
         const hasName = !!signerName.trim();
         const hasEmail = !!signerEmail.trim();
         const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail);
-        const canProceedFromSignature = hasSignatureData && isSignatureValid && hasName && hasEmail && isEmailValid;
-        
-        console.log('✅ canProceed: signature_capture validation', {
-          hasSignatureData,
-          isSignatureValid,
-          hasName,
-          hasEmail,
-          isEmailValid,
-          canProceedFromSignature,
-          signatureDataLength: signatureData?.length || 0,
-          signerName: signerName.trim(),
-          signerEmail: signerEmail.trim()
-        });
-        
-        return canProceedFromSignature;
+        return hasSignatureData && isSignatureValid && hasName && hasEmail && isEmailValid;
       }
       case 'confirmation':
-        console.log('✅ canProceed: confirmation', { signatureIntentConfirmed });
         return signatureIntentConfirmed;
       default:
-        console.log('✅ canProceed: default case - false');
         return false;
     }
   }, [currentStep, legalDisclosureAccepted, signatureData, signerName, signerEmail, signatureIntentConfirmed]);
@@ -366,37 +348,19 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
             </Box>
 
             <EnhancedSignaturePad
-              onSignatureChange={(data, analysis) => {
-                console.log('🖊️ SIGNATURE CHANGE HANDLER CALLED', {
-                  hasData: !!data,
-                  dataLength: data?.length || 0,
-                  isValidData: data ? contractUtils.validateSignature(data) : false,
-                  timestamp: Date.now(),
-                  analysis: analysis ? 'Analysis provided' : 'No analysis'
-                });
-                
+              onSignatureChange={(data) => {
                 setSignatureData(data);
-                
+
                 // Clear any signature-related errors when signature is provided
                 if (data) {
-                  console.log('🖊️ Clearing signature-related errors');
                   setErrors(prev => prev.filter(error => !error.includes('signature')));
-                } else {
-                  console.log('🖊️ No signature data provided - keeping errors');
-                }
-                
-                // Store analysis for later use
-                if (analysis) {
-                  console.log('🖊️ Signature analysis:', analysis);
                 }
               }}
               width={isMobile ? 300 : 500}
               height={200}
               required
               label="Electronic Signature"
-              helperText="Draw your signature in the box above. We'll analyze it for security."
-              enableBiometricAnalysis={true}
-              showAnalytics={true}
+              helperText="Draw your signature in the box above"
             />
           </Box>
         );
@@ -490,48 +454,7 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
         </Button>
       </DialogTitle>
 
-      <DialogContent 
-        dividers
-        onClick={(e) => {
-          const target = e.target as HTMLElement;
-          console.log('📋 Dialog content clicked', { 
-            target: target.tagName, 
-            className: target.className,
-            isSignatureCanvas: target.tagName === 'CANVAS',
-            canvasId: target.id,
-            timestamp: Date.now()
-          });
-          // Check if click is inside signature canvas area
-          if (target.tagName === 'CANVAS' || target.closest('.signature-pad')) {
-            console.log('🎯 Click detected inside signature area - NOT stopping propagation');
-          } else {
-            console.log('🎯 Click outside signature area');
-          }
-        }}
-        onMouseDown={(e) => {
-          const target = e.target as HTMLElement;
-          console.log('📋 Dialog content mouse down', { 
-            target: target.tagName,
-            isSignatureCanvas: target.tagName === 'CANVAS',
-            timestamp: Date.now()
-          });
-          // Don't prevent default for canvas interactions
-          if (target.tagName === 'CANVAS') {
-            console.log('🎯 Mouse down on canvas - allowing event');
-          }
-        }}
-        onPointerDown={(e) => {
-          const target = e.target as HTMLElement;
-          if (target.tagName === 'CANVAS') {
-            console.log('🎯 Pointer down on canvas', {
-              pointerId: e.pointerId,
-              pointerType: e.pointerType,
-              pressure: e.pressure,
-              timestamp: Date.now()
-            });
-          }
-        }}
-      >
+      <DialogContent dividers>
         {/* Progress Stepper */}
         <Stepper 
           activeStep={currentStepIndex} 
