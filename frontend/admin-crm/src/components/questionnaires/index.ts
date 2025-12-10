@@ -6,3 +6,4 @@ export { QuestionnaireReorderDialog } from './QuestionnaireReorderDialog';
 export { QuestionnaireFieldsTable } from './QuestionnaireFieldsTable';
 export { FieldFormDialog } from './FieldFormDialog';
 export { QuestionnairePreview } from './QuestionnairePreview';
+export { ManageQuestionsDialog } from './ManageQuestionsDialog';

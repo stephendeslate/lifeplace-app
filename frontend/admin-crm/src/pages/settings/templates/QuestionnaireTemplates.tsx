@@ -1,13 +1,14 @@
 // Questionnaire Templates Settings Page - Standardized Version
 // Migrated to use the unified settings system
 
-import React from 'react';
-import { Quiz as QuestionnaireIcon } from '@mui/icons-material';
+import React, { useState } from 'react';
+import { Quiz as QuestionnaireIcon, Edit as EditIcon } from '@mui/icons-material';
 import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useQuestionnaires } from '../../../hooks/useQuestionnaires';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { Questionnaire, CreateQuestionnaireData, UpdateQuestionnaireData } from '../../../types/questionnaires.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
+import { ManageQuestionsDialog } from '../../../components/questionnaires/ManageQuestionsDialog';
 
 // Table columns configuration
 const columns: SettingsTableColumn<Questionnaire>[] = [
@@ -111,6 +112,9 @@ const defaultQuestionnaire: Questionnaire = {
 };
 
 export const QuestionnaireTemplates = () => {
+  const [manageQuestionsOpen, setManageQuestionsOpen] = useState(false);
+  const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<Questionnaire | null>(null);
+
   // Get questionnaires and event types
   const {
     questionnaires = [],
@@ -217,21 +221,50 @@ export const QuestionnaireTemplates = () => {
     });
   };
 
+  const handleManageQuestions = (questionnaire: Questionnaire) => {
+    setSelectedQuestionnaire(questionnaire);
+    setManageQuestionsOpen(true);
+  };
+
+  const handleCloseManageQuestions = () => {
+    setManageQuestionsOpen(false);
+    setSelectedQuestionnaire(null);
+  };
+
   return (
-    <SettingsPage
-      config={config}
-      data={questionnaires}
-      defaultValues={defaultQuestionnaire}
-      isLoading={isLoadingQuestionnaires}
-      error={questionnairesError?.message}
-      onRefresh={handleRefresh}
-      onCreate={handleCreate}
-      onUpdate={handleUpdate}
-      onDelete={handleDelete}
-      isCreating={isCreatingQuestionnaire}
-      isUpdating={isUpdatingQuestionnaire}
-      isDeleting={isDeletingQuestionnaire}
-    />
+    <>
+      <SettingsPage
+        config={config}
+        data={questionnaires}
+        defaultValues={defaultQuestionnaire}
+        isLoading={isLoadingQuestionnaires}
+        error={questionnairesError?.message}
+        onRefresh={handleRefresh}
+        onCreate={handleCreate}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+        isCreating={isCreatingQuestionnaire}
+        isUpdating={isUpdatingQuestionnaire}
+        isDeleting={isDeletingQuestionnaire}
+        customTableActions={[
+          {
+            label: 'Manage Questions',
+            icon: React.createElement(EditIcon),
+            onClick: handleManageQuestions,
+            color: 'primary',
+          },
+        ]}
+      />
+
+      <ManageQuestionsDialog
+        open={manageQuestionsOpen}
+        onClose={handleCloseManageQuestions}
+        questionnaire={selectedQuestionnaire ? {
+          id: selectedQuestionnaire.id,
+          name: selectedQuestionnaire.name,
+        } : null}
+      />
+    </>
   );
 };
 

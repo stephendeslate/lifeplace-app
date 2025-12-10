@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { questionnairesApi } from '../apis/questionnaires.api';
 import { useToastActions } from '../contexts/ToastContext';
+import { extractErrorMessage } from '../utils/errorHandling';
 import type {
   QuestionnaireFilters,
   QuestionnaireFieldFilters,
@@ -181,9 +182,7 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
       showSuccess('Field Created', `${newField.name} has been created successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create field'
-        : 'Failed to create field';
+      const message = extractErrorMessage(error, 'Failed to create field');
       showError('Create Failed', message);
     },
   });
@@ -198,9 +197,7 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
       showSuccess('Field Updated', `${updatedField.name} has been updated successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update field'
-        : 'Failed to update field';
+      const message = extractErrorMessage(error, 'Failed to update field');
       showError('Update Failed', message);
     },
   });
@@ -213,9 +210,7 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
       showSuccess('Field Deleted', 'Field has been deleted successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete field'
-        : 'Failed to delete field';
+      const message = extractErrorMessage(error, 'Failed to delete field');
       showError('Delete Failed', message);
     },
   });

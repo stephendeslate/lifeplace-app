@@ -1877,3 +1877,16 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-10-11 12:30:16,577 WARNING [ROLE_UPGRADE] User preserve@example.com upgraded from CLIENT to ADMIN
 🔒 SECURITY 2025-10-11 12:31:32,930 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
 🔒 SECURITY 2025-10-11 12:56:59,107 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-05 14:47:44,188 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-05 14:47:52,643 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:47:57,071 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:48:10,093 WARNING [LOGIN_FAILURE] Failed login attempt for demo@test.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:48:13,797 WARNING [LOGIN_FAILURE] Failed login attempt for demo@test.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:49:06,030 ERROR [LOGIN_FAILURE] Failed login attempt for john.test@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:49:09,633 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-05 16:01:02,819 INFO [LOGIN_SUCCESS] New client registration and auto-login: sd@gmail.com
+🔒 SECURITY 2025-12-05 16:06:48,123 INFO [LOGIN_SUCCESS] User john.des@gmail.com logged in successfully
+🔒 SECURITY 2025-12-10 15:50:26,654 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-10 15:58:05,862 WARNING [LOGIN_FAILURE] Failed login attempt for john.test@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-10 15:58:21,882 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-10 16:12:30,320 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully

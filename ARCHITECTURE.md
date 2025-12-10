@@ -307,48 +307,88 @@ workflows_workflowstage   # Workflow stages
 
 ## Deployment Architecture
 
-### Production Environment
+**📖 See Also:**
+- [infrastructure/DEMO_SETUP.md](./infrastructure/DEMO_SETUP.md) - Complete deployment guide
+- [infrastructure/MIGRATION_GUIDE.md](./infrastructure/MIGRATION_GUIDE.md) - Upgrade to production
+- [infrastructure/SERVICE_INVENTORY.md](./infrastructure/SERVICE_INVENTORY.md) - All services and credentials
+
+### Demo Environment (Current - Cost-Optimized $13-17/mo)
+
+**Purpose:** Client demonstrations and MVP testing
+**Capacity:** 50-100 concurrent users
+**Migration Time:** 15 minutes to production setup
 
 ```
-┌─────────────────┐
-│   Cloudflare    │  CDN & DNS
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───▼────┐ ┌─▼─────────┐
-│ Netlify│ │  Railway  │
-│Frontend│ │  Backend  │
-└────────┘ └─────┬─────┘
-                 │
-         ┌───────┴────────┐
-         │                │
-    ┌────▼────┐    ┌─────▼──────┐
-    │PostgreSQL│   │   Redis    │
-    │(Railway) │   │  (Upstash) │
-    └──────────┘   └────────────┘
+┌────────────────────────────────────────────┐
+│        Frontend (Netlify - FREE)           │
+├────────────────────────────────────────────┤
+│  Admin CRM          Client Portal          │
+└───────────────┬────────────────────────────┘
+                │
+                ▼
+┌────────────────────────────────────────────┐
+│    Railway (Single Service - ~$10/mo)      │
+├────────────────────────────────────────────┤
+│  lifeplace-backend-all-in-one              │
+│  ┌──────────────────────────────────────┐  │
+│  │  Honcho Process Manager              │  │
+│  │  ├── Gunicorn (HTTP API)             │  │
+│  │  ├── Daphne (WebSockets)             │  │
+│  │  ├── Celery Worker                   │  │
+│  │  └── Celery Beat                     │  │
+│  └──────────────────────────────────────┘  │
+│                                             │
+│  PostgreSQL Plugin (Free tier - 512MB)     │
+│  Redis Plugin ($5/mo - 256MB, DB 0-15)     │
+└────────────────────────────────────────────┘
+
+External: Brevo, Stripe, Sentry, UptimeRobot (all FREE)
 ```
 
-### Backend Deployment (Railway)
+### Production Environment (Future - After Business Commits $31-48/mo)
+
+**Purpose:** Production use with independent scaling
+**Capacity:** 1000+ concurrent users
+**Benefits:** Fault isolation, independent deployments, better monitoring
+
+```
+┌────────────────────────────────────────────┐
+│         Railway Project                    │
+├────────────────────────────────────────────┤
+│  Backend Web (HTTP)        $8-12/mo        │
+│  WebSocket Server          $5-8/mo         │
+│  Celery Worker             $5-8/mo         │
+│  Celery Beat               $3-5/mo         │
+│  PostgreSQL                $5-10/mo        │
+│  Redis                     $5/mo           │
+└────────────────────────────────────────────┘
+```
+
+### Backend Deployment Details (Current Demo)
 
 **Platform:** Railway.app
 **Region:** US West (Oregon)
-**Server:** Gunicorn with Daphne for WebSockets
+**Server:** Honcho running all services
 
 **Environment:**
-- Database: Railway-managed PostgreSQL
-- Cache: Upstash Redis (rediss:// SSL)
+- Database: Railway-managed PostgreSQL (Hobby tier)
+- Cache: Railway-managed Redis 256MB
 - Static files: WhiteNoise (compressed)
 
-**Start Command:**
+**Start Command (Demo):**
 ```bash
-python manage.py prepare_template_seeding --force && \
 python manage.py migrate --no-input && \
 python manage.py seed_default_settings && \
-gunicorn -c gunicorn.conf.py core.wsgi:application
+honcho start -f Procfile
 ```
 
-**Workers:** CPU × 2 + 1 (dynamic)
+**Procfile Contents:**
+- web: Gunicorn (HTTP API)
+- websocket: Daphne (WebSocket server)
+- worker: Celery worker
+- beat: Celery beat scheduler
+
+**Workers:** CPU × 2 + 1 (dynamic, shared across all processes)
 **Timeout:** 120 seconds (for Stripe API calls)
 **Max Requests:** 1000 per worker (memory management)
 

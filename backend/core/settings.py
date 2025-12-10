@@ -302,7 +302,7 @@ CACHES = {
     },
     'sessions': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 (Railway only supports DB #0)
+        'LOCATION': REDIS_URL + '/4',  # Use Redis database 4 (Sessions)
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
@@ -312,7 +312,7 @@ CACHES = {
     },
     'analytics': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 (Railway only supports DB #0)
+        'LOCATION': REDIS_URL + '/5',  # Use Redis database 5 (Analytics cache)
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
@@ -327,12 +327,11 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'sessions'
 
 # Django Channels Layer Configuration
-# NOTE: Railway's managed Redis only supports database #0
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [REDIS_URL + '/0'],  # Use Redis database 0 (Railway requirement)
+            'hosts': [REDIS_URL + '/3'],  # Use Redis database 3 (Django Channels)
             'capacity': 1500,  # Maximum number of messages to buffer in each channel
             'expiry': 60,  # How long to keep message in seconds
         },
@@ -533,9 +532,14 @@ if DEBUG:
     LOGGING['loggers']['']['level'] = 'INFO'
 
 # Celery Configuration
-# NOTE: Upstash Redis free tier only supports database 0
-CELERY_BROKER_URL = REDIS_URL + '/0'  # Use Redis database 0 (Upstash requirement)
-CELERY_RESULT_BACKEND = REDIS_URL + '/0'  # Use Redis database 0 (Upstash requirement)
+# Redis database allocation:
+# DB 0: Django cache (default)
+# DB 1: Celery broker
+# DB 2: Celery results
+# DB 3: Django Channels (WebSocket)
+# DB 4: Sessions cache
+CELERY_BROKER_URL = REDIS_URL + '/1'  # Use Redis database 1 (Celery broker)
+CELERY_RESULT_BACKEND = REDIS_URL + '/2'  # Use Redis database 2 (Celery results)
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['json']
@@ -571,4 +575,42 @@ SITE_NAME = os.getenv('SITE_NAME', 'LifePlace')
 BUSINESS_TIMEZONE = 'Asia/Manila'  # Primary business location (Philippines)
 BUSINESS_TIMEZONE_DISPLAY = 'PHT'  # Display abbreviation
 BUSINESS_TIMEZONE_OFFSET = '+08:00'  # UTC offset
+
+# Sentry Error Tracking (Production Only)
+SENTRY_DSN = os.getenv('SENTRY_DSN')
+
+if SENTRY_DSN and IS_PRODUCTION:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+    from sentry_sdk.integrations.celery import CeleryIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            RedisIntegration(),
+            CeleryIntegration(),
+        ],
+        # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring.
+        # Adjust this value in production to reduce overhead.
+        traces_sample_rate=0.1,  # 10% of requests for performance monitoring
+
+        # Capture 100% of errors
+        sample_rate=1.0,
+
+        # Environment
+        environment=ENV,
+
+        # Release tracking (optional - set via CI/CD)
+        release=os.getenv('SENTRY_RELEASE', 'unknown'),
+
+        # Send PII (Personally Identifiable Information) - set to False for privacy
+        send_default_pii=False,
+
+        # Performance monitoring
+        profiles_sample_rate=0.1,  # 10% of transactions for profiling
+    )
+
+    print(f"✅ Sentry initialized for environment: {ENV}")
 

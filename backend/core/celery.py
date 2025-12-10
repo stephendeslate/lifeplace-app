@@ -18,11 +18,18 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 # Configure Redis as the message broker for Celery
+# Redis database allocation:
+# DB 0: Django cache (default)
+# DB 1: Celery broker
+# DB 2: Celery results
+# DB 3: Django Channels (WebSocket)
+# DB 4: Sessions cache
+# DB 5: Analytics cache
 redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379')
 app.conf.update(
     # Broker configuration
-    broker_url=redis_url + '/3',  # Use Redis database 3 for Celery broker
-    result_backend=redis_url + '/4',  # Use Redis database 4 for results
+    broker_url=redis_url + '/1',  # Use Redis database 1 for Celery broker
+    result_backend=redis_url + '/2',  # Use Redis database 2 for results
     
     # Task execution settings
     task_serializer='json',
