@@ -1,11 +1,11 @@
 // frontend/client-portal/src/pages/booking/BookingFlow.tsx
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { 
-  Box, 
-  Container, 
-  Typography, 
+import {
+  Box,
+  Container,
+  Typography,
   CircularProgress,
   Stack,
   Chip,
@@ -33,6 +33,7 @@ import { BookingProvider, useBooking } from '../../contexts/BookingContext';
 import { BookingContainer } from '../../components/booking/BookingContainer';
 import { StepRenderer } from '../../components/booking/StepRenderer';
 import { CleanEventTypeSelection } from '../../components/booking/CleanEventTypeSelection';
+import { SessionRecoveryDialog } from '../../components/booking/SessionRecoveryDialog';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import type { EventType } from '../../types/booking';
@@ -60,7 +61,34 @@ const EventTypeSelectionContainer: React.FC = () => {
 
 // Main booking flow component
 const BookingFlowContent: React.FC = () => {
-  const { state } = useBooking();
+  const { state, actions } = useBooking();
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
+
+  // Show recovery dialog when recoverable session found and no current flow
+  useEffect(() => {
+    if (state.recoverableSession && !state.currentFlow && !state.currentSession) {
+      setShowRecoveryDialog(true);
+    }
+  }, [state.recoverableSession, state.currentFlow, state.currentSession]);
+
+  const handleRestoreSession = () => {
+    if (state.recoverableSession) {
+      // Navigate to booking with session_id to restore the session
+      window.location.href = `/book?session_id=${state.recoverableSession.sessionId}`;
+    }
+  };
+
+  const handleDiscardSession = () => {
+    if (state.recoverableSession) {
+      // Clear the session from localStorage and state
+      actions.clearRecoverableSession(state.recoverableSession.sessionId);
+    }
+    setShowRecoveryDialog(false);
+  };
+
+  const handleCloseDialog = () => {
+    setShowRecoveryDialog(false);
+  };
 
   // Show loading state
   if (state.ui.isLoading && !state.currentFlow) {
@@ -76,7 +104,23 @@ const BookingFlowContent: React.FC = () => {
 
   // Show event type selection if no flow is selected
   if (!state.currentFlow) {
-    return <EventTypeSelectionContainer />;
+    return (
+      <>
+        <SessionRecoveryDialog
+          open={showRecoveryDialog}
+          recoveryInfo={{
+            canRecover: Boolean(state.recoverableSession),
+            lastUpdated: state.recoverableSession?.lastUpdated,
+            currentStep: state.recoverableSession?.stepName,
+            progressPercentage: 0, // Could be calculated from localStorage data
+          }}
+          onRestore={handleRestoreSession}
+          onDiscard={handleDiscardSession}
+          onClose={handleCloseDialog}
+        />
+        <EventTypeSelectionContainer />
+      </>
+    );
   }
 
   // Show the booking flow

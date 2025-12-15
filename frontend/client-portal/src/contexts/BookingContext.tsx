@@ -42,6 +42,7 @@ const initialState: BookingState = {
   selectedPaymentGateway: null,
   totalPrice: '0.00',
   breakdown: [],
+  recoverableSession: null,
 };
 
 // Action types
@@ -61,7 +62,8 @@ type BookingAction =
   | { type: 'SET_PAYMENT_GATEWAYS'; payload: PaymentGateway[] }
   | { type: 'SELECT_PAYMENT_GATEWAY'; payload: PaymentGateway }
   | { type: 'SET_TOTAL_PRICE'; payload: string }
-  | { type: 'RESET_BOOKING' };
+  | { type: 'RESET_BOOKING' }
+  | { type: 'SET_RECOVERABLE_SESSION'; payload: { sessionId: string; lastUpdated: string; stepName: string } | null };
 
 // Reducer
 function bookingReducer(state: BookingState, action: BookingAction): BookingState {
@@ -137,7 +139,10 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
     
     case 'RESET_BOOKING':
       return initialState;
-    
+
+    case 'SET_RECOVERABLE_SESSION':
+      return { ...state, recoverableSession: action.payload };
+
     default:
       return state;
   }
@@ -165,35 +170,45 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       bookingDataUpdate: Record<string, unknown>,
       totalPrice: string
     ) => {
+      // FAILSAFE: Save to localStorage BEFORE API call
+      // This ensures data is preserved even if API fails or tab closes mid-call
+      BookingCoreApi.saveSessionToLocal(sessionId, {
+        booking_data: bookingDataUpdate,
+        total_price: totalPrice,
+        updated_at: new Date().toISOString(),
+        pending_sync: true, // Flag indicating not yet confirmed by server
+      });
+
       try {
-        // Only update backend, don't update local state here
+        // Update backend
         const response = await BookingCoreApi.updateSessionData(
           sessionId,
           stepId,
           bookingDataUpdate,
           false  // mark_completed = false for incremental updates
         );
-        
+
         // Only update total price if it changed
         if (response.total_price && response.total_price !== totalPrice) {
           dispatch({ type: 'SET_TOTAL_PRICE', payload: response.total_price });
         }
-        
+
         // Handle validation errors from backend
         if (response.validation_errors && Object.keys(response.validation_errors).length > 0) {
           dispatch({ type: 'SET_VALIDATION_ERRORS', payload: response.validation_errors as Record<string, string[]> });
         }
-        
-        // Save to local storage
+
+        // Update localStorage with server-confirmed data (clear pending_sync flag)
         BookingCoreApi.saveSessionToLocal(sessionId, {
           booking_data: bookingDataUpdate,
           total_price: response.total_price,
           updated_at: response.updated_at,
+          pending_sync: false, // Confirmed by server
         });
-        
+
       } catch (error) {
-        console.warn('Background update failed:', error);
-        // Don't show errors for background updates - they'll retry
+        console.warn('Background update failed, data preserved in localStorage:', error);
+        // Data is already saved to localStorage from the pre-API save
       }
     }, 1000); // Debounce for 1 second
   }, []);
@@ -239,12 +254,13 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Session recovery on mount
   useEffect(() => {
     BookingCoreApi.cleanupExpiredSessions();
-    
+
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session_id');
-    
-    if (sessionId) {
-      BookingCoreApi.getSession(sessionId)
+    const sessionIdFromUrl = urlParams.get('session_id');
+
+    if (sessionIdFromUrl) {
+      // URL-based recovery - restore the session directly
+      BookingCoreApi.getSession(sessionIdFromUrl)
         .then(sessionData => {
           if (!BookingCoreApi.isSessionExpired(sessionData.expires_at)) {
             dispatch({ type: 'SET_CURRENT_SESSION', payload: sessionData as unknown as BookingSession });
@@ -257,10 +273,119 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         })
         .catch(error => {
-          console.warn('Failed to recover session:', error);
+          console.warn('Failed to recover session from URL:', error);
         });
+    } else {
+      // No URL param - scan localStorage for recoverable sessions (guests)
+      const discoverRecoverableSession = () => {
+        try {
+          const keys = Object.keys(localStorage);
+          const sessionKeys = keys.filter(k => k.startsWith('booking_session_'));
+
+          // Find the most recent non-expired session
+          let mostRecentSession: { sessionId: string; lastUpdated: string; stepName: string; timestamp: number } | null = null;
+
+          for (const key of sessionKeys) {
+            try {
+              const data = JSON.parse(localStorage.getItem(key) || '{}');
+
+              // Skip expired sessions
+              if (data.expires_at && BookingCoreApi.isSessionExpired(data.expires_at)) {
+                localStorage.removeItem(key); // Clean up expired
+                continue;
+              }
+
+              const sessionId = key.replace('booking_session_', '');
+              const lastUpdated = data.updated_at || data.savedAt || data.lastSaved;
+              const timestamp = lastUpdated ? new Date(lastUpdated).getTime() : 0;
+
+              // Track the most recent session
+              if (!mostRecentSession || timestamp > mostRecentSession.timestamp) {
+                mostRecentSession = {
+                  sessionId,
+                  lastUpdated: lastUpdated || new Date().toISOString(),
+                  stepName: data.current_step?.name || data.current_step?.step_type || 'Unknown',
+                  timestamp,
+                };
+              }
+            } catch {
+              // Remove corrupted data
+              localStorage.removeItem(key);
+            }
+          }
+
+          // Set the most recent recoverable session
+          if (mostRecentSession) {
+            dispatch({
+              type: 'SET_RECOVERABLE_SESSION',
+              payload: {
+                sessionId: mostRecentSession.sessionId,
+                lastUpdated: mostRecentSession.lastUpdated,
+                stepName: mostRecentSession.stepName,
+              },
+            });
+          }
+        } catch (error) {
+          console.warn('Error discovering recoverable sessions:', error);
+        }
+      };
+
+      discoverRecoverableSession();
     }
   }, []);
+
+  // Unload handlers - save session when user leaves the page
+  useEffect(() => {
+    if (!state.currentSession) return;
+
+    // Capture session reference at effect time for use in closure
+    const currentSession = state.currentSession;
+
+    const saveSessionOnLeave = () => {
+      // Force flush any pending debounced updates
+      if (debouncedUpdateRef.current?.flush) {
+        debouncedUpdateRef.current.flush();
+      }
+
+      // Save current state to localStorage synchronously
+      try {
+        const sessionToSave = {
+          ...currentSession,
+          stepData: state.stepData,
+          booking_data: currentSession.booking_data,
+          total_price: state.totalPrice,
+          savedAt: new Date().toISOString(),
+        };
+
+        localStorage.setItem(
+          `booking_session_${currentSession.session_id}`,
+          JSON.stringify(sessionToSave)
+        );
+      } catch (e) {
+        console.warn('Failed to save session on unload:', e);
+      }
+    };
+
+    // Save on page unload (tab close, navigation away)
+    window.addEventListener('beforeunload', saveSessionOnLeave);
+
+    // Save on visibility change (tab switch, minimize)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        saveSessionOnLeave();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Save on page hide (mobile browsers)
+    window.addEventListener('pagehide', saveSessionOnLeave);
+
+    return () => {
+      window.removeEventListener('beforeunload', saveSessionOnLeave);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', saveSessionOnLeave);
+    };
+  }, [state.currentSession, state.stepData, state.totalPrice]);
 
   // Actions implementation
   const actions: BookingActions = {
@@ -669,6 +794,15 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     clearErrors: useCallback(() => {
       dispatch({ type: 'CLEAR_ERRORS' });
+    }, []),
+
+    clearRecoverableSession: useCallback((sessionId?: string) => {
+      // Clear the recoverable session state
+      dispatch({ type: 'SET_RECOVERABLE_SESSION', payload: null });
+      // Also clear from localStorage if sessionId provided
+      if (sessionId) {
+        BookingCoreApi.clearSessionFromLocal(sessionId);
+      }
     }, []),
   };
 

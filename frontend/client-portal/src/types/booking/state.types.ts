@@ -55,6 +55,13 @@ export interface BookingState {
     total_price: string;
     type: 'PACKAGE' | 'ADDON' | 'TAX' | 'DISCOUNT' | 'FEE';
   }[];
+
+  // Session recovery
+  recoverableSession: {
+    sessionId: string;
+    lastUpdated: string;
+    stepName: string;
+  } | null;
 }
 
 // Action types
@@ -92,4 +99,7 @@ export interface BookingActions {
   calculatePricing: () => Promise<void>;
   resetBooking: () => void;
   clearErrors: () => void;
+
+  // Session recovery
+  clearRecoverableSession: (sessionId?: string) => void;
 }
