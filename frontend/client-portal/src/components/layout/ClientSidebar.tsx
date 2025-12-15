@@ -22,7 +22,7 @@ import {
   CalendarMonth as BookingIcon,
   Payment as PaymentIcon,
   Description as ContractIcon,
-  Message as MessageIcon,
+  AssignmentTurnedIn as ActionCenterIcon,
   Person as ProfileIcon,
   HelpOutline as HelpIcon,
   Home as HomeIcon,
@@ -31,6 +31,7 @@ import {
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { useContracts } from '../../contexts/ContractsContext';
+import { useActionCount } from '../../hooks/useActionCenter';
 
 interface ClientSidebarProps {
   open: boolean;
@@ -69,11 +70,10 @@ const navigationItems: NavigationItem[] = [
     icon: <HistoryIcon />,
   },
   {
-    id: 'messages',
-    label: 'Messages',
-    path: '/messages',
-    icon: <MessageIcon />,
-    // TODO: Replace with unread messages count
+    id: 'actions',
+    label: 'Action Center',
+    path: '/actions',
+    icon: <ActionCenterIcon />,
   },
   {
     id: 'booking',
@@ -128,8 +128,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { pendingContracts } = useContracts();
-  
-  // Messaging state removed - feature under development
+  const { count: actionCount } = useActionCount();
 
   // Enhanced navigation items with dynamic badges
   const getEnhancedNavigationItems = (): NavigationItem[] => {
@@ -140,11 +139,10 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
           badge: pendingContracts.length > 0 ? pendingContracts.length : undefined,
         };
       }
-      // Messages badge disabled - feature under development
-      if (item.id === 'messages') {
+      if (item.id === 'actions') {
         return {
           ...item,
-          badge: undefined,
+          badge: actionCount > 0 ? actionCount : undefined,
         };
       }
       return item;

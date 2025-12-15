@@ -21,8 +21,8 @@ import ContractsPage from './pages/contracts/ContractsPage';
 import { AboutPage } from './pages/about';
 import { FacilitiesPage } from './pages/facilities';
 
-// Messaging and Records imports
-import { ClientMessagesPage } from './pages/messages/ClientMessagesPage';
+// Action Center and Records imports
+import { ActionCenterPage } from './pages/actions/ActionCenterPage';
 import { RecordsPage } from './pages/records/RecordsPage';
 
 
@@ -411,26 +411,25 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Messages Routes */}
+      {/* Action Center Route */}
       <Route
-        path="/messages"
+        path="/actions"
         element={
           <ProtectedRoute>
             <ClientLayoutWrapper>
-              <ClientMessagesPage />
+              <ActionCenterPage />
             </ClientLayoutWrapper>
           </ProtectedRoute>
         }
       />
+      {/* Redirect old messages route to actions for backward compatibility */}
       <Route
-        path="/messages/thread/:threadId"
-        element={
-          <ProtectedRoute>
-            <ClientLayoutWrapper>
-              <ClientMessagesPage />
-            </ClientLayoutWrapper>
-          </ProtectedRoute>
-        }
+        path="/messages"
+        element={<Navigate to="/actions" replace />}
+      />
+      <Route
+        path="/messages/*"
+        element={<Navigate to="/actions" replace />}
       />
 
       <Route
