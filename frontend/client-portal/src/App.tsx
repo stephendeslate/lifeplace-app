@@ -17,7 +17,7 @@ import { Profile } from './pages/profile';
 import { FinancialPortal } from './pages/payments';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
-import ContractsPage from './pages/contracts/ContractsPage';
+import { DocumentsPage } from './pages/documents/DocumentsPage';
 import { AboutPage } from './pages/about';
 import { FacilitiesPage } from './pages/facilities';
 
@@ -390,14 +390,19 @@ const AppRouter: React.FC = () => {
       />
 
       <Route
-        path="/contracts"
+        path="/documents"
         element={
           <ProtectedRoute>
             <ClientLayoutWrapper>
-              <ContractsPage />
+              <DocumentsPage />
             </ClientLayoutWrapper>
           </ProtectedRoute>
         }
+      />
+      {/* Redirect old contracts route to documents for backward compatibility */}
+      <Route
+        path="/contracts"
+        element={<Navigate to="/documents" replace />}
       />
 
       <Route
