@@ -21,7 +21,7 @@ import {
   Event as EventIcon,
   CalendarMonth as BookingIcon,
   Payment as PaymentIcon,
-  Description as ContractIcon,
+  Folder as DocumentsIcon,
   AssignmentTurnedIn as ActionCenterIcon,
   Person as ProfileIcon,
   HelpOutline as HelpIcon,
@@ -30,7 +30,6 @@ import {
 } from '@mui/icons-material';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GlassCard } from '../../design-system/components/GlassCard';
-import { useContracts } from '../../contexts/ContractsContext';
 import { useActionCount } from '../../hooks/useActionCenter';
 
 interface ClientSidebarProps {
@@ -76,12 +75,6 @@ const navigationItems: NavigationItem[] = [
     icon: <ActionCenterIcon />,
   },
   {
-    id: 'booking',
-    label: 'Book New Event',
-    path: '/booking',
-    icon: <BookingIcon />,
-  },
-  {
     id: 'payments',
     label: 'Payments & Invoices',
     path: '/payments',
@@ -89,11 +82,16 @@ const navigationItems: NavigationItem[] = [
     // TODO: Replace with API-driven outstanding payments count
   },
   {
-    id: 'contracts',
-    label: 'Contracts',
-    path: '/contracts',
-    icon: <ContractIcon />,
-    // TODO: Replace with API-driven pending contracts count
+    id: 'documents',
+    label: 'Documents',
+    path: '/documents',
+    icon: <DocumentsIcon />,
+  },
+  {
+    id: 'booking',
+    label: 'Book New Event',
+    path: '/booking',
+    icon: <BookingIcon />,
   },
 ];
 
@@ -127,18 +125,11 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const { pendingContracts } = useContracts();
   const { count: actionCount } = useActionCount();
 
   // Enhanced navigation items with dynamic badges
   const getEnhancedNavigationItems = (): NavigationItem[] => {
     return navigationItems.map(item => {
-      if (item.id === 'contracts') {
-        return {
-          ...item,
-          badge: pendingContracts.length > 0 ? pendingContracts.length : undefined,
-        };
-      }
       if (item.id === 'actions') {
         return {
           ...item,
