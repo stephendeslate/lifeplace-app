@@ -21,6 +21,7 @@ from ..serializers import (
     ContactInfoStepConfigurationSerializer,
     PaymentInfoStepConfigurationSerializer,
     ConfirmationStepConfigurationSerializer,
+    PaymentTermsConfigurationSerializer,
 )
 from ..services import (
     BookingFlowStepService,
@@ -405,6 +406,62 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
                 'payment_terms': config.payment_terms
             })
             
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['get'])
+    def payment_terms_configuration(self, request, pk=None):
+        """Get payment terms configuration for a payment_info step"""
+        try:
+            step = self.get_object()
+
+            if step.step_type != 'payment_info':
+                return Response(
+                    {"detail": "Payment terms configuration is only available for payment_info steps"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            config = BookingFlowStepConfigurationService.get_payment_terms_configuration(pk)
+            serializer = PaymentTermsConfigurationSerializer(config)
+            return Response(serializer.data)
+        except BookingFlowStepNotFound:
+            return Response(
+                {"detail": "Step not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['patch'])
+    def update_payment_terms_configuration(self, request, pk=None):
+        """Update payment terms configuration for a payment_info step"""
+        try:
+            step = self.get_object()
+
+            if step.step_type != 'payment_info':
+                return Response(
+                    {"detail": "Payment terms configuration is only available for payment_info steps"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            with transaction.atomic():
+                config = BookingFlowStepConfigurationService.update_payment_terms_configuration(
+                    pk, request.data
+                )
+
+            serializer = PaymentTermsConfigurationSerializer(config)
+            return Response(serializer.data)
+        except (BookingFlowStepNotFound, InvalidStepConfiguration) as e:
+            return Response(
+                {"detail": str(e)},
+                status=e.status_code if hasattr(e, 'status_code') else status.HTTP_400_BAD_REQUEST
+            )
         except Exception as e:
             return Response(
                 {"detail": str(e)},

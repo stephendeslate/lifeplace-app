@@ -25,6 +25,7 @@ from .models import (
     IntroductionStepConfiguration,
     PackageSelectionStepConfiguration,
     PaymentInfoStepConfiguration,
+    PaymentTermsConfiguration,
     PricingSummaryStepConfiguration,
     QuestionnaireStepConfiguration,
     QuestionnaireStepItem,
@@ -235,6 +236,87 @@ class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
+
+
+class PaymentTermsConfigurationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for PaymentTermsConfiguration.
+
+    Flow-specific payment terms that override global PaymentSettings.
+    All fields are nullable - null means "use global default".
+    """
+    # Read-only computed field showing effective (merged) settings
+    effective_settings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PaymentTermsConfiguration
+        fields = [
+            'id', 'step',
+            # Deposit configuration overrides
+            'deposit_type',
+            'deposit_percentage',
+            'deposit_fixed_amount',
+            'deposit_is_refundable',
+            'deposit_is_deductible',
+            'deposit_waived_on_full_payment',
+            # Late fee configuration overrides
+            'late_fee_type',
+            'late_fee_amount',
+            'late_fee_percentage',
+            # Security deposit configuration overrides
+            'security_deposit_enabled',
+            'security_deposit_amount',
+            'security_deposit_is_refundable',
+            'security_deposit_description',
+            # Cancellation configuration overrides
+            'cancellation_admin_fee_percentage',
+            # Payment schedule configuration overrides
+            'downpayment_percentage',
+            'downpayment_due_days',
+            'balance_due_days',
+            'balance_due_type',
+            # Computed field
+            'effective_settings',
+            # Timestamps
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'step', 'effective_settings', 'created_at', 'updated_at']
+
+    def get_effective_settings(self, obj):
+        """Get the merged settings (flow-specific + global defaults)"""
+        return obj.get_effective_settings()
+
+    def validate_deposit_percentage(self, value):
+        """Validate deposit percentage is between 0 and 100"""
+        if value is not None and not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Deposit percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_downpayment_percentage(self, value):
+        """Validate downpayment percentage is between 0 and 100"""
+        if value is not None and not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Downpayment percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_late_fee_percentage(self, value):
+        """Validate late fee percentage is between 0 and 100"""
+        if value is not None and not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Late fee percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_cancellation_admin_fee_percentage(self, value):
+        """Validate cancellation admin fee percentage is between 0 and 100"""
+        if value is not None and not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Cancellation admin fee percentage must be between 0 and 100."
+            )
+        return value
 
 
 class ConfirmationStepConfigurationSerializer(serializers.ModelSerializer):

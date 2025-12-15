@@ -159,7 +159,7 @@ export interface QuestionnaireFieldTableProps {
   isLoading: boolean;
   onEdit: (field: QuestionnaireField) => void;
   onDelete: (id: number) => void;
-  onReorder: (fields: QuestionnaireField[]) => void;
+  onReorder?: (fields: QuestionnaireField[]) => void;
   isDeleting: boolean;
 }
 

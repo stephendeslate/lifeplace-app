@@ -17,6 +17,7 @@ import type {
   ReorderStepsData,
   DuplicateFlowData,
   AssignQuestionnairesData,
+  PaymentTermsConfiguration,
 } from '../types/bookingflows.types';
 
 // FIXED: Remove non-existent hook dependencies
@@ -546,6 +547,50 @@ export const useBookingFlowStepConfiguration = () => {
     });
   };
 
+  // Payment Terms Configuration (for payment_info steps)
+  const usePaymentTermsConfiguration = (stepId: number, options?: { enabled?: boolean }) => {
+    const isEnabled = options?.enabled !== undefined ? options.enabled && !!stepId : !!stepId;
+    return useQuery({
+      queryKey: ['payment-terms-configuration', stepId],
+      queryFn: () => bookingFlowsApi.getPaymentTermsConfiguration(stepId),
+      enabled: isEnabled,
+      staleTime: 2 * 60 * 1000,
+    });
+  };
+
+  const updatePaymentTermsMutation = useMutation({
+    mutationFn: ({ stepId, data }: { stepId: number; data: Partial<PaymentTermsConfiguration> }) =>
+      bookingFlowsApi.updatePaymentTermsConfiguration(stepId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payment-terms-configuration'] });
+      showSuccess('Payment Terms Updated', 'Payment terms configuration has been updated successfully.');
+    },
+    onError: (error: unknown) => {
+      console.error('Update payment terms error:', error);
+
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as { response?: { data?: Record<string, unknown> } }).response;
+        if (response?.data) {
+          const errorData = response.data;
+
+          if (errorData.detail) {
+            showError('Update Failed', String(errorData.detail));
+          } else {
+            const fieldErrors = Object.entries(errorData)
+              .map(([field, messages]) => {
+                const messageText = Array.isArray(messages) ? messages.join(', ') : String(messages);
+                return `${field}: ${messageText}`;
+              })
+              .join('\n');
+            showError('Validation Errors', fieldErrors);
+          }
+        }
+      } else {
+        showError('Update Failed', 'Failed to update payment terms. Please try again.');
+      }
+    },
+  });
+
   return {
     // Configuration hooks
     useStepConfiguration,
@@ -556,18 +601,22 @@ export const useBookingFlowStepConfiguration = () => {
     useAvailablePackages,
     useAvailableAddons,
     useAvailableCategories,
-    
+    usePaymentTermsConfiguration,
+
     // Loading states
     isUpdatingConfiguration: updateConfigurationMutation.isPending,
     isAssigningQuestionnaires: assignQuestionnairesMutation.isPending,
-    
+    isUpdatingPaymentTerms: updatePaymentTermsMutation.isPending,
+
     // Error states
     updateConfigurationError: updateConfigurationMutation.error,
     assignQuestionnairesError: assignQuestionnairesMutation.error,
-    
+    updatePaymentTermsError: updatePaymentTermsMutation.error,
+
     // Actions
     updateConfiguration: updateConfigurationMutation.mutate,
     assignQuestionnaires: assignQuestionnairesMutation.mutate,
+    updatePaymentTerms: updatePaymentTermsMutation.mutate,
   };
 };
 

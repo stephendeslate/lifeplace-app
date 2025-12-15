@@ -47,10 +47,7 @@ class PaymentSettingsAdmin(admin.ModelAdmin):
             'fields': ('default_deposit_percentage',),
             'description': 'Default deposit percentage for new bookings'
         }),
-        ('Currency Settings', {
-            'fields': ('default_currency',),
-            'description': 'Default currency for payments and quotes'
-        }),
+        # NOTE: Currency Settings removed - currency is now managed in Settings > Commerce > Currency & Taxes
         ('Auto Payment Retry Settings', {
             'fields': ('auto_payment_retry_attempts', 'auto_payment_retry_delay_days'),
             'description': 'Configure automatic retry behavior for failed payments',

@@ -65,12 +65,115 @@ class PaymentSettings(BaseModel):
         help_text="Default deposit percentage (0-100)"
     )
 
-    # CURRENCY SETTINGS
-    default_currency = models.CharField(
-        max_length=3,
-        default='PHP',
-        help_text="Default currency (ISO 4217 code)"
+    deposit_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('PERCENTAGE', 'Percentage of Total'),
+            ('FIXED', 'Fixed Amount')
+        ],
+        default='PERCENTAGE',
+        help_text="Type of deposit calculation"
     )
+
+    deposit_fixed_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Fixed deposit amount (used when deposit_type is FIXED)"
+    )
+
+    deposit_is_refundable = models.BooleanField(
+        default=False,
+        help_text="Whether the deposit is refundable on cancellation"
+    )
+
+    deposit_is_deductible = models.BooleanField(
+        default=True,
+        help_text="Whether the deposit is deducted from the total contract price"
+    )
+
+    deposit_waived_on_full_payment = models.BooleanField(
+        default=True,
+        help_text="Whether the deposit is waived if client pays in full upfront"
+    )
+
+    # LATE FEE SETTINGS (Enhanced)
+    late_fee_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('FIXED', 'Fixed Amount'),
+            ('PERCENTAGE', 'Percentage of Invoice')
+        ],
+        default='FIXED',
+        help_text="Type of late fee calculation"
+    )
+
+    late_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Late fee as percentage of invoice amount (used when late_fee_type is PERCENTAGE)"
+    )
+
+    # SECURITY DEPOSIT SETTINGS
+    security_deposit_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable security deposit requirement"
+    )
+
+    security_deposit_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Security deposit amount (e.g., for keys, damages)"
+    )
+
+    security_deposit_is_refundable = models.BooleanField(
+        default=True,
+        help_text="Whether security deposit is refundable after event/inspection"
+    )
+
+    security_deposit_description = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Description of what security deposit covers (e.g., 'for keys upon check-in')"
+    )
+
+    # CANCELLATION SETTINGS
+    cancellation_admin_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Administrative processing fee percentage on cancellations"
+    )
+
+    # PAYMENT SCHEDULE SETTINGS
+    downpayment_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('30.00'),
+        help_text="Downpayment percentage of total contract price (0-100)"
+    )
+
+    downpayment_due_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Days after booking to pay downpayment (to block date)"
+    )
+
+    balance_due_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('DAYS_BEFORE', 'Specific Days Before Event'),
+            ('DAY_BEFORE', 'Day Before Event')
+        ],
+        default='DAYS_BEFORE',
+        help_text="When remaining balance is due"
+    )
+
+    # NOTE: default_currency has been removed from this model.
+    # Currency is now managed by CurrencySettings in the settings domain.
+    # Use CurrencySettings.get_system_settings().default_currency instead.
 
     # AUTO PAYMENT RETRY SETTINGS
     auto_payment_retry_attempts = models.PositiveIntegerField(
@@ -137,6 +240,23 @@ class PaymentSettings(BaseModel):
         if not (0 <= self.refund_percentage <= 100):
             raise ValidationError("Refund percentage must be between 0 and 100.")
 
+        if not (0 <= self.downpayment_percentage <= 100):
+            raise ValidationError("Downpayment percentage must be between 0 and 100.")
+
+        if not (0 <= self.late_fee_percentage <= 100):
+            raise ValidationError("Late fee percentage must be between 0 and 100.")
+
+        if not (0 <= self.cancellation_admin_fee_percentage <= 100):
+            raise ValidationError("Cancellation admin fee percentage must be between 0 and 100.")
+
+        # Validate deposit type requirements
+        if self.deposit_type == 'FIXED' and self.deposit_fixed_amount is None:
+            raise ValidationError("Fixed deposit amount is required when deposit type is FIXED.")
+
+        # Validate security deposit
+        if self.security_deposit_enabled and self.security_deposit_amount <= 0:
+            raise ValidationError("Security deposit amount must be greater than 0 when enabled.")
+
     def save(self, *args, **kwargs):
         """Ensure singleton pattern"""
         self.full_clean()
@@ -154,7 +274,7 @@ class PaymentSettings(BaseModel):
                 'late_fee_enabled': True,
                 'default_late_fee_amount': Decimal('25.00'),
                 'default_deposit_percentage': Decimal('50.00'),
-                'default_currency': 'PHP',
+                # NOTE: default_currency removed - use CurrencySettings instead
                 'auto_payment_retry_attempts': 3,
                 'auto_payment_retry_delay_days': 2,
                 # CONSOLIDATED: Refund policy defaults
@@ -162,6 +282,26 @@ class PaymentSettings(BaseModel):
                 'refund_deadline_hours': 48,
                 'refund_percentage': 100,
                 'refund_policy_text': '',
+                # NEW: Enhanced deposit settings
+                'deposit_type': 'PERCENTAGE',
+                'deposit_fixed_amount': None,
+                'deposit_is_refundable': False,
+                'deposit_is_deductible': True,
+                'deposit_waived_on_full_payment': True,
+                # NEW: Enhanced late fee settings
+                'late_fee_type': 'FIXED',
+                'late_fee_percentage': Decimal('0.00'),
+                # NEW: Security deposit settings
+                'security_deposit_enabled': False,
+                'security_deposit_amount': Decimal('0.00'),
+                'security_deposit_is_refundable': True,
+                'security_deposit_description': '',
+                # NEW: Cancellation settings
+                'cancellation_admin_fee_percentage': Decimal('0.00'),
+                # NEW: Payment schedule settings
+                'downpayment_percentage': Decimal('30.00'),
+                'downpayment_due_days': 7,
+                'balance_due_type': 'DAYS_BEFORE',
                 # Note: ManyToMany and ForeignKey fields set after creation
             }
         )

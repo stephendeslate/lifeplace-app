@@ -23,15 +23,19 @@ import {
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 import { usePaymentSettings } from '../../../hooks/usePayments';
+import { PaymentTermsStepConfig } from './PaymentTermsStepConfig';
 import type {
   BookingFlowStep,
-  PaymentInfoStepConfiguration
+  PaymentInfoStepConfiguration,
+  PaymentTermsConfiguration,
 } from '../../../types/bookingflows.types';
 
 interface PaymentInfoStepConfigProps {
   step: BookingFlowStep;
   config?: PaymentInfoStepConfiguration | null;
+  paymentTermsConfig?: PaymentTermsConfiguration | null;
   onUpdate: (data: Partial<PaymentInfoStepConfiguration>) => void;
+  onUpdatePaymentTerms?: (data: Partial<PaymentTermsConfiguration>) => void;
   isLoading?: boolean;
 }
 
@@ -63,7 +67,9 @@ const defaultFormData: PaymentInfoConfigFormData = {
 
 export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
   config,
+  paymentTermsConfig,
   onUpdate,
+  onUpdatePaymentTerms,
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState<PaymentInfoConfigFormData>(defaultFormData);
@@ -305,6 +311,14 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
           </Box>
         </ModernCard>
 
+        {/* Flow-Specific Payment Terms Override */}
+        {onUpdatePaymentTerms && (
+          <PaymentTermsStepConfig
+            config={paymentTermsConfig}
+            onUpdate={onUpdatePaymentTerms}
+            isLoading={isLoading}
+          />
+        )}
 
         {/* Payment Processing */}
         <ModernCard variant="glass" size="medium" animation="none">

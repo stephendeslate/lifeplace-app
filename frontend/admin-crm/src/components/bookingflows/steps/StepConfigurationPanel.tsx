@@ -23,11 +23,12 @@ import {
 // Modern Design System imports
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
-import type { 
+import type {
   BookingFlowStep,
   QuestionnaireStepConfiguration,
   AddonSelectionStepConfiguration,
-  PaymentInfoStepConfiguration
+  PaymentInfoStepConfiguration,
+  PaymentTermsConfiguration,
 } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import {
@@ -76,14 +77,23 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
     updateConfiguration,
     isUpdatingConfiguration,
     updateConfigurationError,
+    usePaymentTermsConfiguration,
+    updatePaymentTerms,
+    isUpdatingPaymentTerms,
   } = useBookingFlowStepConfiguration();
 
-  const { 
-    data: currentConfig, 
+  const {
+    data: currentConfig,
     isLoading: isLoadingConfig,
     refetch: refetchConfig,
     error: configError,
   } = useStepConfiguration(step.id);
+
+  // Only fetch payment terms configuration for payment_info steps
+  const {
+    data: paymentTermsConfig,
+    refetch: refetchPaymentTerms,
+  } = usePaymentTermsConfiguration(step.id, { enabled: step.step_type === 'payment_info' });
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -198,8 +208,13 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           <PaymentInfoStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').PaymentInfoStepConfiguration | null | undefined}
+            paymentTermsConfig={paymentTermsConfig as PaymentTermsConfiguration | null | undefined}
             onUpdate={(data: Partial<PaymentInfoStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
-            isLoading={isUpdatingConfiguration}
+            onUpdatePaymentTerms={(data: Partial<PaymentTermsConfiguration>) => {
+              updatePaymentTerms({ stepId: step.id, data });
+              refetchPaymentTerms();
+            }}
+            isLoading={isUpdatingConfiguration || isUpdatingPaymentTerms}
           />
         );
 

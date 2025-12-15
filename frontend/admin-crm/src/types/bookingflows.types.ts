@@ -363,12 +363,55 @@ export interface ConfirmationStepConfiguration {
   show_booking_summary: boolean;
   show_next_steps: boolean;
   next_steps_content: string;
-  
+
   // Auto-actions
   send_confirmation_email: boolean;
   send_calendar_invite: boolean;
   create_event_immediately: boolean;
-  
+
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * PaymentTermsConfiguration - Flow-specific payment terms that override global PaymentSettings.
+ * All fields are nullable - null means "use global default".
+ */
+export interface PaymentTermsConfiguration {
+  id: number;
+  step: number;
+
+  // Deposit configuration overrides (null = use global)
+  deposit_type: 'PERCENTAGE' | 'FIXED' | null;
+  deposit_percentage: number | null;  // Decimal as number
+  deposit_fixed_amount: number | null;  // Decimal as number
+  deposit_is_refundable: boolean | null;
+  deposit_is_deductible: boolean | null;
+  deposit_waived_on_full_payment: boolean | null;
+
+  // Late fee configuration overrides (null = use global)
+  late_fee_type: 'FIXED' | 'PERCENTAGE' | null;
+  late_fee_amount: number | null;  // Decimal as number
+  late_fee_percentage: number | null;  // Decimal as number
+
+  // Security deposit configuration overrides (null = use global)
+  security_deposit_enabled: boolean | null;
+  security_deposit_amount: number | null;  // Decimal as number
+  security_deposit_is_refundable: boolean | null;
+  security_deposit_description: string;  // Empty string = use global
+
+  // Cancellation configuration overrides (null = use global)
+  cancellation_admin_fee_percentage: number | null;  // Decimal as number
+
+  // Payment schedule configuration overrides (null = use global)
+  downpayment_percentage: number | null;  // Decimal as number
+  downpayment_due_days: number | null;
+  balance_due_days: number | null;
+  balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE' | null;
+
+  // Computed field - merged settings (flow-specific + global defaults)
+  effective_settings?: Record<string, unknown>;
+
   created_at: string;
   updated_at: string;
 }

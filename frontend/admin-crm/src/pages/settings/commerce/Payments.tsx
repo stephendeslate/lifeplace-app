@@ -14,20 +14,17 @@ import {
 import {
   Add as AddIcon,
   Payment as PaymentIcon,
-  AccountBalance as TaxIcon,
   Search as SearchIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { usePaymentGateways, useTaxRates } from '../../../hooks/usePayments';
+import { usePaymentGateways } from '../../../hooks/usePayments';
 import {
   PaymentGatewayTable,
   PaymentGatewayFormDialog,
-  TaxRateTable,
-  TaxRateFormDialog,
   PaymentPlanSettings,
 } from '../../../components/payments';
-import type { PaymentGateway, TaxRate } from '../../../types/payments.types';
+import type { PaymentGateway } from '../../../types/payments.types';
 
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
@@ -64,18 +61,13 @@ export const Payments: React.FC = () => {
   // Gateway management state
   const [gatewayDialogOpen, setGatewayDialogOpen] = useState(false);
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>(null);
-  
-  // Tax rate management state
-  const [taxRateDialogOpen, setTaxRateDialogOpen] = useState(false);
-  const [selectedTaxRate, setSelectedTaxRate] = useState<TaxRate | null>(null);
-  
+
   // Search functionality
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchField, setShowSearchField] = useState(false);
 
   // Data fetching
   const { data: gateways = [], isLoading: gatewaysLoading, refetch: refetchGateways } = usePaymentGateways();
-  const { data: taxRates = [], isLoading: taxRatesLoading, refetch: refetchTaxRates } = useTaxRates();
 
   useEffect(() => {
     setBreadcrumbs([
@@ -105,29 +97,12 @@ export const Payments: React.FC = () => {
     setSelectedGateway(null);
   };
 
-  // Tax rate handlers
-  const handleAddTaxRate = () => {
-    setSelectedTaxRate(null);
-    setTaxRateDialogOpen(true);
-  };
-
-  const handleEditTaxRate = (taxRate: TaxRate) => {
-    setSelectedTaxRate(taxRate);
-    setTaxRateDialogOpen(true);
-  };
-
-  const handleCloseTaxRateDialog = () => {
-    setTaxRateDialogOpen(false);
-    setSelectedTaxRate(null);
-  };
-
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
 
   const handleRefresh = () => {
     refetchGateways();
-    refetchTaxRates();
   };
 
   const handleToggleSearch = () => {
@@ -138,11 +113,10 @@ export const Payments: React.FC = () => {
   };
 
   const hasPayMongo = gateways.some(g => g.code === 'paymongo' && g.is_active);
-  
+
   // Calculate stats
   const activeGateways = gateways.filter(g => g.is_active).length;
-  const activeTaxRates = taxRates.length; // TaxRate doesn't have is_active property
-  
+
   // Header actions
   const headerActions: HeaderAction[] = [
     {
@@ -150,14 +124,14 @@ export const Payments: React.FC = () => {
       label: showSearchField ? 'Hide Search' : 'Search',
       onClick: handleToggleSearch,
       variant: 'icon',
-      tooltip: showSearchField ? 'Hide search field' : 'Search payment gateways and tax rates',
+      tooltip: showSearchField ? 'Hide search field' : 'Search payment gateways',
     },
     createRefreshAction(handleRefresh),
   ];
 
-  const primaryAction = activeTab !== 1 ? createAddAction(
-    activeTab === 0 ? 'New Gateway' : 'New Tax Rate',
-    activeTab === 0 ? handleAddGateway : handleAddTaxRate,
+  const primaryAction = activeTab === 0 ? createAddAction(
+    'New Gateway',
+    handleAddGateway,
     'primary'
   ) : undefined;
 
@@ -166,7 +140,7 @@ export const Payments: React.FC = () => {
       {/* Modern Header */}
       <ModernPageHeader
         title="Payment Configuration"
-        subtitle="Configure payment gateways and tax settings for client transactions"
+        subtitle="Configure payment gateways and payment plans for client transactions"
         icon={<PaymentIcon />}
         breadcrumbs={[
           { label: 'Settings' },
@@ -177,7 +151,6 @@ export const Payments: React.FC = () => {
         secondaryActions={headerActions}
         stats={[
           { label: 'Active Gateways', value: activeGateways },
-          { label: 'Active Tax Rates', value: activeTaxRates },
           { label: 'Total Gateways', value: gateways.length },
         ]}
         size="medium"
@@ -214,14 +187,14 @@ export const Payments: React.FC = () => {
                 <SearchIcon sx={{ color: tokens.color.primary[600] }} />
                 Search Payment Configuration
               </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
+              <Typography
+                variant="body2"
+                sx={{
                   color: tokens.color.neutral[600],
                   mb: 3,
                 }}
               >
-                Find payment gateways and tax rates by name, type, or configuration details
+                Find payment gateways by name, type, or configuration details
               </Typography>
 
               <TextField
@@ -348,13 +321,8 @@ export const Payments: React.FC = () => {
               iconPosition="start"
             />
             <Tab
-              label="Payment Plans"
+              label="Payment Plans and Terms"
               icon={<SettingsIcon />}
-              iconPosition="start"
-            />
-            <Tab
-              label="Tax Rates"
-              icon={<TaxIcon />}
               iconPosition="start"
             />
           </Tabs>
@@ -416,7 +384,7 @@ export const Payments: React.FC = () => {
             />
           </TabPanel>
 
-          {/* Payment Plans Tab */}
+          {/* Payment Plans and Terms Tab */}
           <TabPanel value={activeTab} index={1}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
               <Box>
@@ -443,60 +411,6 @@ export const Payments: React.FC = () => {
 
             <PaymentPlanSettings />
           </TabPanel>
-
-          {/* Tax Rates Tab */}
-          <TabPanel value={activeTab} index={2}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-              <Box>
-                <Typography 
-                  variant="h6" 
-                  fontWeight="700"
-                  sx={{ 
-                    color: tokens.color.neutral[800],
-                    mb: 0.5,
-                  }}
-                >
-                  Tax Rates
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: tokens.color.neutral[600],
-                  }}
-                >
-                  Manage tax rates applied to invoices and quotes
-                </Typography>
-              </Box>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleAddTaxRate}
-                sx={{
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                  borderRadius: tokens.spacing.radius.full,
-                  fontWeight: 600,
-                  px: 3,
-                  py: 1.25,
-                  boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
-                  transition: createTransition(['transform', 'box-shadow'], 'fast'),
-                  
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-                    transform: 'translateY(-2px)',
-                    boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
-                  },
-                }}
-              >
-                Add Tax Rate
-              </Button>
-            </Box>
-
-            <TaxRateTable
-              taxRates={taxRates}
-              isLoading={taxRatesLoading}
-              onEdit={handleEditTaxRate}
-            />
-          </TabPanel>
         </Box>
       </ModernCard>
 
@@ -505,12 +419,6 @@ export const Payments: React.FC = () => {
         open={gatewayDialogOpen}
         onClose={handleCloseGatewayDialog}
         gateway={selectedGateway}
-      />
-
-      <TaxRateFormDialog
-        open={taxRateDialogOpen}
-        onClose={handleCloseTaxRateDialog}
-        taxRate={selectedTaxRate}
       />
     </ModernSettingsLayout>
   );

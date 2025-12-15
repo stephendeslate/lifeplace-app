@@ -206,14 +206,33 @@ class ContractContextService:
     
     @staticmethod
     def _get_payment_terms(event: Event) -> str:
-        """Get payment terms with fallback"""
-        # Check event preferences for custom payment terms
+        """
+        Get payment terms with fallback hierarchy:
+        1. Event preferences (custom override for this specific event)
+        2. Booking flow's PaymentTermsConfiguration (flow-specific)
+        3. Global PaymentSettings defaults
+        """
+        # Check event preferences for custom payment terms (highest priority)
         if event.preferences and isinstance(event.preferences, dict):
             payment_terms = event.preferences.get('payment_terms')
             if payment_terms:
                 return payment_terms
-        
-        # Default payment terms
+
+        # Use PaymentTermsResolver to get structured terms and generate text
+        try:
+            from core.domains.payments.services import PaymentTermsResolver
+
+            # Get payment terms for this event (traces back to booking flow)
+            terms = PaymentTermsResolver.get_terms_for_event(event.id)
+
+            # Generate human-readable payment terms text from structured config
+            return PaymentTermsResolver.generate_terms_text(terms)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error generating payment terms for event {event.id}: {e}")
+
+        # Ultimate fallback
         return '50% deposit required upon contract signing, remaining balance due 7 days before event date'
     
     @staticmethod
