@@ -18,6 +18,7 @@ from ..models import (
     PricingSummaryStepConfiguration,
     ContactInfoStepConfiguration,
     PaymentInfoStepConfiguration,
+    PaymentTermsConfiguration,
     IntroductionStepConfiguration,
     DateTimeStepConfiguration,
     ConfirmationStepConfiguration,
@@ -461,3 +462,65 @@ class BookingFlowStepConfigurationService:
                 setattr(config, key, value)
         config.save()
         return config
+
+    @staticmethod
+    def get_payment_terms_configuration(step_id):
+        """Get payment terms configuration for a payment info step"""
+        try:
+            step = BookingFlowStep.objects.get(id=step_id)
+        except BookingFlowStep.DoesNotExist:
+            raise BookingFlowStepNotFound()
+
+        if step.step_type != 'payment_info':
+            raise InvalidStepConfiguration("Payment terms configuration is only available for payment_info steps")
+
+        try:
+            return step.payment_terms_config
+        except PaymentTermsConfiguration.DoesNotExist:
+            # Create default configuration
+            return PaymentTermsConfiguration.objects.create(step=step)
+
+    @staticmethod
+    def update_payment_terms_configuration(step_id, config_data):
+        """Update payment terms configuration for a payment info step.
+
+        This is separate from the main payment_info configuration to allow
+        flow-specific overrides of global payment settings.
+        """
+        try:
+            step = BookingFlowStep.objects.get(id=step_id)
+        except BookingFlowStep.DoesNotExist:
+            raise BookingFlowStepNotFound()
+
+        if step.step_type != 'payment_info':
+            raise InvalidStepConfiguration("Payment terms configuration is only available for payment_info steps")
+
+        with transaction.atomic():
+            config, created = PaymentTermsConfiguration.objects.get_or_create(step=step)
+
+            # List of valid fields on PaymentTermsConfiguration
+            valid_fields = [
+                'deposit_type', 'deposit_percentage', 'deposit_fixed_amount',
+                'deposit_is_refundable', 'deposit_is_deductible', 'deposit_waived_on_full_payment',
+                'late_fee_enabled', 'late_fee_type', 'late_fee_amount', 'late_fee_percentage',
+                'security_deposit_enabled', 'security_deposit_amount',
+                'security_deposit_is_refundable', 'security_deposit_description',
+                'cancellation_admin_fee_percentage',
+                'downpayment_percentage', 'downpayment_due_days',
+                'balance_due_days', 'balance_due_type',
+                'grace_period_days',
+            ]
+
+            for key, value in config_data.items():
+                if key in valid_fields and hasattr(config, key):
+                    # Handle null values for optional fields (to use global defaults)
+                    setattr(config, key, value)
+
+            try:
+                config.save()
+                logger.info(f"Updated payment terms configuration for step: {step.name}")
+            except Exception as e:
+                logger.error(f"Error saving payment terms configuration: {e}")
+                raise InvalidStepConfiguration(f"Failed to save payment terms configuration: {str(e)}")
+
+            return config

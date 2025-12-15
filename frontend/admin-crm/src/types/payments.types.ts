@@ -184,7 +184,7 @@ export interface PaymentPlan {
   installments: PaymentInstallment[];
   paid_amount: string;
   remaining_balance: string;
-  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  status: PaymentPlanStatus;
   is_overdue: boolean;
   next_payment_date: string | null;
   created_at: string;
@@ -290,6 +290,13 @@ export interface InvoiceLineItem {
   tax_rate: string;
   total: string;
   product: number | null;
+  // Enhanced pricing fields (DRY compliance)
+  item_type?: 'PACKAGE' | 'ADDON';
+  item_type_display?: string;
+  base_unit_price?: string;
+  excess_hours?: number;
+  excess_hour_price?: string;
+  excess_cost?: string;
   created_at: string;
   updated_at: string;
 }
@@ -373,16 +380,51 @@ export interface PaymentSettings {
   // DEPOSIT SETTINGS
   /** Default deposit percentage required for new bookings */
   default_deposit_percentage: number;
+  /** Type of deposit calculation (PERCENTAGE or FIXED) */
+  deposit_type: 'PERCENTAGE' | 'FIXED';
+  /** Fixed deposit amount (used when deposit_type is FIXED) */
+  deposit_fixed_amount: number | null;
+  /** Whether the deposit is refundable on cancellation */
+  deposit_is_refundable: boolean;
+  /** Whether the deposit is deducted from total contract price */
+  deposit_is_deductible: boolean;
+  /** Whether deposit is waived if client pays in full upfront */
+  deposit_waived_on_full_payment: boolean;
 
   // LATE FEE SETTINGS
   /** Whether late fees are enabled system-wide */
   late_fee_enabled: boolean;
   /** Default late fee amount when late fees are applied */
   default_late_fee_amount: number;
+  /** Type of late fee calculation (FIXED or PERCENTAGE) */
+  late_fee_type: 'FIXED' | 'PERCENTAGE';
+  /** Late fee as percentage of invoice (used when late_fee_type is PERCENTAGE) */
+  late_fee_percentage: number;
 
-  // CURRENCY SETTINGS
-  /** Default currency code for payments */
-  default_currency: string;
+  // SECURITY DEPOSIT SETTINGS
+  /** Whether security deposit is enabled */
+  security_deposit_enabled: boolean;
+  /** Security deposit amount */
+  security_deposit_amount: number;
+  /** Whether security deposit is refundable */
+  security_deposit_is_refundable: boolean;
+  /** Description of what security deposit covers */
+  security_deposit_description: string;
+
+  // CANCELLATION SETTINGS
+  /** Administrative processing fee percentage on cancellations */
+  cancellation_admin_fee_percentage: number;
+
+  // PAYMENT SCHEDULE SETTINGS
+  /** Downpayment percentage of total contract price */
+  downpayment_percentage: number;
+  /** Days after booking to pay downpayment */
+  downpayment_due_days: number;
+  /** When remaining balance is due (DAYS_BEFORE or DAY_BEFORE) */
+  balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE';
+
+  // NOTE: default_currency has been removed from PaymentSettings
+  // Currency is now managed by CurrencySettings in Settings > Commerce > Currency & Taxes
 
   // AUTO RETRY SETTINGS
   /** Number of automatic retry attempts for failed payments */
@@ -408,19 +450,33 @@ export interface PaymentSettings {
 }
 
 // Enums and Types
-export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
+export type PaymentStatus = 'CREATED' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
+export type PaymentPlanStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'SUSPENDED' | 'DEFAULTED' | 'CANCELLED';
 export type PaymentMethodType = 'CREDIT_CARD' | 'BANK_TRANSFER' | 'CHECK' | 'CASH' | 'DIGITAL_WALLET';
 export type PaymentFrequency = 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
-export type InstallmentStatus = 'PENDING' | 'PAID' | 'OVERDUE';
+export type InstallmentStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'WAIVED' | 'CANCELLED' | 'OVERDUE';
 export type TransactionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'VOID' | 'CANCELLED';
 export type NotificationType = 'INVOICE_ISSUED' | 'PAYMENT_REMINDER' | 'PAYMENT_RECEIVED' | 'PAYMENT_OVERDUE' | 'RECEIPT_SENT';
 export type RefundStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REJECTED';
 
 export const PAYMENT_STATUSES = [
+  { value: 'CREATED', label: 'Created' },
   { value: 'PENDING', label: 'Pending' },
+  { value: 'PROCESSING', label: 'Processing' },
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'FAILED', label: 'Failed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'REFUNDED', label: 'Refunded' },
+] as const;
+
+export const PAYMENT_PLAN_STATUSES = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'SUSPENDED', label: 'Suspended' },
+  { value: 'DEFAULTED', label: 'Defaulted' },
+  { value: 'CANCELLED', label: 'Cancelled' },
 ] as const;
 
 export const PAYMENT_METHOD_TYPES = [
@@ -440,6 +496,9 @@ export const PAYMENT_FREQUENCIES = [
 export const INSTALLMENT_STATUSES = [
   { value: 'PENDING', label: 'Pending' },
   { value: 'PAID', label: 'Paid' },
+  { value: 'PARTIAL', label: 'Partial' },
+  { value: 'WAIVED', label: 'Waived' },
+  { value: 'CANCELLED', label: 'Cancelled' },
   { value: 'OVERDUE', label: 'Overdue' },
 ] as const;
 
@@ -576,12 +635,29 @@ export interface UpdatePaymentSettingsData {
   default_installments?: number;
   default_installment_frequency?: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
   // Deposit settings
+  deposit_type?: 'PERCENTAGE' | 'FIXED';
   default_deposit_percentage?: number;
+  deposit_fixed_amount?: number | null;
+  deposit_is_refundable?: boolean;
+  deposit_is_deductible?: boolean;
+  deposit_waived_on_full_payment?: boolean;
   // Late fee settings
   late_fee_enabled?: boolean;
+  late_fee_type?: 'FIXED' | 'PERCENTAGE';
   default_late_fee_amount?: number;
-  // Currency settings
-  default_currency?: string;
+  late_fee_percentage?: number;
+  // Security deposit settings
+  security_deposit_enabled?: boolean;
+  security_deposit_amount?: number;
+  security_deposit_is_refundable?: boolean;
+  security_deposit_description?: string;
+  // Cancellation settings
+  cancellation_admin_fee_percentage?: number;
+  // Payment schedule settings
+  downpayment_percentage?: number;
+  downpayment_due_days?: number;
+  balance_due_type?: 'DAYS_BEFORE' | 'DAY_BEFORE';
+  // NOTE: default_currency removed - currency is managed by CurrencySettings
   // Auto retry settings
   auto_payment_retry_attempts?: number;
   auto_payment_retry_delay_days?: number;

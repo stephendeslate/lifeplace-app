@@ -39,6 +39,9 @@ import {
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   AccountBalance as AccountBalanceIcon,
+  HourglassEmpty as HourglassEmptyIcon,
+  Replay as ReplayIcon,
+  AddCircle as AddCircleIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
@@ -143,12 +146,20 @@ export const PaymentsOverview: React.FC = () => {
 
   const getStatusColor = (status: PaymentStatus) => {
     switch (status) {
-      case 'COMPLETED':
-        return 'success';
+      case 'CREATED':
+        return 'default';
       case 'PENDING':
         return 'warning';
+      case 'PROCESSING':
+        return 'info';
+      case 'COMPLETED':
+        return 'success';
       case 'FAILED':
         return 'error';
+      case 'CANCELLED':
+        return 'default';
+      case 'REFUNDED':
+        return 'secondary';
       default:
         return 'default';
     }
@@ -156,12 +167,20 @@ export const PaymentsOverview: React.FC = () => {
 
   const getStatusIcon = (status: PaymentStatus) => {
     switch (status) {
-      case 'COMPLETED':
-        return <CheckCircleIcon sx={{ fontSize: 16 }} />;
+      case 'CREATED':
+        return <AddCircleIcon sx={{ fontSize: 16 }} />;
       case 'PENDING':
         return <ScheduleIcon sx={{ fontSize: 16 }} />;
+      case 'PROCESSING':
+        return <HourglassEmptyIcon sx={{ fontSize: 16 }} />;
+      case 'COMPLETED':
+        return <CheckCircleIcon sx={{ fontSize: 16 }} />;
       case 'FAILED':
         return <CancelIcon sx={{ fontSize: 16 }} />;
+      case 'CANCELLED':
+        return <CancelIcon sx={{ fontSize: 16 }} />;
+      case 'REFUNDED':
+        return <ReplayIcon sx={{ fontSize: 16 }} />;
       default:
         return <WarningIcon sx={{ fontSize: 16 }} />;
     }

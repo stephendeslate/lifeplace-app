@@ -36,8 +36,27 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
             'late_fee_enabled',
             'default_late_fee_amount',
             'default_deposit_percentage',
-            # Currency settings
-            'default_currency',
+            # Enhanced deposit settings
+            'deposit_type',
+            'deposit_fixed_amount',
+            'deposit_is_refundable',
+            'deposit_is_deductible',
+            'deposit_waived_on_full_payment',
+            # Enhanced late fee settings
+            'late_fee_type',
+            'late_fee_percentage',
+            # Security deposit settings
+            'security_deposit_enabled',
+            'security_deposit_amount',
+            'security_deposit_is_refundable',
+            'security_deposit_description',
+            # Cancellation settings
+            'cancellation_admin_fee_percentage',
+            # Payment schedule settings
+            'downpayment_percentage',
+            'downpayment_due_days',
+            'balance_due_type',
+            # NOTE: default_currency removed - currency is now managed by CurrencySettings
             # Auto retry settings
             'auto_payment_retry_attempts',
             'auto_payment_retry_delay_days',
@@ -115,6 +134,60 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
                 "Default late fee amount must be non-negative."
             )
         return value
+
+    def validate_downpayment_percentage(self, value):
+        """Validate downpayment percentage is between 0 and 100"""
+        if not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Downpayment percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_late_fee_percentage(self, value):
+        """Validate late fee percentage is between 0 and 100"""
+        if not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Late fee percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_cancellation_admin_fee_percentage(self, value):
+        """Validate cancellation admin fee percentage is between 0 and 100"""
+        if not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Cancellation admin fee percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_security_deposit_amount(self, value):
+        """Validate security deposit amount is non-negative"""
+        if value < 0:
+            raise serializers.ValidationError(
+                "Security deposit amount must be non-negative."
+            )
+        return value
+
+    def validate(self, data):
+        """Cross-field validation"""
+        # If deposit type is FIXED, fixed amount is required
+        deposit_type = data.get('deposit_type', self.instance.deposit_type if self.instance else 'PERCENTAGE')
+        deposit_fixed_amount = data.get('deposit_fixed_amount', self.instance.deposit_fixed_amount if self.instance else None)
+
+        if deposit_type == 'FIXED' and deposit_fixed_amount is None:
+            raise serializers.ValidationError({
+                'deposit_fixed_amount': 'Fixed deposit amount is required when deposit type is FIXED.'
+            })
+
+        # If security deposit is enabled, amount must be positive
+        security_enabled = data.get('security_deposit_enabled', self.instance.security_deposit_enabled if self.instance else False)
+        security_amount = data.get('security_deposit_amount', self.instance.security_deposit_amount if self.instance else 0)
+
+        if security_enabled and (security_amount is None or security_amount <= 0):
+            raise serializers.ValidationError({
+                'security_deposit_amount': 'Security deposit amount must be greater than 0 when enabled.'
+            })
+
+        return data
 
 
 class TaxRateSerializer(serializers.ModelSerializer):
@@ -262,6 +335,8 @@ class PublicPaymentSettingsSerializer(serializers.ModelSerializer):
     Used for client-facing booking flows and guest checkout.
     Excludes internal/admin-only fields like grace periods, late fees, and retry settings.
     """
+    # Currency is fetched from CurrencySettings (single source of truth)
+    default_currency = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentSettings
@@ -287,6 +362,12 @@ class PublicPaymentSettingsSerializer(serializers.ModelSerializer):
             'refund_percentage',
             'refund_policy_text',
         ]
+
+    def get_default_currency(self, obj):
+        """Get default currency from CurrencySettings (single source of truth)"""
+        from core.domains.settings.models import CurrencySettings
+        currency_settings = CurrencySettings.get_system_settings()
+        return currency_settings.default_currency if currency_settings else 'PHP'
 
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
@@ -716,7 +797,6 @@ class PaymentPlanRequestSerializer(serializers.Serializer):
             ('WEEKLY', 'Weekly'),
             ('BIWEEKLY', 'Bi-weekly'),
             ('MONTHLY', 'Monthly'),
-            ('QUARTERLY', 'Quarterly')
         ],
         default='MONTHLY',
         help_text="Installment frequency"

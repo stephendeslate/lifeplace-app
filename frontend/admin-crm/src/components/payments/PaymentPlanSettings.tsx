@@ -37,12 +37,33 @@ interface PaymentPlanFormData {
   grace_period_days: string;
   default_installments: string;
   default_installment_frequency: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
-  late_fee_enabled: boolean;
-  default_late_fee_amount: string;
+  // Deposit settings (enhanced)
+  deposit_type: 'PERCENTAGE' | 'FIXED';
   default_deposit_percentage: string;
+  deposit_fixed_amount: string;
+  deposit_is_refundable: boolean;
+  deposit_is_deductible: boolean;
+  deposit_waived_on_full_payment: boolean;
+  // Late fee settings (enhanced)
+  late_fee_enabled: boolean;
+  late_fee_type: 'FIXED' | 'PERCENTAGE';
+  default_late_fee_amount: string;
+  late_fee_percentage: string;
+  // Security deposit settings
+  security_deposit_enabled: boolean;
+  security_deposit_amount: string;
+  security_deposit_is_refundable: boolean;
+  security_deposit_description: string;
+  // Cancellation settings
+  cancellation_admin_fee_percentage: string;
+  // Payment schedule settings
+  downpayment_percentage: string;
+  downpayment_due_days: string;
+  balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE';
+  // Auto retry settings
   auto_payment_retry_attempts: string;
   auto_payment_retry_delay_days: string;
-  // PHASE 2 - Refund Policy
+  // Refund Policy
   allow_refunds: boolean;
   refund_deadline_hours: string;
   refund_percentage: string;
@@ -67,12 +88,33 @@ export const PaymentPlanSettings: React.FC = () => {
       grace_period_days: '5',
       default_installments: '4',
       default_installment_frequency: 'MONTHLY',
+      // Deposit settings
+      deposit_type: 'PERCENTAGE',
+      default_deposit_percentage: '50',
+      deposit_fixed_amount: '0',
+      deposit_is_refundable: false,
+      deposit_is_deductible: true,
+      deposit_waived_on_full_payment: true,
+      // Late fee settings
       late_fee_enabled: false,
+      late_fee_type: 'FIXED',
       default_late_fee_amount: '25',
-      default_deposit_percentage: '25',
+      late_fee_percentage: '0',
+      // Security deposit settings
+      security_deposit_enabled: false,
+      security_deposit_amount: '0',
+      security_deposit_is_refundable: true,
+      security_deposit_description: '',
+      // Cancellation settings
+      cancellation_admin_fee_percentage: '0',
+      // Payment schedule settings
+      downpayment_percentage: '30',
+      downpayment_due_days: '7',
+      balance_due_type: 'DAYS_BEFORE',
+      // Auto retry settings
       auto_payment_retry_attempts: '3',
       auto_payment_retry_delay_days: '7',
-      // PHASE 2
+      // Refund policy
       allow_refunds: true,
       refund_deadline_hours: '48',
       refund_percentage: '100',
@@ -80,7 +122,10 @@ export const PaymentPlanSettings: React.FC = () => {
     },
   });
 
+  const depositType = watch('deposit_type');
   const lateFeeEnabled = watch('late_fee_enabled');
+  const lateFeeType = watch('late_fee_type');
+  const securityDepositEnabled = watch('security_deposit_enabled');
   const allowRefunds = watch('allow_refunds');
 
   // Helper function to safely convert values to strings with fallbacks
@@ -99,12 +144,33 @@ export const PaymentPlanSettings: React.FC = () => {
         grace_period_days: safeStringValue(paymentSettings.grace_period_days, '5'),
         default_installments: safeStringValue(paymentSettings.default_installments, '4'),
         default_installment_frequency: paymentSettings.default_installment_frequency || 'MONTHLY',
+        // Deposit settings
+        deposit_type: paymentSettings.deposit_type || 'PERCENTAGE',
+        default_deposit_percentage: safeStringValue(paymentSettings.default_deposit_percentage, '50'),
+        deposit_fixed_amount: safeStringValue(paymentSettings.deposit_fixed_amount, '0'),
+        deposit_is_refundable: paymentSettings.deposit_is_refundable ?? false,
+        deposit_is_deductible: paymentSettings.deposit_is_deductible ?? true,
+        deposit_waived_on_full_payment: paymentSettings.deposit_waived_on_full_payment ?? true,
+        // Late fee settings
         late_fee_enabled: paymentSettings.late_fee_enabled ?? false,
+        late_fee_type: paymentSettings.late_fee_type || 'FIXED',
         default_late_fee_amount: safeStringValue(paymentSettings.default_late_fee_amount, '25'),
-        default_deposit_percentage: safeStringValue(paymentSettings.default_deposit_percentage, '25'),
+        late_fee_percentage: safeStringValue(paymentSettings.late_fee_percentage, '0'),
+        // Security deposit settings
+        security_deposit_enabled: paymentSettings.security_deposit_enabled ?? false,
+        security_deposit_amount: safeStringValue(paymentSettings.security_deposit_amount, '0'),
+        security_deposit_is_refundable: paymentSettings.security_deposit_is_refundable ?? true,
+        security_deposit_description: paymentSettings.security_deposit_description || '',
+        // Cancellation settings
+        cancellation_admin_fee_percentage: safeStringValue(paymentSettings.cancellation_admin_fee_percentage, '0'),
+        // Payment schedule settings
+        downpayment_percentage: safeStringValue(paymentSettings.downpayment_percentage, '30'),
+        downpayment_due_days: safeStringValue(paymentSettings.downpayment_due_days, '7'),
+        balance_due_type: paymentSettings.balance_due_type || 'DAYS_BEFORE',
+        // Auto retry settings
         auto_payment_retry_attempts: safeStringValue(paymentSettings.auto_payment_retry_attempts, '3'),
         auto_payment_retry_delay_days: safeStringValue(paymentSettings.auto_payment_retry_delay_days, '7'),
-        // PHASE 2 - Refund Policy
+        // Refund Policy
         allow_refunds: paymentSettings.allow_refunds ?? true,
         refund_deadline_hours: safeStringValue(paymentSettings.refund_deadline_hours, '48'),
         refund_percentage: safeStringValue(paymentSettings.refund_percentage, '100'),
@@ -121,12 +187,33 @@ export const PaymentPlanSettings: React.FC = () => {
       grace_period_days: parseInt(data.grace_period_days, 10),
       default_installments: parseInt(data.default_installments, 10),
       default_installment_frequency: data.default_installment_frequency,
-      late_fee_enabled: data.late_fee_enabled,
-      default_late_fee_amount: parseFloat(data.default_late_fee_amount),
+      // Deposit settings
+      deposit_type: data.deposit_type,
       default_deposit_percentage: parseFloat(data.default_deposit_percentage),
+      deposit_fixed_amount: data.deposit_type === 'FIXED' ? parseFloat(data.deposit_fixed_amount) : null,
+      deposit_is_refundable: data.deposit_is_refundable,
+      deposit_is_deductible: data.deposit_is_deductible,
+      deposit_waived_on_full_payment: data.deposit_waived_on_full_payment,
+      // Late fee settings
+      late_fee_enabled: data.late_fee_enabled,
+      late_fee_type: data.late_fee_type,
+      default_late_fee_amount: parseFloat(data.default_late_fee_amount),
+      late_fee_percentage: parseFloat(data.late_fee_percentage),
+      // Security deposit settings
+      security_deposit_enabled: data.security_deposit_enabled,
+      security_deposit_amount: parseFloat(data.security_deposit_amount),
+      security_deposit_is_refundable: data.security_deposit_is_refundable,
+      security_deposit_description: data.security_deposit_description.trim(),
+      // Cancellation settings
+      cancellation_admin_fee_percentage: parseFloat(data.cancellation_admin_fee_percentage),
+      // Payment schedule settings
+      downpayment_percentage: parseFloat(data.downpayment_percentage),
+      downpayment_due_days: parseInt(data.downpayment_due_days, 10),
+      balance_due_type: data.balance_due_type,
+      // Auto retry settings
       auto_payment_retry_attempts: parseInt(data.auto_payment_retry_attempts, 10),
       auto_payment_retry_delay_days: parseInt(data.auto_payment_retry_delay_days, 10),
-      // PHASE 2 - Refund Policy
+      // Refund Policy
       allow_refunds: data.allow_refunds,
       refund_deadline_hours: parseInt(data.refund_deadline_hours, 10),
       refund_percentage: parseInt(data.refund_percentage, 10),
@@ -321,41 +408,113 @@ export const PaymentPlanSettings: React.FC = () => {
               />
 
               {lateFeeEnabled && (
-                <Controller
-                  name="default_late_fee_amount"
-                  control={control}
-                  rules={{
-                    required: lateFeeEnabled ? 'Late fee amount is required when enabled' : false,
-                    min: { value: 0, message: 'Cannot be negative' },
-                  }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Default Late Fee Amount"
-                      type="number"
-                      error={!!errors.default_late_fee_amount}
-                      helperText={errors.default_late_fee_amount?.message || 'Fixed late fee amount (can be overridden per payment plan)'}
-                      InputProps={{
-                        startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
+                <>
+                  <Controller
+                    name="late_fee_type"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        select
+                        label="Late Fee Type"
+                        helperText="Choose whether late fee is a fixed amount or percentage of invoice"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.lg,
+                            border: `1px solid ${tokens.color.borders.glass}`,
+                            '&:hover': {
+                              border: `1px solid ${tokens.color.primary[300]}`,
+                            },
+                            '&.Mui-focused': {
+                              border: `1px solid ${tokens.color.primary[500]}`,
+                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                            },
                           },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
+                        }}
+                      >
+                        <MenuItem value="FIXED">Fixed Amount</MenuItem>
+                        <MenuItem value="PERCENTAGE">Percentage of Invoice</MenuItem>
+                      </TextField>
+                    )}
+                  />
+
+                  {lateFeeType === 'FIXED' ? (
+                    <Controller
+                      name="default_late_fee_amount"
+                      control={control}
+                      rules={{
+                        required: lateFeeEnabled ? 'Late fee amount is required when enabled' : false,
+                        min: { value: 0, message: 'Cannot be negative' },
                       }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          fullWidth
+                          label="Late Fee Amount"
+                          type="number"
+                          error={!!errors.default_late_fee_amount}
+                          helperText={errors.default_late_fee_amount?.message || 'Fixed late fee amount applied to overdue payments'}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
+                          }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              ...glassPresets.light,
+                              borderRadius: tokens.spacing.radius.lg,
+                              border: `1px solid ${tokens.color.borders.glass}`,
+                              '&:hover': {
+                                border: `1px solid ${tokens.color.primary[300]}`,
+                              },
+                              '&.Mui-focused': {
+                                border: `1px solid ${tokens.color.primary[500]}`,
+                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                              },
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  ) : (
+                    <Controller
+                      name="late_fee_percentage"
+                      control={control}
+                      rules={{
+                        required: lateFeeEnabled ? 'Late fee percentage is required when enabled' : false,
+                        min: { value: 0, message: 'Cannot be negative' },
+                        max: { value: 100, message: 'Cannot exceed 100%' },
+                      }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          fullWidth
+                          label="Late Fee Percentage"
+                          type="number"
+                          error={!!errors.late_fee_percentage}
+                          helperText={errors.late_fee_percentage?.message || 'Percentage of invoice amount applied as late fee'}
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                          }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              ...glassPresets.light,
+                              borderRadius: tokens.spacing.radius.lg,
+                              border: `1px solid ${tokens.color.borders.glass}`,
+                              '&:hover': {
+                                border: `1px solid ${tokens.color.primary[300]}`,
+                              },
+                              '&.Mui-focused': {
+                                border: `1px solid ${tokens.color.primary[500]}`,
+                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                              },
+                            },
+                          }}
+                        />
+                      )}
                     />
                   )}
-                />
+                </>
               )}
             </Stack>
           </ModernCard>
@@ -454,12 +613,12 @@ export const PaymentPlanSettings: React.FC = () => {
             </Stack>
           </ModernCard>
 
-          {/* Deposit Settings */}
+          {/* Deposit Settings (Enhanced) */}
           <ModernCard
             variant="glass"
             size="medium"
             animation="fade"
-            title="Deposit Settings"
+            title="Reservation Deposit Settings"
             sx={{
               '&::before': {
                 background: `linear-gradient(135deg, ${tokens.color.secondary[500]}04 0%, ${tokens.color.secondary[600]}03 100%)`,
@@ -470,15 +629,482 @@ export const PaymentPlanSettings: React.FC = () => {
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
                 <MoneyIcon sx={{ color: tokens.color.secondary[600] }} />
                 <Typography variant="subtitle2" color="text.secondary">
-                  Configure default deposit requirements
+                  Configure reservation deposit requirements and behavior
                 </Typography>
               </Box>
 
               <Controller
-                name="default_deposit_percentage"
+                name="deposit_type"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    select
+                    label="Deposit Type"
+                    helperText="Choose whether deposit is a percentage of total or a fixed amount"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.lg,
+                        border: `1px solid ${tokens.color.borders.glass}`,
+                        '&:hover': {
+                          border: `1px solid ${tokens.color.primary[300]}`,
+                        },
+                        '&.Mui-focused': {
+                          border: `1px solid ${tokens.color.primary[500]}`,
+                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="PERCENTAGE">Percentage of Total</MenuItem>
+                    <MenuItem value="FIXED">Fixed Amount</MenuItem>
+                  </TextField>
+                )}
+              />
+
+              {depositType === 'PERCENTAGE' ? (
+                <Controller
+                  name="default_deposit_percentage"
+                  control={control}
+                  rules={{
+                    required: 'Deposit percentage is required',
+                    min: { value: 0, message: 'Cannot be negative' },
+                    max: { value: 100, message: 'Cannot exceed 100%' },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Deposit Percentage"
+                      type="number"
+                      error={!!errors.default_deposit_percentage}
+                      helperText={errors.default_deposit_percentage?.message || 'Percentage of total contract price required as deposit'}
+                      InputProps={{
+                        endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.lg,
+                          border: `1px solid ${tokens.color.borders.glass}`,
+                          '&:hover': {
+                            border: `1px solid ${tokens.color.primary[300]}`,
+                          },
+                          '&.Mui-focused': {
+                            border: `1px solid ${tokens.color.primary[500]}`,
+                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                />
+              ) : (
+                <Controller
+                  name="deposit_fixed_amount"
+                  control={control}
+                  rules={{
+                    required: 'Fixed deposit amount is required',
+                    min: { value: 0, message: 'Cannot be negative' },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Fixed Deposit Amount"
+                      type="number"
+                      error={!!errors.deposit_fixed_amount}
+                      helperText={errors.deposit_fixed_amount?.message || 'Fixed reservation deposit amount'}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.lg,
+                          border: `1px solid ${tokens.color.borders.glass}`,
+                          '&:hover': {
+                            border: `1px solid ${tokens.color.primary[300]}`,
+                          },
+                          '&.Mui-focused': {
+                            border: `1px solid ${tokens.color.primary[500]}`,
+                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                />
+              )}
+
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Controller
+                  name="deposit_is_refundable"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          {...field}
+                          checked={field.value}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: tokens.color.success[500],
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: tokens.color.success[500],
+                              },
+                            },
+                          }}
+                        />
+                      }
+                      label="Deposit is Refundable"
+                    />
+                  )}
+                />
+
+                <Controller
+                  name="deposit_is_deductible"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          {...field}
+                          checked={field.value}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: tokens.color.success[500],
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: tokens.color.success[500],
+                              },
+                            },
+                          }}
+                        />
+                      }
+                      label="Deposit is Deductible from Total"
+                    />
+                  )}
+                />
+
+                <Controller
+                  name="deposit_waived_on_full_payment"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          {...field}
+                          checked={field.value}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: tokens.color.success[500],
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: tokens.color.success[500],
+                              },
+                            },
+                          }}
+                        />
+                      }
+                      label="Waive Deposit on Full Payment"
+                    />
+                  )}
+                />
+              </Box>
+            </Stack>
+          </ModernCard>
+
+          {/* Payment Schedule Settings */}
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="fade"
+            title="Payment Schedule Settings"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
+              },
+            }}
+          >
+            <Stack spacing={3}>
+              <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                <ScheduleIcon sx={{ color: tokens.color.primary[600] }} />
+                <Typography variant="subtitle2" color="text.secondary">
+                  Configure downpayment and balance due schedule
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 3 }}>
+                <Controller
+                  name="downpayment_percentage"
+                  control={control}
+                  rules={{
+                    required: 'Downpayment percentage is required',
+                    min: { value: 0, message: 'Cannot be negative' },
+                    max: { value: 100, message: 'Cannot exceed 100%' },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Downpayment Percentage"
+                      type="number"
+                      error={!!errors.downpayment_percentage}
+                      helperText={errors.downpayment_percentage?.message || 'Percentage of total required as downpayment to block the date'}
+                      InputProps={{
+                        endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.lg,
+                          border: `1px solid ${tokens.color.borders.glass}`,
+                          '&:hover': {
+                            border: `1px solid ${tokens.color.primary[300]}`,
+                          },
+                          '&.Mui-focused': {
+                            border: `1px solid ${tokens.color.primary[500]}`,
+                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                />
+
+                <Controller
+                  name="downpayment_due_days"
+                  control={control}
+                  rules={{
+                    required: 'Downpayment due days is required',
+                    min: { value: 1, message: 'Must be at least 1 day' },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Downpayment Due Within"
+                      type="number"
+                      error={!!errors.downpayment_due_days}
+                      helperText={errors.downpayment_due_days?.message || 'Days after booking to pay downpayment'}
+                      InputProps={{
+                        endAdornment: <InputAdornment position="end">days</InputAdornment>,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.lg,
+                          border: `1px solid ${tokens.color.borders.glass}`,
+                          '&:hover': {
+                            border: `1px solid ${tokens.color.primary[300]}`,
+                          },
+                          '&.Mui-focused': {
+                            border: `1px solid ${tokens.color.primary[500]}`,
+                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                />
+              </Box>
+
+              <Controller
+                name="balance_due_type"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    select
+                    label="Balance Due Type"
+                    helperText="When the remaining balance is due"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.lg,
+                        border: `1px solid ${tokens.color.borders.glass}`,
+                        '&:hover': {
+                          border: `1px solid ${tokens.color.primary[300]}`,
+                        },
+                        '&.Mui-focused': {
+                          border: `1px solid ${tokens.color.primary[500]}`,
+                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="DAYS_BEFORE">Specific Days Before Event</MenuItem>
+                    <MenuItem value="DAY_BEFORE">Day Before Event</MenuItem>
+                  </TextField>
+                )}
+              />
+            </Stack>
+          </ModernCard>
+
+          {/* Security Deposit Settings */}
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="fade"
+            title="Security Deposit Settings"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.info[500]}04 0%, ${tokens.color.info[600]}03 100%)`,
+              },
+            }}
+          >
+            <Stack spacing={3}>
+              <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                <MoneyIcon sx={{ color: tokens.color.info[600] }} />
+                <Typography variant="subtitle2" color="text.secondary">
+                  Configure security/damage deposit requirements
+                </Typography>
+              </Box>
+
+              <Controller
+                name="security_deposit_enabled"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        {...field}
+                        checked={field.value}
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': {
+                            color: tokens.color.info[500],
+                            '& + .MuiSwitch-track': {
+                              backgroundColor: tokens.color.info[500],
+                            },
+                          },
+                        }}
+                      />
+                    }
+                    label="Enable Security Deposit"
+                  />
+                )}
+              />
+
+              {securityDepositEnabled && (
+                <>
+                  <Controller
+                    name="security_deposit_amount"
+                    control={control}
+                    rules={{
+                      required: securityDepositEnabled ? 'Security deposit amount is required' : false,
+                      min: { value: 0, message: 'Cannot be negative' },
+                    }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Security Deposit Amount"
+                        type="number"
+                        error={!!errors.security_deposit_amount}
+                        helperText={errors.security_deposit_amount?.message || 'Fixed security deposit amount collected on check-in'}
+                        InputProps={{
+                          startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.lg,
+                            border: `1px solid ${tokens.color.borders.glass}`,
+                            '&:hover': {
+                              border: `1px solid ${tokens.color.primary[300]}`,
+                            },
+                            '&.Mui-focused': {
+                              border: `1px solid ${tokens.color.primary[500]}`,
+                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                            },
+                          },
+                        }}
+                      />
+                    )}
+                  />
+
+                  <Controller
+                    name="security_deposit_is_refundable"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            {...field}
+                            checked={field.value}
+                            sx={{
+                              '& .MuiSwitch-switchBase.Mui-checked': {
+                                color: tokens.color.success[500],
+                                '& + .MuiSwitch-track': {
+                                  backgroundColor: tokens.color.success[500],
+                                },
+                              },
+                            }}
+                          />
+                        }
+                        label="Security Deposit is Refundable (after inspection)"
+                      />
+                    )}
+                  />
+
+                  <Controller
+                    name="security_deposit_description"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Security Deposit Description"
+                        placeholder="e.g., Collected upon check-in, refunded after inspection"
+                        helperText="Optional description shown in contracts"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.lg,
+                            border: `1px solid ${tokens.color.borders.glass}`,
+                            '&:hover': {
+                              border: `1px solid ${tokens.color.primary[300]}`,
+                            },
+                            '&.Mui-focused': {
+                              border: `1px solid ${tokens.color.primary[500]}`,
+                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                            },
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                </>
+              )}
+            </Stack>
+          </ModernCard>
+
+          {/* Cancellation Settings */}
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="fade"
+            title="Cancellation Settings"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.error[500]}04 0%, ${tokens.color.error[600]}03 100%)`,
+              },
+            }}
+          >
+            <Stack spacing={3}>
+              <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                <RefundIcon sx={{ color: tokens.color.error[600] }} />
+                <Typography variant="subtitle2" color="text.secondary">
+                  Configure cancellation administrative fees
+                </Typography>
+              </Box>
+
+              <Controller
+                name="cancellation_admin_fee_percentage"
                 control={control}
                 rules={{
-                  required: 'Deposit percentage is required',
                   min: { value: 0, message: 'Cannot be negative' },
                   max: { value: 100, message: 'Cannot exceed 100%' },
                 }}
@@ -486,10 +1112,10 @@ export const PaymentPlanSettings: React.FC = () => {
                   <TextField
                     {...field}
                     fullWidth
-                    label="Default Deposit Percentage"
+                    label="Cancellation Admin Fee"
                     type="number"
-                    error={!!errors.default_deposit_percentage}
-                    helperText={errors.default_deposit_percentage?.message || 'Percentage of total amount required as deposit'}
+                    error={!!errors.cancellation_admin_fee_percentage}
+                    helperText={errors.cancellation_admin_fee_percentage?.message || 'Percentage of payment deducted as admin fee on client cancellation'}
                     InputProps={{
                       endAdornment: <InputAdornment position="end">%</InputAdornment>,
                     }}

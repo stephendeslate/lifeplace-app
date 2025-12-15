@@ -109,3 +109,10 @@ export type {
   SettingsPageProps,
   SettingsPageConfig,
 } from './settings';
+
+// Status Chips - Reusable status display components
+export {
+  PaymentStatusChip,
+  PaymentPlanStatusChip,
+  InstallmentStatusChip,
+} from './StatusChips';

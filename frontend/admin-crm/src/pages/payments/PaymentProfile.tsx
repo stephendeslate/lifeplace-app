@@ -275,12 +275,20 @@ export const PaymentProfile: React.FC = () => {
 
   const getStatusColor = (status: PaymentStatus): 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
-      case 'COMPLETED':
-        return 'success';
+      case 'CREATED':
+        return 'primary';
       case 'PENDING':
         return 'warning';
+      case 'PROCESSING':
+        return 'info';
+      case 'COMPLETED':
+        return 'success';
       case 'FAILED':
         return 'error';
+      case 'CANCELLED':
+        return 'warning';
+      case 'REFUNDED':
+        return 'secondary';
       default:
         return 'primary';
     }
