@@ -30,10 +30,13 @@ import {
   TrendingUp as TrendingUpIcon,
   AccessTime as AccessTimeIcon,
   PriorityHigh as PriorityIcon,
+  ShoppingCart as BookingIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useDashboardData } from '../../hooks/useDashboardData';
+import { useUnfinishedBookings } from '../../hooks/useUnfinishedBookings';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useAcceptQuote, useRejectQuote } from '../../hooks/useEventQuotes';
@@ -53,6 +56,7 @@ const Dashboard: React.FC = () => {
 
   const { useAnalytics } = useCommunications();
   const dashboardData = useDashboardData();
+  const { data: unfinishedBookings, isLoading: isLoadingBookings } = useUnfinishedBookings();
 
   // Quote action hooks
   const acceptQuoteMutation = useAcceptQuote();
@@ -149,6 +153,74 @@ const Dashboard: React.FC = () => {
             <Alert severity="error">{dashboardData.error}</Alert>
           ) : (
             <Stack spacing={4}>
+              {/* Unfinished Bookings Section */}
+              {!isLoadingBookings && unfinishedBookings && unfinishedBookings.length > 0 && (
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <BookingIcon color="primary" />
+                    Continue Your Booking
+                  </Typography>
+
+                  <Stack spacing={2}>
+                    {unfinishedBookings.map((session) => (
+                      <GlassCard
+                        key={session.session_id}
+                        variant="light"
+                        intensity="subtle"
+                        hover={true}
+                        sx={{
+                          backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                          border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => navigate(`/book?session_id=${session.session_id}`)}
+                      >
+                        <Box display="flex" alignItems="center" gap={2} p={2}>
+                          <Box
+                            sx={{
+                              p: 1,
+                              borderRadius: 1,
+                              backgroundColor: alpha(theme.palette.primary.main, 0.15),
+                              color: theme.palette.primary.main,
+                            }}
+                          >
+                            <BookingIcon />
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                              {session.booking_flow?.name || 'Booking in Progress'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {session.current_step?.name || 'Step'} - {session.progress_percentage}% complete
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={session.progress_percentage}
+                              sx={{ width: 60, height: 6, borderRadius: 3 }}
+                            />
+                            <Button
+                              variant="contained"
+                              size="small"
+                              endIcon={<ArrowForwardIcon />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/book?session_id=${session.session_id}`);
+                              }}
+                            >
+                              Continue
+                            </Button>
+                          </Box>
+                        </Box>
+                      </GlassCard>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {unfinishedBookings && unfinishedBookings.length > 0 && <Divider />}
+
               {/* Critical Actions Bar */}
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
