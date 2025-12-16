@@ -129,22 +129,27 @@ const transformContractToAction = (contract: {
     signed_count: number;
     percentage: number;
   };
-  status: 'SENT' | 'PARTIALLY_SIGNED';
+  status: 'SENT' | 'PARTIALLY_SIGNED' | 'EXPIRED';
   canClientSign?: boolean;
+  signDisabledReason?: string | null;
+  isExpired?: boolean;
 }): ContractActionItem => {
   const daysUntilExpiry = calculateDaysUntil(contract.expiresAt);
-  const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 3 && daysUntilExpiry > 0;
-  const urgency = calculateUrgencyFromDays(daysUntilExpiry, false);
+  const isExpired = contract.isExpired || (daysUntilExpiry !== null && daysUntilExpiry <= 0) || contract.status === 'EXPIRED';
+  const isExpiringSoon = !isExpired && daysUntilExpiry !== null && daysUntilExpiry <= 3 && daysUntilExpiry > 0;
+  const urgency = isExpired ? 'CRITICAL' : calculateUrgencyFromDays(daysUntilExpiry, false);
 
   return {
     id: `contract-${contract.id}`,
     type: 'CONTRACT',
     title: contract.templateName,
-    description: `${contract.signatureProgress.signed_count} of ${contract.signatureProgress.total_required} signatures`,
+    description: isExpired
+      ? 'Contract has expired'
+      : `${contract.signatureProgress.signed_count} of ${contract.signatureProgress.total_required} signatures`,
     eventId: contract.eventId,
     eventName: contract.eventName,
-    urgency: isExpiringSoon ? 'HIGH' : urgency,
-    urgencyScore: URGENCY_SCORES[isExpiringSoon ? 'HIGH' : urgency],
+    urgency: isExpired ? 'CRITICAL' : (isExpiringSoon ? 'HIGH' : urgency),
+    urgencyScore: URGENCY_SCORES[isExpired ? 'CRITICAL' : (isExpiringSoon ? 'HIGH' : urgency)],
     dueDate: contract.expiresAt,
     createdAt: new Date().toISOString(), // Not available from contract data
     contractId: contract.id,
@@ -160,7 +165,9 @@ const transformContractToAction = (contract: {
     contractStatus: contract.status,
     expiresAt: contract.expiresAt,
     daysUntilExpiry,
-    canClientSign: contract.canClientSign ?? true,
+    canClientSign: !isExpired && (contract.canClientSign ?? true),
+    signDisabledReason: isExpired ? (contract.signDisabledReason || 'Contract has expired') : null,
+    isExpired,
   };
 };
 
@@ -329,10 +336,13 @@ export const useActionCenter = (options: UseActionCenterOptions = {}): UseAction
       });
 
     // ============ CONTRACTS ============
-    // Transform pending contracts from context
+    // Transform pending contracts from context (including expired for visibility)
     pendingContracts.forEach(contract => {
-      // Only include contracts that the client can sign
-      if (contract.can_client_sign) {
+      // Include contracts that need signing OR are expired (for visibility)
+      const isExpiredContract = contract.status === 'EXPIRED' || contract.is_expired;
+      const needsSignature = contract.can_client_sign || ['SENT', 'PARTIALLY_SIGNED'].includes(contract.status);
+
+      if (needsSignature || isExpiredContract) {
         const eventId = typeof contract.event === 'object'
           ? parseInt(contract.event.id, 10)
           : parseInt(contract.id, 10);
@@ -351,8 +361,10 @@ export const useActionCenter = (options: UseActionCenterOptions = {}): UseAction
             signed_count: 0,
             percentage: 0,
           },
-          status: contract.status as 'SENT' | 'PARTIALLY_SIGNED',
+          status: contract.status as 'SENT' | 'PARTIALLY_SIGNED' | 'EXPIRED',
           canClientSign: contract.can_client_sign,
+          signDisabledReason: contract.sign_disabled_reason,
+          isExpired: isExpiredContract,
         }));
       }
     });

@@ -224,6 +224,48 @@ class PaymentSettings(BaseModel):
         help_text="Primary payment gateway (pre-selected by default)"
     )
 
+    # DATE BLOCKING POLICY SETTINGS
+    DATE_BLOCKING_POLICY_CHOICES = [
+        ('IMMEDIATE', 'Block Immediately on Booking'),
+        ('ON_DOWNPAYMENT', 'Block When Downpayment Received'),
+    ]
+
+    DOWNPAYMENT_DUE_REFERENCE_CHOICES = [
+        ('DAYS_AFTER_BOOKING', 'Days After Booking'),
+        ('DAYS_BEFORE_EVENT', 'Days Before Event'),
+    ]
+
+    date_blocking_policy = models.CharField(
+        max_length=20,
+        choices=DATE_BLOCKING_POLICY_CHOICES,
+        default='IMMEDIATE',
+        help_text="When to block dates for new bookings"
+    )
+
+    downpayment_due_reference = models.CharField(
+        max_length=20,
+        choices=DOWNPAYMENT_DUE_REFERENCE_CHOICES,
+        default='DAYS_AFTER_BOOKING',
+        help_text="Reference point for downpayment due date calculation"
+    )
+
+    downpayment_deadline_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Days after booking before event is auto-cancelled if downpayment not received (for ON_DOWNPAYMENT policy)"
+    )
+
+    # CHILD/YOUTH PRICING SETTINGS
+    child_pricing_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable age-based pricing tiers"
+    )
+
+    child_pricing_tiers = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Age-based pricing tiers: [{min_age, max_age, discount_percentage, label}]"
+    )
+
     class Meta:
         verbose_name = "Payment Settings"
         verbose_name_plural = "Payment Settings"
@@ -302,6 +344,13 @@ class PaymentSettings(BaseModel):
                 'downpayment_percentage': Decimal('30.00'),
                 'downpayment_due_days': 7,
                 'balance_due_type': 'DAYS_BEFORE',
+                # NEW: Date blocking policy settings
+                'date_blocking_policy': 'IMMEDIATE',
+                'downpayment_due_reference': 'DAYS_AFTER_BOOKING',
+                'downpayment_deadline_days': 7,
+                # NEW: Child pricing settings
+                'child_pricing_enabled': False,
+                'child_pricing_tiers': [],
                 # Note: ManyToMany and ForeignKey fields set after creation
             }
         )

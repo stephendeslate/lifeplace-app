@@ -14,12 +14,17 @@ import {
   InputAdornment,
   Collapse,
   Divider,
+  IconButton,
 } from '@mui/material';
 import {
   AttachMoney as MoneyIcon,
   Settings as SettingsIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  CalendarMonth as CalendarIcon,
+  ChildCare as ChildCareIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { ModernCard } from '../../common/ModernCard';
 import { usePaymentSettings } from '../../../hooks/usePayments';
@@ -30,6 +35,13 @@ interface PaymentTermsStepConfigProps {
   config?: PaymentTermsConfiguration | null;
   onUpdate: (data: Partial<PaymentTermsConfiguration>) => void;
   isLoading?: boolean;
+}
+
+interface ChildPricingTier {
+  min_age: number;
+  max_age: number;
+  discount_percentage: number;
+  label: string;
 }
 
 interface PaymentTermsFormData {
@@ -56,6 +68,15 @@ interface PaymentTermsFormData {
   downpayment_due_days: string;
   balance_due_days: string;
   balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE' | null;
+
+  // Date blocking policy
+  date_blocking_policy: 'IMMEDIATE' | 'ON_DOWNPAYMENT' | null;
+  downpayment_due_reference: 'DAYS_AFTER_BOOKING' | 'DAYS_BEFORE_EVENT' | null;
+  downpayment_deadline_days: string;
+
+  // Child/youth pricing
+  child_pricing_enabled: boolean | null;
+  child_pricing_tiers: ChildPricingTier[] | null;
 }
 
 const defaultFormData: PaymentTermsFormData = {
@@ -77,6 +98,13 @@ const defaultFormData: PaymentTermsFormData = {
   downpayment_due_days: '',
   balance_due_days: '',
   balance_due_type: null,
+  // Date blocking policy
+  date_blocking_policy: null,
+  downpayment_due_reference: null,
+  downpayment_deadline_days: '',
+  // Child pricing
+  child_pricing_enabled: null,
+  child_pricing_tiers: null,
 };
 
 export const PaymentTermsStepConfig: React.FC<PaymentTermsStepConfigProps> = ({
@@ -118,13 +146,23 @@ export const PaymentTermsStepConfig: React.FC<PaymentTermsStepConfigProps> = ({
         downpayment_due_days: safeString(config.downpayment_due_days),
         balance_due_days: safeString(config.balance_due_days),
         balance_due_type: config.balance_due_type,
+        // Date blocking policy
+        date_blocking_policy: config.date_blocking_policy ?? null,
+        downpayment_due_reference: config.downpayment_due_reference ?? null,
+        downpayment_deadline_days: safeString(config.downpayment_deadline_days),
+        // Child pricing
+        child_pricing_enabled: config.child_pricing_enabled ?? null,
+        child_pricing_tiers: config.child_pricing_tiers ?? null,
       };
       setFormData(newFormData);
 
       // Check if any overrides are set
-      const hasAnyOverride = Object.values(newFormData).some(v =>
-        v !== null && v !== '' && v !== undefined
-      );
+      const hasAnyOverride = Object.entries(newFormData).some(([key, v]) => {
+        if (key === 'child_pricing_tiers') {
+          return v !== null && Array.isArray(v) && v.length > 0;
+        }
+        return v !== null && v !== '' && v !== undefined;
+      });
       setHasOverrides(hasAnyOverride);
       if (hasAnyOverride) {
         setExpanded(true);
@@ -192,6 +230,13 @@ export const PaymentTermsStepConfig: React.FC<PaymentTermsStepConfigProps> = ({
       downpayment_due_days: parseOptionalInt(formData.downpayment_due_days),
       balance_due_days: parseOptionalInt(formData.balance_due_days),
       balance_due_type: formData.balance_due_type,
+      // Date blocking policy
+      date_blocking_policy: formData.date_blocking_policy,
+      downpayment_due_reference: formData.downpayment_due_reference,
+      downpayment_deadline_days: parseOptionalInt(formData.downpayment_deadline_days),
+      // Child pricing
+      child_pricing_enabled: formData.child_pricing_enabled,
+      child_pricing_tiers: formData.child_pricing_tiers,
     };
 
     onUpdate(updateData);
@@ -218,7 +263,43 @@ export const PaymentTermsStepConfig: React.FC<PaymentTermsStepConfigProps> = ({
       downpayment_due_days: null,
       balance_due_days: null,
       balance_due_type: null,
+      // Date blocking policy
+      date_blocking_policy: null,
+      downpayment_due_reference: null,
+      downpayment_deadline_days: null,
+      // Child pricing
+      child_pricing_enabled: null,
+      child_pricing_tiers: null,
     });
+  };
+
+  // Child pricing tier handlers
+  const handleAddChildTier = () => {
+    const newTier: ChildPricingTier = {
+      min_age: 0,
+      max_age: 12,
+      discount_percentage: 50,
+      label: 'Child',
+    };
+    setFormData(prev => ({
+      ...prev,
+      child_pricing_tiers: [...(prev.child_pricing_tiers || []), newTier],
+    }));
+  };
+
+  const handleUpdateChildTier = (index: number, field: keyof ChildPricingTier, value: string | number) => {
+    setFormData(prev => {
+      const tiers = [...(prev.child_pricing_tiers || [])];
+      tiers[index] = { ...tiers[index], [field]: value };
+      return { ...prev, child_pricing_tiers: tiers };
+    });
+  };
+
+  const handleRemoveChildTier = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      child_pricing_tiers: (prev.child_pricing_tiers || []).filter((_, i) => i !== index),
+    }));
   };
 
   const renderGlobalDefault = (_field: string, value: unknown) => {
@@ -558,6 +639,157 @@ export const PaymentTermsStepConfig: React.FC<PaymentTermsStepConfigProps> = ({
                       endAdornment: <InputAdornment position="end">%</InputAdornment>,
                     }}
                   />
+                )}
+              </Stack>
+            </Box>
+
+            <Divider />
+
+            {/* Date Blocking Policy Override */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarIcon fontSize="small" />
+                Date Blocking Policy Override
+              </Typography>
+
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                <strong>Important:</strong> Controls when dates become officially blocked for bookings.
+                <br />
+                <strong>IMMEDIATE:</strong> Date blocked immediately when booking is confirmed.
+                <br />
+                <strong>ON_DOWNPAYMENT:</strong> Date blocked only after downpayment is received (first-to-pay-wins).
+              </Alert>
+
+              <Stack spacing={2}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Date Blocking Policy"
+                  value={formData.date_blocking_policy || ''}
+                  onChange={handleSelectChange('date_blocking_policy')}
+                  helperText={`Global default: ${paymentSettings?.date_blocking_policy || 'IMMEDIATE'}`}
+                  size="small"
+                >
+                  <MenuItem value="">Use Global Default</MenuItem>
+                  <MenuItem value="IMMEDIATE">Block Immediately on Booking</MenuItem>
+                  <MenuItem value="ON_DOWNPAYMENT">Block When Downpayment Received</MenuItem>
+                </TextField>
+
+                {formData.date_blocking_policy === 'ON_DOWNPAYMENT' && (
+                  <>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Downpayment Due Reference"
+                      value={formData.downpayment_due_reference || ''}
+                      onChange={handleSelectChange('downpayment_due_reference')}
+                      helperText={`Global default: ${paymentSettings?.downpayment_due_reference || 'DAYS_AFTER_BOOKING'}`}
+                      size="small"
+                    >
+                      <MenuItem value="">Use Global Default</MenuItem>
+                      <MenuItem value="DAYS_AFTER_BOOKING">Days After Booking</MenuItem>
+                      <MenuItem value="DAYS_BEFORE_EVENT">Days Before Event</MenuItem>
+                    </TextField>
+
+                    <TextField
+                      fullWidth
+                      label="Auto-Cancel Deadline (Days)"
+                      type="number"
+                      value={formData.downpayment_deadline_days}
+                      onChange={handleInputChange('downpayment_deadline_days')}
+                      helperText={`Global: ${paymentSettings?.downpayment_deadline_days || 7} days. Event auto-cancelled if downpayment not received by deadline.`}
+                      size="small"
+                      InputProps={{
+                        endAdornment: <InputAdornment position="end">days</InputAdornment>,
+                      }}
+                    />
+                  </>
+                )}
+              </Stack>
+            </Box>
+
+            <Divider />
+
+            {/* Child/Youth Pricing Override */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ChildCareIcon fontSize="small" />
+                Child/Youth Pricing Override
+              </Typography>
+
+              <Stack spacing={2}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.child_pricing_enabled === true}
+                      onChange={handleNullableSwitchChange('child_pricing_enabled')}
+                    />
+                  }
+                  label={`Enable Child Pricing (Global: ${renderGlobalDefault('child_pricing_enabled', paymentSettings?.child_pricing_enabled)})`}
+                />
+
+                {formData.child_pricing_enabled && (
+                  <>
+                    <Alert severity="info" sx={{ mb: 1 }}>
+                      Define age-based pricing tiers. Use 100% discount for free entry.
+                    </Alert>
+
+                    {(formData.child_pricing_tiers || []).map((tier, index) => (
+                      <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                        <TextField
+                          label="Min Age"
+                          type="number"
+                          value={tier.min_age}
+                          onChange={(e) => handleUpdateChildTier(index, 'min_age', parseInt(e.target.value) || 0)}
+                          size="small"
+                          sx={{ width: 100 }}
+                        />
+                        <TextField
+                          label="Max Age"
+                          type="number"
+                          value={tier.max_age}
+                          onChange={(e) => handleUpdateChildTier(index, 'max_age', parseInt(e.target.value) || 0)}
+                          size="small"
+                          sx={{ width: 100 }}
+                        />
+                        <TextField
+                          label="Discount %"
+                          type="number"
+                          value={tier.discount_percentage}
+                          onChange={(e) => handleUpdateChildTier(index, 'discount_percentage', parseInt(e.target.value) || 0)}
+                          size="small"
+                          sx={{ width: 120 }}
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                          }}
+                        />
+                        <TextField
+                          label="Label"
+                          value={tier.label}
+                          onChange={(e) => handleUpdateChildTier(index, 'label', e.target.value)}
+                          size="small"
+                          sx={{ flex: 1, minWidth: 150 }}
+                          placeholder="e.g., Child, Infant"
+                        />
+                        <IconButton
+                          onClick={() => handleRemoveChildTier(index)}
+                          color="error"
+                          size="small"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    ))}
+
+                    <Button
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={handleAddChildTier}
+                      size="small"
+                    >
+                      Add Pricing Tier
+                    </Button>
+                  </>
                 )}
               </Stack>
             </Box>

@@ -499,7 +499,7 @@ class PublicEventAvailabilityAPIView(APIView):
                 start_date__date__gte=start_date,
                 start_date__date__lte=end_date,
                 status='CONFIRMED'
-            ).select_related('event_type')
+            ).exclude(status='CANCELLED').select_related('event_type')
 
             # Apply event type filter if provided
             if event_type_id:
@@ -511,24 +511,63 @@ class PublicEventAvailabilityAPIView(APIView):
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
+            # Build date summary for availability calendar
+            # Group events by date and determine if date is blocked
+            date_summary = {}
+            for event in events:
+                event_date = event.start_date.date().isoformat()
+                if event_date not in date_summary:
+                    date_summary[event_date] = {
+                        'date': event_date,
+                        'date_blocked': False,
+                        'event_count': 0,
+                        'events': [],
+                    }
+
+                date_summary[event_date]['event_count'] += 1
+
+                # Date is blocked if ANY event on that date has date_blocked=True
+                if event.date_blocked:
+                    date_summary[event_date]['date_blocked'] = True
+
+                date_summary[event_date]['events'].append({
+                    'id': event.id,
+                    'name': 'Reserved' if event.date_blocked else 'Pending',
+                    'event_type_name': event.event_type.name if event.event_type else None,
+                    'status': event.status,
+                    'start_date': event.start_date.isoformat(),
+                    'end_date': event.end_date.isoformat() if event.end_date else None,
+                    'date_blocked': event.date_blocked,
+                })
+
             # Serialize events - return minimal data for public consumption
             events_data = []
             for event in events:
                 events_data.append({
                     'id': event.id,
-                    'name': event.name or 'Reserved',
+                    'name': 'Reserved' if event.date_blocked else 'Pending',
                     'event_type_name': event.event_type.name if event.event_type else None,
                     'status': event.status,
                     'start_date': event.start_date.isoformat(),
                     'end_date': event.end_date.isoformat() if event.end_date else None,
                     'payment_status': event.payment_status,
+                    'date_blocked': event.date_blocked,
                 })
+
+            # Calculate blocked dates for the calendar
+            blocked_dates = [
+                date_info['date']
+                for date_info in date_summary.values()
+                if date_info['date_blocked']
+            ]
 
             return Response({
                 'start_date': start_date.isoformat(),
                 'end_date': end_date.isoformat(),
                 'event_count': len(events_data),
-                'events': events_data
+                'events': events_data,
+                'date_summary': list(date_summary.values()),
+                'blocked_dates': blocked_dates,
             }, status=status.HTTP_200_OK)
 
         except Exception as e:

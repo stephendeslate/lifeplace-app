@@ -53,6 +53,10 @@ export interface EventContract {
   signature_count: number;
   is_fully_signed: boolean;
   is_expired: boolean;
+  is_expiring_soon: boolean;
+  days_until_expiry: number | null;
+  expiry_urgency: 'CRITICAL' | 'HIGH' | 'NORMAL' | null;
+  sign_disabled_reason: string | null;
   contract_type: string;
   missing_signatures: string[];
   signature_progress: {

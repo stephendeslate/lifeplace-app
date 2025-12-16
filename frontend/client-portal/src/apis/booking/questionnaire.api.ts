@@ -379,15 +379,6 @@ export class QuestionnaireApi {
   static handleQuestionnaireError(error: unknown): string {
     return ErrorHandler.extractMessage(error);
   }
-
-  /**
-   * Extract questionnaire field errors
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractQuestionnaireErrors(error: unknown): Record<string, string[]> {
-    const errorData = error as {response?: {data?: {field_errors?: Record<string, string[]>}}};
-    return errorData.response?.data?.field_errors || {};
-  }
 }
 
 export default QuestionnaireApi;

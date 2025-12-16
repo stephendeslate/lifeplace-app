@@ -43,6 +43,8 @@ app.conf.update(
         'core.domains.notifications.tasks.*': {'queue': 'notifications'},
         'core.domains.communications.tasks.*': {'queue': 'communications'},
         'core.domains.analytics.tasks.*': {'queue': 'analytics'},
+        'core.domains.events.tasks.*': {'queue': 'events'},
+        'core.domains.contracts.tasks.*': {'queue': 'contracts'},
     },
     
     # Worker configuration
@@ -81,7 +83,29 @@ app.conf.update(
             'task': 'core.domains.notifications.tasks.collect_delivery_metrics',
             'schedule': 5 * 60,  # Every 5 minutes
             'options': {'queue': 'analytics'}
-        }
+        },
+        # Event deadline tasks
+        'daily-deadline-sweep': {
+            'task': 'core.domains.events.tasks.daily_deadline_sweep',
+            'schedule': 60 * 60,  # Hourly (catches missed deadlines)
+            'options': {'queue': 'events'}
+        },
+        'schedule-deadline-reminders': {
+            'task': 'core.domains.events.tasks.schedule_deadline_reminders',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'events'}
+        },
+        # Contract expiry tasks
+        'expire-contracts': {
+            'task': 'core.domains.contracts.tasks.expire_contracts',
+            'schedule': 60 * 60,  # Hourly
+            'options': {'queue': 'contracts'}
+        },
+        'schedule-contract-expiry-reminders': {
+            'task': 'core.domains.contracts.tasks.schedule_contract_expiry_reminders',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'contracts'}
+        },
     },
 )
 

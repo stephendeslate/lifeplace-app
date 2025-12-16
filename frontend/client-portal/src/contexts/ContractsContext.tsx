@@ -11,6 +11,7 @@ interface ContractsContextValue {
   contracts: Contract[];
   pendingContracts: Contract[];
   signedContracts: Contract[];
+  expiredContracts: Contract[];
   pendingSignatures: PendingContractsResponse | undefined;
   
   // Loading states
@@ -127,11 +128,14 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
 
   // Derived data
   const contracts = contractsQuery.data || [];
-  const pendingContracts = contracts.filter(contract => 
+  const pendingContracts = contracts.filter(contract =>
     ['SENT', 'PARTIALLY_SIGNED'].includes(contract.status)
   );
-  const signedContracts = contracts.filter(contract => 
+  const signedContracts = contracts.filter(contract =>
     contract.status === 'SIGNED'
+  );
+  const expiredContracts = contracts.filter(contract =>
+    contract.status === 'EXPIRED' || contract.is_expired === true
   );
 
   // Actions
@@ -200,6 +204,7 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
     contracts,
     pendingContracts,
     signedContracts,
+    expiredContracts,
     pendingSignatures: pendingQuery.data,
     
     // Loading states

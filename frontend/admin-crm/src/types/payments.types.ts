@@ -423,6 +423,20 @@ export interface PaymentSettings {
   /** When remaining balance is due (DAYS_BEFORE or DAY_BEFORE) */
   balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE';
 
+  // DATE BLOCKING POLICY SETTINGS
+  /** When dates become blocked for bookings */
+  date_blocking_policy: 'IMMEDIATE' | 'ON_DOWNPAYMENT';
+  /** Reference point for downpayment due date calculation */
+  downpayment_due_reference: 'DAYS_AFTER_BOOKING' | 'DAYS_BEFORE_EVENT';
+  /** Days before auto-cancellation if downpayment not received (ON_DOWNPAYMENT policy) */
+  downpayment_deadline_days: number;
+
+  // CHILD/YOUTH PRICING SETTINGS
+  /** Whether age-based pricing is enabled */
+  child_pricing_enabled: boolean;
+  /** Age-based pricing tiers */
+  child_pricing_tiers: ChildPricingTier[];
+
   // NOTE: default_currency has been removed from PaymentSettings
   // Currency is now managed by CurrencySettings in Settings > Commerce > Currency & Taxes
 
@@ -533,6 +547,14 @@ export const REFUND_STATUSES = [
   { value: 'FAILED', label: 'Failed' },
   { value: 'REJECTED', label: 'Rejected' },
 ] as const;
+
+/** Age-based pricing tier for child/youth discounts */
+export interface ChildPricingTier {
+  min_age: number;
+  max_age: number;
+  discount_percentage: number;
+  label: string;
+}
 
 // Create/Update Data Types
 export interface CreatePaymentData {
@@ -666,6 +688,13 @@ export interface UpdatePaymentSettingsData {
   refund_deadline_hours?: number;
   refund_percentage?: number;
   refund_policy_text?: string;
+  // DATE BLOCKING POLICY SETTINGS
+  date_blocking_policy?: 'IMMEDIATE' | 'ON_DOWNPAYMENT';
+  downpayment_due_reference?: 'DAYS_AFTER_BOOKING' | 'DAYS_BEFORE_EVENT';
+  downpayment_deadline_days?: number;
+  // CHILD/YOUTH PRICING SETTINGS
+  child_pricing_enabled?: boolean;
+  child_pricing_tiers?: ChildPricingTier[];
 }
 
 // Filter Types

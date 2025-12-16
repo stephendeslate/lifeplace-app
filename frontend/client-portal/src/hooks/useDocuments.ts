@@ -47,11 +47,22 @@ const transformEventFileToDocument = (
 
 // Transform Contract to DocumentItem
 const transformContractToDocument = (contract: Contract): DocumentItem => {
+  // Create descriptive status text for display
+  const isExpired = contract.status === 'EXPIRED' || contract.is_expired === true;
+  let displayStatus: string;
+  if (isExpired) {
+    displayStatus = 'EXPIRED - Contact support for assistance';
+  } else if (contract.status === 'SIGNED') {
+    displayStatus = 'Fully Signed';
+  } else {
+    displayStatus = contract.status;
+  }
+
   return {
     id: `contract-${contract.id}`,
     type: 'CONTRACT',
     name: contract.template?.name || 'Contract',
-    description: `${contract.event?.title || 'Event'} - ${contract.status}`,
+    description: `${contract.event?.title || 'Event'} - ${displayStatus}`,
     eventId: parseInt(contract.event?.id || '0', 10),
     eventName: contract.event?.title || 'Unknown Event',
     category: 'CONTRACT',
@@ -80,8 +91,8 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
   const { useEventsList } = useEvents();
   const { data: events = [], isLoading: eventsLoading } = useEventsList();
 
-  // Get signed contracts
-  const { signedContracts, isLoading: contractsLoading } = useContracts();
+  // Get signed and expired contracts
+  const { signedContracts, expiredContracts, isLoading: contractsLoading } = useContracts();
 
   // Fetch documents for all events
   const { data: allEventDocuments = {}, isLoading: documentsLoading } = useQuery({
@@ -125,13 +136,18 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
       });
     });
 
-    // Add signed contracts (only SIGNED status)
+    // Add signed contracts
     signedContracts.forEach((contract) => {
       documents.push(transformContractToDocument(contract));
     });
 
+    // Add expired contracts (for visibility - clients should see them with status)
+    expiredContracts.forEach((contract) => {
+      documents.push(transformContractToDocument(contract));
+    });
+
     return documents;
-  }, [allEventDocuments, events, signedContracts]);
+  }, [allEventDocuments, events, signedContracts, expiredContracts]);
 
   // Apply filters
   const filteredDocuments = useMemo(() => {

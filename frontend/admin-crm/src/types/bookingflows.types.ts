@@ -409,11 +409,30 @@ export interface PaymentTermsConfiguration {
   balance_due_days: number | null;
   balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE' | null;
 
+  // Date blocking policy overrides (null = use global)
+  date_blocking_policy: 'IMMEDIATE' | 'ON_DOWNPAYMENT' | null;
+  downpayment_due_reference: 'DAYS_AFTER_BOOKING' | 'DAYS_BEFORE_EVENT' | null;
+  downpayment_deadline_days: number | null;
+
+  // Child/youth pricing overrides (null = use global)
+  child_pricing_enabled: boolean | null;
+  child_pricing_tiers: ChildPricingTier[] | null;
+
   // Computed field - merged settings (flow-specific + global defaults)
   effective_settings?: Record<string, unknown>;
 
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Child pricing tier for age-based pricing
+ */
+export interface ChildPricingTier {
+  min_age: number;
+  max_age: number;
+  discount_percentage: number;
+  label: string;
 }
 
 // REMOVED: EventDetailsStepConfiguration (doesn't exist in backend)

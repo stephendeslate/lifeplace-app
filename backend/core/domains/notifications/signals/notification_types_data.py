@@ -461,7 +461,56 @@ def get_default_notification_types():
             'supports_email': True,
             'supports_sms': False,
         },
-        
+        {
+            'code': 'CONTRACT_EXPIRING_SOON',
+            'name': 'Contract Expiring Soon',
+            'description': 'Notification when a contract is about to expire',
+            'category': 'CONTRACT',
+            'icon': 'AccessTimeIcon',
+            'color': '#FF9800',
+            'priority': 'HIGH',
+            'default_title_template': 'Contract Expires in {{ days_remaining }} Day(s)',
+            'default_content_template': 'Your contract for {{ event_name }} expires on {{ valid_until }}. Please sign the contract before it expires to secure your booking.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Your contract is expiring soon:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Expires:</strong> {{ valid_until }}</li>
+                <li><strong>Days Remaining:</strong> {{ days_remaining }}</li>
+            </ul>
+            <p>Please sign the contract before it expires to secure your booking date.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Sign Contract Now</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Your contract for {{ event_name }} expires in {{ days_remaining }} day(s). Please sign soon.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+        {
+            'code': 'CONTRACT_EXPIRED',
+            'name': 'Contract Expired',
+            'description': 'Notification when a contract has expired',
+            'category': 'CONTRACT',
+            'icon': 'EventBusyIcon',
+            'color': '#F44336',
+            'priority': 'HIGH',
+            'default_title_template': 'Contract Has Expired',
+            'default_content_template': 'The contract for {{ event_name }} expired on {{ valid_until }}. Please contact us if you would like to request a new contract.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Unfortunately, your contract has expired:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Expired on:</strong> {{ valid_until }}</li>
+            </ul>
+            <p>If you would still like to proceed with your booking, please contact us to request a new contract.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Contact Us</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Your contract for {{ event_name }} has expired. Contact us for a new contract.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+
         # Communication notifications
         {
             'code': 'MESSAGE_RECEIVED',

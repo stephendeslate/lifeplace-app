@@ -1463,7 +1463,66 @@ class BookingSessionService:
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             raise
-        
+
+        # DATE BLOCKING: Apply date blocking policy based on booking flow configuration
+        try:
+            from core.domains.events.services.date_blocking_service import DateBlockingService
+
+            # Check if this event should block the date
+            should_block, policy = DateBlockingService.should_block_on_booking_completion(event)
+            logger.info(f"Date blocking policy for event {event.id}: {policy} (should_block={should_block})")
+
+            if should_block:
+                # IMMEDIATE policy: Block date now (but first check if already blocked)
+                if DateBlockingService.is_date_blocked(event.start_date, exclude_event_id=event.id):
+                    # Date is already blocked by another event
+                    logger.warning(
+                        f"Date {event.start_date.date()} is already blocked. "
+                        f"Event {event.id} created but date not blocked."
+                    )
+                    # Don't raise exception - event was created, just won't block the date
+                    # This handles race conditions gracefully
+                else:
+                    DateBlockingService.block_date(event, reason="Immediate blocking on booking completion")
+                    logger.info(f"Date blocked immediately for event {event.id}")
+            else:
+                # ON_DOWNPAYMENT policy: Set deadline but don't block yet
+                terms = DateBlockingService.get_effective_payment_terms(event)
+                deadline_days = terms.get('downpayment_deadline_days', 7)
+
+                DateBlockingService.set_downpayment_deadline(event, deadline_days)
+                logger.info(
+                    f"Set downpayment deadline for event {event.id}: "
+                    f"{deadline_days} days from now ({event.downpayment_deadline})"
+                )
+
+                # Schedule deadline check task (will be handled by Celery)
+                try:
+                    from core.domains.events.tasks import check_downpayment_deadline
+                    check_downpayment_deadline.apply_async(
+                        args=[event.id],
+                        eta=event.downpayment_deadline
+                    )
+                    logger.info(f"Scheduled deadline check task for event {event.id}")
+                except ImportError:
+                    logger.warning("Celery tasks not available - deadline check not scheduled")
+                except Exception as task_error:
+                    logger.warning(f"Could not schedule deadline task: {task_error}")
+
+        except Exception as blocking_error:
+            logger.error(f"Error applying date blocking policy: {blocking_error}")
+            # Don't fail event creation due to blocking logic error
+
+        # REBOOK: Handle rebook completion if this is a reboooked event
+        try:
+            if booking_data.get('is_rebook') and booking_data.get('original_event_id'):
+                from core.domains.events.services.rebook_service import EventRebookService
+                EventRebookService.complete_rebook(event, booking_data['original_event_id'])
+                logger.info(f"Completed rebook for event {event.id} from original {booking_data['original_event_id']}")
+        except Exception as rebook_error:
+            logger.warning(f"Error completing rebook: {rebook_error}")
+            # Don't fail event creation due to rebook linking error
+
         # ADD: Create a note for the event after it's created
         # This is the proper way to add notes to an event
         try:

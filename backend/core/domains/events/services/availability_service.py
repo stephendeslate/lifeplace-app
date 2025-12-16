@@ -485,54 +485,80 @@ class DateAvailabilityService:
         blocked_reasons: List[str],
         capacity_issues: List[str]
     ) -> DateAvailabilityInfo:
-        """Determine final availability status and permissions"""
-        
+        """Determine final availability status and permissions
+
+        UPDATED LOGIC for date_blocked field:
+        - date_blocked=True events are hard blocks (date is taken)
+        - For ON_DOWNPAYMENT policy: CONFIRMED events without date_blocked=True
+          do NOT block new bookings (first-to-pay-wins applies)
+        - For IMMEDIATE policy: CONFIRMED events block immediately
+        """
+
+        # NEW: Check for date_blocked events (hard blocks)
+        date_blocked_count = len([e for e in existing_events if getattr(e, 'date_blocked', False)])
         confirmed_count = len([e for e in existing_events if e.status == 'CONFIRMED'])
         lead_count = len([e for e in existing_events if e.status == 'LEAD'])
         total_count = len(existing_events)
-        
-        # Determine conflict level
-        if confirmed_count > 1:
-            conflict_level = ConflictLevel.MULTIPLE_CONFIRMED
-        elif confirmed_count == 1:
+
+        # Determine conflict level based on date_blocked (not just CONFIRMED)
+        if date_blocked_count > 0:
+            conflict_level = ConflictLevel.MULTIPLE_CONFIRMED if date_blocked_count > 1 else ConflictLevel.CONFIRMED
+        elif confirmed_count > 0:
+            # CONFIRMED but not date_blocked - these are pending payment
             conflict_level = ConflictLevel.CONFIRMED
         elif lead_count > 0:
             conflict_level = ConflictLevel.LEAD_ONLY
         else:
             conflict_level = ConflictLevel.NONE
-        
+
         # Determine base availability status
         if blocked_reasons:
             status = AvailabilityStatus.BLOCKED
-        elif confirmed_count > 0:
+        elif date_blocked_count > 0:
+            # Date is officially blocked by a paid/confirmed booking
             status = AvailabilityStatus.FULLY_BOOKED
+        elif confirmed_count > 0:
+            # Has confirmed but unpaid events - partially booked (first-to-pay-wins)
+            status = AvailabilityStatus.PARTIALLY_BOOKED
         elif total_count > 0:
             status = AvailabilityStatus.PARTIALLY_BOOKED
         else:
             status = AvailabilityStatus.AVAILABLE
-        
+
         # Apply business rules for booking permissions
         can_book_event = True
         can_create_lead = True
         reasons = []
-        
-        # Rule 1: Cannot book if there's a confirmed event
-        if confirmed_count > 0:
+
+        # Rule 1: Check date_blocked field (CRITICAL - hard block)
+        # If any event has date_blocked=True, the date is taken
+        if date_blocked_count > 0:
             can_book_event = False
-            reasons.append("Date has confirmed event(s)")
-        
-        # Rule 2: Cannot book if blocked
+            reasons.append("Date is already booked")
+        else:
+            # Rule 1b: Get blocking policy to determine if CONFIRMED events block
+            blocking_policy = self._get_blocking_policy_for_request(request)
+
+            if blocking_policy == 'IMMEDIATE':
+                # Traditional behavior: CONFIRMED events block immediately
+                if confirmed_count > 0:
+                    can_book_event = False
+                    reasons.append("Date has confirmed event(s)")
+            # For ON_DOWNPAYMENT: CONFIRMED but unpaid events do NOT block
+            # Multiple bookings allowed - first to pay wins
+
+        # Rule 2: Cannot book if blocked by configuration
         if blocked_reasons:
             can_book_event = False
             can_create_lead = False
             reasons.extend(blocked_reasons)
-        
+
         # Rule 3: Capacity constraints affect both bookings and leads
-        if capacity_issues:
+        if capacity_issues and date_blocked_count > 0:
+            # Only apply capacity issues if date is actually blocked
             can_book_event = False
-            # Leads might still be allowed depending on business rules
             reasons.extend(capacity_issues)
-        
+
         # Rule 4: Buffer conflicts prevent booking
         if buffer_conflicts:
             can_book_event = False
@@ -556,6 +582,35 @@ class DateAvailabilityService:
                 30  # Look 30 days ahead
             ) if not can_book_event else None
         )
+
+
+    def _get_blocking_policy_for_request(self, request: AvailabilityRequest) -> str:
+        """
+        Get the date blocking policy for the availability request.
+
+        Args:
+            request: AvailabilityRequest with booking flow or event type info
+
+        Returns:
+            str: 'IMMEDIATE' or 'ON_DOWNPAYMENT'
+        """
+        try:
+            from core.domains.events.services.date_blocking_service import DateBlockingService
+
+            # If we have a booking flow, get its effective payment terms
+            if request.booking_flow_id:
+                booking_flow = BookingFlow.objects.get(id=request.booking_flow_id)
+                terms = DateBlockingService.get_effective_payment_terms(booking_flow)
+                return terms.get('date_blocking_policy', 'IMMEDIATE')
+
+            # Fall back to global default
+            from core.domains.payments.models import PaymentSettings
+            settings = PaymentSettings.get_default_settings()
+            return settings.date_blocking_policy
+
+        except Exception as e:
+            self.logger.warning(f"Error getting blocking policy: {e}")
+            return 'IMMEDIATE'  # Safe default
 
 
 # Global service instance

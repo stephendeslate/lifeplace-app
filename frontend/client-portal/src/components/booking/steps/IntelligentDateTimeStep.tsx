@@ -80,24 +80,33 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   const eventTypeId = flow?.event_type || undefined;
 
   // Fetch event availability data for the current month
-  const { data: availabilityEvents = [] } = useEventAvailability({
+  // blockedDates contains dates where date_blocked=true (actually unavailable)
+  const { data: availabilityEvents = [], blockedDates } = useEventAvailability({
     currentMonth,
     eventTypeId,
     enabled: true,
   });
 
   // Convert availability events to EventData format for calendar
+  // Only show events with date_blocked=true as "booked"
   const calendarEvents: EventData[] = useMemo(() => {
-    return availabilityEvents.map(event => ({
-      id: event.id,
-      name: event.name,
-      event_type_name: event.event_type_name || '',
-      status: event.status as 'DRAFT' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
-      start_date: event.start_date,
-      end_date: event.end_date || event.start_date,
-      payment_status: event.payment_status as 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE',
-    }));
+    return availabilityEvents
+      .filter(event => event.date_blocked) // Only show truly blocked events
+      .map(event => ({
+        id: event.id,
+        name: event.name,
+        event_type_name: event.event_type_name || '',
+        status: event.status as 'DRAFT' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
+        start_date: event.start_date,
+        end_date: event.end_date || event.start_date,
+        payment_status: event.payment_status as 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE',
+      }));
   }, [availabilityEvents]);
+
+  // List of dates that are actually unavailable (date_blocked=true)
+  const unavailableDates: string[] = useMemo(() => {
+    return blockedDates;
+  }, [blockedDates]);
 
   // Configuration-based constraints
   const minDuration = config?.min_duration_hours || 1;

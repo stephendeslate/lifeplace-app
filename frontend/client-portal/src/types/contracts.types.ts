@@ -115,6 +115,11 @@ export interface Contract {
   amendment_number: number;
   signatures: ContractSignature[];
   is_fully_signed?: boolean;
+  is_expired?: boolean;
+  is_expiring_soon?: boolean;
+  days_until_expiry?: number | null;
+  expiry_urgency?: 'CRITICAL' | 'HIGH' | 'NORMAL' | null;
+  sign_disabled_reason?: string | null;
   missing_signatures?: SignatureRole[];
   signature_progress?: SignatureProgress;
   can_client_sign?: boolean;
@@ -148,6 +153,7 @@ export interface DetailedContractStatus {
     is_current_user: boolean;
   }>;
   can_client_sign: boolean;
+  sign_disabled_reason?: string | null;
   expires_at: string | null;
 }
 

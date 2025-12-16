@@ -9,11 +9,13 @@ import {
   Box,
   LinearProgress,
   useTheme,
+  Alert,
 } from '@mui/material';
 import {
   Edit as SignIcon,
   Visibility as ViewIcon,
   Warning as ExpiringIcon,
+  Email as ContactIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ActionCard } from './ActionCard';
@@ -52,8 +54,12 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
 
   const { signatureProgress } = action;
   const progressPercentage = signatureProgress.percentage;
-  const isExpiringSoon = action.daysUntilExpiry !== null && action.daysUntilExpiry <= 3 && action.daysUntilExpiry > 0;
-  const isExpired = action.daysUntilExpiry !== null && action.daysUntilExpiry <= 0;
+  const isExpiringSoon = !action.isExpired && action.daysUntilExpiry !== null && action.daysUntilExpiry <= 3 && action.daysUntilExpiry > 0;
+  const isExpired = action.isExpired || (action.daysUntilExpiry !== null && action.daysUntilExpiry <= 0);
+
+  const handleContactSupport = () => {
+    navigate('/action-center?subject=Contract Extension Request');
+  };
 
   return (
     <ActionCard action={action}>
@@ -89,10 +95,16 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
         {/* Status and Expiry Info */}
         <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
           <Chip
-            label={action.contractStatus === 'PARTIALLY_SIGNED' ? 'Partially Signed' : 'Awaiting Signature'}
+            label={
+              isExpired ? 'Expired' :
+              action.contractStatus === 'PARTIALLY_SIGNED' ? 'Partially Signed' : 'Awaiting Signature'
+            }
             size="small"
-            color={action.contractStatus === 'PARTIALLY_SIGNED' ? 'warning' : 'info'}
-            variant="outlined"
+            color={
+              isExpired ? 'error' :
+              action.contractStatus === 'PARTIALLY_SIGNED' ? 'warning' : 'info'
+            }
+            variant={isExpired ? 'filled' : 'outlined'}
             sx={{ fontSize: '0.7rem' }}
           />
 
@@ -125,6 +137,15 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
           )}
         </Stack>
 
+        {/* Expired Contract Message */}
+        {isExpired && action.signDisabledReason && (
+          <Alert severity="error" sx={{ py: 0.5, '& .MuiAlert-message': { py: 0 } }}>
+            <Typography variant="caption">
+              {action.signDisabledReason}
+            </Typography>
+          </Alert>
+        )}
+
         {/* Action Buttons */}
         <Stack direction="row" spacing={1}>
           <Button
@@ -153,6 +174,22 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
               sx={{ fontSize: '0.75rem' }}
             >
               Sign Now
+            </Button>
+          )}
+
+          {isExpired && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ContactIcon />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleContactSupport();
+              }}
+              color="primary"
+              sx={{ fontSize: '0.75rem' }}
+            >
+              Request Extension
             </Button>
           )}
         </Stack>
