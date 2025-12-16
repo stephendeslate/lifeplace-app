@@ -43,6 +43,7 @@ import {
   Draw as SignIcon,
   Cancel as VoidIcon,
   Download as DownloadIcon,
+  AccessTime as AccessTimeIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -59,18 +60,18 @@ interface EventContractsProps {
 }
 
 
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: string, isExpiringSoon?: boolean) => {
   switch (status) {
     case 'DRAFT':
       return 'default';
     case 'SENT':
-      return 'info';
+      return isExpiringSoon ? 'warning' : 'info';
     case 'PARTIALLY_SIGNED':
       return 'warning';
     case 'SIGNED':
       return 'success';
     case 'EXPIRED':
-      return 'warning';
+      return 'error';
     case 'VOID':
       return 'error';
     case 'AMENDED':
@@ -78,6 +79,21 @@ const getStatusColor = (status: string) => {
     default:
       return 'default';
   }
+};
+
+// Helper to get expiry warning text
+const getExpiryWarning = (contract: EventContract): { text: string; severity: 'warning' | 'error' } | null => {
+  if (contract.status === 'SIGNED') return null;
+  if (contract.is_expired || contract.status === 'EXPIRED') {
+    return { text: 'Expired', severity: 'error' };
+  }
+  if (contract.is_expiring_soon && contract.days_until_expiry !== null) {
+    if (contract.days_until_expiry <= 1) {
+      return { text: `Expires today`, severity: 'error' };
+    }
+    return { text: `Expires in ${contract.days_until_expiry} day(s)`, severity: 'warning' };
+  }
+  return null;
 };
 
 export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
@@ -366,11 +382,24 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                   {contract.template_name}
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    label={contract.status_display || contract.status}
-                    color={getStatusColor(contract.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
-                    size="small"
-                  />
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <Chip
+                      label={contract.status_display || contract.status}
+                      color={getStatusColor(contract.status, contract.is_expiring_soon) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
+                      size="small"
+                    />
+                    {getExpiryWarning(contract) && (
+                      <Tooltip title={contract.sign_disabled_reason || getExpiryWarning(contract)?.text || ''}>
+                        <Chip
+                          icon={<AccessTimeIcon sx={{ fontSize: 14 }} />}
+                          label={getExpiryWarning(contract)?.text}
+                          color={getExpiryWarning(contract)?.severity}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Tooltip>
+                    )}
+                  </Stack>
                 </TableCell>
                 <TableCell>
                   {contract.contract_value

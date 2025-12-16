@@ -177,22 +177,6 @@ export class ContactInfoApi {
       custom_fields: {},
     };
   }
-
-  /**
-   * Handle API errors
-   * @deprecated Use ErrorHandler.extractMessage() instead
-   */
-  static handleApiError(error: unknown): string {
-    return ErrorHandler.extractMessage(error);
-  }
-
-  /**
-   * Extract validation errors from API response
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractValidationErrors(error: unknown): Record<string, string[]> {
-    return ErrorHandler.extractValidationErrorsAsRecord(error);
-  }
 }
 
 export default ContactInfoApi;

@@ -105,7 +105,60 @@ class Event(BaseModel):
     total_amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     preferences = models.JSONField(default=dict, blank=True, help_text="Client preferences")
-    
+
+    # DATE BLOCKING FIELDS
+    date_blocked = models.BooleanField(
+        default=False,
+        help_text="Whether this event's date is officially blocked"
+    )
+    date_blocked_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the date was officially blocked"
+    )
+
+    # DEADLINE TRACKING
+    downpayment_deadline = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Deadline for downpayment before auto-cancellation"
+    )
+
+    # CANCELLATION TRACKING
+    CANCELLED_REASON_CHOICES = [
+        ('CLIENT_REQUEST', 'Client Requested'),
+        ('PAYMENT_TIMEOUT', 'Payment Deadline Expired'),
+        ('DATE_TAKEN', 'Date Taken by Another Booking'),
+        ('ADMIN', 'Admin Cancelled'),
+    ]
+
+    cancelled_reason = models.CharField(
+        max_length=20,
+        choices=CANCELLED_REASON_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Reason for cancellation"
+    )
+    cancelled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the event was cancelled"
+    )
+
+    # REBOOK SUPPORT
+    original_event = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='rebooked_events',
+        help_text="If this is a rebooked event, reference to original"
+    )
+    can_rebook = models.BooleanField(
+        default=True,
+        help_text="Whether this cancelled event can be rebooked"
+    )
+
     # Use optimized manager by default
     objects = OptimizedEventManager()
     all_objects = models.Manager()  # Fallback to unoptimized if needed
@@ -116,6 +169,8 @@ class Event(BaseModel):
             models.Index(fields=['event_type', 'status']),
             models.Index(fields=['payment_status', '-start_date']),
             models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['date_blocked', 'start_date']),  # For availability queries
+            models.Index(fields=['downpayment_deadline', 'payment_status']),  # For deadline checks
         ]
 
     def update_payment_status(self):

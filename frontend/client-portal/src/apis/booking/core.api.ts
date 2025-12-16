@@ -359,24 +359,6 @@ export class BookingCoreApi {
     return response.data as Record<string, unknown>;
   }
 
-  // Error handling helpers
-
-  /**
-   * Handle API errors and extract user-friendly messages
-   * @deprecated Use ErrorHandler.extractMessage() instead
-   */
-  static handleApiError(error: unknown): string {
-    return ErrorHandler.extractMessage(error);
-  }
-
-  /**
-   * Extract validation errors from API response
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractValidationErrors(error: unknown): Record<string, string[]> {
-    return ErrorHandler.extractValidationErrorsAsRecord(error);
-  }
-
   /**
  * Calculate pricing for current session state
  */

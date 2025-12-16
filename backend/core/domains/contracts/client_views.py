@@ -62,10 +62,10 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
                 'notes'
             ).order_by('-created_at')
         
-        # Client users only see contracts from their events that are ready for signing
+        # Client users see contracts from their events (including expired for visibility)
         return EventContract.objects.filter(
             event__client=user,
-            status__in=['SENT', 'PARTIALLY_SIGNED', 'SIGNED']
+            status__in=['SENT', 'PARTIALLY_SIGNED', 'SIGNED', 'EXPIRED']
         ).select_related(
             'event', 'template', 'signed_by'
         ).prefetch_related(
@@ -91,6 +91,7 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
             contract.is_fully_signed = contract.is_fully_signed()
             contract.missing_signatures = contract.get_missing_signatures()
             contract.can_client_sign = self._can_client_sign(contract, request.user)
+            contract.sign_disabled_reason = self._get_sign_disabled_reason(contract, request.user)
         
         serializer = self.get_serializer(contracts, many=True)
         
@@ -107,7 +108,8 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         instance.is_fully_signed = instance.is_fully_signed()
         instance.missing_signatures = instance.get_missing_signatures()
         instance.can_client_sign = self._can_client_sign(instance, request.user)
-        
+        instance.sign_disabled_reason = self._get_sign_disabled_reason(instance, request.user)
+
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
     
@@ -115,14 +117,51 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         """Check if the current client can sign this contract"""
         if contract.status not in ['SENT', 'PARTIALLY_SIGNED']:
             return False
-        
+
+        # Check if contract has expired (even if status not yet updated)
+        if contract.valid_until:
+            from datetime import date
+            if date.today() > contract.valid_until:
+                return False
+
         # Check if client signature already exists
         if contract.signatures.filter(role='CLIENT').exists():
             return False
-        
+
         # Check if CLIENT role is required
         required_roles = contract.template.get_signature_requirements()
         return 'CLIENT' in required_roles
+
+    def _get_sign_disabled_reason(self, contract, user):
+        """Get the reason why signing is disabled for this contract"""
+        # Status-based reasons
+        if contract.status == 'SIGNED':
+            return 'Contract is already fully signed'
+        if contract.status == 'VOID':
+            return 'Contract has been voided'
+        if contract.status == 'AMENDED':
+            return 'Contract has been amended - please sign the new version'
+        if contract.status == 'EXPIRED':
+            return 'Contract has expired'
+        if contract.status == 'DRAFT':
+            return 'Contract has not been sent yet'
+
+        # Check if expired by date (even if status not yet updated)
+        if contract.valid_until:
+            from datetime import date
+            if date.today() > contract.valid_until:
+                return 'Contract validity period has passed'
+
+        # Check if already signed by client
+        if contract.signatures.filter(role='CLIENT').exists():
+            return 'You have already signed this contract'
+
+        # Check if CLIENT role is required
+        required_roles = contract.template.get_signature_requirements()
+        if 'CLIENT' not in required_roles:
+            return 'Client signature is not required for this contract'
+
+        return None
     
     @action(detail=True, methods=['post'])
     def sign(self, request, pk=None):
@@ -230,6 +269,7 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
             },
             'signatures': signature_status,
             'can_client_sign': self._can_client_sign(contract, request.user),
+            'sign_disabled_reason': self._get_sign_disabled_reason(contract, request.user),
             'expires_at': contract.valid_until.isoformat() if contract.valid_until else None
         })
     

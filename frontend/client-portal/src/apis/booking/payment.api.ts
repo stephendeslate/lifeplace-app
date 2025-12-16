@@ -326,24 +326,6 @@ export class PaymentApi {
     return 'Live';
   }
 
-  // Error handling
-
-  /**
-   * Handle payment API errors
-   * @deprecated Use ErrorHandler.extractMessage() instead
-   */
-  static handlePaymentError(error: unknown): string {
-    return ErrorHandler.extractMessage(error);
-  }
-
-  /**
-   * Extract payment validation errors
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractPaymentErrors(error: unknown): Record<string, string[]> {
-    return ErrorHandler.extractValidationErrorsAsRecord(error);
-  }
-
   // Gateway feature detection
 
   /**

@@ -27,52 +27,122 @@ def update_event_financial_totals(event):
     """Update event's total_amount_paid and total_amount_due based on invoices and payments"""
     if not event:
         return
-    
+
     try:
         # Calculate total from invoices
         total_invoiced = 0
         total_paid = 0
-        
+
         # Get all invoices for this event
         invoices = Invoice.objects.filter(event=event)
         for invoice in invoices:
             if invoice.total_amount:
                 total_invoiced += float(invoice.total_amount)
-                
+
                 # Calculate paid amount from related payments
                 paid_for_this_invoice = 0
                 if hasattr(invoice, 'related_payments'):
                     for payment in invoice.related_payments.filter(status='COMPLETED'):
                         if payment.amount:
                             paid_for_this_invoice += float(payment.amount)
-                
+
                 total_paid += paid_for_this_invoice
-        
+
         # Also add direct event payments (not linked to invoices)
         direct_payments = Payment.objects.filter(event=event, invoice__isnull=True, status='COMPLETED')
         for payment in direct_payments:
             if payment.amount:
                 total_paid += float(payment.amount)
-        
+
+        # Store previous payment status
+        previous_payment_status = event.payment_status
+
         # Update event fields
         event.total_amount_paid = total_paid
         event.total_amount_due = max(0, total_invoiced - total_paid)  # Can't be negative
-        
+
         # Update payment status based on amounts
         if total_invoiced == 0:
             event.payment_status = 'UNPAID'
         elif total_paid >= total_invoiced:
-            event.payment_status = 'PAID'  
+            event.payment_status = 'PAID'
         elif total_paid > 0:
             event.payment_status = 'PARTIALLY_PAID'
         else:
             event.payment_status = 'UNPAID'
-            
+
         event.save(update_fields=['total_amount_paid', 'total_amount_due', 'payment_status'])
         logger.info(f"Updated event {event.id} financials: paid={total_paid}, due={event.total_amount_due}, status={event.payment_status}")
-        
+
+        # DATE BLOCKING: Check if payment meets downpayment threshold for ON_DOWNPAYMENT policy
+        # Only trigger when payment status transitions from UNPAID to PARTIALLY_PAID or PAID
+        if previous_payment_status == 'UNPAID' and event.payment_status in ('PARTIALLY_PAID', 'PAID'):
+            _check_and_process_downpayment_received(event, total_paid, total_invoiced)
+
     except Exception as e:
         logger.error(f"Failed to update event {event.id} financial totals: {e}")
+
+
+def _check_and_process_downpayment_received(event, total_paid, total_invoiced):
+    """
+    Check if payment meets downpayment threshold and process date blocking.
+
+    This implements the first-to-pay-wins logic for ON_DOWNPAYMENT policy.
+    """
+    try:
+        from core.domains.events.services.date_blocking_service import DateBlockingService
+        from decimal import Decimal
+
+        # Skip if event is already blocked or cancelled
+        if event.date_blocked or event.status == 'CANCELLED':
+            logger.info(f"Skipping downpayment check for event {event.id}: already blocked or cancelled")
+            return
+
+        # Get effective payment terms
+        terms = DateBlockingService.get_effective_payment_terms(event)
+        policy = terms.get('date_blocking_policy', 'IMMEDIATE')
+
+        # Only process for ON_DOWNPAYMENT policy
+        if policy != 'ON_DOWNPAYMENT':
+            logger.info(f"Skipping downpayment check for event {event.id}: policy is {policy}")
+            return
+
+        # Check if payment meets downpayment threshold
+        downpayment_percentage = terms.get('downpayment_percentage', 30)
+        required_amount = Decimal(str(total_invoiced)) * (Decimal(str(downpayment_percentage)) / Decimal('100'))
+
+        if Decimal(str(total_paid)) >= required_amount:
+            logger.info(
+                f"Downpayment threshold met for event {event.id}: "
+                f"paid {total_paid} >= required {required_amount} ({downpayment_percentage}%)"
+            )
+
+            # Get the most recent completed payment for this event
+            latest_payment = Payment.objects.filter(
+                event=event,
+                status='COMPLETED'
+            ).order_by('-created_at').first()
+
+            # Process first-to-pay-wins logic
+            result = DateBlockingService.process_downpayment_received(event, latest_payment)
+
+            if result['success']:
+                logger.info(
+                    f"Date blocking processed for event {event.id}: "
+                    f"blocked={result['blocked']}, cancelled_events={len(result['cancelled_events'])}"
+                )
+            else:
+                logger.warning(f"Date blocking failed for event {event.id}: {result['error']}")
+        else:
+            logger.info(
+                f"Downpayment threshold NOT met for event {event.id}: "
+                f"paid {total_paid} < required {required_amount} ({downpayment_percentage}%)"
+            )
+
+    except Exception as e:
+        logger.error(f"Error checking downpayment for event {event.id}: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
 
 
 # === PAYMENT CACHE INVALIDATION SIGNALS ===

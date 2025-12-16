@@ -386,8 +386,153 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
         feedback = serializer.save()
         
         logger.info(f"Client {request.user.id} updated feedback {feedback_id} for event {pk}")
-        
+
         return Response(
             ClientEventFeedbackSerializer(feedback).data,
             status=status.HTTP_200_OK
         )
+
+    @action(detail=False, methods=['get'])
+    def rebookable(self, request):
+        """
+        List cancelled events that can be rebooked.
+
+        Returns events that:
+        - Were cancelled for DATE_TAKEN or PAYMENT_TIMEOUT reasons
+        - Have can_rebook=True
+        - Haven't been rebooked already
+        """
+        from ..services.rebook_service import EventRebookService
+
+        try:
+            events = EventRebookService.get_rebookable_events(request.user)
+            serializer = ClientEventSerializer(events, many=True)
+
+            logger.info(f"Client {request.user.id} retrieved {events.count()} rebookable events")
+
+            return Response({
+                'count': events.count(),
+                'results': serializer.data,
+            })
+        except Exception as e:
+            logger.error(f"Error getting rebookable events for client {request.user.id}: {e}")
+            return Response(
+                {"detail": "An error occurred while retrieving rebookable events."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['post'])
+    def rebook(self, request, pk=None):
+        """
+        Create a new booking session from a cancelled event.
+
+        Pre-populates the booking session with data from the original event,
+        allowing the client to select a new date without re-entering all information.
+
+        Request body (optional):
+        {
+            "new_date": "2025-02-15T14:00:00"  // Optional: New date/time for the event
+        }
+
+        Returns:
+        {
+            "session_id": "uuid",
+            "booking_flow_id": 123,
+            "message": "Rebook session created"
+        }
+        """
+        from ..services.rebook_service import EventRebookService
+        from datetime import datetime
+
+        try:
+            # Get the event
+            event = Event.objects.get(id=pk, client=request.user)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if event can be rebooked
+        can_rebook, reason = EventRebookService.can_rebook(event)
+        if not can_rebook:
+            return Response(
+                {"detail": reason},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Parse optional new date
+        new_date = None
+        if 'new_date' in request.data:
+            try:
+                new_date_str = request.data['new_date']
+                new_date = datetime.fromisoformat(new_date_str.replace('Z', '+00:00'))
+                # Remove timezone info since we use naive datetimes (PHT)
+                if new_date.tzinfo is not None:
+                    new_date = new_date.replace(tzinfo=None)
+            except (ValueError, TypeError) as e:
+                return Response(
+                    {"detail": f"Invalid date format: {e}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        try:
+            # Create rebook session
+            session = EventRebookService.create_rebook_session(event, new_date)
+
+            logger.info(
+                f"Client {request.user.id} created rebook session {session.session_id} "
+                f"for cancelled event {pk}"
+            )
+
+            return Response({
+                'session_id': str(session.session_id),
+                'booking_flow_id': session.booking_flow_id,
+                'original_event_id': event.id,
+                'message': 'Rebook session created successfully',
+            }, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error creating rebook session for event {pk}: {e}")
+            return Response(
+                {"detail": "An error occurred while creating the rebook session."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['get'])
+    def rebook_info(self, request, pk=None):
+        """
+        Get rebooking information for a cancelled event.
+
+        Returns details about whether the event can be rebooked and why.
+        """
+        from ..services.rebook_service import EventRebookService
+
+        try:
+            event = Event.objects.get(id=pk, client=request.user)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        can_rebook, reason = EventRebookService.can_rebook(event)
+
+        # Get rebook history
+        history = EventRebookService.get_rebook_history(event)
+
+        return Response({
+            'event_id': event.id,
+            'status': event.status,
+            'cancelled_reason': event.cancelled_reason,
+            'cancelled_at': event.cancelled_at.isoformat() if event.cancelled_at else None,
+            'can_rebook': can_rebook,
+            'rebook_reason': reason,
+            'has_been_rebooked': event.rebooked_events.exists(),
+            'rebook_history': history,
+        })

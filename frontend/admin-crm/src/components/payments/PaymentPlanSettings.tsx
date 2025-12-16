@@ -21,13 +21,18 @@ import {
   AttachMoney as MoneyIcon,
   AutorenewRounded as AutoPayIcon,
   CancelPresentation as RefundIcon,
+  CalendarMonth as CalendarIcon,
+  ChildCare as ChildCareIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
+import IconButton from '@mui/material/IconButton';
 import { useForm, Controller } from 'react-hook-form';
 import { ModernCard } from '../common/ModernCard';
 import { usePaymentSettings, useUpdatePaymentSettings } from '../../hooks/usePayments';
 import { useCurrentCurrency } from '../../hooks/useCurrency';
 import { PAYMENT_FREQUENCIES } from '../../types/payments.types';
-import type { UpdatePaymentSettingsData } from '../../types/payments.types';
+import type { UpdatePaymentSettingsData, ChildPricingTier } from '../../types/payments.types';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
@@ -68,6 +73,13 @@ interface PaymentPlanFormData {
   refund_deadline_hours: string;
   refund_percentage: string;
   refund_policy_text: string;
+  // Date Blocking Policy
+  date_blocking_policy: 'IMMEDIATE' | 'ON_DOWNPAYMENT';
+  downpayment_due_reference: 'DAYS_AFTER_BOOKING' | 'DAYS_BEFORE_EVENT';
+  downpayment_deadline_days: string;
+  // Child/Youth Pricing
+  child_pricing_enabled: boolean;
+  child_pricing_tiers: ChildPricingTier[];
 }
 
 
@@ -119,6 +131,13 @@ export const PaymentPlanSettings: React.FC = () => {
       refund_deadline_hours: '48',
       refund_percentage: '100',
       refund_policy_text: '',
+      // Date blocking policy
+      date_blocking_policy: 'IMMEDIATE',
+      downpayment_due_reference: 'DAYS_AFTER_BOOKING',
+      downpayment_deadline_days: '7',
+      // Child/youth pricing
+      child_pricing_enabled: false,
+      child_pricing_tiers: [],
     },
   });
 
@@ -127,6 +146,9 @@ export const PaymentPlanSettings: React.FC = () => {
   const lateFeeType = watch('late_fee_type');
   const securityDepositEnabled = watch('security_deposit_enabled');
   const allowRefunds = watch('allow_refunds');
+  const dateBlockingPolicy = watch('date_blocking_policy');
+  const childPricingEnabled = watch('child_pricing_enabled');
+  const childPricingTiers = watch('child_pricing_tiers');
 
   // Helper function to safely convert values to strings with fallbacks
   const safeStringValue = (value: number | null | undefined, fallback: string): string => {
@@ -175,6 +197,13 @@ export const PaymentPlanSettings: React.FC = () => {
         refund_deadline_hours: safeStringValue(paymentSettings.refund_deadline_hours, '48'),
         refund_percentage: safeStringValue(paymentSettings.refund_percentage, '100'),
         refund_policy_text: paymentSettings.refund_policy_text || '',
+        // Date Blocking Policy
+        date_blocking_policy: paymentSettings.date_blocking_policy || 'IMMEDIATE',
+        downpayment_due_reference: paymentSettings.downpayment_due_reference || 'DAYS_AFTER_BOOKING',
+        downpayment_deadline_days: safeStringValue(paymentSettings.downpayment_deadline_days, '7'),
+        // Child/Youth Pricing
+        child_pricing_enabled: paymentSettings.child_pricing_enabled ?? false,
+        child_pricing_tiers: paymentSettings.child_pricing_tiers || [],
       });
     }
   }, [paymentSettings, reset]);
@@ -218,12 +247,42 @@ export const PaymentPlanSettings: React.FC = () => {
       refund_deadline_hours: parseInt(data.refund_deadline_hours, 10),
       refund_percentage: parseInt(data.refund_percentage, 10),
       refund_policy_text: data.refund_policy_text.trim() || '',
+      // Date Blocking Policy
+      date_blocking_policy: data.date_blocking_policy,
+      downpayment_due_reference: data.downpayment_due_reference,
+      downpayment_deadline_days: parseInt(data.downpayment_deadline_days, 10),
+      // Child/Youth Pricing
+      child_pricing_enabled: data.child_pricing_enabled,
+      child_pricing_tiers: data.child_pricing_tiers,
     };
 
     updateSettings({ id: paymentSettings.id, data: updateData });
   };
 
   const isLoading = isLoadingSettings || isUpdating;
+
+  // Child pricing tier handlers
+  const handleAddChildTier = () => {
+    const newTier: ChildPricingTier = {
+      min_age: 0,
+      max_age: 12,
+      discount_percentage: 50,
+      label: 'Child',
+    };
+    const currentTiers = childPricingTiers || [];
+    reset({ ...control._formValues, child_pricing_tiers: [...currentTiers, newTier] }, { keepDirty: true });
+  };
+
+  const handleUpdateChildTier = (index: number, field: keyof ChildPricingTier, value: string | number) => {
+    const tiers = [...(childPricingTiers || [])];
+    tiers[index] = { ...tiers[index], [field]: value };
+    reset({ ...control._formValues, child_pricing_tiers: tiers }, { keepDirty: true });
+  };
+
+  const handleRemoveChildTier = (index: number) => {
+    const tiers = (childPricingTiers || []).filter((_, i) => i !== index);
+    reset({ ...control._formValues, child_pricing_tiers: tiers }, { keepDirty: true });
+  };
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -940,6 +999,267 @@ export const PaymentPlanSettings: React.FC = () => {
                   </TextField>
                 )}
               />
+            </Stack>
+          </ModernCard>
+
+          {/* Date Blocking Policy Settings */}
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="fade"
+            title="Date Blocking Policy"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.secondary[500]}04 0%, ${tokens.color.secondary[600]}03 100%)`,
+              },
+            }}
+          >
+            <Stack spacing={3}>
+              <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                <CalendarIcon sx={{ color: tokens.color.secondary[600] }} />
+                <Typography variant="subtitle2" color="text.secondary">
+                  Configure when dates become blocked for other bookings
+                </Typography>
+              </Box>
+
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <strong>IMMEDIATE:</strong> Date is blocked as soon as a booking is confirmed (traditional behavior).
+                <br />
+                <strong>ON_DOWNPAYMENT:</strong> Date is only blocked when downpayment is received. Multiple clients can book the same date until one pays (first-to-pay wins).
+              </Alert>
+
+              <Controller
+                name="date_blocking_policy"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    select
+                    label="Date Blocking Policy"
+                    helperText="When should dates become unavailable to other clients?"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.lg,
+                        border: `1px solid ${tokens.color.borders.glass}`,
+                        '&:hover': {
+                          border: `1px solid ${tokens.color.primary[300]}`,
+                        },
+                        '&.Mui-focused': {
+                          border: `1px solid ${tokens.color.primary[500]}`,
+                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="IMMEDIATE">Block Immediately on Booking</MenuItem>
+                    <MenuItem value="ON_DOWNPAYMENT">Block When Downpayment Received</MenuItem>
+                  </TextField>
+                )}
+              />
+
+              {dateBlockingPolicy === 'ON_DOWNPAYMENT' && (
+                <>
+                  <Controller
+                    name="downpayment_due_reference"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        select
+                        label="Downpayment Due Reference Point"
+                        helperText="When is the downpayment due date calculated from?"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.lg,
+                            border: `1px solid ${tokens.color.borders.glass}`,
+                            '&:hover': {
+                              border: `1px solid ${tokens.color.primary[300]}`,
+                            },
+                            '&.Mui-focused': {
+                              border: `1px solid ${tokens.color.primary[500]}`,
+                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                            },
+                          },
+                        }}
+                      >
+                        <MenuItem value="DAYS_AFTER_BOOKING">Days After Booking</MenuItem>
+                        <MenuItem value="DAYS_BEFORE_EVENT">Days Before Event</MenuItem>
+                      </TextField>
+                    )}
+                  />
+
+                  <Controller
+                    name="downpayment_deadline_days"
+                    control={control}
+                    rules={{
+                      required: 'Deadline days is required',
+                      min: { value: 1, message: 'Must be at least 1 day' },
+                    }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Downpayment Deadline"
+                        type="number"
+                        helperText="Days until booking is auto-cancelled if downpayment not received"
+                        InputProps={{
+                          endAdornment: <InputAdornment position="end">days</InputAdornment>,
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            ...glassPresets.light,
+                            borderRadius: tokens.spacing.radius.lg,
+                            border: `1px solid ${tokens.color.borders.glass}`,
+                            '&:hover': {
+                              border: `1px solid ${tokens.color.primary[300]}`,
+                            },
+                            '&.Mui-focused': {
+                              border: `1px solid ${tokens.color.primary[500]}`,
+                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                            },
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                </>
+              )}
+            </Stack>
+          </ModernCard>
+
+          {/* Child/Youth Pricing Settings */}
+          <ModernCard
+            variant="glass"
+            size="medium"
+            animation="fade"
+            title="Child/Youth Pricing"
+            sx={{
+              '&::before': {
+                background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.success[600]}03 100%)`,
+              },
+            }}
+          >
+            <Stack spacing={3}>
+              <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                <ChildCareIcon sx={{ color: tokens.color.success[600] }} />
+                <Typography variant="subtitle2" color="text.secondary">
+                  Configure age-based pricing tiers for discounts
+                </Typography>
+              </Box>
+
+              <Controller
+                name="child_pricing_enabled"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        {...field}
+                        checked={field.value}
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': {
+                            color: tokens.color.success[500],
+                            '& + .MuiSwitch-track': {
+                              backgroundColor: tokens.color.success[500],
+                            },
+                          },
+                        }}
+                      />
+                    }
+                    label="Enable Child/Youth Pricing"
+                  />
+                )}
+              />
+
+              {childPricingEnabled && (
+                <>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="subtitle2">Pricing Tiers</Typography>
+                    <Button
+                      startIcon={<AddIcon />}
+                      onClick={handleAddChildTier}
+                      size="small"
+                      variant="outlined"
+                    >
+                      Add Tier
+                    </Button>
+                  </Box>
+
+                  {(childPricingTiers || []).map((tier, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        display: 'flex',
+                        gap: 2,
+                        alignItems: 'center',
+                        p: 2,
+                        borderRadius: tokens.spacing.radius.lg,
+                        ...glassPresets.light,
+                        border: `1px solid ${tokens.color.borders.glass}`,
+                      }}
+                    >
+                      <TextField
+                        label="Label"
+                        value={tier.label}
+                        onChange={(e) => handleUpdateChildTier(index, 'label', e.target.value)}
+                        size="small"
+                        sx={{ flex: 1.5 }}
+                      />
+                      <TextField
+                        label="Min Age"
+                        type="number"
+                        value={tier.min_age}
+                        onChange={(e) => handleUpdateChildTier(index, 'min_age', parseInt(e.target.value, 10) || 0)}
+                        size="small"
+                        sx={{ flex: 1 }}
+                        InputProps={{
+                          inputProps: { min: 0 },
+                        }}
+                      />
+                      <TextField
+                        label="Max Age"
+                        type="number"
+                        value={tier.max_age}
+                        onChange={(e) => handleUpdateChildTier(index, 'max_age', parseInt(e.target.value, 10) || 0)}
+                        size="small"
+                        sx={{ flex: 1 }}
+                        InputProps={{
+                          inputProps: { min: 0 },
+                        }}
+                      />
+                      <TextField
+                        label="Discount"
+                        type="number"
+                        value={tier.discount_percentage}
+                        onChange={(e) => handleUpdateChildTier(index, 'discount_percentage', parseInt(e.target.value, 10) || 0)}
+                        size="small"
+                        sx={{ flex: 1 }}
+                        InputProps={{
+                          endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                          inputProps: { min: 0, max: 100 },
+                        }}
+                      />
+                      <IconButton
+                        onClick={() => handleRemoveChildTier(index)}
+                        color="error"
+                        size="small"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  ))}
+
+                  {(childPricingTiers || []).length === 0 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                      No pricing tiers configured. Click &quot;Add Tier&quot; to create one.
+                    </Typography>
+                  )}
+                </>
+              )}
             </Stack>
           </ModernCard>
 

@@ -846,6 +846,52 @@ class PaymentTermsConfiguration(BaseModel):
         help_text="Override: When balance is due (null = use global)"
     )
 
+    # DATE BLOCKING POLICY OVERRIDES
+    DATE_BLOCKING_POLICY_CHOICES = [
+        ('IMMEDIATE', 'Block Immediately on Booking'),
+        ('ON_DOWNPAYMENT', 'Block When Downpayment Received'),
+    ]
+
+    DOWNPAYMENT_DUE_REFERENCE_CHOICES = [
+        ('DAYS_AFTER_BOOKING', 'Days After Booking'),
+        ('DAYS_BEFORE_EVENT', 'Days Before Event'),
+    ]
+
+    date_blocking_policy = models.CharField(
+        max_length=20,
+        choices=DATE_BLOCKING_POLICY_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Override: When to block dates (null = use global)"
+    )
+
+    downpayment_due_reference = models.CharField(
+        max_length=20,
+        choices=DOWNPAYMENT_DUE_REFERENCE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Override: Reference point for downpayment due date (null = use global)"
+    )
+
+    downpayment_deadline_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Override: Days before auto-cancellation if downpayment not received (null = use global)"
+    )
+
+    # CHILD/YOUTH PRICING OVERRIDES
+    child_pricing_enabled = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override: Enable age-based pricing (null = use global)"
+    )
+
+    child_pricing_tiers = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Override: Age-based pricing tiers (null = use global)"
+    )
+
     class Meta:
         verbose_name = "Payment Terms Configuration"
         verbose_name_plural = "Payment Terms Configurations"
@@ -900,6 +946,13 @@ class PaymentTermsConfiguration(BaseModel):
             'downpayment_due_days': get_value('downpayment_due_days', 'downpayment_due_days'),
             'balance_due_days': get_value('balance_due_days', 'balance_due_days'),
             'balance_due_type': get_value('balance_due_type', 'balance_due_type'),
+            # Date blocking policy settings
+            'date_blocking_policy': get_value('date_blocking_policy', 'date_blocking_policy'),
+            'downpayment_due_reference': get_value('downpayment_due_reference', 'downpayment_due_reference'),
+            'downpayment_deadline_days': get_value('downpayment_deadline_days', 'downpayment_deadline_days'),
+            # Child pricing settings
+            'child_pricing_enabled': get_value('child_pricing_enabled', 'child_pricing_enabled'),
+            'child_pricing_tiers': self.child_pricing_tiers if self.child_pricing_tiers is not None else global_settings.child_pricing_tiers,
             # Currency (from CurrencySettings - single source of truth)
             'currency': currency,
         }

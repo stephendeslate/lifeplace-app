@@ -67,6 +67,8 @@ export interface ContractActionItem extends ActionItem {
   expiresAt: string | null;
   daysUntilExpiry: number | null;
   canClientSign: boolean;
+  signDisabledReason: string | null;
+  isExpired: boolean;
   originalContract?: Contract;
 }
 

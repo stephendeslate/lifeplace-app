@@ -30,14 +30,24 @@ class ClientEventSerializer(serializers.ModelSerializer):
     days_until_event = serializers.SerializerMethodField()
     contracts = serializers.SerializerMethodField()
     pending_signature_required = serializers.SerializerMethodField()
+    can_rebook = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
         fields = [
             'id', 'name', 'event_type_name', 'status', 'start_date', 'end_date',
             'current_stage_name', 'payment_status', 'days_until_event',
-            'contracts', 'pending_signature_required'
+            'contracts', 'pending_signature_required',
+            # Date blocking and cancellation fields
+            'date_blocked', 'date_blocked_at', 'downpayment_deadline',
+            'cancelled_reason', 'cancelled_at', 'can_rebook'
         ]
+
+    def get_can_rebook(self, obj):
+        """Check if event can be rebooked"""
+        from ..services.rebook_service import EventRebookService
+        can_rebook, _ = EventRebookService.can_rebook(obj)
+        return can_rebook
 
     def get_days_until_event(self, obj):
         from django.utils import timezone
