@@ -47,6 +47,20 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
     status: '',
   };
 
+  // Type for extended API response with all optional fields
+  type ExtendedApiResponse = ContractApiResponse & {
+    signatures?: ContractSignature[];
+    content?: string;
+    signature_progress?: { total_required: number; signed_count: number; percentage: number };
+    can_client_sign?: boolean;
+    is_expired?: boolean;
+    is_expiring_soon?: boolean;
+    days_until_expiry?: number | null;
+    expiry_urgency?: 'CRITICAL' | 'HIGH' | 'NORMAL' | null;
+    sign_disabled_reason?: string | null;
+  };
+  const extResponse = apiResponse as ExtendedApiResponse;
+
   return {
     id: apiResponse.id.toString(),
     event: eventData,
@@ -55,10 +69,10 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
       name: apiResponse.template_name,
       description: '',
       requires_signature: true, // Default assumption
-      signature_requirements: Array.from(new Set((apiResponse as ContractApiResponse & { signatures?: ContractSignature[] }).signatures?.map(s => s.role) || ['CLIENT'])), // Extract actual roles from signatures
+      signature_requirements: Array.from(new Set(extResponse.signatures?.map(s => s.role) || ['CLIENT'])), // Extract actual roles from signatures
     },
     status: apiResponse.status,
-    content: (apiResponse as ContractApiResponse & { content?: string }).content || '', // Content may be missing in list endpoints
+    content: extResponse.content || '', // Content may be missing in list endpoints
     sent_at: apiResponse.sent_at,
     fully_signed_at: apiResponse.fully_signed_at,
     valid_until: apiResponse.valid_until,
@@ -68,17 +82,23 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
     is_amendment: apiResponse.is_amendment,
     original_contract: apiResponse.original_contract?.toString() || null,
     amendment_number: apiResponse.amendment_number,
-    signatures: (apiResponse as ContractApiResponse & { signatures?: ContractSignature[] }).signatures || [], // May be missing in list endpoints
+    signatures: extResponse.signatures || [], // May be missing in list endpoints
     is_fully_signed: apiResponse.is_fully_signed,
-    signature_progress: (apiResponse as ContractApiResponse & { signature_progress?: { total_required: number; signed_count: number; percentage: number } }).signature_progress ? {
-      total_required: (apiResponse as ContractApiResponse & { signature_progress: { total_required: number; signed_count: number; percentage: number } }).signature_progress.total_required,
-      signed_count: (apiResponse as ContractApiResponse & { signature_progress: { total_required: number; signed_count: number; percentage: number } }).signature_progress.signed_count,
-      percentage: (apiResponse as ContractApiResponse & { signature_progress: { total_required: number; signed_count: number; percentage: number } }).signature_progress.percentage,
+    signature_progress: extResponse.signature_progress ? {
+      total_required: extResponse.signature_progress.total_required,
+      signed_count: extResponse.signature_progress.signed_count,
+      percentage: extResponse.signature_progress.percentage,
       required_roles: [],
       signed_roles: [],
       missing_roles: []
     } : undefined,
-    can_client_sign: (apiResponse as ContractApiResponse & { can_client_sign?: boolean }).can_client_sign ?? (apiResponse.status === 'SENT' && !apiResponse.is_fully_signed),
+    can_client_sign: extResponse.can_client_sign ?? (apiResponse.status === 'SENT' && !apiResponse.is_fully_signed),
+    // Expiry-related fields from backend
+    is_expired: extResponse.is_expired,
+    is_expiring_soon: extResponse.is_expiring_soon,
+    days_until_expiry: extResponse.days_until_expiry,
+    expiry_urgency: extResponse.expiry_urgency,
+    sign_disabled_reason: extResponse.sign_disabled_reason,
     created_at: apiResponse.created_at,
     updated_at: apiResponse.updated_at,
   };

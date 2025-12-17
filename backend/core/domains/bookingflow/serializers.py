@@ -275,6 +275,13 @@ class PaymentTermsConfigurationSerializer(serializers.ModelSerializer):
             'downpayment_due_days',
             'balance_due_days',
             'balance_due_type',
+            # Date blocking policy overrides
+            'date_blocking_policy',
+            'downpayment_due_reference',
+            'downpayment_deadline_days',
+            # Child/youth pricing overrides
+            'child_pricing_enabled',
+            'child_pricing_tiers',
             # Computed field
             'effective_settings',
             # Timestamps
