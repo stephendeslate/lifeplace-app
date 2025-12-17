@@ -44,18 +44,32 @@ class EventQuote(BaseModel):
     
     
     def accept(self, signature_data=None):
-        """Mark quote as accepted and create contract/invoice if needed"""
+        """Mark quote as accepted and create contract/invoice if needed.
+
+        Raises:
+            ValueError: If quote cannot be accepted (wrong status or expired)
+        """
+        # Validate quote can be accepted
+        if self.status != 'SENT':
+            raise ValueError(f"Cannot accept quote with status '{self.status}'. Quote must be in SENT status.")
+
+        # Check if quote has expired
+        if self.valid_until and self.valid_until < timezone.now().date():
+            raise ValueError(
+                f"Cannot accept expired quote. This quote expired on {self.valid_until}."
+            )
+
         self.status = 'ACCEPTED'
         self.accepted_at = timezone.now()
         if signature_data:
             self.signature_data = signature_data
         self.save()
-        
-        # Update event status
+
+        # Update event status and link accepted quote
         self.event.status = 'CONFIRMED'
         self.event.accepted_quote = self
         self.event.save()
-        
+
         # Record activity
         QuoteActivity.objects.create(
             quote=self,
@@ -63,8 +77,8 @@ class EventQuote(BaseModel):
             action_by=self.event.client,
             notes=f"Quote accepted by {self.event.client}"
         )
-        
-        # This would typically trigger creation of contract and initial invoice via signals
+
+        # Contract and invoice creation is handled via signals (handle_quote_acceptance)
         
     def reject(self, reason=None):
         """Mark quote as rejected"""

@@ -34,6 +34,7 @@ import { format, isPast } from 'date-fns';
 import type { EventQuote } from '../../types/sales.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { QuoteActivityTimeline } from './QuoteActivityTimeline';
 
 interface QuoteDetailsDialogProps {
   open: boolean;
@@ -341,6 +342,15 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
               </Box>
             </>
           )}
+
+          {/* Activity History */}
+          <Divider />
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Activity History
+            </Typography>
+            <QuoteActivityTimeline quoteId={quote.id} />
+          </Box>
         </Stack>
       </DialogContent>
       <DialogActions>

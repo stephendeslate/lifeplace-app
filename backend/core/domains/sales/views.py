@@ -311,6 +311,67 @@ class EventQuoteViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['get'])
+    def preview(self, request, pk=None):
+        """Preview quote as PDF (inline display)"""
+        try:
+            from .pdf_service import QuotePDFService
+
+            quote = self.get_object()
+            pdf_buffer = QuotePDFService.generate_quote_pdf(quote)
+
+            response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="quote_{quote.id}_v{quote.version}.pdf"'
+            return response
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        """Download quote as PDF (attachment)"""
+        try:
+            from .pdf_service import QuotePDFService
+
+            quote = self.get_object()
+            pdf_buffer = QuotePDFService.generate_quote_pdf(quote)
+
+            response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="quote_{quote.id}_v{quote.version}.pdf"'
+            return response
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def generate_pdf(self, request, pk=None):
+        """Generate and save PDF to quote model"""
+        try:
+            from .pdf_service import QuotePDFService
+
+            quote = self.get_object()
+            pdf_url = QuotePDFService.save_quote_pdf(quote)
+
+            serializer = self.get_serializer(quote)
+            return Response({
+                **serializer.data,
+                'pdf_url': pdf_url
+            })
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def activities(self, request, pk=None):
+        """Get activity history for a quote"""
+        try:
+            from .models import QuoteActivity
+            from .serializers import QuoteActivitySerializer
+
+            quote = self.get_object()
+            activities = QuoteActivity.objects.filter(quote=quote).order_by('-created_at')
+            serializer = QuoteActivitySerializer(activities, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class QuoteLineItemViewSet(viewsets.ModelViewSet):
     """ViewSet for managing quote line items"""
@@ -348,6 +409,112 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
         try:
             QuoteService.remove_line_item(kwargs.get('pk'), request.user)
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class QuoteOptionViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing quote pricing options"""
+    queryset = QuoteOption.objects.select_related('quote').prefetch_related('items')
+    serializer_class = QuoteOptionSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        quote_id = self.request.query_params.get('quote')
+        if quote_id:
+            queryset = queryset.filter(quote_id=quote_id)
+        return queryset.order_by('-created_at')
+
+    def create(self, request, *args, **kwargs):
+        """Create a new quote option with optional items"""
+        try:
+            quote_id = request.data.get('quote')
+            if not quote_id:
+                return Response(
+                    {"detail": "Quote ID is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create the option
+            option = QuoteOption.objects.create(
+                quote_id=quote_id,
+                name=request.data.get('name', ''),
+                description=request.data.get('description', ''),
+                total_price=0,
+                is_selected=request.data.get('is_selected', False)
+            )
+
+            # Create items if provided
+            items_data = request.data.get('items', [])
+            for item_data in items_data:
+                QuoteOptionItem.objects.create(
+                    option=option,
+                    description=item_data.get('description', ''),
+                    quantity=item_data.get('quantity', 1),
+                    unit_price=item_data.get('unit_price', 0),
+                    total=item_data.get('total', 0),
+                    product_id=item_data.get('product')
+                )
+
+            # Recalculate total
+            option.calculate_total()
+
+            serializer = self.get_serializer(option)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """Update a quote option"""
+        try:
+            option = self.get_object()
+            option.name = request.data.get('name', option.name)
+            option.description = request.data.get('description', option.description)
+            option.is_selected = request.data.get('is_selected', option.is_selected)
+            option.save()
+
+            # Update items if provided
+            items_data = request.data.get('items')
+            if items_data is not None:
+                # Clear existing items and recreate
+                option.items.all().delete()
+                for item_data in items_data:
+                    QuoteOptionItem.objects.create(
+                        option=option,
+                        description=item_data.get('description', ''),
+                        quantity=item_data.get('quantity', 1),
+                        unit_price=item_data.get('unit_price', 0),
+                        total=item_data.get('total', 0),
+                        product_id=item_data.get('product')
+                    )
+                option.calculate_total()
+
+            serializer = self.get_serializer(option)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        """Delete a quote option"""
+        try:
+            option = self.get_object()
+            option.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def select(self, request, pk=None):
+        """Select this option (deselects others)"""
+        try:
+            option = self.get_object()
+            # Deselect all other options for this quote
+            QuoteOption.objects.filter(quote=option.quote).update(is_selected=False)
+            option.is_selected = True
+            option.save()
+            serializer = self.get_serializer(option)
+            return Response(serializer.data)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -481,14 +648,9 @@ class ClientEventQuoteViewSet(viewsets.ReadOnlyModelViewSet):
     def download_pdf(self, request, pk=None):
         """Download quote as PDF"""
         try:
-            quote = self.get_object()
+            from .pdf_service import QuotePDFService
 
-            # Check if PDF file exists
-            if not quote.pdf_file:
-                return Response(
-                    {"detail": "PDF not available for this quote"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+            quote = self.get_object()
 
             # Log PDF download
             from .models import QuoteActivity
@@ -499,9 +661,12 @@ class ClientEventQuoteViewSet(viewsets.ReadOnlyModelViewSet):
                 notes=f"PDF downloaded by client {request.user.get_full_name()}"
             )
 
+            # Generate PDF dynamically
+            pdf_buffer = QuotePDFService.generate_quote_pdf(quote)
+
             # Return file response
             response = HttpResponse(
-                quote.pdf_file.read(),
+                pdf_buffer.read(),
                 content_type='application/pdf'
             )
             response['Content-Disposition'] = f'attachment; filename="quote_{quote.id}_v{quote.version}.pdf"'
