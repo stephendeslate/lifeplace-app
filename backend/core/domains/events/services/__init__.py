@@ -8,6 +8,9 @@ from .event_services import (
     EventTimelineService,
 )
 from .client_event_service import ClientEventService
+from .checkin_service import CheckInService
+from .late_checkout_service import LateCheckoutService
+from .date_holding_service import DateHoldingService
 
 __all__ = [
     'EventTypeService',
@@ -17,4 +20,7 @@ __all__ = [
     'EventFeedbackService',
     'EventTimelineService',
     'ClientEventService',
+    'CheckInService',
+    'LateCheckoutService',
+    'DateHoldingService',
 ]

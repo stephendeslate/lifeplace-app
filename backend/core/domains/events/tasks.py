@@ -307,3 +307,182 @@ def notify_competing_event_cancelled(self, cancelled_event_id: int, blocking_eve
     except Exception as e:
         logger.error(f"Error sending cancellation notification: {e}")
         raise
+
+
+# ============================================================
+# DATE HOLD EXPIRATION TASKS
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def expire_date_holds(self):
+    """
+    Periodic task to expire temporary date holds.
+
+    Finds all events with expired temporary holds and releases them.
+    Runs via Celery beat schedule (recommended: every 15 minutes).
+    """
+    from .models import Event
+    from .services.date_holding_service import DateHoldingService
+
+    logger.info("Starting date hold expiration sweep")
+
+    now = datetime.now()
+    expired_count = 0
+    error_count = 0
+
+    # Find events with expired temporary holds
+    expired_holds = Event.objects.filter(
+        date_hold_status='TEMPORARY_HOLD',
+        date_hold_expires_at__lte=now
+    ).exclude(status='CANCELLED')
+
+    total_count = expired_holds.count()
+    logger.info(f"Found {total_count} expired date holds")
+
+    for event in expired_holds:
+        try:
+            DateHoldingService.release_hold(event, reason='Automatic expiration')
+            expired_count += 1
+
+            # Send notification to client
+            send_hold_expired_notification.delay(event.id)
+        except Exception as e:
+            logger.error(f"Error expiring hold for event {event.id}: {e}")
+            error_count += 1
+
+    logger.info(
+        f"Date hold expiration completed: "
+        f"{expired_count} expired, {error_count} errors, {total_count} total"
+    )
+
+    return {'total': total_count, 'expired': expired_count, 'errors': error_count}
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+)
+def send_hold_expired_notification(self, event_id: int):
+    """
+    Send notification when a date hold expires.
+
+    Args:
+        event_id: ID of the event whose hold expired
+    """
+    from .models import Event
+    from core.domains.notifications.services import NotificationService
+
+    try:
+        event = Event.objects.get(id=event_id)
+
+        NotificationService.create_notification(
+            recipient=event.client,
+            notification_type='DATE_HOLD_EXPIRED',
+            title='Date Hold Expired',
+            message=(
+                f'Your hold on {event.start_date.strftime("%B %d, %Y")} has expired. '
+                f'The date is now available for other bookings. '
+                f'To secure this date, please complete your booking with payment.'
+            ),
+            related_event=event,
+            priority='HIGH',
+            channels=['IN_APP', 'EMAIL']
+        )
+
+        logger.info(f"Sent hold expiration notification for event {event_id}")
+        return {'status': 'sent', 'event_id': event_id}
+
+    except Event.DoesNotExist:
+        logger.warning(f"Event {event_id} not found for hold expiration notification")
+        return {'status': 'error', 'reason': 'event_not_found'}
+    except Exception as e:
+        logger.error(f"Error sending hold expiration notification: {e}")
+        raise
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def send_hold_expiring_soon_reminders(self):
+    """
+    Send reminders for holds expiring within 24 hours.
+
+    Runs via Celery beat schedule (recommended: daily).
+    """
+    from datetime import timedelta
+    from .models import Event
+
+    logger.info("Scheduling hold expiration reminders")
+
+    now = datetime.now()
+    threshold = now + timedelta(hours=24)
+    scheduled_count = 0
+
+    # Find events with holds expiring within 24 hours
+    expiring_soon = Event.objects.filter(
+        date_hold_status='TEMPORARY_HOLD',
+        date_hold_expires_at__gt=now,
+        date_hold_expires_at__lte=threshold
+    ).exclude(status='CANCELLED')
+
+    for event in expiring_soon:
+        try:
+            send_hold_expiring_reminder.delay(event.id)
+            scheduled_count += 1
+        except Exception as e:
+            logger.error(f"Error scheduling hold reminder for event {event.id}: {e}")
+
+    logger.info(f"Scheduled {scheduled_count} hold expiration reminders")
+    return {'scheduled': scheduled_count}
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+)
+def send_hold_expiring_reminder(self, event_id: int):
+    """
+    Send reminder that a date hold is expiring soon.
+
+    Args:
+        event_id: ID of the event with expiring hold
+    """
+    from .models import Event
+    from core.domains.notifications.services import NotificationService
+
+    try:
+        event = Event.objects.get(id=event_id)
+
+        if event.date_hold_status != 'TEMPORARY_HOLD':
+            return {'status': 'skipped', 'reason': 'not_held'}
+
+        hours_remaining = (event.date_hold_expires_at - datetime.now()).total_seconds() / 3600
+
+        NotificationService.create_notification(
+            recipient=event.client,
+            notification_type='HOLD_EXPIRING_REMINDER',
+            title='Date Hold Expiring Soon',
+            message=(
+                f'Your hold on {event.start_date.strftime("%B %d, %Y")} expires in '
+                f'{int(hours_remaining)} hours. Complete your payment to secure this date.'
+            ),
+            related_event=event,
+            priority='HIGH',
+            channels=['IN_APP', 'EMAIL']
+        )
+
+        logger.info(f"Sent hold expiring reminder for event {event_id}")
+        return {'status': 'sent', 'event_id': event_id, 'hours_remaining': int(hours_remaining)}
+
+    except Event.DoesNotExist:
+        logger.warning(f"Event {event_id} not found for hold reminder")
+        return {'status': 'error', 'reason': 'event_not_found'}
+    except Exception as e:
+        logger.error(f"Error sending hold reminder: {e}")
+        raise

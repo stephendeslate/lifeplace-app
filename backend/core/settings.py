@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'core.domains.clients',
     'core.domains.events',
     'core.domains.products',
+    'core.domains.venues',  # Venue management and operating rules
     'core.domains.questionnaires',
     'core.domains.contracts',
     'core.domains.sales',

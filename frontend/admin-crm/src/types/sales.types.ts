@@ -54,6 +54,7 @@ export interface EventQuote {
   status_display: string;
   subtotal: string;
   tax_amount: string;
+  service_charge_amount: string;
   discount_amount: string;
   total_amount: string;
   valid_until: string;

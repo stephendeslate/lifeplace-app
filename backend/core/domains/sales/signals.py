@@ -122,6 +122,7 @@ def handle_quote_acceptance(sender, instance, created, **kwargs):
                             'event_price': str(instance.total_amount),
                             'subtotal': str(instance.subtotal),
                             'tax_amount': str(instance.tax_amount),
+                            'service_charge_amount': str(instance.service_charge_amount),
                             'discount_amount': str(instance.discount_amount),
 
                             # Formatted pricing (currency)
@@ -130,6 +131,7 @@ def handle_quote_acceptance(sender, instance, created, **kwargs):
                             'contract_value_formatted': _format_currency_for_contract(instance.total_amount, currency_settings),
                             'subtotal_formatted': _format_currency_for_contract(instance.subtotal, currency_settings),
                             'tax_amount_formatted': _format_currency_for_contract(instance.tax_amount, currency_settings),
+                            'service_charge_formatted': _format_currency_for_contract(instance.service_charge_amount, currency_settings),
                             'discount_amount_formatted': _format_currency_for_contract(instance.discount_amount, currency_settings),
 
                             # Deposit calculations
@@ -222,8 +224,9 @@ def recalculate_quote_totals_on_line_item_delete(sender, instance, **kwargs):
 
 
 def _recalculate_quote_totals(quote):
-    """Helper function to recalculate quote subtotal, tax, and total from line items"""
+    """Helper function to recalculate quote subtotal, tax, service charge, and total from line items"""
     from decimal import Decimal
+    from core.domains.payments.models import PaymentSettings
 
     # Calculate totals from line items
     subtotal = Decimal('0.00')
@@ -236,17 +239,29 @@ def _recalculate_quote_totals(quote):
         subtotal += item_subtotal
         tax_amount += item_tax
 
-    total_amount = subtotal + tax_amount
+    # Get discount amount (preserve existing discount)
+    discount_amount = quote.discount_amount or Decimal('0.00')
 
-    # Apply discount if present
-    if quote.discount_amount:
-        total_amount -= quote.discount_amount
+    # Calculate service charge based on (subtotal - discount)
+    service_charge_amount = Decimal('0.00')
+    try:
+        settings = PaymentSettings.get_default_settings()
+        if settings.service_charge_enabled:
+            chargeable_amount = subtotal - discount_amount
+            service_charge_rate = settings.service_charge_percentage / Decimal('100')
+            service_charge_amount = (chargeable_amount * service_charge_rate).quantize(Decimal('0.01'))
+    except Exception as e:
+        logger.warning(f"Error calculating service charge: {e}")
+
+    # Calculate total: subtotal - discount + service_charge + tax
+    total_amount = subtotal - discount_amount + service_charge_amount + tax_amount
 
     # Update quote (avoid triggering signals again)
     EventQuote.objects.filter(pk=quote.pk).update(
         subtotal=subtotal,
         tax_amount=tax_amount,
+        service_charge_amount=service_charge_amount,
         total_amount=total_amount
     )
 
-    logger.info(f"Recalculated quote {quote.id} totals: subtotal=₱{subtotal}, tax=₱{tax_amount}, total=₱{total_amount}")
+    logger.info(f"Recalculated quote {quote.id} totals: subtotal=₱{subtotal}, service_charge=₱{service_charge_amount}, tax=₱{tax_amount}, total=₱{total_amount}")

@@ -20,6 +20,8 @@ class OptimizedEventManager(models.Manager):
         return super().get_queryset().select_related(
             'client',
             'event_type',
+            'venue',
+            'venue__venue_operating_rules',
             'workflow_template',
             'current_stage'
         )
@@ -99,6 +101,90 @@ class Event(BaseModel):
     total_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     product_options = models.ManyToManyField('products.ProductOption', through='EventProductOption')
 
+    # VENUE FIELDS
+    venue = models.ForeignKey(
+        'venues.Venue',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='events',
+        help_text="Primary venue for this event"
+    )
+
+    # PROGRAM TIMING (client's actual program/event)
+    program_start_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Client's program start time"
+    )
+    program_end_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Client's program end time"
+    )
+    program_duration_hours = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Program duration in hours"
+    )
+
+    # VENUE ACCESS (calculated from venue operating rules)
+    ingress_start_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Calculated ingress (setup) start time"
+    )
+    egress_end_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Calculated egress (teardown) end time"
+    )
+
+    # EARLY CHECK-IN (optional, with fee)
+    early_checkin_requested = models.BooleanField(
+        default=False,
+        help_text="Whether early check-in was requested"
+    )
+    early_checkin_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Requested early check-in time"
+    )
+    early_checkin_hours = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Hours early for check-in"
+    )
+    early_checkin_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Early check-in fee amount"
+    )
+
+    # LATE CHECKOUT (requested, tracking actual is in late_checkout_fee_* fields)
+    late_checkout_requested = models.BooleanField(
+        default=False,
+        help_text="Whether late checkout was requested"
+    )
+    late_checkout_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Requested late checkout time"
+    )
+    late_checkout_hours = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Hours late for checkout"
+    )
+
     # Accepted quote reference
     accepted_quote = models.ForeignKey(
         'sales.EventQuote',
@@ -169,6 +255,120 @@ class Event(BaseModel):
         help_text="Whether this cancelled event can be rebooked"
     )
 
+    # DATE HOLD FIELDS (temporary holds that expire - extends permanent blocking)
+    DATE_HOLD_STATUS_CHOICES = [
+        ('NONE', 'No Hold'),
+        ('TEMPORARY_HOLD', 'Temporary Hold'),
+        ('PERMANENT_BLOCK', 'Permanently Blocked'),
+    ]
+    date_hold_status = models.CharField(
+        max_length=20,
+        choices=DATE_HOLD_STATUS_CHOICES,
+        default='NONE',
+        help_text="Current hold status for this event's date"
+    )
+    date_hold_expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the temporary hold expires (null for permanent blocks)"
+    )
+    date_held_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the date was first held"
+    )
+    date_hold_extended_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of times the hold has been extended"
+    )
+
+    # RESCHEDULING TRACKING
+    original_start_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Original start date before any rescheduling"
+    )
+    reschedule_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of times this event has been rescheduled"
+    )
+    last_rescheduled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the event was last rescheduled"
+    )
+
+    # CHECK-IN/OUT TRACKING
+    CHECK_IN_STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('CHECKED_IN', 'Checked In'),
+        ('CHECKED_OUT', 'Checked Out'),
+        ('NO_SHOW', 'No Show'),
+    ]
+    check_in_status = models.CharField(
+        max_length=20,
+        choices=CHECK_IN_STATUS_CHOICES,
+        default='PENDING',
+        help_text="Current check-in/out status"
+    )
+    scheduled_check_in_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Scheduled check-in time (defaults to start_date)"
+    )
+    scheduled_checkout_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Scheduled checkout time (defaults to end_date)"
+    )
+    actual_check_in_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Actual check-in time"
+    )
+    actual_checkout_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Actual checkout time"
+    )
+    checked_in_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='events_checked_in',
+        help_text="Staff who performed check-in"
+    )
+    checked_out_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='events_checked_out',
+        help_text="Staff who performed checkout"
+    )
+    check_in_notes = models.TextField(
+        blank=True,
+        help_text="Notes from check-in (condition, issues, etc.)"
+    )
+    checkout_notes = models.TextField(
+        blank=True,
+        help_text="Notes from checkout (condition, damages, etc.)"
+    )
+
+    # LATE CHECKOUT TRACKING
+    late_checkout_fee_applied = models.BooleanField(
+        default=False,
+        help_text="Whether late checkout fee has been applied"
+    )
+    late_checkout_fee_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Late checkout fee amount applied"
+    )
+
     # Use optimized manager by default
     objects = OptimizedEventManager()
     all_objects = models.Manager()  # Fallback to unoptimized if needed
@@ -181,6 +381,9 @@ class Event(BaseModel):
             models.Index(fields=['status', '-created_at']),
             models.Index(fields=['date_blocked', 'start_date']),  # For availability queries
             models.Index(fields=['downpayment_deadline', 'payment_status']),  # For deadline checks
+            models.Index(fields=['date_hold_status', 'date_hold_expires_at']),  # For hold expiration queries
+            models.Index(fields=['check_in_status', 'start_date']),  # For check-in tracking queries
+            models.Index(fields=['venue', 'start_date']),  # For venue-based queries
         ]
 
     def update_payment_status(self):

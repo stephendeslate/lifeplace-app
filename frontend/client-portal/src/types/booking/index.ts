@@ -94,3 +94,18 @@ export type {
   SessionUpdatePayload,
   BookingSession,
 } from './bookingData.types';
+
+// Venue types
+export type {
+  VenueOperatingRulesPublic,
+  VenuePublic,
+  PackageVenuePublic,
+  CalculatedEventTimes,
+  DurationBreakdown,
+  EarlyCheckinInfo,
+  LateCheckoutInfo,
+  VenueTimeCalculation,
+  CalculateTimesRequest,
+  VenueAvailabilityResponse,
+  DateTimeWithVenueData,
+} from './venues.types';

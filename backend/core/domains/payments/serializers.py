@@ -72,6 +72,27 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
             # Child/youth pricing settings
             'child_pricing_enabled',
             'child_pricing_tiers',
+            # Service charge settings
+            'service_charge_enabled',
+            'service_charge_percentage',
+            # Rescheduling fee settings
+            'rescheduling_fee_enabled',
+            'rescheduling_fee_type',
+            'rescheduling_fee_percentage',
+            'rescheduling_fee_fixed_amount',
+            'rescheduling_grace_period_hours',
+            # Late checkout fee settings
+            'late_checkout_fee_enabled',
+            'late_checkout_fee_type',
+            'late_checkout_fee_amount',
+            'late_checkout_fee_percentage',
+            'late_checkout_grace_minutes',
+            'late_checkout_max_hours',
+            # Date holding settings
+            'date_hold_enabled',
+            'date_hold_duration_days',
+            'date_hold_max_extensions',
+            'date_hold_extension_days',
             # Timestamps
             'created_at',
             'updated_at',

@@ -21,12 +21,13 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { useProductCategories } from '../../hooks/useProducts';
-import type { 
-  ProductOption, 
-  CreateProductData, 
-  UpdateProductData, 
+import type {
+  ProductOption,
+  CreateProductData,
+  UpdateProductData,
   ProductFormData,
 } from '../../types/products.types';
+import { PackageVenuesSection } from './PackageVenuesSection';
 
 interface ProductFormDialogProps {
   open: boolean;
@@ -468,6 +469,25 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
               </Box>
 
               <Divider sx={{ my: 3 }} />
+
+              {/* Included Venues (only for existing packages) */}
+              {formData.type === 'PACKAGE' && (
+                <>
+                  {editingProduct?.id ? (
+                    <PackageVenuesSection packageId={editingProduct.id} />
+                  ) : (
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        Included Venues
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Save this package first to assign venues.
+                      </Typography>
+                    </Box>
+                  )}
+                  <Divider sx={{ my: 3 }} />
+                </>
+              )}
 
               {/* Settings */}
               <Typography variant="h6" gutterBottom>

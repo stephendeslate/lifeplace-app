@@ -11,10 +11,19 @@ import {
   useTheme,
   alpha,
   Divider,
+  FormControlLabel,
+  Switch,
+  Chip,
+  Paper,
+  Collapse,
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
   CheckCircle as CheckCircleIcon,
+  AccessTime as TimeIcon,
+  NightsStay as OvernightIcon,
+  AttachMoney as FeeIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { addHours, format, parseISO } from 'date-fns';
@@ -22,11 +31,15 @@ import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import { EventAvailabilityCalendar } from '../../../design-system/visualizations/EventAvailabilityCalendar';
 import { useEventAvailability } from '../../../hooks/useEventAvailability';
+import { VenuesApi } from '../../../apis/booking/venues.api';
 import type {
   DateTimeStepData,
   DateTimeStepConfiguration,
   StepValidationResult,
-  BookingFlow
+  BookingFlow,
+  VenuePublic,
+  PackageVenuePublic,
+  VenueTimeCalculation,
 } from '../../../types/booking';
 import type { AvailabilitySlot, EventData } from '../../../design-system/visualizations/EventAvailabilityCalendar';
 
@@ -43,6 +56,24 @@ interface IntelligentDateTimeStepProps {
   isValidating: boolean;
   onValidate?: (data: DateTimeStepData) => Promise<StepValidationResult>;
   flow?: BookingFlow | null;
+  // Venue props - passed from booking context when a package is selected
+  selectedPackageId?: number | null;
+  venue?: VenuePublic | null;
+  packageVenue?: PackageVenuePublic | null;
+}
+
+// Extended step data that includes venue fields
+interface ExtendedDateTimeStepData extends DateTimeStepData {
+  venue_id?: number;
+  program_duration_hours?: number;
+  early_checkin_requested?: boolean;
+  early_checkin_hours?: number;
+  late_checkout_requested?: boolean;
+  late_checkout_hours?: number;
+  early_checkin_fee?: number;
+  late_checkout_fee?: number;
+  ingress_start_time?: string;
+  egress_end_time?: string;
 }
 
 export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = ({
@@ -53,12 +84,27 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   isValidating,
   onValidate: _onValidate,
   flow,
+  selectedPackageId,
+  venue: propVenue,
+  packageVenue: propPackageVenue,
 }) => {
   const theme = useTheme();
 
   // Use ref to prevent infinite loops with onDataChange
   const onDataChangeRef = useRef(onDataChange);
   onDataChangeRef.current = onDataChange;
+
+  // Venue state (from props or loaded from package)
+  const [venue, setVenue] = useState<VenuePublic | null>(propVenue || null);
+  const [packageVenue, setPackageVenue] = useState<PackageVenuePublic | null>(propPackageVenue || null);
+  const [venueLoading, setVenueLoading] = useState(false);
+  const [timeCalculation, setTimeCalculation] = useState<VenueTimeCalculation | null>(null);
+
+  // Early check-in / Late checkout state
+  const [earlyCheckinRequested, setEarlyCheckinRequested] = useState(false);
+  const [earlyCheckinHours, setEarlyCheckinHours] = useState(1);
+  const [lateCheckoutRequested, setLateCheckoutRequested] = useState(false);
+  const [lateCheckoutHours, setLateCheckoutHours] = useState(1);
 
   // Core state
   const [selectedDate, setSelectedDate] = useState<Date | null>(
@@ -76,12 +122,36 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   // Track current month for calendar
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate || new Date());
 
+  // Load venue from package if provided
+  useEffect(() => {
+    if (propVenue) {
+      setVenue(propVenue);
+      return;
+    }
+
+    if (selectedPackageId && !venue) {
+      setVenueLoading(true);
+      VenuesApi.getPrimaryVenueForPackage(selectedPackageId)
+        .then((pv) => {
+          if (pv) {
+            setPackageVenue(pv);
+            // Get full venue details
+            VenuesApi.getVenue(pv.venue).then(setVenue).catch(console.error);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setVenueLoading(false));
+    }
+  }, [selectedPackageId, propVenue, venue]);
+
+  // Get venue rules
+  const venueRules = venue?.operating_rules || null;
+
   // Extract event type from flow if available
   const eventTypeId = flow?.event_type || undefined;
 
   // Fetch event availability data for the current month
-  // blockedDates contains dates where date_blocked=true (actually unavailable)
-  const { data: availabilityEvents = [], blockedDates } = useEventAvailability({
+  const { data: availabilityEvents = [] } = useEventAvailability({
     currentMonth,
     eventTypeId,
     enabled: true,
@@ -103,36 +173,71 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
       }));
   }, [availabilityEvents]);
 
-  // List of dates that are actually unavailable (date_blocked=true)
-  const unavailableDates: string[] = useMemo(() => {
-    return blockedDates;
-  }, [blockedDates]);
+  // Configuration-based constraints - use venue rules if available, fallback to config
+  const minDuration = venueRules
+    ? parseFloat(venueRules.minimum_program_hours)
+    : (config?.min_duration_hours || 1);
+  const maxDuration = venueRules?.maximum_program_hours
+    ? parseFloat(venueRules.maximum_program_hours)
+    : (config?.max_duration_hours || 12);
+  const defaultDuration = venueRules
+    ? parseFloat(venueRules.default_program_hours)
+    : (config?.default_duration_hours || 4);
+  const bufferBefore = venueRules
+    ? parseFloat(venueRules.ingress_hours)
+    : (config?.buffer_before_hours || 0);
+  const bufferAfter = venueRules
+    ? parseFloat(venueRules.egress_hours)
+    : (config?.buffer_after_hours || 0);
+  const isFixedDuration = venueRules?.is_fixed_duration || false;
 
-  // Configuration-based constraints
-  const minDuration = config?.min_duration_hours || 1;
-  const maxDuration = config?.max_duration_hours || 12;
-  const bufferBefore = config?.buffer_before_hours || 0;
-  const bufferAfter = config?.buffer_after_hours || 0;
-  
+  // Set default duration from venue when venue loads
+  useEffect(() => {
+    if (venue && venueRules && !stepData?.duration) {
+      setDuration(defaultDuration);
+    }
+  }, [venue, venueRules, defaultDuration, stepData?.duration]);
+
+  // Calculate event times when date/time/duration changes
+  useEffect(() => {
+    if (!venue || !selectedDate || !selectedTime) {
+      setTimeCalculation(null);
+      return;
+    }
+
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    const timeString = format(selectedTime, 'HH:mm');
+
+    VenuesApi.calculateTimes(venue.id, {
+      program_date: dateString,
+      program_start_time: timeString,
+      program_hours: duration,
+      early_checkin_hours: earlyCheckinRequested ? earlyCheckinHours : null,
+      late_checkout_hours: lateCheckoutRequested ? lateCheckoutHours : null,
+    })
+      .then(setTimeCalculation)
+      .catch(console.error);
+  }, [venue, selectedDate, selectedTime, duration, earlyCheckinRequested, earlyCheckinHours, lateCheckoutRequested, lateCheckoutHours]);
+
   // Update parent data when selections change
   useEffect(() => {
     if (!selectedDate) return;
-    
+
     // Treat all times as Philippines time directly - no timezone conversion
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     const timeString = selectedTime ? format(selectedTime, 'HH:mm') : '';
-    
+
     let endDate = '';
     let endTime = '';
-    
+
     if (timeString) {
       const startDateTime = parseISO(`${dateString}T${timeString}:00`);
       const endDateTime = addHours(startDateTime, duration);
       endDate = format(endDateTime, 'yyyy-MM-dd');
       endTime = format(endDateTime, 'HH:mm');
     }
-    
-    const data: DateTimeStepData = {
+
+    const data: ExtendedDateTimeStepData = {
       start_date: dateString,
       start_time: timeString,
       end_date: endDate,
@@ -140,10 +245,21 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
       duration: duration,
       resource_requirements: [],
       staff_requirements: [],
+      // Venue fields
+      venue_id: venue?.id,
+      program_duration_hours: duration,
+      early_checkin_requested: earlyCheckinRequested,
+      early_checkin_hours: earlyCheckinRequested ? earlyCheckinHours : undefined,
+      late_checkout_requested: lateCheckoutRequested,
+      late_checkout_hours: lateCheckoutRequested ? lateCheckoutHours : undefined,
+      early_checkin_fee: timeCalculation?.early_checkin?.fee || undefined,
+      late_checkout_fee: timeCalculation?.late_checkout?.fee || undefined,
+      ingress_start_time: timeCalculation?.times.ingress_start,
+      egress_end_time: timeCalculation?.times.egress_end,
     };
-    
+
     onDataChangeRef.current(data);
-  }, [selectedDate, selectedTime, duration]);
+  }, [selectedDate, selectedTime, duration, venue, earlyCheckinRequested, earlyCheckinHours, lateCheckoutRequested, lateCheckoutHours, timeCalculation]);
   
   // Handle date selection from calendar
   const handleDateSelect = useCallback((date: Date, slot: AvailabilitySlot) => {
@@ -265,9 +381,12 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                   
                   <Box sx={{ mt: 3 }}>
                     <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                      Duration: {duration} hours
+                      {venue ? 'Program Duration' : 'Duration'}: {duration} hours
+                      {isFixedDuration && (
+                        <Chip label="Fixed" size="small" sx={{ ml: 1 }} />
+                      )}
                     </Typography>
-                    
+
                     <Slider
                       value={duration}
                       onChange={handleDurationChange}
@@ -279,9 +398,187 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                         { value: maxDuration, label: `${maxDuration}h` },
                       ]}
                       valueLabelDisplay="auto"
+                      disabled={isFixedDuration}
                       sx={{ mt: 2 }}
                     />
                   </Box>
+
+                  {/* Venue Info */}
+                  {venue && (
+                    <Box sx={{ mt: 3 }}>
+                      <Paper
+                        sx={{
+                          p: 2,
+                          backgroundColor: alpha(theme.palette.info.main, 0.05),
+                          border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          {venue.is_overnight ? (
+                            <OvernightIcon color="info" fontSize="small" />
+                          ) : (
+                            <ScheduleIcon color="info" fontSize="small" />
+                          )}
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                            {venue.name}
+                          </Typography>
+                          {venue.is_overnight && (
+                            <Chip label="Overnight" size="small" color="info" variant="outlined" />
+                          )}
+                        </Box>
+                        {venue.description && (
+                          <Typography variant="body2" color="text.secondary">
+                            {venue.description}
+                          </Typography>
+                        )}
+                      </Paper>
+                    </Box>
+                  )}
+
+                  {/* Early Check-in / Late Checkout Options */}
+                  {venue && venueRules && (venueRules.early_checkin_allowed || venueRules.late_checkout_allowed) && (
+                    <Box sx={{ mt: 3 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                        Optional Add-ons
+                      </Typography>
+
+                      <Stack spacing={2}>
+                        {/* Early Check-in */}
+                        {venueRules.early_checkin_allowed && (
+                          <Paper
+                            sx={{
+                              p: 2,
+                              backgroundColor: earlyCheckinRequested
+                                ? alpha(theme.palette.success.main, 0.05)
+                                : 'transparent',
+                              border: `1px solid ${
+                                earlyCheckinRequested
+                                  ? alpha(theme.palette.success.main, 0.3)
+                                  : theme.palette.divider
+                              }`,
+                              borderRadius: 2,
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={earlyCheckinRequested}
+                                  onChange={(e) => setEarlyCheckinRequested(e.target.checked)}
+                                  color="success"
+                                />
+                              }
+                              label={
+                                <Box>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    Early Check-in
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    ₱{venueRules.early_checkin_fee_per_hour}/hour (earliest{' '}
+                                    {VenuesApi.formatTime(venueRules.earliest_checkin_time || '')})
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+
+                            <Collapse in={earlyCheckinRequested}>
+                              <Box sx={{ mt: 2, pl: 2 }}>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                  Hours early: {earlyCheckinHours}
+                                </Typography>
+                                <Slider
+                                  value={earlyCheckinHours}
+                                  onChange={(_, val) => setEarlyCheckinHours(val as number)}
+                                  min={1}
+                                  max={4}
+                                  step={1}
+                                  marks
+                                  valueLabelDisplay="auto"
+                                  sx={{ maxWidth: 200 }}
+                                />
+                                {timeCalculation?.early_checkin?.fee && (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                                    <FeeIcon fontSize="small" color="success" />
+                                    <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
+                                      +₱{timeCalculation.early_checkin.fee.toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Collapse>
+                          </Paper>
+                        )}
+
+                        {/* Late Checkout */}
+                        {venueRules.late_checkout_allowed && (
+                          <Paper
+                            sx={{
+                              p: 2,
+                              backgroundColor: lateCheckoutRequested
+                                ? alpha(theme.palette.warning.main, 0.05)
+                                : 'transparent',
+                              border: `1px solid ${
+                                lateCheckoutRequested
+                                  ? alpha(theme.palette.warning.main, 0.3)
+                                  : theme.palette.divider
+                              }`,
+                              borderRadius: 2,
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={lateCheckoutRequested}
+                                  onChange={(e) => setLateCheckoutRequested(e.target.checked)}
+                                  color="warning"
+                                />
+                              }
+                              label={
+                                <Box>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    Late Checkout
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    ₱{venueRules.late_checkout_fee_per_hour}/hour (max{' '}
+                                    {venueRules.late_checkout_max_hours}h, until{' '}
+                                    {VenuesApi.formatTime(venueRules.latest_checkout_time || '')})
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+
+                            <Collapse in={lateCheckoutRequested}>
+                              <Box sx={{ mt: 2, pl: 2 }}>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                  Hours late: {lateCheckoutHours}
+                                </Typography>
+                                <Slider
+                                  value={lateCheckoutHours}
+                                  onChange={(_, val) => setLateCheckoutHours(val as number)}
+                                  min={1}
+                                  max={venueRules.late_checkout_max_hours}
+                                  step={1}
+                                  marks
+                                  valueLabelDisplay="auto"
+                                  sx={{ maxWidth: 200 }}
+                                />
+                                {timeCalculation?.late_checkout?.fee && (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                                    <FeeIcon fontSize="small" color="warning" />
+                                    <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600 }}>
+                                      +₱{timeCalculation.late_checkout.fee.toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Collapse>
+                          </Paper>
+                        )}
+                      </Stack>
+                    </Box>
+                  )}
                 </Box>
               )}
             </Stack>
@@ -314,9 +611,9 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                   Event Schedule Confirmed
                 </Typography>
               </Box>
-              
+
               <Divider sx={{ mb: 2 }} />
-              
+
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
@@ -326,33 +623,130 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                     {selectedSummary?.date}
                   </Typography>
                 </Box>
-                
+
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Time
+                    {venue ? 'Program Time' : 'Time'}
                   </Typography>
                   <Typography variant="body1">
                     {selectedSummary?.time}
                   </Typography>
                 </Box>
-                
+
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Duration
+                    {venue ? 'Program Duration' : 'Duration'}
                   </Typography>
                   <Typography variant="body1">
                     {selectedSummary?.duration}
                   </Typography>
                 </Box>
               </Stack>
-              
-              {bufferBefore > 0 || bufferAfter > 0 ? (
+
+              {/* Venue Time Breakdown */}
+              {venue && timeCalculation && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TimeIcon fontSize="small" />
+                    Full Time Breakdown
+                  </Typography>
+
+                  <Stack spacing={1}>
+                    {bufferBefore > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Setup (Ingress)
+                        </Typography>
+                        <Typography variant="body2">
+                          {VenuesApi.formatTime(timeCalculation.times.ingress_start.split('T')[1]?.slice(0, 5) || '')} - {bufferBefore}h
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        Your Program
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {VenuesApi.formatTime(timeCalculation.times.program_start.split('T')[1]?.slice(0, 5) || '')} -{' '}
+                        {VenuesApi.formatTime(timeCalculation.times.program_end.split('T')[1]?.slice(0, 5) || '')}
+                      </Typography>
+                    </Box>
+
+                    {bufferAfter > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Teardown (Egress)
+                        </Typography>
+                        <Typography variant="body2">
+                          +{bufferAfter}h - ends {VenuesApi.formatTime(timeCalculation.times.egress_end.split('T')[1]?.slice(0, 5) || '')}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <Divider sx={{ my: 1 }} />
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Total Venue Time
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {timeCalculation.duration_breakdown.total_hours} hours
+                      </Typography>
+                    </Box>
+
+                    {/* Early Check-in / Late Checkout Summary */}
+                    {(earlyCheckinRequested || lateCheckoutRequested) && (
+                      <>
+                        <Divider sx={{ my: 1 }} />
+                        {earlyCheckinRequested && timeCalculation.early_checkin && (
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2" color="success.main">
+                              Early Check-in ({earlyCheckinHours}h early)
+                            </Typography>
+                            <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
+                              +₱{timeCalculation.early_checkin.fee?.toLocaleString()}
+                            </Typography>
+                          </Box>
+                        )}
+                        {lateCheckoutRequested && timeCalculation.late_checkout && (
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2" color="warning.main">
+                              Late Checkout ({lateCheckoutHours}h late)
+                            </Typography>
+                            <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600 }}>
+                              +₱{timeCalculation.late_checkout.fee?.toLocaleString()}
+                            </Typography>
+                          </Box>
+                        )}
+                      </>
+                    )}
+                  </Stack>
+
+                  {/* Constraints Info */}
+                  {(timeCalculation.constraints.music_curfew || timeCalculation.constraints.hard_cutoff) && (
+                    <Alert severity="info" sx={{ mt: 2 }}>
+                      <Typography variant="caption">
+                        {timeCalculation.constraints.music_curfew && (
+                          <>Music curfew: {VenuesApi.formatTime(timeCalculation.constraints.music_curfew)}. </>
+                        )}
+                        {timeCalculation.constraints.hard_cutoff && (
+                          <>All activities must end by {VenuesApi.formatTime(timeCalculation.constraints.hard_cutoff)}.</>
+                        )}
+                      </Typography>
+                    </Alert>
+                  )}
+                </Box>
+              )}
+
+              {/* Simple buffer info when no venue */}
+              {!venue && (bufferBefore > 0 || bufferAfter > 0) && (
                 <Alert severity="info" sx={{ mt: 2 }}>
                   <Typography variant="caption">
                     Includes {bufferBefore}h setup + {bufferAfter}h cleanup buffer
                   </Typography>
                 </Alert>
-              ) : null}
+              )}
             </Box>
           </GlassCard>
         </AnimatedElement>

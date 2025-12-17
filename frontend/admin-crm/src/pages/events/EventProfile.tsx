@@ -30,6 +30,7 @@ import {
   Fade,
   Grow,
   Tooltip,
+  TextField,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -55,9 +56,15 @@ import {
   Schedule as ScheduleIcon,
   ContentCopy as ContentCopyIcon,
   Download as DownloadIcon,
+  Login as CheckInIcon,
+  Logout as CheckOutIcon,
+  Warning as WarningIcon,
+  Timer as TimerIcon,
+  EventBusy as NoShowIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
+import { eventsApi } from '../../apis/events.api';
 import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuestionnaires } from '../../hooks/useQuestionnaires';
@@ -111,6 +118,14 @@ export const EventProfile: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Check-in/out state
+  const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  const [checkOutDialogOpen, setCheckOutDialogOpen] = useState(false);
+  const [noShowDialogOpen, setNoShowDialogOpen] = useState(false);
+  const [checkInNotes, setCheckInNotes] = useState('');
+  const [checkOutNotes, setCheckOutNotes] = useState('');
+  const [isProcessingCheckIn, setIsProcessingCheckIn] = useState(false);
   
   // Hooks
   const { 
@@ -330,6 +345,89 @@ export const EventProfile: React.FC = () => {
         navigate('/events');
       }
     });
+  };
+
+  // Check-in/out handlers
+  const handleCheckIn = async () => {
+    setIsProcessingCheckIn(true);
+    try {
+      await eventsApi.checkIn(eventId, checkInNotes);
+      setCheckInDialogOpen(false);
+      setCheckInNotes('');
+      refetch();
+    } catch (error) {
+      console.error('Check-in failed:', error);
+    } finally {
+      setIsProcessingCheckIn(false);
+    }
+  };
+
+  const handleCheckout = async () => {
+    setIsProcessingCheckIn(true);
+    try {
+      await eventsApi.checkout(eventId, checkOutNotes, true);
+      setCheckOutDialogOpen(false);
+      setCheckOutNotes('');
+      refetch();
+    } catch (error) {
+      console.error('Checkout failed:', error);
+    } finally {
+      setIsProcessingCheckIn(false);
+    }
+  };
+
+  const handleNoShow = async () => {
+    setIsProcessingCheckIn(true);
+    try {
+      await eventsApi.markNoShow(eventId, 'Marked as no-show by admin');
+      setNoShowDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error('No-show marking failed:', error);
+    } finally {
+      setIsProcessingCheckIn(false);
+    }
+  };
+
+  const getCheckInStatusColor = (status: string) => {
+    switch (status) {
+      case 'CHECKED_IN':
+        return { color: tokens.color.success[600], bg: tokens.color.success[500] };
+      case 'CHECKED_OUT':
+        return { color: tokens.color.info[600], bg: tokens.color.info[500] };
+      case 'NO_SHOW':
+        return { color: tokens.color.error[600], bg: tokens.color.error[500] };
+      default:
+        return { color: tokens.color.warning[600], bg: tokens.color.warning[500] };
+    }
+  };
+
+  const formatCheckInTime = (dateStr: string | null) => {
+    if (!dateStr) return 'Not set';
+    const date = new Date(dateStr);
+    return date.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const canPerformCheckIn = () => {
+    if (!event) return false;
+    if (event.check_in_status !== 'PENDING') return false;
+    if (event.status === 'CANCELLED') return false;
+    // Allow check-in if event date is today or in the past
+    const eventDate = new Date(event.start_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate <= today;
+  };
+
+  const canPerformCheckout = () => {
+    return event?.check_in_status === 'CHECKED_IN';
   };
 
   const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
@@ -1424,6 +1522,332 @@ export const EventProfile: React.FC = () => {
           </Box>
         </Fade>
 
+        {/* Check-in/Out Tracking Card */}
+        {event.status !== 'CANCELLED' && (
+          <Fade in={isLoaded} timeout={800}>
+            <Box sx={{ mb: 4 }}>
+              <Card
+                elevation={0}
+                sx={{
+                  ...glassPresets.light,
+                  borderRadius: tokens.spacing.radius.xxl,
+                  border: `1px solid ${tokens.color.borders.glass}`,
+                  position: 'relative',
+                  overflow: 'visible',
+                  transition: createTransition(['transform', 'box-shadow'], 'fast'),
+
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(135deg, ${tokens.color.info[500]}04 0%, ${tokens.color.success[500]}04 100%)`,
+                    borderRadius: tokens.spacing.radius.xxl,
+                    pointerEvents: 'none',
+                  },
+
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: tokens.shadow.glass.light,
+                  }
+                }}
+              >
+                <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                  <Stack spacing={3}>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                          sx={{
+                            ...glassPresets.medium,
+                            borderRadius: tokens.spacing.radius.full,
+                            p: 1.5,
+                            background: `linear-gradient(135deg, ${tokens.color.info[500]}15 0%, ${tokens.color.info[600]}10 100%)`,
+                            border: `1px solid ${tokens.color.info[500]}30`,
+                          }}
+                        >
+                          <TimerIcon sx={{ fontSize: 20, color: tokens.color.info[600] }} />
+                        </Box>
+                        <Typography
+                          variant="h6"
+                          fontWeight="bold"
+                          sx={{ color: tokens.color.neutral[800] }}
+                        >
+                          Check-in / Checkout
+                        </Typography>
+                      </Box>
+
+                      {/* Check-in Status Chip */}
+                      <Chip
+                        label={event.check_in_status === 'CHECKED_IN' ? 'Checked In' :
+                               event.check_in_status === 'CHECKED_OUT' ? 'Checked Out' :
+                               event.check_in_status === 'NO_SHOW' ? 'No Show' : 'Pending'}
+                        sx={{
+                          ...glassPresets.light,
+                          background: `linear-gradient(135deg, ${getCheckInStatusColor(event.check_in_status).bg}20 0%, ${getCheckInStatusColor(event.check_in_status).bg}15 100%)`,
+                          color: getCheckInStatusColor(event.check_in_status).color,
+                          border: `1px solid ${getCheckInStatusColor(event.check_in_status).bg}30`,
+                          fontWeight: 600,
+                        }}
+                      />
+                    </Box>
+
+                    {/* Times Display */}
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+                        gap: 2
+                      }}
+                    >
+                      {/* Scheduled Check-in */}
+                      <Box
+                        sx={{
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.xl,
+                          p: 2.5,
+                          border: `1px solid ${tokens.color.info[500]}20`,
+                          background: `linear-gradient(135deg, ${tokens.color.info[500]}05 0%, transparent 100%)`,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: tokens.color.neutral[500],
+                            fontWeight: 600,
+                            mb: 1,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Scheduled Check-in
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Box
+                            sx={{
+                              ...glassPresets.light,
+                              borderRadius: tokens.spacing.radius.full,
+                              p: 1,
+                              background: `${tokens.color.info[500]}15`,
+                            }}
+                          >
+                            <CheckInIcon sx={{ fontSize: 16, color: tokens.color.info[600] }} />
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: tokens.color.neutral[800],
+                              fontWeight: 500
+                            }}
+                          >
+                            {formatCheckInTime(event.scheduled_check_in_time)}
+                          </Typography>
+                        </Box>
+                        {event.actual_check_in_time && (
+                          <Box mt={1.5} pt={1.5} sx={{ borderTop: `1px solid ${tokens.color.neutral[500]}10` }}>
+                            <Typography variant="caption" sx={{ color: tokens.color.success[600], fontWeight: 600 }}>
+                              Actual: {formatCheckInTime(event.actual_check_in_time)}
+                            </Typography>
+                            {event.checked_in_by_name && (
+                              <Typography variant="caption" display="block" sx={{ color: tokens.color.neutral[500] }}>
+                                By: {event.checked_in_by_name}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
+
+                      {/* Scheduled Checkout */}
+                      <Box
+                        sx={{
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.xl,
+                          p: 2.5,
+                          border: `1px solid ${tokens.color.warning[500]}20`,
+                          background: `linear-gradient(135deg, ${tokens.color.warning[500]}05 0%, transparent 100%)`,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: tokens.color.neutral[500],
+                            fontWeight: 600,
+                            mb: 1,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Scheduled Checkout
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Box
+                            sx={{
+                              ...glassPresets.light,
+                              borderRadius: tokens.spacing.radius.full,
+                              p: 1,
+                              background: `${tokens.color.warning[500]}15`,
+                            }}
+                          >
+                            <CheckOutIcon sx={{ fontSize: 16, color: tokens.color.warning[600] }} />
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: tokens.color.neutral[800],
+                              fontWeight: 500
+                            }}
+                          >
+                            {formatCheckInTime(event.scheduled_checkout_time)}
+                          </Typography>
+                        </Box>
+                        {event.actual_checkout_time && (
+                          <Box mt={1.5} pt={1.5} sx={{ borderTop: `1px solid ${tokens.color.neutral[500]}10` }}>
+                            <Typography variant="caption" sx={{ color: tokens.color.success[600], fontWeight: 600 }}>
+                              Actual: {formatCheckInTime(event.actual_checkout_time)}
+                            </Typography>
+                            {event.checked_out_by_name && (
+                              <Typography variant="caption" display="block" sx={{ color: tokens.color.neutral[500] }}>
+                                By: {event.checked_out_by_name}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+
+                    {/* Late Checkout Warning */}
+                    {event.late_checkout_fee_applied && event.late_checkout_fee_amount && (
+                      <Alert
+                        severity="warning"
+                        icon={<WarningIcon />}
+                        sx={{
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.xl,
+                          border: `1px solid ${tokens.color.warning[500]}30`,
+                        }}
+                      >
+                        <Typography variant="body2" fontWeight={600}>
+                          Late Checkout Fee Applied: {formatEventPrice(event.late_checkout_fee_amount)}
+                        </Typography>
+                      </Alert>
+                    )}
+
+                    {/* Notes Display */}
+                    {(event.check_in_notes || event.checkout_notes) && (
+                      <Box
+                        sx={{
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.xl,
+                          p: 2.5,
+                          border: `1px solid ${tokens.color.neutral[500]}20`,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: tokens.color.neutral[500],
+                            fontWeight: 600,
+                            mb: 1,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Notes
+                        </Typography>
+                        {event.check_in_notes && (
+                          <Typography variant="body2" sx={{ color: tokens.color.neutral[700], mb: 1 }}>
+                            <strong>Check-in:</strong> {event.check_in_notes}
+                          </Typography>
+                        )}
+                        {event.checkout_notes && (
+                          <Typography variant="body2" sx={{ color: tokens.color.neutral[700] }}>
+                            <strong>Checkout:</strong> {event.checkout_notes}
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+
+                    {/* Action Buttons */}
+                    <Box display="flex" gap={2} flexWrap="wrap">
+                      {canPerformCheckIn() && (
+                        <Button
+                          variant="contained"
+                          startIcon={<CheckInIcon />}
+                          onClick={() => setCheckInDialogOpen(true)}
+                          sx={{
+                            background: tokens.color.backgrounds.successGradient,
+                            borderRadius: tokens.spacing.radius.xl,
+                            fontWeight: 600,
+                            px: 3,
+                            boxShadow: `0 4px 12px ${tokens.color.success[500]}25`,
+
+                            '&:hover': {
+                              background: tokens.color.backgrounds.successGradient,
+                              transform: 'translateY(-1px)',
+                              boxShadow: `0 6px 16px ${tokens.color.success[500]}35`,
+                            }
+                          }}
+                        >
+                          Check In Guest
+                        </Button>
+                      )}
+
+                      {canPerformCheckout() && (
+                        <Button
+                          variant="contained"
+                          startIcon={<CheckOutIcon />}
+                          onClick={() => setCheckOutDialogOpen(true)}
+                          sx={{
+                            background: tokens.color.backgrounds.primaryGradient,
+                            borderRadius: tokens.spacing.radius.xl,
+                            fontWeight: 600,
+                            px: 3,
+                            boxShadow: `0 4px 12px ${tokens.color.primary[500]}25`,
+
+                            '&:hover': {
+                              background: tokens.color.backgrounds.primaryGradient,
+                              transform: 'translateY(-1px)',
+                              boxShadow: `0 6px 16px ${tokens.color.primary[500]}35`,
+                            }
+                          }}
+                        >
+                          Checkout Guest
+                        </Button>
+                      )}
+
+                      {event.check_in_status === 'PENDING' && (
+                        <Button
+                          variant="outlined"
+                          startIcon={<NoShowIcon />}
+                          onClick={() => setNoShowDialogOpen(true)}
+                          sx={{
+                            borderColor: tokens.color.error[500],
+                            color: tokens.color.error[600],
+                            borderRadius: tokens.spacing.radius.xl,
+                            fontWeight: 600,
+                            px: 3,
+
+                            '&:hover': {
+                              borderColor: tokens.color.error[600],
+                              background: `${tokens.color.error[500]}10`,
+                            }
+                          }}
+                        >
+                          Mark No Show
+                        </Button>
+                      )}
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Box>
+          </Fade>
+        )}
+
         {/* Enhanced Sections */}
         <Grow in={isLoaded} timeout={1000}>
           <Stack spacing={4} mb={4}>
@@ -1699,6 +2123,270 @@ export const EventProfile: React.FC = () => {
               }}
             >
               {isDeletingEvent ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Check-in Dialog */}
+        <Dialog
+          open={checkInDialogOpen}
+          onClose={() => setCheckInDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              ...glassPresets.strong,
+              borderRadius: tokens.spacing.radius.xxxl,
+              border: `1px solid ${tokens.color.success[500]}30`,
+              boxShadow: tokens.shadow.component.modal,
+            }
+          }}
+          BackdropProps={{
+            sx: {
+              backdropFilter: 'blur(20px)',
+              background: 'rgba(16, 185, 129, 0.1)',
+            }
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.success[500]}08 0%, transparent 100%)`,
+              borderRadius: `${tokens.spacing.radius.xxxl} ${tokens.spacing.radius.xxxl} 0 0`,
+              borderBottom: `1px solid ${tokens.color.success[500]}20`,
+              color: tokens.color.success[700],
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <CheckInIcon /> Check In Guest
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <DialogContentText sx={{ color: tokens.color.neutral[700], mb: 3 }}>
+              Confirm check-in for "{event.name || 'this event'}".
+              This will record the current time as the actual check-in time.
+            </DialogContentText>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Check-in Notes (Optional)"
+              placeholder="Add any notes about the check-in..."
+              value={checkInNotes}
+              onChange={(e) => setCheckInNotes(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: tokens.spacing.radius.xl,
+                }
+              }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 3, gap: 2 }}>
+            <Button
+              onClick={() => {
+                setCheckInDialogOpen(false);
+                setCheckInNotes('');
+              }}
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xl,
+                color: tokens.color.neutral[700],
+                fontWeight: 600,
+                px: 3,
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCheckIn}
+              variant="contained"
+              disabled={isProcessingCheckIn}
+              sx={{
+                background: tokens.color.backgrounds.successGradient,
+                borderRadius: tokens.spacing.radius.xl,
+                fontWeight: 600,
+                px: 3,
+                boxShadow: `0 4px 12px ${tokens.color.success[500]}25`,
+
+                '&:hover': {
+                  background: tokens.color.backgrounds.successGradient,
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 6px 16px ${tokens.color.success[500]}35`,
+                }
+              }}
+            >
+              {isProcessingCheckIn ? <CircularProgress size={20} color="inherit" /> : 'Confirm Check-in'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Checkout Dialog */}
+        <Dialog
+          open={checkOutDialogOpen}
+          onClose={() => setCheckOutDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              ...glassPresets.strong,
+              borderRadius: tokens.spacing.radius.xxxl,
+              border: `1px solid ${tokens.color.primary[500]}30`,
+              boxShadow: tokens.shadow.component.modal,
+            }
+          }}
+          BackdropProps={{
+            sx: {
+              backdropFilter: 'blur(20px)',
+              background: 'rgba(59, 130, 246, 0.1)',
+            }
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, transparent 100%)`,
+              borderRadius: `${tokens.spacing.radius.xxxl} ${tokens.spacing.radius.xxxl} 0 0`,
+              borderBottom: `1px solid ${tokens.color.primary[500]}20`,
+              color: tokens.color.primary[700],
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <CheckOutIcon /> Checkout Guest
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <DialogContentText sx={{ color: tokens.color.neutral[700], mb: 3 }}>
+              Confirm checkout for "{event.name || 'this event'}".
+              This will record the current time as the actual checkout time.
+              Any applicable late checkout fees will be calculated automatically.
+            </DialogContentText>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Checkout Notes (Optional)"
+              placeholder="Add any notes about the checkout..."
+              value={checkOutNotes}
+              onChange={(e) => setCheckOutNotes(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: tokens.spacing.radius.xl,
+                }
+              }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 3, gap: 2 }}>
+            <Button
+              onClick={() => {
+                setCheckOutDialogOpen(false);
+                setCheckOutNotes('');
+              }}
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xl,
+                color: tokens.color.neutral[700],
+                fontWeight: 600,
+                px: 3,
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCheckout}
+              variant="contained"
+              disabled={isProcessingCheckIn}
+              sx={{
+                background: tokens.color.backgrounds.primaryGradient,
+                borderRadius: tokens.spacing.radius.xl,
+                fontWeight: 600,
+                px: 3,
+                boxShadow: `0 4px 12px ${tokens.color.primary[500]}25`,
+
+                '&:hover': {
+                  background: tokens.color.backgrounds.primaryGradient,
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 6px 16px ${tokens.color.primary[500]}35`,
+                }
+              }}
+            >
+              {isProcessingCheckIn ? <CircularProgress size={20} color="inherit" /> : 'Confirm Checkout'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* No Show Dialog */}
+        <Dialog
+          open={noShowDialogOpen}
+          onClose={() => setNoShowDialogOpen(false)}
+          PaperProps={{
+            sx: {
+              ...glassPresets.strong,
+              borderRadius: tokens.spacing.radius.xxxl,
+              border: `1px solid ${tokens.color.error[500]}30`,
+              boxShadow: tokens.shadow.component.modal,
+            }
+          }}
+          BackdropProps={{
+            sx: {
+              backdropFilter: 'blur(20px)',
+              background: 'rgba(239, 68, 68, 0.1)',
+            }
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.error[500]}08 0%, transparent 100%)`,
+              borderRadius: `${tokens.spacing.radius.xxxl} ${tokens.spacing.radius.xxxl} 0 0`,
+              borderBottom: `1px solid ${tokens.color.error[500]}20`,
+              color: tokens.color.error[700],
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <NoShowIcon /> Mark as No Show
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <DialogContentText sx={{ color: tokens.color.neutral[700] }}>
+              Are you sure you want to mark "{event.name || 'this event'}" as a no-show?
+              This indicates the guest did not arrive for their scheduled event.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, gap: 2 }}>
+            <Button
+              onClick={() => setNoShowDialogOpen(false)}
+              sx={{
+                ...glassPresets.light,
+                borderRadius: tokens.spacing.radius.xl,
+                color: tokens.color.neutral[700],
+                fontWeight: 600,
+                px: 3,
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleNoShow}
+              variant="contained"
+              disabled={isProcessingCheckIn}
+              sx={{
+                background: tokens.color.backgrounds.errorGradient,
+                borderRadius: tokens.spacing.radius.xl,
+                fontWeight: 600,
+                px: 3,
+                boxShadow: `0 4px 12px ${tokens.color.error[500]}25`,
+
+                '&:hover': {
+                  background: tokens.color.backgrounds.errorGradient,
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 6px 16px ${tokens.color.error[500]}35`,
+                }
+              }}
+            >
+              {isProcessingCheckIn ? <CircularProgress size={20} color="inherit" /> : 'Confirm No Show'}
             </Button>
           </DialogActions>
         </Dialog>

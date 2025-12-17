@@ -456,6 +456,48 @@ export interface PaymentSettings {
   /** Default refund policy text to display to clients */
   refund_policy_text: string;
 
+  // SERVICE CHARGE SETTINGS
+  /** Whether service charge is enabled */
+  service_charge_enabled: boolean;
+  /** Service charge percentage (0-100) */
+  service_charge_percentage: number;
+
+  // RESCHEDULING FEE SETTINGS
+  /** Whether rescheduling fee is enabled */
+  rescheduling_fee_enabled: boolean;
+  /** Type of rescheduling fee calculation */
+  rescheduling_fee_type: 'PERCENTAGE' | 'FIXED';
+  /** Rescheduling fee percentage */
+  rescheduling_fee_percentage: number;
+  /** Fixed rescheduling fee amount */
+  rescheduling_fee_fixed_amount: number | null;
+  /** Hours after booking during which rescheduling is free */
+  rescheduling_grace_period_hours: number;
+
+  // LATE CHECKOUT FEE SETTINGS
+  /** Whether late checkout fee is enabled */
+  late_checkout_fee_enabled: boolean;
+  /** Type of late checkout fee calculation */
+  late_checkout_fee_type: 'FIXED' | 'HOURLY' | 'PERCENTAGE';
+  /** Late checkout fee amount (fixed or per hour) */
+  late_checkout_fee_amount: number;
+  /** Late checkout fee percentage (if type is PERCENTAGE) */
+  late_checkout_fee_percentage: number;
+  /** Minutes after scheduled checkout before late fee applies */
+  late_checkout_grace_minutes: number;
+  /** Maximum hours for late checkout billing */
+  late_checkout_max_hours: number;
+
+  // DATE HOLDING SETTINGS
+  /** Whether temporary date holding is enabled */
+  date_hold_enabled: boolean;
+  /** Default duration for temporary date holds in days */
+  date_hold_duration_days: number;
+  /** Maximum number of hold extensions allowed */
+  date_hold_max_extensions: number;
+  /** Duration of each hold extension in days */
+  date_hold_extension_days: number;
+
   // TIMESTAMPS
   /** Timestamp when settings were created */
   created_at: string;
