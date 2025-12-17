@@ -128,11 +128,17 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   const handleSubmit = async () => {
     // Validation
     const hasInvalidLineItem = lineItems.some(
-      (item) => !item.description.trim() || item.quantity <= 0 || parseFloat(item.unit_price) < 0
+      (item) => !item.description.trim() || item.quantity <= 0
     );
 
     if (hasInvalidLineItem) {
       showToast({ type: 'error', title: 'Validation Error', message: 'Please fill in all line item fields correctly' });
+      return;
+    }
+
+    const subtotal = calculateSubtotal();
+    if (subtotal < 0) {
+      showToast({ type: 'error', title: 'Validation Error', message: 'Quote total cannot be negative' });
       return;
     }
 
@@ -251,11 +257,13 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                           onChange={(e) =>
                             handleLineItemChange(index, 'unit_price', e.target.value)
                           }
-                          inputProps={{ min: 0, step: '0.01' }}
+                          inputProps={{ step: '0.01' }}
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Typography variant="body2">₱{item.total.toFixed(2)}</Typography>
+                        <Typography variant="body2" color={item.total < 0 ? 'success.main' : 'inherit'}>
+                          ₱{item.total.toFixed(2)}
+                        </Typography>
                       </TableCell>
                       <TableCell align="center">
                         <IconButton
