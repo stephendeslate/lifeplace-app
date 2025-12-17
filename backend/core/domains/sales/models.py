@@ -63,12 +63,16 @@ class EventQuote(BaseModel):
         self.accepted_at = timezone.now()
         if signature_data:
             self.signature_data = signature_data
-        self.save()
 
-        # Update event status and link accepted quote
+        # IMPORTANT: Update event BEFORE saving quote to ensure the signal handler
+        # can access event.accepted_quote for correct pricing in contract generation
         self.event.status = 'CONFIRMED'
         self.event.accepted_quote = self
         self.event.save()
+
+        # Now save the quote - this triggers the post_save signal which creates
+        # contract and invoice. The signal can now access event.accepted_quote
+        self.save()
 
         # Record activity
         QuoteActivity.objects.create(
@@ -148,7 +152,8 @@ class EventQuote(BaseModel):
                     context_data=template_data,
                     client=client,
                     sent_by=None,
-                    use_async=False
+                    use_async=False,
+                    event=self.event
                 )
 
                 logger.info(f"Sent quote notification email to {client.email} for quote {self.id}")
@@ -158,13 +163,19 @@ class EventQuote(BaseModel):
     
     def create_next_version(self):
         """Create a new version based on this quote"""
+        # Calculate valid_until bounded by event date to prevent quotes being valid after the event
+        default_valid_until = timezone.now().date() + timezone.timedelta(days=30)
+        event_date = self.event.start_date.date() if hasattr(self.event.start_date, 'date') else self.event.start_date
+        max_valid_until = event_date - timezone.timedelta(days=1)  # At least 1 day before event
+        quote_valid_until = min(default_valid_until, max_valid_until)
+
         new_quote = EventQuote.objects.create(
             event=self.event,
             template=self.template,
             version=self.version + 1,
             status='DRAFT',
             total_amount=self.total_amount,
-            valid_until=timezone.now().date() + timezone.timedelta(days=30),
+            valid_until=quote_valid_until,
             terms_and_conditions=self.terms_and_conditions,
             notes=self.notes,
             created_by=self.created_by
@@ -239,6 +250,12 @@ class QuoteTemplate(BaseModel):
         Creates a new quote for an event based on this template
         Returns the newly created quote
         """
+        # Calculate valid_until bounded by event date to prevent quotes being valid after the event
+        default_valid_until = timezone.now().date() + timezone.timedelta(days=self.default_validity_days)
+        event_date = event.start_date.date() if hasattr(event.start_date, 'date') else event.start_date
+        max_valid_until = event_date - timezone.timedelta(days=1)  # At least 1 day before event
+        quote_valid_until = min(default_valid_until, max_valid_until)
+
         # Create the quote
         quote = EventQuote.objects.create(
             event=event,
@@ -246,7 +263,7 @@ class QuoteTemplate(BaseModel):
             version=1,
             status='DRAFT',
             total_amount=0,  # Will be calculated after adding items
-            valid_until=timezone.now().date() + timezone.timedelta(days=self.default_validity_days),
+            valid_until=quote_valid_until,
             terms_and_conditions=self.terms_and_conditions,
             created_by=created_by
         )

@@ -52,11 +52,11 @@ interface EventCommunicationsProps {
 }
 
 export const EventCommunications: React.FC<EventCommunicationsProps> = ({
+  event,
   clientId,
   clientEmail,
   clientName
 }) => {
-  // event prop is available but not used in current implementation
   const [searchTerm, setSearchTerm] = useState('');
   const [channelFilter, setChannelFilter] = useState<'ALL' | 'EMAIL' | 'SMS'>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -65,12 +65,12 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
   const { useRecords } = useCommunications();
-  const { 
-    data: communications = [], 
-    isLoading, 
-    refetch 
+  const {
+    data: communications = [],
+    isLoading,
+    refetch
   } = useRecords({
-    client_id: clientId,
+    event_id: event.id,
     channel: channelFilter === 'ALL' ? undefined : channelFilter,
     status: statusFilter === 'ALL' ? undefined : statusFilter as 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED'
   });
@@ -309,6 +309,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
           is_active: true,
           has_account: false
         }}
+        eventId={event.id}
       />
 
       {/* View Details Dialog */}

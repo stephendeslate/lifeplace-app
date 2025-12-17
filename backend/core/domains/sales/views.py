@@ -412,6 +412,104 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['post'])
+    def calculate_pricing(self, request):
+        """Calculate pricing for a line item based on product and event duration.
+
+        Request body:
+        {
+            "product_id": 123,
+            "quantity": 1,
+            "event_id": 456  // to get duration
+        }
+
+        Returns pricing breakdown including excess hours calculation.
+        """
+        from core.domains.sales.pricing_service import PricingCalculationService
+        from core.domains.products.models import ProductOption
+        from core.domains.events.models import Event
+        from decimal import Decimal
+
+        try:
+            product_id = request.data.get('product_id')
+            quantity = int(request.data.get('quantity', 1))
+            event_id = request.data.get('event_id')
+
+            if not product_id:
+                return Response(
+                    {"detail": "product_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not event_id:
+                return Response(
+                    {"detail": "event_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                product = ProductOption.objects.get(pk=product_id)
+            except ProductOption.DoesNotExist:
+                return Response(
+                    {"detail": f"Product with ID {product_id} not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            try:
+                event = Event.objects.get(pk=event_id)
+            except Event.DoesNotExist:
+                return Response(
+                    {"detail": f"Event with ID {event_id} not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            event_duration = event.get_duration_hours()
+
+            # Build package data for pricing calculation
+            package_data = {
+                'product_id': product.id,
+                'name': product.name,
+                'price': float(product.base_price),
+                'quantity': quantity,
+                'hours_included': product.included_hours or 0,
+            }
+
+            if product.excess_hour_price:
+                package_data['excess_hour_price'] = float(product.excess_hour_price)
+
+            pricing_item = PricingCalculationService._create_package_line_item(
+                package_data,
+                event_duration
+            )
+
+            if pricing_item:
+                item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
+
+                return Response({
+                    'product_id': product.id,
+                    'product_name': product.name,
+                    'description': pricing_item.description,
+                    'quantity': pricing_item.quantity,
+                    'base_unit_price': str(pricing_item.base_unit_price),
+                    'excess_hours': pricing_item.excess_hours,
+                    'excess_hour_price': str(pricing_item.excess_hour_price) if pricing_item.excess_hour_price else None,
+                    'excess_cost': str(pricing_item.excess_cost),
+                    'unit_price': str(pricing_item.total_unit_price),
+                    'total': str(pricing_item.line_total),
+                    'tax_rate': str(pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0'))),
+                    'item_type': item_type,
+                    'event_duration_hours': event_duration,
+                    'included_hours': product.included_hours or 0,
+                })
+            else:
+                return Response(
+                    {"detail": "Failed to calculate pricing"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class QuoteOptionViewSet(viewsets.ModelViewSet):
     """ViewSet for managing quote pricing options"""

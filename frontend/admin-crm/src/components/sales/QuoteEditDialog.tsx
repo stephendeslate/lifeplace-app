@@ -16,14 +16,20 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Autocomplete,
+  Chip,
+  Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, Info as InfoIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useToast } from '../../contexts/ToastContext';
 import { useUpdateEventQuote } from '../../hooks/useSales';
+import { useProducts } from '../../hooks/useProducts';
+import { salesApi } from '../../apis/sales.api';
 import type { EventQuote } from '../../types/sales.types';
+import type { ProductOption } from '../../types/products.types';
 
 interface QuoteEditDialogProps {
   open: boolean;
@@ -38,6 +44,12 @@ interface LineItemFormData {
   quantity: number;
   unit_price: string;
   total: number;
+  product_id?: number | null;
+  // Excess hours breakdown (display only)
+  base_unit_price?: string;
+  excess_hours?: number | null;
+  excess_hour_price?: string | null;
+  excess_cost?: string;
 }
 
 const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
@@ -48,6 +60,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
 }) => {
   const { showToast } = useToast();
   const updateQuoteMutation = useUpdateEventQuote();
+  const { products, isLoadingProducts } = useProducts({ is_active: true });
 
   const [validUntil, setValidUntil] = useState<Date | null>(
     quote.valid_until ? new Date(quote.valid_until) : null
@@ -56,6 +69,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   const [termsAndConditions, setTermsAndConditions] = useState(quote.terms_and_conditions || '');
   const [clientMessage, setClientMessage] = useState(quote.client_message || '');
   const [lineItems, setLineItems] = useState<LineItemFormData[]>([]);
+  const [isCalculating, setIsCalculating] = useState<number | null>(null);
 
   // Initialize line items from quote
   useEffect(() => {
@@ -67,6 +81,11 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           quantity: item.quantity,
           unit_price: item.unit_price,
           total: parseFloat(item.unit_price) * item.quantity,
+          product_id: item.product || null,
+          base_unit_price: item.base_unit_price,
+          excess_hours: item.excess_hours,
+          excess_hour_price: item.excess_hour_price,
+          excess_cost: item.excess_cost,
         }))
       );
     } else {
@@ -77,6 +96,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           quantity: 1,
           unit_price: '0.00',
           total: 0,
+          product_id: null,
         },
       ]);
     }
@@ -90,6 +110,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
         quantity: 1,
         unit_price: '0.00',
         total: 0,
+        product_id: null,
       },
     ]);
   };
@@ -100,6 +121,99 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
     }
   };
 
+  const handleProductSelect = async (index: number, product: ProductOption | null) => {
+    const updatedItems = [...lineItems];
+
+    if (product && quote.event) {
+      setIsCalculating(index);
+      try {
+        // Call pricing calculation endpoint
+        const pricing = await salesApi.calculateLineItemPricing({
+          product_id: product.id,
+          quantity: updatedItems[index].quantity || 1,
+          event_id: quote.event,
+        });
+
+        updatedItems[index] = {
+          ...updatedItems[index],
+          product_id: product.id,
+          description: pricing.description,
+          unit_price: pricing.unit_price,
+          total: parseFloat(pricing.total),
+          base_unit_price: pricing.base_unit_price,
+          excess_hours: pricing.excess_hours,
+          excess_hour_price: pricing.excess_hour_price,
+          excess_cost: pricing.excess_cost,
+        };
+      } catch (error) {
+        console.error('Failed to calculate pricing:', error);
+        // Fallback to basic product info
+        updatedItems[index] = {
+          ...updatedItems[index],
+          product_id: product.id,
+          description: product.name,
+          unit_price: product.base_price,
+          total: parseFloat(product.base_price) * (updatedItems[index].quantity || 1),
+        };
+        showToast({ type: 'warning', title: 'Pricing Warning', message: 'Could not calculate excess hours pricing' });
+      } finally {
+        setIsCalculating(null);
+      }
+    } else {
+      // Clear product selection
+      updatedItems[index] = {
+        ...updatedItems[index],
+        product_id: null,
+        base_unit_price: undefined,
+        excess_hours: undefined,
+        excess_hour_price: undefined,
+        excess_cost: undefined,
+      };
+    }
+
+    setLineItems(updatedItems);
+  };
+
+  const handleQuantityChange = async (index: number, quantity: number) => {
+    const updatedItems = [...lineItems];
+    const item = updatedItems[index];
+    updatedItems[index] = { ...item, quantity };
+
+    // If there's a product, recalculate pricing
+    if (item.product_id && quote.event) {
+      setIsCalculating(index);
+      try {
+        const pricing = await salesApi.calculateLineItemPricing({
+          product_id: item.product_id,
+          quantity: quantity,
+          event_id: quote.event,
+        });
+
+        updatedItems[index] = {
+          ...updatedItems[index],
+          description: pricing.description,
+          unit_price: pricing.unit_price,
+          total: parseFloat(pricing.total),
+          base_unit_price: pricing.base_unit_price,
+          excess_hours: pricing.excess_hours,
+          excess_hour_price: pricing.excess_hour_price,
+          excess_cost: pricing.excess_cost,
+        };
+      } catch (error) {
+        console.error('Failed to recalculate pricing:', error);
+        // Fallback to simple calculation
+        updatedItems[index].total = quantity * (parseFloat(item.unit_price) || 0);
+      } finally {
+        setIsCalculating(null);
+      }
+    } else {
+      // Simple calculation for free-form items
+      updatedItems[index].total = quantity * (parseFloat(item.unit_price) || 0);
+    }
+
+    setLineItems(updatedItems);
+  };
+
   const handleLineItemChange = (
     index: number,
     field: keyof LineItemFormData,
@@ -108,14 +222,10 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
     const updatedItems = [...lineItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
 
-    // Recalculate total for this line item
-    if (field === 'quantity' || field === 'unit_price') {
-      const quantity = field === 'quantity' ? (value as number) : updatedItems[index].quantity;
-      const unitPrice =
-        field === 'unit_price'
-          ? parseFloat(value as string) || 0
-          : parseFloat(updatedItems[index].unit_price) || 0;
-      updatedItems[index].total = quantity * unitPrice;
+    // Recalculate total for free-form items (no product)
+    if ((field === 'unit_price') && !updatedItems[index].product_id) {
+      const unitPrice = parseFloat(value as string) || 0;
+      updatedItems[index].total = updatedItems[index].quantity * unitPrice;
     }
 
     setLineItems(updatedItems);
@@ -123,6 +233,11 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
 
   const calculateSubtotal = () => {
     return lineItems.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const getSelectedProduct = (productId: number | null | undefined): ProductOption | null => {
+    if (!productId) return null;
+    return products.find((p) => p.id === productId) || null;
   };
 
   const handleSubmit = async () => {
@@ -153,6 +268,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           description: item.description,
           quantity: item.quantity,
           unit_price: item.unit_price,
+          ...(item.product_id && { product_id: item.product_id }),
         })),
       };
 
@@ -170,7 +286,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>Edit Quote #{quote.id}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
@@ -207,9 +323,10 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
               <Table size="small">
                 <TableHead>
                   <TableRow>
+                    <TableCell sx={{ width: '200px' }}>Product</TableCell>
                     <TableCell>Description</TableCell>
-                    <TableCell align="right" sx={{ width: '100px' }}>
-                      Quantity
+                    <TableCell align="right" sx={{ width: '80px' }}>
+                      Qty
                     </TableCell>
                     <TableCell align="right" sx={{ width: '120px' }}>
                       Unit Price
@@ -224,61 +341,126 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                 </TableHead>
                 <TableBody>
                   {lineItems.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          value={item.description}
-                          onChange={(e) =>
-                            handleLineItemChange(index, 'description', e.target.value)
-                          }
-                          placeholder="Item description"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleLineItemChange(index, 'quantity', parseInt(e.target.value) || 1)
-                          }
-                          inputProps={{ min: 1 }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          type="number"
-                          value={item.unit_price}
-                          onChange={(e) =>
-                            handleLineItemChange(index, 'unit_price', e.target.value)
-                          }
-                          inputProps={{ step: '0.01' }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" color={item.total < 0 ? 'success.main' : 'inherit'}>
-                          ₱{item.total.toFixed(2)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveLineItem(index)}
-                          disabled={lineItems.length === 1}
-                          color="error"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
+                    <React.Fragment key={index}>
+                      <TableRow>
+                        <TableCell>
+                          <Autocomplete
+                            size="small"
+                            options={products}
+                            getOptionLabel={(option) => option.name}
+                            value={getSelectedProduct(item.product_id)}
+                            onChange={(_, newValue) => handleProductSelect(index, newValue)}
+                            loading={isLoadingProducts}
+                            disabled={isCalculating === index}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                placeholder="Select product..."
+                                variant="outlined"
+                              />
+                            )}
+                            renderOption={(props, option) => (
+                              <li {...props} key={option.id}>
+                                <Box>
+                                  <Typography variant="body2">{option.name}</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {option.formatted_price}
+                                    {option.has_excess_hours && option.included_hours && (
+                                      <> | {option.included_hours}h included</>
+                                    )}
+                                  </Typography>
+                                </Box>
+                              </li>
+                            )}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={item.description}
+                            onChange={(e) =>
+                              handleLineItemChange(index, 'description', e.target.value)
+                            }
+                            placeholder="Item description"
+                            disabled={isCalculating === index}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleQuantityChange(index, parseInt(e.target.value) || 1)
+                            }
+                            inputProps={{ min: 1 }}
+                            disabled={isCalculating === index}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            type="number"
+                            value={item.unit_price}
+                            onChange={(e) =>
+                              handleLineItemChange(index, 'unit_price', e.target.value)
+                            }
+                            inputProps={{ step: '0.01' }}
+                            disabled={isCalculating === index || !!item.product_id}
+                            helperText={item.product_id ? 'Auto-calculated' : undefined}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" color={item.total < 0 ? 'success.main' : 'inherit'}>
+                            {isCalculating === index ? '...' : `₱${item.total.toFixed(2)}`}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRemoveLineItem(index)}
+                            disabled={lineItems.length === 1}
+                            color="error"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                      {/* Excess hours info row */}
+                      {item.excess_hours && item.excess_hours > 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} sx={{ py: 0.5, borderBottom: 'none' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pl: 2 }}>
+                              <Tooltip title="This line item includes excess hours pricing">
+                                <InfoIcon fontSize="small" color="info" />
+                              </Tooltip>
+                              <Chip
+                                size="small"
+                                label={`Base: ₱${item.base_unit_price}`}
+                                variant="outlined"
+                              />
+                              <Chip
+                                size="small"
+                                label={`+${item.excess_hours}h excess @ ₱${item.excess_hour_price}/h`}
+                                color="warning"
+                                variant="outlined"
+                              />
+                              <Chip
+                                size="small"
+                                label={`Excess cost: ₱${item.excess_cost}`}
+                                color="warning"
+                              />
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   ))}
                   <TableRow>
-                    <TableCell colSpan={3} align="right">
+                    <TableCell colSpan={4} align="right">
                       <Typography variant="subtitle1" fontWeight="bold">
                         Subtotal:
                       </Typography>
@@ -334,7 +516,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={updateQuoteMutation.isPending}
+          disabled={updateQuoteMutation.isPending || isCalculating !== null}
         >
           {updateQuoteMutation.isPending ? 'Saving...' : 'Save Changes'}
         </Button>

@@ -11,14 +11,15 @@ User = get_user_model()
 
 
 @shared_task(bind=True, name='communications.send_communication_async')
-def send_communication_async(self, template_name: str, recipient: str, 
-                            context_data: Dict = None, client_id: int = None, 
-                            sent_by_id: int = None):
+def send_communication_async(self, template_name: str, recipient: str,
+                            context_data: Dict = None, client_id: int = None,
+                            sent_by_id: int = None, event_id: int = None):
     """
     Async task for sending single communications
     """
     from .services import CommunicationService
-    
+    from core.domains.events.models import Event
+
     try:
         # Get related objects
         client = None
@@ -27,14 +28,21 @@ def send_communication_async(self, template_name: str, recipient: str,
                 client = User.objects.get(id=client_id)
             except User.DoesNotExist:
                 logger.warning(f"Client {client_id} not found for async communication")
-        
+
         sent_by = None
         if sent_by_id:
             try:
                 sent_by = User.objects.get(id=sent_by_id)
             except User.DoesNotExist:
                 logger.warning(f"Sender {sent_by_id} not found for async communication")
-        
+
+        event = None
+        if event_id:
+            try:
+                event = Event.objects.get(id=event_id)
+            except Event.DoesNotExist:
+                logger.warning(f"Event {event_id} not found for async communication")
+
         # Send communication
         service = CommunicationService()
         record = service.send_communication(
@@ -42,7 +50,8 @@ def send_communication_async(self, template_name: str, recipient: str,
             recipient=recipient,
             context_data=context_data or {},
             client=client,
-            sent_by=sent_by
+            sent_by=sent_by,
+            event=event
         )
         
         if record:

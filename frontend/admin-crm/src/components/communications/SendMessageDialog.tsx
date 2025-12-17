@@ -43,6 +43,7 @@ interface SendMessageDialogProps {
   open: boolean;
   onClose: () => void;
   client: Client;
+  eventId?: number;
 }
 
 interface MessageFormData {
@@ -56,7 +57,8 @@ interface MessageFormData {
 export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
   open,
   onClose,
-  client
+  client,
+  eventId
 }) => {
   const [formData, setFormData] = useState<MessageFormData>({
     templateId: '',
@@ -238,6 +240,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
       template_id: formData.templateId,
       recipient: client.email,
       client_id: client.id,
+      event_id: eventId,
       custom_subject: formData.subject,  // Make sure this field is included
       custom_body: formData.body,        // Make sure this field is included
       context_data: {

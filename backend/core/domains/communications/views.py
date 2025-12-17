@@ -176,7 +176,8 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for communication records"""
     queryset = CommunicationRecord.objects.select_related(
         'client',
-        'sent_by'
+        'sent_by',
+        'event'
     ).order_by('-created_at')
     serializer_class = CommunicationRecordSerializer
     permission_classes = [IsAdminOrClient]  # Both admins and clients can view records
@@ -192,7 +193,12 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
         client_id = self.request.query_params.get('client_id')
         if client_id and self.request.user.role == 'ADMIN':
             queryset = queryset.filter(client_id=client_id)
-        
+
+        # Filter by event
+        event_id = self.request.query_params.get('event_id')
+        if event_id:
+            queryset = queryset.filter(event_id=event_id)
+
         # Filter by template
         template_name = self.request.query_params.get('template_name')
         if template_name:
@@ -240,9 +246,10 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
         template_id = serializer.validated_data['template_id']
         recipient = serializer.validated_data['recipient']
         client_id = serializer.validated_data.get('client_id')
+        event_id = serializer.validated_data.get('event_id')
         context_data = serializer.validated_data.get('context_data', {})
         use_async = serializer.validated_data.get('use_async', False)
-        
+
         # Get client if provided
         client = None
         if client_id:
@@ -251,6 +258,18 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
             except User.DoesNotExist:
                 return Response(
                     {'error': 'Client not found'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Get event if provided
+        event = None
+        if event_id:
+            try:
+                from core.domains.events.models import Event
+                event = Event.objects.get(id=event_id)
+            except Event.DoesNotExist:
+                return Response(
+                    {'error': 'Event not found'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
@@ -274,9 +293,10 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
                 context_data=context_data,
                 client=client,
                 sent_by=request.user,
-                use_async=True
+                use_async=True,
+                event=event
             )
-            
+
             return Response({
                 'message': 'Communication queued for async processing',
                 'async': True
@@ -288,7 +308,8 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
                 recipient=recipient,
                 context_data=context_data,
                 client=client,
-                sent_by=request.user
+                sent_by=request.user,
+                event=event
             )
             
             if record:

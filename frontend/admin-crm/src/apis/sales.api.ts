@@ -243,4 +243,29 @@ export const salesApi = {
     const response = await api.get<PaginatedResponse<EventQuote>>(`/sales/quotes/?client_id=${clientId}`);
     return response.data.results;
   },
+
+  // Line Item Pricing Calculation
+  calculateLineItemPricing: async (data: {
+    product_id: number;
+    quantity: number;
+    event_id: number;
+  }): Promise<{
+    product_id: number;
+    product_name: string;
+    description: string;
+    quantity: number;
+    base_unit_price: string;
+    excess_hours: number | null;
+    excess_hour_price: string | null;
+    excess_cost: string;
+    unit_price: string;
+    total: string;
+    tax_rate: string;
+    item_type: string;
+    event_duration_hours: number | null;
+    included_hours: number;
+  }> => {
+    const response = await api.post('/sales/line-items/calculate_pricing/', data);
+    return response.data;
+  },
 };

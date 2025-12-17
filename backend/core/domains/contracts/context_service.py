@@ -33,7 +33,21 @@ class ContractContextService:
             # Get related data
             client = event.client
             event_type = event.event_type
-            
+
+            # Get price source from accepted quote (preferred) or event.total_price (fallback)
+            # This ensures contract shows the accepted quote price, including any discounts
+            if hasattr(event, 'accepted_quote') and event.accepted_quote:
+                quote = event.accepted_quote
+                price_source = quote.total_amount
+                subtotal = quote.subtotal
+                tax_amount = quote.tax_amount
+                discount_amount = quote.discount_amount
+            else:
+                price_source = event.total_price or Decimal('0')
+                subtotal = price_source
+                tax_amount = Decimal('0')
+                discount_amount = Decimal('0')
+
             # Generate standardized context
             context = {
                 # Event Information (standardized naming)
@@ -85,13 +99,17 @@ class ContractContextService:
                 'client_address': ContractContextService._get_client_address(client),
                 
                 # Financial Information (standardized naming)
-                'total_price': str(event.total_price or 0),
-                'total_amount': str(event.total_price or 0),
-                'contract_value': str(event.total_price or 0),
-                'event_price': str(event.total_price or 0),
-                'amount_due': str(event.total_amount_due or event.total_price or 0),
+                # Uses accepted quote pricing when available to ensure contract shows correct price
+                'total_price': str(price_source),
+                'total_amount': str(price_source),
+                'contract_value': str(price_source),
+                'event_price': str(price_source),
+                'subtotal': str(subtotal),
+                'tax_amount': str(tax_amount),
+                'discount_amount': str(discount_amount),
+                'amount_due': str(event.total_amount_due or price_source),
                 'amount_paid': str(event.total_amount_paid or 0),
-                'amount_remaining': str((event.total_amount_due or event.total_price or 0) - (event.total_amount_paid or 0)),
+                'amount_remaining': str((event.total_amount_due or price_source) - (event.total_amount_paid or 0)),
                 
                 # Payment Information
                 'payment_status': event.payment_status,
@@ -286,10 +304,10 @@ class ContractContextService:
     def _get_currency_formatted_amounts(event: Event) -> Dict[str, str]:
         """Get currency-formatted amount fields using system currency settings"""
         from core.domains.settings.models import CurrencySettings
-        
+
         # Get system currency settings
         currency_settings = CurrencySettings.get_system_settings()
-        
+
         # Get currency symbol mapping
         currency_symbols = {
             'PHP': '₱',
@@ -298,31 +316,44 @@ class ContractContextService:
             'SGD': 'S$',
             'HKD': 'HK$',
         }
-        
+
+        # Get price source from accepted quote (preferred) or event.total_price (fallback)
+        if hasattr(event, 'accepted_quote') and event.accepted_quote:
+            quote = event.accepted_quote
+            price_source = quote.total_amount
+            subtotal = quote.subtotal
+            tax_amount = quote.tax_amount
+            discount_amount = quote.discount_amount
+        else:
+            price_source = event.total_price or Decimal('0')
+            subtotal = price_source
+            tax_amount = Decimal('0')
+            discount_amount = Decimal('0')
+
         def format_currency(amount):
             if not amount:
                 amount = 0
-            
+
             try:
                 amount_float = float(amount)
             except (ValueError, TypeError):
                 amount_float = 0
-            
+
             # Get currency symbol
             currency_code = currency_settings.default_currency
             symbol = currency_symbols.get(currency_code, currency_code)
-            
+
             # Format based on decimal places setting
             decimal_places = currency_settings.decimal_places
             thousands_sep = currency_settings.thousands_separator
             decimal_sep = currency_settings.decimal_separator
-            
+
             # Format the number
             if decimal_places == 0:
                 formatted_amount = f"{amount_float:,.0f}".replace(',', '|').replace('.', decimal_sep).replace('|', thousands_sep)
             else:
                 formatted_amount = f"{amount_float:,.{decimal_places}f}".replace(',', '|').replace('.', decimal_sep).replace('|', thousands_sep)
-            
+
             # Apply display format
             display_format = currency_settings.display_format
             if display_format == 'symbol':
@@ -333,15 +364,18 @@ class ContractContextService:
                 return f"{symbol}{formatted_amount} {currency_code}"
             else:
                 return f"{symbol}{formatted_amount}"
-        
+
         return {
-            'total_price_formatted': format_currency(event.total_price),
-            'total_amount_formatted': format_currency(event.total_price),
-            'contract_value_formatted': format_currency(event.total_price),
-            'amount_due_formatted': format_currency(event.total_amount_due or event.total_price),
+            'total_price_formatted': format_currency(price_source),
+            'total_amount_formatted': format_currency(price_source),
+            'contract_value_formatted': format_currency(price_source),
+            'subtotal_formatted': format_currency(subtotal),
+            'tax_amount_formatted': format_currency(tax_amount),
+            'discount_amount_formatted': format_currency(discount_amount),
+            'amount_due_formatted': format_currency(event.total_amount_due or price_source),
             'amount_paid_formatted': format_currency(event.total_amount_paid),
             'amount_remaining_formatted': format_currency(
-                (event.total_amount_due or event.total_price or 0) - (event.total_amount_paid or 0)
+                (event.total_amount_due or price_source or 0) - (event.total_amount_paid or 0)
             ),
         }
     
@@ -412,11 +446,17 @@ class ContractContextService:
             'client_company': 'Client company name',
             'client_address': 'Client address',
             
-            # Financial Information
-            'total_price': 'Total price (numeric)',
-            'total_amount': 'Total amount (alias)',
-            'contract_value': 'Contract value (alias)',
+            # Financial Information (uses accepted quote pricing when available)
+            'total_price': 'Total price from accepted quote (numeric)',
+            'total_amount': 'Total amount from accepted quote (alias)',
+            'contract_value': 'Contract value from accepted quote (alias)',
+            'subtotal': 'Subtotal before tax and discounts (numeric)',
+            'tax_amount': 'Tax amount (numeric)',
+            'discount_amount': 'Discount amount applied (numeric)',
             'total_price_formatted': 'Total price (currency formatted)',
+            'subtotal_formatted': 'Subtotal (currency formatted)',
+            'tax_amount_formatted': 'Tax amount (currency formatted)',
+            'discount_amount_formatted': 'Discount amount (currency formatted)',
             'amount_due': 'Amount due (numeric)',
             'amount_paid': 'Amount paid (numeric)',
             'amount_remaining': 'Remaining balance (numeric)',
@@ -479,6 +519,12 @@ class ContractContextService:
             payment_settings = PaymentSettings.get_default_settings()
             deposit_percentage = payment_settings.default_deposit_percentage
 
+            # Get price source from accepted quote (preferred) or event.total_price (fallback)
+            if hasattr(event, 'accepted_quote') and event.accepted_quote:
+                price_source = event.accepted_quote.total_amount
+            else:
+                price_source = event.total_price or Decimal('0')
+
             # Calculate deposit and balance amounts
             deposit_amount = Decimal('0')
             balance_amount = Decimal('0')
@@ -486,9 +532,9 @@ class ContractContextService:
             balance_due_days = 0
             late_fee_amount = '0'
 
-            if event.total_price:
-                deposit_amount = event.total_price * (deposit_percentage / Decimal('100'))
-                balance_amount = event.total_price - deposit_amount
+            if price_source:
+                deposit_amount = price_source * (deposit_percentage / Decimal('100'))
+                balance_amount = price_source - deposit_amount
 
             # Get invoice for due date information
             invoice = Invoice.objects.filter(event=event).order_by('-created_at').first()

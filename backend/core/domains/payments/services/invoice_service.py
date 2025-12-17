@@ -214,11 +214,21 @@ class InvoiceService:
         else:  # DAYS_BEFORE
             due_date = event_date - timedelta(days=balance_due_days)
 
-        # Ensure due date is not in the past (minimum 7 days from today)
+        # Ensure due date is not in the past, but also never after the event
         today = timezone.now().date()
+        max_due_date = event_date - timedelta(days=1)  # Never after event date
+
         if due_date < today:
-            due_date = today + timedelta(days=7)
-            logger.info(f"Invoice due date adjusted to {due_date} (was in the past)")
+            # Fallback: minimum 7 days from today, but never after event date - 1
+            fallback_date = today + timedelta(days=7)
+            due_date = min(fallback_date, max_due_date)
+
+            # If even max_due_date is in the past (event is imminent), use max_due_date anyway
+            if due_date < today:
+                due_date = max_due_date
+                logger.warning(f"Invoice due date {due_date} is in the past - event is imminent on {event_date}")
+            else:
+                logger.info(f"Invoice due date adjusted to {due_date} (was in the past, bounded by event date)")
 
         # Generate unique invoice ID
         base_invoice_id = f"INV-{timezone.now().strftime('%Y%m%d')}-{quote.event.id}-{quote.id}"

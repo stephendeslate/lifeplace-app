@@ -19,6 +19,7 @@ export interface ManualSendData {
   template_id: number;
   recipient: string;
   client_id?: number;
+  event_id?: number;
   context_data?: Record<string, unknown>;
   custom_subject?: string;
   custom_body?: string;
@@ -76,10 +77,11 @@ export const communicationsApi = {
   getRecords: async (filters?: CommunicationFilters): Promise<CommunicationRecord[]> => {
     const params = new URLSearchParams();
     if (filters?.client_id) params.append('client_id', filters.client_id.toString());
+    if (filters?.event_id) params.append('event_id', filters.event_id.toString());
     if (filters?.template_name) params.append('template_name', filters.template_name);
     if (filters?.status) params.append('status', filters.status);
     if (filters?.channel) params.append('channel', filters.channel);
-    
+
     const response = await api.get(`/communications/records/?${params.toString()}`);
     const data = response.data as { results?: CommunicationRecord[] } | CommunicationRecord[];
     return (Array.isArray(data) ? data : data.results) || [];
