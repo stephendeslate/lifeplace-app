@@ -1,7 +1,6 @@
 // frontend/client-portal/src/apis/booking/core.api.ts
 
 import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   EventType,
   BookingFlow,

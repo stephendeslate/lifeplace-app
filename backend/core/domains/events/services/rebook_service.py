@@ -314,5 +314,229 @@ class EventRebookService:
         return history
 
 
+    # ============================================================
+    # RESCHEDULING FEE CALCULATION
+    # ============================================================
+
+    @staticmethod
+    def calculate_rescheduling_fee(event: Event) -> Dict:
+        """
+        Calculate the rescheduling fee for an event.
+
+        Args:
+            event: The event being rescheduled
+
+        Returns:
+            dict: Fee calculation details
+        """
+        from decimal import Decimal
+        from core.domains.payments.models import PaymentSettings
+
+        result = {
+            'fee_applicable': False,
+            'fee_amount': Decimal('0.00'),
+            'fee_type': None,
+            'fee_percentage': None,
+            'within_grace_period': False,
+            'grace_period_hours': 0,
+            'hours_since_booking': 0,
+            'reason': None,
+        }
+
+        try:
+            settings = PaymentSettings.get_default_settings()
+
+            if not settings.rescheduling_fee_enabled:
+                result['reason'] = 'Rescheduling fees not enabled'
+                return result
+
+            # Check if within grace period
+            if event.created_at:
+                hours_since_booking = (datetime.now() - event.created_at.replace(tzinfo=None)).total_seconds() / 3600
+                result['hours_since_booking'] = round(hours_since_booking, 2)
+                result['grace_period_hours'] = settings.rescheduling_grace_period_hours
+
+                if hours_since_booking <= settings.rescheduling_grace_period_hours:
+                    result['within_grace_period'] = True
+                    result['reason'] = f'Within {settings.rescheduling_grace_period_hours}h grace period'
+                    return result
+
+            # Calculate fee based on type
+            result['fee_applicable'] = True
+            result['fee_type'] = settings.rescheduling_fee_type
+
+            if settings.rescheduling_fee_type == 'PERCENTAGE':
+                # Get contract/quote total for percentage calculation
+                contract_total = EventRebookService._get_event_contract_total(event)
+                fee_rate = settings.rescheduling_fee_percentage / Decimal('100')
+                result['fee_amount'] = (contract_total * fee_rate).quantize(Decimal('0.01'))
+                result['fee_percentage'] = settings.rescheduling_fee_percentage
+                result['reason'] = f'{settings.rescheduling_fee_percentage}% of contract total'
+            else:  # FIXED
+                result['fee_amount'] = settings.rescheduling_fee_fixed_amount or Decimal('0.00')
+                result['reason'] = 'Fixed rescheduling fee'
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error calculating rescheduling fee: {e}")
+            result['reason'] = f'Error: {str(e)}'
+            return result
+
+    @staticmethod
+    def _get_event_contract_total(event: Event) -> 'Decimal':
+        """Get the contract/quote total for an event."""
+        from decimal import Decimal
+
+        # Try to get from accepted quote
+        try:
+            from core.domains.sales.models import EventQuote
+            accepted_quote = EventQuote.objects.filter(
+                event=event,
+                status='ACCEPTED'
+            ).first()
+            if accepted_quote:
+                return accepted_quote.total_amount
+        except Exception:
+            pass
+
+        # Try to get from invoice
+        try:
+            from core.domains.payments.models import Invoice
+            invoice = Invoice.objects.filter(event=event).first()
+            if invoice:
+                return invoice.total_amount
+        except Exception:
+            pass
+
+        # Fallback to event total_price
+        return event.total_price or Decimal('0.00')
+
+    @staticmethod
+    def process_reschedule(
+        event: Event,
+        new_start_date: datetime,
+        new_end_date: datetime = None,
+        apply_fee: bool = True,
+        notes: str = None
+    ) -> Dict:
+        """
+        Process event rescheduling with fee calculation.
+
+        Args:
+            event: The event to reschedule
+            new_start_date: New start date/time
+            new_end_date: New end date/time (optional)
+            apply_fee: Whether to apply the rescheduling fee
+            notes: Optional notes about the rescheduling
+
+        Returns:
+            dict: Result of the rescheduling operation
+        """
+        from django.utils import timezone
+
+        result = {
+            'success': False,
+            'fee_applied': False,
+            'fee_amount': None,
+            'error': None,
+        }
+
+        try:
+            # Validate event status
+            if event.status == 'CANCELLED':
+                result['error'] = 'Cannot reschedule a cancelled event'
+                return result
+
+            if event.status == 'COMPLETED':
+                result['error'] = 'Cannot reschedule a completed event'
+                return result
+
+            # Store original date if this is the first reschedule
+            if not event.original_start_date:
+                event.original_start_date = event.start_date
+
+            # Calculate fee if applicable
+            fee_info = EventRebookService.calculate_rescheduling_fee(event)
+
+            if apply_fee and fee_info['fee_applicable']:
+                result['fee_applied'] = True
+                result['fee_amount'] = fee_info['fee_amount']
+                # Note: Actual fee charging would be handled separately
+                # This just tracks that a fee should be applied
+
+            # Update event dates
+            event.start_date = new_start_date
+            if new_end_date:
+                event.end_date = new_end_date
+
+            # Update tracking fields
+            event.reschedule_count = (event.reschedule_count or 0) + 1
+            event.last_rescheduled_at = timezone.now()
+
+            event.save(update_fields=[
+                'start_date', 'end_date',
+                'original_start_date', 'reschedule_count', 'last_rescheduled_at'
+            ])
+
+            # Log timeline entry
+            try:
+                from core.domains.events.models import EventTimeline
+                EventTimeline.objects.create(
+                    event=event,
+                    action_type='STATUS_CHANGE',
+                    description=f'Event rescheduled to {new_start_date.strftime("%B %d, %Y")}' +
+                               (f' (Fee: {fee_info["fee_amount"]})' if result['fee_applied'] else ' (No fee)'),
+                    is_public=True,
+                    action_data={
+                        'previous_date': str(event.original_start_date) if event.original_start_date else None,
+                        'new_date': str(new_start_date),
+                        'reschedule_count': event.reschedule_count,
+                        'fee_applied': result['fee_applied'],
+                        'fee_amount': str(fee_info['fee_amount']) if fee_info['fee_amount'] else None,
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Could not create timeline entry for reschedule: {e}")
+
+            result['success'] = True
+            logger.info(
+                f"Rescheduled event {event.id} to {new_start_date} "
+                f"(count: {event.reschedule_count}, fee: {result['fee_amount']})"
+            )
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error processing reschedule for event {event.id}: {e}")
+            result['error'] = str(e)
+            return result
+
+    @staticmethod
+    def preview_rescheduling_fee(event: Event) -> Dict:
+        """
+        Preview the rescheduling fee without actually rescheduling.
+
+        Args:
+            event: The event to preview fee for
+
+        Returns:
+            dict: Fee preview information
+        """
+        fee_info = EventRebookService.calculate_rescheduling_fee(event)
+
+        return {
+            'fee_applicable': fee_info['fee_applicable'],
+            'fee_amount': str(fee_info['fee_amount']),
+            'fee_type': fee_info['fee_type'],
+            'fee_percentage': str(fee_info['fee_percentage']) if fee_info['fee_percentage'] else None,
+            'within_grace_period': fee_info['within_grace_period'],
+            'grace_period_hours': fee_info['grace_period_hours'],
+            'hours_since_booking': fee_info['hours_since_booking'],
+            'reason': fee_info['reason'],
+            'reschedule_count': event.reschedule_count or 0,
+        }
+
+
 # Create singleton instance
 rebook_service = EventRebookService()

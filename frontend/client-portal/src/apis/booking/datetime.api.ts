@@ -2,7 +2,6 @@
 
 import api from '../../utils/api';
 import { formatInTimeZone } from 'date-fns-tz';
-import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   DateTimeStepData,
   StepValidationResult,

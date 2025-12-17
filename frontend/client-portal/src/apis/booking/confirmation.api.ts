@@ -1,7 +1,6 @@
 // frontend/client-portal/src/apis/booking/confirmation.api.ts
 
 import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
 
 /**
  * Confirmation step API functions

@@ -34,7 +34,6 @@ import {
   ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { useCommunications } from '../../hooks/useCommunications';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useUnfinishedBookings } from '../../hooks/useUnfinishedBookings';
 import { GlassCard } from '../../design-system/components/GlassCard';
@@ -54,16 +53,12 @@ const Dashboard: React.FC = () => {
     quoteName: string | null;
   }>({ open: false, quoteId: null, quoteName: null });
 
-  const { useAnalytics } = useCommunications();
   const dashboardData = useDashboardData();
   const { data: unfinishedBookings, isLoading: isLoadingBookings } = useUnfinishedBookings();
 
   // Quote action hooks
   const acceptQuoteMutation = useAcceptQuote();
   const rejectQuoteMutation = useRejectQuote();
-
-  // Get communication analytics
-  const { data: commAnalytics, isLoading: isLoadingAnalytics } = useAnalytics();
 
   // Handler for quote actions
   const handleQuoteAction = async (quoteId: number, action: 'accept' | 'reject') => {
@@ -686,64 +681,6 @@ const Dashboard: React.FC = () => {
           )}
         </GlassCard>
       </AnimatedElement>
-
-      {/* Communication Analytics (if available) */}
-      {commAnalytics && !isLoadingAnalytics && (
-        <AnimatedElement animation="fadeIn" delay={500}>
-          <GlassCard 
-            variant="light" 
-            intensity="medium"
-            sx={{ 
-              mt: 4,
-              border: `1px solid ${alpha('#fff', 0.1)}`,
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-              Communication Summary
-            </Typography>
-            <Box 
-              sx={{ 
-                display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
-                gap: 3
-              }}
-            >
-              <Box sx={{ flex: 1, textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                  {commAnalytics.total_sent}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Messages
-                </Typography>
-              </Box>
-              <Box sx={{ flex: 1, textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, color: 'success.main' }}>
-                  {commAnalytics.delivered}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Delivered
-                </Typography>
-              </Box>
-              <Box sx={{ flex: 1, textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, color: 'info.main' }}>
-                  {commAnalytics.opened}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Opened
-                </Typography>
-              </Box>
-              <Box sx={{ flex: 1, textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, color: 'success.main' }}>
-                  {commAnalytics.open_rate}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Open Rate
-                </Typography>
-              </Box>
-            </Box>
-          </GlassCard>
-        </AnimatedElement>
-      )}
 
       {/* Quote Rejection Dialog */}
       <QuoteRejectionDialog

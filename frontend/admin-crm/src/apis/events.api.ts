@@ -178,4 +178,55 @@ export const eventsApi = {
     });
     return response.data;
   },
+
+  // Check-in/out operations
+  checkIn: async (eventId: number, notes?: string): Promise<Event> => {
+    const response = await api.post<Event>(`/events/events/${eventId}/check_in/`, { notes });
+    return response.data;
+  },
+
+  checkout: async (eventId: number, notes?: string, calculateLateFee?: boolean): Promise<Event & { late_checkout_fee?: { fee_amount: string; reason: string } }> => {
+    const response = await api.post(`/events/events/${eventId}/checkout/`, {
+      notes,
+      calculate_late_fee: calculateLateFee
+    });
+    return response.data;
+  },
+
+  markNoShow: async (eventId: number, notes?: string): Promise<Event> => {
+    const response = await api.post<Event>(`/events/events/${eventId}/no_show/`, { notes });
+    return response.data;
+  },
+
+  getCheckInStatus: async (eventId: number): Promise<{
+    check_in_status: string;
+    scheduled_check_in_time: string | null;
+    scheduled_checkout_time: string | null;
+    actual_check_in_time: string | null;
+    actual_checkout_time: string | null;
+    checked_in_by_name: string | null;
+    checked_out_by_name: string | null;
+    check_in_notes: string;
+    checkout_notes: string;
+    late_checkout_fee_applied: boolean;
+    late_checkout_fee_amount: string | null;
+    can_check_in: boolean;
+    can_checkout: boolean;
+    can_mark_no_show: boolean;
+  }> => {
+    const response = await api.get(`/events/events/${eventId}/check_in_status/`);
+    return response.data;
+  },
+
+  previewLateCheckoutFee: async (eventId: number): Promise<{
+    fee_applicable: boolean;
+    fee_amount: string;
+    fee_type: string | null;
+    hours_late: number;
+    grace_minutes: number;
+    reason: string;
+  }> => {
+    const response = await api.get(`/events/events/${eventId}/late_checkout_preview/`);
+    return response.data;
+  },
 };

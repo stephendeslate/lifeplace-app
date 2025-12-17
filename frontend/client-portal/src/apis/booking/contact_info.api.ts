@@ -1,7 +1,6 @@
 // frontend/client-portal/src/apis/booking/contact_info.api.ts
 
 import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   ContactInfoStepData,
   StepValidationResult,

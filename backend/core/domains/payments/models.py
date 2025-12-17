@@ -266,6 +266,104 @@ class PaymentSettings(BaseModel):
         help_text="Age-based pricing tiers: [{min_age, max_age, discount_percentage, label}]"
     )
 
+    # SERVICE CHARGE SETTINGS
+    service_charge_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable service charge on bookings"
+    )
+    service_charge_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Service charge percentage (0-100)"
+    )
+
+    # RESCHEDULING FEE SETTINGS
+    rescheduling_fee_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable rescheduling fee when client changes event date"
+    )
+    rescheduling_fee_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('PERCENTAGE', 'Percentage of Total'),
+            ('FIXED', 'Fixed Amount')
+        ],
+        default='PERCENTAGE',
+        help_text="Type of rescheduling fee calculation"
+    )
+    rescheduling_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Rescheduling fee as percentage of contract total"
+    )
+    rescheduling_fee_fixed_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Fixed rescheduling fee amount"
+    )
+    rescheduling_grace_period_hours = models.PositiveIntegerField(
+        default=24,
+        help_text="Hours after booking during which rescheduling is free"
+    )
+
+    # LATE CHECKOUT FEE SETTINGS
+    late_checkout_fee_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable late checkout fee"
+    )
+    late_checkout_fee_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('FIXED', 'Fixed Amount'),
+            ('HOURLY', 'Per Hour'),
+            ('PERCENTAGE', 'Percentage of Contract')
+        ],
+        default='HOURLY',
+        help_text="Type of late checkout fee calculation"
+    )
+    late_checkout_fee_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('300.00'),
+        help_text="Late checkout fee amount (fixed or per hour)"
+    )
+    late_checkout_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Late checkout fee as percentage (if type is PERCENTAGE)"
+    )
+    late_checkout_grace_minutes = models.PositiveIntegerField(
+        default=15,
+        help_text="Minutes after scheduled checkout before late fee applies"
+    )
+    late_checkout_max_hours = models.PositiveIntegerField(
+        default=4,
+        help_text="Maximum hours for late checkout billing"
+    )
+
+    # DATE HOLDING SETTINGS
+    date_hold_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable temporary date holding"
+    )
+    date_hold_duration_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Default duration for temporary date holds in days"
+    )
+    date_hold_max_extensions = models.PositiveIntegerField(
+        default=1,
+        help_text="Maximum number of hold extensions allowed"
+    )
+    date_hold_extension_days = models.PositiveIntegerField(
+        default=3,
+        help_text="Duration of each hold extension in days"
+    )
+
     class Meta:
         verbose_name = "Payment Settings"
         verbose_name_plural = "Payment Settings"
@@ -290,6 +388,20 @@ class PaymentSettings(BaseModel):
 
         if not (0 <= self.cancellation_admin_fee_percentage <= 100):
             raise ValidationError("Cancellation admin fee percentage must be between 0 and 100.")
+
+        # Validate new fee percentages
+        if not (0 <= self.service_charge_percentage <= 100):
+            raise ValidationError("Service charge percentage must be between 0 and 100.")
+
+        if not (0 <= self.rescheduling_fee_percentage <= 100):
+            raise ValidationError("Rescheduling fee percentage must be between 0 and 100.")
+
+        if not (0 <= self.late_checkout_fee_percentage <= 100):
+            raise ValidationError("Late checkout fee percentage must be between 0 and 100.")
+
+        # Validate rescheduling fee type requirements
+        if self.rescheduling_fee_type == 'FIXED' and self.rescheduling_fee_fixed_amount is None:
+            raise ValidationError("Fixed rescheduling fee amount is required when fee type is FIXED.")
 
         # Validate deposit type requirements
         if self.deposit_type == 'FIXED' and self.deposit_fixed_amount is None:

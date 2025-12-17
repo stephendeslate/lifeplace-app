@@ -226,6 +226,12 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                   </Typography>
                 </Box>
               )}
+              {quote.service_charge_amount && parseFloat(quote.service_charge_amount) > 0 && (
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">Service Charge:</Typography>
+                  <Typography variant="body2">{formatQuoteAmount(quote.service_charge_amount)}</Typography>
+                </Box>
+              )}
               {quote.tax_amount && parseFloat(quote.tax_amount) > 0 && (
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">Tax:</Typography>

@@ -33,21 +33,22 @@ class PricingLineItem:
         self.line_total = self.total_unit_price * self.quantity
 
 
-@dataclass 
+@dataclass
 class PricingBreakdown:
     """Complete pricing breakdown"""
     line_items: List[PricingLineItem]
     subtotal: Decimal = Decimal('0.00')
-    discount_amount: Decimal = Decimal('0.00') 
+    discount_amount: Decimal = Decimal('0.00')
+    service_charge_amount: Decimal = Decimal('0.00')
     tax_amount: Decimal = Decimal('0.00')
     total_amount: Decimal = Decimal('0.00')
     applied_discount: Optional[Discount] = None
-    
+
     def __post_init__(self):
         """Calculate totals from line items"""
         self.subtotal = sum(item.line_total for item in self.line_items)
-        # Tax and discount calculations happen separately via apply_discount/apply_tax methods
-        self.total_amount = self.subtotal - self.discount_amount + self.tax_amount
+        # Tax, service charge, and discount calculations happen separately via apply_* methods
+        self.total_amount = self.subtotal - self.discount_amount + self.service_charge_amount + self.tax_amount
 
 
 class PricingCalculationService:
@@ -120,12 +121,17 @@ class PricingCalculationService:
             except Discount.DoesNotExist:
                 logger.warning(f"Discount code not found: {discount_code}")
         
+        # Apply service charge (applied to subtotal - discount, before tax)
+        PricingCalculationService.apply_service_charge(breakdown)
+        if breakdown.service_charge_amount > 0:
+            logger.info(f"Applied service charge: ₱{breakdown.service_charge_amount}")
+
         # Apply tax using single-source-of-truth logic
         tax_rate = PricingCalculationService.get_applicable_tax_rate(line_items)
         if tax_rate > 0:
             PricingCalculationService.apply_tax(breakdown, tax_rate)
             logger.info(f"Applied tax: {tax_rate}% - ₱{breakdown.tax_amount}")
-        
+
         logger.info(f"Final total: ₱{breakdown.total_amount}")
         return breakdown
     
@@ -313,17 +319,48 @@ class PricingCalculationService:
             # Handle free hours discount - this would need more complex logic
             # For now, treat as fixed amount
             breakdown.discount_amount = min(discount.value, breakdown.subtotal)
-        
+
         breakdown.applied_discount = discount
-        breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount + breakdown.tax_amount
-    
+        breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount + breakdown.service_charge_amount + breakdown.tax_amount
+
+    @staticmethod
+    def apply_service_charge(breakdown: PricingBreakdown):
+        """
+        Apply service charge to the pricing breakdown.
+
+        Service charge is calculated as a percentage of (subtotal - discount).
+        Configuration comes from PaymentSettings singleton.
+        """
+        from core.domains.payments.models import PaymentSettings
+
+        try:
+            settings = PaymentSettings.get_default_settings()
+
+            if not settings.service_charge_enabled:
+                breakdown.service_charge_amount = Decimal('0.00')
+                return
+
+            # Calculate service charge on (subtotal - discount)
+            chargeable_amount = breakdown.subtotal - breakdown.discount_amount
+            service_charge_rate = settings.service_charge_percentage / Decimal('100')
+            breakdown.service_charge_amount = (chargeable_amount * service_charge_rate).quantize(Decimal('0.01'))
+
+            # Recalculate total
+            breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount + breakdown.service_charge_amount + breakdown.tax_amount
+
+            logger.info(f"Service charge applied: {settings.service_charge_percentage}% = ₱{breakdown.service_charge_amount}")
+
+        except Exception as e:
+            logger.warning(f"Error applying service charge: {e}")
+            breakdown.service_charge_amount = Decimal('0.00')
+
     @staticmethod
     def apply_tax(breakdown: PricingBreakdown, tax_rate: Decimal):
         """Apply tax to the pricing breakdown"""
         taxable_amount = breakdown.subtotal - breakdown.discount_amount
-        breakdown.tax_amount = taxable_amount * (tax_rate / 100)
-        # Recalculate total after applying tax
-        breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount + breakdown.tax_amount
+        breakdown.tax_amount = (taxable_amount * (tax_rate / 100)).quantize(Decimal('0.01'))
+        # Recalculate total after applying tax (includes service charge)
+        breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount + breakdown.service_charge_amount + breakdown.tax_amount
     
     @staticmethod
     def calculate_pricing_breakdown(pricing_line_items: List[PricingLineItem]) -> PricingBreakdown:

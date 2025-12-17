@@ -16,8 +16,10 @@ import {
   Category as CategoryIcon,
   Inventory as ProductIcon,
   LocalOffer as DiscountIcon,
+  LocationOn as VenueIcon,
 } from '@mui/icons-material';
 import { useProductCategories, useProducts, useDiscounts } from '../../../hooks/useProducts';
+import { useVenues } from '../../../hooks/useVenues';
 import { 
   ModernCard,
   ModernPageHeader,
@@ -32,9 +34,10 @@ import { DiscountsTable } from '../../../components/products/DiscountsTable';
 import { CategoryFormDialog } from '../../../components/products/CategoryFormDialog';
 import { ProductFormDialog } from '../../../components/products/ProductFormDialog';
 import { DiscountFormDialog } from '../../../components/products/DiscountFormDialog';
-import type { 
-  ProductCategory, 
-  ProductOption, 
+import { VenuesTable, VenueFormDialog } from '../../../components/venues';
+import type {
+  ProductCategory,
+  ProductOption,
   Discount,
   CreateCategoryData,
   UpdateCategoryData,
@@ -43,6 +46,12 @@ import type {
   CreateDiscountData,
   UpdateDiscountData,
 } from '../../../types/products.types';
+import type {
+  VenueListItem,
+  VenueDetail,
+  CreateVenueData,
+  UpdateVenueData,
+} from '../../../types/venues.types';
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
@@ -78,6 +87,7 @@ export const ProductsPackages: React.FC = () => {
   const [discountSearch, setDiscountSearch] = useState('');
   const [discountTypeFilter, _setDiscountTypeFilter] = useState<'all' | 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS'>('all');
   const [discountValidFilter, _setDiscountValidFilter] = useState<'all' | 'valid' | 'invalid'>('all');
+  const [venueSearch, setVenueSearch] = useState('');
   
   // Header search functionality
   const [showSearchField, setShowSearchField] = useState(false);
@@ -87,12 +97,14 @@ export const ProductsPackages: React.FC = () => {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
+  const [venueDialogOpen, setVenueDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
   const [editingProduct, setEditingProduct] = useState<ProductOption | null>(null);
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
+  const [editingVenue, setEditingVenue] = useState<VenueListItem | VenueDetail | null>(null);
   const [itemToDelete, setItemToDelete] = useState<{
-    type: 'category' | 'product' | 'discount';
+    type: 'category' | 'product' | 'discount' | 'venue';
     id: number;
     name: string;
   } | null>(null);
@@ -117,6 +129,10 @@ export const ProductsPackages: React.FC = () => {
     is_valid: discountValidFilter === 'all' ? undefined : discountValidFilter === 'valid',
     use_pagination: false, // This will ensure we get all discounts
   }), [discountSearch, discountTypeFilter, discountValidFilter]);
+
+  const venueFilters = useMemo(() => ({
+    search: venueSearch || undefined,
+  }), [venueSearch]);
 
   // Hooks
   const {
@@ -151,6 +167,17 @@ export const ProductsPackages: React.FC = () => {
     isUpdatingDiscount,
     isDeletingDiscount,
   } = useDiscounts(discountFilters);
+
+  const {
+    venues,
+    isLoadingVenues,
+    createVenue,
+    updateVenue,
+    deleteVenue,
+    isCreatingVenue,
+    isUpdatingVenue,
+    isDeletingVenue,
+  } = useVenues(venueFilters);
 
   // Event handlers
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -253,6 +280,38 @@ export const ProductsPackages: React.FC = () => {
     setDiscountDialogOpen(false);
   };
 
+  // Venue handlers
+  const handleCreateVenue = () => {
+    setEditingVenue(null);
+    setVenueDialogOpen(true);
+  };
+
+  const handleEditVenue = (venue: VenueListItem) => {
+    setEditingVenue(venue);
+    setVenueDialogOpen(true);
+  };
+
+  const handleDeleteVenue = (id: number) => {
+    const venue = venues.find(v => v.id === id);
+    if (venue) {
+      setItemToDelete({
+        type: 'venue',
+        id,
+        name: venue.name
+      });
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleVenueSubmit = (data: CreateVenueData | UpdateVenueData) => {
+    if (editingVenue) {
+      updateVenue({ id: editingVenue.id, data: data as UpdateVenueData });
+    } else {
+      createVenue(data as CreateVenueData);
+    }
+    setVenueDialogOpen(false);
+  };
+
   // Delete handlers
   const handleDeleteConfirm = () => {
     if (!itemToDelete) return;
@@ -263,6 +322,7 @@ export const ProductsPackages: React.FC = () => {
       category: () => deleteCategory(id),
       product: () => deleteProduct(id),
       discount: () => deleteDiscount(id),
+      venue: () => deleteVenue(id),
     };
 
     deleteActions[type]();
@@ -275,13 +335,16 @@ export const ProductsPackages: React.FC = () => {
     // Apply to current tab's search
     switch (activeTab) {
       case 0:
-        setCategorySearch(query);
+        setProductSearch(query);
         break;
       case 1:
-        setProductSearch(query);
+        setCategorySearch(query);
         break;
       case 2:
         setDiscountSearch(query);
+        break;
+      case 3:
+        setVenueSearch(query);
         break;
     }
   };
@@ -297,19 +360,23 @@ export const ProductsPackages: React.FC = () => {
       setCategorySearch('');
       setProductSearch('');
       setDiscountSearch('');
+      setVenueSearch('');
     }
   };
 
   const handleCreateNew = () => {
     switch (activeTab) {
       case 0:
-        handleCreateCategory();
+        handleCreateProduct();
         break;
       case 1:
-        handleCreateProduct();
+        handleCreateCategory();
         break;
       case 2:
         handleCreateDiscount();
+        break;
+      case 3:
+        handleCreateVenue();
         break;
     }
   };
@@ -331,6 +398,7 @@ export const ProductsPackages: React.FC = () => {
       category: isDeletingCategory,
       product: isDeletingProduct,
       discount: isDeletingDiscount,
+      venue: isDeletingVenue,
     }[type];
   };
 
@@ -356,6 +424,7 @@ export const ProductsPackages: React.FC = () => {
             case 0: return 'Product';
             case 1: return 'Category';
             case 2: return 'Discount';
+            case 3: return 'Venue';
             default: return 'Item';
           }
         };
@@ -377,7 +446,8 @@ export const ProductsPackages: React.FC = () => {
             stats={[
               { label: 'Products', value: products.length },
               { label: 'Categories', value: categories.length },
-              { label: 'Active Discounts', value: discounts.filter(d => d.is_active).length },
+              { label: 'Discounts', value: discounts.filter(d => d.is_active).length },
+              { label: 'Venues', value: venues.length },
             ]}
             size="medium"
             gradient
@@ -483,14 +553,23 @@ export const ProductsPackages: React.FC = () => {
               </Box>
             } 
           />
-          <Tab 
+          <Tab
             label={
               <Box display="flex" alignItems="center" gap={1}>
                 <DiscountIcon />
                 Discounts
                 <Chip label={discounts.length} size="small" />
               </Box>
-            } 
+            }
+          />
+          <Tab
+            label={
+              <Box display="flex" alignItems="center" gap={1}>
+                <VenueIcon />
+                Venues
+                <Chip label={venues.length} size="small" />
+              </Box>
+            }
           />
         </Tabs>
 
@@ -542,7 +621,7 @@ export const ProductsPackages: React.FC = () => {
 
             {/* Discounts Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
-              Create promotional discounts to incentivize bookings. Set validity periods, 
+              Create promotional discounts to incentivize bookings. Set validity periods,
               usage limits, and specific requirements for each discount.
             </Alert>
 
@@ -553,6 +632,28 @@ export const ProductsPackages: React.FC = () => {
               onEdit={handleEditDiscount}
               onDelete={handleDeleteDiscount}
               isDeleting={isDeletingDiscount}
+            />
+          </Box>
+        </TabPanel>
+
+        {/* Venues Tab */}
+        <TabPanel value={activeTab} index={3}>
+          <Box p={3}>
+
+            {/* Venues Alert */}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Venues define physical locations and their operating rules. Each venue has configurable
+              check-in/checkout times, duration limits, and optional early/late fees. Assign venues to
+              packages to determine booking rules.
+            </Alert>
+
+            {/* Venues Table */}
+            <VenuesTable
+              venues={venues}
+              isLoading={isLoadingVenues}
+              onEdit={handleEditVenue}
+              onDelete={handleDeleteVenue}
+              isDeleting={isDeletingVenue}
             />
           </Box>
         </TabPanel>
@@ -581,6 +682,14 @@ export const ProductsPackages: React.FC = () => {
         editingDiscount={editingDiscount}
         onSubmit={handleDiscountSubmit}
         isLoading={isCreatingDiscount || isUpdatingDiscount}
+      />
+
+      <VenueFormDialog
+        open={venueDialogOpen}
+        onClose={() => setVenueDialogOpen(false)}
+        editingVenue={editingVenue}
+        onSubmit={handleVenueSubmit}
+        isLoading={isCreatingVenue || isUpdatingVenue}
       />
 
       {/* Delete Confirmation Dialog */}

@@ -124,7 +124,7 @@ class EventQuoteSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'event', 'event_details', 'template', 'template_details',
             'version', 'status', 'status_display', 'subtotal', 'tax_amount',
-            'discount_amount', 'total_amount', 'valid_until', 'sent_at',
+            'service_charge_amount', 'discount_amount', 'total_amount', 'valid_until', 'sent_at',
             'accepted_at', 'rejected_at', 'rejection_reason', 'notes',
             'terms_and_conditions', 'client_message', 'signature_data',
             'line_items', 'options', 'activities', 'created_at', 'updated_at'
@@ -158,14 +158,14 @@ class ClientEventQuoteSerializer(serializers.ModelSerializer):
         model = EventQuote
         fields = [
             'id', 'event_details', 'version', 'status', 'status_display',
-            'subtotal', 'tax_amount', 'discount_amount', 'total_amount',
+            'subtotal', 'tax_amount', 'service_charge_amount', 'discount_amount', 'total_amount',
             'valid_until', 'sent_at', 'accepted_at', 'rejected_at',
             'rejection_reason', 'terms_and_conditions', 'client_message',
             'notes',  # Expose notes for client to see their original message
             'line_items', 'options', 'created_at'
         ]
         read_only_fields = [
-            'id', 'version', 'subtotal', 'tax_amount', 'discount_amount',
+            'id', 'version', 'subtotal', 'tax_amount', 'service_charge_amount', 'discount_amount',
             'total_amount', 'sent_at', 'accepted_at', 'rejected_at',
             'notes', 'client_message',  # Make notes read-only
             'created_at'

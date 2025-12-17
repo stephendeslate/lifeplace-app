@@ -768,8 +768,9 @@ class QuoteService:
 
             quote.subtotal = breakdown.subtotal
             quote.tax_amount = breakdown.tax_amount
+            quote.service_charge_amount = breakdown.service_charge_amount
             quote.total_amount = breakdown.total_amount
-            quote.save(update_fields=["subtotal", "tax_amount", "total_amount"])
+            quote.save(update_fields=["subtotal", "tax_amount", "service_charge_amount", "total_amount"])
             
             # Record activity
             QuoteActivity.objects.create(

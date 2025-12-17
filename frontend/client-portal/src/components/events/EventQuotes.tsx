@@ -235,59 +235,6 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
               </Alert>
             )}
 
-            {/* Pricing Summary */}
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2,
-                backgroundColor: alpha(theme.palette.primary.main, 0.02),
-              }}
-            >
-              <Stack spacing={1}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2" color="text.secondary">
-                    Subtotal:
-                  </Typography>
-                  <Typography variant="body2">
-                    {formatAmount(quote.subtotal)}
-                  </Typography>
-                </Stack>
-
-                {parseFloat(quote.tax_amount) > 0 && (
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" color="text.secondary">
-                      Tax:
-                    </Typography>
-                    <Typography variant="body2">
-                      {formatAmount(quote.tax_amount)}
-                    </Typography>
-                  </Stack>
-                )}
-
-                {parseFloat(quote.discount_amount) > 0 && (
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" color="text.secondary">
-                      Discount:
-                    </Typography>
-                    <Typography variant="body2" color="success.main">
-                      -{formatAmount(quote.discount_amount)}
-                    </Typography>
-                  </Stack>
-                )}
-
-                <Divider />
-
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Total:
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {formatAmount(quote.total_amount)}
-                  </Typography>
-                </Stack>
-              </Stack>
-            </Paper>
-
             {/* Client Message */}
             {quote.client_message && (
               <Paper variant="outlined" sx={{ p: 2, backgroundColor: 'grey.50' }}>

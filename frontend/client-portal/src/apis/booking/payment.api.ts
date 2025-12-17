@@ -1,7 +1,6 @@
 // frontend/client-portal/src/apis/booking/payment.api.ts
 
 import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   PaymentGateway,
   PaymentGatewayResponse,

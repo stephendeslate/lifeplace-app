@@ -156,18 +156,39 @@ class EventSerializer(serializers.ModelSerializer):
     current_quote = serializers.SerializerMethodField()
     current_invoice = serializers.SerializerMethodField()
     
+    # Check-in/out staff names
+    checked_in_by_name = serializers.SerializerMethodField()
+    checked_out_by_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Event
         fields = [
             'id', 'client', 'client_name', 'event_type', 'event_type_name', 'name',
             'status', 'start_date', 'end_date', 'workflow_template', 'workflow_template_name',
-            'current_stage', 'current_stage_name', 'lead_source', 'last_contacted', 
-            'total_price', 'payment_status', 'total_amount_due', 'total_amount_paid', 
+            'current_stage', 'current_stage_name', 'lead_source', 'last_contacted',
+            'total_price', 'payment_status', 'total_amount_due', 'total_amount_paid',
             'workflow_progress', 'next_task', 'preferences', 'created_at', 'updated_at',
-            'current_total_amount', 'current_quote', 'current_invoice'
+            'current_total_amount', 'current_quote', 'current_invoice',
+            # Date blocking fields
+            'date_blocked', 'date_blocked_at',
+            # Date holding fields
+            'date_hold_status', 'date_hold_expires_at', 'date_held_at', 'date_hold_extended_count',
+            # Rescheduling tracking
+            'original_start_date', 'reschedule_count', 'last_rescheduled_at',
+            # Check-in/out tracking
+            'check_in_status', 'scheduled_check_in_time', 'scheduled_checkout_time',
+            'actual_check_in_time', 'actual_checkout_time',
+            'checked_in_by', 'checked_in_by_name', 'checked_out_by', 'checked_out_by_name',
+            'check_in_notes', 'checkout_notes',
+            # Late checkout
+            'late_checkout_fee_applied', 'late_checkout_fee_amount',
+            # Cancellation
+            'cancelled_reason', 'cancelled_at', 'can_rebook',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task', 
-                           'current_total_amount', 'current_quote', 'current_invoice']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task',
+                           'current_total_amount', 'current_quote', 'current_invoice',
+                           'date_blocked_at', 'date_held_at', 'actual_check_in_time',
+                           'actual_checkout_time', 'cancelled_at']
     
     def get_client_name(self, obj):
         if obj.client:
@@ -243,7 +264,19 @@ class EventSerializer(serializers.ModelSerializer):
             return None
         except Exception:
             return None
-    
+
+    def get_checked_in_by_name(self, obj):
+        """Get name of staff who performed check-in"""
+        if obj.checked_in_by:
+            return f"{obj.checked_in_by.first_name} {obj.checked_in_by.last_name}"
+        return None
+
+    def get_checked_out_by_name(self, obj):
+        """Get name of staff who performed checkout"""
+        if obj.checked_out_by:
+            return f"{obj.checked_out_by.first_name} {obj.checked_out_by.last_name}"
+        return None
+
     def validate(self, data):
         """Validate event data"""
         # Ensure end_date is after start_date if both are provided
