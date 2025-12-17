@@ -65,6 +65,13 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
             'refund_deadline_hours',
             'refund_percentage',
             'refund_policy_text',
+            # Date blocking policy settings
+            'date_blocking_policy',
+            'downpayment_due_reference',
+            'downpayment_deadline_days',
+            # Child/youth pricing settings
+            'child_pricing_enabled',
+            'child_pricing_tiers',
             # Timestamps
             'created_at',
             'updated_at',

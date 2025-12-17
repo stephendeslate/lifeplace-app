@@ -48,6 +48,9 @@ export interface RecentUpdate {
   created_at: string;
 }
 
+// Cancellation reason types
+export type CancelledReason = 'CLIENT_REQUEST' | 'PAYMENT_TIMEOUT' | 'DATE_TAKEN' | 'ADMIN';
+
 // Base Event interface matching backend ClientEventSerializer
 export interface Event {
   id: number;
@@ -65,6 +68,13 @@ export interface Event {
   contracts_count?: number;
   pending_signature_required?: boolean;
   contract_expiry_days?: number | null;
+  // Date blocking and rebooking fields
+  date_blocked?: boolean;
+  date_blocked_at?: string | null;
+  downpayment_deadline?: string | null;
+  cancelled_reason?: CancelledReason | null;
+  cancelled_at?: string | null;
+  can_rebook?: boolean;
 }
 
 // Detailed Event interface matching backend ClientEventDetailSerializer
