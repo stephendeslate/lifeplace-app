@@ -4,6 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from core.domains.events.models import Event
+from core.domains.payments.models import TaxRate
 from django.db import models, transaction
 from django.utils import timezone
 
@@ -27,6 +28,19 @@ from .models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def get_default_tax_rate():
+    """Get tax rate from system default (Currency & Taxes settings only)"""
+    default_tax = TaxRate.objects.filter(is_default=True).first()
+    return default_tax.rate if default_tax else Decimal('0')
+
+
+def get_tax_rate_for_product(product):
+    """Get appropriate tax rate for a product - 0 if tax-inclusive, system default otherwise"""
+    if getattr(product, 'is_tax_inclusive', False):
+        return Decimal('0')  # Tax already included in price
+    return get_default_tax_rate()
 
 
 class QuoteTemplateService:
@@ -236,7 +250,7 @@ class QuoteService:
                             description=pricing_item.description,
                             quantity=pricing_item.quantity,
                             unit_price=pricing_item.total_unit_price,
-                            tax_rate=pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0')),
+                            tax_rate=get_tax_rate_for_product(product),
                             total=pricing_item.line_total,
                             product=product,
                             notes="",
@@ -360,10 +374,14 @@ class QuoteService:
                         try:
                             line_item = QuoteLineItem.objects.get(id=item_id, quote=quote)
 
+                            # Check if recalculation should be skipped (user override)
+                            skip_recalculation = item_data.pop('skip_recalculation', False)
+
                             # Check if we should recalculate pricing
-                            should_recalculate = (
+                            # Skip if user explicitly overrode values
+                            should_recalculate = not skip_recalculation and (
                                 (product_id and product_id != line_item.product_id) or
-                                ('quantity' in item_data and (product_id or line_item.product_id))
+                                ('quantity' in item_data and item_data.get('quantity') != line_item.quantity and (product_id or line_item.product_id))
                             )
 
                             if should_recalculate:
@@ -389,7 +407,7 @@ class QuoteService:
                                         line_item.description = pricing_item.description
                                         line_item.quantity = pricing_item.quantity
                                         line_item.unit_price = pricing_item.total_unit_price
-                                        line_item.tax_rate = pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0'))
+                                        line_item.tax_rate = get_tax_rate_for_product(product)
                                         line_item.total = pricing_item.line_total
                                         line_item.product = product
                                         line_item.item_type = item_type
@@ -438,7 +456,7 @@ class QuoteService:
                                         description=pricing_item.description,
                                         quantity=pricing_item.quantity,
                                         unit_price=pricing_item.total_unit_price,
-                                        tax_rate=pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0')),
+                                        tax_rate=get_tax_rate_for_product(product),
                                         total=pricing_item.line_total,
                                         product=product,
                                         notes=item_data.get('notes', ''),
@@ -553,7 +571,7 @@ class QuoteService:
                             description=pricing_item.description,
                             quantity=pricing_item.quantity,
                             unit_price=pricing_item.total_unit_price,
-                            tax_rate=pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0')),
+                            tax_rate=get_tax_rate_for_product(product),
                             total=pricing_item.line_total,
                             product=product,
                             notes=line_item_data.get('notes', ''),
@@ -658,7 +676,7 @@ class QuoteService:
                         line_item.description = pricing_item.description
                         line_item.quantity = pricing_item.quantity
                         line_item.unit_price = pricing_item.total_unit_price
-                        line_item.tax_rate = pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0'))
+                        line_item.tax_rate = get_tax_rate_for_product(product)
                         line_item.total = pricing_item.line_total
                         line_item.product = product
                         line_item.item_type = item_type

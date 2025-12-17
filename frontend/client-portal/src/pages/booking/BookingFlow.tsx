@@ -74,7 +74,7 @@ const BookingFlowContent: React.FC = () => {
   const handleRestoreSession = () => {
     if (state.recoverableSession) {
       // Navigate to booking with session_id to restore the session
-      window.location.href = `/book?session_id=${state.recoverableSession.sessionId}`;
+      window.location.href = `/booking?session_id=${state.recoverableSession.sessionId}`;
     }
   };
 

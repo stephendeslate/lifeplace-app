@@ -264,6 +264,8 @@ export const salesApi = {
     item_type: string;
     event_duration_hours: number | null;
     included_hours: number;
+    has_excess_hours: boolean;
+    is_tax_inclusive: boolean;
   }> => {
     const response = await api.post('/sales/line-items/calculate_pricing/', data);
     return response.data;

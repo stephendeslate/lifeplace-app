@@ -473,16 +473,16 @@ const FinancialPortal: React.FC = () => {
                 },
               }}
             >
-              <Tab 
-                label={`Payment History (${Array.isArray(payments) ? payments.length : 0})`}
-                icon={<PaymentIcon />} 
+              <Tab
+                label={`Invoices (${Array.isArray(invoices) ? invoices.length : 0})`}
+                icon={<ReceiptIcon />}
                 iconPosition="start"
                 id="financial-tab-0"
                 aria-controls="financial-tabpanel-0"
               />
               <Tab
-                label={`Invoices (${Array.isArray(invoices) ? invoices.length : 0})`}
-                icon={<ReceiptIcon />}
+                label={`Payment History (${Array.isArray(payments) ? payments.length : 0})`}
+                icon={<PaymentIcon />}
                 iconPosition="start"
                 id="financial-tab-1"
                 aria-controls="financial-tabpanel-1"
@@ -498,7 +498,7 @@ const FinancialPortal: React.FC = () => {
           </Box>
 
           {/* Payment History Tab */}
-          <TabPanel value={activeTab} index={0}>
+          <TabPanel value={activeTab} index={1}>
             <Box sx={{ p: 3 }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -664,7 +664,7 @@ const FinancialPortal: React.FC = () => {
           </TabPanel>
 
           {/* Invoices Tab */}
-          <TabPanel value={activeTab} index={1}>
+          <TabPanel value={activeTab} index={0}>
             <Box sx={{ p: 3 }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
