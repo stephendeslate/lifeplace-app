@@ -178,27 +178,58 @@ class InvoiceService:
         invoice.delete()
     
     @staticmethod
-    def create_from_quote(quote, due_days=14):
-        """Create an invoice from an accepted quote"""
+    def create_from_quote(quote, booking_flow_id=None):
+        """Create an invoice from an accepted quote
+
+        Args:
+            quote: The accepted quote to create invoice from
+            booking_flow_id: Optional booking flow ID to get flow-specific payment terms
+                           If not provided, uses global PaymentSettings defaults
+        """
+        from .payment_terms_resolver import PaymentTermsResolver
+
         if not quote or not quote.event:
             return None
-        
+
         # Check if invoice already exists for this quote
         existing_invoice = Invoice.objects.filter(quote=quote).first()
         if existing_invoice:
             logger.info(f"Invoice {existing_invoice.invoice_id} already exists for quote {quote.id}")
             return existing_invoice
-        
+
+        # Get effective payment terms (flow override or global default)
+        if booking_flow_id:
+            terms = PaymentTermsResolver.get_terms_for_flow(booking_flow_id)
+        else:
+            terms = PaymentTermsResolver.get_global_settings()
+
+        balance_due_days = terms.get('balance_due_days', 30)
+        balance_due_type = terms.get('balance_due_type', 'DAYS_BEFORE')
+
+        # Calculate due date based on event date (not today)
+        event_date = quote.event.start_date.date() if hasattr(quote.event.start_date, 'date') else quote.event.start_date
+
+        if balance_due_type == 'DAY_BEFORE':
+            due_date = event_date - timedelta(days=1)
+        else:  # DAYS_BEFORE
+            due_date = event_date - timedelta(days=balance_due_days)
+
+        # Ensure due date is not in the past (minimum 7 days from today)
+        today = timezone.now().date()
+        if due_date < today:
+            due_date = today + timedelta(days=7)
+            logger.info(f"Invoice due date adjusted to {due_date} (was in the past)")
+
         # Generate unique invoice ID
         base_invoice_id = f"INV-{timezone.now().strftime('%Y%m%d')}-{quote.event.id}-{quote.id}"
         invoice_id = base_invoice_id
         counter = 1
-        
+
         # Ensure uniqueness by adding a counter if needed
         while Invoice.objects.filter(invoice_id=invoice_id).exists():
             invoice_id = f"{base_invoice_id}-{counter}"
             counter += 1
-        
+
         # Create invoice
         invoice = Invoice.objects.create(
             invoice_id=invoice_id,
@@ -208,7 +239,7 @@ class InvoiceService:
             tax_amount=quote.tax_amount,
             total_amount=quote.total_amount,
             issue_date=timezone.now().date(),
-            due_date=timezone.now().date() + timedelta(days=due_days),
+            due_date=due_date,
             status='DRAFT',
             notes=f"Invoice generated from quote #{quote.id}",
             quote=quote
@@ -240,7 +271,8 @@ class InvoiceService:
         from .payment_service import PaymentService
         from .payment_plan_service import PaymentPlanService
         from .gateway_service import PaymentGatewayService
-        from ..models import PaymentSettings
+        from .payment_orchestrator import PaymentOrchestrator, PaymentRequest
+        from ..models import PaymentSettings, Payment
 
         try:
             # Validate invoice status (allow PARTIALLY_PAID for subsequent payments)
@@ -321,21 +353,30 @@ class InvoiceService:
                     }
                 }
 
-            # Create payment record
-            payment_creation_data = {
-                'event': invoice.event.id,
-                'amount': str(payment_amount),
-                'currency': invoice.currency,
-                'due_date': invoice.due_date,
-                'description': description,
-                'invoice': invoice.id,
-                'is_manual': payment_data.get('is_manual', False),
-                'reference_number': payment_data.get('reference_number', ''),
-                'notes': payment_data.get('notes', '')
-            }
+            # Create payment via PaymentOrchestrator (unified payment creation)
+            request = PaymentRequest(
+                event_id=invoice.event.id,
+                amount=payment_amount,
+                currency=invoice.currency,
+                due_date=invoice.due_date,
+                description=description,
+                invoice_id=invoice.id,
+                payment_type='INVOICE',
+                is_manual=payment_data.get('is_manual', False),
+                notes=payment_data.get('notes', ''),
+                created_by='invoice_service'
+            )
 
-            # Create the payment
-            payment = PaymentService.create_payment(payment_creation_data, user)
+            response = PaymentOrchestrator.create_payment(request, user)
+            if not response.success:
+                return {
+                    'success': False,
+                    'error': response.message,
+                    'error_code': response.error_code,
+                    'details': response.error_details
+                }
+
+            payment = Payment.objects.get(id=response.payment_id)
 
             # If manual payment, mark as completed
             if payment_data.get('is_manual', False):

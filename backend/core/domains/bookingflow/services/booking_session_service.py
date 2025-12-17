@@ -561,9 +561,10 @@ class BookingSessionService:
                     logger.info(f"Quote {quote.id} accepted - event status after: {event.status}")
 
                     # Create invoice from the accepted quote
+                    # Pass booking_flow_id so invoice due date uses flow-specific payment terms
                     logger.info(f"Creating invoice from accepted quote {quote.id}")
                     from core.domains.payments.services.invoice_service import InvoiceService
-                    invoice = InvoiceService.create_from_quote(quote)
+                    invoice = InvoiceService.create_from_quote(quote, booking_flow_id=session.booking_flow_id)
                     logger.info(f"Created invoice {invoice.invoice_id} from quote")
 
                     # FIX: Synchronize invoice total with correct event pricing
@@ -618,9 +619,10 @@ class BookingSessionService:
 
                 else:
                     # Default case: create invoice and issue it but don't process payment immediately
+                    # Pass booking_flow_id so invoice due date uses flow-specific payment terms
                     logger.info(f"Processing default completion type for session {session.session_id}")
                     from core.domains.payments.services.invoice_service import InvoiceService
-                    invoice = InvoiceService.create_from_quote(quote)
+                    invoice = InvoiceService.create_from_quote(quote, booking_flow_id=session.booking_flow_id)
                     invoice.issue()  # Changes status from DRAFT to ISSUED
                     logger.info(f"Invoice {invoice.invoice_id} created and issued for later payment")
 
