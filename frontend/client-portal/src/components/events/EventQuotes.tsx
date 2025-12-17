@@ -339,7 +339,11 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {item.description}
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500 }}
+                          color={parseFloat(item.total) < 0 ? 'success.main' : 'inherit'}
+                        >
                           {formatAmount(item.total)}
                         </Typography>
                       </Stack>

@@ -347,7 +347,7 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
                             onChange={(e) => handleItemChange(index, 'unit_price', e.target.value)}
                             size="small"
                             type="number"
-                            inputProps={{ min: 0, step: 0.01 }}
+                            inputProps={{ step: 0.01 }}
                           />
                         </TableCell>
                         <TableCell>
