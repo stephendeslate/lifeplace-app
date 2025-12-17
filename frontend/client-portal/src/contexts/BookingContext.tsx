@@ -282,8 +282,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           const keys = Object.keys(localStorage);
           const sessionKeys = keys.filter(k => k.startsWith('booking_session_'));
 
-          // Find the most recent non-expired session
-          let mostRecentSession: { sessionId: string; lastUpdated: string; stepName: string; timestamp: number } | null = null;
+          // Find the most recent non-expired session WITH meaningful progress
+          let mostRecentSession: { sessionId: string; lastUpdated: string; stepName: string; timestamp: number; progressPercentage: number } | null = null;
 
           for (const key of sessionKeys) {
             try {
@@ -295,17 +295,39 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 continue;
               }
 
+              // Check if session has meaningful progress worth recovering
+              // A session is only recoverable if:
+              // 1. progress_percentage > 0 OR
+              // 2. booking_data has meaningful content (not just empty object)
+              const bookingData = data.booking_data || {};
+              const hasBookingData = Object.keys(bookingData).length > 0 &&
+                // Check if there's actual data, not just empty arrays
+                Object.values(bookingData).some((val: unknown) => {
+                  if (Array.isArray(val)) return val.length > 0;
+                  if (typeof val === 'object' && val !== null) return Object.keys(val).length > 0;
+                  return val !== null && val !== undefined && val !== '';
+                });
+              const progressPercentage = data.progress_percentage || 0;
+              const hasMeaningfulProgress = progressPercentage > 0 || hasBookingData;
+
+              // Skip sessions with no meaningful progress
+              if (!hasMeaningfulProgress) {
+                localStorage.removeItem(key); // Clean up empty sessions
+                continue;
+              }
+
               const sessionId = key.replace('booking_session_', '');
               const lastUpdated = data.updated_at || data.savedAt || data.lastSaved;
               const timestamp = lastUpdated ? new Date(lastUpdated).getTime() : 0;
 
-              // Track the most recent session
+              // Track the most recent session with actual progress
               if (!mostRecentSession || timestamp > mostRecentSession.timestamp) {
                 mostRecentSession = {
                   sessionId,
                   lastUpdated: lastUpdated || new Date().toISOString(),
                   stepName: data.current_step?.name || data.current_step?.step_type || 'Unknown',
                   timestamp,
+                  progressPercentage,
                 };
               }
             } catch {
@@ -796,13 +818,12 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       dispatch({ type: 'CLEAR_ERRORS' });
     }, []),
 
-    clearRecoverableSession: useCallback((sessionId?: string) => {
+    clearRecoverableSession: useCallback((_sessionId?: string) => {
       // Clear the recoverable session state
       dispatch({ type: 'SET_RECOVERABLE_SESSION', payload: null });
-      // Also clear from localStorage if sessionId provided
-      if (sessionId) {
-        BookingCoreApi.clearSessionFromLocal(sessionId);
-      }
+      // Clear ALL booking sessions from localStorage to ensure a clean slate
+      // This prevents old sessions from appearing after clicking "Start Over"
+      BookingCoreApi.clearAllSessionsFromLocal();
     }, []),
   };
 

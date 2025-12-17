@@ -261,6 +261,20 @@ export class BookingCoreApi {
     }
   }
 
+  /**
+   * Clear ALL booking sessions from local storage
+   * Used when user clicks "Start Over" to ensure a clean slate
+   */
+  static clearAllSessionsFromLocal(): void {
+    try {
+      const keys = Object.keys(localStorage);
+      const sessionKeys = keys.filter(key => key.startsWith('booking_session_'));
+      sessionKeys.forEach(key => localStorage.removeItem(key));
+    } catch (error) {
+      console.warn('Failed to clear all sessions from local storage:', error);
+    }
+  }
+
   // Data formatting helpers
 
   /**

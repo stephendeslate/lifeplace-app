@@ -503,7 +503,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                                   {formatAmount(paymentAmounts.deposit, invoice.currency)} ({paymentAmounts.depositPercentage}%)
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary" display="block">
-                                  Remaining balance of {formatAmount(paymentAmounts.remaining, invoice.currency)} will be due {paymentAmounts.balanceDueDays} days before your event
+                                  Remaining balance of {formatAmount(paymentAmounts.remaining, invoice.currency)} due by {new Date(invoice.due_date).toLocaleDateString()}
                                 </Typography>
                               </Box>
                             }

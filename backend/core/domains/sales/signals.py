@@ -79,10 +79,16 @@ def handle_quote_acceptance(sender, instance, created, **kwargs):
                 logger.info(f"Invoice already exists for quote {instance.id}")
                 return
 
+            # Get booking flow ID from the event's booking session (if exists)
+            # This allows invoice due date to use flow-specific payment terms
+            from core.domains.bookingflow.models import BookingSession
+            booking_session = BookingSession.objects.filter(created_event=instance.event).first()
+            booking_flow_id = booking_session.booking_flow_id if booking_session else None
+
             # Create invoice from accepted quote
-            logger.info(f"Creating invoice for accepted quote {instance.id}")
+            logger.info(f"Creating invoice for accepted quote {instance.id} (booking_flow_id={booking_flow_id})")
             from core.domains.payments.services.invoice_service import InvoiceService
-            invoice = InvoiceService.create_from_quote(instance)
+            invoice = InvoiceService.create_from_quote(instance, booking_flow_id=booking_flow_id)
 
             # Issue the invoice so it can be paid by the client
             invoice.issue()
