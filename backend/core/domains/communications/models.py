@@ -60,6 +60,7 @@ class CommunicationRecord(BaseModel):
     
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='communication_records', null=True, blank=True)
     sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_communications')
+    event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, null=True, blank=True, related_name='communication_records')
     
     external_message_id = models.CharField(max_length=100, blank=True, null=True)
     

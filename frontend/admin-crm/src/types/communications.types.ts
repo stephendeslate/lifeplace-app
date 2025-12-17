@@ -26,6 +26,7 @@ export interface CommunicationRecord {
   client_name?: string;
   sent_by?: number;
   sent_by_name?: string;
+  event?: number;
   external_message_id?: string;
   delivery_status: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
   sent_at?: string;
@@ -58,6 +59,7 @@ export interface ManualSendData {
   template_id: number;
   recipient: string;
   client_id?: number;
+  event_id?: number;
   context_data?: Record<string, unknown>;
   custom_subject?: string;
   custom_body?: string;
@@ -109,6 +111,7 @@ export interface CommunicationFilters {
   channel?: string;
   search?: string;
   client_id?: number;
+  event_id?: number;
   template_name?: string;
   status?: string;
 }

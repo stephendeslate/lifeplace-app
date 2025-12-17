@@ -817,13 +817,25 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             logger.info(f"Sending confirmation email for session {session.session_id}")
             logger.debug(f"Email context - Date: {event_date_formatted}, Time: {event_time_formatted}")
             
+            # Try to find the event associated with this session
+            from core.domains.events.models import Event
+            event = None
+            try:
+                # Look for the most recent event for this client created around the session completion time
+                event = Event.objects.filter(
+                    client=session.client
+                ).order_by('-created_at').first()
+            except Exception as e:
+                logger.warning(f"Could not find event for session {session.session_id}: {e}")
+
             # Send the email
             if session.booking_flow.confirmation_email_template:
                 result = comm_service.send_communication(
                     template_name=session.booking_flow.confirmation_email_template.name,
                     recipient=session.client.email,
                     context_data=context,
-                    client=session.client
+                    client=session.client,
+                    event=event
                 )
                 
                 # Mark as sent in session data

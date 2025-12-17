@@ -58,7 +58,11 @@ class QuoteLineItemSerializer(serializers.ModelSerializer):
         model = QuoteLineItem
         fields = [
             'id', 'quote', 'description', 'quantity', 'unit_price',
-            'tax_rate', 'total', 'product', 'notes', 'created_at', 'updated_at'
+            'tax_rate', 'total', 'product', 'notes',
+            # Excess hours pricing breakdown fields
+            'item_type', 'base_unit_price', 'excess_hours',
+            'excess_hour_price', 'excess_cost',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 

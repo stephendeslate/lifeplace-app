@@ -690,7 +690,8 @@ class BookingSessionService:
                 context_data=template_data,
                 client=session.client,
                 sent_by=None,
-                use_async=True  # ASYNC: Queue email for background processing
+                use_async=True,  # ASYNC: Queue email for background processing
+                event=event
             )
 
             logger.info(f"Sent quote request acknowledgment to {session.client.email} for event {event.id}")
@@ -822,7 +823,8 @@ class BookingSessionService:
                 context_data=context_data,
                 client=session.client,
                 sent_by=None,
-                use_async=True  # ASYNC: Queue email for background processing
+                use_async=True,  # ASYNC: Queue email for background processing
+                event=event
             )
 
             logger.info(f"Sent booking confirmation email to {session.client.email} for event {event.id}")
@@ -1951,6 +1953,12 @@ class BookingSessionService:
 
         logger.info(f"Creating quote with status '{quote_status}' for completion_type '{completion_type}'")
 
+        # Calculate valid_until bounded by event date to prevent quotes being valid after the event
+        default_valid_until = datetime.now().date() + timedelta(days=30)
+        event_date = event.start_date.date() if hasattr(event.start_date, 'date') else event.start_date
+        max_valid_until = event_date - timedelta(days=1)  # At least 1 day before event
+        quote_valid_until = min(default_valid_until, max_valid_until)
+
         # Create the quote with conditional status
         # Initialize with basic values, will be recalculated after line items are added
         quote = EventQuote.objects.create(
@@ -1961,7 +1969,7 @@ class BookingSessionService:
             tax_amount=Decimal('0.00'),  # Will be recalculated
             discount_amount=pricing_breakdown.discount_amount,
             total_amount=Decimal('0.00'),  # Will be recalculated
-            valid_until=datetime.now().date() + timedelta(days=30),
+            valid_until=quote_valid_until,
             accepted_at=accepted_at,
             created_by=session.client,
             notes=notes,  # Use client message in notes

@@ -203,34 +203,36 @@ class CommunicationService:
         context_data: Dict[str, Any] = None,
         client: Optional[User] = None, # type: ignore
         sent_by: Optional[User] = None, # type: ignore
-        use_async: bool = False
+        use_async: bool = False,
+        event = None  # Optional Event instance
     ) -> Optional[CommunicationRecord]:
         """Send a communication using a template with optional async processing"""
-        
+
         # If async is requested and Celery is available
         if use_async and not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', True):
             try:
                 from .tasks import send_communication_async
-                
+
                 task_result = send_communication_async.delay(
                     template_name=template_name,
                     recipient=recipient,
                     context_data=context_data,
                     client_id=client.id if client else None,
-                    sent_by_id=sent_by.id if sent_by else None
+                    sent_by_id=sent_by.id if sent_by else None,
+                    event_id=event.id if event else None
                 )
-                
+
                 logger.info(f"Queued async communication: task_id={task_result.id}")
                 print(f"🚀 Queued async communication: {task_result.id}")
-                
+
                 # Return a placeholder record (actual record will be created by task)
                 return None  # Async tasks don't return records immediately
-                
+
             except ImportError:
                 logger.warning("Celery not available, falling back to synchronous sending")
             except Exception as e:
                 logger.warning(f"Async task failed, falling back to sync: {str(e)}")
-        
+
         # Synchronous sending (default behavior)
         try:
             template = CommunicationTemplateService.get_template_by_name(template_name)
@@ -238,9 +240,9 @@ class CommunicationService:
             logger.error(f"Template '{template_name}' not found")
             print(f"❌ Template '{template_name}' not found")
             return None
-        
+
         return self.send_communication_by_template(
-            template, recipient, context_data, client, sent_by
+            template, recipient, context_data, client, sent_by, event
         )
     
     def send_communication_by_template(
@@ -249,7 +251,8 @@ class CommunicationService:
         recipient: str,
         context_data: Dict[str, Any] = None,
         client: Optional[User] = None, # type: ignore
-        sent_by: Optional[User] = None # type: ignore
+        sent_by: Optional[User] = None, # type: ignore
+        event = None  # Optional Event instance
     ) -> Optional[CommunicationRecord]:
         """Send communication using template object - Enhanced for manual messages"""
         
@@ -316,6 +319,7 @@ class CommunicationService:
             body=body,
             client=client,
             sent_by=sent_by,
+            event=event,
             context_data=context_data,
             delivery_status='PENDING'
         )

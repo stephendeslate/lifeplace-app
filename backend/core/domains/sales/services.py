@@ -164,8 +164,12 @@ class QuoteService:
         
         with transaction.atomic():
             # Set default valid until date if not provided
+            # Bound by event date to prevent quotes being valid after the event
             if 'valid_until' not in data or not data['valid_until']:
-                data['valid_until'] = timezone.now().date() + timedelta(days=30)
+                default_valid_until = timezone.now().date() + timedelta(days=30)
+                event_date = event.start_date.date() if hasattr(event.start_date, 'date') else event.start_date
+                max_valid_until = event_date - timedelta(days=1)  # At least 1 day before event
+                data['valid_until'] = min(default_valid_until, max_valid_until)
             
             # Get next version number for this event
             max_version = EventQuote.objects.filter(event=event).aggregate(
@@ -196,18 +200,54 @@ class QuoteService:
             
             # If a template was used, copy its products as line items
             if quote.template:
+                from core.domains.sales.pricing_service import PricingCalculationService
+
                 template_products = QuoteTemplateProduct.objects.filter(template=quote.template)
+                event_duration = event.get_duration_hours()
+
                 for template_product in template_products:
-                    QuoteLineItem.objects.create(
-                        quote=quote,
-                        description=template_product.product.name,
-                        quantity=template_product.quantity,
-                        unit_price=template_product.product.base_price,
-                        tax_rate=getattr(template_product.product, 'tax_rate', Decimal('0')),
-                        total=template_product.product.base_price * template_product.quantity,
-                        product=template_product.product,
-                        notes=""
+                    product = template_product.product
+
+                    # Build package data for pricing service to calculate excess hours
+                    package_data = {
+                        'product_id': product.id,
+                        'name': product.name,
+                        'price': float(product.base_price),
+                        'quantity': template_product.quantity,
+                        'hours_included': product.included_hours or 0,
+                    }
+
+                    # Add excess_hour_price if product has it configured
+                    if product.excess_hour_price:
+                        package_data['excess_hour_price'] = float(product.excess_hour_price)
+
+                    # Use pricing service to calculate with excess hours
+                    pricing_item = PricingCalculationService._create_package_line_item(
+                        package_data,
+                        event_duration
                     )
+
+                    if pricing_item:
+                        # Determine item type based on product type
+                        item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
+
+                        QuoteLineItem.objects.create(
+                            quote=quote,
+                            description=pricing_item.description,
+                            quantity=pricing_item.quantity,
+                            unit_price=pricing_item.total_unit_price,
+                            tax_rate=pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0')),
+                            total=pricing_item.line_total,
+                            product=product,
+                            notes="",
+                            item_type=item_type,
+                            base_unit_price=pricing_item.base_unit_price,
+                            excess_hours=pricing_item.excess_hours,
+                            excess_hour_price=pricing_item.excess_hour_price,
+                            excess_cost=pricing_item.excess_cost
+                        )
+                    else:
+                        logger.warning(f"Failed to calculate pricing for product {product.id} ({product.name})")
                 
                 # Copy terms and conditions from template if not provided
                 if quote.template.terms_and_conditions and not quote.terms_and_conditions:
@@ -295,6 +335,8 @@ class QuoteService:
             # Handle line items updates if provided
             if line_items_data is not None:
                 from core.domains.sales.models import QuoteLineItem
+                from core.domains.sales.pricing_service import PricingCalculationService
+                from core.domains.products.models import ProductOption
 
                 # Get list of IDs from incoming data
                 incoming_ids = [item.get('id') for item in line_items_data if item.get('id')]
@@ -306,22 +348,112 @@ class QuoteService:
                     # If no IDs provided, delete all existing line items
                     quote.line_items.all().delete()
 
+                event_duration = quote.event.get_duration_hours()
+
                 # Update or create line items
                 for item_data in line_items_data:
                     item_id = item_data.pop('id', None)
+                    product_id = item_data.get('product_id') or item_data.get('product')
 
                     if item_id:
-                        # Update existing line item using .save() to fire signals
+                        # Update existing line item
                         try:
                             line_item = QuoteLineItem.objects.get(id=item_id, quote=quote)
-                            for key, value in item_data.items():
-                                setattr(line_item, key, value)
-                            line_item.save()  # This fires post_save signal for recalculation
+
+                            # Check if we should recalculate pricing
+                            should_recalculate = (
+                                (product_id and product_id != line_item.product_id) or
+                                ('quantity' in item_data and (product_id or line_item.product_id))
+                            )
+
+                            if should_recalculate:
+                                pid = product_id or line_item.product_id
+                                try:
+                                    product = ProductOption.objects.get(pk=pid)
+                                    package_data = {
+                                        'product_id': product.id,
+                                        'name': product.name,
+                                        'price': float(product.base_price),
+                                        'quantity': int(item_data.get('quantity', line_item.quantity)),
+                                        'hours_included': product.included_hours or 0,
+                                    }
+                                    if product.excess_hour_price:
+                                        package_data['excess_hour_price'] = float(product.excess_hour_price)
+
+                                    pricing_item = PricingCalculationService._create_package_line_item(
+                                        package_data, event_duration
+                                    )
+
+                                    if pricing_item:
+                                        item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
+                                        line_item.description = pricing_item.description
+                                        line_item.quantity = pricing_item.quantity
+                                        line_item.unit_price = pricing_item.total_unit_price
+                                        line_item.tax_rate = pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0'))
+                                        line_item.total = pricing_item.line_total
+                                        line_item.product = product
+                                        line_item.item_type = item_type
+                                        line_item.base_unit_price = pricing_item.base_unit_price
+                                        line_item.excess_hours = pricing_item.excess_hours
+                                        line_item.excess_hour_price = pricing_item.excess_hour_price
+                                        line_item.excess_cost = pricing_item.excess_cost
+                                        if 'notes' in item_data:
+                                            line_item.notes = item_data['notes']
+                                except ProductOption.DoesNotExist:
+                                    logger.warning(f"Product {pid} not found, updating without recalculation")
+                                    for key, value in item_data.items():
+                                        setattr(line_item, key, value)
+                            else:
+                                # No recalculation needed
+                                for key, value in item_data.items():
+                                    setattr(line_item, key, value)
+
+                            line_item.save()
                         except QuoteLineItem.DoesNotExist:
                             logger.warning(f"Line item {item_id} not found for quote {quote.id}")
                     else:
-                        # Create new line item (fires post_save signal automatically)
-                        QuoteLineItem.objects.create(quote=quote, **item_data)
+                        # Create new line item
+                        if product_id:
+                            # Use pricing service for product-based items
+                            try:
+                                product = ProductOption.objects.get(pk=product_id)
+                                package_data = {
+                                    'product_id': product.id,
+                                    'name': product.name,
+                                    'price': float(product.base_price),
+                                    'quantity': int(item_data.get('quantity', 1)),
+                                    'hours_included': product.included_hours or 0,
+                                }
+                                if product.excess_hour_price:
+                                    package_data['excess_hour_price'] = float(product.excess_hour_price)
+
+                                pricing_item = PricingCalculationService._create_package_line_item(
+                                    package_data, event_duration
+                                )
+
+                                if pricing_item:
+                                    item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
+                                    QuoteLineItem.objects.create(
+                                        quote=quote,
+                                        description=pricing_item.description,
+                                        quantity=pricing_item.quantity,
+                                        unit_price=pricing_item.total_unit_price,
+                                        tax_rate=pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0')),
+                                        total=pricing_item.line_total,
+                                        product=product,
+                                        notes=item_data.get('notes', ''),
+                                        item_type=item_type,
+                                        base_unit_price=pricing_item.base_unit_price,
+                                        excess_hours=pricing_item.excess_hours,
+                                        excess_hour_price=pricing_item.excess_hour_price,
+                                        excess_cost=pricing_item.excess_cost
+                                    )
+                            except ProductOption.DoesNotExist:
+                                logger.warning(f"Product {product_id} not found, creating without product")
+                                QuoteLineItem.objects.create(quote=quote, **item_data)
+                        else:
+                            # Free-form line item
+                            QuoteLineItem.objects.create(quote=quote, **item_data)
 
                 changes.append(f"Updated {len(line_items_data)} line items")
 
@@ -367,32 +499,88 @@ class QuoteService:
     
     @staticmethod
     def add_line_item(quote_id, line_item_data, user):
-        """Add a line item to a quote"""
+        """Add a line item to a quote
+
+        If product_id is provided, uses PricingCalculationService to calculate
+        excess hours based on event duration.
+        """
         try:
             quote = EventQuote.objects.get(pk=quote_id)
         except EventQuote.DoesNotExist:
             raise QuoteNotFoundException(f"Quote with ID {quote_id} not found")
-        
+
         # Don't allow updating accepted/rejected quotes
         if quote.status in ['ACCEPTED', 'REJECTED']:
             raise InvalidQuoteStatusTransition(
                 f"Cannot update a quote with status {quote.status}"
             )
-        
+
         with transaction.atomic():
-            # Create line item
-            if 'total' not in line_item_data:
-                line_item_data['total'] = (
-                    Decimal(str(line_item_data['unit_price'])) * int(line_item_data['quantity'])
+            # Check if product_id is provided for auto-calculation
+            product_id = line_item_data.get('product_id') or line_item_data.get('product')
+
+            if product_id:
+                # Use PricingCalculationService to calculate with excess hours
+                from core.domains.sales.pricing_service import PricingCalculationService
+                from core.domains.products.models import ProductOption
+
+                try:
+                    product = ProductOption.objects.get(pk=product_id)
+                    event_duration = quote.event.get_duration_hours()
+
+                    # Build package data for pricing calculation
+                    package_data = {
+                        'product_id': product.id,
+                        'name': product.name,
+                        'price': float(product.base_price),
+                        'quantity': int(line_item_data.get('quantity', 1)),
+                        'hours_included': product.included_hours or 0,
+                    }
+
+                    if product.excess_hour_price:
+                        package_data['excess_hour_price'] = float(product.excess_hour_price)
+
+                    pricing_item = PricingCalculationService._create_package_line_item(
+                        package_data,
+                        event_duration
+                    )
+
+                    if pricing_item:
+                        item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
+
+                        line_item = QuoteLineItem.objects.create(
+                            quote=quote,
+                            description=pricing_item.description,
+                            quantity=pricing_item.quantity,
+                            unit_price=pricing_item.total_unit_price,
+                            tax_rate=pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0')),
+                            total=pricing_item.line_total,
+                            product=product,
+                            notes=line_item_data.get('notes', ''),
+                            item_type=item_type,
+                            base_unit_price=pricing_item.base_unit_price,
+                            excess_hours=pricing_item.excess_hours,
+                            excess_hour_price=pricing_item.excess_hour_price,
+                            excess_cost=pricing_item.excess_cost
+                        )
+                    else:
+                        logger.warning(f"Failed to calculate pricing for product {product.id}")
+                        raise ValueError(f"Failed to calculate pricing for product {product.name}")
+
+                except ProductOption.DoesNotExist:
+                    raise ValueError(f"Product with ID {product_id} not found")
+            else:
+                # No product - use provided values directly (free-form entry)
+                if 'total' not in line_item_data:
+                    line_item_data['total'] = (
+                        Decimal(str(line_item_data['unit_price'])) * int(line_item_data['quantity'])
+                    )
+
+                line_item = QuoteLineItem.objects.create(
+                    quote=quote,
+                    **line_item_data
                 )
-            
-            line_item = QuoteLineItem.objects.create(
-                quote=quote,
-                **line_item_data
-            )
-            
-            # Auto calculate quote totals (the line_item save() will trigger this)
-            
+
             # Record activity
             QuoteActivity.objects.create(
                 quote=quote,
@@ -400,39 +588,105 @@ class QuoteService:
                 action_by=user,
                 notes=f"Added line item: {line_item.description}"
             )
-            
+
             return line_item
     
     @staticmethod
     def update_line_item(line_item_id, line_item_data, user):
-        """Update a line item in a quote"""
+        """Update a line item in a quote
+
+        If product_id is provided/changed, recalculates pricing using
+        PricingCalculationService with excess hours.
+        """
         try:
             line_item = QuoteLineItem.objects.get(pk=line_item_id)
         except QuoteLineItem.DoesNotExist:
             raise LineItemNotFoundException(f"Line item with ID {line_item_id} not found")
-        
+
         quote = line_item.quote
-        
+
         # Don't allow updating accepted/rejected quotes
         if quote.status in ['ACCEPTED', 'REJECTED']:
             raise InvalidQuoteStatusTransition(
                 f"Cannot update a quote with status {quote.status}"
             )
-        
+
         with transaction.atomic():
             # Track changes
             description = line_item.description
-            
-            # Update line item
-            for key, value in line_item_data.items():
-                setattr(line_item, key, value)
-            
-            # Auto calculate total if quantity or unit_price changed
-            if 'quantity' in line_item_data or 'unit_price' in line_item_data:
-                line_item.total = line_item.quantity * line_item.unit_price
-            
+
+            # Check if product is being set/changed
+            new_product_id = line_item_data.get('product_id') or line_item_data.get('product')
+            current_product_id = line_item.product_id
+            quantity_changed = 'quantity' in line_item_data
+
+            # Recalculate if product changed or quantity changed with existing product
+            should_recalculate = (
+                (new_product_id and new_product_id != current_product_id) or
+                (quantity_changed and (new_product_id or current_product_id))
+            )
+
+            if should_recalculate:
+                from core.domains.sales.pricing_service import PricingCalculationService
+                from core.domains.products.models import ProductOption
+
+                product_id_to_use = new_product_id or current_product_id
+
+                try:
+                    product = ProductOption.objects.get(pk=product_id_to_use)
+                    event_duration = quote.event.get_duration_hours()
+
+                    package_data = {
+                        'product_id': product.id,
+                        'name': product.name,
+                        'price': float(product.base_price),
+                        'quantity': int(line_item_data.get('quantity', line_item.quantity)),
+                        'hours_included': product.included_hours or 0,
+                    }
+
+                    if product.excess_hour_price:
+                        package_data['excess_hour_price'] = float(product.excess_hour_price)
+
+                    pricing_item = PricingCalculationService._create_package_line_item(
+                        package_data,
+                        event_duration
+                    )
+
+                    if pricing_item:
+                        item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
+
+                        line_item.description = pricing_item.description
+                        line_item.quantity = pricing_item.quantity
+                        line_item.unit_price = pricing_item.total_unit_price
+                        line_item.tax_rate = pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0'))
+                        line_item.total = pricing_item.line_total
+                        line_item.product = product
+                        line_item.item_type = item_type
+                        line_item.base_unit_price = pricing_item.base_unit_price
+                        line_item.excess_hours = pricing_item.excess_hours
+                        line_item.excess_hour_price = pricing_item.excess_hour_price
+                        line_item.excess_cost = pricing_item.excess_cost
+
+                        # Apply any additional overrides from line_item_data (e.g., notes)
+                        if 'notes' in line_item_data:
+                            line_item.notes = line_item_data['notes']
+                    else:
+                        logger.warning(f"Failed to calculate pricing for product {product.id}")
+                        raise ValueError(f"Failed to calculate pricing for product {product.name}")
+
+                except ProductOption.DoesNotExist:
+                    raise ValueError(f"Product with ID {product_id_to_use} not found")
+            else:
+                # No product recalculation needed - update fields directly
+                for key, value in line_item_data.items():
+                    setattr(line_item, key, value)
+
+                # Auto calculate total if quantity or unit_price changed
+                if 'quantity' in line_item_data or 'unit_price' in line_item_data:
+                    line_item.total = line_item.quantity * line_item.unit_price
+
             line_item.save()
-            
+
             # Record activity
             QuoteActivity.objects.create(
                 quote=quote,
@@ -440,7 +694,7 @@ class QuoteService:
                 action_by=user,
                 notes=f"Updated line item: {description}"
             )
-            
+
             return line_item
     
     @staticmethod

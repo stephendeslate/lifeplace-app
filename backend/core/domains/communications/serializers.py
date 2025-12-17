@@ -58,7 +58,7 @@ class CommunicationRecordSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'template_name', 'channel', 'category', 'recipient',
             'subject', 'body', 'client', 'client_email', 'client_name',
-            'sent_by', 'sent_by_name', 'external_message_id',
+            'sent_by', 'sent_by_name', 'event', 'external_message_id',
             'delivery_status', 'sent_at', 'delivered_at', 'opened_at',
             'is_opened', 'context_data', 'created_at'
         ]
@@ -73,6 +73,7 @@ class SendCommunicationSerializer(serializers.Serializer):
     template_id = serializers.IntegerField()
     recipient = serializers.CharField()  # Email or phone
     client_id = serializers.IntegerField(required=False, allow_null=True)
+    event_id = serializers.IntegerField(required=False, allow_null=True)
     context_data = serializers.JSONField(required=False, default=dict)
     use_async = serializers.BooleanField(required=False, default=False)
     
