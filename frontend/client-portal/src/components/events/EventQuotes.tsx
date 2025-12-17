@@ -40,7 +40,7 @@ import {
   Info as InfoIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
-import { format, isBefore } from 'date-fns';
+import { format, isBefore, differenceInDays } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useEventQuotes, useQuoteActions } from '../../hooks/useEventQuotes';
 import { useCurrencySettings } from '../../hooks/useCurrency';
@@ -114,6 +114,17 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
   const isExpired = () => {
     if (!quote.valid_until) return false;
     return isBefore(new Date(quote.valid_until), new Date());
+  };
+
+  const getDaysUntilExpiry = () => {
+    if (!quote.valid_until) return null;
+    const days = differenceInDays(new Date(quote.valid_until), new Date());
+    return days;
+  };
+
+  const isExpiringSoon = () => {
+    const days = getDaysUntilExpiry();
+    return days !== null && days >= 0 && days <= 3;
   };
 
   const isActionable = () => {
@@ -204,6 +215,24 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
                   )}
                 </Typography>
               </Stack>
+            )}
+
+            {/* Expiry Warning */}
+            {quote.status === 'SENT' && isExpired() && (
+              <Alert severity="error" icon={<WarningIcon fontSize="inherit" />}>
+                This quote has expired and can no longer be accepted. Please contact us for a new quote.
+              </Alert>
+            )}
+
+            {quote.status === 'SENT' && isExpiringSoon() && !isExpired() && (
+              <Alert severity="warning" icon={<WarningIcon fontSize="inherit" />}>
+                {getDaysUntilExpiry() === 0
+                  ? 'This quote expires today! Please accept or reject it soon.'
+                  : getDaysUntilExpiry() === 1
+                    ? 'This quote expires tomorrow! Please accept or reject it soon.'
+                    : `This quote expires in ${getDaysUntilExpiry()} days. Please accept or reject it before it expires.`
+                }
+              </Alert>
             )}
 
             {/* Pricing Summary */}

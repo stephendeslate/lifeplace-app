@@ -1,0 +1,102 @@
+# backend/core/domains/sales/tasks.py
+
+from celery import shared_task
+from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task(name='sales.expire_sent_quotes')
+def expire_sent_quotes():
+    """
+    Mark quotes past their valid_until date as EXPIRED.
+
+    This task runs daily to automatically expire quotes that have passed
+    their validity period and are still in SENT status.
+    """
+    from .models import EventQuote, QuoteActivity
+
+    today = timezone.now().date()
+
+    # Find all SENT quotes that have expired
+    expired_quotes = EventQuote.objects.filter(
+        status='SENT',
+        valid_until__lt=today
+    )
+
+    count = 0
+    for quote in expired_quotes:
+        try:
+            quote.status = 'EXPIRED'
+            quote.save(update_fields=['status', 'updated_at'])
+
+            # Log the activity
+            QuoteActivity.objects.create(
+                quote=quote,
+                action='EXPIRED',
+                notes=f"Quote automatically expired (valid until: {quote.valid_until})"
+            )
+
+            logger.info(f"Expired quote {quote.id} for event {quote.event_id}")
+            count += 1
+
+        except Exception as e:
+            logger.error(f"Failed to expire quote {quote.id}: {e}")
+
+    logger.info(f"Quote expiry task completed: expired {count} quotes")
+    return count
+
+
+@shared_task(name='sales.send_quote_expiry_reminders')
+def send_quote_expiry_reminders():
+    """
+    Send reminder emails for quotes expiring soon (within 3 days).
+
+    This task runs daily to remind clients about quotes that will expire soon.
+    """
+    from .models import EventQuote, QuoteReminder
+    from datetime import timedelta
+
+    today = timezone.now().date()
+    reminder_threshold = today + timedelta(days=3)
+
+    # Find quotes expiring within 3 days that haven't had a reminder sent recently
+    expiring_quotes = EventQuote.objects.filter(
+        status='SENT',
+        valid_until__gte=today,
+        valid_until__lte=reminder_threshold
+    )
+
+    count = 0
+    for quote in expiring_quotes:
+        try:
+            # Check if a reminder was already sent for this quote recently
+            recent_reminder = QuoteReminder.objects.filter(
+                quote=quote,
+                is_sent=True,
+                created_at__gte=timezone.now() - timedelta(days=2)
+            ).exists()
+
+            if not recent_reminder:
+                # Create and send reminder
+                reminder = QuoteReminder.objects.create(
+                    quote=quote,
+                    scheduled_date=timezone.now(),
+                    is_sent=True,
+                    sent_at=timezone.now(),
+                    message=f"Quote expiry reminder: expires on {quote.valid_until}"
+                )
+
+                # Send reminder email (using communication service)
+                from core.domains.communications.services import CommunicationService
+                CommunicationService.send_quote_expiry_reminder(quote)
+
+                logger.info(f"Sent expiry reminder for quote {quote.id}")
+                count += 1
+
+        except Exception as e:
+            logger.error(f"Failed to send reminder for quote {quote.id}: {e}")
+
+    logger.info(f"Quote reminder task completed: sent {count} reminders")
+    return count

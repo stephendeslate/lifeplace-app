@@ -45,6 +45,8 @@ app.conf.update(
         'core.domains.analytics.tasks.*': {'queue': 'analytics'},
         'core.domains.events.tasks.*': {'queue': 'events'},
         'core.domains.contracts.tasks.*': {'queue': 'contracts'},
+        'core.domains.sales.tasks.*': {'queue': 'sales'},
+        'sales.*': {'queue': 'sales'},
     },
     
     # Worker configuration
@@ -105,6 +107,17 @@ app.conf.update(
             'task': 'core.domains.contracts.tasks.schedule_contract_expiry_reminders',
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'contracts'}
+        },
+        # Quote expiry tasks
+        'expire-quotes': {
+            'task': 'sales.expire_sent_quotes',
+            'schedule': 60 * 60,  # Hourly
+            'options': {'queue': 'sales'}
+        },
+        'quote-expiry-reminders': {
+            'task': 'sales.send_quote_expiry_reminders',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'sales'}
         },
     },
 )

@@ -12,6 +12,7 @@ import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
 import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
 import { ContractEdit, ContractView, ContractSign } from './pages/contracts';
+import { QuotesPage } from './pages/quotes';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
@@ -320,6 +321,16 @@ const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <ContractSign />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Quote Management Routes */}
+      <Route
+        path="/quotes"
+        element={
+          <ProtectedRoute>
+            <QuotesPage />
           </ProtectedRoute>
         }
       />

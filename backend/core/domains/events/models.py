@@ -98,7 +98,17 @@ class Event(BaseModel):
     last_contacted = models.DateTimeField(null=True, blank=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     product_options = models.ManyToManyField('products.ProductOption', through='EventProductOption')
-    
+
+    # Accepted quote reference
+    accepted_quote = models.ForeignKey(
+        'sales.EventQuote',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='accepted_for_event',
+        help_text="The accepted quote for this event"
+    )
+
     # Payment status fields (moved from EventPaymentStatus)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='UNPAID')
     total_amount_due = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
