@@ -46,6 +46,7 @@ export interface ProductOption {
   base_price: string;
   currency: string;
   tax_rate: string;
+  is_tax_inclusive: boolean;
   type: ProductType;
   type_display: string;
   is_active: boolean;

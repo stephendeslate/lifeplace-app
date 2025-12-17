@@ -369,6 +369,12 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         debouncedUpdateRef.current.flush();
       }
 
+      // Don't save sessions with 0% progress
+      const progressPercentage = currentSession.progress_percentage || 0;
+      if (progressPercentage === 0) {
+        return;
+      }
+
       // Save current state to localStorage synchronously
       try {
         const sessionToSave = {

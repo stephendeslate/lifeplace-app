@@ -81,7 +81,11 @@ class ProductOption(BaseModel):
     base_price = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3, default='PHP')
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=12.00)
-    
+    is_tax_inclusive = models.BooleanField(
+        default=False,
+        help_text="If True, base_price already includes tax (no additional tax applied)"
+    )
+
     # Product configuration
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     is_active = models.BooleanField(default=True)

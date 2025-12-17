@@ -283,30 +283,13 @@ class PricingCalculationService:
     @staticmethod
     def get_applicable_tax_rate(line_items: List[PricingLineItem]) -> Decimal:
         """
-        Get applicable tax rate using single-source-of-truth logic:
-        1. Check if any line items have specific product tax rates (non-zero)
-        2. If not, use the default tax rate from TaxRate model
-        3. Fall back to 12% if no default is configured
+        Get applicable tax rate from system default (Currency & Taxes settings only).
+
+        Tax source: System TaxRate with is_default=True
+        Fallback: 0% if no default configured
+
+        Note: Individual line items may have tax_rate=0 if the product is tax-inclusive.
         """
-        # Check if any products have specific tax rates
-        product_tax_rates = []
-        
-        for item in line_items:
-            if item.product_id:
-                try:
-                    product = ProductOption.objects.get(id=item.product_id)
-                    if product.tax_rate and product.tax_rate > 0:
-                        product_tax_rates.append(product.tax_rate)
-                        logger.info(f"Using product-specific tax rate: {product.tax_rate}% for {product.name}")
-                except ProductOption.DoesNotExist:
-                    continue
-        
-        # If any products have specific tax rates, use the highest one
-        # (This handles mixed tax scenarios by applying the highest rate)
-        if product_tax_rates:
-            return max(product_tax_rates)
-        
-        # Otherwise, use the default tax rate from TaxRate model
         try:
             default_tax_rate = TaxRate.objects.filter(is_default=True).first()
             if default_tax_rate:
@@ -314,10 +297,10 @@ class PricingCalculationService:
                 return default_tax_rate.rate
         except Exception as e:
             logger.warning(f"Error fetching default tax rate: {e}")
-        
-        # Final fallback to 12% (Philippines standard VAT)
-        logger.info("Using fallback tax rate: 12%")
-        return Decimal('12.00')
+
+        # No default configured - return 0%
+        logger.info("No default tax rate configured, using 0%")
+        return Decimal('0')
 
     @staticmethod
     def apply_discount(breakdown: PricingBreakdown, discount: Discount):

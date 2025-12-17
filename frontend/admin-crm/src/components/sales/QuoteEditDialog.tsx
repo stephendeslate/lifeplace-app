@@ -20,7 +20,7 @@ import {
   Chip,
   Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon, Info as InfoIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, Info as InfoIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -45,11 +45,14 @@ interface LineItemFormData {
   unit_price: string;
   total: number;
   product_id?: number | null;
-  // Excess hours breakdown (display only)
+  tax_rate?: string;
+  // Excess hours breakdown (editable for override)
   base_unit_price?: string;
   excess_hours?: number | null;
   excess_hour_price?: string | null;
   excess_cost?: string;
+  has_excess_hours?: boolean;
+  is_tax_inclusive?: boolean;
 }
 
 const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
@@ -70,23 +73,33 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   const [clientMessage, setClientMessage] = useState(quote.client_message || '');
   const [lineItems, setLineItems] = useState<LineItemFormData[]>([]);
   const [isCalculating, setIsCalculating] = useState<number | null>(null);
+  const [overriddenItems, setOverriddenItems] = useState<Set<number>>(new Set());
 
   // Initialize line items from quote
   useEffect(() => {
+    // Clear override state when quote changes
+    setOverriddenItems(new Set());
+
     if (quote.line_items && quote.line_items.length > 0) {
       setLineItems(
-        quote.line_items.map((item) => ({
-          id: item.id,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total: parseFloat(item.unit_price) * item.quantity,
-          product_id: item.product || null,
-          base_unit_price: item.base_unit_price,
-          excess_hours: item.excess_hours,
-          excess_hour_price: item.excess_hour_price,
-          excess_cost: item.excess_cost,
-        }))
+        quote.line_items.map((item) => {
+          // Look up product to get has_excess_hours
+          const product = item.product ? products.find((p) => p.id === item.product) : null;
+          return {
+            id: item.id,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total: parseFloat(item.unit_price) * item.quantity,
+            product_id: item.product || null,
+            tax_rate: item.tax_rate,
+            base_unit_price: item.base_unit_price,
+            excess_hours: item.excess_hours,
+            excess_hour_price: item.excess_hour_price,
+            excess_cost: item.excess_cost,
+            has_excess_hours: product?.has_excess_hours ?? false,
+          };
+        })
       );
     } else {
       // Initialize with at least one empty line item
@@ -100,7 +113,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
         },
       ]);
     }
-  }, [quote]);
+  }, [quote, products]);
 
   const handleAddLineItem = () => {
     setLineItems([
@@ -124,6 +137,13 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   const handleProductSelect = async (index: number, product: ProductOption | null) => {
     const updatedItems = [...lineItems];
 
+    // Clear override status when product changes
+    setOverriddenItems((prev) => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+
     if (product && quote.event) {
       setIsCalculating(index);
       try {
@@ -140,10 +160,13 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           description: pricing.description,
           unit_price: pricing.unit_price,
           total: parseFloat(pricing.total),
+          tax_rate: pricing.tax_rate,
           base_unit_price: pricing.base_unit_price,
           excess_hours: pricing.excess_hours,
           excess_hour_price: pricing.excess_hour_price,
           excess_cost: pricing.excess_cost,
+          has_excess_hours: pricing.has_excess_hours,
+          is_tax_inclusive: pricing.is_tax_inclusive,
         };
       } catch (error) {
         console.error('Failed to calculate pricing:', error);
@@ -154,6 +177,8 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           description: product.name,
           unit_price: product.base_price,
           total: parseFloat(product.base_price) * (updatedItems[index].quantity || 1),
+          has_excess_hours: product.has_excess_hours,
+          is_tax_inclusive: product.is_tax_inclusive,
         };
         showToast({ type: 'warning', title: 'Pricing Warning', message: 'Could not calculate excess hours pricing' });
       } finally {
@@ -164,10 +189,12 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
       updatedItems[index] = {
         ...updatedItems[index],
         product_id: null,
+        tax_rate: undefined,
         base_unit_price: undefined,
         excess_hours: undefined,
         excess_hour_price: undefined,
         excess_cost: undefined,
+        has_excess_hours: undefined,
       };
     }
 
@@ -178,6 +205,13 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
     const updatedItems = [...lineItems];
     const item = updatedItems[index];
     updatedItems[index] = { ...item, quantity };
+
+    // Clear override status when quantity changes (recalculates from API)
+    setOverriddenItems((prev) => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
 
     // If there's a product, recalculate pricing
     if (item.product_id && quote.event) {
@@ -194,10 +228,13 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           description: pricing.description,
           unit_price: pricing.unit_price,
           total: parseFloat(pricing.total),
+          tax_rate: pricing.tax_rate,
           base_unit_price: pricing.base_unit_price,
           excess_hours: pricing.excess_hours,
           excess_hour_price: pricing.excess_hour_price,
           excess_cost: pricing.excess_cost,
+          has_excess_hours: pricing.has_excess_hours,
+          is_tax_inclusive: pricing.is_tax_inclusive,
         };
       } catch (error) {
         console.error('Failed to recalculate pricing:', error);
@@ -231,8 +268,98 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
     setLineItems(updatedItems);
   };
 
+  // Handler for manual override of pricing fields
+  const handlePricingOverride = (
+    index: number,
+    field: 'unit_price' | 'base_unit_price' | 'excess_hours' | 'excess_hour_price' | 'excess_cost',
+    value: string | number
+  ) => {
+    const updatedItems = [...lineItems];
+    updatedItems[index] = { ...updatedItems[index], [field]: value };
+
+    // Recalculate dependent fields based on which field changed
+    if (field === 'unit_price') {
+      updatedItems[index].total = updatedItems[index].quantity * (parseFloat(value as string) || 0);
+    } else if (field === 'base_unit_price' || field === 'excess_cost') {
+      // Recalculate unit_price from base + excess
+      const base = parseFloat(updatedItems[index].base_unit_price || '0');
+      const excess = parseFloat(updatedItems[index].excess_cost || '0');
+      updatedItems[index].unit_price = (base + excess).toFixed(2);
+      updatedItems[index].total = updatedItems[index].quantity * (base + excess);
+    } else if (field === 'excess_hours' || field === 'excess_hour_price') {
+      // Recalculate excess_cost from hours * rate
+      const hours = parseFloat(String(updatedItems[index].excess_hours || 0));
+      const rate = parseFloat(updatedItems[index].excess_hour_price || '0');
+      updatedItems[index].excess_cost = (hours * rate).toFixed(2);
+      // Then recalculate unit_price and total
+      const base = parseFloat(updatedItems[index].base_unit_price || '0');
+      updatedItems[index].unit_price = (base + hours * rate).toFixed(2);
+      updatedItems[index].total = updatedItems[index].quantity * (base + hours * rate);
+    }
+
+    // Mark this item as overridden
+    setOverriddenItems((prev) => new Set(prev).add(index));
+    setLineItems(updatedItems);
+  };
+
+  // Handler to reset a line item to calculated values
+  const handleResetToCalculated = async (index: number) => {
+    const item = lineItems[index];
+    if (!item.product_id || !quote.event) return;
+
+    setIsCalculating(index);
+    try {
+      const pricing = await salesApi.calculateLineItemPricing({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        event_id: quote.event,
+      });
+
+      const updatedItems = [...lineItems];
+      updatedItems[index] = {
+        ...updatedItems[index],
+        description: pricing.description,
+        unit_price: pricing.unit_price,
+        total: parseFloat(pricing.total),
+        tax_rate: pricing.tax_rate,
+        base_unit_price: pricing.base_unit_price,
+        excess_hours: pricing.excess_hours,
+        excess_hour_price: pricing.excess_hour_price,
+        excess_cost: pricing.excess_cost,
+        has_excess_hours: pricing.has_excess_hours,
+        is_tax_inclusive: pricing.is_tax_inclusive,
+      };
+      setLineItems(updatedItems);
+
+      // Clear override status
+      setOverriddenItems((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
+    } catch (error) {
+      console.error('Failed to reset pricing:', error);
+      showToast({ type: 'error', title: 'Reset Failed', message: 'Could not reset to calculated values' });
+    } finally {
+      setIsCalculating(null);
+    }
+  };
+
   const calculateSubtotal = () => {
     return lineItems.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const calculateTaxAmount = () => {
+    return lineItems.reduce((sum, item) => {
+      // Skip tax-inclusive items (tax already in price)
+      if (item.is_tax_inclusive) return sum;
+      const taxRate = parseFloat(item.tax_rate || '0') / 100;
+      return sum + (item.total * taxRate);
+    }, 0);
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateTaxAmount();
   };
 
   const getSelectedProduct = (productId: number | null | undefined): ProductOption | null => {
@@ -263,12 +390,21 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
         notes,
         terms_and_conditions: termsAndConditions,
         client_message: clientMessage,
-        line_items: lineItems.map((item) => ({
+        line_items: lineItems.map((item, index) => ({
           ...(item.id && { id: item.id }),
           description: item.description,
           quantity: item.quantity,
           unit_price: item.unit_price,
+          tax_rate: item.tax_rate,
           ...(item.product_id && { product_id: item.product_id }),
+          // Include excess hours fields if item was overridden (to preserve overridden values)
+          ...(overriddenItems.has(index) && {
+            skip_recalculation: true,
+            base_unit_price: item.base_unit_price,
+            excess_hours: item.excess_hours,
+            excess_hour_price: item.excess_hour_price,
+            excess_cost: item.excess_cost,
+          }),
         })),
       };
 
@@ -331,6 +467,9 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                     <TableCell align="right" sx={{ width: '120px' }}>
                       Unit Price
                     </TableCell>
+                    <TableCell align="right" sx={{ width: '80px' }}>
+                      Tax %
+                    </TableCell>
                     <TableCell align="right" sx={{ width: '120px' }}>
                       Total
                     </TableCell>
@@ -344,35 +483,46 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                     <React.Fragment key={index}>
                       <TableRow>
                         <TableCell>
-                          <Autocomplete
-                            size="small"
-                            options={products}
-                            getOptionLabel={(option) => option.name}
-                            value={getSelectedProduct(item.product_id)}
-                            onChange={(_, newValue) => handleProductSelect(index, newValue)}
-                            loading={isLoadingProducts}
-                            disabled={isCalculating === index}
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                placeholder="Select product..."
-                                variant="outlined"
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Autocomplete
+                              size="small"
+                              options={products}
+                              getOptionLabel={(option) => option.name}
+                              value={getSelectedProduct(item.product_id)}
+                              onChange={(_, newValue) => handleProductSelect(index, newValue)}
+                              loading={isLoadingProducts}
+                              disabled={isCalculating === index}
+                              sx={{ flex: 1 }}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  placeholder="Select product..."
+                                  variant="outlined"
+                                />
+                              )}
+                              renderOption={(props, option) => (
+                                <li {...props} key={option.id}>
+                                  <Box>
+                                    <Typography variant="body2">{option.name}</Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {option.formatted_price}
+                                      {option.has_excess_hours && option.included_hours && (
+                                        <> | {option.included_hours}h included</>
+                                      )}
+                                    </Typography>
+                                  </Box>
+                                </li>
+                              )}
+                            />
+                            {overriddenItems.has(index) && (
+                              <Chip
+                                size="small"
+                                label="Overridden"
+                                color="warning"
+                                variant="filled"
                               />
                             )}
-                            renderOption={(props, option) => (
-                              <li {...props} key={option.id}>
-                                <Box>
-                                  <Typography variant="body2">{option.name}</Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {option.formatted_price}
-                                    {option.has_excess_hours && option.included_hours && (
-                                      <> | {option.included_hours}h included</>
-                                    )}
-                                  </Typography>
-                                </Box>
-                              </li>
-                            )}
-                          />
+                          </Box>
                         </TableCell>
                         <TableCell>
                           <TextField
@@ -400,18 +550,52 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                           />
                         </TableCell>
                         <TableCell>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            type="number"
-                            value={item.unit_price}
-                            onChange={(e) =>
-                              handleLineItemChange(index, 'unit_price', e.target.value)
-                            }
-                            inputProps={{ step: '0.01' }}
-                            disabled={isCalculating === index || !!item.product_id}
-                            helperText={item.product_id ? 'Auto-calculated' : undefined}
-                          />
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <TextField
+                              fullWidth
+                              size="small"
+                              type="number"
+                              value={item.unit_price}
+                              onChange={(e) => {
+                                if (item.product_id) {
+                                  handlePricingOverride(index, 'unit_price', e.target.value);
+                                } else {
+                                  handleLineItemChange(index, 'unit_price', e.target.value);
+                                }
+                              }}
+                              inputProps={{ step: '0.01' }}
+                              disabled={isCalculating === index}
+                              sx={overriddenItems.has(index) ? {
+                                '& .MuiOutlinedInput-root': {
+                                  '& fieldset': { borderColor: 'warning.main' }
+                                }
+                              } : undefined}
+                            />
+                            {item.product_id && overriddenItems.has(index) && (
+                              <Tooltip title="Reset to calculated value">
+                                <IconButton size="small" onClick={() => handleResetToCalculated(index)} color="warning">
+                                  <RefreshIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">
+                          {item.is_tax_inclusive ? (
+                            <Tooltip title="Tax already included in price">
+                              <Chip size="small" label="Incl." color="info" variant="outlined" />
+                            </Tooltip>
+                          ) : (
+                            <TextField
+                              size="small"
+                              type="number"
+                              value={item.tax_rate || ''}
+                              onChange={(e) => handleLineItemChange(index, 'tax_rate', e.target.value)}
+                              inputProps={{ step: '0.01', min: 0 }}
+                              sx={{ width: '70px' }}
+                              disabled={isCalculating === index}
+                            />
+                          )}
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2" color={item.total < 0 ? 'success.main' : 'inherit'}>
@@ -429,30 +613,61 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                           </IconButton>
                         </TableCell>
                       </TableRow>
-                      {/* Excess hours info row */}
-                      {item.excess_hours && item.excess_hours > 0 && (
+                      {/* Excess hours info row - only shown for products with has_excess_hours=true */}
+                      {item.product_id && item.has_excess_hours && (
                         <TableRow>
-                          <TableCell colSpan={6} sx={{ py: 0.5, borderBottom: 'none' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pl: 2 }}>
-                              <Tooltip title="This line item includes excess hours pricing">
-                                <InfoIcon fontSize="small" color="info" />
+                          <TableCell colSpan={7} sx={{ py: 1, borderBottom: 'none' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pl: 2 }}>
+                              <Tooltip title="Pricing breakdown - edit values to override">
+                                <InfoIcon fontSize="small" color={overriddenItems.has(index) ? 'warning' : 'info'} />
                               </Tooltip>
+                              <TextField
+                                size="small"
+                                type="number"
+                                label="Base Price"
+                                value={item.base_unit_price || ''}
+                                onChange={(e) => handlePricingOverride(index, 'base_unit_price', e.target.value)}
+                                disabled={isCalculating === index}
+                                inputProps={{ step: '0.01' }}
+                                sx={{ width: '110px' }}
+                              />
+                              <TextField
+                                size="small"
+                                type="number"
+                                label="Excess Hours"
+                                value={item.excess_hours ?? ''}
+                                onChange={(e) => handlePricingOverride(index, 'excess_hours', parseFloat(e.target.value) || 0)}
+                                disabled={isCalculating === index}
+                                inputProps={{ step: '0.5', min: 0 }}
+                                sx={{ width: '110px' }}
+                              />
+                              <TextField
+                                size="small"
+                                type="number"
+                                label="Rate/Hour"
+                                value={item.excess_hour_price || ''}
+                                onChange={(e) => handlePricingOverride(index, 'excess_hour_price', e.target.value)}
+                                disabled={isCalculating === index}
+                                inputProps={{ step: '0.01' }}
+                                sx={{ width: '110px' }}
+                              />
                               <Chip
                                 size="small"
-                                label={`Base: ₱${item.base_unit_price}`}
+                                label={`Excess: ₱${item.excess_cost || '0.00'}`}
+                                color={overriddenItems.has(index) ? 'warning' : 'default'}
                                 variant="outlined"
                               />
-                              <Chip
-                                size="small"
-                                label={`+${item.excess_hours}h excess @ ₱${item.excess_hour_price}/h`}
-                                color="warning"
-                                variant="outlined"
-                              />
-                              <Chip
-                                size="small"
-                                label={`Excess cost: ₱${item.excess_cost}`}
-                                color="warning"
-                              />
+                              {overriddenItems.has(index) && (
+                                <Tooltip title="Reset all to calculated values">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleResetToCalculated(index)}
+                                    color="warning"
+                                  >
+                                    <RefreshIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                             </Box>
                           </TableCell>
                         </TableRow>
@@ -460,14 +675,40 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                     </React.Fragment>
                   ))}
                   <TableRow>
-                    <TableCell colSpan={4} align="right">
-                      <Typography variant="subtitle1" fontWeight="bold">
+                    <TableCell colSpan={5} align="right">
+                      <Typography variant="body2">
                         Subtotal:
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
-                      <Typography variant="subtitle1" fontWeight="bold">
+                      <Typography variant="body2">
                         ₱{calculateSubtotal().toFixed(2)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={5} align="right">
+                      <Typography variant="body2" color="text.secondary">
+                        Tax:
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">
+                        ₱{calculateTaxAmount().toFixed(2)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={5} align="right">
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        Total:
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        ₱{calculateTotal().toFixed(2)}
                       </Typography>
                     </TableCell>
                     <TableCell />

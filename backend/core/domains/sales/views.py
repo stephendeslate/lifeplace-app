@@ -485,6 +485,15 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
             if pricing_item:
                 item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
 
+                # Tax rate: 0 if product is tax-inclusive, otherwise system default
+                from core.domains.payments.models import TaxRate
+                is_tax_inclusive = getattr(product, 'is_tax_inclusive', False)
+                if is_tax_inclusive:
+                    tax_rate = Decimal('0')
+                else:
+                    default_tax = TaxRate.objects.filter(is_default=True).first()
+                    tax_rate = default_tax.rate if default_tax else Decimal('0')
+
                 return Response({
                     'product_id': product.id,
                     'product_name': product.name,
@@ -496,10 +505,12 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
                     'excess_cost': str(pricing_item.excess_cost),
                     'unit_price': str(pricing_item.total_unit_price),
                     'total': str(pricing_item.line_total),
-                    'tax_rate': str(pricing_item.tax_rate or getattr(product, 'tax_rate', Decimal('0'))),
+                    'tax_rate': str(tax_rate),
                     'item_type': item_type,
                     'event_duration_hours': event_duration,
                     'included_hours': product.included_hours or 0,
+                    'has_excess_hours': getattr(product, 'has_excess_hours', False),
+                    'is_tax_inclusive': is_tax_inclusive,
                 })
             else:
                 return Response(
