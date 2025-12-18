@@ -49,6 +49,11 @@ interface VenueFormData {
   // Display
   location_description: string;
   sort_order: string;
+  // Standalone pricing (for custom package curation)
+  is_rentable_standalone: boolean;
+  standalone_base_price: string;
+  standalone_included_hours: string;
+  standalone_excess_hour_price: string;
   // Operating rules
   operating_rules: OperatingRulesFormData;
 }
@@ -131,6 +136,11 @@ const defaultFormData: VenueFormData = {
   is_bookable: true,
   location_description: '',
   sort_order: '0',
+  // Standalone pricing defaults
+  is_rentable_standalone: false,
+  standalone_base_price: '',
+  standalone_included_hours: '',
+  standalone_excess_hour_price: '',
   operating_rules: defaultOperatingRules,
 };
 
@@ -164,6 +174,11 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
           is_bookable: venue.is_bookable ?? true,
           location_description: venue.location_description || '',
           sort_order: venue.sort_order?.toString() || '0',
+          // Standalone pricing
+          is_rentable_standalone: venue.is_rentable_standalone ?? false,
+          standalone_base_price: venue.standalone_base_price?.toString() || '',
+          standalone_included_hours: venue.standalone_included_hours?.toString() || '',
+          standalone_excess_hour_price: venue.standalone_excess_hour_price?.toString() || '',
           operating_rules: rules ? {
             default_check_in_time: rules.default_check_in_time || '14:00',
             default_checkout_time: rules.default_checkout_time || '12:00',
@@ -334,6 +349,11 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
       is_bookable: formData.is_bookable,
       location_description: formData.location_description.trim(),
       sort_order: parseInt(formData.sort_order) || 0,
+      // Standalone pricing
+      is_rentable_standalone: formData.is_rentable_standalone,
+      standalone_base_price: formData.standalone_base_price ? parseFloat(formData.standalone_base_price) : null,
+      standalone_included_hours: formData.standalone_included_hours ? parseFloat(formData.standalone_included_hours) : null,
+      standalone_excess_hour_price: formData.standalone_excess_hour_price ? parseFloat(formData.standalone_excess_hour_price) : null,
       operating_rules: operatingRulesData,
     };
 
@@ -492,6 +512,74 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
                   helperText="Lower numbers appear first"
                   sx={{ width: 150 }}
                 />
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Standalone Pricing (for custom package curation) */}
+          <Accordion
+            expanded={expandedSections.includes('standalone-pricing')}
+            onChange={() => toggleSection('standalone-pricing')}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Standalone Pricing</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack spacing={2}>
+                <Alert severity="info" sx={{ mb: 1 }}>
+                  Enable standalone pricing to allow this venue to be rented independently or included in custom package bundles.
+                </Alert>
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.is_rentable_standalone}
+                      onChange={handleSwitchChange('is_rentable_standalone')}
+                    />
+                  }
+                  label="Available for Standalone Rental"
+                />
+
+                {formData.is_rentable_standalone && (
+                  <Box display="flex" gap={2} flexWrap="wrap">
+                    <TextField
+                      label="Base Price"
+                      value={formData.standalone_base_price}
+                      onChange={handleInputChange('standalone_base_price')}
+                      type="number"
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">₱</InputAdornment>,
+                        inputProps: { min: 0, step: 0.01 },
+                      }}
+                      helperText="Price when rented as standalone"
+                      sx={{ flex: 1, minWidth: 200 }}
+                    />
+                    <TextField
+                      label="Included Hours"
+                      value={formData.standalone_included_hours}
+                      onChange={handleInputChange('standalone_included_hours')}
+                      type="number"
+                      InputProps={{
+                        endAdornment: <InputAdornment position="end">hrs</InputAdornment>,
+                        inputProps: { min: 0, step: 0.5 },
+                      }}
+                      helperText="Hours included in base price"
+                      sx={{ flex: 1, minWidth: 150 }}
+                    />
+                    <TextField
+                      label="Excess Hour Rate"
+                      value={formData.standalone_excess_hour_price}
+                      onChange={handleInputChange('standalone_excess_hour_price')}
+                      type="number"
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">₱</InputAdornment>,
+                        inputProps: { min: 0, step: 0.01 },
+                      }}
+                      helperText="Per hour beyond included"
+                      sx={{ flex: 1, minWidth: 200 }}
+                    />
+                  </Box>
+                )}
               </Stack>
             </AccordionDetails>
           </Accordion>

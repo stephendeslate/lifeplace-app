@@ -42,15 +42,16 @@ import { SettingsTable } from '../../../components/common/settings/SettingsTable
 import { SettingsFormDialog } from '../../../components/common/settings/SettingsFormDialog';
 import type { ModernTableAction } from '../../../components/common/ModernTable';
 
-// Step type options for the form
+// Step type options for the form (matches backend STEP_TYPES)
 const STEP_TYPE_OPTIONS = [
   { value: 'introduction', label: 'Introduction' },
-  { value: 'contact_info', label: 'Contact Information' },
+  { value: 'venue_selection', label: 'Venue Selection' },
   { value: 'date_time', label: 'Date & Time Selection' },
+  { value: 'questionnaire', label: 'Questionnaire' },
   { value: 'package_selection', label: 'Package Selection' },
   { value: 'addon_selection', label: 'Add-on Selection' },
-  { value: 'questionnaire', label: 'Questionnaire' },
   { value: 'pricing_summary', label: 'Pricing Summary' },
+  { value: 'contact_info', label: 'Contact Information' },
   { value: 'payment_info', label: 'Payment Information' },
   { value: 'confirmation', label: 'Confirmation' },
 ];
@@ -77,6 +78,7 @@ const columns: SettingsTableColumn<BookingFlowStep>[] = [
     render: (value, row) => {
       const colors: Record<string, 'primary' | 'info' | 'success' | 'warning' | 'secondary' | 'error' | 'default'> = {
         introduction: 'primary',
+        venue_selection: 'info',
         date_time: 'info',
         questionnaire: 'success',
         package_selection: 'warning',

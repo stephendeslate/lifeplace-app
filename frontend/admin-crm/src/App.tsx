@@ -29,6 +29,7 @@ import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } 
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates, WorkflowTemplateDetails } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
+import { VIPProgram } from './pages/settings/vip/VIPProgram';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
 import { PaymentsOverview, PaymentProfile } from './pages/payments';
 // FunnelAnalytics removed - functionality now in AnalyticsDashboard
@@ -455,6 +456,14 @@ const AppRouter: React.FC = () => {
         element={
           <SettingsRoute>
             <Sales />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/commerce/vip-loyalty"
+        element={
+          <SettingsRoute>
+            <VIPProgram />
           </SettingsRoute>
         }
       />

@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Psychology,
   CurrencyExchange,
+  Star,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -130,6 +131,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/commerce/sales',
         icon: TrendingUp,
         description: 'Manage sales settings',
+      },
+      {
+        id: 'vip-loyalty',
+        label: 'VIP & Loyalty',
+        path: '/settings/commerce/vip-loyalty',
+        icon: Star,
+        description: 'Configure VIP program and rewards',
       },
     ],
   },

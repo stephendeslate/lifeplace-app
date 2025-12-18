@@ -24,6 +24,7 @@ from .serializers import (
     VenueBlockedDateSerializer,
     PublicVenueSerializer,
     PublicVenueOperatingRulesSerializer,
+    RentableVenueSerializer,
 )
 from .services import VenueService, VenueAvailabilityService
 
@@ -119,6 +120,19 @@ class VenueViewSet(viewsets.ModelViewSet):
         """Get all active and bookable venues"""
         venues = VenueService.get_active_venues()
         serializer = VenueListSerializer(venues, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def rentable(self, request):
+        """Get all venues that can be rented standalone (for custom package curation)"""
+        venues = Venue.objects.filter(
+            is_active=True,
+            is_bookable=True,
+            is_rentable_standalone=True,
+            standalone_base_price__isnull=False,
+        ).select_related('venue_operating_rules').order_by('sort_order', 'name')
+
+        serializer = RentableVenueSerializer(venues, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['get', 'put', 'patch'])
@@ -415,6 +429,19 @@ class PublicVenueViewSet(viewsets.ReadOnlyModelViewSet):
             is_active=True,
             is_bookable=True
         ).order_by('sort_order', 'name')
+
+    @action(detail=False, methods=['get'])
+    def rentable(self, request):
+        """Get all venues available for standalone rental (custom package curation)"""
+        venues = Venue.objects.filter(
+            is_active=True,
+            is_bookable=True,
+            is_rentable_standalone=True,
+            standalone_base_price__isnull=False,
+        ).select_related('venue_operating_rules').order_by('sort_order', 'name')
+
+        serializer = RentableVenueSerializer(venues, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def operating_rules(self, request, pk=None):

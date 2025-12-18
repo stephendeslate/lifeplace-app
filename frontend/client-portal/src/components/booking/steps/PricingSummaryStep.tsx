@@ -72,7 +72,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   const [validatingDiscount, setValidatingDiscount] = useState(false);
 
   // Get selected packages and addons from step data
-  const selectedPackages = state.stepData.package_selection?.selected_packages || [];
+  // Check package_selection first, then venue_selection (for custom packages), then booking_data
+  const selectedPackages = state.stepData.package_selection?.selected_packages ||
+    (state.stepData.venue_selection as { selected_packages?: typeof state.stepData.package_selection?.selected_packages })?.selected_packages ||
+    (state.currentSession?.booking_data?.selected_packages as typeof state.stepData.package_selection?.selected_packages) ||
+    [];
   const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
 
   // Use simplified unified pricing hook

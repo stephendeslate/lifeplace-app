@@ -49,7 +49,11 @@ class VenueSerializer(serializers.ModelSerializer):
             'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
             'is_active', 'is_bookable',
             'location_description', 'featured_image', 'gallery_images',
-            'sort_order', 'operating_rules', 'packages_count',
+            'sort_order',
+            # Standalone pricing
+            'is_rentable_standalone', 'standalone_base_price',
+            'standalone_included_hours', 'standalone_excess_hour_price',
+            'operating_rules', 'packages_count',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -93,7 +97,8 @@ class VenueListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'code', 'is_overnight', 'is_active', 'is_bookable',
             'minimum_capacity', 'maximum_capacity',
-            'featured_image', 'sort_order', 'has_operating_rules', 'packages_count'
+            'featured_image', 'sort_order', 'is_rentable_standalone',
+            'has_operating_rules', 'packages_count'
         ]
 
     def get_has_operating_rules(self, obj):
@@ -153,7 +158,11 @@ class VenueWithRulesSerializer(serializers.ModelSerializer):
             'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
             'is_active', 'is_bookable',
             'location_description', 'featured_image', 'gallery_images',
-            'sort_order', 'operating_rules',
+            'sort_order',
+            # Standalone pricing
+            'is_rentable_standalone', 'standalone_base_price',
+            'standalone_included_hours', 'standalone_excess_hour_price',
+            'operating_rules',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -346,4 +355,40 @@ class PublicPackageVenueSerializer(serializers.ModelSerializer):
             return PublicVenueOperatingRulesSerializer(
                 obj.venue.venue_operating_rules
             ).data
+        return None
+
+
+class RentableVenueSerializer(serializers.ModelSerializer):
+    """
+    Serializer for venues that can be rented standalone.
+    Used by the venue selection booking flow step.
+    """
+    operating_rules = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Venue
+        fields = [
+            'id', 'name', 'code', 'description',
+            'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
+            'location_description', 'featured_image', 'gallery_images',
+            # Standalone pricing
+            'standalone_base_price', 'standalone_included_hours',
+            'standalone_excess_hour_price',
+            'operating_rules'
+        ]
+
+    def get_operating_rules(self, obj):
+        """Get simplified operating rules for venue selection"""
+        if hasattr(obj, 'venue_operating_rules'):
+            rules = obj.venue_operating_rules
+            return {
+                'default_check_in_time': rules.default_check_in_time,
+                'default_checkout_time': rules.default_checkout_time,
+                'checkout_next_day': rules.checkout_next_day,
+                'minimum_program_hours': rules.minimum_program_hours,
+                'maximum_program_hours': rules.maximum_program_hours,
+                'default_program_hours': rules.default_program_hours,
+                'earliest_start_time': rules.earliest_start_time,
+                'latest_end_time': rules.latest_end_time,
+            }
         return None

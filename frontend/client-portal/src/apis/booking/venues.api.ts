@@ -7,6 +7,9 @@ import type {
   VenueTimeCalculation,
   CalculateTimesRequest,
   VenueAvailabilityResponse,
+  RentableVenue,
+  CreateFromVenuesRequest,
+  CreateFromVenuesResponse,
 } from '../../types/booking/venues.types';
 
 /**
@@ -19,6 +22,25 @@ export class VenuesApi {
    */
   static async getActiveVenues(): Promise<VenuePublic[]> {
     const response = await api.get<VenuePublic[]>('/venues/public/');
+    return response.data;
+  }
+
+  /**
+   * Get all venues available for standalone rental (custom package curation)
+   */
+  static async getRentableVenues(): Promise<RentableVenue[]> {
+    const response = await api.get<RentableVenue[]>('/venues/public/rentable/');
+    return response.data;
+  }
+
+  /**
+   * Create a custom package from selected venues
+   */
+  static async createFromVenues(data: CreateFromVenuesRequest): Promise<CreateFromVenuesResponse> {
+    const response = await api.post<CreateFromVenuesResponse>(
+      '/products/products/create_from_venues/',
+      data
+    );
     return response.data;
   }
 

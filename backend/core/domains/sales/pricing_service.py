@@ -39,16 +39,20 @@ class PricingBreakdown:
     line_items: List[PricingLineItem]
     subtotal: Decimal = Decimal('0.00')
     discount_amount: Decimal = Decimal('0.00')
+    vip_discount_amount: Decimal = Decimal('0.00')
     service_charge_amount: Decimal = Decimal('0.00')
     tax_amount: Decimal = Decimal('0.00')
     total_amount: Decimal = Decimal('0.00')
     applied_discount: Optional[Discount] = None
+    applied_vip_benefits: List[str] = None  # List of applied VIP benefit descriptions
 
     def __post_init__(self):
         """Calculate totals from line items"""
         self.subtotal = sum(item.line_total for item in self.line_items)
+        if self.applied_vip_benefits is None:
+            self.applied_vip_benefits = []
         # Tax, service charge, and discount calculations happen separately via apply_* methods
-        self.total_amount = self.subtotal - self.discount_amount + self.service_charge_amount + self.tax_amount
+        self.total_amount = self.subtotal - self.discount_amount - self.vip_discount_amount + self.service_charge_amount + self.tax_amount
 
 
 class PricingCalculationService:
@@ -58,14 +62,15 @@ class PricingCalculationService:
     """
     
     @staticmethod
-    def calculate_from_booking_data(booking_data: Dict[str, Any], event_duration_hours: Optional[int] = None) -> PricingBreakdown:
+    def calculate_from_booking_data(booking_data: Dict[str, Any], event_duration_hours: Optional[int] = None, client=None) -> PricingBreakdown:
         """
         Calculate pricing from booking session data.
-        
+
         Args:
             booking_data: Booking session data containing selected packages and addons
             event_duration_hours: Event duration in hours for excess calculations
-            
+            client: Optional client User object for VIP benefit application
+
         Returns:
             PricingBreakdown: Complete pricing breakdown
         """
@@ -120,8 +125,14 @@ class PricingCalculationService:
                 logger.info(f"Applied discount: {discount_code} - ₱{breakdown.discount_amount}")
             except Discount.DoesNotExist:
                 logger.warning(f"Discount code not found: {discount_code}")
-        
-        # Apply service charge (applied to subtotal - discount, before tax)
+
+        # Apply VIP benefits if client is provided
+        if client:
+            PricingCalculationService.apply_vip_benefits(breakdown, client, event_duration_hours)
+            if breakdown.vip_discount_amount > 0:
+                logger.info(f"Applied VIP benefits: ₱{breakdown.vip_discount_amount}")
+
+        # Apply service charge (applied to subtotal - discount - vip_discount, before tax)
         PricingCalculationService.apply_service_charge(breakdown)
         if breakdown.service_charge_amount > 0:
             logger.info(f"Applied service charge: ₱{breakdown.service_charge_amount}")
@@ -321,15 +332,56 @@ class PricingCalculationService:
             breakdown.discount_amount = min(discount.value, breakdown.subtotal)
 
         breakdown.applied_discount = discount
-        breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount + breakdown.service_charge_amount + breakdown.tax_amount
+        breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount - breakdown.vip_discount_amount + breakdown.service_charge_amount + breakdown.tax_amount
+
+    @staticmethod
+    def apply_vip_benefits(breakdown: PricingBreakdown, client, event_duration_hours: Optional[int] = None):
+        """
+        Apply VIP benefits to the pricing breakdown.
+
+        VIP benefits are applied after regular discounts.
+        """
+        try:
+            from core.domains.vip.services import VIPPricingIntegrationService
+
+            # Get the amount available for VIP discounts (after regular discount)
+            available_for_vip = breakdown.subtotal - breakdown.discount_amount
+
+            # Get automatic benefits and apply them
+            vip_discount, applied_benefits = VIPPricingIntegrationService.calculate_vip_discount(
+                client, available_for_vip
+            )
+
+            # Check for service charge waiver
+            if VIPPricingIntegrationService.should_waive_fee(client, 'SERVICE_CHARGE'):
+                applied_benefits.append("Service charge waived")
+
+            breakdown.vip_discount_amount = min(vip_discount, available_for_vip)
+            breakdown.applied_vip_benefits = applied_benefits
+
+            # Recalculate total
+            breakdown.total_amount = (
+                breakdown.subtotal
+                - breakdown.discount_amount
+                - breakdown.vip_discount_amount
+                + breakdown.service_charge_amount
+                + breakdown.tax_amount
+            )
+
+        except ImportError:
+            # VIP module not available
+            logger.debug("VIP module not available, skipping VIP benefits")
+        except Exception as e:
+            logger.warning(f"Error applying VIP benefits: {e}")
 
     @staticmethod
     def apply_service_charge(breakdown: PricingBreakdown):
         """
         Apply service charge to the pricing breakdown.
 
-        Service charge is calculated as a percentage of (subtotal - discount).
+        Service charge is calculated as a percentage of (subtotal - discount - vip_discount).
         Configuration comes from PaymentSettings singleton.
+        May be waived for VIP clients.
         """
         from core.domains.payments.models import PaymentSettings
 
@@ -340,13 +392,25 @@ class PricingCalculationService:
                 breakdown.service_charge_amount = Decimal('0.00')
                 return
 
-            # Calculate service charge on (subtotal - discount)
-            chargeable_amount = breakdown.subtotal - breakdown.discount_amount
+            # Check if service charge is waived via VIP
+            if 'Service charge waived' in (breakdown.applied_vip_benefits or []):
+                breakdown.service_charge_amount = Decimal('0.00')
+                logger.info("Service charge waived for VIP client")
+                return
+
+            # Calculate service charge on (subtotal - discount - vip_discount)
+            chargeable_amount = breakdown.subtotal - breakdown.discount_amount - breakdown.vip_discount_amount
             service_charge_rate = settings.service_charge_percentage / Decimal('100')
             breakdown.service_charge_amount = (chargeable_amount * service_charge_rate).quantize(Decimal('0.01'))
 
             # Recalculate total
-            breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount + breakdown.service_charge_amount + breakdown.tax_amount
+            breakdown.total_amount = (
+                breakdown.subtotal
+                - breakdown.discount_amount
+                - breakdown.vip_discount_amount
+                + breakdown.service_charge_amount
+                + breakdown.tax_amount
+            )
 
             logger.info(f"Service charge applied: {settings.service_charge_percentage}% = ₱{breakdown.service_charge_amount}")
 
@@ -357,10 +421,16 @@ class PricingCalculationService:
     @staticmethod
     def apply_tax(breakdown: PricingBreakdown, tax_rate: Decimal):
         """Apply tax to the pricing breakdown"""
-        taxable_amount = breakdown.subtotal - breakdown.discount_amount
+        taxable_amount = breakdown.subtotal - breakdown.discount_amount - breakdown.vip_discount_amount
         breakdown.tax_amount = (taxable_amount * (tax_rate / 100)).quantize(Decimal('0.01'))
         # Recalculate total after applying tax (includes service charge)
-        breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount + breakdown.service_charge_amount + breakdown.tax_amount
+        breakdown.total_amount = (
+            breakdown.subtotal
+            - breakdown.discount_amount
+            - breakdown.vip_discount_amount
+            + breakdown.service_charge_amount
+            + breakdown.tax_amount
+        )
     
     @staticmethod
     def calculate_pricing_breakdown(pricing_line_items: List[PricingLineItem]) -> PricingBreakdown:

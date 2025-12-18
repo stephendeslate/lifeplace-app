@@ -33,6 +33,7 @@ import type {
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import {
   IntroductionStepConfig,
+  VenueSelectionStepConfig,
   DateTimeStepConfig,
   QuestionnaireStepConfig,
   PackageSelectionStepConfig,
@@ -144,7 +145,15 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             onConfigurationChange={() => refetchConfig()}
           />
         );
-      
+
+      case 'venue_selection':
+        return (
+          <VenueSelectionStepConfig
+            step={step}
+            onConfigurationChange={() => refetchConfig()}
+          />
+        );
+
       case 'date_time':
         return (
           <DateTimeStepConfig
