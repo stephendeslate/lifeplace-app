@@ -13,10 +13,16 @@ class DashboardService:
         """
         Get main dashboard KPIs.
         Returns aggregated metrics for the specified date range with trend comparison.
+
+        Date field logic:
+        - Bookings (total, confirmed, leads, cancelled) → created_at (when booking was made)
+        - Completed events → end_date (when event actually finished)
+        - Revenue → from Payment records for completed payments
         """
         from core.domains.events.models import Event
         from core.domains.bookingflow.models import BookingSession
         from core.domains.users.models import User
+        from core.domains.payments.models import Payment
 
         if not end_date:
             end_date = timezone.now()
@@ -28,23 +34,53 @@ class DashboardService:
         prev_start = start_date - timedelta(days=period_length)
         prev_end = start_date
 
-        # Current period events
-        current_events = Event.objects.filter(created_at__range=(start_date, end_date))
-        prev_events = Event.objects.filter(created_at__range=(prev_start, prev_end))
+        # Bookings use created_at (when the booking was made)
+        current_bookings = Event.objects.filter(created_at__range=(start_date, end_date))
+        prev_bookings = Event.objects.filter(created_at__range=(prev_start, prev_end))
 
-        # Revenue calculations
-        current_revenue = current_events.filter(
-            status__in=['CONFIRMED', 'COMPLETED']
-        ).aggregate(total=Sum('total_price'))['total'] or Decimal('0')
+        # Completed events use end_date (when the event actually finished)
+        current_completed = Event.objects.filter(
+            status='COMPLETED',
+            end_date__range=(start_date, end_date)
+        )
+        prev_completed = Event.objects.filter(
+            status='COMPLETED',
+            end_date__range=(prev_start, prev_end)
+        )
 
-        prev_revenue = prev_events.filter(
-            status__in=['CONFIRMED', 'COMPLETED']
-        ).aggregate(total=Sum('total_price'))['total'] or Decimal('0')
+        # Event Revenue - payments from COMPLETED events only (operational success)
+        current_event_revenue = Payment.objects.filter(
+            event__status='COMPLETED',
+            event__end_date__range=(start_date, end_date),
+            status='COMPLETED'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
-        # Booking counts by status
-        confirmed_count = current_events.filter(status='CONFIRMED').count()
-        completed_count = current_events.filter(status='COMPLETED').count()
-        cancelled_count = current_events.filter(status='CANCELLED').count()
+        prev_event_revenue = Payment.objects.filter(
+            event__status='COMPLETED',
+            event__end_date__range=(prev_start, prev_end),
+            status='COMPLETED'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+        # Total Revenue - ALL completed payments including cancelled event deposits/fees (cash flow)
+        current_total_revenue = Payment.objects.filter(
+            event__end_date__range=(start_date, end_date),
+            status='COMPLETED'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+        prev_total_revenue = Payment.objects.filter(
+            event__end_date__range=(prev_start, prev_end),
+            status='COMPLETED'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+        # Booking counts by status (using created_at for when bookings were made)
+        total_bookings = current_bookings.count()
+        confirmed_count = current_bookings.filter(status='CONFIRMED').count()
+        cancelled_count = current_bookings.filter(status='CANCELLED').count()
+        leads_count = current_bookings.filter(status='LEAD').count()
+
+        # Completed count uses end_date
+        completed_count = current_completed.count()
+
         total_successful = confirmed_count + completed_count
 
         # Booking sessions for conversion tracking
@@ -58,15 +94,19 @@ class DashboardService:
             date_joined__range=(start_date, end_date)
         ).count()
 
-        # Calculate trends
-        revenue_trend = 0
-        if prev_revenue > 0:
-            revenue_trend = float((current_revenue - prev_revenue) / prev_revenue * 100)
+        # Calculate trends for both revenue types
+        event_revenue_trend = 0
+        if prev_event_revenue > 0:
+            event_revenue_trend = float((current_event_revenue - prev_event_revenue) / prev_event_revenue * 100)
 
-        # Average booking value
+        total_revenue_trend = 0
+        if prev_total_revenue > 0:
+            total_revenue_trend = float((current_total_revenue - prev_total_revenue) / prev_total_revenue * 100)
+
+        # Average booking value (based on event revenue for operational metrics)
         avg_booking_value = 0
         if total_successful > 0:
-            avg_booking_value = float(current_revenue / total_successful)
+            avg_booking_value = float(current_event_revenue / total_successful)
 
         # Conversion rate
         conversion_rate = 0
@@ -74,12 +114,14 @@ class DashboardService:
             conversion_rate = round(completed_sessions / total_sessions * 100, 1)
 
         return {
-            'total_bookings': current_events.count(),
+            'total_bookings': total_bookings,
             'confirmed_bookings': confirmed_count,
             'completed_bookings': completed_count,
             'cancelled_bookings': cancelled_count,
-            'total_revenue': float(current_revenue),
-            'revenue_trend': round(revenue_trend, 1),
+            'event_revenue': float(current_event_revenue),
+            'total_revenue': float(current_total_revenue),
+            'event_revenue_trend': round(event_revenue_trend, 1),
+            'total_revenue_trend': round(total_revenue_trend, 1),
             'avg_booking_value': round(avg_booking_value, 2),
             'new_clients': new_clients,
             'booking_sessions': total_sessions,

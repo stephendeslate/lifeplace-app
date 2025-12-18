@@ -3,16 +3,24 @@ from django.db.models import Count, Sum, Avg, Q
 
 
 class EventsAnalyticsService:
-    """Service for event and guest analytics - queries existing models directly."""
+    """
+    Service for event and guest analytics - queries existing models directly.
+
+    Date field logic:
+    - Bookings → created_at (when booking was made)
+    - Completed events → end_date (when event actually finished)
+    - Revenue → from Payment records for completed events
+    """
 
     @staticmethod
     def get_event_attendance(start_date, end_date):
-        """Total guests and breakdown by event type."""
+        """Total guests and breakdown by event type for completed events."""
         from core.domains.events.models import EventProductOption
 
+        # For attendance, use completed events with end_date
         results = EventProductOption.objects.filter(
-            event__start_date__range=(start_date, end_date),
-            event__status__in=['CONFIRMED', 'COMPLETED']
+            event__status='COMPLETED',
+            event__end_date__range=(start_date, end_date)
         ).values(
             'product_option__name',
             'product_option__type'
@@ -33,9 +41,10 @@ class EventsAnalyticsService:
 
     @staticmethod
     def get_package_performance(start_date, end_date, limit=10):
-        """Which packages are most popular."""
+        """Which packages are most popular - based on bookings made."""
         from core.domains.events.models import EventProductOption
 
+        # For package popularity, use created_at (when bookings were made)
         results = EventProductOption.objects.filter(
             event__created_at__range=(start_date, end_date),
             product_option__type='PACKAGE'
@@ -65,10 +74,12 @@ class EventsAnalyticsService:
 
     @staticmethod
     def get_feedback_scores(start_date, end_date):
-        """Average satisfaction scores."""
+        """Average satisfaction scores for completed events."""
         from core.domains.events.models import EventFeedback
 
+        # Feedback is for completed events, use end_date
         results = EventFeedback.objects.filter(
+            event__status='COMPLETED',
             event__end_date__range=(start_date, end_date)
         ).aggregate(
             total_feedback=Count('id'),
@@ -97,27 +108,52 @@ class EventsAnalyticsService:
     def get_event_type_breakdown(start_date, end_date):
         """Breakdown by event type."""
         from core.domains.events.models import Event
+        from core.domains.payments.models import Payment
 
-        results = Event.objects.filter(
+        # For bookings breakdown, use created_at
+        booking_results = Event.objects.filter(
             created_at__range=(start_date, end_date)
         ).values(
             'event_type__name'
         ).annotate(
             count=Count('id'),
             confirmed=Count('id', filter=Q(status='CONFIRMED')),
-            completed=Count('id', filter=Q(status='COMPLETED')),
-            revenue=Sum('total_price', filter=Q(status__in=['CONFIRMED', 'COMPLETED']))
+            cancelled=Count('id', filter=Q(status='CANCELLED')),
+            leads=Count('id', filter=Q(status='LEAD')),
         ).order_by('-count')
+
+        # For completed, use end_date
+        completed_by_type = {}
+        completed_results = Event.objects.filter(
+            status='COMPLETED',
+            end_date__range=(start_date, end_date)
+        ).values('event_type__name').annotate(
+            completed=Count('id')
+        )
+        for cr in completed_results:
+            completed_by_type[cr['event_type__name']] = cr['completed']
+
+        # Get actual revenue by event type from payments (completed events by end_date)
+        revenue_by_type = {}
+        payment_results = Payment.objects.filter(
+            event__status='COMPLETED',
+            event__end_date__range=(start_date, end_date),
+            status='COMPLETED'
+        ).values('event__event_type__name').annotate(
+            revenue=Sum('amount')
+        )
+        for pr in payment_results:
+            revenue_by_type[pr['event__event_type__name']] = float(pr['revenue'] or 0)
 
         return [
             {
                 'event_type': r['event_type__name'] or 'Unspecified',
                 'count': r['count'],
                 'confirmed': r['confirmed'],
-                'completed': r['completed'],
-                'revenue': float(r['revenue'] or 0),
+                'completed': completed_by_type.get(r['event_type__name'], 0),
+                'revenue': revenue_by_type.get(r['event_type__name'], 0),
             }
-            for r in results
+            for r in booking_results
         ]
 
     @staticmethod
