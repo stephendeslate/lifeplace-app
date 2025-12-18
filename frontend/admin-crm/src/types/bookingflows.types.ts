@@ -148,6 +148,10 @@ export interface VenueSelectionStepConfiguration {
   bundle_discount_percent: string;
   title: string;
   description: string;
+  // Package recommendation settings
+  show_package_recommendations: boolean;
+  show_view_packages_option: boolean;
+  view_packages_button_text: string;
   available_venues_details?: Array<{
     id: number;
     name: string;

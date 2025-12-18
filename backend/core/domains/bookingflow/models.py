@@ -339,6 +339,22 @@ class VenueSelectionStepConfiguration(BaseModel):
         help_text="Description text shown at the top of the step"
     )
 
+    # Package recommendation settings
+    show_package_recommendations = models.BooleanField(
+        default=True,
+        help_text="Show matching pre-made packages when venues are selected"
+    )
+    show_view_packages_option = models.BooleanField(
+        default=True,
+        help_text="Show 'View our packages' link for users who want to browse packages"
+    )
+    view_packages_button_text = models.CharField(
+        max_length=255,
+        default="Not sure? View our packages instead",
+        blank=True,
+        help_text="Text for the 'view packages' button"
+    )
+
     def __str__(self):
         return f"Venue Selection config for {self.step}"
 

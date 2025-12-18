@@ -10,6 +10,8 @@ import type {
   RentableVenue,
   CreateFromVenuesRequest,
   CreateFromVenuesResponse,
+  FindMatchingPackagesRequest,
+  FindMatchingPackagesResponse,
 } from '../../types/booking/venues.types';
 
 /**
@@ -39,6 +41,18 @@ export class VenuesApi {
   static async createFromVenues(data: CreateFromVenuesRequest): Promise<CreateFromVenuesResponse> {
     const response = await api.post<CreateFromVenuesResponse>(
       '/products/products/create_from_venues/',
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Find pre-made packages that match or partially match the selected venues.
+   * Returns packages with price comparison data for recommendations.
+   */
+  static async findMatchingPackages(data: FindMatchingPackagesRequest): Promise<FindMatchingPackagesResponse> {
+    const response = await api.post<FindMatchingPackagesResponse>(
+      '/products/products/find_matching_packages/',
       data
     );
     return response.data;

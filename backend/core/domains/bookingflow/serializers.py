@@ -55,6 +55,8 @@ class VenueSelectionStepConfigurationSerializer(serializers.ModelSerializer):
             'id', 'step', 'min_venues', 'max_venues',
             'show_pricing', 'show_included_hours', 'show_bundle_discount',
             'bundle_discount_percent', 'title', 'description',
+            'show_package_recommendations', 'show_view_packages_option',
+            'view_packages_button_text',
             'available_venues_details',
             'created_at', 'updated_at'
         ]

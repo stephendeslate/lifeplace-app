@@ -20,6 +20,7 @@ from ..models import (
     PaymentInfoStepConfiguration,
     PaymentTermsConfiguration,
     IntroductionStepConfiguration,
+    VenueSelectionStepConfiguration,
     DateTimeStepConfiguration,
     ConfirmationStepConfiguration,
 )
@@ -47,6 +48,7 @@ class BookingFlowStepConfigurationService:
         
         config_map = {
             'introduction': lambda s: getattr(s, 'introduction_config', None),
+            'venue_selection': lambda s: getattr(s, 'venue_selection_config', None),
             'date_time': lambda s: getattr(s, 'datetime_config', None),
             'questionnaire': lambda s: getattr(s, 'questionnaire_config', None),
             'package_selection': lambda s: getattr(s, 'package_config', None),
@@ -89,6 +91,7 @@ class BookingFlowStepConfigurationService:
         with transaction.atomic():
             config_updaters = {
                 'introduction': BookingFlowStepConfigurationService._update_introduction_config,
+                'venue_selection': BookingFlowStepConfigurationService._update_venue_selection_config,
                 'date_time': BookingFlowStepConfigurationService._update_datetime_config,
                 'questionnaire': BookingFlowStepConfigurationService._update_questionnaire_config,
                 'package_selection': BookingFlowStepConfigurationService._update_package_config,
@@ -239,6 +242,11 @@ class BookingFlowStepConfigurationService:
                 title=f"Welcome to {s.booking_flow.event_type.name if s.booking_flow.event_type else 'Event'} Booking",
                 content="We're excited to help you plan your perfect event!"
             ),
+            'venue_selection': lambda s: VenueSelectionStepConfiguration.objects.create(
+                step=s,
+                title="Select Your Spaces",
+                description="Choose which spaces to include in your booking."
+            ),
             'date_time': lambda s: DateTimeStepConfiguration.objects.create(
                 step=s,
                 enable_real_time_availability=True,
@@ -276,7 +284,40 @@ class BookingFlowStepConfigurationService:
                 setattr(config, key, value)
         config.save()
         return config
-    
+
+    @staticmethod
+    def _update_venue_selection_config(step, config_data):
+        """Update venue selection step configuration"""
+        from core.domains.venues.models import Venue
+
+        config, created = VenueSelectionStepConfiguration.objects.get_or_create(
+            step=step,
+            defaults={
+                'title': "Select Your Spaces",
+                'description': "Choose which spaces to include in your booking."
+            }
+        )
+
+        # Handle many-to-many field separately
+        m2m_fields = ['available_venues']
+
+        for key, value in config_data.items():
+            if hasattr(config, key):
+                if key in m2m_fields:
+                    # Validate the IDs exist and are rentable venues
+                    if key == 'available_venues':
+                        valid_ids = Venue.objects.filter(
+                            id__in=value,
+                            is_active=True,
+                            is_rentable_standalone=True
+                        ).values_list('id', flat=True)
+                        getattr(config, key).set(valid_ids)
+                else:
+                    setattr(config, key, value)
+
+        config.save()
+        return config
+
     @staticmethod
     def _update_datetime_config(step, config_data):
         """Update datetime step configuration with enhanced availability features"""

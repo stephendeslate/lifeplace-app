@@ -15,12 +15,17 @@ import {
   Paper,
   Divider,
   Skeleton,
+  Collapse,
 } from '@mui/material';
 import {
   Check,
   AccessTime,
   People,
   LocationOn,
+  LocalOffer,
+  ArrowForward,
+  Star,
+  Inventory,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { VenuesApi } from '../../../apis/booking/venues.api';
@@ -29,6 +34,8 @@ import { useCurrencySettings } from '../../../hooks/useCurrency';
 import type {
   RentableVenue,
   VenueSelectionStepConfiguration,
+  MatchedPackage,
+  FindMatchingPackagesResponse,
 } from '../../../types/booking/venues.types';
 import type { VenueSelectionStepData } from '../../../types/booking/stepData.types';
 import type { SelectedPackage } from '../../../types/booking';
@@ -36,10 +43,11 @@ import type { SelectedPackage } from '../../../types/booking';
 interface VenueSelectionStepProps {
   stepData?: VenueSelectionStepData;
   config: VenueSelectionStepConfiguration | null;
-  onDataChange: (data: VenueSelectionStepData & { selected_packages?: SelectedPackage[] }) => void;
+  onDataChange: (data: VenueSelectionStepData & { selected_packages?: SelectedPackage[]; navigate_to_packages?: boolean }) => void;
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
   sessionId?: string;
+  onNavigateToPackages?: () => void;
 }
 
 export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
@@ -49,6 +57,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   validationErrors,
   isValidating,
   sessionId,
+  onNavigateToPackages,
 }) => {
   const { formatAmount } = useCurrencySettings();
   const [selectedVenueIds, setSelectedVenueIds] = useState<number[]>(
@@ -56,6 +65,10 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   );
   const [isCreatingPackage, setIsCreatingPackage] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [matchingPackages, setMatchingPackages] = useState<FindMatchingPackagesResponse | null>(null);
+  const [isLoadingMatches, setIsLoadingMatches] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [selectedPreMadePackage, setSelectedPreMadePackage] = useState<MatchedPackage | null>(null);
 
   // Configuration values
   const minVenues = config?.min_venues || 1;
@@ -66,6 +79,9 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   const bundleDiscountPercent = parseFloat(config?.bundle_discount_percent || '10');
   const title = config?.title || 'Select Your Spaces';
   const description = config?.description || 'Choose which spaces to include in your booking.';
+  const showPackageRecommendations = config?.show_package_recommendations ?? true;
+  const showViewPackagesOption = config?.show_view_packages_option ?? true;
+  const viewPackagesButtonText = config?.view_packages_button_text || 'Not sure? View our packages instead';
 
   // Fetch rentable venues
   const { data: venues, isLoading, error: fetchError } = useQuery({
@@ -82,6 +98,41 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
       setSelectedVenueIds(stepData.selected_venue_ids);
     }
   }, [stepData.selected_venue_ids]);
+
+  // Fetch matching packages when venues change
+  useEffect(() => {
+    const fetchMatchingPackages = async () => {
+      if (selectedVenueIds.length === 0 || !showPackageRecommendations) {
+        setMatchingPackages(null);
+        setShowRecommendations(false);
+        setSelectedPreMadePackage(null);
+        return;
+      }
+
+      setIsLoadingMatches(true);
+      try {
+        const result = await VenuesApi.findMatchingPackages({
+          venue_ids: selectedVenueIds,
+          bundle_discount_percent: config?.bundle_discount_percent,
+        });
+        setMatchingPackages(result);
+
+        // Auto-show recommendations if we have matches
+        if (result.exact_matches.length > 0 || result.partial_matches.length > 0) {
+          setShowRecommendations(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch matching packages:', error);
+        setMatchingPackages(null);
+      } finally {
+        setIsLoadingMatches(false);
+      }
+    };
+
+    // Debounce the API call
+    const timeoutId = setTimeout(fetchMatchingPackages, 300);
+    return () => clearTimeout(timeoutId);
+  }, [selectedVenueIds, showPackageRecommendations, config?.bundle_discount_percent]);
 
   // Get selected venue objects
   const selectedVenueObjects = useMemo(() => {
@@ -134,6 +185,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
 
     setSelectedVenueIds(newSelectedIds);
     setCreateError(null);
+    setSelectedPreMadePackage(null); // Reset pre-made package selection when venues change
 
     // Auto-select first venue as primary (backend requirement, not shown to user)
     const autoPrimaryId = newSelectedIds.length > 0 ? newSelectedIds[0] : null;
@@ -143,6 +195,47 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
       primary_venue_id: autoPrimaryId,
     });
   }, [selectedVenueIds, maxVenues, isVenueSelected, onDataChange]);
+
+  // Handle selecting a pre-made package
+  const handleSelectPreMadePackage = useCallback((pkg: MatchedPackage) => {
+    setSelectedPreMadePackage(pkg);
+    setCreateError(null);
+  }, []);
+
+  // Handle using the selected pre-made package
+  const handleUsePreMadePackage = useCallback(() => {
+    if (!selectedPreMadePackage) return;
+
+    const selectedPackage: SelectedPackage = {
+      product_id: selectedPreMadePackage.id,
+      name: selectedPreMadePackage.name,
+      price: selectedPreMadePackage.base_price,
+      quantity: 1,
+      included_hours: selectedPreMadePackage.included_hours,
+      excess_hour_price: selectedPreMadePackage.excess_hour_price || undefined,
+    };
+
+    onDataChange({
+      selected_venue_ids: selectedVenueIds,
+      primary_venue_id: selectedVenueIds[0] || null,
+      matched_package_id: selectedPreMadePackage.id,
+      selected_packages: [selectedPackage],
+    });
+  }, [selectedPreMadePackage, selectedVenueIds, onDataChange]);
+
+  // Handle "View Packages" navigation
+  const handleViewPackages = useCallback(() => {
+    if (onNavigateToPackages) {
+      onNavigateToPackages();
+    } else {
+      // Signal to parent to navigate to package selection
+      onDataChange({
+        selected_venue_ids: selectedVenueIds,
+        primary_venue_id: selectedVenueIds[0] || null,
+        navigate_to_packages: true,
+      });
+    }
+  }, [onNavigateToPackages, onDataChange, selectedVenueIds]);
 
   // Create custom package from selected venues
   const handleCreatePackage = useCallback(async () => {
@@ -470,33 +563,230 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
         </Paper>
       )}
 
-      {/* Confirm Selection Button - Creates the custom package */}
-      {selectedVenueIds.length > 0 && !stepData.custom_package_id && (
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          size="large"
-          onClick={handleCreatePackage}
-          disabled={!validationStatus.isValid || isCreatingPackage || !sessionId}
-          sx={{ mb: 2 }}
-        >
-          {isCreatingPackage ? (
-            <>
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-              Confirming Selection...
-            </>
-          ) : (
-            'Confirm Selection'
-          )}
-        </Button>
+      {/* Package Recommendations */}
+      {showPackageRecommendations && selectedVenueIds.length > 0 && (
+        <Collapse in={showRecommendations}>
+          <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <LocalOffer color="primary" />
+              <Typography variant="subtitle1">
+                Package Recommendations
+              </Typography>
+              {isLoadingMatches && <CircularProgress size={16} />}
+            </Box>
+
+            {/* Exact Matches */}
+            {matchingPackages?.exact_matches && matchingPackages.exact_matches.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="success.main" sx={{ mb: 1, fontWeight: 'medium' }}>
+                  <Star sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
+                  Perfect Match! These packages include your exact selection:
+                </Typography>
+                {matchingPackages.exact_matches.map((pkg) => (
+                  <Card
+                    key={pkg.id}
+                    variant={selectedPreMadePackage?.id === pkg.id ? 'elevation' : 'outlined'}
+                    sx={{
+                      mb: 1,
+                      cursor: 'pointer',
+                      border: selectedPreMadePackage?.id === pkg.id ? 2 : 1,
+                      borderColor: selectedPreMadePackage?.id === pkg.id ? 'success.main' : 'divider',
+                      '&:hover': { borderColor: 'success.light' },
+                    }}
+                    onClick={() => handleSelectPreMadePackage(pkg)}
+                  >
+                    <CardContent sx={{ py: 1.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Box>
+                          <Typography variant="subtitle2">{pkg.name}</Typography>
+                          {pkg.description && (
+                            <Typography variant="caption" color="text.secondary">
+                              {pkg.description}
+                            </Typography>
+                          )}
+                          {pkg.bonus_venues.length > 0 && (
+                            <Typography variant="caption" color="success.main" display="block">
+                              + Bonus: {pkg.bonus_venues.map(v => v.name).join(', ')}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="h6" color="primary">
+                            {formatPrice(pkg.base_price)}
+                          </Typography>
+                          {pkg.is_better_value && parseFloat(pkg.savings_vs_custom) > 0 && (
+                            <Chip
+                              label={`Save ${formatPrice(pkg.savings_vs_custom)}`}
+                              color="success"
+                              size="small"
+                            />
+                          )}
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            )}
+
+            {/* Partial Matches - Only show top 3 */}
+            {matchingPackages?.partial_matches && matchingPackages.partial_matches.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="info.main" sx={{ mb: 1 }}>
+                  <Inventory sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
+                  You might also like these packages:
+                </Typography>
+                {matchingPackages.partial_matches.slice(0, 3).map((pkg) => (
+                  <Card
+                    key={pkg.id}
+                    variant={selectedPreMadePackage?.id === pkg.id ? 'elevation' : 'outlined'}
+                    sx={{
+                      mb: 1,
+                      cursor: 'pointer',
+                      border: selectedPreMadePackage?.id === pkg.id ? 2 : 1,
+                      borderColor: selectedPreMadePackage?.id === pkg.id ? 'primary.main' : 'divider',
+                      '&:hover': { borderColor: 'primary.light' },
+                    }}
+                    onClick={() => handleSelectPreMadePackage(pkg)}
+                  >
+                    <CardContent sx={{ py: 1.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Box>
+                          <Typography variant="subtitle2">{pkg.name}</Typography>
+                          {pkg.additional_venues.length > 0 && (
+                            <Typography variant="caption" color="text.secondary">
+                              Includes: {pkg.venues.map(v => v.name).join(', ')}
+                            </Typography>
+                          )}
+                          {pkg.bonus_venues.length > 0 && (
+                            <Typography variant="caption" color="success.main" display="block">
+                              + Bonus: {pkg.bonus_venues.map(v => v.name).join(', ')}
+                            </Typography>
+                          )}
+                          {pkg.match_type === 'superset' && pkg.additional_venues.length > 0 && (
+                            <Typography variant="caption" color="info.main" display="block">
+                              Extra venues included: {pkg.additional_venues.map(v => v.name).join(', ')}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="h6" color="primary">
+                            {formatPrice(pkg.base_price)}
+                          </Typography>
+                          {pkg.is_better_value && parseFloat(pkg.savings_vs_custom) > 0 && (
+                            <Chip
+                              label={`Save ${formatPrice(pkg.savings_vs_custom)}`}
+                              color="success"
+                              size="small"
+                            />
+                          )}
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            )}
+
+            {/* Custom Package Option */}
+            <Card
+              variant={selectedPreMadePackage === null ? 'elevation' : 'outlined'}
+              sx={{
+                cursor: 'pointer',
+                border: selectedPreMadePackage === null ? 2 : 1,
+                borderColor: selectedPreMadePackage === null ? 'secondary.main' : 'divider',
+                bgcolor: selectedPreMadePackage === null ? 'action.selected' : 'background.paper',
+              }}
+              onClick={() => setSelectedPreMadePackage(null)}
+            >
+              <CardContent sx={{ py: 1.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="subtitle2">Create Custom Package</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {selectedVenueObjects.map(v => v.name).join(' + ')}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography variant="h6" color="secondary">
+                      {formatPrice(pricingSummary.total)}
+                    </Typography>
+                    {pricingSummary.hasDiscount && (
+                      <Typography variant="caption" color="success.main">
+                        {pricingSummary.discountPercent}% multi-space discount applied
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Paper>
+        </Collapse>
       )}
 
-      {/* Package Created Confirmation */}
-      {stepData.custom_package_id && (
+      {/* Confirm Selection Buttons */}
+      {selectedVenueIds.length > 0 && !stepData.custom_package_id && !stepData.matched_package_id && (
+        <Box sx={{ mb: 2 }}>
+          {selectedPreMadePackage ? (
+            <Button
+              variant="contained"
+              color="success"
+              fullWidth
+              size="large"
+              onClick={handleUsePreMadePackage}
+              disabled={!validationStatus.isValid}
+              startIcon={<Check />}
+            >
+              Use {selectedPreMadePackage.name}
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              size="large"
+              onClick={handleCreatePackage}
+              disabled={!validationStatus.isValid || isCreatingPackage || !sessionId}
+            >
+              {isCreatingPackage ? (
+                <>
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                  Creating Custom Package...
+                </>
+              ) : (
+                'Confirm Custom Package'
+              )}
+            </Button>
+          )}
+        </Box>
+      )}
+
+      {/* Package Created/Selected Confirmation */}
+      {(stepData.custom_package_id || stepData.matched_package_id) && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          Your spaces have been selected. Click Continue to proceed.
+          {stepData.matched_package_id
+            ? 'Package selected! Click Continue to proceed.'
+            : 'Your custom package has been created. Click Continue to proceed.'}
         </Alert>
+      )}
+
+      {/* View Packages Option */}
+      {showViewPackagesOption && selectedVenueIds.length === 0 && (
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <Divider sx={{ my: 2 }}>
+            <Typography variant="caption" color="text.secondary">
+              OR
+            </Typography>
+          </Divider>
+          <Button
+            variant="text"
+            color="primary"
+            onClick={handleViewPackages}
+            endIcon={<ArrowForward />}
+          >
+            {viewPackagesButtonText}
+          </Button>
+        </Box>
       )}
 
       {/* Validation indicator */}
