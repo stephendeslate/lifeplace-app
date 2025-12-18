@@ -17,19 +17,8 @@ import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
 
-// Analytics imports
-import { 
-  AnalyticsOverview,
-  MetricsManagement,
-  DashboardsManagement,
-  DashboardView,
-  ReportsManagement,
-  ReportView,
-  FunnelsManagement,
-  AlertsManagement,
-  EventsExplorer,
-  AnalyticsSettings,
-} from './pages/analytics';
+// Analytics imports - New simplified dashboard
+import { AnalyticsDashboard } from './pages/analytics';
 
 // Enhanced Settings imports
 import { EnhancedSettingsLayout } from './pages/settings/EnhancedSettingsLayout';
@@ -42,7 +31,7 @@ import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
 import { PaymentsOverview, PaymentProfile } from './pages/payments';
-import { FunnelAnalytics } from './pages/analytics/funnels/FunnelAnalytics';
+// FunnelAnalytics removed - functionality now in AnalyticsDashboard
 
 // Messaging imports
 import { MessagesOverview } from './pages/messages/MessagesOverview';
@@ -181,95 +170,17 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Analytics Routes */}
+      {/* Analytics Routes - Simplified single dashboard */}
       <Route
         path="/analytics"
         element={
           <ProtectedRoute>
-            <AnalyticsOverview />
+            <AnalyticsDashboard />
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/analytics/metrics"
-        element={
-          <ProtectedRoute>
-            <MetricsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/dashboards"
-        element={
-          <ProtectedRoute>
-            <DashboardsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/dashboards/:id"
-        element={
-          <ProtectedRoute>
-            <DashboardView />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/reports"
-        element={
-          <ProtectedRoute>
-            <ReportsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/reports/:id"
-        element={
-          <ProtectedRoute>
-            <ReportView />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/funnels"
-        element={
-          <ProtectedRoute>
-            <FunnelsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/funnels/:id/analytics"
-        element={
-          <ProtectedRoute>
-            <FunnelAnalytics />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/alerts"
-        element={
-          <ProtectedRoute>
-            <AlertsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/events"
-        element={
-          <ProtectedRoute>
-            <EventsExplorer />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/settings"
-        element={
-          <ProtectedRoute>
-            <AnalyticsSettings />
-          </ProtectedRoute>
-        }
-      />
+      {/* Legacy routes redirect to main analytics */}
+      <Route path="/analytics/*" element={<Navigate to="/analytics" replace />} />
 
       {/* Event Management Routes */}
       <Route

@@ -80,6 +80,13 @@ class Event(BaseModel):
         ('payment', 'Payment Completion'),
         ('quote', 'Quote Request'),
     ]
+    LEAD_SOURCE_CHOICES = [
+        ('FACEBOOK', 'Facebook'),
+        ('REFERRAL', 'Referral'),
+        ('WALKIN', 'Walk-in'),
+        ('CLIENT_PORTAL', 'Client Portal'),
+        ('OTHER', 'Other'),
+    ]
 
     client = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='events')
     event_type = models.ForeignKey(EventType, on_delete=models.PROTECT, null=True, blank=True)
@@ -96,7 +103,7 @@ class Event(BaseModel):
     end_date = models.DateTimeField(null=True, blank=True)
     workflow_template = models.ForeignKey('workflows.WorkflowTemplate', on_delete=models.SET_NULL, null=True)
     current_stage = models.ForeignKey('workflows.WorkflowStage', on_delete=models.SET_NULL, null=True)
-    lead_source = models.CharField(max_length=50, blank=True)
+    lead_source = models.CharField(max_length=50, blank=True, choices=LEAD_SOURCE_CHOICES)
     last_contacted = models.DateTimeField(null=True, blank=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     product_options = models.ManyToManyField('products.ProductOption', through='EventProductOption')
