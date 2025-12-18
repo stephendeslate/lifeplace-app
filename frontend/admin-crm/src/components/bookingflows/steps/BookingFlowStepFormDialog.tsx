@@ -260,6 +260,7 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
   const getStepTypeIcon = (stepType: StepType) => {
     const icons = {
       introduction: '👋',
+      venue_selection: '🏠',
       date_time: '📅',
       questionnaire: '📝',
       package_selection: '📦',
@@ -270,13 +271,14 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
       review_booking: '🔍',
       confirmation: '✅',
     };
-    
+
     return icons[stepType as keyof typeof icons] || '⚙️';
   };
 
   const getStepTypeDescription = (stepType: StepType) => {
     const descriptions = {
       introduction: 'Welcome message and flow overview',
+      venue_selection: 'Select spaces for custom package curation',
       date_time: 'Date and time selection with availability checking',
       questionnaire: 'Custom questionnaires and forms',
       package_selection: 'Choose from available packages',

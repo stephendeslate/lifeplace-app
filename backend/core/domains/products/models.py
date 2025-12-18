@@ -1,5 +1,6 @@
 # backend/core/domains/products/models.py
 from core.utils.models import BaseModel
+from decimal import Decimal
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
@@ -115,6 +116,24 @@ class ProductOption(BaseModel):
     
     # Event type compatibility (keep for backwards compatibility)
     event_type = models.ForeignKey('events.EventType', on_delete=models.PROTECT, null=True, blank=True)
+
+    # Custom package tracking (for venue selection curation)
+    is_custom = models.BooleanField(
+        default=False,
+        help_text="True if this package was generated from venue selection"
+    )
+    booking_session_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="Booking session that created this custom package (for cleanup)"
+    )
+    bundle_discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Discount applied for multi-venue custom packages"
+    )
 
     class Meta:
         ordering = ['category__sort_order', 'sort_order', 'name']

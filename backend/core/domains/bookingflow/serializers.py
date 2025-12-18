@@ -29,6 +29,7 @@ from .models import (
     PricingSummaryStepConfiguration,
     QuestionnaireStepConfiguration,
     QuestionnaireStepItem,
+    VenueSelectionStepConfiguration,
 )
 
 
@@ -42,6 +43,28 @@ class IntroductionStepConfigurationSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
+
+
+class VenueSelectionStepConfigurationSerializer(serializers.ModelSerializer):
+    """Serializer for venue selection step configuration"""
+    available_venues_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = VenueSelectionStepConfiguration
+        fields = [
+            'id', 'step', 'min_venues', 'max_venues',
+            'show_pricing', 'show_included_hours', 'show_bundle_discount',
+            'bundle_discount_percent', 'title', 'description',
+            'available_venues_details',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
+
+    def get_available_venues_details(self, obj):
+        """Get detailed venue information for available venues"""
+        from core.domains.venues.serializers import RentableVenueSerializer
+        venues = obj.get_available_venues_queryset()
+        return RentableVenueSerializer(venues, many=True).data
 
 
 class DateTimeStepConfigurationSerializer(serializers.ModelSerializer):
@@ -361,7 +384,8 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
                 
             config_attr_map = {
                 'introduction': 'introduction_config',
-                'date_time': 'datetime_config', 
+                'venue_selection': 'venue_selection_config',
+                'date_time': 'datetime_config',
                 'questionnaire': 'questionnaire_config',
                 'package_selection': 'package_config',
                 'addon_selection': 'addon_config',
@@ -370,9 +394,10 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
                 'payment_info': 'payment_config',
                 'confirmation': 'confirmation_config'
             }
-            
+
             serializer_map = {
                 'introduction': IntroductionStepConfigurationSerializer,
+                'venue_selection': VenueSelectionStepConfigurationSerializer,
                 'date_time': DateTimeStepConfigurationSerializer,
                 'questionnaire': QuestionnaireStepConfigurationSerializer,
                 'package_selection': PackageSelectionStepConfigurationSerializer,

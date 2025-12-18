@@ -66,6 +66,7 @@ export type {
   ContactInfoStepData,
   PaymentStepData,
   ConfirmationStepData,
+  VenueSelectionStepData,
   StepData,
   Discount,
   PricingCalculation,
@@ -108,4 +109,8 @@ export type {
   CalculateTimesRequest,
   VenueAvailabilityResponse,
   DateTimeWithVenueData,
+  RentableVenue,
+  VenueSelectionStepConfiguration,
+  CreateFromVenuesRequest,
+  CreateFromVenuesResponse,
 } from './venues.types';

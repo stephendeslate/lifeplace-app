@@ -17,7 +17,7 @@ from .serializers import (
     ProductCategorySerializer,
     ProductCategoryTreeSerializer,
 )
-from .services import DiscountService, ProductService, ProductCategoryService
+from .services import DiscountService, ProductService, ProductCategoryService, CustomPackageService
 from .cache_service import product_cache_service
 
 logger = logging.getLogger(__name__)
@@ -393,10 +393,76 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         is_active = self.request.query_params.get('is_active', None)
         if is_active is not None:
             is_active = is_active.lower() == 'true'
-        
+
         products = ProductService.get_all_products(is_active=is_active)
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def create_from_venues(self, request):
+        """
+        Create a custom package from selected venues.
+        Used by the venue selection booking flow step.
+
+        Request body:
+        {
+            "venue_ids": [1, 2, 3],
+            "primary_venue_id": 1,
+            "booking_session_id": "session-uuid"
+        }
+        """
+        venue_ids = request.data.get('venue_ids', [])
+        primary_venue_id = request.data.get('primary_venue_id')
+        booking_session_id = request.data.get('booking_session_id')
+        category_id = request.data.get('category_id')
+
+        if not venue_ids:
+            return Response(
+                {'error': 'venue_ids is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not primary_venue_id:
+            return Response(
+                {'error': 'primary_venue_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not booking_session_id:
+            return Response(
+                {'error': 'booking_session_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            package = CustomPackageService.create_from_venues(
+                venue_ids=venue_ids,
+                primary_venue_id=primary_venue_id,
+                booking_session_id=booking_session_id,
+                category_id=category_id,
+            )
+
+            # Get venue breakdown for response
+            breakdown = CustomPackageService.get_package_venue_breakdown(package.id)
+
+            return Response({
+                'id': package.id,
+                'name': package.name,
+                'description': package.description,
+                'base_price': str(package.base_price),
+                'included_hours': package.included_hours,
+                'excess_hour_price': str(package.excess_hour_price) if package.excess_hour_price else None,
+                'is_custom': package.is_custom,
+                'bundle_discount_percent': str(package.bundle_discount_percent),
+                'venues': breakdown.get('venues', []) if breakdown else [],
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Failed to create custom package: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class DiscountViewSet(viewsets.ModelViewSet):

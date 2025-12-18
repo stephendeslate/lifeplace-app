@@ -195,6 +195,7 @@ class BookingFlowStep(BaseModel):
     """
     STEP_TYPES = [
         ('introduction', 'Introduction'),
+        ('venue_selection', 'Venue Selection'),
         ('date_time', 'Date & Time Selection'),
         ('questionnaire', 'Questionnaire'),
         ('package_selection', 'Package Selection'),
@@ -278,6 +279,86 @@ class IntroductionStepConfiguration(BaseModel):
 
     def __str__(self):
         return f"Intro config for {self.step}"
+
+
+class VenueSelectionStepConfiguration(BaseModel):
+    """Configuration for venue selection step (custom package curation)"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='venue_selection_config'
+    )
+
+    # Available venues for selection
+    available_venues = models.ManyToManyField(
+        'venues.Venue',
+        blank=True,
+        limit_choices_to={'is_rentable_standalone': True, 'is_active': True},
+        help_text="Specific venues to show (empty = all rentable venues)"
+    )
+
+    # Selection constraints
+    min_venues = models.PositiveIntegerField(
+        default=1,
+        help_text="Minimum number of venues to select"
+    )
+    max_venues = models.PositiveIntegerField(
+        default=5,
+        help_text="Maximum number of venues to select"
+    )
+
+    # Display options
+    show_pricing = models.BooleanField(
+        default=True,
+        help_text="Show standalone pricing for each venue"
+    )
+    show_included_hours = models.BooleanField(
+        default=True,
+        help_text="Show included hours for each venue"
+    )
+    show_bundle_discount = models.BooleanField(
+        default=True,
+        help_text="Show bundle discount for multi-venue selections"
+    )
+    bundle_discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Discount percentage for selecting multiple venues"
+    )
+
+    # UI customization
+    title = models.CharField(
+        max_length=255,
+        default="Select Your Spaces",
+        blank=True
+    )
+    description = models.TextField(
+        blank=True,
+        default="Choose which spaces to include in your booking.",
+        help_text="Description text shown at the top of the step"
+    )
+
+    def __str__(self):
+        return f"Venue Selection config for {self.step}"
+
+    def get_available_venues_queryset(self):
+        """Get the available venues for this step"""
+        from core.domains.venues.models import Venue
+
+        if self.available_venues.exists():
+            return self.available_venues.filter(
+                is_active=True,
+                is_rentable_standalone=True,
+                standalone_base_price__isnull=False
+            )
+        else:
+            return Venue.objects.filter(
+                is_active=True,
+                is_bookable=True,
+                is_rentable_standalone=True,
+                standalone_base_price__isnull=False
+            )
 
 
 class DateTimeStepConfiguration(BaseModel):

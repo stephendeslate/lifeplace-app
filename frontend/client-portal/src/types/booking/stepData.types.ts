@@ -165,9 +165,17 @@ export interface ConfirmationStepData {
   booking_completion_result?: Record<string, unknown>; // BookingCompletionResult from api.types
 }
 
+// Venue selection step data (for custom package curation)
+export interface VenueSelectionStepData {
+  selected_venue_ids: number[];
+  primary_venue_id: number | null;
+  custom_package_id?: number;
+}
+
 // Combined step data type
 export interface StepData {
   introduction?: IntroductionStepData;
+  venue_selection?: VenueSelectionStepData;
   date_time?: DateTimeStepData;
   questionnaire?: QuestionnaireStepData;
   package_selection?: PackageSelectionStepData;

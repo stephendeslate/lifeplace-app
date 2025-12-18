@@ -7,6 +7,7 @@ import { useBookingSession } from '../../hooks/booking/useBookingCore';
 
 // Import step components
 import { CleanIntroductionStep } from './steps/CleanIntroductionStep';
+import { VenueSelectionStep } from './steps/VenueSelectionStep';
 import { IntelligentDateTimeStep } from './steps/IntelligentDateTimeStep';
 import { EnhancedContactInfoStep } from './steps/EnhancedContactInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
@@ -15,17 +16,18 @@ import { ConfirmationStep } from './steps/ConfirmationStep';
 import { CleanPackageSelectionStep } from './steps/CleanPackageSelectionStep';
 import { AddonSelectionStep } from './steps/AddonSelectionStep';
 import { PricingSummaryStep } from './steps/PricingSummaryStep';
-import type { 
-  ContactInfoStepConfiguration, 
-  DateTimeStepConfiguration, 
-  IntroductionStepConfiguration, 
+import type {
+  ContactInfoStepConfiguration,
+  DateTimeStepConfiguration,
+  IntroductionStepConfiguration,
   PaymentInfoStepConfiguration,
   QuestionnaireStepConfiguration,
   PackageSelectionStepConfiguration,
   AddonSelectionStepConfiguration,
   ConfirmationStepConfiguration,
   StepValidationResult,
-  PricingSummaryStepConfiguration
+  PricingSummaryStepConfiguration,
+  VenueSelectionStepConfiguration,
 } from '../../types/booking';
 
 
@@ -69,6 +71,10 @@ export const StepRenderer: React.FC = () => {
 
   const handleIntroductionChange = useCallback((data: unknown) => {
     handleDataChange('introduction', data);
+  }, [handleDataChange]);
+
+  const handleVenueSelectionChange = useCallback((data: unknown) => {
+    handleDataChange('venue_selection', data);
   }, [handleDataChange]);
 
   const handleDateTimeChange = useCallback((data: unknown) => {
@@ -137,7 +143,24 @@ export const StepRenderer: React.FC = () => {
         />
       );
 
+    case 'venue_selection':
+      return (
+        <VenueSelectionStep
+          stepData={state.stepData.venue_selection}
+          config={configuration_data as VenueSelectionStepConfiguration | null}
+          onDataChange={handleVenueSelectionChange}
+          validationErrors={mergedValidationErrors}
+          isValidating={state.ui.isValidating}
+          sessionId={state.currentSession?.session_id}
+        />
+      );
+
     case 'date_time':
+      // Get selectedPackageId from booking data (could come from venue_selection or package_selection)
+      const bookingData = state.currentSession?.booking_data || {};
+      const selectedPackages = bookingData.selected_packages as Array<{ product_id: number }> | undefined;
+      const selectedPackageId = selectedPackages?.[0]?.product_id || null;
+
       return (
         <IntelligentDateTimeStep
           stepData={state.stepData.date_time}
@@ -147,6 +170,7 @@ export const StepRenderer: React.FC = () => {
           isValidating={state.ui.isValidating}
           onValidate={handleValidation}
           flow={state.currentFlow}
+          selectedPackageId={selectedPackageId}
         />
       );
 

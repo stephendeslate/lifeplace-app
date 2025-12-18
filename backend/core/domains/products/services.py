@@ -1,10 +1,13 @@
 # backend/core/domains/products/services.py
 import logging
+from datetime import timedelta
+from decimal import Decimal
 
 from django.db import models, transaction
 from django.db.models import Q, Prefetch
 from django.utils import timezone
 from django.utils.text import slugify
+from rest_framework.exceptions import ValidationError
 
 from .exceptions import DiscountCodeExists, DiscountNotFound, ProductNotFound, CategoryNotFound
 from .models import Discount, ProductOption, ProductCategory
@@ -402,3 +405,200 @@ class DiscountService:
                         return False, "Discount is not applicable to selected products"
         
         return True, "Discount is valid"
+
+
+class CustomPackageService:
+    """
+    Service for creating custom packages from venue selections.
+    Used by the venue selection booking flow step.
+    """
+    BUNDLE_DISCOUNT_PERCENT = Decimal('10.00')  # 10% off for 2+ venues
+
+    @classmethod
+    def create_from_venues(cls, venue_ids, primary_venue_id, booking_session_id, category_id=None):
+        """
+        Create a custom package from selected venues.
+
+        Args:
+            venue_ids: List of venue IDs to include in the package
+            primary_venue_id: ID of the primary venue (determines datetime rules)
+            booking_session_id: ID of the booking session creating this package
+            category_id: Optional category ID for the package
+
+        Returns:
+            ProductOption: The created custom package
+        """
+        from core.domains.venues.models import Venue, PackageVenue
+
+        venues = Venue.objects.filter(
+            id__in=venue_ids,
+            is_rentable_standalone=True,
+            is_active=True
+        )
+
+        if not venues.exists():
+            raise ValidationError("No valid rentable venues selected")
+
+        venue_list = list(venues)
+
+        # Validate primary venue is in selection
+        primary_venue = None
+        for v in venue_list:
+            if v.id == primary_venue_id:
+                primary_venue = v
+                break
+
+        if not primary_venue:
+            # Use first venue if primary not found
+            primary_venue = venue_list[0]
+            primary_venue_id = primary_venue.id
+
+        # Calculate totals from standalone pricing
+        total_hours = Decimal('0')
+        total_price = Decimal('0')
+
+        for venue in venue_list:
+            if venue.standalone_included_hours:
+                total_hours += venue.standalone_included_hours
+            if venue.standalone_base_price:
+                total_price += venue.standalone_base_price
+
+        # Apply bundle discount for multi-venue selections
+        discount_percent = cls.BUNDLE_DISCOUNT_PERCENT if len(venue_list) > 1 else Decimal('0')
+        discount_amount = total_price * (discount_percent / Decimal('100'))
+        final_price = total_price - discount_amount
+
+        # Get default category if not provided
+        if not category_id:
+            default_category = ProductCategory.objects.filter(
+                is_active=True,
+                requires_venue=True
+            ).first()
+            if not default_category:
+                default_category = ProductCategory.objects.filter(is_active=True).first()
+            category_id = default_category.id if default_category else None
+
+        if not category_id:
+            raise ValidationError("No product category available for custom package")
+
+        # Generate package name
+        venue_names = ' + '.join(v.name for v in venue_list)
+        package_name = f"Custom: {venue_names}"
+
+        with transaction.atomic():
+            # Create the custom package
+            package = ProductOption.objects.create(
+                name=package_name,
+                description=f"Custom package with: {venue_names}",
+                category_id=category_id,
+                type='PACKAGE',
+                pricing_model='FIXED',
+                base_price=final_price,
+                has_excess_hours=True,
+                included_hours=int(total_hours),
+                excess_hour_price=primary_venue.standalone_excess_hour_price or Decimal('0'),
+                is_active=True,
+                is_custom=True,
+                booking_session_id=booking_session_id,
+                bundle_discount_percent=discount_percent,
+            )
+
+            # Create PackageVenue links
+            for i, venue in enumerate(venue_list):
+                PackageVenue.objects.create(
+                    package=package,
+                    venue=venue,
+                    is_primary=(venue.id == primary_venue_id),
+                    access_order=i + 1,
+                    access_duration_hours=venue.standalone_included_hours,
+                    hours_contribution=venue.standalone_included_hours,
+                    price_contribution=venue.standalone_base_price,
+                    is_bonus=False,
+                )
+
+            logger.info(
+                f"Created custom package '{package.name}' (ID: {package.id}) "
+                f"for session {booking_session_id} with {len(venue_list)} venues"
+            )
+
+            return package
+
+    @classmethod
+    def cleanup_abandoned_packages(cls, older_than_hours=24):
+        """
+        Remove custom packages from abandoned booking sessions.
+
+        Args:
+            older_than_hours: Delete custom packages older than this many hours
+
+        Returns:
+            int: Number of packages deleted
+        """
+        cutoff = timezone.now() - timedelta(hours=older_than_hours)
+
+        # Find custom packages that:
+        # 1. Are marked as custom
+        # 2. Were created before the cutoff
+        # 3. Have no associated quotes or bookings
+        abandoned_packages = ProductOption.objects.filter(
+            is_custom=True,
+            created_at__lt=cutoff,
+        ).exclude(
+            # Exclude packages that have quotes
+            quote_line_items__isnull=False
+        ).exclude(
+            # Exclude packages that have bookings
+            booking_products__isnull=False
+        )
+
+        count = abandoned_packages.count()
+
+        if count > 0:
+            # Delete associated PackageVenue records first (cascade should handle this)
+            abandoned_packages.delete()
+            logger.info(f"Cleaned up {count} abandoned custom packages older than {older_than_hours} hours")
+
+        return count
+
+    @classmethod
+    def get_package_venue_breakdown(cls, package_id):
+        """
+        Get the venue breakdown for a custom package.
+
+        Args:
+            package_id: ID of the package
+
+        Returns:
+            dict: Venue breakdown with pricing details
+        """
+        from core.domains.venues.models import PackageVenue
+
+        package = ProductOption.objects.filter(id=package_id, is_custom=True).first()
+        if not package:
+            return None
+
+        package_venues = PackageVenue.objects.filter(
+            package=package
+        ).select_related('venue').order_by('access_order')
+
+        venues = []
+        for pv in package_venues:
+            venues.append({
+                'id': pv.venue.id,
+                'name': pv.venue.name,
+                'is_primary': pv.is_primary,
+                'is_bonus': pv.is_bonus,
+                'hours_contribution': pv.hours_contribution,
+                'price_contribution': pv.price_contribution,
+                'access_order': pv.access_order,
+            })
+
+        return {
+            'package_id': package.id,
+            'package_name': package.name,
+            'is_custom': package.is_custom,
+            'base_price': package.base_price,
+            'included_hours': package.included_hours,
+            'bundle_discount_percent': package.bundle_discount_percent,
+            'venues': venues,
+        }

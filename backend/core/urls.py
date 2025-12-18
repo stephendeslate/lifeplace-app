@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/analytics/', include('core.domains.analytics.urls_v2')),
     path('api/settings/', include('core.domains.settings.urls')),
     path('api/messaging/', include('core.domains.messaging.urls')),
+    path('api/vip/', include('core.domains.vip.urls')),
     # Client-specific endpoint routing for frontend compatibility
     path('api/client/', include('core.domains.events.client_urls')),
 ]

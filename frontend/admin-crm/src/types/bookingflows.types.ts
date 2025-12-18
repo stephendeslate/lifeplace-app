@@ -95,9 +95,10 @@ export interface BookingFlowStep {
   updated_at: string;
 }
 
-// FIXED: Removed non-existent and deprecated step types
-export type StepType = 
+// Step types matching backend STEP_TYPES exactly
+export type StepType =
   | 'introduction'
+  | 'venue_selection'
   | 'date_time'
   | 'questionnaire'
   | 'package_selection'
@@ -108,9 +109,10 @@ export type StepType =
   | 'review_booking'
   | 'confirmation';
 
-// FIXED: Updated to match backend STEP_TYPES exactly
+// Step types matching backend STEP_TYPES exactly
 export const STEP_TYPES = [
   { value: 'introduction', label: 'Introduction' },
+  { value: 'venue_selection', label: 'Venue Selection' },
   { value: 'date_time', label: 'Date & Time Selection' },
   { value: 'questionnaire', label: 'Questionnaire' },
   { value: 'package_selection', label: 'Package Selection' },
@@ -135,7 +137,31 @@ export interface IntroductionStepConfiguration {
   updated_at: string;
 }
 
-// FIXED: Enhanced DateTimeStepConfiguration to match evolved backend
+export interface VenueSelectionStepConfiguration {
+  id: number;
+  step: number;
+  min_venues: number;
+  max_venues: number;
+  show_pricing: boolean;
+  show_included_hours: boolean;
+  show_bundle_discount: boolean;
+  bundle_discount_percent: string;
+  title: string;
+  description: string;
+  available_venues_details?: Array<{
+    id: number;
+    name: string;
+    code: string;
+    description: string;
+    standalone_base_price: string;
+    standalone_included_hours: string;
+    standalone_excess_hour_price: string;
+  }>;
+  created_at: string;
+  updated_at: string;
+}
+
+// Enhanced DateTimeStepConfiguration to match evolved backend
 export interface DateTimeStepConfiguration {
   id: number;
   step: number;
@@ -437,8 +463,9 @@ export interface ChildPricingTier {
 
 // REMOVED: EventDetailsStepConfiguration (doesn't exist in backend)
 
-export type StepConfiguration = 
+export type StepConfiguration =
   | IntroductionStepConfiguration
+  | VenueSelectionStepConfiguration
   | DateTimeStepConfiguration
   | QuestionnaireStepConfiguration
   | PackageSelectionStepConfiguration

@@ -1,7 +1,11 @@
 # backend/core/domains/bookingflow/admin.py
 
 from django.contrib import admin
-from core.domains.bookingflow.models import BookingFlow
+from core.domains.bookingflow.models import (
+    BookingFlow,
+    BookingFlowStep,
+    VenueSelectionStepConfiguration,
+)
 from core.domains.communications.models import CommunicationTemplate
 
 @admin.register(BookingFlow)
@@ -46,3 +50,17 @@ class BookingFlowAdmin(admin.ModelAdmin):
             f"Total: {total_fixed} flows updated."
         )
     fix_confirmation_email_template.short_description = "Fix Confirmation Email Template"
+
+
+@admin.register(BookingFlowStep)
+class BookingFlowStepAdmin(admin.ModelAdmin):
+    list_display = ('name', 'booking_flow', 'step_type', 'order', 'is_enabled')
+    list_filter = ('booking_flow', 'step_type', 'is_enabled')
+    ordering = ('booking_flow', 'order')
+
+
+@admin.register(VenueSelectionStepConfiguration)
+class VenueSelectionStepConfigurationAdmin(admin.ModelAdmin):
+    list_display = ('step', 'min_venues', 'max_venues', 'show_pricing', 'bundle_discount_percent')
+    list_filter = ('show_pricing', 'show_bundle_discount')
+    filter_horizontal = ('available_venues',)

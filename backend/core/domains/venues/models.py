@@ -50,6 +50,33 @@ class Venue(BaseModel):
     )
     sort_order = models.PositiveIntegerField(default=0)
 
+    # Standalone rental pricing (for custom package curation)
+    is_rentable_standalone = models.BooleanField(
+        default=False,
+        help_text="Can this venue be rented without a pre-made package?"
+    )
+    standalone_base_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Price when rented as standalone venue"
+    )
+    standalone_included_hours = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Hours included when rented standalone"
+    )
+    standalone_excess_hour_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Excess hour rate when rented standalone"
+    )
+
     class Meta:
         ordering = ['sort_order', 'name']
         verbose_name = 'Venue'
@@ -371,6 +398,26 @@ class PackageVenue(BaseModel):
     notes = models.TextField(
         blank=True,
         help_text="Notes about this venue's usage in the package (e.g., 'For ceremony only')"
+    )
+
+    # Bonus venue and contribution tracking (for custom package curation)
+    is_bonus = models.BooleanField(
+        default=False,
+        help_text="True if venue is included free (e.g., cabanas with bundle)"
+    )
+    hours_contribution = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Hours this venue contributes to package total"
+    )
+    price_contribution = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Price this venue contributes to package total"
     )
 
     class Meta:

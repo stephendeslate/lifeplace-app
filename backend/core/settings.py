@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'core.domains.analytics',
     'core.domains.settings',  # Currency and application settings management
     'core.domains.messaging',  # Real-time messaging system
+    'core.domains.vip',  # VIP & Loyalty program
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

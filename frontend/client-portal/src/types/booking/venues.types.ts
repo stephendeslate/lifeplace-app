@@ -156,3 +156,82 @@ export interface DateTimeWithVenueData {
   early_checkin_fee?: number;
   late_checkout_fee?: number;
 }
+
+// ============================================
+// VENUE SELECTION STEP TYPES
+// For custom package curation from venue selection
+// ============================================
+
+/**
+ * Rentable venue - a venue that can be rented standalone
+ * with its own pricing for custom package curation
+ */
+export interface RentableVenue {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  minimum_capacity: number;
+  maximum_capacity: number;
+  recommended_capacity: number | null;
+  location_description: string;
+  featured_image: string | null;
+  gallery_images: string[];
+  standalone_base_price: string;
+  standalone_included_hours: string;
+  standalone_excess_hour_price: string;
+  operating_rules: VenueOperatingRulesPublic | null;
+}
+
+/**
+ * Data for venue selection step
+ */
+export interface VenueSelectionStepData {
+  selected_venue_ids: number[];
+  primary_venue_id: number | null;
+  custom_package_id?: number;
+}
+
+/**
+ * Request to create custom package from venues
+ */
+export interface CreateFromVenuesRequest {
+  venue_ids: number[];
+  primary_venue_id: number;
+  booking_session_id: string;
+  category_id?: number;
+}
+
+/**
+ * Response from creating custom package
+ */
+export interface CreateFromVenuesResponse {
+  id: number;
+  name: string;
+  base_price: string;
+  included_hours: number;
+  excess_hour_price: string;
+  bundle_discount_percent: string;
+  venues: Array<{
+    id: number;
+    name: string;
+    is_primary: boolean;
+    hours_contribution: string | null;
+    price_contribution: string | null;
+  }>;
+}
+
+/**
+ * Configuration for venue selection step
+ */
+export interface VenueSelectionStepConfiguration {
+  min_venues: number;
+  max_venues: number;
+  show_pricing: boolean;
+  show_included_hours: boolean;
+  show_bundle_discount: boolean;
+  bundle_discount_percent: string;
+  title: string;
+  description: string;
+  available_venues_details?: RentableVenue[];
+}

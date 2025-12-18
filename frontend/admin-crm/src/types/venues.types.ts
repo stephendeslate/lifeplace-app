@@ -71,6 +71,11 @@ export interface Venue {
   featured_image: string | null;
   gallery_images: string[];
   sort_order: number;
+  // Standalone pricing (for custom package curation)
+  is_rentable_standalone: boolean;
+  standalone_base_price: string | null;
+  standalone_included_hours: string | null;
+  standalone_excess_hour_price: string | null;
   operating_rules: VenueOperatingRules | null;
   packages_count: number;
   created_at: string;
@@ -88,6 +93,7 @@ export interface VenueListItem {
   maximum_capacity: number;
   featured_image: string | null;
   sort_order: number;
+  is_rentable_standalone: boolean;
   has_operating_rules: boolean;
   packages_count: number;
 }
@@ -120,6 +126,11 @@ export interface CreateVenueData {
   featured_image?: string | null;
   gallery_images?: string[];
   sort_order?: number;
+  // Standalone pricing (for custom package curation)
+  is_rentable_standalone?: boolean;
+  standalone_base_price?: number | null;
+  standalone_included_hours?: number | null;
+  standalone_excess_hour_price?: number | null;
   operating_rules?: CreateOperatingRulesData;
 }
 
