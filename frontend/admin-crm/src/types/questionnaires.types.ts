@@ -22,6 +22,7 @@ export interface QuestionnaireField {
   required: boolean;
   order: number;
   options: string[] | null;
+  is_guest_count: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -80,6 +81,7 @@ export interface CreateQuestionnaireFieldData {
   required?: boolean;
   order?: number;
   options?: string[] | null;
+  is_guest_count?: boolean;
 }
 
 export type UpdateQuestionnaireFieldData = Partial<CreateQuestionnaireFieldData>;
@@ -115,6 +117,7 @@ export interface QuestionnaireFieldFormData {
   required: boolean;
   order: number;
   options: string[];
+  is_guest_count: boolean;
 }
 
 // Action types

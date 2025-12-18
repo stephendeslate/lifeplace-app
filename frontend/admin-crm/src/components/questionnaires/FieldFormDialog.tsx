@@ -42,6 +42,7 @@ const defaultFormData: QuestionnaireFieldFormData = {
   required: false,
   order: 1,
   options: [],
+  is_guest_count: false,
 };
 
 export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
@@ -65,6 +66,7 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
           required: editingField.required ?? false,
           order: editingField.order || 1,
           options: editingField.options || [],
+          is_guest_count: editingField.is_guest_count ?? false,
         });
       } else {
         setFormData(defaultFormData);
@@ -153,6 +155,8 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
       options: (formData.type === 'select' || formData.type === 'multi-select')
         ? formData.options.filter(opt => opt.trim())
         : [],
+      // Only include is_guest_count for number fields
+      is_guest_count: formData.type === 'number' ? formData.is_guest_count : false,
     };
 
     if (questionnaireId && !editingField) {
@@ -241,7 +245,7 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                     type="number"
                     sx={{ flex: 1 }}
                   />
-                  
+
                   <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                     <FormControlLabel
                       control={
@@ -254,6 +258,39 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                     />
                   </Box>
                 </Box>
+
+                {formData.type === 'number' && (
+                  <Box
+                    sx={{
+                      p: 2,
+                      borderRadius: tokens.spacing.radius.lg,
+                      border: `1px solid ${tokens.color.borders.glass}`,
+                      background: formData.is_guest_count
+                        ? `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`
+                        : 'transparent',
+                    }}
+                  >
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.is_guest_count}
+                          onChange={handleSwitchChange('is_guest_count')}
+                          color="primary"
+                        />
+                      }
+                      label={
+                        <Box>
+                          <Typography variant="body2" fontWeight={500}>
+                            Guest Count Field
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            This field captures the number of guests/participants
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </Box>
+                )}
 
                 {requiresOptions(formData.type) && (
                   <Box>

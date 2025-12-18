@@ -167,7 +167,8 @@ class EventSerializer(serializers.ModelSerializer):
             'status', 'start_date', 'end_date', 'workflow_template', 'workflow_template_name',
             'current_stage', 'current_stage_name', 'lead_source', 'last_contacted',
             'total_price', 'payment_status', 'total_amount_due', 'total_amount_paid',
-            'workflow_progress', 'next_task', 'preferences', 'created_at', 'updated_at',
+            'workflow_progress', 'next_task', 'preferences', 'num_participants',
+            'created_at', 'updated_at',
             'current_total_amount', 'current_quote', 'current_invoice',
             # Date blocking fields
             'date_blocked', 'date_blocked_at',

@@ -14,7 +14,7 @@ class QuestionnaireFieldSerializer(serializers.ModelSerializer):
         model = QuestionnaireField
         fields = [
             'id', 'questionnaire', 'name', 'type', 'type_display',
-            'required', 'order', 'options', 'created_at', 'updated_at'
+            'required', 'order', 'options', 'is_guest_count', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
@@ -66,7 +66,7 @@ class QuestionnaireFieldCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating questionnaire fields - without requiring questionnaire"""
     class Meta:
         model = QuestionnaireField
-        fields = ['name', 'type', 'required', 'order', 'options']
+        fields = ['name', 'type', 'required', 'order', 'options', 'is_guest_count']
     
     def validate(self, data):
         """Validate field data based on field type"""

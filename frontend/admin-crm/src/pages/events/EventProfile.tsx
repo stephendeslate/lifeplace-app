@@ -61,6 +61,7 @@ import {
   Warning as WarningIcon,
   Timer as TimerIcon,
   EventBusy as NoShowIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
@@ -1389,6 +1390,53 @@ export const EventProfile: React.FC = () => {
                             }}
                           >
                             {event.lead_source}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )}
+
+                    {event.num_participants && (
+                      <Box
+                        sx={{
+                          ...glassPresets.light,
+                          borderRadius: tokens.spacing.radius.xl,
+                          p: 2.5,
+                          border: `1px solid ${tokens.color.info[500]}20`,
+                          background: `linear-gradient(135deg, ${tokens.color.info[500]}05 0%, transparent 100%)`,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: tokens.color.neutral[500],
+                            fontWeight: 600,
+                            mb: 1,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Number of Guests
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Box
+                            sx={{
+                              ...glassPresets.light,
+                              borderRadius: tokens.spacing.radius.full,
+                              p: 1,
+                              background: `${tokens.color.info[500]}15`,
+                            }}
+                          >
+                            <PeopleIcon sx={{ fontSize: 16, color: tokens.color.info[600] }} />
+                          </Box>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              color: tokens.color.info[700],
+                              fontWeight: 700
+                            }}
+                          >
+                            {event.num_participants}
                           </Typography>
                         </Box>
                       </Box>

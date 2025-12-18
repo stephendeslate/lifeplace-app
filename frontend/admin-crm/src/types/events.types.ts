@@ -108,6 +108,8 @@ export interface Event {
   cancelled_reason: CancelledReason | null;
   cancelled_at: string | null;
   can_rebook: boolean;
+  // Guest count
+  num_participants: number | null;
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -161,6 +163,7 @@ export interface CreateEventData {
   end_date?: string | null;
   lead_source?: string;
   total_price?: string | null;
+  num_participants?: number | null;
 }
 
 export type UpdateEventData = Partial<CreateEventData>;
@@ -198,6 +201,7 @@ export interface EventFormData {
   end_date: string;
   lead_source: string;
   total_price: string;
+  num_participants: string;
 }
 
 // Component prop types
