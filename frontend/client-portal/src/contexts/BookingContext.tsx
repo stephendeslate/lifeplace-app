@@ -673,7 +673,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       } catch (error) {
         const errorMessage = ErrorHandler.extractMessage(error);
-        const validationErrors = BookingCoreApi.extractValidationErrors(error);
+        const validationErrors = ErrorHandler.extractValidationErrorsAsRecord(error);
         
         dispatch({ type: 'SET_ERROR', payload: errorMessage });
         dispatch({ type: 'SET_VALIDATION_ERRORS', payload: validationErrors });
@@ -711,7 +711,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
             BookingCoreApi.saveSessionToLocal(state.currentSession.session_id, updatedSession as unknown as Record<string, unknown>);
 
           } catch (error) {
-            const errorMessage = BookingCoreApi.handleApiError(error);
+            const errorMessage = ErrorHandler.extractMessage(error);
             dispatch({ type: 'SET_ERROR', payload: errorMessage });
           } finally {
             dispatch({ type: 'SET_SUBMITTING', payload: false });
