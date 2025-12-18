@@ -32,9 +32,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useToastActions } from '../../contexts/ToastContext';
-import { MetricCard } from '../../components/analytics/common/MetricCard';
-import { useDateRange } from '../../components/analytics/common/DateRangePicker';
-import { useBusinessMetrics } from '../../hooks/useAnalytics';
+import { KPICard } from '../../components/analytics';
+import { useDateRange, useDashboardKPIs } from '../../hooks/useAnalytics';
 import { useEvents } from '../../hooks/useEvents';
 import { useClients } from '../../hooks/useClients';
 import { usePayments } from '../../hooks/usePayments';
@@ -53,24 +52,21 @@ export const Dashboard: React.FC = () => {
   const themeColors = useThemeColors();
   const [isLoaded, setIsLoaded] = useState(false);
   // Date range for metrics (last 30 days by default)
-  const { dateRange } = useDateRange();
+  const { dateRange } = useDateRange(30);
 
   // Data hooks with error handling
-  const { businessMetrics, refetchBusinessMetrics } = useBusinessMetrics({
-    start_date: dateRange.start_date,
-    end_date: dateRange.end_date,
-  });
+  const { data: dashboardKPIs, refetch: refetchDashboardKPIs } = useDashboardKPIs(dateRange);
 
-  const { events } = useEvents({ 
+  const { events } = useEvents({
     start_date_from: new Date().toISOString().split('T')[0],
     start_date_to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   });
 
   const { clients } = useClients({ search: '' });
-  
+
   const { payments } = usePayments({
-    start_date: dateRange.start_date,
-    end_date: dateRange.end_date,
+    start_date: dateRange.startDate,
+    end_date: dateRange.endDate,
   });
 
   const { useNotificationCounts, useRecentNotifications } = useNotifications();
@@ -99,7 +95,7 @@ export const Dashboard: React.FC = () => {
   }, [setBreadcrumbs]);
 
   const handleRefreshAll = () => {
-    refetchBusinessMetrics();
+    refetchDashboardKPIs();
     showSuccess('Dashboard Refreshed', 'All data has been refreshed successfully.');
   };
 
@@ -107,7 +103,7 @@ export const Dashboard: React.FC = () => {
   // Calculate dashboard metrics
   const totalActiveClients = clients?.length || 0;
   const upcomingEvents = events?.filter(e => e.status !== 'CANCELLED').length || 0;
-  const totalRevenue = businessMetrics?.total_revenue || '0';
+  const totalRevenue = dashboardKPIs?.total_revenue || 0;
   const pendingPayments = payments?.filter(p => p.status === 'PENDING').length || 0;
 
   // System health calculation
@@ -291,42 +287,36 @@ export const Dashboard: React.FC = () => {
                 }
               }}
             >
-              <MetricCard
+              <KPICard
                 title="Total Revenue"
                 value={formatRevenue(totalRevenue)}
-                description="Last 30 days"
+                subtitle="Last 30 days"
                 color="success"
                 icon={<AttachMoney />}
-                trend={{
-                  value: 12.5,
-                  direction: 'up'
-                }}
+                trend={12.5}
               />
 
-              <MetricCard
+              <KPICard
                 title="Active Clients"
                 value={totalActiveClients}
-                description="Total registered"
+                subtitle="Total registered"
                 color="primary"
                 icon={<People />}
-                trend={{
-                  value: 8.2,
-                  direction: 'up'
-                }}
+                trend={8.2}
               />
 
-              <MetricCard
+              <KPICard
                 title="Upcoming Events"
                 value={upcomingEvents}
-                description="Next 7 days"
+                subtitle="Next 7 days"
                 color="warning"
                 icon={<CalendarToday />}
               />
 
-              <MetricCard
+              <KPICard
                 title="System Health"
                 value={`${systemHealth}%`}
-                description="All systems operational"
+                subtitle="All systems operational"
                 color={systemHealth > 90 ? "success" : systemHealth > 70 ? "warning" : "error"}
                 icon={<Analytics />}
               />
