@@ -39,7 +39,9 @@ import { useContracts } from '../../contexts/ContractsContext';
 import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
 import ContractViewer from '../../components/contracts/ContractViewer';
 import { contractsApi } from '../../apis/contracts.api';
+import { InvoicePaymentDialog } from '../../components/payments/InvoicePaymentDialog';
 import type { Contract } from '../../types/contracts.types';
+import type { Invoice } from '../../types/financial.types';
 import type {
   ActionType,
   ActionCenterFilters,
@@ -72,6 +74,10 @@ export const ActionCenterPage: React.FC = () => {
   const [signingDialogOpen, setSigningDialogOpen] = useState(false);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+
+  // Invoice payment dialog state
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | null>(null);
+  const [invoicePaymentDialogOpen, setInvoicePaymentDialogOpen] = useState(false);
 
   // Contracts context for signing
   const { refreshContracts } = useContracts();
@@ -146,9 +152,24 @@ export const ActionCenterPage: React.FC = () => {
     refetch();
   };
 
-  // Handle payment pay
+  // Handle payment pay - open dialog directly instead of navigating
   const handlePaymentPay = (action: PaymentActionItem) => {
-    navigate(`/payments?pay=${action.invoiceId}`);
+    if (action.originalInvoice) {
+      setSelectedInvoiceForPayment(action.originalInvoice);
+      setInvoicePaymentDialogOpen(true);
+    }
+  };
+
+  // Handle invoice payment dialog close
+  const handleCloseInvoicePaymentDialog = () => {
+    setInvoicePaymentDialogOpen(false);
+    setSelectedInvoiceForPayment(null);
+  };
+
+  // Handle invoice payment success
+  const handleInvoicePaymentSuccess = () => {
+    handleCloseInvoicePaymentDialog();
+    refetch();
   };
 
   // Handle payment view
@@ -433,6 +454,16 @@ export const ActionCenterPage: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Invoice Payment Dialog */}
+      {selectedInvoiceForPayment && (
+        <InvoicePaymentDialog
+          open={invoicePaymentDialogOpen}
+          invoice={selectedInvoiceForPayment}
+          onClose={handleCloseInvoicePaymentDialog}
+          onPaymentSuccess={handleInvoicePaymentSuccess}
+        />
+      )}
     </Box>
   );
 };
