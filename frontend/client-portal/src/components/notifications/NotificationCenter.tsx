@@ -1,6 +1,7 @@
 // frontend/client-portal/src/components/notifications/NotificationCenter.tsx
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -14,47 +15,146 @@ import {
   Chip,
   useTheme,
   alpha,
+  CircularProgress,
+  Skeleton,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
   Event as EventIcon,
   Payment as PaymentIcon,
   Message as MessageIcon,
+  Settings as SettingsIcon,
+  Assignment as TaskIcon,
+  Person as PersonIcon,
+  Description as ContractIcon,
+  AccountTree as WorkflowIcon,
   Warning as WarningIcon,
   Info as InfoIcon,
   CheckCircle as SuccessIcon,
   Close as CloseIcon,
   MarkEmailRead as MarkReadIcon,
   Delete as DeleteIcon,
+  SettingsOutlined as PreferencesIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { useNotifications } from '../../hooks/useNotifications';
+import { useNotificationRealtime } from '../../hooks/useNotificationRealtime';
+import type {
+  Notification,
+  NotificationCategory,
+  NotificationPriority,
+} from '../../types/notifications.types';
 
-interface NotificationItem {
-  id: number;
-  type: 'event' | 'payment' | 'message' | 'system';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  actionUrl?: string;
-  metadata?: {
-    eventName?: string;
-    amount?: string;
-    senderName?: string;
-  };
-}
+// Map category to icon component
+const getCategoryIcon = (category?: NotificationCategory) => {
+  switch (category) {
+    case 'EVENT':
+      return <EventIcon fontSize="small" />;
+    case 'PAYMENT':
+      return <PaymentIcon fontSize="small" />;
+    case 'COMMUNICATION':
+      return <MessageIcon fontSize="small" />;
+    case 'SYSTEM':
+      return <SettingsIcon fontSize="small" />;
+    case 'TASK':
+      return <TaskIcon fontSize="small" />;
+    case 'CLIENT':
+      return <PersonIcon fontSize="small" />;
+    case 'CONTRACT':
+      return <ContractIcon fontSize="small" />;
+    case 'WORKFLOW':
+      return <WorkflowIcon fontSize="small" />;
+    default:
+      return <NotificationsIcon fontSize="small" />;
+  }
+};
+
+// Map priority to color
+const getPriorityColor = (priority?: NotificationPriority, theme: ReturnType<typeof useTheme>) => {
+  switch (priority) {
+    case 'URGENT':
+      return { main: theme.palette.error.main };
+    case 'HIGH':
+      return { main: theme.palette.warning.main };
+    case 'NORMAL':
+      return { main: theme.palette.info.main };
+    case 'LOW':
+      return { main: theme.palette.grey[500] };
+    default:
+      return { main: theme.palette.primary.main };
+  }
+};
+
+// Map category to color
+const getCategoryColor = (category?: NotificationCategory, theme: ReturnType<typeof useTheme>) => {
+  switch (category) {
+    case 'EVENT':
+      return theme.palette.primary.main;
+    case 'PAYMENT':
+      return theme.palette.success.main;
+    case 'COMMUNICATION':
+      return theme.palette.info.main;
+    case 'SYSTEM':
+      return theme.palette.grey[600];
+    case 'TASK':
+      return theme.palette.secondary.main;
+    case 'CLIENT':
+      return theme.palette.info.dark;
+    case 'CONTRACT':
+      return theme.palette.warning.main;
+    case 'WORKFLOW':
+      return theme.palette.primary.dark;
+    default:
+      return theme.palette.primary.main;
+  }
+};
+
+// Get priority icon
+const getPriorityIcon = (priority?: NotificationPriority) => {
+  switch (priority) {
+    case 'URGENT':
+      return <WarningIcon fontSize="small" color="error" />;
+    case 'HIGH':
+      return <WarningIcon fontSize="small" color="warning" />;
+    case 'NORMAL':
+      return <InfoIcon fontSize="small" color="info" />;
+    case 'LOW':
+      return <SuccessIcon fontSize="small" color="success" />;
+    default:
+      return <InfoIcon fontSize="small" />;
+  }
+};
 
 export const NotificationCenter: React.FC = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  
-  // TODO: Replace with API/WebSocket calls to fetch real notifications
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+  // Get hooks from useNotifications
+  const {
+    useUnreadNotifications,
+    useNotificationCounts,
+    useMarkAsRead,
+    useMarkAllAsRead,
+    useDeleteNotification,
+  } = useNotifications();
+
+  // Fetch data
+  const { data: notifications = [], isLoading: isLoadingNotifications } =
+    useUnreadNotifications(10);
+  const { data: counts, isLoading: isLoadingCounts } = useNotificationCounts();
+
+  // Get mutations
+  const markAsReadMutation = useMarkAsRead();
+  const markAllAsReadMutation = useMarkAllAsRead();
+  const deleteMutation = useDeleteNotification();
+
+  // Enable real-time notifications
+  useNotificationRealtime({ enabled: true });
 
   const open = Boolean(anchorEl);
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = counts?.unread ?? 0;
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -65,66 +165,53 @@ export const NotificationCenter: React.FC = () => {
   };
 
   const handleMarkAsRead = (notificationId: number) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-    );
+    markAsReadMutation.mutate(notificationId);
   };
 
   const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    markAllAsReadMutation.mutate();
   };
 
   const handleDeleteNotification = (notificationId: number) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    deleteMutation.mutate(notificationId);
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'event': return <EventIcon fontSize="small" />;
-      case 'payment': return <PaymentIcon fontSize="small" />;
-      case 'message': return <MessageIcon fontSize="small" />;
-      case 'system': return <InfoIcon fontSize="small" />;
-      default: return <NotificationsIcon fontSize="small" />;
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read if not already
+    if (!notification.is_read) {
+      markAsReadMutation.mutate(notification.id);
+    }
+
+    // Navigate if action URL is provided
+    if (notification.action_url) {
+      if (notification.action_url.startsWith('http')) {
+        window.open(notification.action_url, '_blank');
+      } else {
+        navigate(notification.action_url);
+      }
+      handleClose();
     }
   };
 
-  const getNotificationColor = (type: string, priority: string) => {
-    if (priority === 'urgent') return { main: theme.palette.error.main };
-    if (priority === 'high') return { main: theme.palette.warning.main };
-    
-    switch (type) {
-      case 'event': return { main: theme.palette.primary.main };
-      case 'payment': return { main: theme.palette.success.main };
-      case 'message': return { main: theme.palette.info.main };
-      case 'system': return { main: theme.palette.grey[600] };
-      default: return { main: theme.palette.primary.main };
-    }
+  const handleOpenPreferences = () => {
+    // Navigate to settings/notifications or open a dialog
+    navigate('/settings');
+    handleClose();
   };
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return <WarningIcon fontSize="small" color="error" />;
-      case 'high': return <WarningIcon fontSize="small" color="warning" />;
-      case 'medium': return <InfoIcon fontSize="small" color="info" />;
-      case 'low': return <SuccessIcon fontSize="small" color="success" />;
-      default: return <InfoIcon fontSize="small" />;
-    }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const now = new Date();
-    const notificationTime = new Date(timestamp);
-    const diffInHours = Math.floor((now.getTime() - notificationTime.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays === 1) return 'Yesterday';
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-    
-    return notificationTime.toLocaleDateString();
-  };
+  // Loading skeleton for notifications
+  const NotificationSkeleton = () => (
+    <Box sx={{ p: 3 }}>
+      <Box display="flex" gap={2}>
+        <Skeleton variant="circular" width={40} height={40} />
+        <Box flex={1}>
+          <Skeleton variant="text" width="60%" />
+          <Skeleton variant="text" width="80%" />
+          <Skeleton variant="text" width="40%" />
+        </Box>
+      </Box>
+    </Box>
+  );
 
   return (
     <>
@@ -141,7 +228,11 @@ export const NotificationCenter: React.FC = () => {
           transition: 'all 0.2s ease',
         }}
       >
-        <Badge badgeContent={unreadCount} color="error">
+        <Badge
+          badgeContent={isLoadingCounts ? 0 : unreadCount}
+          color="error"
+          max={99}
+        >
           <NotificationsIcon />
         </Badge>
       </IconButton>
@@ -181,8 +272,14 @@ export const NotificationCenter: React.FC = () => {
             }}
           >
             {/* Header */}
-            <Box sx={{ p: 3, borderBottom: `1px solid ${alpha('#fff', 0.1)}` }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box
+              sx={{ p: 3, borderBottom: `1px solid ${alpha('#fff', 0.1)}` }}
+            >
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Notifications
                 </Typography>
@@ -190,8 +287,15 @@ export const NotificationCenter: React.FC = () => {
                   {unreadCount > 0 && (
                     <Button
                       size="small"
-                      startIcon={<MarkReadIcon />}
+                      startIcon={
+                        markAllAsReadMutation.isPending ? (
+                          <CircularProgress size={14} color="inherit" />
+                        ) : (
+                          <MarkReadIcon />
+                        )
+                      }
                       onClick={handleMarkAllAsRead}
+                      disabled={markAllAsReadMutation.isPending}
                       sx={{
                         backgroundColor: alpha('#fff', 0.1),
                         '&:hover': {
@@ -202,6 +306,18 @@ export const NotificationCenter: React.FC = () => {
                       Mark all read
                     </Button>
                   )}
+                  <IconButton
+                    size="small"
+                    onClick={handleOpenPreferences}
+                    sx={{
+                      backgroundColor: alpha('#fff', 0.1),
+                      '&:hover': {
+                        backgroundColor: alpha('#fff', 0.2),
+                      },
+                    }}
+                  >
+                    <PreferencesIcon fontSize="small" />
+                  </IconButton>
                   <IconButton
                     size="small"
                     onClick={handleClose}
@@ -216,28 +332,57 @@ export const NotificationCenter: React.FC = () => {
                   </IconButton>
                 </Box>
               </Box>
-              
+
               {unreadCount > 0 && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1 }}
+                >
+                  You have {unreadCount} unread notification
+                  {unreadCount !== 1 ? 's' : ''}
                 </Typography>
               )}
             </Box>
 
             {/* Notifications List */}
             <Box sx={{ maxHeight: 480, overflow: 'auto' }}>
-              {notifications.length === 0 ? (
+              {isLoadingNotifications ? (
+                <>
+                  <NotificationSkeleton />
+                  <NotificationSkeleton />
+                  <NotificationSkeleton />
+                </>
+              ) : notifications.length === 0 ? (
                 <Box sx={{ p: 4, textAlign: 'center' }}>
-                  <NotificationsIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                  <NotificationsIcon
+                    sx={{ fontSize: 48, color: 'grey.400', mb: 2 }}
+                  />
                   <Typography variant="body2" color="text.secondary">
                     No notifications yet
                   </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1, display: 'block' }}
+                  >
+                    We'll notify you when something important happens
+                  </Typography>
                 </Box>
               ) : (
-                <Stack divider={<Divider sx={{ borderColor: alpha('#fff', 0.1) }} />}>
+                <Stack
+                  divider={
+                    <Divider sx={{ borderColor: alpha('#fff', 0.1) }} />
+                  }
+                >
                   {notifications.map((notification, index) => {
-                    const notificationColor = getNotificationColor(notification.type, notification.priority);
-                    
+                    const category =
+                      notification.notification_type_details?.category;
+                    const priority =
+                      notification.notification_type_details?.priority;
+                    const notificationColor = getPriorityColor(priority, theme);
+                    const categoryColor = getCategoryColor(category, theme);
+
                     return (
                       <AnimatedElement
                         key={notification.id}
@@ -247,18 +392,22 @@ export const NotificationCenter: React.FC = () => {
                         <Box
                           sx={{
                             p: 3,
-                            backgroundColor: notification.read 
-                              ? 'transparent' 
+                            backgroundColor: notification.is_read
+                              ? 'transparent'
                               : alpha(notificationColor.main, 0.05),
                             '&:hover': {
                               backgroundColor: alpha('#fff', 0.1),
                             },
                             transition: 'all 0.2s ease',
                             position: 'relative',
+                            cursor: notification.action_url
+                              ? 'pointer'
+                              : 'default',
                           }}
+                          onClick={() => handleNotificationClick(notification)}
                         >
                           {/* Unread indicator */}
-                          {!notification.read && (
+                          {!notification.is_read && (
                             <Box
                               sx={{
                                 position: 'absolute',
@@ -266,7 +415,7 @@ export const NotificationCenter: React.FC = () => {
                                 top: 0,
                                 bottom: 0,
                                 width: 3,
-                                backgroundColor: notificationColor.main,
+                                backgroundColor: categoryColor,
                               }}
                             />
                           )}
@@ -277,86 +426,98 @@ export const NotificationCenter: React.FC = () => {
                               sx={{
                                 width: 40,
                                 height: 40,
-                                backgroundColor: alpha(notificationColor.main, 0.15),
-                                color: notificationColor.main,
+                                backgroundColor: alpha(categoryColor, 0.15),
+                                color: categoryColor,
                               }}
                             >
-                              {getNotificationIcon(notification.type)}
+                              {getCategoryIcon(category)}
                             </Avatar>
 
                             {/* Content */}
                             <Box flex={1} minWidth={0}>
-                              <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                                <Typography 
-                                  variant="body2" 
-                                  sx={{ 
-                                    fontWeight: notification.read ? 400 : 600,
-                                    color: notification.read ? 'text.secondary' : 'text.primary',
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="flex-start"
+                                mb={1}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: notification.is_read
+                                      ? 400
+                                      : 600,
+                                    color: notification.is_read
+                                      ? 'text.secondary'
+                                      : 'text.primary',
                                   }}
                                 >
                                   {notification.title}
                                 </Typography>
-                                <Box display="flex" alignItems="center" gap={0.5}>
-                                  {getPriorityIcon(notification.priority)}
-                                  <Typography variant="caption" color="text.secondary">
-                                    {formatTimestamp(notification.timestamp)}
+                                <Box
+                                  display="flex"
+                                  alignItems="center"
+                                  gap={0.5}
+                                >
+                                  {getPriorityIcon(priority)}
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {notification.time_since_created}
                                   </Typography>
                                 </Box>
                               </Box>
-                              
-                              <Typography 
-                                variant="body2" 
-                                color="text.secondary" 
+
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
                                 sx={{ mb: 2, lineHeight: 1.4 }}
                               >
-                                {notification.message}
+                                {notification.content}
                               </Typography>
 
-                              {/* Metadata */}
-                              {notification.metadata && (
-                                <Box display="flex" gap={1} mb={2}>
-                                  {notification.metadata.eventName && (
-                                    <Chip
-                                      label={notification.metadata.eventName}
-                                      size="small"
-                                      variant="outlined"
-                                      sx={{
-                                        backgroundColor: alpha('#fff', 0.1),
-                                        border: `1px solid ${alpha('#fff', 0.2)}`,
-                                      }}
-                                    />
-                                  )}
-                                  {notification.metadata.amount && (
-                                    <Chip
-                                      label={notification.metadata.amount}
-                                      size="small"
-                                      variant="outlined"
-                                      color="success"
-                                      sx={{
-                                        backgroundColor: alpha('#fff', 0.1),
-                                        border: `1px solid ${alpha('#fff', 0.2)}`,
-                                      }}
-                                    />
-                                  )}
-                                  {notification.metadata.senderName && (
-                                    <Chip
-                                      label={notification.metadata.senderName}
-                                      size="small"
-                                      variant="outlined"
-                                      color="info"
-                                      sx={{
-                                        backgroundColor: alpha('#fff', 0.1),
-                                        border: `1px solid ${alpha('#fff', 0.2)}`,
-                                      }}
-                                    />
-                                  )}
-                                </Box>
-                              )}
+                              {/* Metadata chips */}
+                              <Box display="flex" gap={1} mb={2} flexWrap="wrap">
+                                {notification.event_name && (
+                                  <Chip
+                                    label={notification.event_name}
+                                    size="small"
+                                    variant="outlined"
+                                    icon={<EventIcon />}
+                                    sx={{
+                                      backgroundColor: alpha('#fff', 0.1),
+                                      border: `1px solid ${alpha('#fff', 0.2)}`,
+                                    }}
+                                  />
+                                )}
+                                {category && (
+                                  <Chip
+                                    label={
+                                      notification.notification_type_details
+                                        ?.name || category
+                                    }
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: alpha(
+                                        categoryColor,
+                                        0.1
+                                      ),
+                                      color: categoryColor,
+                                      border: `1px solid ${alpha(categoryColor, 0.3)}`,
+                                    }}
+                                  />
+                                )}
+                              </Box>
 
                               {/* Actions */}
-                              <Box display="flex" justifyContent="space-between" alignItems="center">
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="center"
+                              >
                                 <Box display="flex" gap={1}>
-                                  {notification.actionUrl && (
+                                  {notification.action_url && (
                                     <Button
                                       size="small"
                                       variant="outlined"
@@ -371,12 +532,20 @@ export const NotificationCenter: React.FC = () => {
                                     </Button>
                                   )}
                                 </Box>
-                                
-                                <Box display="flex" gap={0.5}>
-                                  {!notification.read && (
+
+                                <Box
+                                  display="flex"
+                                  gap={0.5}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {!notification.is_read && (
                                     <IconButton
                                       size="small"
-                                      onClick={() => handleMarkAsRead(notification.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkAsRead(notification.id);
+                                      }}
+                                      disabled={markAsReadMutation.isPending}
                                       sx={{
                                         backgroundColor: alpha('#fff', 0.1),
                                         '&:hover': {
@@ -389,11 +558,18 @@ export const NotificationCenter: React.FC = () => {
                                   )}
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleDeleteNotification(notification.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteNotification(notification.id);
+                                    }}
+                                    disabled={deleteMutation.isPending}
                                     sx={{
                                       backgroundColor: alpha('#fff', 0.1),
                                       '&:hover': {
-                                        backgroundColor: alpha(theme.palette.error.main, 0.1),
+                                        backgroundColor: alpha(
+                                          theme.palette.error.main,
+                                          0.1
+                                        ),
                                         color: theme.palette.error.main,
                                       },
                                     }}
@@ -414,10 +590,20 @@ export const NotificationCenter: React.FC = () => {
 
             {/* Footer */}
             {notifications.length > 0 && (
-              <Box sx={{ p: 2, borderTop: `1px solid ${alpha('#fff', 0.1)}`, textAlign: 'center' }}>
+              <Box
+                sx={{
+                  p: 2,
+                  borderTop: `1px solid ${alpha('#fff', 0.1)}`,
+                  textAlign: 'center',
+                }}
+              >
                 <Button
                   variant="text"
                   size="small"
+                  onClick={() => {
+                    navigate('/notifications');
+                    handleClose();
+                  }}
                   sx={{
                     backgroundColor: alpha('#fff', 0.1),
                     '&:hover': {
