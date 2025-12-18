@@ -129,12 +129,12 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class NotificationListSerializer(NotificationSerializer):
     """Lightweight serializer for notification lists"""
-    
+
     class Meta(NotificationSerializer.Meta):
         fields = [
             'id', 'notification_type_details', 'title', 'content', 'action_url',
             'is_read', 'read_at', 'time_since_created', 'can_mark_read',
-            'created_at'
+            'created_at', 'event', 'event_name'
         ]
 
 
