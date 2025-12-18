@@ -12,12 +12,13 @@ interface KPICardProps {
   trend?: number;
   trendLabel?: string;
   isLoading?: boolean;
-  color?: 'primary' | 'success' | 'warning' | 'error' | 'info';
+  color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
   icon?: React.ReactNode;
 }
 
 const colorMap = {
   primary: { bg: 'rgba(33, 150, 243, 0.1)', text: '#2196f3' },
+  secondary: { bg: 'rgba(156, 39, 176, 0.1)', text: '#9c27b0' },
   success: { bg: 'rgba(76, 175, 80, 0.1)', text: '#4caf50' },
   warning: { bg: 'rgba(255, 152, 0, 0.1)', text: '#ff9800' },
   error: { bg: 'rgba(244, 67, 54, 0.1)', text: '#f44336' },

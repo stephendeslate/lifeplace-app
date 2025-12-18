@@ -7,7 +7,14 @@ from django.utils import timezone
 
 
 class SalesAnalyticsService:
-    """Service for sales and reservation analytics - queries existing models directly."""
+    """
+    Service for sales and reservation analytics - queries existing models directly.
+
+    Date field logic:
+    - Bookings (total, confirmed, leads, cancelled) → created_at (when booking was made)
+    - Completed events → end_date (when event actually finished)
+    - Revenue → from Payment records for completed payments on completed events
+    """
 
     @staticmethod
     def get_bookings_summary(start_date, end_date, period='daily'):
@@ -16,6 +23,7 @@ class SalesAnalyticsService:
         Returns: daily/weekly/monthly/yearly booking counts and revenue.
         """
         from core.domains.events.models import Event
+        from core.domains.payments.models import Payment
 
         trunc_fn = {
             'daily': TruncDay,
@@ -24,6 +32,7 @@ class SalesAnalyticsService:
             'yearly': TruncYear,
         }.get(period, TruncDay)
 
+        # Bookings use created_at (when booking was made)
         results = Event.objects.filter(
             created_at__range=(start_date, end_date)
         ).annotate(
@@ -31,11 +40,38 @@ class SalesAnalyticsService:
         ).values('period').annotate(
             total_bookings=Count('id'),
             confirmed_bookings=Count('id', filter=Q(status='CONFIRMED')),
-            completed_bookings=Count('id', filter=Q(status='COMPLETED')),
             cancelled_bookings=Count('id', filter=Q(status='CANCELLED')),
             leads=Count('id', filter=Q(status='LEAD')),
-            total_revenue=Sum('total_price', filter=Q(status__in=['CONFIRMED', 'COMPLETED']))
         ).order_by('period')
+
+        # Completed events use end_date
+        completed_by_period = {}
+        completed_results = Event.objects.filter(
+            status='COMPLETED',
+            end_date__range=(start_date, end_date)
+        ).annotate(
+            period=trunc_fn('end_date')
+        ).values('period').annotate(
+            completed_bookings=Count('id')
+        )
+        for cr in completed_results:
+            if cr['period']:
+                completed_by_period[cr['period']] = cr['completed_bookings']
+
+        # Revenue from completed payments on completed events (by end_date)
+        revenue_by_period = {}
+        payment_results = Payment.objects.filter(
+            event__status='COMPLETED',
+            event__end_date__range=(start_date, end_date),
+            status='COMPLETED'
+        ).annotate(
+            period=trunc_fn('event__end_date')
+        ).values('period').annotate(
+            total_revenue=Sum('amount')
+        )
+        for pr in payment_results:
+            if pr['period']:
+                revenue_by_period[pr['period']] = float(pr['total_revenue'] or 0)
 
         # Convert to serializable format
         return [
@@ -43,10 +79,10 @@ class SalesAnalyticsService:
                 'period': r['period'].isoformat() if r['period'] else None,
                 'total_bookings': r['total_bookings'],
                 'confirmed_bookings': r['confirmed_bookings'],
-                'completed_bookings': r['completed_bookings'],
+                'completed_bookings': completed_by_period.get(r['period'], 0),
                 'cancelled_bookings': r['cancelled_bookings'],
                 'leads': r['leads'],
-                'total_revenue': float(r['total_revenue'] or 0),
+                'total_revenue': revenue_by_period.get(r['period'], 0),
             }
             for r in results
         ]
@@ -55,13 +91,40 @@ class SalesAnalyticsService:
     def get_reservation_pipeline(start_date, end_date):
         """Get reservation counts by status (pipeline view)."""
         from core.domains.events.models import Event
+        from core.domains.payments.models import Payment
 
-        results = Event.objects.filter(
+        # Bookings use created_at (when booking was made)
+        booking_results = Event.objects.filter(
             created_at__range=(start_date, end_date)
-        ).values('status').annotate(
+        ).exclude(status='COMPLETED').values('status').annotate(
             count=Count('id'),
-            total_value=Sum('total_price')
         ).order_by('status')
+
+        # Completed events use end_date
+        completed_count = Event.objects.filter(
+            status='COMPLETED',
+            end_date__range=(start_date, end_date)
+        ).count()
+
+        # Get actual revenue by status from payments
+        revenue_by_status = {}
+        # For non-completed, use created_at
+        payment_results = Payment.objects.filter(
+            event__created_at__range=(start_date, end_date),
+            status='COMPLETED'
+        ).exclude(event__status='COMPLETED').values('event__status').annotate(
+            total_value=Sum('amount')
+        )
+        for pr in payment_results:
+            revenue_by_status[pr['event__status']] = float(pr['total_value'] or 0)
+
+        # For completed, use end_date
+        completed_revenue = Payment.objects.filter(
+            event__status='COMPLETED',
+            event__end_date__range=(start_date, end_date),
+            status='COMPLETED'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        revenue_by_status['COMPLETED'] = float(completed_revenue)
 
         # Add status labels
         status_labels = {
@@ -71,24 +134,34 @@ class SalesAnalyticsService:
             'CANCELLED': 'Cancelled',
         }
 
-        return [
-            {
+        results = []
+        for r in booking_results:
+            results.append({
                 'status': r['status'],
                 'label': status_labels.get(r['status'], r['status']),
                 'count': r['count'],
-                'total_value': float(r['total_value'] or 0),
-            }
-            for r in results
-        ]
+                'total_value': revenue_by_status.get(r['status'], 0),
+            })
+
+        # Add completed separately
+        results.append({
+            'status': 'COMPLETED',
+            'label': 'Completed',
+            'count': completed_count,
+            'total_value': revenue_by_status.get('COMPLETED', 0),
+        })
+
+        return results
 
     @staticmethod
     def get_revenue_by_event_type(start_date, end_date):
         """Revenue breakdown by event type/package."""
         from core.domains.events.models import EventProductOption
 
+        # For revenue breakdown, use completed events with end_date
         results = EventProductOption.objects.filter(
-            event__created_at__range=(start_date, end_date),
-            event__status__in=['CONFIRMED', 'COMPLETED']
+            event__status='COMPLETED',
+            event__end_date__range=(start_date, end_date)
         ).values(
             'product_option__name',
             'product_option__type',
@@ -118,8 +191,9 @@ class SalesAnalyticsService:
         """Payment status tracking including overdue payments."""
         from core.domains.payments.models import Payment, PaymentInstallment
 
+        # Filter by booking creation date for payment tracking
         payments = Payment.objects.filter(
-            created_at__range=(start_date, end_date)
+            event__created_at__range=(start_date, end_date)
         )
 
         # Get payment summaries by status

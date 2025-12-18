@@ -103,6 +103,7 @@ export const Dashboard: React.FC = () => {
   // Calculate dashboard metrics
   const totalActiveClients = clients?.length || 0;
   const upcomingEvents = events?.filter(e => e.status !== 'CANCELLED').length || 0;
+  const eventRevenue = dashboardKPIs?.event_revenue || 0;
   const totalRevenue = dashboardKPIs?.total_revenue || 0;
   const pendingPayments = payments?.filter(p => p.status === 'PENDING').length || 0;
 
@@ -268,41 +269,50 @@ export const Dashboard: React.FC = () => {
               </Typography>
             </Box>
             
-            <Box 
-              sx={{ 
+            <Box
+              sx={{
                 display: 'grid',
-                gridTemplateColumns: { 
-                  xs: '1fr', 
-                  sm: 'repeat(2, 1fr)', 
-                  lg: 'repeat(4, 1fr)' 
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  lg: 'repeat(5, 1fr)'
                 },
                 gap: 3,
-                
+
                 // Staggered animation for metric cards
                 '& > div': {
                   '&:nth-of-type(1)': { animationDelay: '100ms' },
-                  '&:nth-of-type(2)': { animationDelay: '200ms' },
-                  '&:nth-of-type(3)': { animationDelay: '300ms' },
-                  '&:nth-of-type(4)': { animationDelay: '400ms' },
+                  '&:nth-of-type(2)': { animationDelay: '150ms' },
+                  '&:nth-of-type(3)': { animationDelay: '200ms' },
+                  '&:nth-of-type(4)': { animationDelay: '250ms' },
+                  '&:nth-of-type(5)': { animationDelay: '300ms' },
                 }
               }}
             >
               <KPICard
-                title="Total Revenue"
-                value={formatRevenue(totalRevenue)}
-                subtitle="Last 30 days"
+                title="Event Revenue"
+                value={formatRevenue(eventRevenue)}
+                subtitle="From completed events"
                 color="success"
                 icon={<AttachMoney />}
-                trend={12.5}
+                trend={dashboardKPIs?.event_revenue_trend}
+              />
+
+              <KPICard
+                title="Total Revenue"
+                value={formatRevenue(totalRevenue)}
+                subtitle="All collected payments"
+                color="primary"
+                icon={<AttachMoney />}
+                trend={dashboardKPIs?.total_revenue_trend}
               />
 
               <KPICard
                 title="Active Clients"
                 value={totalActiveClients}
                 subtitle="Total registered"
-                color="primary"
+                color="secondary"
                 icon={<People />}
-                trend={8.2}
               />
 
               <KPICard
@@ -314,10 +324,10 @@ export const Dashboard: React.FC = () => {
               />
 
               <KPICard
-                title="System Health"
-                value={`${systemHealth}%`}
-                subtitle="All systems operational"
-                color={systemHealth > 90 ? "success" : systemHealth > 70 ? "warning" : "error"}
+                title="Conversion Rate"
+                value={`${dashboardKPIs?.conversion_rate || 0}%`}
+                subtitle="Booking sessions"
+                color="info"
                 icon={<Analytics />}
               />
             </Box>
