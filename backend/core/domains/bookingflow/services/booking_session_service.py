@@ -1626,6 +1626,35 @@ class BookingSessionService:
                     )
                     logger.info(f"Created {len(responses_data)} questionnaire responses for event {event.id}")
 
+                    # Auto-populate num_participants from guest count fields
+                    try:
+                        from core.domains.questionnaires.models import QuestionnaireField
+
+                        total_guests = 0
+                        for response in responses_data:
+                            field_id = response.get('field')
+                            value = response.get('value')
+
+                            if field_id and value:
+                                try:
+                                    field = QuestionnaireField.objects.get(id=field_id)
+                                    if field.is_guest_count and field.type == 'number':
+                                        total_guests += int(value)
+                                except (QuestionnaireField.DoesNotExist, ValueError, TypeError):
+                                    continue
+
+                        if total_guests > 0:
+                            event.num_participants = total_guests
+                            event.save(update_fields=['num_participants'])
+                            logger.info(f"Set num_participants={total_guests} for event {event.id} from questionnaire")
+
+                            # Also update EventProductOptions
+                            for epo in event.event_products.all():
+                                epo.num_participants = total_guests
+                                epo.save(update_fields=['num_participants'])
+                    except Exception as guest_err:
+                        logger.warning(f"Could not auto-populate guest count: {guest_err}")
+
         except Exception as e:
             logger.warning(f"Could not create questionnaire responses for event: {e}")
         

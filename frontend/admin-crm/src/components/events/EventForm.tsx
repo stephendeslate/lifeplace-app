@@ -40,6 +40,7 @@ const getInitialFormData = (event?: Event | null): EventFormData => {
       end_date: '',
       lead_source: '',
       total_price: '',
+      num_participants: '',
     };
   }
 
@@ -77,6 +78,7 @@ const getInitialFormData = (event?: Event | null): EventFormData => {
     end_date: event.end_date || '',
     lead_source: event.lead_source || '',
     total_price: event.total_price || '',
+    num_participants: event.num_participants?.toString() || '',
   };
 };
 
@@ -156,6 +158,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       end_date: formData.end_date || null,
       lead_source: formData.lead_source || undefined,
       total_price: formData.total_price ? parseFloat(formData.total_price).toString() : null,
+      num_participants: formData.num_participants ? parseInt(formData.num_participants) : null,
     };
 
     onSubmit(submitData);
@@ -304,7 +307,7 @@ export const EventForm: React.FC<EventFormProps> = ({
           />
         </Box>
 
-        {/* Lead Source and Total Price Row */}
+        {/* Lead Source, Total Price, and Number of Guests Row */}
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
           <TextField
             fullWidth
@@ -324,6 +327,18 @@ export const EventForm: React.FC<EventFormProps> = ({
             helperText={errors.total_price}
             InputProps={{
               inputProps: { min: 0, step: '0.01' }
+            }}
+          />
+
+          <TextField
+            fullWidth
+            label="Number of Guests"
+            type="number"
+            value={formData.num_participants}
+            onChange={(e) => handleChange('num_participants', e.target.value)}
+            placeholder="Total expected guests"
+            InputProps={{
+              inputProps: { min: 0 }
             }}
           />
         </Box>

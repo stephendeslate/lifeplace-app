@@ -38,6 +38,10 @@ class QuestionnaireField(BaseModel):
     required = models.BooleanField(default=False)
     order = models.IntegerField(default=1)
     options = models.JSONField(blank=True, default=list, help_text="List of option strings")
+    is_guest_count = models.BooleanField(
+        default=False,
+        help_text="If true, this field's numeric response will contribute to event guest count"
+    )
 
     def __str__(self):
         return f"{self.questionnaire.name} - {self.name}"

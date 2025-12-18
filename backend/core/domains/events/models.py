@@ -209,6 +209,13 @@ class Event(BaseModel):
 
     preferences = models.JSONField(default=dict, blank=True, help_text="Client preferences")
 
+    # GUEST COUNT
+    num_participants = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Total number of guests/participants for this event"
+    )
+
     # DATE BLOCKING FIELDS
     date_blocked = models.BooleanField(
         default=False,
