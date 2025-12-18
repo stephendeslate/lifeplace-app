@@ -234,4 +234,77 @@ export interface VenueSelectionStepConfiguration {
   title: string;
   description: string;
   available_venues_details?: RentableVenue[];
+  // Enhanced configuration
+  show_package_recommendations?: boolean;
+  show_view_packages_option?: boolean;
+  view_packages_button_text?: string;
+}
+
+// ============================================
+// PACKAGE MATCHING TYPES
+// For finding pre-made packages that match venue selection
+// ============================================
+
+/**
+ * Venue info within a matched package
+ */
+export interface MatchedPackageVenue {
+  id: number;
+  name: string;
+  is_primary: boolean;
+  is_included_in_selection: boolean;
+}
+
+/**
+ * A pre-made package that matches or partially matches venue selection
+ */
+export interface MatchedPackage {
+  id: number;
+  name: string;
+  description: string | null;
+  base_price: string;
+  included_hours: number;
+  excess_hour_price: string | null;
+  match_type: 'exact' | 'superset' | 'subset' | 'partial';
+  venues: MatchedPackageVenue[];
+  bonus_venues: MatchedPackageVenue[];
+  savings_vs_custom: string;
+  savings_percent: string;
+  is_better_value: boolean;
+  additional_venues: MatchedPackageVenue[];
+  missing_venues: Array<{ id: number; name: string }>;
+}
+
+/**
+ * Custom package estimate from venue selection
+ */
+export interface CustomPackageEstimate {
+  subtotal: string;
+  discount_percent: string;
+  discount_amount: string;
+  total: string;
+  included_hours: number;
+  venues: Array<{
+    id: number;
+    name: string;
+    price: string;
+    hours: string;
+  }>;
+}
+
+/**
+ * Request to find matching packages
+ */
+export interface FindMatchingPackagesRequest {
+  venue_ids: number[];
+  bundle_discount_percent?: string;
+}
+
+/**
+ * Response from finding matching packages
+ */
+export interface FindMatchingPackagesResponse {
+  exact_matches: MatchedPackage[];
+  partial_matches: MatchedPackage[];
+  custom_package_estimate: CustomPackageEstimate | null;
 }

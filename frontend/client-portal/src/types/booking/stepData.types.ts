@@ -170,6 +170,8 @@ export interface VenueSelectionStepData {
   selected_venue_ids: number[];
   primary_venue_id: number | null;
   custom_package_id?: number;
+  matched_package_id?: number;  // When user selects a pre-made package that matches
+  navigate_to_packages?: boolean;  // Signal to navigate to package selection
 }
 
 // Combined step data type

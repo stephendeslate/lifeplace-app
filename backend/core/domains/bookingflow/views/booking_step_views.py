@@ -13,6 +13,7 @@ from ..serializers import (
     ReorderStepsSerializer,
     # Configuration serializers
     IntroductionStepConfigurationSerializer,
+    VenueSelectionStepConfigurationSerializer,
     DateTimeStepConfigurationSerializer,
     QuestionnaireStepConfigurationSerializer,
     PackageSelectionStepConfigurationSerializer,
@@ -198,9 +199,10 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
             
             config = BookingFlowStepConfigurationService.get_step_configuration(pk)
             
-            # Updated serializer mapping with pricing_summary added
+            # Updated serializer mapping with pricing_summary and venue_selection added
             serializer_map = {
                 'introduction': IntroductionStepConfigurationSerializer,
+                'venue_selection': VenueSelectionStepConfigurationSerializer,
                 'date_time': DateTimeStepConfigurationSerializer,
                 'questionnaire': QuestionnaireStepConfigurationSerializer,
                 'package_selection': PackageSelectionStepConfigurationSerializer,

@@ -602,3 +602,161 @@ class CustomPackageService:
             'bundle_discount_percent': package.bundle_discount_percent,
             'venues': venues,
         }
+
+    @classmethod
+    def find_matching_packages(cls, venue_ids, bundle_discount_percent=None):
+        """
+        Find pre-made packages that match or partially match the selected venues.
+        Returns packages with match type and price comparison data.
+
+        Args:
+            venue_ids: List of venue IDs selected by user
+            bundle_discount_percent: Optional discount percent for custom package calculation
+
+        Returns:
+            dict: Contains exact_matches, partial_matches, and custom_package_estimate
+        """
+        from core.domains.venues.models import Venue, PackageVenue
+
+        if not venue_ids:
+            return {
+                'exact_matches': [],
+                'partial_matches': [],
+                'custom_package_estimate': None,
+            }
+
+        venue_set = set(venue_ids)
+        discount_percent = Decimal(str(bundle_discount_percent)) if bundle_discount_percent else cls.BUNDLE_DISCOUNT_PERCENT
+
+        # Get selected venues for custom package price calculation
+        selected_venues = Venue.objects.filter(
+            id__in=venue_ids,
+            is_active=True,
+            is_rentable_standalone=True
+        )
+
+        # Calculate custom package estimate
+        custom_total_price = Decimal('0')
+        custom_total_hours = Decimal('0')
+        venue_details = []
+
+        for venue in selected_venues:
+            if venue.standalone_base_price:
+                custom_total_price += venue.standalone_base_price
+            if venue.standalone_included_hours:
+                custom_total_hours += venue.standalone_included_hours
+            venue_details.append({
+                'id': venue.id,
+                'name': venue.name,
+                'price': str(venue.standalone_base_price or 0),
+                'hours': str(venue.standalone_included_hours or 0),
+            })
+
+        # Apply bundle discount for multi-venue
+        custom_discount = custom_total_price * (discount_percent / Decimal('100')) if len(venue_ids) > 1 else Decimal('0')
+        custom_final_price = custom_total_price - custom_discount
+
+        custom_package_estimate = {
+            'subtotal': str(custom_total_price),
+            'discount_percent': str(discount_percent) if len(venue_ids) > 1 else '0',
+            'discount_amount': str(custom_discount),
+            'total': str(custom_final_price),
+            'included_hours': int(custom_total_hours),
+            'venues': venue_details,
+        }
+
+        # Find all pre-made packages (not custom) that include at least one selected venue
+        packages_with_venues = ProductOption.objects.filter(
+            type='PACKAGE',
+            is_active=True,
+            is_bookable=True,
+            is_custom=False,  # Only pre-made packages
+        ).prefetch_related(
+            'package_venues__venue'
+        ).distinct()
+
+        exact_matches = []
+        partial_matches = []
+
+        for package in packages_with_venues:
+            package_venue_ids = set(
+                pv.venue_id for pv in package.package_venues.all()
+                if not pv.is_bonus  # Exclude bonus venues from matching
+            )
+
+            if not package_venue_ids:
+                continue
+
+            # Check match type
+            if package_venue_ids == venue_set:
+                # Exact match - package has exactly the venues user selected
+                match_type = 'exact'
+            elif venue_set.issubset(package_venue_ids):
+                # Package contains all selected venues plus more
+                match_type = 'superset'
+            elif package_venue_ids.issubset(venue_set):
+                # Selected venues contain all package venues plus more
+                match_type = 'subset'
+            elif package_venue_ids & venue_set:
+                # Partial overlap
+                match_type = 'partial'
+            else:
+                # No overlap
+                continue
+
+            # Get package venue details
+            package_venues = []
+            bonus_venues = []
+            for pv in package.package_venues.all():
+                venue_info = {
+                    'id': pv.venue.id,
+                    'name': pv.venue.name,
+                    'is_primary': pv.is_primary,
+                    'is_included_in_selection': pv.venue.id in venue_set,
+                }
+                if pv.is_bonus:
+                    bonus_venues.append(venue_info)
+                else:
+                    package_venues.append(venue_info)
+
+            # Calculate savings compared to custom package
+            package_price = package.base_price or Decimal('0')
+            savings = custom_final_price - package_price if custom_final_price > package_price else Decimal('0')
+            savings_percent = (savings / custom_final_price * 100) if custom_final_price > 0 else Decimal('0')
+
+            package_data = {
+                'id': package.id,
+                'name': package.name,
+                'description': package.description,
+                'base_price': str(package.base_price),
+                'included_hours': package.included_hours,
+                'excess_hour_price': str(package.excess_hour_price) if package.excess_hour_price else None,
+                'match_type': match_type,
+                'venues': package_venues,
+                'bonus_venues': bonus_venues,
+                'savings_vs_custom': str(savings),
+                'savings_percent': str(savings_percent.quantize(Decimal('0.1'))),
+                'is_better_value': package_price < custom_final_price,
+                'additional_venues': [
+                    v for v in package_venues
+                    if not v['is_included_in_selection']
+                ],
+                'missing_venues': [
+                    {'id': vid, 'name': next((v['name'] for v in venue_details if v['id'] == vid), 'Unknown')}
+                    for vid in venue_set - package_venue_ids
+                ],
+            }
+
+            if match_type == 'exact':
+                exact_matches.append(package_data)
+            else:
+                partial_matches.append(package_data)
+
+        # Sort partial matches by savings (best value first)
+        partial_matches.sort(key=lambda x: Decimal(x['savings_vs_custom']), reverse=True)
+
+        return {
+            'exact_matches': exact_matches,
+            'partial_matches': partial_matches,
+            'custom_package_estimate': custom_package_estimate,
+        }

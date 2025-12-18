@@ -464,6 +464,49 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    @action(detail=False, methods=['post'])
+    def find_matching_packages(self, request):
+        """
+        Find pre-made packages that match or partially match the selected venues.
+        Returns packages with price comparison data for recommendation.
+
+        Request body:
+        {
+            "venue_ids": [1, 2, 3],
+            "bundle_discount_percent": "10.00"  // Optional
+        }
+
+        Returns:
+        {
+            "exact_matches": [...],
+            "partial_matches": [...],
+            "custom_package_estimate": {...}
+        }
+        """
+        venue_ids = request.data.get('venue_ids', [])
+        bundle_discount_percent = request.data.get('bundle_discount_percent')
+
+        if not venue_ids:
+            return Response(
+                {'error': 'venue_ids is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            result = CustomPackageService.find_matching_packages(
+                venue_ids=venue_ids,
+                bundle_discount_percent=bundle_discount_percent,
+            )
+
+            return Response(result)
+
+        except Exception as e:
+            logger.error(f"Failed to find matching packages: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class DiscountViewSet(viewsets.ModelViewSet):
     """

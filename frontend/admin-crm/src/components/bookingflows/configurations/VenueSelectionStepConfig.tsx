@@ -39,6 +39,10 @@ interface VenueSelectionConfigFormData {
   bundle_discount_percent: string;
   title: string;
   description: string;
+  // Package recommendation settings
+  show_package_recommendations: boolean;
+  show_view_packages_option: boolean;
+  view_packages_button_text: string;
 }
 
 const defaultFormData: VenueSelectionConfigFormData = {
@@ -50,6 +54,9 @@ const defaultFormData: VenueSelectionConfigFormData = {
   bundle_discount_percent: '10.00',
   title: 'Select Your Spaces',
   description: 'Choose which spaces to include in your booking.',
+  show_package_recommendations: true,
+  show_view_packages_option: true,
+  view_packages_button_text: 'Not sure? View our packages instead',
 };
 
 export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> = ({
@@ -88,6 +95,9 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
         bundle_discount_percent: venueConfig.bundle_discount_percent || '10.00',
         title: venueConfig.title || 'Select Your Spaces',
         description: venueConfig.description || 'Choose which spaces to include in your booking.',
+        show_package_recommendations: venueConfig.show_package_recommendations ?? true,
+        show_view_packages_option: venueConfig.show_view_packages_option ?? true,
+        view_packages_button_text: venueConfig.view_packages_button_text || 'Not sure? View our packages instead',
       });
       setHasChanges(false);
     } else if (!isLoadingConfig && !config) {
@@ -108,7 +118,10 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
         formData.show_bundle_discount !== (venueConfig.show_bundle_discount ?? true) ||
         formData.bundle_discount_percent !== (venueConfig.bundle_discount_percent || '10.00') ||
         formData.title !== (venueConfig.title || 'Select Your Spaces') ||
-        formData.description !== (venueConfig.description || '');
+        formData.description !== (venueConfig.description || '') ||
+        formData.show_package_recommendations !== (venueConfig.show_package_recommendations ?? true) ||
+        formData.show_view_packages_option !== (venueConfig.show_view_packages_option ?? true) ||
+        formData.view_packages_button_text !== (venueConfig.view_packages_button_text || 'Not sure? View our packages instead');
 
       setHasChanges(hasFormChanges);
     }
@@ -188,6 +201,9 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
       bundle_discount_percent: formData.bundle_discount_percent,
       title: formData.title.trim(),
       description: formData.description.trim(),
+      show_package_recommendations: formData.show_package_recommendations,
+      show_view_packages_option: formData.show_view_packages_option,
+      view_packages_button_text: formData.view_packages_button_text.trim(),
     };
 
     updateConfiguration(
@@ -213,6 +229,9 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
         bundle_discount_percent: venueConfig.bundle_discount_percent || '10.00',
         title: venueConfig.title || 'Select Your Spaces',
         description: venueConfig.description || 'Choose which spaces to include in your booking.',
+        show_package_recommendations: venueConfig.show_package_recommendations ?? true,
+        show_view_packages_option: venueConfig.show_view_packages_option ?? true,
+        view_packages_button_text: venueConfig.view_packages_button_text || 'Not sure? View our packages instead',
       });
     } else {
       setFormData(defaultFormData);
@@ -412,6 +431,63 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
                   Show discount applied when selecting multiple spaces
                 </Typography>
               </Box>
+            </Stack>
+          </Box>
+        </ModernCard>
+
+        {/* Package Recommendations */}
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Package Recommendations
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Show users pre-made packages that match their venue selection, helping them find better value options.
+            </Typography>
+
+            <Stack spacing={2}>
+              <Box>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.show_package_recommendations}
+                      onChange={handleSwitchChange('show_package_recommendations')}
+                      disabled={isUpdatingConfiguration}
+                    />
+                  }
+                  label="Show Package Recommendations"
+                />
+                <Typography variant="caption" color="text.secondary" display="block">
+                  When enabled, shows matching pre-made packages with price comparisons
+                </Typography>
+              </Box>
+
+              <Box>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.show_view_packages_option}
+                      onChange={handleSwitchChange('show_view_packages_option')}
+                      disabled={isUpdatingConfiguration}
+                    />
+                  }
+                  label="Show 'View Packages' Option"
+                />
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Allow users to navigate to package selection if unsure about venue selection
+                </Typography>
+              </Box>
+
+              {formData.show_view_packages_option && (
+                <TextField
+                  fullWidth
+                  label="View Packages Button Text"
+                  value={formData.view_packages_button_text}
+                  onChange={handleInputChange('view_packages_button_text')}
+                  helperText="Text shown on the button to navigate to packages"
+                  disabled={isUpdatingConfiguration}
+                />
+              )}
             </Stack>
           </Box>
         </ModernCard>
