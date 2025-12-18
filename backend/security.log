@@ -1901,3 +1901,6 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-12-18 09:01:18,836 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
 🔒 SECURITY 2025-12-18 11:18:50,416 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
 🔒 SECURITY 2025-12-18 11:19:41,774 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-18 12:51:02,592 WARNING [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-18 12:51:03,956 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-18 23:14:49,840 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
