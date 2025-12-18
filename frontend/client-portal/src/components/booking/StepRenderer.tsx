@@ -211,6 +211,7 @@ export const StepRenderer: React.FC = () => {
           onDataChange={handlePackageSelectionChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
+          venueSelectionData={state.stepData.venue_selection}
         />
       );
 
