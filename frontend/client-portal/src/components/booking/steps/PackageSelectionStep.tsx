@@ -15,20 +15,22 @@ import {
   Divider,
   IconButton,
 } from '@mui/material';
-import { 
-  Add, 
-  Remove, 
-  Check, 
+import {
+  Add,
+  Remove,
+  Check,
   AccessTime,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { ProductsApi } from '../../../apis/booking/products.api';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
-import type { 
-  PackageSelectionStepData, 
+import type {
+  PackageSelectionStepData,
   PackageSelectionStepConfiguration,
   ProductOption,
   SelectedPackage,
 } from '../../../types/booking';
+import type { VenueSelectionStepData } from '../../../types/booking/stepData.types';
 
 interface PackageSelectionStepProps {
   stepData?: PackageSelectionStepData;
@@ -36,6 +38,7 @@ interface PackageSelectionStepProps {
   onDataChange: (data: PackageSelectionStepData) => void;
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
+  venueSelectionData?: VenueSelectionStepData;
 }
 
 export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
@@ -44,12 +47,28 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
   onDataChange,
   validationErrors,
   isValidating,
+  venueSelectionData,
 }) => {
   const { formatAmount } = useCurrencySettings();
   const availablePackages = config?.available_packages_details || [];
   const selectionType = config?.selection_type || 'SINGLE';
   const minSelection = config?.min_selection || 1;
   const maxSelection = config?.max_selection || 1;
+
+  // Detect if package was pre-selected from venue selection step
+  const hasPreSelectedFromVenues = useMemo(() => {
+    const hasCustomPackage = !!venueSelectionData?.custom_package_id;
+    const hasMatchedPackage = !!venueSelectionData?.matched_package_id;
+    const hasSelectedPackages = (stepData.selected_packages?.length ?? 0) > 0;
+    return (hasCustomPackage || hasMatchedPackage) && hasSelectedPackages;
+  }, [venueSelectionData, stepData.selected_packages]);
+
+  // Check if the pre-selected package is a custom package (not in available list)
+  const isCustomPackageSelected = useMemo(() => {
+    if (!hasPreSelectedFromVenues) return false;
+    const selectedIds = stepData.selected_packages?.map(p => p.product_id) || [];
+    return selectedIds.some(id => !availablePackages.some(p => p.id === id));
+  }, [hasPreSelectedFromVenues, stepData.selected_packages, availablePackages]);
 
   // Use props stepData as single source of truth - memoize to stabilize reference
   const selectedPackages = useMemo(() => stepData.selected_packages || [], [stepData.selected_packages]);
@@ -154,6 +173,11 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
     return ProductsApi.formatPrice(price);
   };
 
+  // Handler to clear pre-selected package and allow re-selection
+  const handleClearPreSelection = useCallback(() => {
+    onDataChange({ selected_packages: [] });
+  }, [onDataChange]);
+
   if (!config) {
     return (
       <Box display="flex" justifyContent="center" p={3}>
@@ -162,7 +186,115 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
     );
   }
 
-  if (!availablePackages.length) {
+  // Show confirmation UI for custom packages selected in venue selection
+  if (isCustomPackageSelected && selectedPackages.length > 0) {
+    const customPkg = selectedPackages[0];
+    return (
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          Your Package Selection
+        </Typography>
+
+        <Alert severity="success" sx={{ mb: 3 }}>
+          You've created a custom package from your venue selection.
+        </Alert>
+
+        <Card variant="elevation" sx={{ border: 2, borderColor: 'primary.main', mb: 3 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box sx={{ flex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Check color="primary" />
+                  <Typography variant="h6">
+                    {customPkg.name}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  {customPkg.included_hours && (
+                    <Chip
+                      icon={<AccessTime />}
+                      label={`${customPkg.included_hours} hours included`}
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
+                  {customPkg.excess_hour_price && (
+                    <Chip
+                      label={`+${formatAmount(parseFloat(customPkg.excess_hour_price))}/hr extra`}
+                      size="small"
+                      variant="outlined"
+                      color="secondary"
+                    />
+                  )}
+                </Box>
+
+                <Typography variant="h5" color="primary">
+                  {formatPrice(customPkg.price)}
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+          <CardActions sx={{ px: 2, pb: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<EditIcon />}
+              onClick={handleClearPreSelection}
+            >
+              Choose a Different Package
+            </Button>
+          </CardActions>
+        </Card>
+
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Click Continue to proceed with this package, or select a different option below.
+        </Typography>
+
+        {/* Show available packages as alternatives */}
+        {availablePackages.length > 0 && (
+          <>
+            <Divider sx={{ my: 3 }} />
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Or choose from our pre-made packages:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {availablePackages.slice(0, 3).map((packageOption) => (
+                <Card
+                  key={packageOption.id}
+                  variant="outlined"
+                  sx={{
+                    cursor: 'pointer',
+                    '&:hover': { borderColor: 'primary.light' },
+                  }}
+                  onClick={() => handlePackageToggle(packageOption)}
+                >
+                  <CardContent sx={{ py: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="subtitle2">{packageOption.name}</Typography>
+                      <Typography variant="h6" color="primary">
+                        {formatPrice(packageOption.base_price)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          </>
+        )}
+
+        {isValidating && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+            <CircularProgress size={16} />
+            <Typography variant="body2" color="text.secondary">
+              Validating selection...
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    );
+  }
+
+  if (!availablePackages.length && !hasPreSelectedFromVenues) {
     return (
       <Alert severity="info">
         No packages are currently available for selection.
@@ -175,9 +307,9 @@ export const PackageSelectionStep: React.FC<PackageSelectionStepProps> = ({
       <Typography variant="h6" gutterBottom>
         Select Your Package
       </Typography>
-      
+
       <Typography variant="body2" color="text.secondary" gutterBottom>
-        {selectionType === 'SINGLE' 
+        {selectionType === 'SINGLE'
           ? 'Choose one package for your event'
           : `Choose up to ${maxSelection || 'multiple'} packages`}
       </Typography>

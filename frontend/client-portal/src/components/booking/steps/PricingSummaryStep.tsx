@@ -37,6 +37,7 @@ import type {
   StepData,
   BookingFlow,
   BookingSession,
+  SelectedPackage,
 } from '../../../types/booking';
 
 interface PricingSummaryStepProps {
@@ -73,9 +74,9 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 
   // Get selected packages and addons from step data
   // Check package_selection first, then venue_selection (for custom packages), then booking_data
-  const selectedPackages = state.stepData.package_selection?.selected_packages ||
-    (state.stepData.venue_selection as { selected_packages?: typeof state.stepData.package_selection?.selected_packages })?.selected_packages ||
-    (state.currentSession?.booking_data?.selected_packages as typeof state.stepData.package_selection?.selected_packages) ||
+  const selectedPackages: SelectedPackage[] = state.stepData.package_selection?.selected_packages ||
+    (state.stepData.venue_selection as { selected_packages?: SelectedPackage[] })?.selected_packages ||
+    (state.currentSession?.booking_data?.selected_packages as SelectedPackage[] | undefined) ||
     [];
   const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
 

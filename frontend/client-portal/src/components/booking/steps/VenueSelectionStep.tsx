@@ -93,11 +93,15 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   const availableVenues = config?.available_venues_details || venues || [];
 
   // Sync local state with stepData changes from parent
+  // Use JSON.stringify to compare array values, not references
+  const stepDataVenueIdsString = JSON.stringify(stepData.selected_venue_ids || []);
   useEffect(() => {
-    if (stepData.selected_venue_ids) {
-      setSelectedVenueIds(stepData.selected_venue_ids);
+    const newIds = stepData.selected_venue_ids || [];
+    // Only update if values actually changed
+    if (JSON.stringify(selectedVenueIds) !== stepDataVenueIdsString) {
+      setSelectedVenueIds(newIds);
     }
-  }, [stepData.selected_venue_ids]);
+  }, [stepDataVenueIdsString]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch matching packages when venues change
   useEffect(() => {
@@ -770,12 +774,12 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
         </Alert>
       )}
 
-      {/* View Packages Option */}
-      {showViewPackagesOption && selectedVenueIds.length === 0 && (
+      {/* View Packages Option - Show when no package is confirmed yet */}
+      {showViewPackagesOption && !stepData.custom_package_id && !stepData.matched_package_id && (
         <Box sx={{ textAlign: 'center', mt: 3 }}>
           <Divider sx={{ my: 2 }}>
             <Typography variant="caption" color="text.secondary">
-              OR
+              {selectedVenueIds.length === 0 ? 'OR' : 'WANT TO COMPARE?'}
             </Typography>
           </Divider>
           <Button
@@ -784,7 +788,9 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
             onClick={handleViewPackages}
             endIcon={<ArrowForward />}
           >
-            {viewPackagesButtonText}
+            {selectedVenueIds.length === 0
+              ? viewPackagesButtonText
+              : 'Browse our pre-made packages instead'}
           </Button>
         </Box>
       )}

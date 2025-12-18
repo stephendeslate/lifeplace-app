@@ -33,6 +33,7 @@ import type {
   PackageSelectionStepData,
   PackageSelectionStepConfiguration,
 } from '../../../types/booking';
+import type { VenueSelectionStepData } from '../../../types/booking/stepData.types';
 import { ProductsApi } from '../../../apis/booking/products.api';
 
 interface PackageCardProps {
@@ -328,6 +329,7 @@ interface CleanPackageSelectionStepProps {
   onDataChange: (data: PackageSelectionStepData) => void;
   validationErrors: Record<string, string[]>;
   isValidating?: boolean;
+  venueSelectionData?: VenueSelectionStepData;
 }
 
 const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
@@ -335,14 +337,37 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   config,
   onDataChange,
   validationErrors,
+  venueSelectionData,
 }) => {
   const theme = useTheme();
-  
+
   const [availablePackages, setAvailablePackages] = useState<ProductOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAllPackages, setShowAllPackages] = useState(false);
   const selectionType = (config?.selection_type || 'SINGLE') as 'SINGLE' | 'MULTIPLE';
   const minSelection = config?.min_selection || 1;
   const maxSelection = config?.max_selection || 1;
+
+  // Detect if a package was pre-selected from venue selection step
+  const hasPreSelectedFromVenues = useMemo(() => {
+    const hasCustomPackage = !!venueSelectionData?.custom_package_id;
+    const hasMatchedPackage = !!venueSelectionData?.matched_package_id;
+    const hasSelectedPackages = (stepData.selected_packages?.length ?? 0) > 0;
+    return (hasCustomPackage || hasMatchedPackage) && hasSelectedPackages;
+  }, [venueSelectionData, stepData.selected_packages]);
+
+  // Check if the pre-selected package is a custom package (not in available list)
+  const isCustomPackageSelected = useMemo(() => {
+    if (!hasPreSelectedFromVenues || availablePackages.length === 0) return false;
+    const selectedIds = stepData.selected_packages?.map(p => p.product_id) || [];
+    return selectedIds.some(id => !availablePackages.some(p => p.id === id));
+  }, [hasPreSelectedFromVenues, stepData.selected_packages, availablePackages]);
+
+  // Handler to clear pre-selected package and show all options
+  const handleChooseDifferent = useCallback(() => {
+    setShowAllPackages(true);
+    onDataChange({ selected_packages: [] });
+  }, [onDataChange]);
 
   useEffect(() => {
     const loadPackages = async () => {
@@ -442,6 +467,152 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         <Typography variant="body2" color="text.secondary">
           Loading available packages...
         </Typography>
+      </Box>
+    );
+  }
+
+  // Show confirmation UI for custom packages from venue selection
+  if (isCustomPackageSelected && !showAllPackages && stepData.selected_packages && stepData.selected_packages.length > 0) {
+    const customPkg = stepData.selected_packages[0];
+    return (
+      <Box>
+        <AnimatedElement animation="slideDown" delay={100}>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
+              Your Package Selection
+            </Typography>
+          </Box>
+        </AnimatedElement>
+
+        <AnimatedElement animation="fadeIn" delay={200}>
+          <Alert
+            severity="success"
+            sx={{
+              mb: 3,
+              backgroundColor: alpha(theme.palette.success.main, 0.1),
+              border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
+            }}
+          >
+            You've created a custom package from your venue selection.
+          </Alert>
+        </AnimatedElement>
+
+        <AnimatedElement animation="slideUp" delay={300}>
+          <GlassCard
+            variant="light"
+            intensity="medium"
+            sx={{
+              position: 'relative',
+              backgroundColor: alpha(theme.palette.primary.main, 0.1),
+              border: `2px solid ${theme.palette.primary.main}`,
+              mb: 3,
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                backgroundColor: theme.palette.primary.main,
+                borderRadius: '8px 8px 0 0',
+              },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <CheckCircleIcon sx={{ color: theme.palette.primary.main }} />
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                  {customPkg.name}
+                </Typography>
+              </Box>
+
+              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 3 }}>
+                {customPkg.included_hours && (
+                  <Chip
+                    icon={<AccessTimeIcon fontSize="small" />}
+                    label={`${customPkg.included_hours} hours included`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ backgroundColor: alpha('#fff', 0.1) }}
+                  />
+                )}
+                {customPkg.excess_hour_price && (
+                  <Chip
+                    label={`+₱${parseFloat(customPkg.excess_hour_price).toLocaleString()}/hr extra`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ backgroundColor: alpha('#fff', 0.1) }}
+                  />
+                )}
+              </Stack>
+
+              <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette.primary.main, mb: 2 }}>
+                ₱{parseFloat(customPkg.price || '0').toLocaleString()}
+              </Typography>
+
+              <Button
+                variant="outlined"
+                onClick={handleChooseDifferent}
+                sx={{
+                  color: 'text.secondary',
+                  borderColor: alpha('#fff', 0.3),
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.1),
+                    borderColor: alpha('#fff', 0.5),
+                  },
+                }}
+              >
+                Choose a Different Package
+              </Button>
+            </CardContent>
+          </GlassCard>
+        </AnimatedElement>
+
+        <AnimatedElement animation="fadeIn" delay={400}>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 3 }}>
+            Click Continue to proceed with this package.
+          </Typography>
+        </AnimatedElement>
+
+        {/* Show preview of available packages */}
+        {availablePackages.length > 0 && (
+          <AnimatedElement animation="slideUp" delay={500}>
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+                Or choose from our pre-made packages:
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {availablePackages.slice(0, 3).map((pkg) => (
+                  <GlassCard
+                    key={pkg.id}
+                    variant="light"
+                    intensity="weak"
+                    sx={{
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.5)}`,
+                      },
+                    }}
+                    onClick={() => handlePackageSelect(pkg)}
+                  >
+                    <CardContent sx={{ py: 2, px: 3 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          {pkg.name}
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
+                          ₱{parseFloat(pkg.base_price || '0').toLocaleString()}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </GlassCard>
+                ))}
+              </Box>
+            </Box>
+          </AnimatedElement>
+        )}
       </Box>
     );
   }
