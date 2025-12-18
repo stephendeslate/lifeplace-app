@@ -17,9 +17,11 @@ import {
   Inventory as ProductIcon,
   LocalOffer as DiscountIcon,
   LocationOn as VenueIcon,
+  Store as VendorIcon,
 } from '@mui/icons-material';
 import { useProductCategories, useProducts, useDiscounts } from '../../../hooks/useProducts';
 import { useVenues } from '../../../hooks/useVenues';
+import { useVendors } from '../../../hooks/useVendors';
 import { 
   ModernCard,
   ModernPageHeader,
@@ -35,6 +37,7 @@ import { CategoryFormDialog } from '../../../components/products/CategoryFormDia
 import { ProductFormDialog } from '../../../components/products/ProductFormDialog';
 import { DiscountFormDialog } from '../../../components/products/DiscountFormDialog';
 import { VenuesTable, VenueFormDialog } from '../../../components/venues';
+import { VendorsTable, VendorFormDialog } from '../../../components/vendors';
 import type {
   ProductCategory,
   ProductOption,
@@ -52,6 +55,12 @@ import type {
   CreateVenueData,
   UpdateVenueData,
 } from '../../../types/venues.types';
+import type {
+  VendorListItem,
+  VendorDetail,
+  CreateVendorData,
+  UpdateVendorData,
+} from '../../../types/vendors.types';
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
@@ -88,7 +97,8 @@ export const ProductsPackages: React.FC = () => {
   const [discountTypeFilter, _setDiscountTypeFilter] = useState<'all' | 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS'>('all');
   const [discountValidFilter, _setDiscountValidFilter] = useState<'all' | 'valid' | 'invalid'>('all');
   const [venueSearch, setVenueSearch] = useState('');
-  
+  const [vendorSearch, setVendorSearch] = useState('');
+
   // Header search functionality
   const [showSearchField, setShowSearchField] = useState(false);
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
@@ -98,13 +108,15 @@ export const ProductsPackages: React.FC = () => {
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
   const [venueDialogOpen, setVenueDialogOpen] = useState(false);
+  const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
   const [editingProduct, setEditingProduct] = useState<ProductOption | null>(null);
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
   const [editingVenue, setEditingVenue] = useState<VenueListItem | VenueDetail | null>(null);
+  const [editingVendor, setEditingVendor] = useState<VendorListItem | VendorDetail | null>(null);
   const [itemToDelete, setItemToDelete] = useState<{
-    type: 'category' | 'product' | 'discount' | 'venue';
+    type: 'category' | 'product' | 'discount' | 'venue' | 'vendor';
     id: number;
     name: string;
   } | null>(null);
@@ -133,6 +145,10 @@ export const ProductsPackages: React.FC = () => {
   const venueFilters = useMemo(() => ({
     search: venueSearch || undefined,
   }), [venueSearch]);
+
+  const vendorFilters = useMemo(() => ({
+    search: vendorSearch || undefined,
+  }), [vendorSearch]);
 
   // Hooks
   const {
@@ -178,6 +194,17 @@ export const ProductsPackages: React.FC = () => {
     isUpdatingVenue,
     isDeletingVenue,
   } = useVenues(venueFilters);
+
+  const {
+    vendors,
+    isLoadingVendors,
+    createVendor,
+    updateVendor,
+    deleteVendor,
+    isCreatingVendor,
+    isUpdatingVendor,
+    isDeletingVendor,
+  } = useVendors(vendorFilters);
 
   // Event handlers
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -312,6 +339,38 @@ export const ProductsPackages: React.FC = () => {
     setVenueDialogOpen(false);
   };
 
+  // Vendor handlers
+  const handleCreateVendor = () => {
+    setEditingVendor(null);
+    setVendorDialogOpen(true);
+  };
+
+  const handleEditVendor = (vendor: VendorListItem) => {
+    setEditingVendor(vendor);
+    setVendorDialogOpen(true);
+  };
+
+  const handleDeleteVendor = (id: number) => {
+    const vendor = vendors.find(v => v.id === id);
+    if (vendor) {
+      setItemToDelete({
+        type: 'vendor',
+        id,
+        name: vendor.name
+      });
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleVendorSubmit = (data: CreateVendorData | UpdateVendorData) => {
+    if (editingVendor) {
+      updateVendor({ id: editingVendor.id, data: data as UpdateVendorData });
+    } else {
+      createVendor(data as CreateVendorData);
+    }
+    setVendorDialogOpen(false);
+  };
+
   // Delete handlers
   const handleDeleteConfirm = () => {
     if (!itemToDelete) return;
@@ -323,6 +382,7 @@ export const ProductsPackages: React.FC = () => {
       product: () => deleteProduct(id),
       discount: () => deleteDiscount(id),
       venue: () => deleteVenue(id),
+      vendor: () => deleteVendor(id),
     };
 
     deleteActions[type]();
@@ -346,6 +406,9 @@ export const ProductsPackages: React.FC = () => {
       case 3:
         setVenueSearch(query);
         break;
+      case 4:
+        setVendorSearch(query);
+        break;
     }
   };
 
@@ -361,6 +424,7 @@ export const ProductsPackages: React.FC = () => {
       setProductSearch('');
       setDiscountSearch('');
       setVenueSearch('');
+      setVendorSearch('');
     }
   };
 
@@ -377,6 +441,9 @@ export const ProductsPackages: React.FC = () => {
         break;
       case 3:
         handleCreateVenue();
+        break;
+      case 4:
+        handleCreateVendor();
         break;
     }
   };
@@ -399,6 +466,7 @@ export const ProductsPackages: React.FC = () => {
       product: isDeletingProduct,
       discount: isDeletingDiscount,
       venue: isDeletingVenue,
+      vendor: isDeletingVendor,
     }[type];
   };
 
@@ -425,6 +493,7 @@ export const ProductsPackages: React.FC = () => {
             case 1: return 'Category';
             case 2: return 'Discount';
             case 3: return 'Venue';
+            case 4: return 'Vendor';
             default: return 'Item';
           }
         };
@@ -448,6 +517,7 @@ export const ProductsPackages: React.FC = () => {
               { label: 'Categories', value: categories.length },
               { label: 'Discounts', value: discounts.filter(d => d.is_active).length },
               { label: 'Venues', value: venues.length },
+              { label: 'Vendors', value: vendors.length },
             ]}
             size="medium"
             gradient
@@ -530,9 +600,11 @@ export const ProductsPackages: React.FC = () => {
 
       {/* Tabs */}
       <ModernCard sx={{ mb: 3 }}>
-        <Tabs 
-          value={activeTab} 
+        <Tabs
+          value={activeTab}
           onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
           <Tab 
@@ -568,6 +640,15 @@ export const ProductsPackages: React.FC = () => {
                 <VenueIcon />
                 Venues
                 <Chip label={venues.length} size="small" />
+              </Box>
+            }
+          />
+          <Tab
+            label={
+              <Box display="flex" alignItems="center" gap={1}>
+                <VendorIcon />
+                Vendors
+                <Chip label={vendors.length} size="small" />
               </Box>
             }
           />
@@ -657,6 +738,28 @@ export const ProductsPackages: React.FC = () => {
             />
           </Box>
         </TabPanel>
+
+        {/* Vendors Tab */}
+        <TabPanel value={activeTab} index={4}>
+          <Box p={3}>
+
+            {/* Vendors Alert */}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Vendors are service providers (catering, photography, florists, DJs, etc.) that can be
+              included in packages. Configure vendor details, contact information, and optional operating
+              rules for lead times and service duration.
+            </Alert>
+
+            {/* Vendors Table */}
+            <VendorsTable
+              vendors={vendors}
+              isLoading={isLoadingVendors}
+              onEdit={handleEditVendor}
+              onDelete={handleDeleteVendor}
+              isDeleting={isDeletingVendor}
+            />
+          </Box>
+        </TabPanel>
       </ModernCard>
 
       {/* Dialogs */}
@@ -690,6 +793,14 @@ export const ProductsPackages: React.FC = () => {
         editingVenue={editingVenue}
         onSubmit={handleVenueSubmit}
         isLoading={isCreatingVenue || isUpdatingVenue}
+      />
+
+      <VendorFormDialog
+        open={vendorDialogOpen}
+        onClose={() => setVendorDialogOpen(false)}
+        editingVendor={editingVendor}
+        onSubmit={handleVendorSubmit}
+        isLoading={isCreatingVendor || isUpdatingVendor}
       />
 
       {/* Delete Confirmation Dialog */}
