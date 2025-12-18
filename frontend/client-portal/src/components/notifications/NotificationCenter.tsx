@@ -40,6 +40,7 @@ import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useNotificationRealtime } from '../../hooks/useNotificationRealtime';
+import { NotificationPreferencesDialog } from './NotificationPreferencesDialog';
 import type {
   Notification,
   NotificationCategory,
@@ -130,6 +131,7 @@ export const NotificationCenter: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   // Get hooks from useNotifications
   const {
@@ -194,9 +196,12 @@ export const NotificationCenter: React.FC = () => {
   };
 
   const handleOpenPreferences = () => {
-    // Navigate to settings/notifications or open a dialog
-    navigate('/settings');
+    setPreferencesOpen(true);
     handleClose();
+  };
+
+  const handleClosePreferences = () => {
+    setPreferencesOpen(false);
   };
 
   // Loading skeleton for notifications
@@ -618,6 +623,12 @@ export const NotificationCenter: React.FC = () => {
           </GlassCard>
         </AnimatedElement>
       </Popover>
+
+      {/* Notification Preferences Dialog */}
+      <NotificationPreferencesDialog
+        open={preferencesOpen}
+        onClose={handleClosePreferences}
+      />
     </>
   );
 };

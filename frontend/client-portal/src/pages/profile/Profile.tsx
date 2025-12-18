@@ -31,6 +31,7 @@ import { useToastActions } from '../../contexts/ToastContext';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import ChangePasswordDialog from '../../components/profile/ChangePasswordDialog';
+import { NotificationPreferencesDialog } from '../../components/notifications';
 import { useChangePassword } from '../../hooks/useChangePassword';
 
 interface ProfileFormData {
@@ -56,6 +57,7 @@ const Profile: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [notificationPreferencesOpen, setNotificationPreferencesOpen] = useState(false);
 
   // Password change mutation
   const changePasswordMutation = useChangePassword();
@@ -421,6 +423,7 @@ const Profile: React.FC = () => {
                     variant="outlined"
                     startIcon={<NotificationsIcon />}
                     fullWidth
+                    onClick={() => setNotificationPreferencesOpen(true)}
                     sx={{
                       backgroundColor: alpha('#fff', 0.1),
                       backdropFilter: 'blur(10px)',
@@ -479,6 +482,12 @@ const Profile: React.FC = () => {
         onClose={() => setPasswordDialogOpen(false)}
         onSubmit={handleChangePassword}
         isLoading={changePasswordMutation.isPending}
+      />
+
+      {/* Notification Preferences Dialog */}
+      <NotificationPreferencesDialog
+        open={notificationPreferencesOpen}
+        onClose={() => setNotificationPreferencesOpen(false)}
       />
     </Box>
   );
