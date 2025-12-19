@@ -207,7 +207,6 @@ class BookingFlowService:
                     new_step = BookingFlowStep.objects.create(
                         booking_flow=new_flow,
                         step_type=step.step_type,
-                        name=step.name,
                         description=step.description,
                         order=step.order,
                         is_enabled=step.is_enabled,

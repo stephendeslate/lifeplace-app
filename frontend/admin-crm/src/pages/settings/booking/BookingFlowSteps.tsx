@@ -122,12 +122,12 @@ const formSections: ModernFormSection[] = [
     title: 'Basic Information',
     fields: [
       {
-        name: 'name',
-        label: 'Step Name',
-        type: 'text',
+        name: 'step_type',
+        label: 'Step Type',
+        type: 'select',
         required: true,
-        placeholder: 'e.g., Contact Information',
-        helperText: 'A descriptive name for this step',
+        helperText: 'The type of step - this determines the step name displayed to users',
+        options: STEP_TYPE_OPTIONS,
       },
       {
         name: 'description',
@@ -137,14 +137,6 @@ const formSections: ModernFormSection[] = [
         rows: 2,
         placeholder: 'Brief description of what this step does...',
         helperText: 'Optional description for internal reference',
-      },
-      {
-        name: 'step_type',
-        label: 'Step Type',
-        type: 'select',
-        required: true,
-        helperText: 'The type of information collected in this step',
-        options: STEP_TYPE_OPTIONS,
       },
     ],
   },
@@ -171,18 +163,10 @@ const formSections: ModernFormSection[] = [
       },
     ],
   },
-  {
-    title: 'Display Settings',
-    fields: [
-      {
-        name: 'order',
-        label: 'Display Order',
-        type: 'number',
-        helperText: 'The position of this step in the flow (auto-assigned)',
-      },
-    ],
-  },
 ];
+
+// Note: Display order is intentionally not in the form - it's auto-assigned
+// based on existing steps and can be changed via the "Reorder Steps" dialog
 
 // Embedded table component for use within BookingFlowDetails
 interface EmbeddedStepsTableProps {
@@ -336,7 +320,6 @@ const EmbeddedStepsTable: React.FC<EmbeddedStepsTableProps> = ({
 const defaultStepValues: BookingFlowStep = {
   id: 0,
   booking_flow: 0,
-  name: '',
   description: '',
   step_type: 'contact_info' as StepType,
   step_type_display: 'Contact Information',
@@ -403,12 +386,15 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
 
   // Handle step creation
   const handleCreate = async (data: BookingFlowStep) => {
+    // Calculate next order based on existing steps (max order + 1)
+    const maxOrder = steps.reduce((max, step) => Math.max(max, step.order ?? 0), 0);
+    const nextOrder = maxOrder + 1;
+
     const createData: CreateBookingFlowStepData = {
       booking_flow: flowId,
-      name: data.name,
       description: data.description,
       step_type: data.step_type,
-      order: data.order || steps.length + 1,
+      order: nextOrder,
       is_enabled: data.is_enabled,
       is_required: data.is_required,
       is_skippable: data.is_skippable,
@@ -428,7 +414,6 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
   // Handle step update
   const handleUpdate = async (id: string | number, data: BookingFlowStep) => {
     const updateData: UpdateBookingFlowStepData = {
-      name: data.name,
       description: data.description,
       step_type: data.step_type,
       order: data.order,
@@ -617,7 +602,7 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
             setShowConfiguration(false);
             setSelectedStep(null);
           }}
-          title={`Configure: ${selectedStep.name}`}
+          title={`Configure: ${selectedStep.step_type_display}`}
           maxWidth="xl"
           fullWidth
         >

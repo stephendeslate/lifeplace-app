@@ -173,14 +173,20 @@ export const CleanEventTypeSelection: React.FC<CleanEventTypeSelectionProps> = (
       </AnimatedElement>
 
       {/* Event Type Grid */}
-      <Box sx={{ 
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+      <Box sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
         gap: 3,
-        mb: 4 
+        mb: 4
       }}>
         {eventTypes.map((eventType, index) => (
-          <AnimatedElement key={eventType.id} animation="slideUp" delay={200 + index * 100}>
+          <AnimatedElement
+            key={eventType.id}
+            animation="slideUp"
+            delay={200 + index * 100}
+            sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: '340px' }, maxWidth: '100%' }}
+          >
               <GlassCard
                 variant="light"
                 intensity="medium"

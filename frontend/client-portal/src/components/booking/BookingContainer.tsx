@@ -65,7 +65,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
     );
     
     return {
-      stepName: currentStep.name as string,
+      stepName: currentStep.step_type_display,
       stepIndex: Math.max(0, stepIndex),
     };
   };
@@ -226,7 +226,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
                           },
                         }}
                       >
-                        {step.name}
+                        {step.step_type_display}
                       </StepLabel>
                     </Step>
                   )

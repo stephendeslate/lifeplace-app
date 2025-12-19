@@ -212,7 +212,6 @@ class BookingFlowStep(BaseModel):
         related_name='steps'
     )
     step_type = models.CharField(max_length=50, choices=STEP_TYPES)
-    name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField()
     
@@ -247,7 +246,7 @@ class BookingFlowStep(BaseModel):
         unique_together = [['booking_flow', 'order'], ['booking_flow', 'step_type']]
 
     def __str__(self):
-        return f"{self.booking_flow.name} - {self.name}"
+        return f"{self.booking_flow.name} - {self.get_step_type_display()}"
     
     def is_visible_for_data(self, booking_data):
         """Check if this step should be visible based on booking data"""

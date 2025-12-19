@@ -72,7 +72,6 @@ export interface BookingFlowStep {
   booking_flow: number;
   step_type: StepType;
   step_type_display: string;
-  name: string;
   description: string;
   order: number;
   
@@ -533,7 +532,6 @@ export type UpdateBookingFlowData = Partial<CreateBookingFlowData>;
 export interface CreateBookingFlowStepData {
   booking_flow?: number;
   step_type: StepType;
-  name: string;
   description?: string;
   order?: number;
   is_enabled?: boolean;
@@ -711,7 +709,6 @@ export interface BookingFlowFormData {
 
 export interface BookingFlowStepFormData {
   step_type: StepType;
-  name: string;
   description: string;
   is_enabled: boolean;
   is_required: boolean;

@@ -36,7 +36,7 @@ class BookingFlowStepBasicSerializer(serializers.ModelSerializer):
         model = BookingFlowStep
         fields = [
             'id', 'booking_flow', 'step_type', 'step_type_display',
-            'name', 'order', 'is_enabled', 'is_required',
+            'order', 'is_enabled', 'is_required',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

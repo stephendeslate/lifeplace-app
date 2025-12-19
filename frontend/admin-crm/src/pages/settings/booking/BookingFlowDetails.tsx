@@ -331,9 +331,9 @@ export const BookingFlowDetails: React.FC = () => {
 
   const handleStepSubmit = (data: CreateBookingFlowStepData | UpdateBookingFlowStepData) => {
     if (editingStep) {
-      updateStep({ 
-        id: editingStep.id, 
-        data: data as UpdateBookingFlowStepData 
+      updateStep({
+        id: editingStep.id,
+        data: data as UpdateBookingFlowStepData
       }, {
         onSuccess: () => {
           handleStepDialogClose();
@@ -341,9 +341,14 @@ export const BookingFlowDetails: React.FC = () => {
         }
       });
     } else {
+      // Calculate next order based on existing steps (max order + 1)
+      const maxOrder = steps.reduce((max, step) => Math.max(max, step.order ?? 0), 0);
+      const nextOrder = maxOrder + 1;
+
       createStep({
         ...data as CreateBookingFlowStepData,
-        booking_flow: flowId
+        booking_flow: flowId,
+        order: nextOrder
       }, {
         onSuccess: () => {
           handleStepDialogClose();
@@ -500,7 +505,7 @@ export const BookingFlowDetails: React.FC = () => {
               Steps
             </Link>
             <Typography variant="body2" color="text.primary">
-              Configure: {selectedStepForConfig.name}
+              Configure: {selectedStepForConfig.step_type_display}
             </Typography>
           </Breadcrumbs>
         </Box>
@@ -601,7 +606,7 @@ export const BookingFlowDetails: React.FC = () => {
           />
           <Tab 
             icon={<SettingsIcon />} 
-            label={selectedStepForConfig ? `Configure: ${selectedStepForConfig.name}` : "Configuration"}
+            label={selectedStepForConfig ? `Configure: ${selectedStepForConfig.step_type_display}` : "Configuration"}
             iconPosition="start"
             disabled={!selectedStepForConfig}
           />

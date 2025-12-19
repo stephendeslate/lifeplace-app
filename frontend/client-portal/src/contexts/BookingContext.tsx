@@ -325,7 +325,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 mostRecentSession = {
                   sessionId,
                   lastUpdated: lastUpdated || new Date().toISOString(),
-                  stepName: data.current_step?.name || data.current_step?.step_type || 'Unknown',
+                  stepName: data.current_step?.step_type_display || data.current_step?.step_type || 'Unknown',
                   timestamp,
                   progressPercentage,
                 };

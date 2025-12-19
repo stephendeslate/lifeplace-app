@@ -94,7 +94,7 @@ const ImprovedStepReorderListInner: React.ForwardRefRenderFunction<
       <Box sx={{ flexGrow: 1 }}>
         <Box display="flex" alignItems="center" gap={1} mb={0.5}>
           <Typography variant="subtitle2" fontWeight="medium">
-            {step.name}
+            {step.step_type_display}
           </Typography>
           {step.is_required ? (
             <RequiredIcon color="error" fontSize="small" />

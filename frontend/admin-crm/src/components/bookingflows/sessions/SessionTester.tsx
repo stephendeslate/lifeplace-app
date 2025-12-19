@@ -102,7 +102,7 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
     // Initialize test results
     setTestResults(enabledSteps.map(step => ({
       stepId: step.id,
-      stepName: step.name,
+      stepName: step.step_type_display,
       stepType: step.step_type_display,
       status: 'pending',
       errors: [],
