@@ -17,6 +17,7 @@ import {
   alpha,
   CircularProgress,
   Skeleton,
+  type Theme,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -72,7 +73,7 @@ const getCategoryIcon = (category?: NotificationCategory) => {
 };
 
 // Map priority to color
-const getPriorityColor = (priority?: NotificationPriority, theme: ReturnType<typeof useTheme>) => {
+const getPriorityColor = (theme: Theme, priority?: NotificationPriority) => {
   switch (priority) {
     case 'URGENT':
       return { main: theme.palette.error.main };
@@ -88,7 +89,7 @@ const getPriorityColor = (priority?: NotificationPriority, theme: ReturnType<typ
 };
 
 // Map category to color
-const getCategoryColor = (category?: NotificationCategory, theme: ReturnType<typeof useTheme>) => {
+const getCategoryColor = (theme: Theme, category?: NotificationCategory) => {
   switch (category) {
     case 'EVENT':
       return theme.palette.primary.main;
@@ -385,8 +386,8 @@ export const NotificationCenter: React.FC = () => {
                       notification.notification_type_details?.category;
                     const priority =
                       notification.notification_type_details?.priority;
-                    const notificationColor = getPriorityColor(priority, theme);
-                    const categoryColor = getCategoryColor(category, theme);
+                    const notificationColor = getPriorityColor(theme, priority);
+                    const categoryColor = getCategoryColor(theme, category);
 
                     return (
                       <AnimatedElement

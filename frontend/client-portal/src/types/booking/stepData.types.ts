@@ -28,6 +28,9 @@ export interface SelectedPackage {
   price_with_tax?: string; // pre-calculated price including tax
   is_custom_bundle?: boolean; // True if this is a custom bundle, not a pre-made package
   venue_ids?: number[]; // Venue IDs for custom bundle (to create on backend)
+  // Custom bundle pricing properties
+  included_hours?: number | string | null;
+  excess_hour_price?: string;
 }
 
 export interface PackageSelectionStepData {
@@ -218,6 +221,10 @@ export interface ProductOption {
   tags?: string[];
   created_at: string;
   updated_at: string;
+  // Custom bundle pricing properties
+  included_hours?: number | string | null;
+  excess_hour_price?: string;
+  has_excess_hours?: boolean;
 }
 
 // Discount type from products domain
@@ -246,6 +253,7 @@ export interface Discount {
 export interface EventSummary {
   eventType: string;
   date: string;
+  time?: string; // Optional time display (informational)
   venue?: string;
   location?: string;
 }

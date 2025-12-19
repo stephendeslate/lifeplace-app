@@ -9,6 +9,6 @@ export * from './useFinancial';
 export { useInvoicePayments } from './useInvoicePayments';
 
 // Notification hooks
-export { default as useNotifications, useNotifications } from './useNotifications';
-export { default as useNotificationPreferences, useNotificationPreferences } from './useNotificationPreferences';
-export { default as useNotificationRealtime, useNotificationRealtime } from './useNotificationRealtime';
+export { default as useNotifications } from './useNotifications';
+export { default as useNotificationPreferences } from './useNotificationPreferences';
+export { default as useNotificationRealtime } from './useNotificationRealtime';

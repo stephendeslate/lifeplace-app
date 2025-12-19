@@ -54,7 +54,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
   } = useSessionTimer(state.currentSession?.expires_at);
 
   // Get current step info
-  const getCurrentStepInfo = () => {
+  const getCurrentStepInfo = (): { stepName: string; stepIndex: number } => {
     if (!state.currentFlow || !state.currentSession?.current_step) {
       return { stepName: 'Loading...', stepIndex: 0 };
     }
@@ -63,9 +63,9 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
     const stepIndex = state.currentFlow.enabled_steps.findIndex(
       (step) => step.id === currentStep.id
     );
-    
+
     return {
-      stepName: currentStep.step_type_display,
+      stepName: String(currentStep.step_type_display || 'Step'),
       stepIndex: Math.max(0, stepIndex),
     };
   };

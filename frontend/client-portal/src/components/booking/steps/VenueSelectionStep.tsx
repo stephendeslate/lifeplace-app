@@ -26,7 +26,6 @@ import { ProductsApi } from '../../../apis/booking/products.api';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
 import type {
   RentableVenue,
-  RentableVenueWithEventType,
   VenueSelectionStepConfiguration,
 } from '../../../types/booking/venues.types';
 import type { VenueSelectionStepData } from '../../../types/booking/stepData.types';

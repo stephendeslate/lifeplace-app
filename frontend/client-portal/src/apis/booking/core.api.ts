@@ -380,13 +380,31 @@ static async calculatePricing(
     discountCode?: string
   ): Promise<PricingCalculation> {
     const data = discountCode ? { discount_code: discountCode } : {};
-    
+
     const response = await api.post<PricingCalculation>(
       `/bookingflow/public/flows/session/${sessionId}/calculate-pricing/`,
       data
     );
-    
+
     return response.data;
+  }
+
+  /**
+   * Handle API errors and extract user-friendly message
+   */
+  static handleApiError(error: unknown): string {
+    if (error instanceof Error) {
+      // Check for Axios error structure
+      const axiosError = error as { response?: { data?: { detail?: string; message?: string } } };
+      if (axiosError.response?.data?.detail) {
+        return axiosError.response.data.detail;
+      }
+      if (axiosError.response?.data?.message) {
+        return axiosError.response.data.message;
+      }
+      return error.message;
+    }
+    return 'An unexpected error occurred';
   }
 }
 

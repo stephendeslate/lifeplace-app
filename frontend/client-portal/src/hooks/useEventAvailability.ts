@@ -50,7 +50,9 @@ interface UseEventAvailabilityResult {
   dateSummary: DateSummaryData[];
   /** Loading state */
   isLoading: boolean;
-  /** Error state */
+  /** Error state (boolean) */
+  isError: boolean;
+  /** Error object */
   error: Error | null;
 }
 
@@ -95,6 +97,7 @@ export const useEventAvailability = ({
     blockedDates: query.data?.blocked_dates ?? [],
     dateSummary: query.data?.date_summary ?? [],
     isLoading: query.isLoading,
+    isError: query.isError,
     error: query.error,
   };
 };
