@@ -110,22 +110,6 @@ export const StepRenderer: React.FC = () => {
     handleDataChange('pricing_summary', data);
   }, [handleDataChange]);
 
-  // Navigate to package selection step (for "View Packages" from venue selection)
-  const handleNavigateToPackages = useCallback(() => {
-    if (!state.currentFlow?.enabled_steps) return;
-
-    // Find the package_selection step index
-    const packageStepIndex = state.currentFlow.enabled_steps.findIndex(
-      (step) => step.step_type === 'package_selection'
-    );
-
-    if (packageStepIndex >= 0) {
-      actions.goToStep(packageStepIndex);
-    } else {
-      console.warn('Package selection step not found in flow');
-    }
-  }, [state.currentFlow?.enabled_steps, actions]);
-
   // Now we can have conditional returns after all hooks
   if (!currentStep) {
     return (
@@ -167,12 +151,10 @@ export const StepRenderer: React.FC = () => {
           onDataChange={handleVenueSelectionChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
-          sessionId={state.currentSession?.session_id}
-          onNavigateToPackages={handleNavigateToPackages}
         />
       );
 
-    case 'date_time':
+    case 'date_time': {
       // Get selectedPackageId from booking data (could come from venue_selection or package_selection)
       const bookingData = state.currentSession?.booking_data || {};
       const selectedPackages = bookingData.selected_packages as Array<{ product_id: number }> | undefined;
@@ -190,6 +172,7 @@ export const StepRenderer: React.FC = () => {
           selectedPackageId={selectedPackageId}
         />
       );
+    }
 
     case 'questionnaire':
       return (

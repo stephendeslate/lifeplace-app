@@ -23,7 +23,7 @@ export interface QuestionnaireStepData {
 
 // Standardized to use product_id while keeping all display fields
 export interface SelectedPackage {
-  product_id: number; // Standardized from 'package_id'
+  product_id: number; // Standardized from 'package_id'. Use -1 for custom bundles (temporary ID)
   name: string;
   price: string; // base price as string
   quantity: number;
@@ -33,6 +33,9 @@ export interface SelectedPackage {
   // Enhanced fields for proper tax calculation
   tax_rate?: string; // individual tax rate as percentage string (e.g., "0.00", "12.00")
   price_with_tax?: string; // pre-calculated price including tax
+  // Custom bundle fields (when user creates package from venue selection)
+  is_custom_bundle?: boolean; // True if this is a custom bundle, not a pre-made package
+  venue_ids?: number[]; // Venue IDs for custom bundle (to create on backend)
 }
 
 export interface PackageSelectionStepData {
@@ -165,13 +168,10 @@ export interface ConfirmationStepData {
   booking_completion_result?: Record<string, unknown>; // BookingCompletionResult from api.types
 }
 
-// Venue selection step data (for custom package curation)
+// Venue selection step data
+// Simplified: Only stores venue IDs. Package selection moved to PackageSelectionStep.
 export interface VenueSelectionStepData {
   selected_venue_ids: number[];
-  primary_venue_id: number | null;
-  custom_package_id?: number;
-  matched_package_id?: number;  // When user selects a pre-made package that matches
-  navigate_to_packages?: boolean;  // Signal to navigate to package selection
 }
 
 // Combined step data type

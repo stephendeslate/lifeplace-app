@@ -96,8 +96,9 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
 
   // Venue state (from props or loaded from package)
   const [venue, setVenue] = useState<VenuePublic | null>(propVenue || null);
-  const [packageVenue, setPackageVenue] = useState<PackageVenuePublic | null>(propPackageVenue || null);
-  const [venueLoading, setVenueLoading] = useState(false);
+  // Note: packageVenue and venueLoading are set but not read - kept for potential future use
+  const [_packageVenue, setPackageVenue] = useState<PackageVenuePublic | null>(propPackageVenue || null);
+  const [_venueLoading, setVenueLoading] = useState(false);
   const [timeCalculation, setTimeCalculation] = useState<VenueTimeCalculation | null>(null);
 
   // Early check-in / Late checkout state

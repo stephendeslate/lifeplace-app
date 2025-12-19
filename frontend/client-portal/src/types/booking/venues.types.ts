@@ -185,11 +185,10 @@ export interface RentableVenue {
 
 /**
  * Data for venue selection step
+ * Simplified: Only stores venue IDs. Package selection moved to PackageSelectionStep.
  */
 export interface VenueSelectionStepData {
   selected_venue_ids: number[];
-  primary_venue_id: number | null;
-  custom_package_id?: number;
 }
 
 /**
@@ -197,7 +196,6 @@ export interface VenueSelectionStepData {
  */
 export interface CreateFromVenuesRequest {
   venue_ids: number[];
-  primary_venue_id: number;
   booking_session_id: string;
   category_id?: number;
 }
