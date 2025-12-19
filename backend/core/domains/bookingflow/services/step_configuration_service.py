@@ -210,7 +210,6 @@ class BookingFlowStepConfigurationService:
             # Create enhanced datetime configuration with availability features
             datetime_config = DateTimeStepConfiguration.objects.create(
                 step=step,
-                allow_time_selection=True,
                 show_calendar_view=True,
                 enable_real_time_availability=True,
                 show_availability_status=True,

@@ -106,7 +106,6 @@ export type StepType =
   | 'pricing_summary'
   | 'contact_info'
   | 'payment_info'
-  | 'review_booking'
   | 'confirmation';
 
 // Step types matching backend STEP_TYPES exactly
@@ -189,11 +188,6 @@ export interface DateTimeStepConfiguration {
   overbooking_threshold: number;
   sync_with_calendar: boolean;
   calendar_source: 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
-  // Deprecated fields kept for backward compatibility
-  allow_time_selection: boolean;
-  min_duration_hours: number;
-  max_duration_hours: number;
-  default_duration_hours: number;
   created_at: string;
   updated_at: string;
 }

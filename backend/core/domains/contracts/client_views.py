@@ -55,19 +55,19 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         # Admin users can see all contracts
         if hasattr(user, 'role') and user.role == 'ADMIN':
             return EventContract.objects.select_related(
-                'event', 'template', 'signed_by'
+                'event', 'template'
             ).prefetch_related(
                 'signatures__signer',
                 'documents',
                 'notes'
             ).order_by('-created_at')
-        
+
         # Client users see contracts from their events (including expired for visibility)
         return EventContract.objects.filter(
             event__client=user,
             status__in=['SENT', 'PARTIALLY_SIGNED', 'SIGNED', 'EXPIRED']
         ).select_related(
-            'event', 'template', 'signed_by'
+            'event', 'template'
         ).prefetch_related(
             'signatures__signer',
             'documents',

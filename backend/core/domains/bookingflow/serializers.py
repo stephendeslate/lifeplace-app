@@ -70,18 +70,12 @@ class VenueSelectionStepConfigurationSerializer(serializers.ModelSerializer):
 
 
 class DateTimeStepConfigurationSerializer(serializers.ModelSerializer):
-    """Serializer for DateTime step configuration
-
-    NOTE: Duration fields (min_duration_hours, max_duration_hours, default_duration_hours,
-    allow_time_selection) are deprecated. Duration is now calculated from venue selections.
-    These fields are kept for backward compatibility only.
-    """
+    """Serializer for DateTime step configuration."""
     class Meta:
         model = DateTimeStepConfiguration
         fields = [
-            'id', 'step', 'allow_time_selection', 'allow_multi_day', 'min_event_days', 'max_event_days',
-            'show_calendar_view', 'min_duration_hours', 'max_duration_hours',
-            'default_duration_hours', 'enable_real_time_availability',
+            'id', 'step', 'allow_multi_day', 'min_event_days', 'max_event_days',
+            'show_calendar_view', 'enable_real_time_availability',
             'show_availability_status', 'auto_check_conflicts',
             'blocked_dates', 'available_days_of_week', 'available_time_slots',
             'buffer_before_hours', 'buffer_after_hours',

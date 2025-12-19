@@ -78,20 +78,7 @@ class EventContract(BaseModel):
         help_text="Reference to payment schedule or terms"
     )
     currency = models.CharField(max_length=3, default='PHP')
-    
-    # Legacy fields for backward compatibility (will be deprecated)
-    signed_at = models.DateTimeField(null=True, blank=True, help_text="DEPRECATED: Use ContractSignature model")
-    signed_by = models.ForeignKey(
-        'users.User', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        related_name='legacy_signed_contracts',
-        help_text="DEPRECATED: Use ContractSignature model"
-    )
-    signature_data = models.TextField(null=True, blank=True, help_text="DEPRECATED: Use ContractSignature model")
-    witness_name = models.CharField(max_length=255, blank=True, help_text="DEPRECATED: Use ContractSignature model")
-    witness_signature = models.TextField(null=True, blank=True, help_text="DEPRECATED: Use ContractSignature model")
-    
+
     # Amendment tracking
     is_amendment = models.BooleanField(default=False)
     original_contract = models.ForeignKey(

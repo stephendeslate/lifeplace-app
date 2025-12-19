@@ -55,7 +55,7 @@ class EventContractAdmin(admin.ModelAdmin):
     list_display = ('event', 'template', 'status', 'contract_value', 'currency', 'sent_at', 'fully_signed_at', 'is_amendment', 'amendment_number')
     list_filter = ('status', 'currency', 'is_amendment', 'template')
     search_fields = ('event__id', 'template__name', 'content')
-    readonly_fields = ('created_at', 'updated_at', 'fully_signed_at', 'signed_at')
+    readonly_fields = ('created_at', 'updated_at', 'fully_signed_at')
     list_editable = ('status',)
     date_hierarchy = 'created_at'
     fieldsets = (
@@ -71,10 +71,6 @@ class EventContractAdmin(admin.ModelAdmin):
         ('Amendment Information', {
             'fields': ('is_amendment', 'original_contract', 'amendment_number')
         }),
-        ('Legacy Fields', {
-            'fields': ('signed_at', 'signed_by', 'signature_data', 'witness_name', 'witness_signature'),
-            'classes': ('collapse',)
-        }),
         ('Metadata', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
@@ -87,7 +83,7 @@ class EventContractAdmin(admin.ModelAdmin):
     ]
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('event', 'template', 'original_contract', 'signed_by')
+        return super().get_queryset(request).select_related('event', 'template', 'original_contract')
 
 
 @admin.register(ContractSignature)

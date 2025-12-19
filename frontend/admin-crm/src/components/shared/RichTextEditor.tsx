@@ -58,8 +58,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   placeholder = "Start typing...",
   disabled = false,
   minHeight = 150,
-  showVariableInsert = false,
-  onVariableInsert,
+  showVariableInsert: _showVariableInsert = false,
+  onVariableInsert: _onVariableInsert,
   error = false,
   helperText,
   label,
@@ -115,13 +115,6 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   const handleChange = (content: string) => {
     onChange(content);
   };
-
-  // Expose insertVariable globally for external use (backwards compatibility)
-  useEffect(() => {
-    if (onVariableInsert && showVariableInsert) {
-      (window as Window & { _richTextEditorInsertVariable?: typeof insertVariable })._richTextEditorInsertVariable = insertVariable;
-    }
-  }, [onVariableInsert, showVariableInsert]);
 
   // Sync content when value prop changes (controlled component behavior)
   useEffect(() => {

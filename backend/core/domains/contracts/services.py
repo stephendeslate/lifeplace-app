@@ -906,56 +906,6 @@ class ContractNoteService:
         return True
 
 
-# Legacy service methods for backward compatibility
-class LegacyContractService:
-    """Legacy service methods for backward compatibility"""
-    
-    @staticmethod
-    def sign_contract(contract_id, user_id, signature_data, witness_name=None, witness_signature=None):
-        """
-        Legacy sign contract method - creates CLIENT signature
-        
-        DEPRECATED: Use ContractSignatureService.add_signature instead
-        """
-        logger.warning("Using deprecated sign_contract method. Use ContractSignatureService.add_signature instead.")
-        
-        signature_details = {
-            'signer_name': f"User {user_id}",  # Should be passed from frontend
-            'signer_email': ''  # Should be passed from frontend
-        }
-        
-        # Add client signature
-        client_signature = ContractSignatureService.add_signature(
-            contract_id=contract_id,
-            user_id=user_id,
-            signature_data=signature_data,
-            role='CLIENT',
-            **signature_details
-        )
-        
-        # Add witness signature if provided
-        if witness_name and witness_signature:
-            witness_signature_obj = ContractSignatureService.add_signature(
-                contract_id=contract_id,
-                user_id=user_id,  # Witness could be same user or different
-                signature_data=witness_signature,
-                role='WITNESS',
-                signer_name=witness_name,
-                signer_email=''
-            )
-        
-        # Update legacy fields for backward compatibility
-        contract = EventContractService.get_contract_by_id(contract_id)
-        contract.signed_at = client_signature.signed_at
-        contract.signed_by_id = user_id
-        contract.signature_data = signature_data
-        contract.witness_name = witness_name or ''
-        contract.witness_signature = witness_signature or ''
-        contract.save()
-        
-        return contract
-
-
 class ContractReportingService:
     """Service for contract reporting and analytics"""
     

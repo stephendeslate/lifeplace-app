@@ -996,11 +996,11 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
             color: 'text.secondary'
           }}>
             <Typography variant="h6" gutterBottom>
-              {eventDays ? `No packages available for ${eventDays}-day events` : 'No pre-made packages available'}
+              No packages available
             </Typography>
             {customBundlePackage && (
               <Typography variant="body2">
-                You can create a custom package from your venue selection above.
+                You can create a custom package from your venue selection.
               </Typography>
             )}
           </Box>

@@ -214,8 +214,8 @@ export const useDateTime = (
   // Get minimum date based on configuration
   const minDate = useMemo(() => {
     const today = new Date();
-    const minDays = config?.min_duration_hours || 1;
-    today.setDate(today.getDate() + Math.floor(minDays / 24));
+    const bufferDays = config?.buffer_before_hours ? Math.ceil(config.buffer_before_hours / 24) : 0;
+    today.setDate(today.getDate() + bufferDays);
     return today;
   }, [config]);
 

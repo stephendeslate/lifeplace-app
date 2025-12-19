@@ -157,17 +157,14 @@ class EventContractDetailSerializer(EventContractSerializer):
     missing_signatures = serializers.ListField(read_only=True)
     signature_progress = serializers.SerializerMethodField()
     can_client_sign = serializers.BooleanField(read_only=True)
-    
-    # Legacy compatibility
-    signed_by = UserSerializer(read_only=True)
-    
+
     class Meta(EventContractSerializer.Meta):
         fields = EventContractSerializer.Meta.fields + [
             'content', 'contract_value', 'payment_schedule_reference', 'currency',
             'is_amendment', 'original_contract', 'amendment_number',
             'signatures', 'amendment_requests', 'documents', 'notes',
             'is_fully_signed', 'missing_signatures', 'signature_progress',
-            'can_client_sign', 'signed_by', 'signature_data', 'witness_name', 'witness_signature'
+            'can_client_sign'
         ]
     
     def get_signature_progress(self, obj):
@@ -183,20 +180,6 @@ class EventContractDetailSerializer(EventContractSerializer):
             'signed_roles': signed_roles,
             'missing_roles': [role for role in required_roles if role not in signed_roles]
         }
-
-
-class ContractSigningSerializer(serializers.Serializer):
-    """Serializer for contract signing (legacy support)"""
-    signature_data = serializers.CharField(required=True)
-    role = serializers.ChoiceField(choices=ContractSignature.ROLE_CHOICES, default='CLIENT')
-    signer_name = serializers.CharField(required=True)
-    signer_title = serializers.CharField(required=False, allow_blank=True)
-    signer_email = serializers.EmailField(required=True)
-    verification_method = serializers.CharField(required=False, allow_blank=True)
-    
-    # Legacy fields for backward compatibility
-    witness_name = serializers.CharField(required=False, allow_blank=True)
-    witness_signature = serializers.CharField(required=False, allow_blank=True)
 
 
 class ContractTemplateCreateUpdateSerializer(serializers.ModelSerializer):

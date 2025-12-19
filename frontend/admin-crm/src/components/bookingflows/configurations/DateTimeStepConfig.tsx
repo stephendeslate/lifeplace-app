@@ -46,13 +46,7 @@ interface DateTimeStepConfigProps {
 }
 
 interface DateTimeConfigFormData {
-  // DEPRECATED - kept for backward compatibility with backend
-  allow_time_selection: boolean; // DEPRECATED: Always false now
-  min_duration_hours: number; // DEPRECATED: Not used in UI
-  max_duration_hours: number; // DEPRECATED: Not used in UI
-  default_duration_hours: number; // DEPRECATED: Not used in UI
-
-  // ACTIVE - used for date selection
+  // Date selection settings
   allow_multi_day: boolean;
   min_event_days: number;
   max_event_days: number;
@@ -89,13 +83,6 @@ interface DateTimeConfigFormData {
 }
 
 const defaultFormData: DateTimeConfigFormData = {
-  // DEPRECATED fields - kept for backward compatibility
-  allow_time_selection: false, // DEPRECATED: Always false now
-  min_duration_hours: 1, // DEPRECATED: Not used in UI
-  max_duration_hours: 24, // DEPRECATED: Not used in UI
-  default_duration_hours: 4, // DEPRECATED: Not used in UI
-
-  // ACTIVE fields
   allow_multi_day: false,
   min_event_days: 1,
   max_event_days: 7,
@@ -159,14 +146,10 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
   useEffect(() => {
     if (config) {
       setFormData({
-        allow_time_selection: false, // DEPRECATED - always false now
         allow_multi_day: config.allow_multi_day ?? false,
         min_event_days: config.min_event_days ?? 1,
         max_event_days: config.max_event_days ?? 7,
         show_calendar_view: config.show_calendar_view ?? true,
-        min_duration_hours: config.min_duration_hours ?? 1, // DEPRECATED - kept for backward compatibility
-        max_duration_hours: config.max_duration_hours ?? 24, // DEPRECATED - kept for backward compatibility
-        default_duration_hours: config.default_duration_hours ?? 4, // DEPRECATED - kept for backward compatibility
         enable_real_time_availability: config.enable_real_time_availability ?? true,
         show_availability_status: config.show_availability_status ?? true,
         auto_check_conflicts: config.auto_check_conflicts ?? true,
