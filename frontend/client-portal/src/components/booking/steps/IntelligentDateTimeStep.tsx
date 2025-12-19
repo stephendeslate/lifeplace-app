@@ -60,7 +60,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   config,
   onDataChange,
   validationErrors,
-  isValidating,
+  isValidating: _isValidating,
   onValidate: _onValidate,
   flow,
   selectedPackageId,
@@ -311,7 +311,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                       </Box>
                       <Stack spacing={0.5}>
                         <Typography variant="body2" color="text.secondary">
-                          Check-in: {VenuesApi.formatTime(venue.operating_rules.default_checkin_time || '')}
+                          Check-in: {VenuesApi.formatTime(venue.operating_rules.default_check_in_time || '')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Checkout: {VenuesApi.formatTime(venue.operating_rules.default_checkout_time || '')}

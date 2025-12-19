@@ -44,6 +44,7 @@ export interface CommunicationFilters {
   delivery_status?: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
   client_id?: number;
   status?: string;
+  is_opened?: 'true' | 'false' | 'all';
 }
 
 export interface SendCommunicationData {

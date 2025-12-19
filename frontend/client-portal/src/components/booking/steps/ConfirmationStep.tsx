@@ -205,9 +205,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     return {
       eventType: state.currentFlow?.event_type_name || 'Event',
       date: new Date(dateTimeData.start_date).toLocaleDateString(),
-      time: dateTimeData.start_time,
-      duration: undefined, // Duration removed: Hours are determined by venue selection
-      venue: dateTimeData.venue_preference,
+      venue: undefined, // Venue is determined by venue selection step
     };
   }, [state.stepData.date_time, state.currentFlow]);
 

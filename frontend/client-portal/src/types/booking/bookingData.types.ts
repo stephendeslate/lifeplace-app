@@ -7,6 +7,7 @@ import type {
   ContactInfoStepData,
   PaymentStepData,
   PricingCalculation,
+  VenueSelectionStepData,
 } from './stepData.types';
 
 /**
@@ -17,10 +18,13 @@ export interface BookingData {
   // Event details
   event_type_id?: number;
   event_name?: string;
-  
+
+  // Venue selection
+  venue_selection?: VenueSelectionStepData;
+
   // Date and time selection
   date_time?: DateTimeStepData;
-  
+
   // Selected products (flattened structure)
   selected_packages?: SelectedPackage[];
   selected_addons?: SelectedAddon[];

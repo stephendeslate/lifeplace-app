@@ -157,12 +157,6 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
 
   // Effect to update venue hours when they change (without changing addons)
   React.useEffect(() => {
-    // Only update if we have changes in venue hours
-    const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
-      ...acc,
-      [key]: value
-    }), {} as Record<string, number>);
-
     if (selectedVenues.length > 0) {
       onDataChange(buildCompleteData(selectedAddons));
     }

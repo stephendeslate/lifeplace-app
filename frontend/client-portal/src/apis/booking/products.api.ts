@@ -212,8 +212,10 @@ export class ProductsApi {
     const basePrice = parseFloat(packageOption.base_price);
     
     if (packageOption.has_excess_hours && packageOption.included_hours) {
-      const includedHours = packageOption.included_hours;
-      
+      const includedHours = typeof packageOption.included_hours === 'number'
+        ? packageOption.included_hours
+        : parseFloat(String(packageOption.included_hours)) || 0;
+
       if (duration <= includedHours) {
         return basePrice;
       } else {

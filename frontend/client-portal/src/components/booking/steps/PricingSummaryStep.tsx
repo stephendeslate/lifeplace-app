@@ -555,14 +555,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                   </Box>
                 )}
 
-                {allStepData?.date_time?.start_time && (
+                {allStepData?.date_time?.end_date && (
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Event Time (Informational)</Typography>
+                    <Typography variant="body2" color="text.secondary">Event End Date</Typography>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {allStepData.date_time.start_time}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                      Note: Hours are determined by venue selection
+                      {formatDate(allStepData.date_time.end_date)}
                     </Typography>
                   </Box>
                 )}

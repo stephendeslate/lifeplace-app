@@ -31,36 +31,20 @@ export const useDateTime = (
 
   // Update step data locally
   const updateData = useCallback((newData: Partial<DateTimeStepData>) => {
-    setData(prev => {
-      const updated = { ...prev, ...newData };
-      
-      // Auto-calculate end date/time if start date/time and duration change
-      if ((newData.start_date || newData.start_time || newData.duration) && 
-          updated.start_date && updated.duration) {
-        const endDateTime = DateTimeApi.calculateEndDateTime(
-          updated.start_date,
-          updated.start_time || '',
-          updated.duration
-        );
-        updated.end_date = endDateTime.end_date;
-        updated.end_time = endDateTime.end_time;
-      }
-      
-      return updated;
-    });
-    
+    setData(prev => ({ ...prev, ...newData }));
+
     // Clear validation errors when data changes
     if (Object.keys(validationErrors).length > 0) {
       setValidationErrors({});
     }
-    
+
     // Clear general error
     if (error) {
       setError(null);
     }
 
-    // Clear availability status when date/time changes
-    if (newData.start_date || newData.start_time) {
+    // Clear availability status when date changes
+    if (newData.start_date) {
       setAvailabilityStatus(null);
     }
   }, [validationErrors, error]);
@@ -176,15 +160,10 @@ export const useDateTime = (
     updateData({ start_date: dateString });
   }, [updateData]);
 
-  // Handle time change
-  const handleTimeChange = useCallback((time: Date | null) => {
-    const timeString = time ? time.toTimeString().split(' ')[0].slice(0, 5) : '';
-    updateData({ start_time: timeString });
-  }, [updateData]);
-
-  // Handle duration change
-  const handleDurationChange = useCallback((duration: number) => {
-    updateData({ duration });
+  // Handle end date change (for multi-day events)
+  const handleEndDateChange = useCallback((date: Date | null) => {
+    const dateString = date ? date.toISOString().split('T')[0] : undefined;
+    updateData({ end_date: dateString });
   }, [updateData]);
 
   // Handle resource requirements change
@@ -192,11 +171,11 @@ export const useDateTime = (
     updateData({ resource_requirements: requirements });
   }, [updateData]);
 
-  // Auto-check availability when date/time changes (if enabled)
+  // Auto-check availability when date changes (if enabled)
   useEffect(() => {
-    if (config?.enable_real_time_availability && 
-        config?.auto_check_conflicts && 
-        data.start_date && 
+    if (config?.enable_real_time_availability &&
+        config?.auto_check_conflicts &&
+        data.start_date &&
         sessionId) {
       const timeoutId = setTimeout(() => {
         checkAvailability();
@@ -204,7 +183,7 @@ export const useDateTime = (
 
       return () => clearTimeout(timeoutId);
     }
-  }, [data.start_date, data.start_time, config, sessionId, checkAvailability]);
+  }, [data.start_date, config, sessionId, checkAvailability]);
 
   // Check if step is complete/valid
   const isValid = useCallback(() => {
@@ -232,9 +211,7 @@ export const useDateTime = (
   // Format display values
   const formattedValues = useMemo(() => ({
     startDate: DateTimeApi.formatDate(data.start_date),
-    startTime: DateTimeApi.formatTime(data.start_time || ''),
-    endDate: DateTimeApi.formatDate(data.end_date || ''),
-    endTime: DateTimeApi.formatTime(data.end_time || ''),
+    endDate: data.end_date ? DateTimeApi.formatDate(data.end_date) : '',
   }), [data]);
 
   // Reset data to default
@@ -255,12 +232,11 @@ export const useDateTime = (
   return {
     // Data
     data,
-    
+
     // Actions
     updateData,
     handleDateChange,
-    handleTimeChange,
-    handleDurationChange,
+    handleEndDateChange,
     handleResourceRequirementsChange,
     saveData,
     validateClientSide,
@@ -268,7 +244,7 @@ export const useDateTime = (
     checkAvailability,
     resetData,
     clearErrors,
-    
+
     // State
     loading,
     validating,
@@ -277,16 +253,16 @@ export const useDateTime = (
     error,
     validationErrors,
     availabilityStatus,
-    
+
     // Utilities
     isValid,
     getFieldError,
     hasFieldError,
     formattedValues,
     minDate,
-    
+
     // Status checks
-    isComplete: !!(data.start_date && data.duration),
+    isComplete: !!data.start_date,
     hasChanges: JSON.stringify(data) !== JSON.stringify(initialData || DateTimeApi.getDefaultData()),
     isAvailable: availabilityStatus?.available,
     showAvailabilityStatus: config?.show_availability_status && !!availabilityStatus,
@@ -303,23 +279,7 @@ export const useDateTimeData = (
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   const updateData = useCallback((newData: Partial<DateTimeStepData>) => {
-    setData(prev => {
-      const updated = { ...prev, ...newData };
-      
-      // Auto-calculate end date/time
-      if ((newData.start_date || newData.start_time || newData.duration) && 
-          updated.start_date && updated.duration) {
-        const endDateTime = DateTimeApi.calculateEndDateTime(
-          updated.start_date,
-          updated.start_time || '',
-          updated.duration
-        );
-        updated.end_date = endDateTime.end_date;
-        updated.end_time = endDateTime.end_time;
-      }
-      
-      return updated;
-    });
+    setData(prev => ({ ...prev, ...newData }));
     setValidationErrors({});
   }, []);
 
@@ -339,9 +299,7 @@ export const useDateTimeData = (
 
   const formattedValues = useMemo(() => ({
     startDate: DateTimeApi.formatDate(data.start_date),
-    startTime: DateTimeApi.formatTime(data.start_time || ''),
-    endDate: DateTimeApi.formatDate(data.end_date || ''),
-    endTime: DateTimeApi.formatTime(data.end_time || ''),
+    endDate: data.end_date ? DateTimeApi.formatDate(data.end_date) : '',
   }), [data]);
 
   return {
@@ -353,6 +311,6 @@ export const useDateTimeData = (
     hasFieldError,
     formattedValues,
     isValid: validate,
-    isComplete: !!(data.start_date && data.duration),
+    isComplete: !!data.start_date,
   };
 };

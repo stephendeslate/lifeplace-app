@@ -211,7 +211,7 @@ export const StepRenderer: React.FC = () => {
       // Get venue details from package selection step config or venue selection step config
       // We need to get the actual venue objects, not just IDs
       // This requires fetching from the available venues in the config
-      const venueConfig = state.currentFlow?.steps?.find(s => s.step_type === 'venue_selection')?.configuration_data as { available_venues_details?: RentableVenue[] } | undefined;
+      const venueConfig = state.currentFlow?.enabled_steps?.find((s: { step_type: string; configuration_data?: unknown }) => s.step_type === 'venue_selection')?.configuration_data as { available_venues_details?: RentableVenue[] } | undefined;
       const selectedVenues = venueConfig?.available_venues_details?.filter(v => selectedVenueIds.includes(v.id)) || [];
 
       // Get existing venue_additional_hours from package_selection step data or addon_selection step data

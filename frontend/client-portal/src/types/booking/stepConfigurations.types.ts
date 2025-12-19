@@ -192,4 +192,10 @@ export interface ProductOption {
   price_with_tax: string;
   created_at: string;
   updated_at: string;
+  // Event duration for multi-day packages (from backend)
+  event_days?: number | null;
+  // Custom bundle properties (used for virtual packages created from venue selection)
+  included_hours?: number | string | null;
+  excess_hour_price?: string;
+  has_excess_hours?: boolean;
 }
