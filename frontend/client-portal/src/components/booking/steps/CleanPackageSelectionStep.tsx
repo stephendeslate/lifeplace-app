@@ -1,4 +1,5 @@
 // frontend/client-portal/src/components/booking/steps/CleanPackageSelectionStep.tsx
+// Enhanced: Venue-aware package selection with custom bundle option
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
@@ -12,6 +13,7 @@ import {
   IconButton,
   LinearProgress,
   Stack,
+  Divider,
   useTheme,
   alpha,
 } from '@mui/material';
@@ -24,7 +26,9 @@ import {
   AccessTime as AccessTimeIcon,
   Remove as RemoveIcon,
   Add as AddIcon,
+  Build as BuildIcon,
 } from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import { useAccessibility } from '../../accessibility';
@@ -32,9 +36,11 @@ import type {
   ProductOption,
   PackageSelectionStepData,
   PackageSelectionStepConfiguration,
+  SelectedPackage,
 } from '../../../types/booking';
 import type { VenueSelectionStepData } from '../../../types/booking/stepData.types';
 import { ProductsApi } from '../../../apis/booking/products.api';
+import { VenuesApi } from '../../../apis/booking/venues.api';
 
 interface PackageCardProps {
   pkg: ProductOption;
@@ -45,6 +51,8 @@ interface PackageCardProps {
   canSelectMore: boolean;
   selectionType: 'SINGLE' | 'MULTIPLE';
   animationDelay: number;
+  isCustomBundle?: boolean;
+  isMultiVenue?: boolean;
 }
 
 const PackageCard: React.FC<PackageCardProps> = ({
@@ -56,6 +64,8 @@ const PackageCard: React.FC<PackageCardProps> = ({
   canSelectMore,
   selectionType,
   animationDelay,
+  isCustomBundle = false,
+  isMultiVenue = false,
 }) => {
   const theme = useTheme();
   const { announceToScreenReader } = useAccessibility();
@@ -74,8 +84,12 @@ const PackageCard: React.FC<PackageCardProps> = ({
     announceToScreenReader(`Updated ${pkg.name} quantity to ${newQuantity}`);
   }, [pkg, selectedQuantity, onQuantityChange, announceToScreenReader]);
 
-  // Simple styling based on whether package is featured
-  const packageColor = pkg.is_featured ? theme.palette.warning.main : theme.palette.primary.main;
+  // Different styling for custom bundles vs pre-made packages
+  const packageColor = isCustomBundle
+    ? theme.palette.secondary.main
+    : pkg.is_featured
+      ? theme.palette.warning.main
+      : theme.palette.primary.main;
 
   return (
     <AnimatedElement animation="slideUp" delay={animationDelay}>
@@ -85,10 +99,10 @@ const PackageCard: React.FC<PackageCardProps> = ({
         sx={{
           position: 'relative',
           cursor: selectionType === 'SINGLE' || (!isSelected && canSelectMore) ? 'pointer' : 'default',
-          backgroundColor: isSelected 
+          backgroundColor: isSelected
             ? alpha(packageColor, 0.1)
             : alpha('#fff', 0.08),
-          border: isSelected 
+          border: isSelected
             ? `2px solid ${packageColor}`
             : `1px solid ${alpha('#fff', 0.1)}`,
           transform: isSelected ? 'scale(1.02)' : 'scale(1)',
@@ -115,7 +129,19 @@ const PackageCard: React.FC<PackageCardProps> = ({
           {/* Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {pkg.is_featured && (
+              {isCustomBundle && (
+                <Chip
+                  icon={<BuildIcon fontSize="small" />}
+                  label={isMultiVenue ? "Custom Bundle" : "Venue Package"}
+                  size="small"
+                  sx={{
+                    backgroundColor: alpha(theme.palette.secondary.main, 0.15),
+                    color: theme.palette.secondary.main,
+                    fontWeight: 600,
+                  }}
+                />
+              )}
+              {pkg.is_featured && !isCustomBundle && (
                 <Chip
                   icon={<StarIcon fontSize="small" />}
                   label="Featured"
@@ -127,35 +153,35 @@ const PackageCard: React.FC<PackageCardProps> = ({
                   }}
                 />
               )}
-              {pkg.type_display && (
+              {pkg.type_display && !isCustomBundle && (
                 <Chip
                   label={pkg.type_display}
                   size="small"
                   variant="outlined"
-                  sx={{ 
+                  sx={{
                     backgroundColor: alpha('#fff', 0.05),
                     borderColor: alpha('#fff', 0.2),
                   }}
                 />
               )}
             </Box>
-            
+
             {/* Selection indicator */}
             <Box>
               {isSelected ? (
-                <CheckCircleIcon 
-                  sx={{ 
+                <CheckCircleIcon
+                  sx={{
                     color: packageColor,
                     fontSize: 28,
                     filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-                  }} 
+                  }}
                 />
               ) : (
-                <RadioButtonUncheckedIcon 
-                  sx={{ 
+                <RadioButtonUncheckedIcon
+                  sx={{
                     color: alpha('#fff', 0.4),
                     fontSize: 28
-                  }} 
+                  }}
                 />
               )}
             </Box>
@@ -165,7 +191,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
             {pkg.name}
           </Typography>
-          
+
           {pkg.description && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3, lineHeight: 1.6 }}>
               {pkg.description}
@@ -218,7 +244,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
                 </Typography>
               )}
             </Box>
-            
+
             {/* Show excess hour pricing if available */}
             {pkg.has_excess_hours && pkg.excess_hour_price && (
               <Box sx={{ textAlign: 'right' }}>
@@ -235,7 +261,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
           {/* Quantity selector for multiple selection */}
           {selectionType === 'MULTIPLE' && isSelected && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2 }}>
-              <IconButton 
+              <IconButton
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -252,7 +278,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
               <Typography variant="h6" sx={{ minWidth: 40, textAlign: 'center', fontWeight: 600 }}>
                 {selectedQuantity}
               </Typography>
-              <IconButton 
+              <IconButton
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -343,42 +369,99 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 
   const [availablePackages, setAvailablePackages] = useState<ProductOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showAllPackages, setShowAllPackages] = useState(false);
   const selectionType = (config?.selection_type || 'SINGLE') as 'SINGLE' | 'MULTIPLE';
   const minSelection = config?.min_selection || 1;
   const maxSelection = config?.max_selection || 1;
 
-  // Detect if a package was pre-selected from venue selection step
-  const hasPreSelectedFromVenues = useMemo(() => {
-    const hasCustomPackage = !!venueSelectionData?.custom_package_id;
-    const hasMatchedPackage = !!venueSelectionData?.matched_package_id;
-    const hasSelectedPackages = (stepData.selected_packages?.length ?? 0) > 0;
-    return (hasCustomPackage || hasMatchedPackage) && hasSelectedPackages;
-  }, [venueSelectionData, stepData.selected_packages]);
+  // Get selected venue IDs from previous step
+  const selectedVenueIds = venueSelectionData?.selected_venue_ids || [];
+  const hasVenueSelection = selectedVenueIds.length > 0;
 
-  // Check if the pre-selected package is a custom package (not in available list)
-  const isCustomPackageSelected = useMemo(() => {
-    if (!hasPreSelectedFromVenues || availablePackages.length === 0) return false;
-    const selectedIds = stepData.selected_packages?.map(p => p.product_id) || [];
-    return selectedIds.some(id => !availablePackages.some(p => p.id === id));
-  }, [hasPreSelectedFromVenues, stepData.selected_packages, availablePackages]);
+  // Fetch venues for display and custom bundle calculation
+  const { data: allVenues } = useQuery({
+    queryKey: ['rentable-venues'],
+    queryFn: VenuesApi.getRentableVenues,
+    enabled: hasVenueSelection,
+  });
 
-  // Handler to clear pre-selected package and show all options
-  const handleChooseDifferent = useCallback(() => {
-    setShowAllPackages(true);
-    onDataChange({ selected_packages: [] });
-  }, [onDataChange]);
+  // Get selected venue objects
+  const selectedVenues = useMemo(() => {
+    if (!allVenues || !hasVenueSelection) return [];
+    return allVenues.filter(v => selectedVenueIds.includes(v.id));
+  }, [allVenues, selectedVenueIds, hasVenueSelection]);
+
+  // Calculate custom bundle pricing
+  const customBundlePricing = useMemo(() => {
+    if (selectedVenues.length === 0) return null;
+
+    const subtotal = selectedVenues.reduce(
+      (sum, v) => sum + parseFloat(v.standalone_base_price || '0'),
+      0
+    );
+    const totalHours = selectedVenues.reduce(
+      (sum, v) => sum + parseFloat(v.standalone_included_hours || '0'),
+      0
+    );
+    const hasDiscount = selectedVenues.length > 1;
+    const discountPercent = 10; // 10% bundle discount for multi-venue
+    const discountAmount = hasDiscount ? subtotal * (discountPercent / 100) : 0;
+    const total = subtotal - discountAmount;
+
+    // Get excess hour price from first venue
+    const excessHourPrice = selectedVenues[0]?.standalone_excess_hour_price || '0';
+
+    return {
+      subtotal,
+      totalHours,
+      hasDiscount,
+      discountPercent,
+      discountAmount,
+      total,
+      excessHourPrice,
+      venueNames: selectedVenues.map(v => v.name).join(' + '),
+    };
+  }, [selectedVenues]);
+
+  // Create a virtual "custom bundle" package option
+  const isMultiVenue = selectedVenues.length > 1;
+  const customBundlePackage: ProductOption | null = useMemo(() => {
+    if (!customBundlePricing || selectedVenues.length === 0) return null;
+
+    // Contextual naming based on single vs multi-venue
+    const packageName = isMultiVenue
+      ? `Custom: ${customBundlePricing.venueNames}`
+      : selectedVenues[0]?.name || 'Your Venue';
+
+    const packageDescription = isMultiVenue
+      ? `Your custom package with ${selectedVenues.length} venues. Includes ${customBundlePricing.discountPercent}% multi-venue discount.`
+      : `Book ${selectedVenues[0]?.name} for your event.`;
+
+    return {
+      id: -1, // Virtual ID for custom package
+      name: packageName,
+      description: packageDescription,
+      base_price: customBundlePricing.total.toString(),
+      formatted_price: `₱${customBundlePricing.total.toLocaleString()}`,
+      included_hours: customBundlePricing.totalHours,
+      excess_hour_price: customBundlePricing.excessHourPrice,
+      has_excess_hours: true,
+      pricing_model: 'FIXED' as const,
+      type: 'PACKAGE' as const,
+      is_active: true,
+      is_featured: false,
+    } as ProductOption;
+  }, [customBundlePricing, selectedVenues, isMultiVenue]);
 
   useEffect(() => {
     const loadPackages = async () => {
       setIsLoading(true);
       try {
+        // TODO: When backend supports it, filter by venue_ids
+        // const packages = await ProductsApi.getPackages({ venue_ids: selectedVenueIds });
         const packages = await ProductsApi.getPackages();
-        // Ensure packages is always an array
         setAvailablePackages(Array.isArray(packages) ? packages : []);
       } catch (err) {
         console.error('Failed to load packages:', err);
-        // Set empty array on error to prevent crash
         setAvailablePackages([]);
       } finally {
         setIsLoading(false);
@@ -388,7 +471,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     loadPackages();
   }, []);
 
-  // Calculate totals and selection state - memoize to stabilize reference
+  // Calculate totals and selection state
   const selectedPackageIds = useMemo(() =>
     stepData.selected_packages?.map(p => p.product_id) || [],
     [stepData.selected_packages]
@@ -400,6 +483,9 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     return sum + (price * (pkg.quantity || 1));
   }, 0) || 0;
 
+  // Check if custom bundle is selected
+  const isCustomBundleSelected = selectedPackageIds.includes(-1);
+
   // Handle package selection
   const handlePackageSelect = useCallback((pkg: ProductOption) => {
     const isCurrentlySelected = selectedPackageIds.includes(pkg.id);
@@ -408,14 +494,22 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       if (isCurrentlySelected) {
         onDataChange({ selected_packages: [] });
       } else {
-        onDataChange({
-          selected_packages: [{
-            product_id: pkg.id,
-            name: pkg.name,
-            price: pkg.base_price,
-            quantity: 1,
-          }]
-        });
+        const selectedPkg: SelectedPackage = {
+          product_id: pkg.id,
+          name: pkg.name,
+          price: pkg.base_price,
+          quantity: 1,
+          included_hours: pkg.included_hours,
+          excess_hour_price: pkg.excess_hour_price,
+        };
+
+        // For custom bundle, we'll need to create it on the backend later
+        if (pkg.id === -1) {
+          selectedPkg.is_custom_bundle = true;
+          selectedPkg.venue_ids = selectedVenueIds;
+        }
+
+        onDataChange({ selected_packages: [selectedPkg] });
       }
     } else {
       // MULTIPLE selection
@@ -423,19 +517,25 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         const updatedPackages = stepData.selected_packages?.filter(p => p.product_id !== pkg.id) || [];
         onDataChange({ selected_packages: updatedPackages });
       } else if (canSelectMore) {
-        const updatedPackages = [
-          ...(stepData.selected_packages || []),
-          {
-            product_id: pkg.id,
-            name: pkg.name,
-            price: pkg.base_price,
-            quantity: 1,
-          }
-        ];
+        const selectedPkg: SelectedPackage = {
+          product_id: pkg.id,
+          name: pkg.name,
+          price: pkg.base_price,
+          quantity: 1,
+          included_hours: pkg.included_hours,
+          excess_hour_price: pkg.excess_hour_price,
+        };
+
+        if (pkg.id === -1) {
+          selectedPkg.is_custom_bundle = true;
+          selectedPkg.venue_ids = selectedVenueIds;
+        }
+
+        const updatedPackages = [...(stepData.selected_packages || []), selectedPkg];
         onDataChange({ selected_packages: updatedPackages });
       }
     }
-  }, [stepData.selected_packages, selectedPackageIds, selectionType, canSelectMore, onDataChange]);
+  }, [stepData.selected_packages, selectedPackageIds, selectionType, canSelectMore, onDataChange, selectedVenueIds]);
 
   // Handle quantity change
   const handleQuantityChange = useCallback((pkg: ProductOption, quantity: number) => {
@@ -443,8 +543,8 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       const updatedPackages = stepData.selected_packages?.filter(p => p.product_id !== pkg.id) || [];
       onDataChange({ selected_packages: updatedPackages });
     } else {
-      const updatedPackages = stepData.selected_packages?.map(p => 
-        p.product_id === pkg.id 
+      const updatedPackages = stepData.selected_packages?.map(p =>
+        p.product_id === pkg.id
           ? { ...p, quantity }
           : p
       ) || [];
@@ -471,192 +571,89 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     );
   }
 
-  // Show confirmation UI for custom packages from venue selection
-  if (isCustomPackageSelected && !showAllPackages && stepData.selected_packages && stepData.selected_packages.length > 0) {
-    const customPkg = stepData.selected_packages[0];
-    return (
-      <Box>
-        <AnimatedElement animation="slideDown" delay={100}>
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-              Your Package Selection
-            </Typography>
-          </Box>
-        </AnimatedElement>
-
-        <AnimatedElement animation="fadeIn" delay={200}>
-          <Alert
-            severity="success"
-            sx={{
-              mb: 3,
-              backgroundColor: alpha(theme.palette.success.main, 0.1),
-              border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
-            }}
-          >
-            You've created a custom package from your venue selection.
-          </Alert>
-        </AnimatedElement>
-
-        <AnimatedElement animation="slideUp" delay={300}>
-          <GlassCard
-            variant="light"
-            intensity="medium"
-            sx={{
-              position: 'relative',
-              backgroundColor: alpha(theme.palette.primary.main, 0.1),
-              border: `2px solid ${theme.palette.primary.main}`,
-              mb: 3,
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 4,
-                backgroundColor: theme.palette.primary.main,
-                borderRadius: '8px 8px 0 0',
-              },
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <CheckCircleIcon sx={{ color: theme.palette.primary.main }} />
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                  {customPkg.name}
-                </Typography>
-              </Box>
-
-              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 3 }}>
-                {customPkg.included_hours && (
-                  <Chip
-                    icon={<AccessTimeIcon fontSize="small" />}
-                    label={`${customPkg.included_hours} hours included`}
-                    size="small"
-                    variant="outlined"
-                    sx={{ backgroundColor: alpha('#fff', 0.1) }}
-                  />
-                )}
-                {customPkg.excess_hour_price && (
-                  <Chip
-                    label={`+₱${parseFloat(customPkg.excess_hour_price).toLocaleString()}/hr extra`}
-                    size="small"
-                    variant="outlined"
-                    sx={{ backgroundColor: alpha('#fff', 0.1) }}
-                  />
-                )}
-              </Stack>
-
-              <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette.primary.main, mb: 2 }}>
-                ₱{parseFloat(customPkg.price || '0').toLocaleString()}
-              </Typography>
-
-              <Button
-                variant="outlined"
-                onClick={handleChooseDifferent}
-                sx={{
-                  color: 'text.secondary',
-                  borderColor: alpha('#fff', 0.3),
-                  '&:hover': {
-                    backgroundColor: alpha('#fff', 0.1),
-                    borderColor: alpha('#fff', 0.5),
-                  },
-                }}
-              >
-                Choose a Different Package
-              </Button>
-            </CardContent>
-          </GlassCard>
-        </AnimatedElement>
-
-        <AnimatedElement animation="fadeIn" delay={400}>
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 3 }}>
-            Click Continue to proceed with this package.
-          </Typography>
-        </AnimatedElement>
-
-        {/* Show preview of available packages */}
-        {availablePackages.length > 0 && (
-          <AnimatedElement animation="slideUp" delay={500}>
-            <Box sx={{ mt: 4 }}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
-                Or choose from our pre-made packages:
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {availablePackages.slice(0, 3).map((pkg) => (
-                  <GlassCard
-                    key={pkg.id}
-                    variant="light"
-                    intensity="weak"
-                    sx={{
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                        border: `1px solid ${alpha(theme.palette.primary.main, 0.5)}`,
-                      },
-                    }}
-                    onClick={() => handlePackageSelect(pkg)}
-                  >
-                    <CardContent sx={{ py: 2, px: 3 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {pkg.name}
-                        </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
-                          ₱{parseFloat(pkg.base_price || '0').toLocaleString()}
-                        </Typography>
-                      </Box>
-                    </CardContent>
-                  </GlassCard>
-                ))}
-              </Box>
-            </Box>
-          </AnimatedElement>
-        )}
-      </Box>
-    );
-  }
-
   return (
     <Box>
       {/* Header */}
       <AnimatedElement animation="slideDown" delay={100}>
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-            Select Your Package
+            Choose Your Package
           </Typography>
+
+          {/* Venue context */}
+          {hasVenueSelection && selectedVenues.length > 0 && (
+            <Typography variant="body1" color="text.secondary">
+              Based on your selection: <strong>{selectedVenues.map(v => v.name).join(', ')}</strong>
+            </Typography>
+          )}
         </Box>
       </AnimatedElement>
 
       {/* Selection info */}
       {selectionType === 'MULTIPLE' && (
         <AnimatedElement animation="fadeIn" delay={200}>
-          <Alert 
-            severity="info" 
-            sx={{ 
+          <Alert
+            severity="info"
+            sx={{
               mb: 3,
               backgroundColor: alpha(theme.palette.info.main, 0.1),
               border: `1px solid ${alpha(theme.palette.info.main, 0.3)}`,
             }}
           >
-            You can select {minSelection} to {maxSelection} packages. 
+            You can select {minSelection} to {maxSelection} packages.
             Currently selected: {totalSelected}
           </Alert>
         </AnimatedElement>
       )}
 
-      {/* Package Grid */}
-      <Box 
-        sx={{ 
-          display: 'grid', 
-          gridTemplateColumns: { 
-            xs: '1fr', 
-            md: Array.isArray(availablePackages) && availablePackages.length === 2 
-              ? 'repeat(2, 1fr)' 
+      {/* Custom Bundle Option - Show first if venues are selected */}
+      {customBundlePackage && (
+        <>
+          <AnimatedElement animation="fadeIn" delay={250}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+              {isMultiVenue ? 'Create Custom Bundle' : 'Book Your Venue'}
+            </Typography>
+          </AnimatedElement>
+
+          <Box sx={{ mb: 4 }}>
+            <PackageCard
+              pkg={customBundlePackage}
+              isSelected={isCustomBundleSelected}
+              selectedQuantity={
+                stepData.selected_packages?.find(p => p.product_id === -1)?.quantity || 0
+              }
+              onSelect={handlePackageSelect}
+              onQuantityChange={handleQuantityChange}
+              canSelectMore={canSelectMore}
+              selectionType={selectionType}
+              animationDelay={300}
+              isCustomBundle={true}
+              isMultiVenue={isMultiVenue}
+            />
+          </Box>
+
+          <AnimatedElement animation="fadeIn" delay={350}>
+            <Divider sx={{ mb: 4 }}>
+              <Typography variant="body2" color="text.secondary">
+                OR CHOOSE A PRE-MADE PACKAGE
+              </Typography>
+            </Divider>
+          </AnimatedElement>
+        </>
+      )}
+
+      {/* Pre-made Package Grid */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            md: Array.isArray(availablePackages) && availablePackages.length === 2
+              ? 'repeat(2, 1fr)'
               : 'repeat(auto-fit, minmax(350px, 1fr))'
-          }, 
+          },
           gap: 4,
-          mb: 4 
+          mb: 4
         }}
       >
         {Array.isArray(availablePackages) && availablePackages.length > 0 ? (
@@ -676,18 +673,20 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
             />
           ))
         ) : (
-          <Box sx={{ 
+          <Box sx={{
             gridColumn: '1 / -1',
-            textAlign: 'center', 
+            textAlign: 'center',
             py: 8,
-            color: 'text.secondary' 
+            color: 'text.secondary'
           }}>
             <Typography variant="h6" gutterBottom>
-              No packages available
+              No pre-made packages available
             </Typography>
-            <Typography variant="body2">
-              Please check back later or contact support
-            </Typography>
+            {customBundlePackage && (
+              <Typography variant="body2">
+                You can create a custom package from your venue selection above.
+              </Typography>
+            )}
           </Box>
         )}
       </Box>

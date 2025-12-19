@@ -402,29 +402,23 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
     def create_from_venues(self, request):
         """
         Create a custom package from selected venues.
-        Used by the venue selection booking flow step.
+        Used by the package selection booking flow step.
 
         Request body:
         {
             "venue_ids": [1, 2, 3],
-            "primary_venue_id": 1,
             "booking_session_id": "session-uuid"
         }
+
+        The first venue in the list is used for excess hour pricing.
         """
         venue_ids = request.data.get('venue_ids', [])
-        primary_venue_id = request.data.get('primary_venue_id')
         booking_session_id = request.data.get('booking_session_id')
         category_id = request.data.get('category_id')
 
         if not venue_ids:
             return Response(
                 {'error': 'venue_ids is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if not primary_venue_id:
-            return Response(
-                {'error': 'primary_venue_id is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -437,7 +431,6 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         try:
             package = CustomPackageService.create_from_venues(
                 venue_ids=venue_ids,
-                primary_venue_id=primary_venue_id,
                 booking_session_id=booking_session_id,
                 category_id=category_id,
             )

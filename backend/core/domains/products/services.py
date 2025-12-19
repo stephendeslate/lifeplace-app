@@ -415,18 +415,21 @@ class CustomPackageService:
     BUNDLE_DISCOUNT_PERCENT = Decimal('10.00')  # 10% off for 2+ venues
 
     @classmethod
-    def create_from_venues(cls, venue_ids, primary_venue_id, booking_session_id, category_id=None):
+    def create_from_venues(cls, venue_ids, booking_session_id, category_id=None):
         """
         Create a custom package from selected venues.
 
         Args:
             venue_ids: List of venue IDs to include in the package
-            primary_venue_id: ID of the primary venue (determines datetime rules)
             booking_session_id: ID of the booking session creating this package
             category_id: Optional category ID for the package
 
         Returns:
             ProductOption: The created custom package
+
+        Note:
+            The first venue in the list is used for excess hour pricing and marked as primary.
+            One event per day means all venues are available if any date is available.
         """
         from core.domains.venues.models import Venue, PackageVenue
 
@@ -441,17 +444,8 @@ class CustomPackageService:
 
         venue_list = list(venues)
 
-        # Validate primary venue is in selection
-        primary_venue = None
-        for v in venue_list:
-            if v.id == primary_venue_id:
-                primary_venue = v
-                break
-
-        if not primary_venue:
-            # Use first venue if primary not found
-            primary_venue = venue_list[0]
-            primary_venue_id = primary_venue.id
+        # Use first venue for excess hour pricing
+        first_venue = venue_list[0]
 
         # Calculate totals from standalone pricing
         total_hours = Decimal('0')
@@ -496,7 +490,7 @@ class CustomPackageService:
                 base_price=final_price,
                 has_excess_hours=True,
                 included_hours=int(total_hours),
-                excess_hour_price=primary_venue.standalone_excess_hour_price or Decimal('0'),
+                excess_hour_price=first_venue.standalone_excess_hour_price or Decimal('0'),
                 is_active=True,
                 is_custom=True,
                 booking_session_id=booking_session_id,
@@ -508,7 +502,7 @@ class CustomPackageService:
                 PackageVenue.objects.create(
                     package=package,
                     venue=venue,
-                    is_primary=(venue.id == primary_venue_id),
+                    is_primary=(i == 0),
                     access_order=i + 1,
                     access_duration_hours=venue.standalone_included_hours,
                     hours_contribution=venue.standalone_included_hours,
