@@ -105,7 +105,7 @@ class BookingFlowStepConfigurationService:
             updater = config_updaters.get(step.step_type)
             if updater:
                 config = updater(step, config_data)
-                logger.info(f"Updated configuration for step: {step.name}")
+                logger.info(f"Updated configuration for step: {step.get_step_type_display()}")
                 return config
             else:
                 raise InvalidStepConfiguration(f"No configuration handler for step type: {step.step_type}")
@@ -187,7 +187,7 @@ class BookingFlowStepConfigurationService:
                     logger.warning(f"Questionnaire {questionnaire_id} not found or inactive")
                     continue
             
-            logger.info(f"Assigned {len(questionnaire_ids)} questionnaires to step: {step.name}")
+            logger.info(f"Assigned {len(questionnaire_ids)} questionnaires to step: {step.get_step_type_display()}")
             return config
     
     @staticmethod
@@ -204,7 +204,6 @@ class BookingFlowStepConfigurationService:
         with transaction.atomic():
             # Update step type
             step.step_type = 'date_time'
-            step.name = step.name.replace('Availability Check', 'Date & Time Selection')
             step.save()
             
             # Create enhanced datetime configuration with availability features
@@ -222,7 +221,7 @@ class BookingFlowStepConfigurationService:
                 overbooking_threshold=0
             )
             
-            logger.info(f"Migrated availability_check step to date_time: {step.name}")
+            logger.info(f"Migrated availability_check step to date_time: {step.get_step_type_display()}")
             return datetime_config
     
     @staticmethod
@@ -472,7 +471,7 @@ class BookingFlowStepConfigurationService:
         
         try:
             config.save()
-            logger.info(f"Successfully updated payment configuration for step: {step.name}")
+            logger.info(f"Successfully updated payment configuration for step: {step.get_step_type_display()}")
         except Exception as e:
             logger.error(f"Error saving payment configuration: {e}")
             raise InvalidStepConfiguration(f"Failed to save payment configuration: {str(e)}")
@@ -560,7 +559,7 @@ class BookingFlowStepConfigurationService:
 
             try:
                 config.save()
-                logger.info(f"Updated payment terms configuration for step: {step.name}")
+                logger.info(f"Updated payment terms configuration for step: {step.get_step_type_display()}")
             except Exception as e:
                 logger.error(f"Error saving payment terms configuration: {e}")
                 raise InvalidStepConfiguration(f"Failed to save payment terms configuration: {str(e)}")

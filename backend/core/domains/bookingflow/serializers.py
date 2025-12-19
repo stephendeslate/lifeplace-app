@@ -371,7 +371,7 @@ class BookingFlowStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookingFlowStep
         fields = [
-            'id', 'booking_flow', 'step_type', 'step_type_display', 'name',
+            'id', 'booking_flow', 'step_type', 'step_type_display',
             'description', 'order', 'is_enabled', 'is_required', 'is_skippable',
             'display_conditions', 'configuration', 'validation_rules',
             'configuration_data', 'created_at', 'updated_at'
@@ -762,7 +762,7 @@ class BookingFlowStepCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookingFlowStep
         fields = [
-            'booking_flow', 'step_type', 'name', 'description', 'order',
+            'booking_flow', 'step_type', 'description', 'order',
             'is_enabled', 'is_required', 'is_skippable', 'display_conditions',
             'configuration', 'validation_rules'
         ]
@@ -806,7 +806,7 @@ class BookingFlowStepUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookingFlowStep
         fields = [
-            'step_type', 'name', 'description', 'order',
+            'step_type', 'description', 'order',
             'is_enabled', 'is_required', 'is_skippable', 'display_conditions',
             'configuration', 'validation_rules'
         ]

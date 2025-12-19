@@ -216,7 +216,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
       
       return {
         stepId: step.id,
-        stepName: step.name,
+        stepName: step.step_type_display,
         stepType: step.step_type_display,
         completionRate: Math.round(completionRate * 100) / 100,
         dropOffRate: Math.round(dropOffRate * 100) / 100,

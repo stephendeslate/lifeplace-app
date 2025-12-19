@@ -41,7 +41,6 @@ import { useBookingFlowSteps } from '../../../hooks/useBookingFlows';
 
 interface StepFormData {
   step_type: StepType;
-  name: string;
   description: string;
   is_enabled: boolean;
   is_required: boolean;
@@ -53,7 +52,6 @@ interface StepFormData {
 
 const defaultFormData: StepFormData = {
   step_type: 'introduction',
-  name: '',
   description: '',
   is_enabled: true,
   is_required: true,
@@ -93,7 +91,6 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
         // Populate form with existing step data
         const stepData: StepFormData = {
           step_type: editingStep.step_type,
-          name: editingStep.name || '',
           description: editingStep.description || '',
           is_enabled: editingStep.is_enabled ?? true,
           is_required: editingStep.is_required ?? true,
@@ -151,15 +148,7 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
     setFormData(prev => ({
       ...prev,
       step_type: stepType,
-      name: prev.name || getDefaultStepName(stepType),
     }));
-  };
-
-  const getDefaultStepName = (stepType: StepType): string => {
-    if (!stepTypesResponse?.step_types) return stepType;
-    
-    const stepTypeObj = stepTypesResponse.step_types.find(type => type.value === stepType);
-    return stepTypeObj?.label || stepType;
   };
 
   const handleDisplayConditionsChange = (value: string) => {
@@ -201,10 +190,6 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Step name is required';
-    }
-
     if (!formData.step_type) {
       newErrors.step_type = 'Step type is required';
     }
@@ -233,7 +218,6 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
     // Create submit data matching the evolved backend serializers
     const submitData: CreateBookingFlowStepData | UpdateBookingFlowStepData = {
       step_type: formData.step_type,
-      name: formData.name.trim(),
       description: formData.description.trim() || undefined,
       is_enabled: formData.is_enabled,
       is_required: formData.is_required,
@@ -426,16 +410,6 @@ export const BookingFlowStepFormDialog: React.FC<BookingFlowStepFormDialogProps>
             )}
 
             {/* Basic Information */}
-            <TextField
-              fullWidth
-              label="Step Name"
-              value={formData.name}
-              onChange={handleInputChange('name')}
-              error={!!errors.name}
-              helperText={errors.name || 'A descriptive name for this step'}
-              required
-            />
-            
             <TextField
               fullWidth
               label="Description"

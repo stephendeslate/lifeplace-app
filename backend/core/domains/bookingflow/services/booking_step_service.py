@@ -83,7 +83,7 @@ class BookingFlowStepService:
                 **step_data
             )
             
-            logger.info(f"Created booking flow step: {step.name} (ID: {step.id}) for flow: {booking_flow.name}")
+            logger.info(f"Created booking flow step: {step.get_step_type_display()} (ID: {step.id}) for flow: {booking_flow.name}")
             return step
         
         except BookingFlow.DoesNotExist:
@@ -122,7 +122,7 @@ class BookingFlowStepService:
                 setattr(step, key, value)
             
             step.save()
-            logger.info(f"Updated step: {step.name}")
+            logger.info(f"Updated step: {step.get_step_type_display()}")
             return step
     
     @staticmethod
@@ -133,8 +133,8 @@ class BookingFlowStepService:
         with transaction.atomic():
             flow = step.booking_flow
             deleted_order = step.order
-            step_name = step.name
-            
+            step_name = step.get_step_type_display()
+
             # Delete the step
             step.delete()
             

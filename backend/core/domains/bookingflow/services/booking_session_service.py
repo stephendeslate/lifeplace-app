@@ -155,7 +155,7 @@ class BookingSessionService:
     def update_session_data(session_id, step_data, mark_completed=False):
         """Update booking session data for a step"""
         session = BookingSessionService.get_session_by_id(session_id)
-        print(f"SERVICE DEBUG: current_step={session.current_step.name if session.current_step else 'None'}")
+        print(f"SERVICE DEBUG: current_step={session.current_step.get_step_type_display() if session.current_step else 'None'}")
 
         # ENHANCED SAFEGUARD: Prevent updating completed sessions
         if session.is_completed:
@@ -227,7 +227,7 @@ class BookingSessionService:
                 # Add current step to completed steps
                 if session.current_step and session.current_step not in session.completed_steps.all():
                     session.completed_steps.add(session.current_step)
-                    print(f"DEBUG: Added step {session.current_step.name} to completed_steps")
+                    print(f"DEBUG: Added step {session.current_step.get_step_type_display()} to completed_steps")
                 
                 # Check if this is a contact_info step - create/associate client user
                 if (session.current_step and 
@@ -396,7 +396,7 @@ class BookingSessionService:
                     session.current_step.id,
                     session.booking_data  # ADD THIS
                 )
-                print(f"DEBUG: Current step: {session.current_step.name if session.current_step else 'None'}, Next step: {next_step.name if next_step else 'None'}")
+                print(f"DEBUG: Current step: {session.current_step.get_step_type_display() if session.current_step else 'None'}, Next step: {next_step.get_step_type_display() if next_step else 'None'}")
                 
                 if next_step:
                     session.current_step = next_step
@@ -507,7 +507,7 @@ class BookingSessionService:
         
         for step in required_steps:
             if step.id not in completed_step_ids:
-                raise StepValidationError(f"Required step '{step.name}' is not completed")
+                raise StepValidationError(f"Required step '{step.get_step_type_display()}' is not completed")
         
         # Validate completion type against payment step configuration
         payment_step = session.booking_flow.steps.filter(step_type='payment_info').first()

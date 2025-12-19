@@ -54,7 +54,7 @@ class BookingFlowAdmin(admin.ModelAdmin):
 
 @admin.register(BookingFlowStep)
 class BookingFlowStepAdmin(admin.ModelAdmin):
-    list_display = ('name', 'booking_flow', 'step_type', 'order', 'is_enabled')
+    list_display = ('step_type', 'booking_flow', 'order', 'is_enabled')
     list_filter = ('booking_flow', 'step_type', 'is_enabled')
     ordering = ('booking_flow', 'order')
 

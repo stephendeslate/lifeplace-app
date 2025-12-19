@@ -256,7 +256,7 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
     onSuccess: (newStep) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flow-steps'] });
       queryClient.invalidateQueries({ queryKey: ['booking-flows'] });
-      showSuccess('Step Created', `${newStep.name} has been created successfully.`);
+      showSuccess('Step Created', `${newStep.step_type_display} has been created successfully.`);
     },
     onError: (error: unknown) => {
       console.error('Create step error:', error);
@@ -300,7 +300,7 @@ export const useBookingFlowSteps = (filters?: BookingFlowStepFilters) => {
       queryClient.invalidateQueries({ queryKey: ['booking-flow-steps'] });
       queryClient.invalidateQueries({ queryKey: ['booking-flow-step', updatedStep.id] });
       queryClient.invalidateQueries({ queryKey: ['booking-flows'] });
-      showSuccess('Step Updated', `${updatedStep.name} has been updated successfully.`);
+      showSuccess('Step Updated', `${updatedStep.step_type_display} has been updated successfully.`);
     },
     onError: (error: unknown) => {
       console.error('Update step error:', error);

@@ -509,15 +509,12 @@ const StepPreview: React.FC<StepPreviewProps> = ({
       <Box display="flex" alignItems="center" gap={1} mb={2}>
         {getStepIcon()}
         <Box display="flex" alignItems="center" gap={1} flex={1}>
-          <Typography 
-            variant={compact ? "body2" : "subtitle1"} 
+          <Typography
+            variant={compact ? "body2" : "subtitle1"}
             fontWeight={isActive ? "bold" : "medium"}
             color={!step.is_enabled ? "text.disabled" : isActive ? "primary" : "text.primary"}
           >
-            {step.name}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            ({step.step_type_display})
+            {step.step_type_display}
           </Typography>
         </Box>
         
@@ -772,7 +769,7 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
               </Button>
 
               <Typography variant="body2" color="text.secondary" textAlign="center" flex={1}>
-                {currentStep?.name}
+                {currentStep?.step_type_display}
               </Typography>
 
               <Button

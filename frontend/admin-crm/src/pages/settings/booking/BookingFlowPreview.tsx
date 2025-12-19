@@ -284,9 +284,6 @@ export const BookingFlowPreviewPage: React.FC = () => {
                 
                 <Box sx={{ flexGrow: 1 }}>
                   <Typography variant="body2" fontWeight="medium">
-                    {step.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
                     {step.step_type_display}
                   </Typography>
                 </Box>

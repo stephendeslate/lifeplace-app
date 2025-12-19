@@ -82,7 +82,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
       const introConfig = config as IntroductionStepConfiguration;
       
       setFormData({
-        title: introConfig.title || `Welcome to ${step.name}`,
+        title: introConfig.title || `Welcome to ${step.step_type_display}`,
         content: introConfig.content || '',
         show_event_details: introConfig.show_event_details ?? true,
         show_pricing_overview: introConfig.show_pricing_overview ?? false,
@@ -94,12 +94,12 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
       // No config exists, set defaults
       setFormData({
         ...defaultFormData,
-        title: `Welcome to ${step.name}`,
+        title: `Welcome to ${step.step_type_display}`,
         content: 'We\'re excited to help you plan your perfect event! This booking process will guide you through all the details we need.',
       });
       setHasChanges(false);
     }
-  }, [config, step.name, isLoadingConfig]);
+  }, [config, step.step_type_display, isLoadingConfig]);
 
   // Track changes to enable/disable save button
   useEffect(() => {
@@ -187,7 +187,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
     if (config) {
       const introConfig = config as IntroductionStepConfiguration;
       setFormData({
-        title: introConfig.title || `Welcome to ${step.name}`,
+        title: introConfig.title || `Welcome to ${step.step_type_display}`,
         content: introConfig.content || '',
         show_event_details: introConfig.show_event_details ?? true,
         show_pricing_overview: introConfig.show_pricing_overview ?? false,
@@ -197,7 +197,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
     } else {
       setFormData({
         ...defaultFormData,
-        title: `Welcome to ${step.name}`,
+        title: `Welcome to ${step.step_type_display}`,
         content: 'We\'re excited to help you plan your perfect event! This booking process will guide you through all the details we need.',
       });
     }

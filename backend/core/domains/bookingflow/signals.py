@@ -52,22 +52,22 @@ def handle_booking_flow_changes(sender, instance, created, **kwargs):
 def handle_step_changes(sender, instance, created, **kwargs):
     """Handle changes to booking flow steps"""
     if created:
-        logger.info(f"New step created: {instance.name} in flow: {instance.booking_flow.name}")
-        
+        logger.info(f"New step created: {instance.get_step_type_display()} in flow: {instance.booking_flow.name}")
+
         # Log warning if someone somehow creates an availability_check step
         if instance.step_type == 'availability_check':
             logger.warning(
-                f"Availability check step created: {instance.name}. "
+                f"Availability check step created: {instance.get_step_type_display()}. "
                 "This step type should be migrated to date_time with availability features."
             )
     else:
-        logger.info(f"Step updated: {instance.name} in flow: {instance.booking_flow.name}")
+        logger.info(f"Step updated: {instance.get_step_type_display()} in flow: {instance.booking_flow.name}")
 
 
 @receiver(post_delete, sender=BookingFlowStep)
 def handle_step_deletion(sender, instance, **kwargs):
     """Handle step deletion"""
-    logger.info(f"Step deleted: {instance.name} from flow: {instance.booking_flow.name}")
+    logger.info(f"Step deleted: {instance.get_step_type_display()} from flow: {instance.booking_flow.name}")
     
     # Update any active sessions that were on this step
     active_sessions = BookingSession.objects.filter(
@@ -255,7 +255,7 @@ def validate_step_configuration(sender, instance, **kwargs):
     # Prevent creation/update of availability_check steps
     if instance.step_type == 'availability_check':
         logger.warning(
-            f"Attempting to save availability_check step: {instance.name}. "
+            f"Attempting to save availability_check step: {instance.get_step_type_display()}. "
             "This step type should be migrated to date_time with availability features."
         )
         # You could raise an exception here if you want to completely block it:
@@ -268,7 +268,7 @@ def validate_step_configuration(sender, instance, **kwargs):
             if not isinstance(instance.display_conditions, dict):
                 raise ValueError("Display conditions must be a valid JSON object")
         except Exception as e:
-            logger.error(f"Invalid display conditions for step {instance.name}: {e}")
+            logger.error(f"Invalid display conditions for step {instance.get_step_type_display()}: {e}")
             instance.display_conditions = {}
     
     # Validate validation rules
@@ -277,7 +277,7 @@ def validate_step_configuration(sender, instance, **kwargs):
             if not isinstance(instance.validation_rules, dict):
                 raise ValueError("Validation rules must be a valid JSON object")
         except Exception as e:
-            logger.error(f"Invalid validation rules for step {instance.name}: {e}")
+            logger.error(f"Invalid validation rules for step {instance.get_step_type_display()}: {e}")
             instance.validation_rules = {}
 
 
@@ -286,7 +286,7 @@ def validate_step_configuration(sender, instance, **kwargs):
 def auto_migrate_availability_check_steps(sender, instance, created, **kwargs):
     """Automatically migrate availability_check steps to date_time steps"""
     if instance.step_type == 'availability_check' and not getattr(instance, '_migrating', False):
-        logger.info(f"Auto-migrating availability_check step to date_time: {instance.name}")
+        logger.info(f"Auto-migrating availability_check step to date_time: {instance.get_step_type_display()}")
         
         try:
             # Prevent infinite recursion

@@ -31,7 +31,6 @@ export interface BookingFlowStep {
   booking_flow: number;
   step_type: StepType;
   step_type_display: string;
-  name: string;
   description: string;
   order: number;
   is_enabled: boolean;
