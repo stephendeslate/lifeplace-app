@@ -530,27 +530,35 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
         """Calculate pricing for current session state using centralized pricing service"""
         try:
             session = BookingSessionService.get_session_by_id(session_uuid)
-            
+
             # Get booking data
             booking_data = session.booking_data or {}
-            
+
             # Add discount code to booking data if provided
             discount_code = request.data.get('discount_code', '')
             if discount_code:
                 booking_data['applied_discount_code'] = discount_code
-            
-            # Get event duration from booking data
-            event_duration = self._get_session_duration(booking_data)
-            
+
+            # Extract venue_additional_hours from session
+            venue_additional_hours = booking_data.get('venue_additional_hours', {})
+
+            # Get event_type_id from booking flow for event-type-specific pricing
+            event_type_id = None
+            if session.booking_flow and session.booking_flow.event_type:
+                event_type_id = session.booking_flow.event_type_id
+
             # Log for debugging
             logger.info(f"=== PRICING API USING CENTRALIZED SERVICE ===")
-            logger.info(f"Session: {session_uuid}, Duration: {event_duration}h, Discount: '{discount_code}'")
-            
+            logger.info(f"Session: {session_uuid}, Discount: '{discount_code}'")
+            logger.info(f"Venue Additional Hours: {venue_additional_hours}")
+            logger.info(f"Event Type ID: {event_type_id}")
+
             # Use centralized pricing service for consistent calculations
             from core.domains.sales.pricing_service import PricingCalculationService
             pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
-                booking_data, 
-                event_duration
+                booking_data=booking_data,
+                venue_additional_hours=venue_additional_hours,
+                event_type_id=event_type_id
             )
             
             # Prepare discount details if discount was applied

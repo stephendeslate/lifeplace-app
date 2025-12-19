@@ -1,6 +1,6 @@
 # backend/core/domains/venues/serializers.py
 from rest_framework import serializers
-from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate
+from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate, VenueEventTypeConfiguration
 
 
 class VenueOperatingRulesSerializer(serializers.ModelSerializer):
@@ -98,6 +98,9 @@ class VenueListSerializer(serializers.ModelSerializer):
             'id', 'name', 'code', 'is_overnight', 'is_active', 'is_bookable',
             'minimum_capacity', 'maximum_capacity',
             'featured_image', 'sort_order', 'is_rentable_standalone',
+            # Standalone pricing fields for editing
+            'standalone_base_price', 'standalone_included_hours',
+            'standalone_excess_hour_price',
             'has_operating_rules', 'packages_count'
         ]
 
@@ -358,6 +361,38 @@ class PublicPackageVenueSerializer(serializers.ModelSerializer):
         return None
 
 
+class VenueEventTypeConfigurationSerializer(serializers.ModelSerializer):
+    """Serializer for venue event type configurations"""
+    venue_name = serializers.CharField(source='venue.name', read_only=True)
+    event_type_name = serializers.CharField(source='event_type.name', read_only=True)
+
+    class Meta:
+        model = VenueEventTypeConfiguration
+        fields = [
+            'id', 'venue', 'venue_name', 'event_type', 'event_type_name',
+            'base_price', 'included_hours', 'excess_hour_price',
+            'is_all_day_access',
+            'default_check_in_time', 'default_checkout_time',
+            'checkout_next_day', 'maximum_program_hours', 'is_fixed_duration',
+            'notes',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class VenueEventTypeConfigurationInlineSerializer(serializers.ModelSerializer):
+    """Inline serializer for event type configs shown in venue details"""
+    event_type_name = serializers.CharField(source='event_type.name', read_only=True)
+
+    class Meta:
+        model = VenueEventTypeConfiguration
+        fields = [
+            'id', 'event_type', 'event_type_name',
+            'base_price', 'included_hours', 'excess_hour_price',
+            'is_all_day_access',
+        ]
+
+
 class RentableVenueSerializer(serializers.ModelSerializer):
     """
     Serializer for venues that can be rented standalone.
@@ -376,6 +411,100 @@ class RentableVenueSerializer(serializers.ModelSerializer):
             'standalone_excess_hour_price',
             'operating_rules'
         ]
+
+    def get_operating_rules(self, obj):
+        """Get simplified operating rules for venue selection"""
+        if hasattr(obj, 'venue_operating_rules'):
+            rules = obj.venue_operating_rules
+            return {
+                'default_check_in_time': rules.default_check_in_time,
+                'default_checkout_time': rules.default_checkout_time,
+                'checkout_next_day': rules.checkout_next_day,
+                'minimum_program_hours': rules.minimum_program_hours,
+                'maximum_program_hours': rules.maximum_program_hours,
+                'default_program_hours': rules.default_program_hours,
+                'earliest_start_time': rules.earliest_start_time,
+                'latest_end_time': rules.latest_end_time,
+            }
+        return None
+
+
+class RentableVenueWithEventTypeSerializer(serializers.ModelSerializer):
+    """
+    Serializer for venues that can be rented standalone, with event-type-specific pricing.
+    Used by the venue selection booking flow step when event_type_id is provided.
+    """
+    operating_rules = serializers.SerializerMethodField()
+    # These will be populated with event-type-specific values if available
+    effective_base_price = serializers.SerializerMethodField()
+    effective_included_hours = serializers.SerializerMethodField()
+    effective_excess_hour_price = serializers.SerializerMethodField()
+    is_all_day_access = serializers.SerializerMethodField()
+    has_event_type_config = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Venue
+        fields = [
+            'id', 'name', 'code', 'description',
+            'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
+            'location_description', 'featured_image', 'gallery_images',
+            # Default standalone pricing (for reference)
+            'standalone_base_price', 'standalone_included_hours',
+            'standalone_excess_hour_price',
+            # Event-type-specific effective pricing
+            'effective_base_price', 'effective_included_hours',
+            'effective_excess_hour_price', 'is_all_day_access',
+            'has_event_type_config',
+            'operating_rules'
+        ]
+
+    def get_event_type_config(self, obj):
+        """Get event type configuration if available"""
+        event_type_id = self.context.get('event_type_id')
+        if not event_type_id:
+            return None
+
+        # Use prefetched data if available
+        if hasattr(obj, '_prefetched_event_type_config'):
+            return obj._prefetched_event_type_config
+
+        try:
+            return VenueEventTypeConfiguration.objects.get(
+                venue=obj,
+                event_type_id=event_type_id
+            )
+        except VenueEventTypeConfiguration.DoesNotExist:
+            return None
+
+    def get_effective_base_price(self, obj):
+        """Get effective base price (event-type-specific or default)"""
+        config = self.get_event_type_config(obj)
+        if config:
+            return str(config.get_effective_base_price() or 0)
+        return obj.standalone_base_price
+
+    def get_effective_included_hours(self, obj):
+        """Get effective included hours (event-type-specific or default)"""
+        config = self.get_event_type_config(obj)
+        if config:
+            return str(config.get_effective_included_hours() or 0)
+        return obj.standalone_included_hours
+
+    def get_effective_excess_hour_price(self, obj):
+        """Get effective excess hour price (event-type-specific or default)"""
+        config = self.get_event_type_config(obj)
+        if config:
+            return str(config.get_effective_excess_hour_price() or 0)
+        return obj.standalone_excess_hour_price
+
+    def get_is_all_day_access(self, obj):
+        """Check if venue has all-day access for this event type"""
+        config = self.get_event_type_config(obj)
+        return config.is_all_day_access if config else False
+
+    def get_has_event_type_config(self, obj):
+        """Check if venue has event-type-specific configuration"""
+        return self.get_event_type_config(obj) is not None
 
     def get_operating_rules(self, obj):
         """Get simplified operating rules for venue selection"""

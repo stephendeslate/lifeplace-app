@@ -29,7 +29,10 @@ import {
   subMonths,
   getDay,
   isBefore,
+  isAfter,
   startOfDay,
+  differenceInDays,
+  addDays,
 } from 'date-fns';
 import { tokens } from '../tokens';
 import { GlassCard } from '../components/GlassCard';
@@ -64,6 +67,12 @@ interface EventAvailabilityCalendarProps {
   // maxEventsPerDay removed - ANY CONFIRMED event blocks the date (business requirement)
   // showEventDetails removed - event details never shown for privacy
   compact?: boolean;
+  // Range selection mode (for multi-day events)
+  isRangeMode?: boolean;
+  selectedEndDate?: Date;
+  minRangeDays?: number; // Minimum days required for range (1 = allow same-day selection)
+  maxRangeDays?: number; // Maximum days allowed for the range
+  onRangeSelect?: (startDate: Date, endDate: Date) => void;
 }
 
 const StyledCalendarContainer = styled(Box)(() => ({
@@ -96,8 +105,8 @@ const StyledDayHeader = styled(Box)(() => ({
 }));
 
 const StyledDay = styled(Box, {
-  shouldForwardProp: (prop) => 
-    !['isAvailable', 'hasEvents', 'isSelected', 'isToday', 'isCurrentMonth', 'isBookable'].includes(prop as string),
+  shouldForwardProp: (prop) =>
+    !['isAvailable', 'hasEvents', 'isSelected', 'isToday', 'isCurrentMonth', 'isBookable', 'isInRange', 'isRangeEnd', 'isOutOfRange'].includes(prop as string),
 })<{
   isAvailable?: boolean;
   hasEvents?: boolean;
@@ -105,13 +114,19 @@ const StyledDay = styled(Box, {
   isToday?: boolean;
   isCurrentMonth?: boolean;
   isBookable?: boolean;
-}>(({ 
+  isInRange?: boolean;
+  isRangeEnd?: boolean;
+  isOutOfRange?: boolean;
+}>(({
   isAvailable = false,
   hasEvents = false,
   isSelected = false,
   isToday = false,
   isCurrentMonth = true,
   isBookable = true,
+  isInRange = false,
+  isRangeEnd = false,
+  isOutOfRange = false,
 }) => ({
   position: 'relative',
   aspectRatio: '1',
@@ -120,38 +135,57 @@ const StyledDay = styled(Box, {
   alignItems: 'center',
   justifyContent: 'center',
   padding: tokens.spacing.space[1],
-  cursor: isBookable && isCurrentMonth ? 'pointer' : 'not-allowed',
+  cursor: isBookable && isCurrentMonth && !isOutOfRange ? 'pointer' : 'not-allowed',
   transition: tokens.animation.transition.all,
   borderRadius: tokens.spacing.radius.md,
   border: '2px solid transparent',
   background: (() => {
     if (!isCurrentMonth) return 'transparent';
+    if (isOutOfRange) return tokens.color.base.sage[100];
     if (hasEvents && !isAvailable) return tokens.color.semantic.error.glass;
     if (hasEvents && isAvailable) return tokens.color.semantic.warning.glass;
     if (isAvailable) return tokens.color.semantic.success.glass;
     return tokens.color.base.sage[50];
   })(),
-  
+
+  // Range selection styling
+  ...(isInRange && {
+    background: `${tokens.color.base.forest[50]} !important`,
+    borderRadius: 0,
+  }),
+
+  ...(isRangeEnd && {
+    border: `2px solid ${tokens.color.base.forest[600]}`,
+    background: `${tokens.color.base.forest[100]} !important`,
+    boxShadow: tokens.shadow.elevation.md,
+    borderRadius: tokens.spacing.radius.md,
+  }),
+
   ...(isSelected && {
     border: `2px solid ${tokens.color.base.forest[600]}`,
-    background: tokens.color.base.forest[100],
+    background: `${tokens.color.base.forest[100]} !important`,
     boxShadow: tokens.shadow.elevation.md,
+    borderRadius: tokens.spacing.radius.md,
   }),
-  
-  ...(isToday && {
+
+  ...(isToday && !isSelected && !isRangeEnd && {
     border: `2px solid ${tokens.color.base.gold[500]}`,
     boxShadow: tokens.shadow.glow.gold,
   }),
-  
+
   ...(!isCurrentMonth && {
     opacity: 0.4,
   }),
-  
-  ...(isBookable && isCurrentMonth && {
+
+  ...(isOutOfRange && {
+    opacity: 0.5,
+  }),
+
+  ...(isBookable && isCurrentMonth && !isOutOfRange && {
     '&:hover': {
       transform: 'scale(1.05)',
       boxShadow: tokens.shadow.elevation.lg,
-      background: isAvailable 
+      background: isAvailable
         ? tokens.color.base.forest[50]
         : tokens.color.base.sage[100],
     },
@@ -187,10 +221,17 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
   minAdvanceBookingDays = 1,
   maxAdvanceBookingDays = 365,
   compact = false,
+  isRangeMode = false,
+  selectedEndDate,
+  minRangeDays = 1,
+  maxRangeDays = 7,
+  onRangeSelect,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  // Track if we're selecting the end date in range mode
+  const [isSelectingEndDate, setIsSelectingEndDate] = useState(false);
   
   // Calculate availability for each day
   const monthAvailability = useMemo(() => {
@@ -282,11 +323,78 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
     }
   };
   
+  // Helper functions for range selection
+  const isDateInRange = (date: Date): boolean => {
+    if (!isRangeMode || !selectedDate || !selectedEndDate) return false;
+    const start = startOfDay(selectedDate);
+    const end = startOfDay(selectedEndDate);
+    const current = startOfDay(date);
+    return isAfter(current, start) && isBefore(current, end);
+  };
+
+  const isDateOutOfRange = (date: Date): boolean => {
+    if (!isRangeMode || !selectedDate || !isSelectingEndDate) return false;
+    const start = startOfDay(selectedDate);
+    const current = startOfDay(date);
+    // Out of range if before start date or more than maxRangeDays from start
+    if (isBefore(current, start)) return true;
+    const daysDiff = differenceInDays(current, start);
+    return daysDiff > maxRangeDays - 1; // -1 because the range includes both start and end
+  };
+
+  const getMaxEndDate = (): Date | null => {
+    if (!selectedDate) return null;
+    return addDays(selectedDate, maxRangeDays - 1);
+  };
+
   const handleDateClick = (date: Date, slot: AvailabilitySlot) => {
     if (!slot.isBookable) return;
-    
-    if (onDateSelect) {
-      onDateSelect(date, slot);
+
+    if (isRangeMode) {
+      // Range selection logic
+      if (!isSelectingEndDate || !selectedDate) {
+        // First click: select start date
+        if (onDateSelect) {
+          onDateSelect(date, slot);
+        }
+        setIsSelectingEndDate(true);
+      } else {
+        // Second click: select end date
+        // Check if the date is within the allowed range
+        const daysDiff = differenceInDays(date, selectedDate);
+
+        // Allow same-day selection when minRangeDays is 1 (single-day events)
+        if (daysDiff === 0 && minRangeDays === 1) {
+          if (onRangeSelect) {
+            onRangeSelect(selectedDate, date); // Same start and end date
+          }
+          setIsSelectingEndDate(false);
+          return;
+        }
+
+        if (daysDiff < 0) {
+          // If clicking before start date, reset and select as new start
+          if (onDateSelect) {
+            onDateSelect(date, slot);
+          }
+          setIsSelectingEndDate(true);
+          return;
+        }
+        if (daysDiff > maxRangeDays - 1) {
+          // Out of range, don't allow
+          return;
+        }
+        // Valid end date selected
+        if (onRangeSelect) {
+          onRangeSelect(selectedDate, date);
+        }
+        setIsSelectingEndDate(false);
+      }
+    } else {
+      // Single date selection (original behavior)
+      if (onDateSelect) {
+        onDateSelect(date, slot);
+      }
     }
   };
   
@@ -349,7 +457,29 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
             const isCurrentMonth = isSameMonth(date, currentMonth);
             const isDayToday = isToday(date);
             const isSelected = selectedDate && isSameDay(date, selectedDate);
-            
+            const isRangeEnd = isRangeMode && selectedEndDate && isSameDay(date, selectedEndDate);
+            const isInRange = isDateInRange(date);
+            const isOutOfRange = isDateOutOfRange(date);
+
+            // Generate tooltip text
+            const getTooltipText = () => {
+              if (!isCurrentMonth) return '';
+              if (isRangeMode && isSelectingEndDate && selectedDate) {
+                if (isOutOfRange) {
+                  const maxEnd = getMaxEndDate();
+                  return `Maximum ${maxRangeDays} days allowed. Select a date on or before ${maxEnd ? format(maxEnd, 'MMM d') : ''}`;
+                }
+                if (isBefore(date, selectedDate)) {
+                  return 'Select a date after the start date';
+                }
+                return `Click to set end date (${format(date, 'EEEE, MMMM d')})`;
+              }
+              if (isRangeMode && !selectedDate) {
+                return `Click to set start date (${format(date, 'EEEE, MMMM d')})`;
+              }
+              return slot.isBookable ? 'Available for booking' : slot.reason;
+            };
+
             return (
               <Tooltip
                 key={index}
@@ -359,9 +489,8 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
                       <Typography variant="caption" display="block" fontWeight={600}>
                         {format(date, 'EEEE, MMMM d')}
                       </Typography>
-                      {/* Event details removed for client privacy */}
                       <Typography variant="caption" display="block" mt={0.5}>
-                        {slot.isBookable ? 'Available for booking' : slot.reason}
+                        {getTooltipText()}
                       </Typography>
                     </Box>
                   ) : ''
@@ -376,18 +505,21 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
                   isToday={isDayToday}
                   isCurrentMonth={isCurrentMonth}
                   isBookable={slot.isBookable}
+                  isInRange={isInRange}
+                  isRangeEnd={!!isRangeEnd}
+                  isOutOfRange={isOutOfRange}
                   onClick={() => handleDateClick(date, slot)}
                 >
-                  <Typography 
-                    variant="body2" 
+                  <Typography
+                    variant="body2"
                     fontWeight={isDayToday ? 700 : 500}
                     color={!isCurrentMonth ? tokens.color.base.sage[400] : 'inherit'}
                   >
                     {format(date, 'd')}
                   </Typography>
-                  
+
                   {isCurrentMonth && getStatusIcon(slot)}
-                  
+
                   {isCurrentMonth && slot.hasEvents.length > 0 && (
                     <StyledEventIndicator />
                   )}

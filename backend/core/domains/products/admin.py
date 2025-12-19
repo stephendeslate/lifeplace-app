@@ -41,8 +41,13 @@ class ProductOptionAdmin(admin.ModelAdmin):
             'fields': ('is_active', 'is_featured', 'allow_multiple', 'requires_approval')
         }),
         ('Time Constraints', {
-            'fields': ('has_excess_hours', 'included_hours', 'excess_hour_price', 
-                      'minimum_hours', 'maximum_hours')
+            'fields': ('minimum_hours', 'maximum_hours'),
+            'description': 'Note: Excess hours pricing is now managed at the Venue level.'
+        }),
+        ('Event Duration', {
+            'fields': ('event_days',),
+            'description': 'For multi-day event packages (camps, retreats). Leave blank for hourly packages.',
+            'classes': ('collapse',),
         }),
         ('Booking Rules', {
             'fields': ('advance_booking_days', 'maximum_booking_days')

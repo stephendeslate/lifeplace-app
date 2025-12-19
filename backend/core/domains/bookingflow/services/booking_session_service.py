@@ -200,6 +200,16 @@ class BookingSessionService:
                 step_data_copy.pop('selected_addons', None)
                 step_data = step_data_copy
 
+            # Handle venue_additional_hours at root level for pricing calculations
+            # Format: {"venue_id": additional_hours, ...} e.g., {"1": 2, "3": 1}
+            if 'venue_additional_hours' in step_data:
+                # Store at root level only (sanitize to prevent JSON serialization errors)
+                session.booking_data['venue_additional_hours'] = sanitize_for_json(step_data['venue_additional_hours'])
+                # Remove from step_data to prevent duplication
+                step_data_copy = step_data.copy()
+                step_data_copy.pop('venue_additional_hours', None)
+                step_data = step_data_copy
+
             # Merge remaining step data (excluding packages/addons which are now at root level)
             if current_step_key not in session.booking_data:
                 session.booking_data[current_step_key] = {}
@@ -1944,10 +1954,15 @@ class BookingSessionService:
         # Get event duration for pricing calculations
         event_duration = BookingSessionService._get_event_duration_from_booking_data(session.booking_data)
 
+        # Get event_type_id from booking flow for event-type-specific pricing
+        event_type_id = None
+        if session.booking_flow and session.booking_flow.event_type:
+            event_type_id = session.booking_flow.event_type_id
+
         # Calculate pricing using centralized service
         pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
-            session.booking_data,
-            event_duration
+            booking_data=session.booking_data,
+            event_type_id=event_type_id
         )
 
         logger.info(f"Centralized pricing calculated: ₱{pricing_breakdown.total_amount}")

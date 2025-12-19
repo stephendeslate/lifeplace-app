@@ -378,18 +378,33 @@ class VenueSelectionStepConfiguration(BaseModel):
 
 
 class DateTimeStepConfiguration(BaseModel):
-    """Enhanced configuration for date and time selection step with availability checking"""
+    """Enhanced configuration for date and time selection step with availability checking
+
+    NOTE: Duration-related fields (min_duration_hours, max_duration_hours, default_duration_hours,
+    allow_time_selection) are deprecated as of Phase 3 DateTime Simplification.
+    Duration is now calculated from venue selections and their additional hours.
+    These fields are kept for backward compatibility only.
+    """
     step = models.OneToOneField(
         BookingFlowStep,
         on_delete=models.CASCADE,
         related_name='datetime_config'
     )
+    # DEPRECATED: Duration fields kept for backward compatibility
     allow_time_selection = models.BooleanField(default=True)
     allow_multi_day = models.BooleanField(default=False)
+    min_event_days = models.PositiveIntegerField(
+        default=1,
+        help_text="Minimum days allowed for event selection (1 enables single-day selection in range mode)"
+    )
+    max_event_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Maximum consecutive days allowed for multi-day events"
+    )
     show_calendar_view = models.BooleanField(default=True)
-    min_duration_hours = models.PositiveIntegerField(default=1)
-    max_duration_hours = models.PositiveIntegerField(default=24)
-    default_duration_hours = models.PositiveIntegerField(default=4)
+    min_duration_hours = models.PositiveIntegerField(default=1)  # DEPRECATED
+    max_duration_hours = models.PositiveIntegerField(default=24)  # DEPRECATED
+    default_duration_hours = models.PositiveIntegerField(default=4)  # DEPRECATED
     
     # Availability settings - Enhanced from availability_check step
     enable_real_time_availability = models.BooleanField(default=True)
@@ -1173,16 +1188,21 @@ class BookingSession(BaseModel):
         
         try:
             from core.domains.sales.pricing_service import PricingCalculationService
-            
+
             # Get event duration
             event_duration = self._get_event_duration()
-            
+
+            # Get event_type_id from booking flow for event-type-specific pricing
+            event_type_id = None
+            if self.booking_flow and self.booking_flow.event_type:
+                event_type_id = self.booking_flow.event_type_id
+
             # Use centralized pricing service
             pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
-                self.booking_data, 
-                event_duration
+                booking_data=self.booking_data,
+                event_type_id=event_type_id
             )
-            
+
             logger.info(f"Centralized pricing service result: ₱{pricing_breakdown.total_amount}")
             return pricing_breakdown.total_amount
             

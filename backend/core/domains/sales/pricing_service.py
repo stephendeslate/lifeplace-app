@@ -1,12 +1,12 @@
 # backend/core/domains/sales/services/pricing_service.py
 import logging
-import math
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 
-from core.domains.products.models import ProductOption, Discount
+from core.domains.products.models import Discount
 from core.domains.payments.models import TaxRate
+from core.domains.venues.models import PackageVenue, VenueEventTypeConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -60,25 +60,129 @@ class PricingCalculationService:
     Centralized service for all pricing calculations in the system.
     Provides a single source of truth for pricing logic, including excess hours.
     """
-    
+
     @staticmethod
-    def calculate_from_booking_data(booking_data: Dict[str, Any], event_duration_hours: Optional[int] = None, client=None) -> PricingBreakdown:
+    def get_venue_hours_info(
+        product_id: int,
+        venue_additional_hours: Dict[str, int],
+        event_type_id: Optional[int] = None
+    ) -> Tuple[Decimal, List[Dict[str, Any]]]:
+        """
+        Calculate venue-based excess hours pricing.
+
+        Args:
+            product_id: The package/product ID
+            venue_additional_hours: Dict mapping venue_id (as string) -> additional hours (int)
+            event_type_id: Optional event type ID for event-type-specific pricing
+
+        Returns:
+            Tuple of (total_cost: Decimal, venue_details: list of dicts)
+        """
+        if not venue_additional_hours:
+            return Decimal('0.00'), []
+
+        # Query PackageVenue to get venues for this package
+        package_venues = PackageVenue.objects.filter(
+            package_id=product_id
+        ).select_related('venue')
+
+        # Pre-fetch event type configurations if event_type_id is provided
+        event_type_configs = {}
+        if event_type_id:
+            configs = VenueEventTypeConfiguration.objects.filter(
+                venue__in=[pv.venue for pv in package_venues],
+                event_type_id=event_type_id
+            ).select_related('venue')
+            event_type_configs = {config.venue_id: config for config in configs}
+
+        total_cost = Decimal('0.00')
+        venue_details = []
+
+        for pv in package_venues:
+            venue_id_str = str(pv.venue.id)
+            additional_hours = venue_additional_hours.get(venue_id_str, 0)
+
+            if additional_hours > 0:
+                # Check for event-type-specific configuration
+                event_config = event_type_configs.get(pv.venue.id)
+
+                if event_config:
+                    # Use event-type-specific pricing
+                    included_hours = event_config.get_effective_included_hours() or Decimal('0')
+                    excess_hour_price = event_config.get_effective_excess_hour_price() or Decimal('0')
+                    is_all_day = event_config.is_all_day_access
+                    logger.info(
+                        f"Using event-type config for {pv.venue.name}: "
+                        f"included={included_hours}h, excess_price=₱{excess_hour_price}, all_day={is_all_day}"
+                    )
+                else:
+                    # Fall back to venue defaults
+                    included_hours = pv.venue.standalone_included_hours or Decimal('0')
+                    excess_hour_price = pv.venue.standalone_excess_hour_price or Decimal('0')
+                    is_all_day = False
+
+                # For all-day access, no excess charges apply
+                if is_all_day:
+                    venue_cost = Decimal('0.00')
+                    logger.info(f"Venue {pv.venue.name}: All-day access - no excess charges")
+                else:
+                    # Calculate cost for this venue
+                    venue_cost = Decimal(str(additional_hours)) * excess_hour_price
+                    total_cost += venue_cost
+                    logger.info(
+                        f"Venue {pv.venue.name}: {additional_hours}h additional @ ₱{excess_hour_price}/h = ₱{venue_cost}"
+                    )
+
+                venue_details.append({
+                    'venue_id': pv.venue.id,
+                    'venue_name': pv.venue.name,
+                    'included_hours': float(included_hours),
+                    'additional_hours': additional_hours,
+                    'excess_hour_price': float(excess_hour_price),
+                    'venue_cost': float(venue_cost),
+                    'is_all_day_access': is_all_day,
+                    'has_event_type_config': event_config is not None
+                })
+
+        return total_cost, venue_details
+
+    @staticmethod
+    def calculate_from_booking_data(
+        booking_data: Dict[str, Any],
+        client=None,
+        venue_additional_hours: Optional[Dict[str, int]] = None,
+        event_type_id: Optional[int] = None
+    ) -> PricingBreakdown:
         """
         Calculate pricing from booking session data.
 
         Args:
             booking_data: Booking session data containing selected packages and addons
-            event_duration_hours: Event duration in hours for excess calculations
             client: Optional client User object for VIP benefit application
+            venue_additional_hours: Optional dict mapping venue_id (string) -> additional hours (int)
+            event_type_id: Optional event type ID for event-type-specific pricing
 
         Returns:
             PricingBreakdown: Complete pricing breakdown
         """
         logger.info("=== CENTRALIZED PRICING CALCULATION ===")
-        logger.info(f"Event duration: {event_duration_hours} hours")
-        
+
+        # Extract venue_additional_hours from booking_data if not provided explicitly
+        if venue_additional_hours is None:
+            venue_additional_hours = booking_data.get('venue_additional_hours', {})
+
+        # Extract event_type_id from booking_data if not provided explicitly
+        if event_type_id is None:
+            event_type_id = booking_data.get('event_type_id')
+            # Also check in root-level booking flow info
+            if event_type_id is None:
+                event_type_id = booking_data.get('booking_flow', {}).get('event_type_id')
+
+        logger.info(f"Venue additional hours: {venue_additional_hours}")
+        logger.info(f"Event type ID: {event_type_id}")
+
         line_items = []
-        
+
         # Get selected packages and addons from booking data (single source of truth approach)
         selected_packages = PricingCalculationService._extract_selected_items(booking_data, 'selected_packages')
         selected_addons = PricingCalculationService._extract_selected_items(booking_data, 'selected_addons')
@@ -100,7 +204,7 @@ class PricingCalculationService:
         # Process packages (which can have excess hours)
         for package_data in selected_packages:
             line_item = PricingCalculationService._create_package_line_item(
-                package_data, event_duration_hours
+                package_data, venue_additional_hours, event_type_id
             )
             if line_item:
                 line_items.append(line_item)
@@ -128,7 +232,7 @@ class PricingCalculationService:
 
         # Apply VIP benefits if client is provided
         if client:
-            PricingCalculationService.apply_vip_benefits(breakdown, client, event_duration_hours)
+            PricingCalculationService.apply_vip_benefits(breakdown, client)
             if breakdown.vip_discount_amount > 0:
                 logger.info(f"Applied VIP benefits: ₱{breakdown.vip_discount_amount}")
 
@@ -196,70 +300,46 @@ class PricingCalculationService:
         return None
     
     @staticmethod
-    def _create_package_line_item(package_data: Dict[str, Any], event_duration_hours: Optional[int]) -> Optional[PricingLineItem]:
-        """Create a line item for a package, including excess hours calculation"""
+    def _create_package_line_item(
+        package_data: Dict[str, Any],
+        venue_additional_hours: Optional[Dict[str, int]] = None,
+        event_type_id: Optional[int] = None
+    ) -> Optional[PricingLineItem]:
+        """Create a line item for a package, including venue-based excess hours calculation"""
         try:
             name = package_data.get('name', 'Package')
             quantity = int(package_data.get('quantity', 1))
             base_price = Decimal(str(package_data.get('price', 0)))
             product_id = package_data.get('product_id')
-            
+
             logger.info(f"Processing package: {name}, base_price: ₱{base_price}, quantity: {quantity}")
-            
-            # Calculate excess hours
+
+            # Calculate excess hours using venue-based hours system
             excess_hours = None
             excess_hour_price = None
-            
-            # Priority 1: Use frontend-provided excess data if available
-            if 'excess_hours' in package_data and 'excess_hour_price' in package_data:
-                excess_hours = int(package_data['excess_hours'])
-                excess_hour_price = Decimal(str(package_data['excess_hour_price']))
-                logger.info(f"Using frontend excess data: {excess_hours}h @ ₱{excess_hour_price}/h")
-            
-            # Priority 2: Calculate from event duration and package data
-            elif event_duration_hours:
-                package_hours = package_data.get('hours_included', 0)
-                
-                # If not in package data, try to get from ProductOption
-                if package_hours == 0 and product_id:
-                    try:
-                        product = ProductOption.objects.get(id=product_id)
-                        package_hours = product.included_hours or 0
-                        logger.info(f"Got package hours from ProductOption: {package_hours}")
-                    except ProductOption.DoesNotExist:
-                        logger.warning(f"ProductOption {product_id} not found")
-                
-                # Calculate excess hours
-                if package_hours > 0 and event_duration_hours > package_hours:
-                    excess_hours = math.ceil(event_duration_hours - package_hours)
-                    
-                    # Determine excess hour price
-                    excess_hour_price = Decimal('0')
-                    
-                    # Try package data first
-                    if 'excess_hour_price' in package_data:
-                        excess_hour_price = Decimal(str(package_data['excess_hour_price']))
-                    # Try ProductOption
-                    elif product_id:
-                        try:
-                            product = ProductOption.objects.get(id=product_id)
-                            if product.excess_hour_price:
-                                excess_hour_price = Decimal(str(product.excess_hour_price))
-                        except ProductOption.DoesNotExist:
-                            pass
-                    
-                    # Fallback: 50% of base hourly rate
-                    if excess_hour_price == 0:
-                        base_hourly_rate = base_price / Decimal(str(package_hours))
-                        excess_hour_price = base_hourly_rate * Decimal('0.5')
-                    
-                    logger.info(f"Calculated excess: {excess_hours}h @ ₱{excess_hour_price}/h")
-            
+
+            if venue_additional_hours and product_id:
+                total_cost, venue_details = PricingCalculationService.get_venue_hours_info(
+                    product_id, venue_additional_hours, event_type_id
+                )
+
+                if total_cost > 0:
+                    # Calculate total additional hours across all venues
+                    total_additional_hours = sum(venue_additional_hours.values())
+                    # Use weighted average price for display purposes
+                    avg_price = total_cost / Decimal(str(total_additional_hours)) if total_additional_hours > 0 else Decimal('0')
+
+                    excess_hours = total_additional_hours
+                    excess_hour_price = avg_price
+
+                    logger.info(f"Venue-based hours: {total_additional_hours}h total, ₱{total_cost} total cost")
+                    logger.info(f"Venue breakdown: {venue_details}")
+
             # Create description
             description = name
             if excess_hours and excess_hours > 0:
-                description += f" (includes {excess_hours}h excess @ ₱{excess_hour_price}/h)"
-            
+                description += f" (+{excess_hours}h additional @ ₱{excess_hour_price}/h avg)"
+
             return PricingLineItem(
                 product_id=product_id,
                 name=name,
@@ -268,9 +348,9 @@ class PricingCalculationService:
                 base_unit_price=base_price,
                 excess_hours=excess_hours,
                 excess_hour_price=excess_hour_price,
-                tax_rate=Decimal('0.00')  # Tax handling can be added later
+                tax_rate=Decimal('0.00')
             )
-            
+
         except (ValueError, TypeError, KeyError) as e:
             logger.warning(f"Error creating package line item: {e}")
             return None
@@ -335,7 +415,7 @@ class PricingCalculationService:
         breakdown.total_amount = breakdown.subtotal - breakdown.discount_amount - breakdown.vip_discount_amount + breakdown.service_charge_amount + breakdown.tax_amount
 
     @staticmethod
-    def apply_vip_benefits(breakdown: PricingBreakdown, client, event_duration_hours: Optional[int] = None):
+    def apply_vip_benefits(breakdown: PricingBreakdown, client):
         """
         Apply VIP benefits to the pricing breakdown.
 

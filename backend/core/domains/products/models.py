@@ -93,11 +93,8 @@ class ProductOption(BaseModel):
     is_featured = models.BooleanField(default=False)
     allow_multiple = models.BooleanField(default=False, help_text="Allow multiple quantities per booking")
     requires_approval = models.BooleanField(default=False, help_text="Requires admin approval before booking")
-    
+
     # Time-based configuration
-    has_excess_hours = models.BooleanField(default=False)
-    included_hours = models.PositiveIntegerField(null=True, blank=True)
-    excess_hour_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     minimum_hours = models.PositiveIntegerField(null=True, blank=True, help_text="Minimum booking duration")
     maximum_hours = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum booking duration")
     
@@ -109,6 +106,13 @@ class ProductOption(BaseModel):
     minimum_guests = models.PositiveIntegerField(null=True, blank=True, help_text="Minimum guest capacity")
     maximum_guests = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum guest capacity")
     recommended_guests = models.PositiveIntegerField(null=True, blank=True, help_text="Recommended guest count")
+
+    # Event duration configuration (for multi-day event types like camps/retreats)
+    event_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Exact number of days for this package (e.g., 2 for 2D1N, 3 for 3D2N). Null means no restriction."
+    )
 
     # Business metadata
     sku = models.CharField(max_length=50, unique=True, null=True, blank=True)

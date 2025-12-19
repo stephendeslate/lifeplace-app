@@ -38,6 +38,22 @@ interface QuoteEditDialogProps {
   onSuccess: () => void;
 }
 
+interface VenueInfo {
+  venue_id: number;
+  venue_name: string;
+  included_hours: number;
+  excess_hour_price: number;
+}
+
+interface VenueHoursBreakdown {
+  venue_id: number;
+  venue_name: string;
+  included_hours: number;
+  additional_hours: number;
+  excess_hour_price: number;
+  venue_cost: number;
+}
+
 interface LineItemFormData {
   id?: number;
   description: string;
@@ -53,6 +69,10 @@ interface LineItemFormData {
   excess_cost?: string;
   has_excess_hours?: boolean;
   is_tax_inclusive?: boolean;
+  // Venue-based hours
+  venue_additional_hours?: Record<string, number>;
+  venue_hours_breakdown?: VenueHoursBreakdown[] | null;
+  available_venues?: VenueInfo[];
 }
 
 const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
@@ -83,8 +103,9 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
     if (quote.line_items && quote.line_items.length > 0) {
       setLineItems(
         quote.line_items.map((item) => {
-          // Look up product to get has_excess_hours
-          const product = item.product ? products.find((p) => p.id === item.product) : null;
+          // has_excess_hours is determined by the backend based on venue configuration
+          // If excess_hours exists in the response, the item has excess hours
+          const hasExcessHours = item.excess_hours !== null && item.excess_hours !== undefined;
           return {
             id: item.id,
             description: item.description,
@@ -97,7 +118,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
             excess_hours: item.excess_hours,
             excess_hour_price: item.excess_hour_price,
             excess_cost: item.excess_cost,
-            has_excess_hours: product?.has_excess_hours ?? false,
+            has_excess_hours: hasExcessHours,
           };
         })
       );
@@ -134,6 +155,9 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
     }
   };
 
+  // Get event_type_id from quote for event-type-specific pricing
+  const eventTypeId = quote.event_type || undefined;
+
   const handleProductSelect = async (index: number, product: ProductOption | null) => {
     const updatedItems = [...lineItems];
 
@@ -144,14 +168,18 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
       return next;
     });
 
-    if (product && quote.event) {
+    if (product) {
       setIsCalculating(index);
       try {
-        // Call pricing calculation endpoint
+        // Fetch venues for this product (with event_type_id for event-type-specific pricing)
+        const venues = await salesApi.getProductVenues(product.id, eventTypeId);
+        const hasVenues = venues && venues.length > 0;
+
+        // Call pricing calculation endpoint (no venue hours initially, with event_type_id)
         const pricing = await salesApi.calculateLineItemPricing({
           product_id: product.id,
           quantity: updatedItems[index].quantity || 1,
-          event_id: quote.event,
+          event_type_id: eventTypeId,
         });
 
         updatedItems[index] = {
@@ -165,8 +193,11 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           excess_hours: pricing.excess_hours,
           excess_hour_price: pricing.excess_hour_price,
           excess_cost: pricing.excess_cost,
-          has_excess_hours: pricing.has_excess_hours,
+          has_excess_hours: hasVenues, // Has venues = can add excess hours
           is_tax_inclusive: pricing.is_tax_inclusive,
+          venue_additional_hours: {},
+          venue_hours_breakdown: pricing.venue_hours_breakdown,
+          available_venues: venues,
         };
       } catch (error) {
         console.error('Failed to calculate pricing:', error);
@@ -177,8 +208,10 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           description: product.name,
           unit_price: product.base_price,
           total: parseFloat(product.base_price) * (updatedItems[index].quantity || 1),
-          has_excess_hours: product.has_excess_hours,
+          has_excess_hours: false,
           is_tax_inclusive: product.is_tax_inclusive,
+          venue_additional_hours: {},
+          available_venues: [],
         };
         showToast({ type: 'warning', title: 'Pricing Warning', message: 'Could not calculate excess hours pricing' });
       } finally {
@@ -195,6 +228,9 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
         excess_hour_price: undefined,
         excess_cost: undefined,
         has_excess_hours: undefined,
+        venue_additional_hours: undefined,
+        venue_hours_breakdown: undefined,
+        available_venues: undefined,
       };
     }
 
@@ -214,13 +250,14 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
     });
 
     // If there's a product, recalculate pricing
-    if (item.product_id && quote.event) {
+    if (item.product_id) {
       setIsCalculating(index);
       try {
         const pricing = await salesApi.calculateLineItemPricing({
           product_id: item.product_id,
           quantity: quantity,
-          event_id: quote.event,
+          venue_additional_hours: item.venue_additional_hours,
+          event_type_id: eventTypeId,
         });
 
         updatedItems[index] = {
@@ -233,8 +270,8 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           excess_hours: pricing.excess_hours,
           excess_hour_price: pricing.excess_hour_price,
           excess_cost: pricing.excess_cost,
-          has_excess_hours: pricing.has_excess_hours,
           is_tax_inclusive: pricing.is_tax_inclusive,
+          venue_hours_breakdown: pricing.venue_hours_breakdown,
         };
       } catch (error) {
         console.error('Failed to recalculate pricing:', error);
@@ -249,6 +286,55 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
     }
 
     setLineItems(updatedItems);
+  };
+
+  // Handler for venue hours changes
+  const handleVenueHoursChange = async (index: number, venueId: number, hours: number) => {
+    const updatedItems = [...lineItems];
+    const item = updatedItems[index];
+
+    // Update venue_additional_hours
+    const newVenueHours = { ...(item.venue_additional_hours || {}) };
+    if (hours > 0) {
+      newVenueHours[String(venueId)] = hours;
+    } else {
+      delete newVenueHours[String(venueId)];
+    }
+
+    updatedItems[index] = { ...item, venue_additional_hours: newVenueHours };
+    setLineItems(updatedItems);
+
+    // Recalculate pricing with new venue hours
+    if (item.product_id) {
+      setIsCalculating(index);
+      try {
+        const pricing = await salesApi.calculateLineItemPricing({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          venue_additional_hours: newVenueHours,
+          event_type_id: eventTypeId,
+        });
+
+        const finalItems = [...lineItems];
+        finalItems[index] = {
+          ...finalItems[index],
+          venue_additional_hours: newVenueHours,
+          description: pricing.description,
+          unit_price: pricing.unit_price,
+          total: parseFloat(pricing.total),
+          base_unit_price: pricing.base_unit_price,
+          excess_hours: pricing.excess_hours,
+          excess_hour_price: pricing.excess_hour_price,
+          excess_cost: pricing.excess_cost,
+          venue_hours_breakdown: pricing.venue_hours_breakdown,
+        };
+        setLineItems(finalItems);
+      } catch (error) {
+        console.error('Failed to recalculate pricing:', error);
+      } finally {
+        setIsCalculating(null);
+      }
+    }
   };
 
   const handleLineItemChange = (
@@ -305,14 +391,15 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   // Handler to reset a line item to calculated values
   const handleResetToCalculated = async (index: number) => {
     const item = lineItems[index];
-    if (!item.product_id || !quote.event) return;
+    if (!item.product_id) return;
 
     setIsCalculating(index);
     try {
       const pricing = await salesApi.calculateLineItemPricing({
         product_id: item.product_id,
         quantity: item.quantity,
-        event_id: quote.event,
+        venue_additional_hours: item.venue_additional_hours,
+        event_type_id: eventTypeId,
       });
 
       const updatedItems = [...lineItems];
@@ -326,8 +413,8 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
         excess_hours: pricing.excess_hours,
         excess_hour_price: pricing.excess_hour_price,
         excess_cost: pricing.excess_cost,
-        has_excess_hours: pricing.has_excess_hours,
         is_tax_inclusive: pricing.is_tax_inclusive,
+        venue_hours_breakdown: pricing.venue_hours_breakdown,
       };
       setLineItems(updatedItems);
 
@@ -397,6 +484,10 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           unit_price: item.unit_price,
           tax_rate: item.tax_rate,
           ...(item.product_id && { product_id: item.product_id }),
+          // Include venue_additional_hours for recalculation
+          ...(item.venue_additional_hours && Object.keys(item.venue_additional_hours).length > 0 && {
+            venue_additional_hours: item.venue_additional_hours,
+          }),
           // Include excess hours fields if item was overridden (to preserve overridden values)
           ...(overriddenItems.has(index) && {
             skip_recalculation: true,
@@ -506,9 +597,6 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                                     <Typography variant="body2">{option.name}</Typography>
                                     <Typography variant="caption" color="text.secondary">
                                       {option.formatted_price}
-                                      {option.has_excess_hours && option.included_hours && (
-                                        <> | {option.included_hours}h included</>
-                                      )}
                                     </Typography>
                                   </Box>
                                 </li>
@@ -613,61 +701,89 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                           </IconButton>
                         </TableCell>
                       </TableRow>
-                      {/* Excess hours info row - only shown for products with has_excess_hours=true */}
-                      {item.product_id && item.has_excess_hours && (
+                      {/* Venue hours selection row - only shown for products with venues */}
+                      {item.product_id && item.has_excess_hours && item.available_venues && item.available_venues.length > 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} sx={{ py: 1, borderBottom: 'none' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pl: 2 }}>
-                              <Tooltip title="Pricing breakdown - edit values to override">
-                                <InfoIcon fontSize="small" color={overriddenItems.has(index) ? 'warning' : 'info'} />
-                              </Tooltip>
-                              <TextField
-                                size="small"
-                                type="number"
-                                label="Base Price"
-                                value={item.base_unit_price || ''}
-                                onChange={(e) => handlePricingOverride(index, 'base_unit_price', e.target.value)}
-                                disabled={isCalculating === index}
-                                inputProps={{ step: '0.01' }}
-                                sx={{ width: '110px' }}
-                              />
-                              <TextField
-                                size="small"
-                                type="number"
-                                label="Excess Hours"
-                                value={item.excess_hours ?? ''}
-                                onChange={(e) => handlePricingOverride(index, 'excess_hours', parseFloat(e.target.value) || 0)}
-                                disabled={isCalculating === index}
-                                inputProps={{ step: '0.5', min: 0 }}
-                                sx={{ width: '110px' }}
-                              />
-                              <TextField
-                                size="small"
-                                type="number"
-                                label="Rate/Hour"
-                                value={item.excess_hour_price || ''}
-                                onChange={(e) => handlePricingOverride(index, 'excess_hour_price', e.target.value)}
-                                disabled={isCalculating === index}
-                                inputProps={{ step: '0.01' }}
-                                sx={{ width: '110px' }}
-                              />
-                              <Chip
-                                size="small"
-                                label={`Excess: ₱${item.excess_cost || '0.00'}`}
-                                color={overriddenItems.has(index) ? 'warning' : 'default'}
-                                variant="outlined"
-                              />
-                              {overriddenItems.has(index) && (
-                                <Tooltip title="Reset all to calculated values">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleResetToCalculated(index)}
-                                    color="warning"
-                                  >
-                                    <RefreshIcon fontSize="small" />
-                                  </IconButton>
+                          <TableCell colSpan={7} sx={{ py: 1.5, borderBottom: 'none', bgcolor: 'action.hover' }}>
+                            <Box sx={{ pl: 2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <Tooltip title="Set additional hours per venue to calculate excess charges">
+                                  <InfoIcon fontSize="small" color="info" />
                                 </Tooltip>
-                              )}
+                                <Typography variant="caption" color="text.secondary">
+                                  Additional Hours by Venue
+                                </Typography>
+                                {item.excess_hours != null && item.excess_hours > 0 && (
+                                  <Chip
+                                    size="small"
+                                    label={`Total: ${item.excess_hours}h = ₱${item.excess_cost || '0.00'}`}
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                )}
+                              </Box>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                                {item.available_venues.map((venue) => {
+                                  const currentHours = item.venue_additional_hours?.[String(venue.venue_id)] || 0;
+                                  return (
+                                    <Box
+                                      key={venue.venue_id}
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                        p: 1,
+                                        border: 1,
+                                        borderColor: currentHours > 0 ? 'primary.main' : 'divider',
+                                        borderRadius: 1,
+                                        bgcolor: 'background.paper',
+                                      }}
+                                    >
+                                      <Box sx={{ minWidth: 120 }}>
+                                        <Typography variant="body2" fontWeight="medium">
+                                          {venue.venue_name}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          {venue.included_hours}h incl. | ₱{venue.excess_hour_price}/h extra
+                                        </Typography>
+                                      </Box>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleVenueHoursChange(index, venue.venue_id, Math.max(0, currentHours - 1))}
+                                          disabled={isCalculating === index || currentHours === 0}
+                                        >
+                                          <Typography variant="body1" fontWeight="bold">−</Typography>
+                                        </IconButton>
+                                        <TextField
+                                          size="small"
+                                          type="number"
+                                          value={currentHours}
+                                          onChange={(e) => handleVenueHoursChange(index, venue.venue_id, Math.max(0, parseInt(e.target.value) || 0))}
+                                          disabled={isCalculating === index}
+                                          inputProps={{ min: 0, style: { textAlign: 'center', width: '40px' } }}
+                                          sx={{ '& input': { p: 0.5 } }}
+                                        />
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleVenueHoursChange(index, venue.venue_id, currentHours + 1)}
+                                          disabled={isCalculating === index}
+                                        >
+                                          <Typography variant="body1" fontWeight="bold">+</Typography>
+                                        </IconButton>
+                                      </Box>
+                                      {currentHours > 0 && (
+                                        <Chip
+                                          size="small"
+                                          label={`₱${(currentHours * venue.excess_hour_price).toFixed(2)}`}
+                                          color="primary"
+                                          variant="filled"
+                                        />
+                                      )}
+                                    </Box>
+                                  );
+                                })}
+                              </Box>
                             </Box>
                           </TableCell>
                         </TableRow>

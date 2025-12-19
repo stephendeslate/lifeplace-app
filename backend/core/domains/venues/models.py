@@ -440,6 +440,124 @@ class PackageVenue(BaseModel):
         super().save(*args, **kwargs)
 
 
+class VenueEventTypeConfiguration(BaseModel):
+    """
+    Event-type-specific venue configuration.
+
+    Overrides venue's standalone_* defaults for specific event types.
+    For example, "Open Field" may have 3 hours included for weddings
+    but 24 hours included for camping.
+
+    When no configuration exists for a venue+event_type combination,
+    the system falls back to the venue's standalone_* values.
+    """
+    venue = models.ForeignKey(
+        Venue,
+        on_delete=models.CASCADE,
+        related_name='event_type_configs'
+    )
+    event_type = models.ForeignKey(
+        'events.EventType',
+        on_delete=models.CASCADE,
+        related_name='venue_configs'
+    )
+
+    # Pricing overrides (null = use venue's standalone_* defaults)
+    base_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Base price for this venue+event type (null = use venue default)"
+    )
+    included_hours = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Hours included for this venue+event type (null = use venue default)"
+    )
+    excess_hour_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Excess hour rate for this venue+event type (null = use venue default)"
+    )
+
+    # All-day access option (for camping-like events)
+    is_all_day_access = models.BooleanField(
+        default=False,
+        help_text="If True, venue has all-day access with no hour limits for this event type"
+    )
+
+    # Operating rule overrides (commonly differ between event types)
+    default_check_in_time = models.TimeField(
+        null=True,
+        blank=True,
+        help_text="Override check-in time for this event type"
+    )
+    default_checkout_time = models.TimeField(
+        null=True,
+        blank=True,
+        help_text="Override checkout time for this event type"
+    )
+    checkout_next_day = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override: checkout is next day (for overnight)"
+    )
+    maximum_program_hours = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Override maximum program hours (null in override = no limit)"
+    )
+    is_fixed_duration = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override: duration is fixed"
+    )
+
+    # Description for admin clarity
+    notes = models.TextField(
+        blank=True,
+        help_text="Internal notes about this configuration"
+    )
+
+    class Meta:
+        unique_together = ('venue', 'event_type')
+        ordering = ['venue__name', 'event_type__name']
+        verbose_name = 'Venue Event Type Configuration'
+        verbose_name_plural = 'Venue Event Type Configurations'
+
+    def __str__(self):
+        return f"{self.venue.name} - {self.event_type.name}"
+
+    def get_effective_base_price(self):
+        """Get base price, falling back to venue default if not set"""
+        if self.base_price is not None:
+            return self.base_price
+        return self.venue.standalone_base_price
+
+    def get_effective_included_hours(self):
+        """Get included hours, falling back to venue default if not set"""
+        if self.is_all_day_access:
+            return Decimal('24.0')  # All-day access
+        if self.included_hours is not None:
+            return self.included_hours
+        return self.venue.standalone_included_hours
+
+    def get_effective_excess_hour_price(self):
+        """Get excess hour price, falling back to venue default if not set"""
+        if self.is_all_day_access:
+            return Decimal('0.00')  # No excess charges for all-day access
+        if self.excess_hour_price is not None:
+            return self.excess_hour_price
+        return self.venue.standalone_excess_hour_price
+
+
 class VenueBlockedDate(BaseModel):
     """
     Dates when a specific venue is blocked (maintenance, private events, etc.)

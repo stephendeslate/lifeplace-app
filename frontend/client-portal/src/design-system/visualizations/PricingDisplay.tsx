@@ -1,4 +1,9 @@
 // design-system/visualizations/PricingDisplay.tsx
+// Note: This design system component shows basic pricing breakdown
+// For detailed venue-based excess hours, see:
+// - PricingSummaryStep.tsx
+// - BookingSummaryCard.tsx
+// - InvoiceViewer.tsx
 
 import React from 'react';
 import { 

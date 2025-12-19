@@ -6,12 +6,9 @@ export interface IntroductionStepData {
 }
 
 export interface DateTimeStepData {
-  start_date: string; // Required
-  start_time?: string;
-  end_date?: string;
-  end_time?: string;
-  duration?: number;
-  venue_preference?: string;
+  start_date: string; // Required - YYYY-MM-DD format
+  end_date?: string; // Optional - YYYY-MM-DD format for multi-day events
+  venue_id?: number;
   resource_requirements?: string[];
   staff_requirements?: string[];
 }
@@ -27,19 +24,15 @@ export interface SelectedPackage {
   name: string;
   price: string; // base price as string
   quantity: number;
-  included_hours?: number;
-  excess_hour_price?: string;
-  duration_hours?: number; // Added for excess hour calculations
-  // Enhanced fields for proper tax calculation
   tax_rate?: string; // individual tax rate as percentage string (e.g., "0.00", "12.00")
   price_with_tax?: string; // pre-calculated price including tax
-  // Custom bundle fields (when user creates package from venue selection)
   is_custom_bundle?: boolean; // True if this is a custom bundle, not a pre-made package
   venue_ids?: number[]; // Venue IDs for custom bundle (to create on backend)
 }
 
 export interface PackageSelectionStepData {
   selected_packages?: SelectedPackage[];
+  venue_additional_hours?: Record<string, number>; // venue_id (string) -> additional hours
 }
 
 // Standardized to use product_id while keeping all display fields
@@ -55,6 +48,7 @@ export interface SelectedAddon {
 
 export interface AddonSelectionStepData {
   selected_addons?: SelectedAddon[];
+  venue_additional_hours?: Record<string, number>; // venue_id (string) -> additional hours
 }
 
 // Extended: Now includes review fields (terms, consent, special requests)
@@ -126,6 +120,16 @@ export interface EnhancedPaymentStepData {
   payment_status?: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 }
 
+// Venue-specific excess hours breakdown
+export interface VenueExcessHours {
+  venue_id: number;
+  venue_name: string;
+  included_hours: number;
+  additional_hours: number;
+  excess_hour_price: string;
+  excess_cost: string;
+}
+
 // Line item for pricing breakdown (matches backend PricingLineItem)
 export interface PricingLineItem {
   product_id: number | null;
@@ -139,6 +143,7 @@ export interface PricingLineItem {
   excess_hours: number | null;
   excess_hour_price: string | null;
   excess_cost: string;
+  venue_details?: VenueExcessHours[];
 }
 
 // Server response for pricing calculation
@@ -201,24 +206,14 @@ export interface ProductOption {
   category_name?: string;
   is_active: boolean;
   is_featured: boolean;
-  
-  // Package-specific fields
-  has_excess_hours?: boolean;
-  included_hours?: number;
-  excess_hour_price?: string;
   pricing_model?: 'FLAT' | 'HOURLY';
-  
-  // Booking constraints
   advance_booking_days?: number;
   maximum_booking_days?: number;
+  event_days?: number | null;
   minimum_quantity?: number;
   maximum_quantity?: number;
-  
-  // Display
   image_url?: string;
   sort_order: number;
-  
-  // Metadata
   sku?: string;
   tags?: string[];
   created_at: string;
@@ -251,8 +246,6 @@ export interface Discount {
 export interface EventSummary {
   eventType: string;
   date: string;
-  time?: string;
-  duration?: number;
   venue?: string;
   location?: string;
 }
@@ -264,10 +257,10 @@ export interface PackageLineItem {
   base_price: string;
   unit_price: string;
   line_total: string;
-  included_hours?: number;
   excess_hours?: number;
   excess_hour_price?: string;
   excess_cost?: string;
+  venue_details?: VenueExcessHours[];
 }
 
 export interface AddonLineItem {

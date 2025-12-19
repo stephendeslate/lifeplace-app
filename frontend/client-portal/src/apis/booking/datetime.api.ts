@@ -8,12 +8,12 @@ import type {
 } from '../../types/booking';
 
 /**
- * Date & Time step API functions
+ * Date step API functions (date-only selection)
  */
 export class DateTimeApi {
-  
+
   /**
-   * Validate date/time step data
+   * Validate date step data
    */
   static async validateStepData(
     sessionId: string,
@@ -31,7 +31,7 @@ export class DateTimeApi {
   }
 
   /**
-   * Update date/time step data
+   * Update date step data
    */
   static async updateStepData(
     sessionId: string,
@@ -51,14 +51,12 @@ export class DateTimeApi {
   }
 
   /**
-   * Check availability for a date/time (placeholder for real availability API)
+   * Check availability for a date
    */
   static async checkAvailability(
     sessionId: string,
     stepData: DateTimeStepData
   ): Promise<{ available: boolean; message: string }> {
-    // This would integrate with actual availability checking system
-    // For MVP, we'll do basic validation
     try {
       const validation = await this.validateStepData(sessionId, 0, stepData);
       return {
@@ -74,56 +72,37 @@ export class DateTimeApi {
   }
 
   /**
-   * Format date/time step data for submission
+   * Format date step data for submission
    */
   static formatStepData(data: DateTimeStepData): DateTimeStepData {
     return {
       start_date: data.start_date || '',
-      start_time: data.start_time || '',
-      end_date: data.end_date || '',
-      end_time: data.end_time || '',
-      duration: Number(data.duration) || 0,
-      resource_requirements: Array.isArray(data.resource_requirements) 
-        ? data.resource_requirements 
+      venue_id: data.venue_id,
+      resource_requirements: Array.isArray(data.resource_requirements)
+        ? data.resource_requirements
         : [],
-      staff_requirements: Array.isArray(data.staff_requirements) 
-        ? data.staff_requirements 
+      staff_requirements: Array.isArray(data.staff_requirements)
+        ? data.staff_requirements
         : [],
     };
   }
 
   /**
-   * Validate date/time data client-side
+   * Validate date data client-side
    */
   static validateData(data: DateTimeStepData): { isValid: boolean; errors: Record<string, string[]> } {
     const errors: Record<string, string[]> = {};
 
-    // Required start date
     if (!data.start_date) {
       errors.start_date = ['Event date is required'];
     } else {
-      // Check if date is in the future
       const selectedDate = new Date(data.start_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       if (selectedDate < today) {
         errors.start_date = ['Event date must be in the future'];
       }
-    }
-
-    // Validate time format if provided
-    if (data.start_time && !this.isValidTimeFormat(data.start_time)) {
-      errors.start_time = ['Please enter a valid time format'];
-    }
-
-    if (data.end_time && !this.isValidTimeFormat(data.end_time)) {
-      errors.end_time = ['Please enter a valid time format'];
-    }
-
-    // Validate duration
-    if (data.duration && (data.duration < 1 || data.duration > 24)) {
-      errors.duration = ['Duration must be between 1 and 24 hours'];
     }
 
     return {
@@ -133,56 +112,14 @@ export class DateTimeApi {
   }
 
   /**
-   * Validate time format (HH:mm)
-   */
-  static isValidTimeFormat(time: string): boolean {
-    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-    return timeRegex.test(time);
-  }
-
-  /**
-   * Get default date/time data
+   * Get default date data
    */
   static getDefaultData(): DateTimeStepData {
     return {
       start_date: '',
-      start_time: '',
-      end_date: '',
-      end_time: '',
-      duration: 4,
       resource_requirements: [],
       staff_requirements: [],
     };
-  }
-
-  /**
-   * Calculate end date/time based on start and duration
-   */
-  static calculateEndDateTime(startDate: string, startTime: string, duration: number): {
-    end_date: string;
-    end_time: string;
-  } {
-    if (!startDate || !duration) {
-      return { end_date: '', end_time: '' };
-    }
-
-    try {
-      const start = new Date(startDate);
-      
-      if (startTime) {
-        const [hours, minutes] = startTime.split(':').map(Number);
-        start.setHours(hours, minutes, 0, 0);
-      }
-
-      const end = new Date(start.getTime() + (duration * 60 * 60 * 1000));
-
-      return {
-        end_date: end.toISOString().split('T')[0],
-        end_time: end.toTimeString().split(' ')[0].slice(0, 5),
-      };
-    } catch {
-      return { end_date: '', end_time: '' };
-    }
   }
 
   /**
@@ -196,24 +133,6 @@ export class DateTimeApi {
       return formatInTimeZone(date, 'Asia/Manila', 'EEEE, MMMM d, yyyy');
     } catch {
       return dateString;
-    }
-  }
-
-  /**
-   * Format time for display - always Philippines timezone with PHT indicator
-   */
-  static formatTime(timeString: string): string {
-    if (!timeString) return '';
-
-    try {
-      const [hours, minutes] = timeString.split(':');
-      const date = new Date();
-      date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-      const formatted = formatInTimeZone(date, 'Asia/Manila', 'h:mm a');
-      return `${formatted} PHT`;
-    } catch {
-      return timeString;
     }
   }
 }

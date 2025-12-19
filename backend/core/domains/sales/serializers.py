@@ -54,6 +54,9 @@ class QuoteTemplateSerializer(serializers.ModelSerializer):
 
 
 class QuoteLineItemSerializer(serializers.ModelSerializer):
+    # Write-only field for setting venue hours (not stored directly, used for calculation)
+    venue_additional_hours = serializers.JSONField(write_only=True, required=False)
+
     class Meta:
         model = QuoteLineItem
         fields = [
@@ -61,7 +64,9 @@ class QuoteLineItemSerializer(serializers.ModelSerializer):
             'tax_rate', 'total', 'product', 'notes',
             # Excess hours pricing breakdown fields
             'item_type', 'base_unit_price', 'excess_hours',
-            'excess_hour_price', 'excess_cost',
+            'excess_hour_price', 'excess_cost', 'venue_hours_breakdown',
+            # Write-only field for recalculation
+            'venue_additional_hours',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

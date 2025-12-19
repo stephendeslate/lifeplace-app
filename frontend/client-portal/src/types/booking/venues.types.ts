@@ -184,6 +184,19 @@ export interface RentableVenue {
 }
 
 /**
+ * Rentable venue with event-type-specific pricing
+ * Used when an event_type_id is provided
+ */
+export interface RentableVenueWithEventType extends RentableVenue {
+  // Event-type-specific effective pricing (overrides standalone_ values)
+  effective_base_price: string;
+  effective_included_hours: string;
+  effective_excess_hour_price: string;
+  is_all_day_access: boolean;
+  has_event_type_config: boolean;
+}
+
+/**
  * Data for venue selection step
  * Simplified: Only stores venue IDs. Package selection moved to PackageSelectionStep.
  */
@@ -198,6 +211,7 @@ export interface CreateFromVenuesRequest {
   venue_ids: number[];
   booking_session_id: string;
   category_id?: number;
+  event_type_id?: number; // Optional - for event-type-specific pricing
 }
 
 /**
@@ -296,6 +310,7 @@ export interface CustomPackageEstimate {
 export interface FindMatchingPackagesRequest {
   venue_ids: number[];
   bundle_discount_percent?: string;
+  event_type_id?: number; // Optional - for event-type-specific pricing
 }
 
 /**

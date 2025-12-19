@@ -415,7 +415,47 @@ class CustomPackageService:
     BUNDLE_DISCOUNT_PERCENT = Decimal('10.00')  # 10% off for 2+ venues
 
     @classmethod
-    def create_from_venues(cls, venue_ids, booking_session_id, category_id=None):
+    def get_venue_pricing_for_event_type(cls, venue, event_type_id=None):
+        """
+        Get venue pricing, checking event-type-specific configuration first.
+
+        Args:
+            venue: Venue instance
+            event_type_id: Optional event type ID for event-type-specific pricing
+
+        Returns:
+            dict: {base_price, included_hours, excess_hour_price, is_all_day_access}
+        """
+        from core.domains.venues.models import VenueEventTypeConfiguration
+
+        # Check for event-type-specific configuration
+        if event_type_id:
+            try:
+                config = VenueEventTypeConfiguration.objects.get(
+                    venue=venue,
+                    event_type_id=event_type_id
+                )
+                return {
+                    'base_price': config.get_effective_base_price() or Decimal('0'),
+                    'included_hours': config.get_effective_included_hours() or Decimal('0'),
+                    'excess_hour_price': config.get_effective_excess_hour_price() or Decimal('0'),
+                    'is_all_day_access': config.is_all_day_access,
+                    'has_event_type_config': True,
+                }
+            except VenueEventTypeConfiguration.DoesNotExist:
+                pass
+
+        # Fall back to venue defaults
+        return {
+            'base_price': venue.standalone_base_price or Decimal('0'),
+            'included_hours': venue.standalone_included_hours or Decimal('0'),
+            'excess_hour_price': venue.standalone_excess_hour_price or Decimal('0'),
+            'is_all_day_access': False,
+            'has_event_type_config': False,
+        }
+
+    @classmethod
+    def create_from_venues(cls, venue_ids, booking_session_id, category_id=None, event_type_id=None):
         """
         Create a custom package from selected venues.
 
@@ -423,6 +463,7 @@ class CustomPackageService:
             venue_ids: List of venue IDs to include in the package
             booking_session_id: ID of the booking session creating this package
             category_id: Optional category ID for the package
+            event_type_id: Optional event type ID for event-type-specific pricing
 
         Returns:
             ProductOption: The created custom package
@@ -447,15 +488,16 @@ class CustomPackageService:
         # Use first venue for excess hour pricing
         first_venue = venue_list[0]
 
-        # Calculate totals from standalone pricing
+        # Calculate totals from standalone pricing (considering event type)
         total_hours = Decimal('0')
         total_price = Decimal('0')
+        venue_pricing_data = []
 
         for venue in venue_list:
-            if venue.standalone_included_hours:
-                total_hours += venue.standalone_included_hours
-            if venue.standalone_base_price:
-                total_price += venue.standalone_base_price
+            pricing = cls.get_venue_pricing_for_event_type(venue, event_type_id)
+            venue_pricing_data.append({'venue': venue, 'pricing': pricing})
+            total_hours += pricing['included_hours']
+            total_price += pricing['base_price']
 
         # Apply bundle discount for multi-venue selections
         discount_percent = cls.BUNDLE_DISCOUNT_PERCENT if len(venue_list) > 1 else Decimal('0')
@@ -481,6 +523,7 @@ class CustomPackageService:
 
         with transaction.atomic():
             # Create the custom package
+            # Note: Excess hours are now managed per-venue via PackageVenue relationships
             package = ProductOption.objects.create(
                 name=package_name,
                 description=f"Custom package with: {venue_names}",
@@ -488,31 +531,31 @@ class CustomPackageService:
                 type='PACKAGE',
                 pricing_model='FIXED',
                 base_price=final_price,
-                has_excess_hours=True,
-                included_hours=int(total_hours),
-                excess_hour_price=first_venue.standalone_excess_hour_price or Decimal('0'),
                 is_active=True,
                 is_custom=True,
                 booking_session_id=booking_session_id,
                 bundle_discount_percent=discount_percent,
             )
 
-            # Create PackageVenue links
-            for i, venue in enumerate(venue_list):
+            # Create PackageVenue links using event-type-aware pricing
+            for i, vpd in enumerate(venue_pricing_data):
+                venue = vpd['venue']
+                pricing = vpd['pricing']
                 PackageVenue.objects.create(
                     package=package,
                     venue=venue,
                     is_primary=(i == 0),
                     access_order=i + 1,
-                    access_duration_hours=venue.standalone_included_hours,
-                    hours_contribution=venue.standalone_included_hours,
-                    price_contribution=venue.standalone_base_price,
+                    access_duration_hours=pricing['included_hours'],
+                    hours_contribution=pricing['included_hours'],
+                    price_contribution=pricing['base_price'],
                     is_bonus=False,
                 )
 
             logger.info(
                 f"Created custom package '{package.name}' (ID: {package.id}) "
                 f"for session {booking_session_id} with {len(venue_list)} venues"
+                f" (event_type_id={event_type_id})"
             )
 
             return package
@@ -592,13 +635,12 @@ class CustomPackageService:
             'package_name': package.name,
             'is_custom': package.is_custom,
             'base_price': package.base_price,
-            'included_hours': package.included_hours,
             'bundle_discount_percent': package.bundle_discount_percent,
             'venues': venues,
         }
 
     @classmethod
-    def find_matching_packages(cls, venue_ids, bundle_discount_percent=None):
+    def find_matching_packages(cls, venue_ids, bundle_discount_percent=None, event_type_id=None):
         """
         Find pre-made packages that match or partially match the selected venues.
         Returns packages with match type and price comparison data.
@@ -606,6 +648,7 @@ class CustomPackageService:
         Args:
             venue_ids: List of venue IDs selected by user
             bundle_discount_percent: Optional discount percent for custom package calculation
+            event_type_id: Optional event type ID for event-type-specific pricing
 
         Returns:
             dict: Contains exact_matches, partial_matches, and custom_package_estimate
@@ -629,21 +672,22 @@ class CustomPackageService:
             is_rentable_standalone=True
         )
 
-        # Calculate custom package estimate
+        # Calculate custom package estimate using event-type-aware pricing
         custom_total_price = Decimal('0')
         custom_total_hours = Decimal('0')
         venue_details = []
 
         for venue in selected_venues:
-            if venue.standalone_base_price:
-                custom_total_price += venue.standalone_base_price
-            if venue.standalone_included_hours:
-                custom_total_hours += venue.standalone_included_hours
+            pricing = cls.get_venue_pricing_for_event_type(venue, event_type_id)
+            custom_total_price += pricing['base_price']
+            custom_total_hours += pricing['included_hours']
             venue_details.append({
                 'id': venue.id,
                 'name': venue.name,
-                'price': str(venue.standalone_base_price or 0),
-                'hours': str(venue.standalone_included_hours or 0),
+                'price': str(pricing['base_price']),
+                'hours': str(pricing['included_hours']),
+                'is_all_day_access': pricing['is_all_day_access'],
+                'has_event_type_config': pricing['has_event_type_config'],
             })
 
         # Apply bundle discount for multi-venue
@@ -723,8 +767,6 @@ class CustomPackageService:
                 'name': package.name,
                 'description': package.description,
                 'base_price': str(package.base_price),
-                'included_hours': package.included_hours,
-                'excess_hour_price': str(package.excess_hour_price) if package.excess_hour_price else None,
                 'match_type': match_type,
                 'venues': package_venues,
                 'bonus_venues': bonus_venues,

@@ -206,7 +206,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       eventType: state.currentFlow?.event_type_name || 'Event',
       date: new Date(dateTimeData.start_date).toLocaleDateString(),
       time: dateTimeData.start_time,
-      duration: dateTimeData.duration,
+      duration: undefined, // Duration removed: Hours are determined by venue selection
       venue: dateTimeData.venue_preference,
     };
   }, [state.stepData.date_time, state.currentFlow]);
@@ -223,9 +223,10 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         unit_price: lineItem?.base_unit_price || pkg.price,
         line_total: lineItem?.line_total || (parseFloat(pkg.price) * pkg.quantity).toString(),
         included_hours: pkg.included_hours,
-        excess_hours: lineItem?.excess_hours || undefined,
+        excess_hours: lineItem?.excess_hours || undefined, // Deprecated: kept for backward compatibility
         excess_hour_price: lineItem?.excess_hour_price || pkg.excess_hour_price,
         excess_cost: lineItem?.excess_cost,
+        venue_details: lineItem?.venue_details, // New: per-venue excess hours breakdown
       };
     });
   }, [selectedPackages, pricing.lineItems]);
