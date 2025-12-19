@@ -170,15 +170,15 @@ export interface DateTimeStepConfiguration {
   id: number;
   step: number;
   allow_multi_day: boolean;
+  min_event_days: number;
   max_event_days: number;
   show_calendar_view: boolean;
   enable_real_time_availability: boolean;
   show_availability_status: boolean;
   auto_check_conflicts: boolean;
-  show_next_available_date: boolean;
-  show_conflict_details: boolean;
   blocked_dates: string[];
   available_days_of_week: number[];
+  available_time_slots: unknown[];
   buffer_before_hours: number;
   buffer_after_hours: number;
   check_venue_availability: boolean;
@@ -189,6 +189,11 @@ export interface DateTimeStepConfiguration {
   overbooking_threshold: number;
   sync_with_calendar: boolean;
   calendar_source: 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
+  // Deprecated fields kept for backward compatibility
+  allow_time_selection: boolean;
+  min_duration_hours: number;
+  max_duration_hours: number;
+  default_duration_hours: number;
   created_at: string;
   updated_at: string;
 }

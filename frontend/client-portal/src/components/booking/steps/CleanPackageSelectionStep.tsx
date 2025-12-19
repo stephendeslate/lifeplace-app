@@ -675,9 +675,23 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     const loadPackages = async () => {
       setIsLoading(true);
       try {
-        // TODO: When backend supports it, filter by venue_ids
-        // const packages = await ProductsApi.getPackages({ venue_ids: selectedVenueIds });
-        const packages = await ProductsApi.getPackages();
+        let packages: ProductOption[] = [];
+
+        // Priority 1: Use specific packages if configured (overrides category filtering)
+        if (config?.available_packages_details?.length) {
+          packages = config.available_packages_details;
+        }
+        // Priority 2: Filter by configured categories
+        else if (config?.available_categories?.length) {
+          const allPackages = await ProductsApi.getPackages();
+          const categoryIds = new Set(config.available_categories);
+          packages = allPackages.filter(pkg => categoryIds.has(pkg.category));
+        }
+        // Priority 3: No config - fetch all packages (backward compatibility)
+        else {
+          packages = await ProductsApi.getPackages();
+        }
+
         setAvailablePackages(Array.isArray(packages) ? packages : []);
       } catch (err) {
         console.error('Failed to load packages:', err);
@@ -688,7 +702,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     };
 
     loadPackages();
-  }, []);
+  }, [config?.available_packages_details, config?.available_categories]);
 
   // Sync venue hours changes to parent
   useEffect(() => {

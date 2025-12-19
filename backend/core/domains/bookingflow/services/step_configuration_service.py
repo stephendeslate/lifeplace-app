@@ -329,8 +329,10 @@ class BookingFlowStepConfigurationService:
                 'auto_check_conflicts': True
             }
         )
+        # Skip read-only and relationship fields
+        readonly_fields = {'id', 'step', 'created_at', 'updated_at'}
         for key, value in config_data.items():
-            if hasattr(config, key):
+            if key not in readonly_fields and hasattr(config, key):
                 setattr(config, key, value)
         config.save()
         return config

@@ -54,6 +54,7 @@ interface DateTimeConfigFormData {
 
   // ACTIVE - used for date selection
   allow_multi_day: boolean;
+  min_event_days: number;
   max_event_days: number;
   show_calendar_view: boolean;
 
@@ -96,6 +97,7 @@ const defaultFormData: DateTimeConfigFormData = {
 
   // ACTIVE fields
   allow_multi_day: false,
+  min_event_days: 1,
   max_event_days: 7,
   show_calendar_view: true,
   enable_real_time_availability: true,
@@ -159,6 +161,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
       setFormData({
         allow_time_selection: false, // DEPRECATED - always false now
         allow_multi_day: config.allow_multi_day ?? false,
+        min_event_days: config.min_event_days ?? 1,
         max_event_days: config.max_event_days ?? 7,
         show_calendar_view: config.show_calendar_view ?? true,
         min_duration_hours: config.min_duration_hours ?? 1, // DEPRECATED - kept for backward compatibility
@@ -188,9 +191,11 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
     event: React.ChangeEvent<HTMLInputElement | { value: unknown }>
   ) => {
     const value = event.target.value;
+    // Parse numeric fields (hours, threshold, and days fields)
+    const isNumericField = field.includes('hours') || field.includes('threshold') || field.includes('_days');
     setFormData(prev => ({
       ...prev,
-      [field]: field.includes('hours') || field.includes('threshold') ? parseInt(value as string) || 0 : value,
+      [field]: isNumericField ? parseInt(value as string) || 0 : value,
     }));
     
     // Clear error when user starts typing
@@ -329,18 +334,32 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
               </Typography>
 
               {formData.allow_multi_day && (
-                <TextField
-                  label="Maximum Nights"
-                  type="number"
-                  value={formData.max_event_days - 1}
-                  onChange={(e) => {
-                    const nights = parseInt(e.target.value) || 1;
-                    handleInputChange('max_event_days')({ target: { value: String(nights + 1) } } as React.ChangeEvent<HTMLInputElement>);
-                  }}
-                  helperText="Maximum nights allowed (e.g., 1 night = 2-day span)"
-                  inputProps={{ min: 1 }}
-                  sx={{ maxWidth: 200, mt: 1 }}
-                />
+                <Box display="flex" gap={2} flexWrap="wrap" mt={1}>
+                  <TextField
+                    label="Minimum Days"
+                    type="number"
+                    value={formData.min_event_days}
+                    onChange={(e) => {
+                      const days = parseInt(e.target.value) || 1;
+                      handleInputChange('min_event_days')({ target: { value: String(days) } } as React.ChangeEvent<HTMLInputElement>);
+                    }}
+                    helperText="Minimum days (1 = allow single-day)"
+                    inputProps={{ min: 1 }}
+                    sx={{ maxWidth: 200 }}
+                  />
+                  <TextField
+                    label="Maximum Days"
+                    type="number"
+                    value={formData.max_event_days}
+                    onChange={(e) => {
+                      const days = parseInt(e.target.value) || 1;
+                      handleInputChange('max_event_days')({ target: { value: String(days) } } as React.ChangeEvent<HTMLInputElement>);
+                    }}
+                    helperText="Maximum days allowed"
+                    inputProps={{ min: 1 }}
+                    sx={{ maxWidth: 200 }}
+                  />
+                </Box>
               )}
             </Stack>
           </Box>
@@ -715,7 +734,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 <strong>Display:</strong>{' '}
                 {[
                   formData.show_calendar_view && 'Calendar View',
-                  formData.allow_multi_day && 'Multi-Day Events'
+                  formData.allow_multi_day && `Multi-Day Events (${formData.min_event_days}-${formData.max_event_days} days)`
                 ].filter(Boolean).join(', ') || 'Basic date selection'}
               </Typography>
 
