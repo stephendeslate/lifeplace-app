@@ -53,13 +53,11 @@ export interface ProductOption {
   is_featured: boolean;
   allow_multiple: boolean;
   requires_approval: boolean;
-  has_excess_hours: boolean;
-  included_hours: number | null;
-  excess_hour_price: string | null;
   minimum_hours: number | null;
   maximum_hours: number | null;
   advance_booking_days: number;
   maximum_booking_days: number | null;
+  event_days: number | null;
   sku: string | null;
   sort_order: number;
   event_type: number | null;
@@ -82,13 +80,11 @@ export interface CreateProductData {
   is_featured?: boolean;
   allow_multiple?: boolean;
   requires_approval?: boolean;
-  has_excess_hours?: boolean;
-  included_hours?: number | null;
-  excess_hour_price?: string | null;
   minimum_hours?: number | null;
   maximum_hours?: number | null;
   advance_booking_days?: number;
   maximum_booking_days?: number | null;
+  event_days?: number | null;
   sku?: string | null;
   sort_order?: number;
   event_type?: number | null;
@@ -202,13 +198,11 @@ export interface ProductFormData {
   is_featured: boolean;
   allow_multiple: boolean;
   requires_approval: boolean;
-  has_excess_hours: boolean;
-  included_hours: string;
-  excess_hour_price: string;
   minimum_hours: string;
   maximum_hours: string;
   advance_booking_days: string;
   maximum_booking_days: string;
+  event_days: string;
   sku: string;
   sort_order: string;
 }

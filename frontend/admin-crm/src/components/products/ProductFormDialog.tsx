@@ -19,6 +19,7 @@ import {
   Divider,
   InputAdornment,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import { useProductCategories } from '../../hooks/useProducts';
 import type {
@@ -50,13 +51,11 @@ const defaultFormData: ProductFormData = {
   is_featured: false,
   allow_multiple: false,
   requires_approval: false,
-  has_excess_hours: false,
-  included_hours: '',
-  excess_hour_price: '',
   minimum_hours: '',
   maximum_hours: '',
   advance_booking_days: '7',
   maximum_booking_days: '',
+  event_days: '',
   sku: '',
   sort_order: '0',
 };
@@ -89,13 +88,11 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           is_featured: editingProduct.is_featured ?? false,
           allow_multiple: editingProduct.allow_multiple ?? false,
           requires_approval: editingProduct.requires_approval ?? false,
-          has_excess_hours: editingProduct.has_excess_hours ?? false,
-          included_hours: editingProduct.included_hours?.toString() || '',
-          excess_hour_price: editingProduct.excess_hour_price || '',
           minimum_hours: editingProduct.minimum_hours?.toString() || '',
           maximum_hours: editingProduct.maximum_hours?.toString() || '',
           advance_booking_days: editingProduct.advance_booking_days?.toString() || '7',
           maximum_booking_days: editingProduct.maximum_booking_days?.toString() || '',
+          event_days: editingProduct.event_days?.toString() || '',
           sku: editingProduct.sku || '',
           sort_order: editingProduct.sort_order?.toString() || '0',
         });
@@ -153,15 +150,6 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       newErrors.base_price = 'Valid price is required';
     }
 
-    if (formData.has_excess_hours) {
-      if (!formData.included_hours || parseInt(formData.included_hours) <= 0) {
-        newErrors.included_hours = 'Included hours required when excess hours enabled';
-      }
-      if (!formData.excess_hour_price || parseFloat(formData.excess_hour_price) <= 0) {
-        newErrors.excess_hour_price = 'Excess hour price required when excess hours enabled';
-      }
-    }
-
     if (formData.minimum_hours && formData.maximum_hours) {
       const min = parseInt(formData.minimum_hours);
       const max = parseInt(formData.maximum_hours);
@@ -190,13 +178,11 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       is_featured: formData.is_featured,
       allow_multiple: formData.allow_multiple,
       requires_approval: formData.requires_approval,
-      has_excess_hours: formData.has_excess_hours,
-      included_hours: formData.included_hours ? parseInt(formData.included_hours) : null,
-      excess_hour_price: formData.excess_hour_price || null,
       minimum_hours: formData.minimum_hours ? parseInt(formData.minimum_hours) : null,
       maximum_hours: formData.maximum_hours ? parseInt(formData.maximum_hours) : null,
       advance_booking_days: parseInt(formData.advance_booking_days) || 7,
       maximum_booking_days: formData.maximum_booking_days ? parseInt(formData.maximum_booking_days) : null,
+      event_days: formData.event_days ? parseInt(formData.event_days) : null,
       sku: formData.sku || null,
       sort_order: parseInt(formData.sort_order) || 0,
     };
@@ -228,6 +214,12 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       
           <DialogContent>
             <Box component="form" noValidate sx={{ mt: 1 }}>
+              {/* Info Alert */}
+              <Alert severity="info" sx={{ mb: 3 }}>
+                Hours and excess pricing are now managed at the venue level.
+                Edit venue settings to configure included hours and excess hour rates.
+              </Alert>
+
               {/* Basic Information */}
               <Typography variant="h6" gutterBottom>
                 Basic Information
@@ -368,52 +360,12 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
 
               <Divider sx={{ my: 3 }} />
 
-              {/* Time Configuration */}
+              {/* Duration Constraints */}
               <Typography variant="h6" gutterBottom>
-                Time Configuration
+                Duration Constraints
               </Typography>
-              
+
               <Box display="flex" flexDirection="column" gap={2}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.has_excess_hours}
-                      onChange={handleSwitchChange('has_excess_hours')}
-                    />
-                  }
-                  label="Enable excess hours pricing"
-                />
-                
-                {formData.has_excess_hours && (
-                  <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
-                    <Box flex={1}>
-                      <TextField
-                        fullWidth
-                        label="Included Hours"
-                        value={formData.included_hours}
-                        onChange={handleInputChange('included_hours')}
-                        error={!!errors.included_hours}
-                        helperText={errors.included_hours}
-                        type="number"
-                      />
-                    </Box>
-                    <Box flex={1}>
-                      <TextField
-                        fullWidth
-                        label="Excess Hour Price"
-                        value={formData.excess_hour_price}
-                        onChange={handleInputChange('excess_hour_price')}
-                        error={!!errors.excess_hour_price}
-                        helperText={errors.excess_hour_price}
-                        type="number"
-                        InputProps={{
-                          startAdornment: <InputAdornment position="start">{formData.currency}</InputAdornment>,
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                )}
-                
                 <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
                   <Box flex={1}>
                     <TextField
@@ -422,6 +374,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       value={formData.minimum_hours}
                       onChange={handleInputChange('minimum_hours')}
                       type="number"
+                      helperText="Minimum booking duration for this product"
                     />
                   </Box>
                   <Box flex={1}>
@@ -431,12 +384,39 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       value={formData.maximum_hours}
                       onChange={handleInputChange('maximum_hours')}
                       error={!!errors.maximum_hours}
-                      helperText={errors.maximum_hours}
+                      helperText={errors.maximum_hours || 'Maximum booking duration for this product'}
                       type="number"
                     />
                   </Box>
                 </Box>
               </Box>
+
+              {/* Event Duration - Only show for PACKAGE type */}
+              {formData.type === 'PACKAGE' && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+
+                  <Typography variant="h6" gutterBottom>
+                    Event Duration
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    For multi-day packages (camps, retreats). Leave blank for hourly packages.
+                  </Typography>
+
+                  <TextField
+                    fullWidth
+                    label="Event Days"
+                    value={formData.event_days}
+                    onChange={handleInputChange('event_days')}
+                    type="number"
+                    helperText="e.g., 2 for 2D1N, 3 for 3D2N, 5 for 5D4N"
+                    InputProps={{
+                      inputProps: { min: 1 }
+                    }}
+                    sx={{ maxWidth: 300 }}
+                  />
+                </>
+              )}
 
               <Divider sx={{ my: 3 }} />
 

@@ -407,7 +407,8 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         Request body:
         {
             "venue_ids": [1, 2, 3],
-            "booking_session_id": "session-uuid"
+            "booking_session_id": "session-uuid",
+            "event_type_id": 1  // Optional - for event-type-specific pricing
         }
 
         The first venue in the list is used for excess hour pricing.
@@ -415,6 +416,7 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         venue_ids = request.data.get('venue_ids', [])
         booking_session_id = request.data.get('booking_session_id')
         category_id = request.data.get('category_id')
+        event_type_id = request.data.get('event_type_id')
 
         if not venue_ids:
             return Response(
@@ -433,6 +435,7 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
                 venue_ids=venue_ids,
                 booking_session_id=booking_session_id,
                 category_id=category_id,
+                event_type_id=event_type_id,
             )
 
             # Get venue breakdown for response
@@ -443,8 +446,6 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
                 'name': package.name,
                 'description': package.description,
                 'base_price': str(package.base_price),
-                'included_hours': package.included_hours,
-                'excess_hour_price': str(package.excess_hour_price) if package.excess_hour_price else None,
                 'is_custom': package.is_custom,
                 'bundle_discount_percent': str(package.bundle_discount_percent),
                 'venues': breakdown.get('venues', []) if breakdown else [],
@@ -466,7 +467,8 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         Request body:
         {
             "venue_ids": [1, 2, 3],
-            "bundle_discount_percent": "10.00"  // Optional
+            "bundle_discount_percent": "10.00",  // Optional
+            "event_type_id": 1  // Optional - for event-type-specific pricing
         }
 
         Returns:
@@ -478,6 +480,7 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         """
         venue_ids = request.data.get('venue_ids', [])
         bundle_discount_percent = request.data.get('bundle_discount_percent')
+        event_type_id = request.data.get('event_type_id')
 
         if not venue_ids:
             return Response(
@@ -489,6 +492,7 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
             result = CustomPackageService.find_matching_packages(
                 venue_ids=venue_ids,
                 bundle_discount_percent=bundle_discount_percent,
+                event_type_id=event_type_id,
             )
 
             return Response(result)

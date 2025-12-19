@@ -412,38 +412,100 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'])
+    def product_venues(self, request):
+        """Get venues associated with a product for venue-based hours selection.
+
+        Query params:
+        - product_id: The product ID to get venues for
+        - event_type_id: Optional event type ID for event-type-specific pricing
+
+        Returns list of venues with their hours configuration.
+        """
+        from core.domains.venues.models import PackageVenue, VenueEventTypeConfiguration
+
+        product_id = request.query_params.get('product_id')
+        if not product_id:
+            return Response(
+                {"detail": "product_id query parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        event_type_id = request.query_params.get('event_type_id')
+
+        package_venues = PackageVenue.objects.filter(
+            package_id=product_id
+        ).select_related('venue')
+
+        # Pre-fetch event type configurations if event_type_id is provided
+        event_type_configs = {}
+        if event_type_id:
+            try:
+                event_type_id = int(event_type_id)
+                configs = VenueEventTypeConfiguration.objects.filter(
+                    venue__in=[pv.venue for pv in package_venues],
+                    event_type_id=event_type_id
+                ).select_related('venue')
+                event_type_configs = {config.venue_id: config for config in configs}
+            except (ValueError, TypeError):
+                pass
+
+        venues_data = []
+        for pv in package_venues:
+            venue = pv.venue
+            event_config = event_type_configs.get(venue.id)
+
+            if event_config:
+                # Use event-type-specific pricing
+                included_hours = float(event_config.get_effective_included_hours() or 0)
+                excess_hour_price = float(event_config.get_effective_excess_hour_price() or 0)
+                is_all_day_access = event_config.is_all_day_access
+            else:
+                # Fall back to venue defaults
+                included_hours = float(venue.standalone_included_hours or 0)
+                excess_hour_price = float(venue.standalone_excess_hour_price or 0)
+                is_all_day_access = False
+
+            venues_data.append({
+                'venue_id': venue.id,
+                'venue_name': venue.name,
+                'included_hours': included_hours,
+                'excess_hour_price': excess_hour_price,
+                'is_all_day_access': is_all_day_access,
+                'has_event_type_config': event_config is not None,
+            })
+
+        return Response(venues_data)
+
     @action(detail=False, methods=['post'])
     def calculate_pricing(self, request):
-        """Calculate pricing for a line item based on product and event duration.
+        """Calculate pricing for a line item based on product and venue-based hours.
 
         Request body:
         {
             "product_id": 123,
             "quantity": 1,
-            "event_id": 456  // to get duration
+            "venue_additional_hours": {"1": 2, "2": 1},  // Optional: venue_id -> additional hours
+            "event_type_id": 1  // Optional: for event-type-specific venue pricing
         }
 
-        Returns pricing breakdown including excess hours calculation.
+        Returns pricing breakdown including venue-based excess hours calculation.
+        Note: Excess hours are now managed at the Venue level, not ProductOption level.
+        Event-type-specific pricing is applied when event_type_id is provided.
         """
         from core.domains.sales.pricing_service import PricingCalculationService
         from core.domains.products.models import ProductOption
-        from core.domains.events.models import Event
         from decimal import Decimal
 
         try:
             product_id = request.data.get('product_id')
             quantity = int(request.data.get('quantity', 1))
-            event_id = request.data.get('event_id')
+            venue_additional_hours = request.data.get('venue_additional_hours', {})
+            event_type_id = request.data.get('event_type_id')
 
             if not product_id:
                 return Response(
                     {"detail": "product_id is required"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            if not event_id:
-                return Response(
-                    {"detail": "event_id is required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -455,32 +517,27 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            try:
-                event = Event.objects.get(pk=event_id)
-            except Event.DoesNotExist:
-                return Response(
-                    {"detail": f"Event with ID {event_id} not found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
-            event_duration = event.get_duration_hours()
-
             # Build package data for pricing calculation
             package_data = {
                 'product_id': product.id,
                 'name': product.name,
                 'price': float(product.base_price),
                 'quantity': quantity,
-                'hours_included': product.included_hours or 0,
             }
 
-            if product.excess_hour_price:
-                package_data['excess_hour_price'] = float(product.excess_hour_price)
-
+            # Use venue-based hours calculation with event_type_id for event-type-specific pricing
             pricing_item = PricingCalculationService._create_package_line_item(
                 package_data,
-                event_duration
+                venue_additional_hours if venue_additional_hours else None,
+                event_type_id=event_type_id
             )
+
+            # Get venue breakdown if venue_additional_hours was provided
+            venue_breakdown = None
+            if venue_additional_hours:
+                _, venue_breakdown = PricingCalculationService.get_venue_hours_info(
+                    product.id, venue_additional_hours, event_type_id=event_type_id
+                )
 
             if pricing_item:
                 item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
@@ -507,10 +564,8 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
                     'total': str(pricing_item.line_total),
                     'tax_rate': str(tax_rate),
                     'item_type': item_type,
-                    'event_duration_hours': event_duration,
-                    'included_hours': product.included_hours or 0,
-                    'has_excess_hours': getattr(product, 'has_excess_hours', False),
                     'is_tax_inclusive': is_tax_inclusive,
+                    'venue_hours_breakdown': venue_breakdown,
                 })
             else:
                 return Response(

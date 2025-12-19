@@ -26,6 +26,7 @@ import { ProductsApi } from '../../../apis/booking/products.api';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
 import type {
   RentableVenue,
+  RentableVenueWithEventType,
   VenueSelectionStepConfiguration,
 } from '../../../types/booking/venues.types';
 import type { VenueSelectionStepData } from '../../../types/booking/stepData.types';
@@ -36,6 +37,7 @@ interface VenueSelectionStepProps {
   onDataChange: (data: VenueSelectionStepData) => void;
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
+  eventTypeId?: number;
 }
 
 export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
@@ -44,6 +46,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   onDataChange,
   validationErrors,
   isValidating,
+  eventTypeId,
 }) => {
   const { formatAmount } = useCurrencySettings();
   const [selectedVenueIds, setSelectedVenueIds] = useState<number[]>(
@@ -58,10 +61,10 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   const title = config?.title || 'Select Your Spaces';
   const description = config?.description || 'Choose which spaces to include in your booking.';
 
-  // Fetch rentable venues
+  // Fetch rentable venues with event-type-specific pricing if available
   const { data: venues, isLoading, error: fetchError } = useQuery({
-    queryKey: ['rentable-venues'],
-    queryFn: VenuesApi.getRentableVenues,
+    queryKey: ['rentable-venues', eventTypeId],
+    queryFn: () => VenuesApi.getRentableVenues(eventTypeId),
   });
 
   // Debug logging - remove after fixing
@@ -210,6 +213,8 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
         {availableVenues.map((venue) => {
           const isSelected = isVenueSelected(venue.id);
+          // Get effective pricing (uses event-type config if available)
+          const pricing = VenuesApi.getEffectivePricing(venue);
 
           return (
             <Card
@@ -271,12 +276,13 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
                       size="small"
                       variant="outlined"
                     />
-                    {showIncludedHours && venue.standalone_included_hours && (
+                    {showIncludedHours && pricing.includedHours && (
                       <Chip
                         icon={<AccessTime />}
-                        label={`${venue.standalone_included_hours} hours included`}
+                        label={pricing.isAllDayAccess ? 'All-day access' : `${pricing.includedHours} hours included`}
                         size="small"
                         variant="outlined"
+                        color={pricing.isAllDayAccess ? 'success' : 'default'}
                       />
                     )}
                     {venue.location_description && (
@@ -293,11 +299,11 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
                   {showPricing && (
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                       <Typography variant="h5" color="primary">
-                        {formatPrice(venue.standalone_base_price)}
+                        {formatPrice(pricing.basePrice)}
                       </Typography>
-                      {venue.standalone_excess_hour_price && (
+                      {pricing.excessHourPrice && !pricing.isAllDayAccess && (
                         <Typography variant="body2" color="text.secondary">
-                          +{formatAmount(parseFloat(venue.standalone_excess_hour_price))}/hr extra
+                          +{formatAmount(parseFloat(pricing.excessHourPrice))}/hr extra
                         </Typography>
                       )}
                     </Box>

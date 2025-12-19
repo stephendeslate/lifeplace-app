@@ -21,11 +21,13 @@ import {
   ShoppingCart,
 } from '@mui/icons-material';
 import { ProductsApi } from '../../../apis/booking/products.api';
-import type { 
-  AddonSelectionStepData, 
+import { VenuesApi } from '../../../apis/booking/venues.api';
+import type {
+  AddonSelectionStepData,
   AddonSelectionStepConfiguration,
   ProductOption,
   SelectedAddon,
+  RentableVenue,
 } from '../../../types/booking';
 
 interface AddonSelectionStepProps {
@@ -34,6 +36,8 @@ interface AddonSelectionStepProps {
   onDataChange: (data: AddonSelectionStepData) => void;
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
+  selectedVenues?: RentableVenue[];
+  venueAdditionalHoursData?: Record<string, number>;
 }
 
 export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
@@ -42,6 +46,8 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
   onDataChange,
   validationErrors,
   isValidating,
+  selectedVenues = [],
+  venueAdditionalHoursData = {},
 }) => {
   // Memoize config values to prevent unnecessary re-renders
   const availableAddons = useMemo(() => config?.available_addons_details || [], [config?.available_addons_details]);
@@ -51,6 +57,15 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
 
   // Use props stepData as single source of truth - memoize to stabilize reference
   const selectedAddons = useMemo(() => stepData.selected_addons || [], [stepData.selected_addons]);
+
+  // State for venue additional hours (initialize from prop data)
+  const [venueAdditionalHours, setVenueAdditionalHours] = React.useState<Record<number, number>>(() => {
+    // Convert string keys to number keys
+    return Object.entries(venueAdditionalHoursData).reduce((acc, [key, value]) => ({
+      ...acc,
+      [parseInt(key)]: value
+    }), {});
+  });
 
   // Group addons by category if enabled
   const groupedAddons = useMemo(() => {
@@ -70,10 +85,36 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
     return selectedAddons.find(a => a.product_id === addonId);
   }, [selectedAddons]);
 
+  // Handle venue hours change
+  const handleVenueHoursChange = useCallback((venueId: number, hours: number) => {
+    setVenueAdditionalHours(prev => ({
+      ...prev,
+      [venueId]: hours
+    }));
+  }, []);
+
+  // Helper to build complete data with venue hours
+  const buildCompleteData = useCallback((addons: SelectedAddon[]) => {
+    const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
+      ...acc,
+      [key]: value  // Keep as string key for API
+    }), {} as Record<string, number>);
+
+    const dataToSend: AddonSelectionStepData = {
+      selected_addons: addons,
+    };
+
+    if (selectedVenues.length > 0 && Object.keys(venueHoursForApi).length > 0) {
+      dataToSend.venue_additional_hours = venueHoursForApi;
+    }
+
+    return dataToSend;
+  }, [venueAdditionalHours, selectedVenues.length]);
+
   // Handle addon toggle - Fixed to use addon_id
   const handleAddonToggle = useCallback((addon: ProductOption) => {
     let newSelectedAddons: SelectedAddon[];
-    
+
     if (isAddonSelected(addon.id)) {
       // Remove addon
       newSelectedAddons = selectedAddons.filter(a => a.product_id !== addon.id);
@@ -82,7 +123,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
       if (maxSelection > 0 && selectedAddons.length >= maxSelection) {
         return; // Don't add if at max
       }
-      
+
       // Add addon with tax information - Fixed to use addon_id
       const newAddon: SelectedAddon = {
         product_id: addon.id, // Fixed: Changed from 'id' to 'addon_id'
@@ -93,12 +134,12 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
         tax_rate: addon.tax_rate, // Individual tax rate from backend
         price_with_tax: addon.price_with_tax, // Pre-calculated price including tax
       };
-      
+
       newSelectedAddons = [...selectedAddons, newAddon];
     }
-    
-    onDataChange({ selected_addons: newSelectedAddons });
-  }, [selectedAddons, maxSelection, isAddonSelected, onDataChange]);
+
+    onDataChange(buildCompleteData(newSelectedAddons));
+  }, [selectedAddons, maxSelection, isAddonSelected, onDataChange, buildCompleteData]);
 
   // Handle quantity change - Fixed to use addon_id
   const handleQuantityChange = useCallback((addonId: number, delta: number) => {
@@ -109,10 +150,23 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
       }
       return addon;
     });
-    
+
     // Only update data, don't trigger navigation
-    onDataChange({ selected_addons: newSelectedAddons });
-  }, [selectedAddons, onDataChange]);
+    onDataChange(buildCompleteData(newSelectedAddons));
+  }, [selectedAddons, onDataChange, buildCompleteData]);
+
+  // Effect to update venue hours when they change (without changing addons)
+  React.useEffect(() => {
+    // Only update if we have changes in venue hours
+    const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
+      ...acc,
+      [key]: value
+    }), {} as Record<string, number>);
+
+    if (selectedVenues.length > 0) {
+      onDataChange(buildCompleteData(selectedAddons));
+    }
+  }, [venueAdditionalHours]); // Only depend on venueAdditionalHours to avoid loops
 
   // Validation status
   const validationStatus = useMemo(() => {
@@ -168,12 +222,113 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
 
   return (
     <Box>
+      {/* Venue Additional Hours Section */}
+      {selectedVenues && selectedVenues.length > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Additional Hours
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Extend your time at any venue. These hours are in addition to what's included in your package.
+          </Typography>
+
+          {selectedVenues.map((venue) => {
+            // Get effective pricing (uses event-type config if available)
+            const pricing = VenuesApi.getEffectivePricing(venue);
+            const additionalHours = venueAdditionalHours[venue.id] || 0;
+            const excessPrice = parseFloat(pricing.excessHourPrice || '0');
+            const includedHours = parseFloat(pricing.includedHours || '0');
+            const totalCost = additionalHours * excessPrice;
+
+            // Skip hours selector for all-day access venues
+            if (pricing.isAllDayAccess) {
+              return (
+                <Paper
+                  key={venue.id}
+                  sx={{
+                    p: 2,
+                    mb: 2,
+                    backgroundColor: 'success.50',
+                    borderColor: 'success.main',
+                    borderWidth: 1,
+                    borderStyle: 'solid',
+                  }}
+                >
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography fontWeight={600}>{venue.name}</Typography>
+                      <Typography variant="body2" color="success.main" fontWeight={500}>
+                        All-day access included
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label="All Day"
+                      color="success"
+                      size="small"
+                    />
+                  </Box>
+                </Paper>
+              );
+            }
+
+            return (
+              <Paper key={venue.id} sx={{ p: 2, mb: 2 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography fontWeight={600}>{venue.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Includes {includedHours} hours
+                    </Typography>
+                  </Box>
+
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleVenueHoursChange(venue.id, Math.max(0, additionalHours - 1))}
+                      disabled={additionalHours === 0}
+                    >
+                      <Remove />
+                    </IconButton>
+
+                    <Typography sx={{ minWidth: 40, textAlign: 'center' }}>
+                      +{additionalHours}
+                    </Typography>
+
+                    <IconButton
+                      size="small"
+                      onClick={() => handleVenueHoursChange(venue.id, Math.min(10, additionalHours + 1))}
+                      disabled={additionalHours >= 10}
+                    >
+                      <Add />
+                    </IconButton>
+
+                    {additionalHours > 0 && (
+                      <Chip
+                        label={`+₱${totalCost.toLocaleString()}`}
+                        color="secondary"
+                        size="small"
+                      />
+                    )}
+                  </Box>
+                </Box>
+
+                <Typography variant="caption" color="text.secondary">
+                  ₱{excessPrice.toLocaleString()}/hr for additional hours
+                </Typography>
+              </Paper>
+            );
+          })}
+        </Box>
+      )}
+
+      {selectedVenues && selectedVenues.length > 0 && <Divider sx={{ my: 3 }} />}
+
       <Typography variant="h6" gutterBottom>
         Add-on Services
       </Typography>
-      
+
       <Typography variant="body2" color="text.secondary" gutterBottom>
-        {totalAddons === 0 
+        {totalAddons === 0
           ? "No add-ons are currently available."
           : `Choose additional services to enhance your event. ${minSelection > 0 ? `Minimum ${minSelection} required.` : 'All optional.'}`}
       </Typography>

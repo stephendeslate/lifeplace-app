@@ -124,6 +124,16 @@ export interface PaymentNotification {
   updated_at: string;
 }
 
+// Venue-specific excess hours breakdown (import from booking types)
+export interface VenueExcessHours {
+  venue_id: number;
+  venue_name: string;
+  included_hours: number;
+  additional_hours: number;
+  excess_hour_price: string;
+  excess_cost: string;
+}
+
 export interface InvoiceLineItem {
   id: number;
   invoice: number;
@@ -139,9 +149,10 @@ export interface InvoiceLineItem {
   item_type: 'PACKAGE' | 'ADDON';
   item_type_display: string;
   base_unit_price: string | null; // Base price before excess hours
-  excess_hours: number | null; // Number of excess hours
-  excess_hour_price: string | null; // Price per excess hour
-  excess_cost: string; // Total excess cost (excess_hours * excess_hour_price)
+  excess_hours: number | null; // Deprecated: Use venue_details for per-venue breakdown
+  excess_hour_price: string | null; // Deprecated: Use venue_details for per-venue breakdown
+  excess_cost: string; // Total excess cost (excess_hours * excess_hour_price or sum of venue costs)
+  venue_details?: VenueExcessHours[]; // Per-venue excess hours breakdown (new format)
 }
 
 export interface InvoiceTax {

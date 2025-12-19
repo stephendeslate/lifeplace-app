@@ -165,53 +165,30 @@ export interface VenueSelectionStepConfiguration {
   updated_at: string;
 }
 
-// Enhanced DateTimeStepConfiguration to match evolved backend
+// DateTimeStepConfiguration - date-only selection
 export interface DateTimeStepConfiguration {
   id: number;
   step: number;
-  allow_time_selection: boolean;
   allow_multi_day: boolean;
+  max_event_days: number;
   show_calendar_view: boolean;
-  min_duration_hours: number;
-  max_duration_hours: number;
-  default_duration_hours: number;
-  
-  // Enhanced availability settings from evolved backend
   enable_real_time_availability: boolean;
   show_availability_status: boolean;
   auto_check_conflicts: boolean;
   show_next_available_date: boolean;
   show_conflict_details: boolean;
-  
   blocked_dates: string[];
   available_days_of_week: number[];
-  available_time_slots: Array<{
-    start_time: string;
-    end_time: string;
-    day_of_week?: number;
-    is_available: boolean;
-  }>;
-  
-  // Buffer settings
   buffer_before_hours: number;
   buffer_after_hours: number;
-  
-  // Availability checking configuration
   check_venue_availability: boolean;
   check_resource_availability: boolean;
   check_staff_availability: boolean;
-  
-  // Availability display settings
   availability_display_mode: 'FULL' | 'LIMITED' | 'SIMPLE';
-  
-  // Conflict resolution
   allow_overbooking: boolean;
   overbooking_threshold: number;
-  
-  // Integration settings
   sync_with_calendar: boolean;
   calendar_source: 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
-  
   created_at: string;
   updated_at: string;
 }

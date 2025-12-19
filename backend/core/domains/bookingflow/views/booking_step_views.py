@@ -636,10 +636,11 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
                 },
                 'date_time': {
                     'required_fields': ['start_date'],
-                    'optional_fields': ['start_time', 'end_date', 'end_time', 'duration'],
+                    'optional_fields': ['start_time', 'end_date', 'end_time', 'duration', 'venue_additional_hours'],
                     'availability_fields': [
                         'venue_preference', 'resource_requirements', 'staff_requirements'
-                    ]
+                    ],
+                    'note': 'Duration fields (start_time, end_time, duration) are deprecated. Use venue_additional_hours instead.'
                 },
                 'questionnaire': {
                     'required_fields': [],

@@ -295,10 +295,14 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                 {selectedPackages.map((pkg) => {
                   // Find matching line item for excess hour details
                   const lineItem = pricing.lineItems?.find(item => item.product_id === pkg.product_id);
-                  const hasExcessHours = lineItem?.excess_hours && lineItem.excess_hours > 0;
                   const basePrice = lineItem?.base_unit_price ? parseFloat(lineItem.base_unit_price) : parseFloat(pkg.price);
                   const unitPrice = basePrice; // Use base price, not total_unit_price
                   const totalPrice = lineItem?.total_unit_price ? parseFloat(lineItem.total_unit_price) : parseFloat(pkg.price);
+
+                  // Check for new venue_details format (preferred) or legacy excess_hours
+                  const venueDetails = lineItem?.venue_details;
+                  const hasVenueExcess = venueDetails && venueDetails.length > 0 && venueDetails.some(v => v.additional_hours > 0);
+                  const hasLegacyExcess = !hasVenueExcess && lineItem?.excess_hours && lineItem.excess_hours > 0;
 
                   return (
                     <TableRow key={pkg.product_id}>
@@ -307,7 +311,21 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {pkg.name}
                           </Typography>
-                          {hasExcessHours && (
+                          {hasVenueExcess && (
+                            <Box sx={{ mt: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                Base: {formatAmount(basePrice.toString())}
+                              </Typography>
+                              {venueDetails?.map(venue => (
+                                venue.additional_hours > 0 && (
+                                  <Typography key={venue.venue_id} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                    {venue.venue_name}: +{venue.additional_hours}h @ {formatAmount(venue.excess_hour_price)}/h
+                                  </Typography>
+                                )
+                              ))}
+                            </Box>
+                          )}
+                          {hasLegacyExcess && (
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                               Base: {formatAmount(basePrice.toString())}
                               {lineItem.excess_hours && lineItem.excess_hour_price && (
@@ -327,7 +345,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                               formatAmount(unitPrice.toString())
                             )}
                           </Typography>
-                          {hasExcessHours && (
+                          {(hasVenueExcess || hasLegacyExcess) && (
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                               (+{formatAmount((totalPrice - basePrice).toString())} excess)
                             </Typography>
@@ -539,18 +557,12 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 
                 {allStepData?.date_time?.start_time && (
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Event Time</Typography>
+                    <Typography variant="body2" color="text.secondary">Event Time (Informational)</Typography>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
                       {allStepData.date_time.start_time}
                     </Typography>
-                  </Box>
-                )}
-
-                {allStepData?.date_time?.duration && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Duration</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {allStepData.date_time.duration} hours
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      Note: Hours are determined by venue selection
                     </Typography>
                   </Box>
                 )}

@@ -3,15 +3,6 @@
 import type { StepConfiguration } from './core.types';
 import type { QuestionnaireStepItem } from './questionnaire.types';
 
-// Additional interfaces for step configurations
-export interface TimeSlot {
-  start_time: string;
-  end_time: string;
-  is_available: boolean;
-  capacity?: number;
-  price_modifier?: number;
-}
-
 export interface CustomField {
   id: string;
   name: string;
@@ -33,18 +24,15 @@ export interface IntroductionStepConfiguration extends StepConfiguration {
 }
 
 export interface DateTimeStepConfiguration extends StepConfiguration {
-  allow_time_selection: boolean;
   allow_multi_day: boolean;
+  min_event_days: number;
+  max_event_days: number;
   show_calendar_view: boolean;
-  min_duration_hours: number;
-  max_duration_hours: number;
-  default_duration_hours: number;
   enable_real_time_availability: boolean;
   show_availability_status: boolean;
   auto_check_conflicts: boolean;
   blocked_dates: string[];
   available_days_of_week: number[];
-  available_time_slots: TimeSlot[];
   buffer_before_hours: number;
   buffer_after_hours: number;
   check_resource_availability: boolean;
@@ -193,9 +181,6 @@ export interface ProductOption {
   is_featured: boolean;
   allow_multiple: boolean;
   requires_approval: boolean;
-  has_excess_hours: boolean;
-  included_hours: number | null;
-  excess_hour_price: string | null;
   minimum_hours: number | null;
   maximum_hours: number | null;
   advance_booking_days: number;

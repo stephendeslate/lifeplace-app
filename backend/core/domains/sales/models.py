@@ -192,7 +192,13 @@ class EventQuote(BaseModel):
                 tax_rate=item.tax_rate,
                 total=item.total,
                 product=item.product,
-                notes=item.notes
+                notes=item.notes,
+                item_type=item.item_type,
+                base_unit_price=item.base_unit_price,
+                excess_hours=item.excess_hours,
+                excess_hour_price=item.excess_hour_price,
+                excess_cost=item.excess_cost,
+                venue_hours_breakdown=item.venue_hours_breakdown
             )
         
         # Copy options if they exist
@@ -358,6 +364,11 @@ class QuoteLineItem(BaseModel):
         decimal_places=2,
         default=Decimal('0.00'),
         help_text='Total excess cost (excess_hours * excess_hour_price)'
+    )
+    venue_hours_breakdown = models.JSONField(
+        null=True,
+        blank=True,
+        help_text='Per-venue hours breakdown: [{venue_id, venue_name, included_hours, additional_hours, excess_hour_price, venue_cost}]'
     )
 
     @property

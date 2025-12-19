@@ -27,7 +27,6 @@ import {
 import { ModernCard } from '../../common/ModernCard';
 import {
   ExpandMore as ExpandMoreIcon,
-  Schedule as TimeIcon,
   CalendarMonth as CalendarIcon,
   Block as BlockIcon,
   CheckCircle as AvailabilityIcon,
@@ -47,50 +46,58 @@ interface DateTimeStepConfigProps {
 }
 
 interface DateTimeConfigFormData {
-  allow_time_selection: boolean;
+  // DEPRECATED - kept for backward compatibility with backend
+  allow_time_selection: boolean; // DEPRECATED: Always false now
+  min_duration_hours: number; // DEPRECATED: Not used in UI
+  max_duration_hours: number; // DEPRECATED: Not used in UI
+  default_duration_hours: number; // DEPRECATED: Not used in UI
+
+  // ACTIVE - used for date selection
   allow_multi_day: boolean;
+  max_event_days: number;
   show_calendar_view: boolean;
-  min_duration_hours: number;
-  max_duration_hours: number;
-  default_duration_hours: number;
-  
+
   // Enhanced availability settings from evolved backend
   enable_real_time_availability: boolean;
   show_availability_status: boolean;
   auto_check_conflicts: boolean;
-  
+
   blocked_dates: string[];
   available_days_of_week: number[];
   available_time_slots: unknown[];
-  
+
   // Buffer settings
   buffer_before_hours: number;
   buffer_after_hours: number;
-  
+
   // Availability checking configuration
   check_venue_availability: boolean;
   check_resource_availability: boolean;
   check_staff_availability: boolean;
-  
+
   // Availability display settings
   availability_display_mode: 'FULL' | 'LIMITED' | 'SIMPLE';
-  
+
   // Conflict resolution
   allow_overbooking: boolean;
   overbooking_threshold: number;
-  
+
   // Integration settings
   sync_with_calendar: boolean;
   calendar_source: 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
 }
 
 const defaultFormData: DateTimeConfigFormData = {
-  allow_time_selection: true,
+  // DEPRECATED fields - kept for backward compatibility
+  allow_time_selection: false, // DEPRECATED: Always false now
+  min_duration_hours: 1, // DEPRECATED: Not used in UI
+  max_duration_hours: 24, // DEPRECATED: Not used in UI
+  default_duration_hours: 4, // DEPRECATED: Not used in UI
+
+  // ACTIVE fields
   allow_multi_day: false,
+  max_event_days: 7,
   show_calendar_view: true,
-  min_duration_hours: 1,
-  max_duration_hours: 24,
-  default_duration_hours: 4,
   enable_real_time_availability: true,
   show_availability_status: true,
   auto_check_conflicts: true,
@@ -150,12 +157,13 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
   useEffect(() => {
     if (config) {
       setFormData({
-        allow_time_selection: config.allow_time_selection ?? true,
+        allow_time_selection: false, // DEPRECATED - always false now
         allow_multi_day: config.allow_multi_day ?? false,
+        max_event_days: config.max_event_days ?? 7,
         show_calendar_view: config.show_calendar_view ?? true,
-        min_duration_hours: config.min_duration_hours ?? 1,
-        max_duration_hours: config.max_duration_hours ?? 24,
-        default_duration_hours: config.default_duration_hours ?? 4,
+        min_duration_hours: config.min_duration_hours ?? 1, // DEPRECATED - kept for backward compatibility
+        max_duration_hours: config.max_duration_hours ?? 24, // DEPRECATED - kept for backward compatibility
+        default_duration_hours: config.default_duration_hours ?? 4, // DEPRECATED - kept for backward compatibility
         enable_real_time_availability: config.enable_real_time_availability ?? true,
         show_availability_status: config.show_availability_status ?? true,
         auto_check_conflicts: config.auto_check_conflicts ?? true,
@@ -230,18 +238,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (formData.min_duration_hours < 1) {
-      newErrors.min_duration_hours = 'Minimum duration must be at least 1 hour';
-    }
-
-    if (formData.max_duration_hours < formData.min_duration_hours) {
-      newErrors.max_duration_hours = 'Maximum duration must be greater than minimum';
-    }
-
-    if (formData.default_duration_hours < formData.min_duration_hours || 
-        formData.default_duration_hours > formData.max_duration_hours) {
-      newErrors.default_duration_hours = 'Default duration must be between minimum and maximum';
-    }
+    // REMOVED: Duration validation - no longer needed
 
     if (formData.buffer_before_hours < 0 || formData.buffer_after_hours < 0) {
       newErrors.buffer = 'Buffer hours cannot be negative';
@@ -285,36 +282,20 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
       <Typography variant="h6" gutterBottom>
         Date & Time Step Configuration
       </Typography>
-      
+
       <Alert severity="info" sx={{ mb: 3 }}>
-        Configure how clients select dates and times for their events, including advanced availability checking and conflict resolution.
+        This step now only handles date selection. Time and duration settings have been moved to the Package Selection step where clients can customize their hours per venue.
       </Alert>
 
       <Stack spacing={3}>
-        {/* Basic Settings */}
+        {/* Calendar Settings */}
         <ModernCard variant="glass" size="medium" animation="none">
           <Box sx={{ p: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
-              Display Options
+              Calendar Settings
             </Typography>
-            
-            <Stack spacing={2}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <TimeIcon color="primary" />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.allow_time_selection}
-                      onChange={handleSwitchChange('allow_time_selection')}
-                    />
-                  }
-                  label="Allow Time Selection"
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Let clients choose specific times in addition to dates
-              </Typography>
 
+            <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
                 <CalendarIcon color="primary" />
                 <FormControlLabel
@@ -346,52 +327,21 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
               <Typography variant="caption" color="text.secondary">
                 Allow events that span multiple days
               </Typography>
-            </Stack>
-          </Box>
-        </ModernCard>
 
-        {/* Duration Settings */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Duration Settings
-            </Typography>
-            
-            <Stack spacing={2}>
-              <Box display="flex" gap={2}>
+              {formData.allow_multi_day && (
                 <TextField
-                  label="Minimum Duration (hours)"
+                  label="Maximum Nights"
                   type="number"
-                  value={formData.min_duration_hours}
-                  onChange={handleInputChange('min_duration_hours')}
-                  error={!!errors.min_duration_hours}
-                  helperText={errors.min_duration_hours}
+                  value={formData.max_event_days - 1}
+                  onChange={(e) => {
+                    const nights = parseInt(e.target.value) || 1;
+                    handleInputChange('max_event_days')({ target: { value: String(nights + 1) } } as React.ChangeEvent<HTMLInputElement>);
+                  }}
+                  helperText="Maximum nights allowed (e.g., 1 night = 2-day span)"
                   inputProps={{ min: 1 }}
-                  sx={{ flex: 1 }}
+                  sx={{ maxWidth: 200, mt: 1 }}
                 />
-                
-                <TextField
-                  label="Maximum Duration (hours)"
-                  type="number"
-                  value={formData.max_duration_hours}
-                  onChange={handleInputChange('max_duration_hours')}
-                  error={!!errors.max_duration_hours}
-                  helperText={errors.max_duration_hours}
-                  inputProps={{ min: 1 }}
-                  sx={{ flex: 1 }}
-                />
-              </Box>
-
-              <TextField
-                label="Default Duration (hours)"
-                type="number"
-                value={formData.default_duration_hours}
-                onChange={handleInputChange('default_duration_hours')}
-                error={!!errors.default_duration_hours}
-                helperText={errors.default_duration_hours || 'Pre-selected duration when the form loads'}
-                inputProps={{ min: 1 }}
-                sx={{ maxWidth: 300 }}
-              />
+              )}
             </Stack>
           </Box>
         </ModernCard>
@@ -759,30 +709,25 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
             <Typography variant="subtitle1" gutterBottom>
               Configuration Summary
             </Typography>
-            
+
             <Stack spacing={1}>
               <Typography variant="body2">
                 <strong>Display:</strong>{' '}
                 {[
                   formData.show_calendar_view && 'Calendar View',
-                  formData.allow_time_selection && 'Time Selection',
                   formData.allow_multi_day && 'Multi-Day Events'
                 ].filter(Boolean).join(', ') || 'Basic date selection'}
               </Typography>
-              
-              <Typography variant="body2">
-                <strong>Duration:</strong> {formData.min_duration_hours}-{formData.max_duration_hours} hours (default: {formData.default_duration_hours}h)
-              </Typography>
-              
+
               <Typography variant="body2">
                 <strong>Available Days:</strong> {formData.available_days_of_week.length} days per week
               </Typography>
-              
+
               <Typography variant="body2">
                 <strong>Real-Time Availability:</strong> {formData.enable_real_time_availability ? 'Enabled' : 'Disabled'}
                 {formData.enable_real_time_availability && ` (${formData.availability_display_mode})`}
               </Typography>
-              
+
               {formData.enable_real_time_availability && (
                 <Typography variant="body2">
                   <strong>Availability Checks:</strong>{' '}
@@ -793,25 +738,25 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                   ].filter(Boolean).join(', ') || 'None'}
                 </Typography>
               )}
-              
+
               {(formData.buffer_before_hours > 0 || formData.buffer_after_hours > 0) && (
                 <Typography variant="body2">
                   <strong>Buffer:</strong> {formData.buffer_before_hours}h before, {formData.buffer_after_hours}h after
                 </Typography>
               )}
-              
+
               {formData.blocked_dates.length > 0 && (
                 <Typography variant="body2">
                   <strong>Blocked Dates:</strong> {formData.blocked_dates.length} dates blocked
                 </Typography>
               )}
-              
+
               {formData.allow_overbooking && (
                 <Typography variant="body2">
                   <strong>Overbooking:</strong> Allowed (threshold: {formData.overbooking_threshold})
                 </Typography>
               )}
-              
+
               {formData.sync_with_calendar && (
                 <Typography variant="body2">
                   <strong>Calendar Sync:</strong> {formData.calendar_source || 'Enabled'}

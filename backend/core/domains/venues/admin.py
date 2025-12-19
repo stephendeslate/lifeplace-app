@@ -1,6 +1,6 @@
 # backend/core/domains/venues/admin.py
 from django.contrib import admin
-from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate
+from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate, VenueEventTypeConfiguration
 
 
 class VenueOperatingRulesInline(admin.StackedInline):
@@ -58,6 +58,17 @@ class PackageVenueInline(admin.TabularInline):
         return False  # Add via PackageVenue admin instead
 
 
+class VenueEventTypeConfigurationInline(admin.TabularInline):
+    """Inline admin for event-type-specific venue configurations"""
+    model = VenueEventTypeConfiguration
+    extra = 1
+    fields = (
+        'event_type', 'included_hours', 'base_price', 'excess_hour_price',
+        'is_all_day_access', 'notes'
+    )
+    autocomplete_fields = ['event_type']
+
+
 @admin.register(Venue)
 class VenueAdmin(admin.ModelAdmin):
     list_display = ('name', 'code', 'is_overnight', 'maximum_capacity',
@@ -77,13 +88,21 @@ class VenueAdmin(admin.ModelAdmin):
         ('Status', {
             'fields': ('is_active', 'is_bookable')
         }),
+        ('Standalone Pricing (Default)', {
+            'fields': (
+                'is_rentable_standalone', 'standalone_base_price',
+                'standalone_included_hours', 'standalone_excess_hour_price'
+            ),
+            'description': 'Default pricing when no event-type-specific configuration exists. '
+                          'Use "Event Type Configurations" below for per-event-type overrides.'
+        }),
         ('Display', {
             'fields': ('location_description', 'featured_image', 'gallery_images', 'sort_order'),
             'classes': ('collapse',)
         }),
     )
 
-    inlines = [VenueOperatingRulesInline, PackageVenueInline]
+    inlines = [VenueOperatingRulesInline, VenueEventTypeConfigurationInline, PackageVenueInline]
 
     def has_operating_rules(self, obj):
         return hasattr(obj, 'venue_operating_rules')
@@ -180,3 +199,42 @@ class VenueBlockedDateAdmin(admin.ModelAdmin):
         if not change:  # New object
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+
+@admin.register(VenueEventTypeConfiguration)
+class VenueEventTypeConfigurationAdmin(admin.ModelAdmin):
+    """Admin for managing venue event type configurations"""
+    list_display = (
+        'venue', 'event_type', 'included_hours', 'base_price',
+        'excess_hour_price', 'is_all_day_access'
+    )
+    list_filter = ('venue', 'event_type', 'is_all_day_access')
+    search_fields = ('venue__name', 'event_type__name', 'notes')
+    ordering = ('venue__name', 'event_type__name')
+    autocomplete_fields = ['venue', 'event_type']
+
+    fieldsets = (
+        (None, {
+            'fields': ('venue', 'event_type')
+        }),
+        ('Pricing Overrides', {
+            'fields': (
+                'base_price', 'included_hours', 'excess_hour_price',
+                'is_all_day_access'
+            ),
+            'description': 'Leave blank to use venue defaults. '
+                          'Check "All-day access" for events like camping that have no hour limits.'
+        }),
+        ('Operating Rule Overrides', {
+            'fields': (
+                'default_check_in_time', 'default_checkout_time',
+                'checkout_next_day', 'maximum_program_hours', 'is_fixed_duration'
+            ),
+            'classes': ('collapse',),
+            'description': 'Optional: Override venue operating rules for this event type.'
+        }),
+        ('Notes', {
+            'fields': ('notes',),
+            'classes': ('collapse',)
+        }),
+    )

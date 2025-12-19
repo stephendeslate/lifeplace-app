@@ -16,6 +16,7 @@ import {
   Divider,
   useTheme,
   alpha,
+  Paper,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -38,7 +39,8 @@ import type {
   PackageSelectionStepConfiguration,
   SelectedPackage,
 } from '../../../types/booking';
-import type { VenueSelectionStepData } from '../../../types/booking/stepData.types';
+import type { VenueSelectionStepData, DateTimeStepData } from '../../../types/booking/stepData.types';
+import type { RentableVenue, RentableVenueWithEventType } from '../../../types/booking/venues.types';
 import { ProductsApi } from '../../../apis/booking/products.api';
 import { VenuesApi } from '../../../apis/booking/venues.api';
 
@@ -349,6 +351,168 @@ const PackageCard: React.FC<PackageCardProps> = ({
   );
 };
 
+// VenueHoursSelector Component
+interface VenueHoursSelectorProps {
+  venues: (RentableVenue | RentableVenueWithEventType)[];
+  venueHours: Record<number, number>;
+  onHoursChange: (venueId: number, hours: number) => void;
+  maxHours?: number;
+}
+
+const VenueHoursSelector: React.FC<VenueHoursSelectorProps> = ({
+  venues,
+  venueHours,
+  onHoursChange,
+  maxHours = 10
+}) => {
+  const theme = useTheme();
+
+  return (
+    <Box sx={{ mt: 3 }}>
+      <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+        Customize Your Hours
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Need more time? Add additional hours to your venues.
+      </Typography>
+
+      {venues.map((venue) => {
+        // Get effective pricing (uses event-type config if available)
+        const pricing = VenuesApi.getEffectivePricing(venue);
+        const additionalHours = venueHours[venue.id] || 0;
+        const excessPrice = parseFloat(pricing.excessHourPrice || '0');
+        const includedHours = parseFloat(pricing.includedHours || '0');
+        const totalCost = additionalHours * excessPrice;
+
+        // Skip hours selector for all-day access venues
+        if (pricing.isAllDayAccess) {
+          return (
+            <Paper
+              key={venue.id}
+              sx={{
+                p: 2,
+                mb: 2,
+                backgroundColor: alpha(theme.palette.success.main, 0.08),
+                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+              }}
+            >
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Box>
+                  <Typography fontWeight={600}>{venue.name}</Typography>
+                  <Typography variant="body2" color="success.main" fontWeight={500}>
+                    All-day access included
+                  </Typography>
+                </Box>
+                <Chip
+                  label="All Day"
+                  color="success"
+                  size="small"
+                />
+              </Box>
+            </Paper>
+          );
+        }
+
+        return (
+          <Paper
+            key={venue.id}
+            sx={{
+              p: 2,
+              mb: 2,
+              backgroundColor: alpha('#fff', 0.08),
+              border: `1px solid ${alpha('#fff', 0.1)}`,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: alpha('#fff', 0.12),
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+              }
+            }}
+          >
+            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <Typography fontWeight={600}>{venue.name}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Includes {includedHours} hours
+                </Typography>
+              </Box>
+
+              <Box display="flex" alignItems="center" gap={2} sx={{ flex: '0 0 auto' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Need more?
+                </Typography>
+
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                  sx={{
+                    backgroundColor: alpha('#fff', 0.05),
+                    borderRadius: 2,
+                    p: 0.5,
+                  }}
+                >
+                  <IconButton
+                    size="small"
+                    onClick={() => onHoursChange(venue.id, Math.max(0, additionalHours - 1))}
+                    disabled={additionalHours === 0}
+                    sx={{
+                      backgroundColor: alpha('#fff', 0.1),
+                      '&:hover': { backgroundColor: alpha('#fff', 0.2) },
+                      '&.Mui-disabled': { opacity: 0.3 }
+                    }}
+                  >
+                    <RemoveIcon fontSize="small" />
+                  </IconButton>
+
+                  <Typography
+                    sx={{
+                      minWidth: 50,
+                      textAlign: 'center',
+                      fontWeight: 600,
+                      fontSize: '1.1rem'
+                    }}
+                  >
+                    +{additionalHours}
+                  </Typography>
+
+                  <IconButton
+                    size="small"
+                    onClick={() => onHoursChange(venue.id, Math.min(maxHours, additionalHours + 1))}
+                    disabled={additionalHours >= maxHours}
+                    sx={{
+                      backgroundColor: alpha('#fff', 0.1),
+                      '&:hover': { backgroundColor: alpha('#fff', 0.2) },
+                      '&.Mui-disabled': { opacity: 0.3 }
+                    }}
+                  >
+                    <AddIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+
+                {additionalHours > 0 && (
+                  <Chip
+                    label={`+₱${totalCost.toLocaleString()}`}
+                    color="secondary"
+                    size="small"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.875rem'
+                    }}
+                  />
+                )}
+              </Box>
+            </Box>
+
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              Additional hours: ₱{excessPrice.toLocaleString()}/hr
+            </Typography>
+          </Paper>
+        );
+      })}
+    </Box>
+  );
+};
+
 interface CleanPackageSelectionStepProps {
   stepData?: PackageSelectionStepData;
   config: PackageSelectionStepConfiguration | null;
@@ -356,6 +520,8 @@ interface CleanPackageSelectionStepProps {
   validationErrors: Record<string, string[]>;
   isValidating?: boolean;
   venueSelectionData?: VenueSelectionStepData;
+  dateTimeStepData?: DateTimeStepData;
+  eventTypeId?: number;
 }
 
 const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
@@ -364,23 +530,55 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   onDataChange,
   validationErrors,
   venueSelectionData,
+  dateTimeStepData,
+  eventTypeId,
 }) => {
   const theme = useTheme();
 
+  // Calculate event days from datetime step data
+  const eventDays = useMemo(() => {
+    if (!dateTimeStepData?.start_date) return null;
+    if (!dateTimeStepData?.end_date) return 1; // Single day event
+
+    const start = new Date(dateTimeStepData.start_date);
+    const end = new Date(dateTimeStepData.end_date);
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1; // Include both start and end day
+  }, [dateTimeStepData?.start_date, dateTimeStepData?.end_date]);
+
+  // Filter packages by event_days (exact match when eventDays is known)
+  const filterPackagesByEventDays = useCallback((packages: ProductOption[]): ProductOption[] => {
+    if (eventDays === null) return packages; // No filtering if no dates selected
+
+    return packages.filter(pkg => {
+      // If package has no event_days restriction, it's available for all durations
+      if (pkg.event_days === null || pkg.event_days === undefined) return true;
+      // Otherwise, exact match required
+      return pkg.event_days === eventDays;
+    });
+  }, [eventDays]);
+
   const [availablePackages, setAvailablePackages] = useState<ProductOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [venueAdditionalHours, setVenueAdditionalHours] = useState<Record<number, number>>({});
   const selectionType = (config?.selection_type || 'SINGLE') as 'SINGLE' | 'MULTIPLE';
   const minSelection = config?.min_selection || 1;
   const maxSelection = config?.max_selection || 1;
+
+  // Apply event_days filtering to available packages
+  const filteredPackages = useMemo(() => {
+    return filterPackagesByEventDays(availablePackages);
+  }, [availablePackages, filterPackagesByEventDays]);
 
   // Get selected venue IDs from previous step
   const selectedVenueIds = venueSelectionData?.selected_venue_ids || [];
   const hasVenueSelection = selectedVenueIds.length > 0;
 
-  // Fetch venues for display and custom bundle calculation
+  // Fetch venues for display and custom bundle calculation with event-type-specific pricing
   const { data: allVenues } = useQuery({
-    queryKey: ['rentable-venues'],
-    queryFn: VenuesApi.getRentableVenues,
+    queryKey: ['rentable-venues', eventTypeId],
+    queryFn: () => VenuesApi.getRentableVenues(eventTypeId),
     enabled: hasVenueSelection,
   });
 
@@ -390,25 +588,39 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     return allVenues.filter(v => selectedVenueIds.includes(v.id));
   }, [allVenues, selectedVenueIds, hasVenueSelection]);
 
-  // Calculate custom bundle pricing
+  // Calculate custom bundle pricing using effective pricing (event-type-specific if available)
   const customBundlePricing = useMemo(() => {
     if (selectedVenues.length === 0) return null;
 
-    const subtotal = selectedVenues.reduce(
-      (sum, v) => sum + parseFloat(v.standalone_base_price || '0'),
+    // Get effective pricing for each venue
+    const venuePricings = selectedVenues.map(v => ({
+      venue: v,
+      pricing: VenuesApi.getEffectivePricing(v),
+    }));
+
+    const subtotal = venuePricings.reduce(
+      (sum, { pricing }) => sum + parseFloat(pricing.basePrice || '0'),
       0
     );
-    const totalHours = selectedVenues.reduce(
-      (sum, v) => sum + parseFloat(v.standalone_included_hours || '0'),
-      0
-    );
+
+    // Check if any venue has all-day access
+    const hasAllDayAccess = venuePricings.some(({ pricing }) => pricing.isAllDayAccess);
+
+    const totalHours = hasAllDayAccess
+      ? 24 // All-day access
+      : venuePricings.reduce(
+          (sum, { pricing }) => sum + parseFloat(pricing.includedHours || '0'),
+          0
+        );
+
     const hasDiscount = selectedVenues.length > 1;
     const discountPercent = 10; // 10% bundle discount for multi-venue
     const discountAmount = hasDiscount ? subtotal * (discountPercent / 100) : 0;
     const total = subtotal - discountAmount;
 
-    // Get excess hour price from first venue
-    const excessHourPrice = selectedVenues[0]?.standalone_excess_hour_price || '0';
+    // Get excess hour price from first venue (not applicable for all-day access)
+    const firstVenuePricing = venuePricings[0]?.pricing;
+    const excessHourPrice = hasAllDayAccess ? '0' : (firstVenuePricing?.excessHourPrice || '0');
 
     return {
       subtotal,
@@ -419,6 +631,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       total,
       excessHourPrice,
       venueNames: selectedVenues.map(v => v.name).join(' + '),
+      hasAllDayAccess,
     };
   }, [selectedVenues]);
 
@@ -432,9 +645,15 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       ? `Custom: ${customBundlePricing.venueNames}`
       : selectedVenues[0]?.name || 'Your Venue';
 
-    const packageDescription = isMultiVenue
-      ? `Your custom package with ${selectedVenues.length} venues. Includes ${customBundlePricing.discountPercent}% multi-venue discount.`
-      : `Book ${selectedVenues[0]?.name} for your event.`;
+    // Build description based on features
+    let packageDescription: string;
+    if (isMultiVenue) {
+      packageDescription = `Your custom package with ${selectedVenues.length} venues. Includes ${customBundlePricing.discountPercent}% multi-venue discount.`;
+    } else if (customBundlePricing.hasAllDayAccess) {
+      packageDescription = `Book ${selectedVenues[0]?.name} with all-day access for your event.`;
+    } else {
+      packageDescription = `Book ${selectedVenues[0]?.name} for your event.`;
+    }
 
     return {
       id: -1, // Virtual ID for custom package
@@ -442,9 +661,9 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       description: packageDescription,
       base_price: customBundlePricing.total.toString(),
       formatted_price: `₱${customBundlePricing.total.toLocaleString()}`,
-      included_hours: customBundlePricing.totalHours,
+      included_hours: customBundlePricing.hasAllDayAccess ? 'All day' : customBundlePricing.totalHours,
       excess_hour_price: customBundlePricing.excessHourPrice,
-      has_excess_hours: true,
+      has_excess_hours: !customBundlePricing.hasAllDayAccess,
       pricing_model: 'FIXED' as const,
       type: 'PACKAGE' as const,
       is_active: true,
@@ -471,6 +690,22 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     loadPackages();
   }, []);
 
+  // Sync venue hours changes to parent
+  useEffect(() => {
+    if (stepData.selected_packages && stepData.selected_packages.length > 0) {
+      // Convert venue hours to string keys for API
+      const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
+        ...acc,
+        [key]: value
+      }), {} as Record<string, number>);
+
+      onDataChange({
+        selected_packages: stepData.selected_packages,
+        venue_additional_hours: venueHoursForApi
+      });
+    }
+  }, [venueAdditionalHours]);
+
   // Calculate totals and selection state
   const selectedPackageIds = useMemo(() =>
     stepData.selected_packages?.map(p => p.product_id) || [],
@@ -478,10 +713,23 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   );
   const totalSelected = stepData.selected_packages?.length || 0;
   const canSelectMore = selectionType === 'MULTIPLE' && totalSelected < maxSelection;
-  const totalPrice = stepData.selected_packages?.reduce((sum, pkg) => {
-    const price = parseFloat(pkg.price || '0');
-    return sum + (price * (pkg.quantity || 1));
-  }, 0) || 0;
+
+  // Calculate total price including excess hours for venues
+  const totalPrice = useMemo(() => {
+    const packagesPrice = stepData.selected_packages?.reduce((sum, pkg) => {
+      const price = parseFloat(pkg.price || '0');
+      return sum + (price * (pkg.quantity || 1));
+    }, 0) || 0;
+
+    // Add excess hours cost for selected venues
+    const excessHoursCost = selectedVenues.reduce((sum, venue) => {
+      const additionalHours = venueAdditionalHours[venue.id] || 0;
+      const excessPrice = parseFloat(venue.standalone_excess_hour_price || '0');
+      return sum + (additionalHours * excessPrice);
+    }, 0);
+
+    return packagesPrice + excessHoursCost;
+  }, [stepData.selected_packages, selectedVenues, venueAdditionalHours]);
 
   // Check if custom bundle is selected
   const isCustomBundleSelected = selectedPackageIds.includes(-1);
@@ -490,9 +738,18 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   const handlePackageSelect = useCallback((pkg: ProductOption) => {
     const isCurrentlySelected = selectedPackageIds.includes(pkg.id);
 
+    // Convert venue hours to string keys for API
+    const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
+      ...acc,
+      [key]: value
+    }), {} as Record<string, number>);
+
     if (selectionType === 'SINGLE') {
       if (isCurrentlySelected) {
-        onDataChange({ selected_packages: [] });
+        onDataChange({
+          selected_packages: [],
+          venue_additional_hours: venueHoursForApi
+        });
       } else {
         const selectedPkg: SelectedPackage = {
           product_id: pkg.id,
@@ -509,13 +766,19 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
           selectedPkg.venue_ids = selectedVenueIds;
         }
 
-        onDataChange({ selected_packages: [selectedPkg] });
+        onDataChange({
+          selected_packages: [selectedPkg],
+          venue_additional_hours: venueHoursForApi
+        });
       }
     } else {
       // MULTIPLE selection
       if (isCurrentlySelected) {
         const updatedPackages = stepData.selected_packages?.filter(p => p.product_id !== pkg.id) || [];
-        onDataChange({ selected_packages: updatedPackages });
+        onDataChange({
+          selected_packages: updatedPackages,
+          venue_additional_hours: venueHoursForApi
+        });
       } else if (canSelectMore) {
         const selectedPkg: SelectedPackage = {
           product_id: pkg.id,
@@ -532,25 +795,52 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         }
 
         const updatedPackages = [...(stepData.selected_packages || []), selectedPkg];
-        onDataChange({ selected_packages: updatedPackages });
+        onDataChange({
+          selected_packages: updatedPackages,
+          venue_additional_hours: venueHoursForApi
+        });
       }
     }
-  }, [stepData.selected_packages, selectedPackageIds, selectionType, canSelectMore, onDataChange, selectedVenueIds]);
+  }, [stepData.selected_packages, selectedPackageIds, selectionType, canSelectMore, venueAdditionalHours, onDataChange, selectedVenueIds]);
 
   // Handle quantity change
   const handleQuantityChange = useCallback((pkg: ProductOption, quantity: number) => {
     if (quantity === 0) {
       const updatedPackages = stepData.selected_packages?.filter(p => p.product_id !== pkg.id) || [];
-      onDataChange({ selected_packages: updatedPackages });
+      // Convert venue hours to string keys for API
+      const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
+        ...acc,
+        [key]: value
+      }), {} as Record<string, number>);
+      onDataChange({
+        selected_packages: updatedPackages,
+        venue_additional_hours: venueHoursForApi
+      });
     } else {
       const updatedPackages = stepData.selected_packages?.map(p =>
         p.product_id === pkg.id
           ? { ...p, quantity }
           : p
       ) || [];
-      onDataChange({ selected_packages: updatedPackages });
+      // Convert venue hours to string keys for API
+      const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
+        ...acc,
+        [key]: value
+      }), {} as Record<string, number>);
+      onDataChange({
+        selected_packages: updatedPackages,
+        venue_additional_hours: venueHoursForApi
+      });
     }
-  }, [stepData.selected_packages, onDataChange]);
+  }, [stepData.selected_packages, venueAdditionalHours, onDataChange]);
+
+  // Handle venue hours change
+  const handleVenueHoursChange = useCallback((venueId: number, hours: number) => {
+    setVenueAdditionalHours(prev => ({
+      ...prev,
+      [venueId]: hours
+    }));
+  }, []);
 
   const hasFieldError = useCallback((fieldName: string) => {
     return !!(validationErrors[fieldName]?.length > 0);
@@ -630,9 +920,21 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
               isCustomBundle={true}
               isMultiVenue={isMultiVenue}
             />
+
+            {/* Show venue hours selector if custom bundle is selected */}
+            {isCustomBundleSelected && selectedVenues.length > 0 && (
+              <AnimatedElement animation="slideUp" delay={350}>
+                <VenueHoursSelector
+                  venues={selectedVenues}
+                  venueHours={venueAdditionalHours}
+                  onHoursChange={handleVenueHoursChange}
+                  maxHours={10}
+                />
+              </AnimatedElement>
+            )}
           </Box>
 
-          <AnimatedElement animation="fadeIn" delay={350}>
+          <AnimatedElement animation="fadeIn" delay={400}>
             <Divider sx={{ mb: 4 }}>
               <Typography variant="body2" color="text.secondary">
                 OR CHOOSE A PRE-MADE PACKAGE
@@ -648,7 +950,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
           display: 'grid',
           gridTemplateColumns: {
             xs: '1fr',
-            md: Array.isArray(availablePackages) && availablePackages.length === 2
+            md: Array.isArray(filteredPackages) && filteredPackages.length === 2
               ? 'repeat(2, 1fr)'
               : 'repeat(auto-fit, minmax(350px, 1fr))'
           },
@@ -656,8 +958,8 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
           mb: 4
         }}
       >
-        {Array.isArray(availablePackages) && availablePackages.length > 0 ? (
-          availablePackages.map((pkg, index) => (
+        {Array.isArray(filteredPackages) && filteredPackages.length > 0 ? (
+          filteredPackages.map((pkg, index) => (
             <PackageCard
               key={pkg.id}
               pkg={pkg}
@@ -680,7 +982,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
             color: 'text.secondary'
           }}>
             <Typography variant="h6" gutterBottom>
-              No pre-made packages available
+              {eventDays ? `No packages available for ${eventDays}-day events` : 'No pre-made packages available'}
             </Typography>
             {customBundlePackage && (
               <Typography variant="body2">

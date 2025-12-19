@@ -8,6 +8,7 @@ import type {
   CalculateTimesRequest,
   VenueAvailabilityResponse,
   RentableVenue,
+  RentableVenueWithEventType,
   CreateFromVenuesRequest,
   CreateFromVenuesResponse,
   FindMatchingPackagesRequest,
@@ -29,9 +30,53 @@ export class VenuesApi {
 
   /**
    * Get all venues available for standalone rental (custom package curation)
+   * @param eventTypeId Optional event type ID for event-type-specific pricing
+   * @returns Venues with event-type-specific pricing if eventTypeId is provided
    */
-  static async getRentableVenues(): Promise<RentableVenue[]> {
-    const response = await api.get<RentableVenue[]>('/venues/public/rentable/');
+  static async getRentableVenues(eventTypeId?: number): Promise<RentableVenueWithEventType[]> {
+    const params = eventTypeId ? { event_type_id: eventTypeId } : {};
+    const response = await api.get<RentableVenueWithEventType[]>('/venues/public/rentable/', { params });
+    return response.data;
+  }
+
+  /**
+   * Get effective pricing from a venue (uses event-type config if available, otherwise standalone)
+   */
+  static getEffectivePricing(venue: RentableVenue | RentableVenueWithEventType): {
+    basePrice: string;
+    includedHours: string;
+    excessHourPrice: string;
+    isAllDayAccess: boolean;
+  } {
+    const venueWithEventType = venue as RentableVenueWithEventType;
+
+    // If venue has event-type-specific config, use effective_* fields
+    if (venueWithEventType.has_event_type_config) {
+      return {
+        basePrice: venueWithEventType.effective_base_price || venue.standalone_base_price,
+        includedHours: venueWithEventType.effective_included_hours || venue.standalone_included_hours,
+        excessHourPrice: venueWithEventType.effective_excess_hour_price || venue.standalone_excess_hour_price,
+        isAllDayAccess: venueWithEventType.is_all_day_access || false,
+      };
+    }
+
+    // Fallback to standalone pricing
+    return {
+      basePrice: venue.standalone_base_price,
+      includedHours: venue.standalone_included_hours,
+      excessHourPrice: venue.standalone_excess_hour_price,
+      isAllDayAccess: false,
+    };
+  }
+
+  /**
+   * Get all venues with event-type-specific pricing
+   * @param eventTypeId Event type ID for event-type-specific pricing
+   */
+  static async getRentableVenuesWithEventType(eventTypeId: number): Promise<RentableVenueWithEventType[]> {
+    const response = await api.get<RentableVenueWithEventType[]>('/venues/public/rentable/', {
+      params: { event_type_id: eventTypeId }
+    });
     return response.data;
   }
 

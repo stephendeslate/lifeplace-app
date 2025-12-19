@@ -28,6 +28,7 @@ import type {
   StepValidationResult,
   PricingSummaryStepConfiguration,
   VenueSelectionStepConfiguration,
+  RentableVenue,
 } from '../../types/booking';
 
 
@@ -151,6 +152,7 @@ export const StepRenderer: React.FC = () => {
           onDataChange={handleVenueSelectionChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
+          eventTypeId={state.currentFlow?.event_type}
         />
       );
 
@@ -195,10 +197,28 @@ export const StepRenderer: React.FC = () => {
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
           venueSelectionData={state.stepData.venue_selection}
+          dateTimeStepData={state.stepData.date_time}
+          eventTypeId={state.currentFlow?.event_type}
         />
       );
 
-    case 'addon_selection':
+    case 'addon_selection': {
+      // Get selected venues from booking data
+      const bookingData = state.currentSession?.booking_data || {};
+      const venueSelectionData = bookingData.venue_selection as { selected_venue_ids?: number[] } | undefined;
+      const selectedVenueIds = venueSelectionData?.selected_venue_ids || [];
+
+      // Get venue details from package selection step config or venue selection step config
+      // We need to get the actual venue objects, not just IDs
+      // This requires fetching from the available venues in the config
+      const venueConfig = state.currentFlow?.steps?.find(s => s.step_type === 'venue_selection')?.configuration_data as { available_venues_details?: RentableVenue[] } | undefined;
+      const selectedVenues = venueConfig?.available_venues_details?.filter(v => selectedVenueIds.includes(v.id)) || [];
+
+      // Get existing venue_additional_hours from package_selection step data or addon_selection step data
+      const packageSelectionData = state.stepData.package_selection;
+      const addonSelectionData = state.stepData.addon_selection;
+      const venueAdditionalHours = addonSelectionData?.venue_additional_hours || packageSelectionData?.venue_additional_hours || {};
+
       return (
         <AddonSelectionStep
           stepData={state.stepData.addon_selection}
@@ -206,8 +226,11 @@ export const StepRenderer: React.FC = () => {
           onDataChange={handleAddonSelectionChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
+          selectedVenues={selectedVenues}
+          venueAdditionalHoursData={venueAdditionalHours}
         />
       );
+    }
 
     case 'pricing_summary':
       return (

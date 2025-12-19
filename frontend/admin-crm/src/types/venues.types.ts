@@ -94,6 +94,10 @@ export interface VenueListItem {
   featured_image: string | null;
   sort_order: number;
   is_rentable_standalone: boolean;
+  // Standalone pricing fields for editing
+  standalone_base_price: string | null;
+  standalone_included_hours: string | null;
+  standalone_excess_hour_price: string | null;
   has_operating_rules: boolean;
   packages_count: number;
 }
@@ -312,3 +316,51 @@ export interface VenueAvailabilityResponse {
     reason: string;
   }>;
 }
+
+// Venue Event Type Configuration
+export interface VenueEventTypeConfiguration {
+  id: number;
+  venue: number;
+  venue_name: string;
+  event_type: number;
+  event_type_name: string;
+  base_price: string | null;
+  included_hours: string | null;
+  excess_hour_price: string | null;
+  is_all_day_access: boolean;
+  default_check_in_time: string | null;
+  default_checkout_time: string | null;
+  checkout_next_day: boolean | null;
+  maximum_program_hours: string | null;
+  is_fixed_duration: boolean | null;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VenueEventTypeConfigurationInline {
+  id?: number;
+  event_type: number;
+  event_type_name?: string;
+  base_price: string | null;
+  included_hours: string | null;
+  excess_hour_price: string | null;
+  is_all_day_access: boolean;
+}
+
+export interface CreateVenueEventTypeConfigurationData {
+  venue: number;
+  event_type: number;
+  base_price?: string | null;
+  included_hours?: string | null;
+  excess_hour_price?: string | null;
+  is_all_day_access?: boolean;
+  default_check_in_time?: string | null;
+  default_checkout_time?: string | null;
+  checkout_next_day?: boolean | null;
+  maximum_program_hours?: string | null;
+  is_fixed_duration?: boolean | null;
+  notes?: string;
+}
+
+export type UpdateVenueEventTypeConfigurationData = Partial<CreateVenueEventTypeConfigurationData>;

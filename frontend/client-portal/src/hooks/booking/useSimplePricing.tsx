@@ -1,4 +1,6 @@
 // Simplified unified pricing hook - single source of truth
+// Supports venue-based excess hours pricing (Phase 6)
+// The backend API returns PricingLineItem[] with venue_details for per-venue breakdown
 import { useState, useEffect, useCallback } from 'react';
 import { useBooking } from '../../contexts/BookingContext';
 import { BookingCoreApi } from '../../apis/booking/core.api';
@@ -13,7 +15,7 @@ export interface SimplePricingBreakdown {
   formattedTax: string;
   formattedDiscount: string;
   formattedTotal: string;
-  lineItems: PricingLineItem[];
+  lineItems: PricingLineItem[]; // Includes venue_details for per-venue excess hours
   discountDetails?: {
     name: string;
     code: string;

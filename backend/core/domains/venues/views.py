@@ -25,7 +25,10 @@ from .serializers import (
     PublicVenueSerializer,
     PublicVenueOperatingRulesSerializer,
     RentableVenueSerializer,
+    RentableVenueWithEventTypeSerializer,
+    VenueEventTypeConfigurationSerializer,
 )
+from .models import VenueEventTypeConfiguration
 from .services import VenueService, VenueAvailabilityService
 
 logger = logging.getLogger(__name__)
@@ -432,7 +435,12 @@ class PublicVenueViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def rentable(self, request):
-        """Get all venues available for standalone rental (custom package curation)"""
+        """
+        Get all venues available for standalone rental (custom package curation).
+
+        Query params:
+            event_type_id: Optional. If provided, returns event-type-specific pricing.
+        """
         venues = Venue.objects.filter(
             is_active=True,
             is_bookable=True,
@@ -440,7 +448,24 @@ class PublicVenueViewSet(viewsets.ReadOnlyModelViewSet):
             standalone_base_price__isnull=False,
         ).select_related('venue_operating_rules').order_by('sort_order', 'name')
 
-        serializer = RentableVenueSerializer(venues, many=True)
+        # Check for event_type_id parameter
+        event_type_id = request.query_params.get('event_type_id')
+
+        if event_type_id:
+            try:
+                event_type_id = int(event_type_id)
+                # Use event-type-aware serializer
+                serializer = RentableVenueWithEventTypeSerializer(
+                    venues,
+                    many=True,
+                    context={'event_type_id': event_type_id}
+                )
+            except (ValueError, TypeError):
+                # Invalid event_type_id, use default serializer
+                serializer = RentableVenueSerializer(venues, many=True)
+        else:
+            serializer = RentableVenueSerializer(venues, many=True)
+
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'])

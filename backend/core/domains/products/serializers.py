@@ -83,8 +83,8 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             'id', 'name', 'description', 'category', 'category_name', 'category_path',
             'pricing_model', 'pricing_model_display', 'base_price', 'currency', 'tax_rate',
             'type', 'type_display', 'is_active', 'is_featured', 'allow_multiple', 'requires_approval',
-            'has_excess_hours', 'included_hours', 'excess_hour_price',
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',
+            'event_days',
             'sku', 'sort_order', 'event_type', 'formatted_price', 'price_with_tax',
             'created_at', 'updated_at'
         ]
@@ -92,30 +92,18 @@ class ProductOptionSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         """Validate product data"""
-        # If product has excess hours, ensure included_hours and excess_hour_price are provided
-        if data.get('has_excess_hours', False):
-            if not data.get('included_hours'):
-                raise serializers.ValidationError({'included_hours': 'Required when has_excess_hours is True'})
-            if not data.get('excess_hour_price'):
-                raise serializers.ValidationError({'excess_hour_price': 'Required when has_excess_hours is True'})
-        
-        # Validate hourly pricing requirements
-        if data.get('pricing_model') == 'HOURLY':
-            if not data.get('included_hours'):
-                raise serializers.ValidationError({'included_hours': 'Required for hourly pricing model'})
-        
         # Validate hour constraints
         min_hours = data.get('minimum_hours')
         max_hours = data.get('maximum_hours')
         if min_hours and max_hours and min_hours > max_hours:
             raise serializers.ValidationError({'maximum_hours': 'Maximum hours must be greater than minimum hours'})
-        
+
         # Validate booking day constraints
         advance_days = data.get('advance_booking_days', 0)
         max_booking_days = data.get('maximum_booking_days')
         if max_booking_days and advance_days > max_booking_days:
             raise serializers.ValidationError({'maximum_booking_days': 'Maximum booking days must be greater than advance booking days'})
-        
+
         return data
 
 

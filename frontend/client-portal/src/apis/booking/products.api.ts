@@ -242,6 +242,25 @@ export class ProductsApi {
   }
 
   /**
+   * Calculate total with excess hours costs for venues
+   */
+  static calculateTotalWithExcessHours(
+    basePrice: number,
+    venues: Array<{ id: number; standalone_excess_hour_price: string }>,
+    venueAdditionalHours: Record<number, number>
+  ): number {
+    let total = basePrice;
+
+    venues.forEach(venue => {
+      const additionalHours = venueAdditionalHours[venue.id] || 0;
+      const excessPrice = parseFloat(venue.standalone_excess_hour_price || '0');
+      total += additionalHours * excessPrice;
+    });
+
+    return total;
+  }
+
+  /**
    * Calculate price with tax
    */
   static calculatePriceWithTax(

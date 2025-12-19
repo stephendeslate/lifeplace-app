@@ -261,8 +261,12 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                       {lineItems.map((item: InvoiceLineItem, index: number) => {
                         const basePrice = item.base_unit_price ? parseFloat(item.base_unit_price) : null;
                         const unitPrice = parseFloat(item.unit_price);
-                        const hasExcessHours = item.excess_hours && item.excess_hours > 0;
                         const excessCost = item.excess_cost ? parseFloat(item.excess_cost) : 0;
+
+                        // Check for new venue_details format (preferred) or legacy excess_hours
+                        const venueDetails = item.venue_details;
+                        const hasVenueExcess = venueDetails && venueDetails.length > 0 && venueDetails.some(v => v.additional_hours > 0);
+                        const hasLegacyExcess = !hasVenueExcess && item.excess_hours && item.excess_hours > 0;
 
                         return (
                           <TableRow key={index}>
@@ -271,7 +275,21 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
                                   {item.description}
                                 </Typography>
-                                {hasExcessHours && (
+                                {hasVenueExcess && (
+                                  <Box sx={{ mt: 0.5 }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                      Base: {FinancialApi.formatAmount(basePrice || 0, invoice.currency)}
+                                    </Typography>
+                                    {venueDetails?.map(venue => (
+                                      venue.additional_hours > 0 && (
+                                        <Typography key={venue.venue_id} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                          {venue.venue_name}: +{venue.additional_hours}h @ {FinancialApi.formatAmount(venue.excess_hour_price, invoice.currency)}/h
+                                        </Typography>
+                                      )
+                                    ))}
+                                  </Box>
+                                )}
+                                {hasLegacyExcess && (
                                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                                     Base: {FinancialApi.formatAmount(basePrice || 0, invoice.currency)}
                                     {item.excess_hours && item.excess_hour_price && (
@@ -309,7 +327,7 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                                 <Typography variant="body2">
                                   {FinancialApi.formatAmount(unitPrice, invoice.currency)}
                                 </Typography>
-                                {hasExcessHours && excessCost > 0 && (
+                                {(hasVenueExcess || hasLegacyExcess) && excessCost > 0 && (
                                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                                     (+{FinancialApi.formatAmount(excessCost / item.quantity, invoice.currency)} excess)
                                   </Typography>

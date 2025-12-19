@@ -217,28 +217,24 @@ class QuoteService:
                 from core.domains.sales.pricing_service import PricingCalculationService
 
                 template_products = QuoteTemplateProduct.objects.filter(template=quote.template)
-                event_duration = event.get_duration_hours()
 
                 for template_product in template_products:
                     product = template_product.product
 
-                    # Build package data for pricing service to calculate excess hours
+                    # Build package data for pricing service
+                    # Note: Excess hours are now venue-based, not product-based.
+                    # For admin quotes, we use base prices without excess hours.
                     package_data = {
                         'product_id': product.id,
                         'name': product.name,
                         'price': float(product.base_price),
                         'quantity': template_product.quantity,
-                        'hours_included': product.included_hours or 0,
                     }
 
-                    # Add excess_hour_price if product has it configured
-                    if product.excess_hour_price:
-                        package_data['excess_hour_price'] = float(product.excess_hour_price)
-
-                    # Use pricing service to calculate with excess hours
+                    # Use pricing service (no venue_additional_hours for admin quotes)
                     pricing_item = PricingCalculationService._create_package_line_item(
                         package_data,
-                        event_duration
+                        None  # No venue additional hours for admin-created quotes
                     )
 
                     if pricing_item:
@@ -362,8 +358,6 @@ class QuoteService:
                     # If no IDs provided, delete all existing line items
                     quote.line_items.all().delete()
 
-                event_duration = quote.event.get_duration_hours()
-
                 # Update or create line items
                 for item_data in line_items_data:
                     item_id = item_data.pop('id', None)
@@ -388,18 +382,17 @@ class QuoteService:
                                 pid = product_id or line_item.product_id
                                 try:
                                     product = ProductOption.objects.get(pk=pid)
+                                    # Note: Excess hours are now venue-based, not product-based.
+                                    # For admin quotes, we use base prices without excess hours.
                                     package_data = {
                                         'product_id': product.id,
                                         'name': product.name,
                                         'price': float(product.base_price),
                                         'quantity': int(item_data.get('quantity', line_item.quantity)),
-                                        'hours_included': product.included_hours or 0,
                                     }
-                                    if product.excess_hour_price:
-                                        package_data['excess_hour_price'] = float(product.excess_hour_price)
 
                                     pricing_item = PricingCalculationService._create_package_line_item(
-                                        package_data, event_duration
+                                        package_data, None  # No venue additional hours for admin quotes
                                     )
 
                                     if pricing_item:
@@ -435,18 +428,17 @@ class QuoteService:
                             # Use pricing service for product-based items
                             try:
                                 product = ProductOption.objects.get(pk=product_id)
+                                # Note: Excess hours are now venue-based, not product-based.
+                                # For admin quotes, we use base prices without excess hours.
                                 package_data = {
                                     'product_id': product.id,
                                     'name': product.name,
                                     'price': float(product.base_price),
                                     'quantity': int(item_data.get('quantity', 1)),
-                                    'hours_included': product.included_hours or 0,
                                 }
-                                if product.excess_hour_price:
-                                    package_data['excess_hour_price'] = float(product.excess_hour_price)
 
                                 pricing_item = PricingCalculationService._create_package_line_item(
-                                    package_data, event_duration
+                                    package_data, None  # No venue additional hours for admin quotes
                                 )
 
                                 if pricing_item:
@@ -520,7 +512,12 @@ class QuoteService:
         """Add a line item to a quote
 
         If product_id is provided, uses PricingCalculationService to calculate
-        excess hours based on event duration.
+        venue-based excess hours.
+
+        Args:
+            quote_id: The quote ID
+            line_item_data: Line item data including optional venue_additional_hours
+            user: The user performing the action
         """
         try:
             quote = EventQuote.objects.get(pk=quote_id)
@@ -538,30 +535,34 @@ class QuoteService:
             product_id = line_item_data.get('product_id') or line_item_data.get('product')
 
             if product_id:
-                # Use PricingCalculationService to calculate with excess hours
+                # Use PricingCalculationService for pricing
                 from core.domains.sales.pricing_service import PricingCalculationService
                 from core.domains.products.models import ProductOption
 
                 try:
                     product = ProductOption.objects.get(pk=product_id)
-                    event_duration = quote.event.get_duration_hours()
 
-                    # Build package data for pricing calculation
+                    # Extract venue_additional_hours if provided
+                    venue_additional_hours = line_item_data.get('venue_additional_hours', {})
+
                     package_data = {
                         'product_id': product.id,
                         'name': product.name,
                         'price': float(product.base_price),
                         'quantity': int(line_item_data.get('quantity', 1)),
-                        'hours_included': product.included_hours or 0,
                     }
-
-                    if product.excess_hour_price:
-                        package_data['excess_hour_price'] = float(product.excess_hour_price)
 
                     pricing_item = PricingCalculationService._create_package_line_item(
                         package_data,
-                        event_duration
+                        venue_additional_hours if venue_additional_hours else None
                     )
+
+                    # Get venue breakdown if venue_additional_hours was provided
+                    venue_breakdown = None
+                    if venue_additional_hours:
+                        _, venue_breakdown = PricingCalculationService.get_venue_hours_info(
+                            product.id, venue_additional_hours
+                        )
 
                     if pricing_item:
                         item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
@@ -579,7 +580,8 @@ class QuoteService:
                             base_unit_price=pricing_item.base_unit_price,
                             excess_hours=pricing_item.excess_hours,
                             excess_hour_price=pricing_item.excess_hour_price,
-                            excess_cost=pricing_item.excess_cost
+                            excess_cost=pricing_item.excess_cost,
+                            venue_hours_breakdown=venue_breakdown if venue_breakdown else None
                         )
                     else:
                         logger.warning(f"Failed to calculate pricing for product {product.id}")
@@ -614,7 +616,12 @@ class QuoteService:
         """Update a line item in a quote
 
         If product_id is provided/changed, recalculates pricing using
-        PricingCalculationService with excess hours.
+        PricingCalculationService with venue-based excess hours.
+
+        Args:
+            line_item_id: The line item ID
+            line_item_data: Line item data including optional venue_additional_hours
+            user: The user performing the action
         """
         try:
             line_item = QuoteLineItem.objects.get(pk=line_item_id)
@@ -644,6 +651,15 @@ class QuoteService:
                 (quantity_changed and (new_product_id or current_product_id))
             )
 
+            # Check if venue_additional_hours is provided for recalculation
+            venue_additional_hours = line_item_data.get('venue_additional_hours', {})
+            venue_hours_changed = bool(venue_additional_hours)
+
+            # Also recalculate if venue hours changed
+            should_recalculate = (
+                should_recalculate or venue_hours_changed
+            )
+
             if should_recalculate:
                 from core.domains.sales.pricing_service import PricingCalculationService
                 from core.domains.products.models import ProductOption
@@ -652,23 +668,25 @@ class QuoteService:
 
                 try:
                     product = ProductOption.objects.get(pk=product_id_to_use)
-                    event_duration = quote.event.get_duration_hours()
 
                     package_data = {
                         'product_id': product.id,
                         'name': product.name,
                         'price': float(product.base_price),
                         'quantity': int(line_item_data.get('quantity', line_item.quantity)),
-                        'hours_included': product.included_hours or 0,
                     }
-
-                    if product.excess_hour_price:
-                        package_data['excess_hour_price'] = float(product.excess_hour_price)
 
                     pricing_item = PricingCalculationService._create_package_line_item(
                         package_data,
-                        event_duration
+                        venue_additional_hours if venue_additional_hours else None
                     )
+
+                    # Get venue breakdown if venue_additional_hours was provided
+                    venue_breakdown = None
+                    if venue_additional_hours:
+                        _, venue_breakdown = PricingCalculationService.get_venue_hours_info(
+                            product.id, venue_additional_hours
+                        )
 
                     if pricing_item:
                         item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
@@ -684,6 +702,7 @@ class QuoteService:
                         line_item.excess_hours = pricing_item.excess_hours
                         line_item.excess_hour_price = pricing_item.excess_hour_price
                         line_item.excess_cost = pricing_item.excess_cost
+                        line_item.venue_hours_breakdown = venue_breakdown if venue_breakdown else None
 
                         # Apply any additional overrides from line_item_data (e.g., notes)
                         if 'notes' in line_item_data:
@@ -759,11 +778,17 @@ class QuoteService:
                     else:
                         booking_data['selected_addons'].append(item_data)
 
-            # Use centralized pricing calculation
-            event_duration = quote.event.get_duration_hours() if quote.event else 8
+            # Get event_type_id from quote's event for event-type-specific pricing
+            event_type_id = None
+            if quote.event and quote.event.event_type:
+                event_type_id = quote.event.event_type_id
+
+            # Use centralized pricing calculation (no venue additional hours for admin quotes)
             breakdown = PricingCalculationService.calculate_from_booking_data(
                 booking_data,
-                event_duration
+                client=None,
+                venue_additional_hours=None,
+                event_type_id=event_type_id
             )
 
             quote.subtotal = breakdown.subtotal

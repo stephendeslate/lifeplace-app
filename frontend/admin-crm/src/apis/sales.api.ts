@@ -244,11 +244,30 @@ export const salesApi = {
     return response.data.results;
   },
 
-  // Line Item Pricing Calculation
+  // Get venues for a product (for venue-based hours selection)
+  getProductVenues: async (productId: number, eventTypeId?: number): Promise<{
+    venue_id: number;
+    venue_name: string;
+    included_hours: number;
+    excess_hour_price: number;
+    is_all_day_access?: boolean;
+    has_event_type_config?: boolean;
+  }[]> => {
+    const params = new URLSearchParams();
+    params.append('product_id', productId.toString());
+    if (eventTypeId) {
+      params.append('event_type_id', eventTypeId.toString());
+    }
+    const response = await api.get(`/sales/line-items/product_venues/?${params.toString()}`);
+    return response.data;
+  },
+
+  // Line Item Pricing Calculation (venue-based hours)
   calculateLineItemPricing: async (data: {
     product_id: number;
     quantity: number;
-    event_id: number;
+    venue_additional_hours?: Record<string, number>;
+    event_type_id?: number;
   }): Promise<{
     product_id: number;
     product_name: string;
@@ -262,10 +281,17 @@ export const salesApi = {
     total: string;
     tax_rate: string;
     item_type: string;
-    event_duration_hours: number | null;
-    included_hours: number;
-    has_excess_hours: boolean;
     is_tax_inclusive: boolean;
+    venue_hours_breakdown: {
+      venue_id: number;
+      venue_name: string;
+      included_hours: number;
+      additional_hours: number;
+      excess_hour_price: number;
+      venue_cost: number;
+      is_all_day_access?: boolean;
+      has_event_type_config?: boolean;
+    }[] | null;
   }> => {
     const response = await api.post('/sales/line-items/calculate_pricing/', data);
     return response.data;
