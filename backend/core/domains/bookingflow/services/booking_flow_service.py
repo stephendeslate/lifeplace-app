@@ -54,8 +54,8 @@ class BookingFlowService:
                 'steps__addon_config__available_categories',
                 'steps__addon_config__available_addons',
                 'steps__contact_config',
-                'steps__payment_config__allowed_gateways',
-                'steps__payment_config__default_gateway',
+                'steps__payment_config',
+                'steps__payment_terms_config',
                 'steps__confirmation_config',
                 'available_discounts',
                 'allowed_payment_gateways'
