@@ -468,13 +468,6 @@ export const SessionTester: React.FC<SessionTesterProps> = ({
           },
         };
       
-      case 'review_booking':
-        return {
-          ...baseData,
-          booking_reviewed: true,
-          changes_requested: false,
-        };
-      
       case 'confirmation':
         return {
           ...baseData,

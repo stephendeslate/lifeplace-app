@@ -38,7 +38,7 @@ interface BreadcrumbItem {
 export interface HeaderAction {
   icon?: React.ReactNode;
   label: string;
-  onClick: () => void;
+  onClick: (event?: React.MouseEvent<HTMLElement>) => void;
   variant?: 'contained' | 'outlined' | 'text' | 'icon';
   color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
   disabled?: boolean;
@@ -115,7 +115,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
   const renderAction = (action: HeaderAction, isSecondary: boolean = false) => {
     const baseButtonProps = {
       disabled: action.disabled,
-      onClick: action.onClick,
+      onClick: (e: React.MouseEvent<HTMLElement>) => action.onClick(e),
       sx: {
         borderRadius: tokens.spacing.radius.full,
         fontWeight: 600,

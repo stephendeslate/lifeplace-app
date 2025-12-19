@@ -191,10 +191,9 @@ export const BookingFlowDetails: React.FC = () => {
     setMenuAnchor(null);
   };
 
-  const handleMenuButtonClick = () => {
-    // Create a synthetic event for the menu button
-    if (menuButtonRef.current) {
-      setMenuAnchor(menuButtonRef.current);
+  const handleMenuButtonClick = (event?: React.MouseEvent<HTMLElement>) => {
+    if (event?.currentTarget) {
+      setMenuAnchor(event.currentTarget);
     }
   };
 

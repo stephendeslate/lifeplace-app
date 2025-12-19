@@ -89,14 +89,6 @@ export class BookingValidationHelpers {
             message: 'Event date must be in the future'
           });
         }
-        
-        // Use type assertion to access allow_time_selection if it exists
-        if ((step.configuration_data as { allow_time_selection?: boolean })?.allow_time_selection && !data.start_time) {
-          errors.push({
-            field: 'start_time',
-            message: 'Event time is required'
-          });
-        }
         break;
 
       case 'pricing_summary':

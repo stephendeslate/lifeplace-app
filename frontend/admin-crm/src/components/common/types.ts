@@ -85,7 +85,7 @@ export interface BreadcrumbItem {
 export interface HeaderAction {
   icon?: React.ReactNode;
   label: string;
-  onClick: () => void;
+  onClick: (event?: React.MouseEvent<HTMLElement>) => void;
   variant?: 'contained' | 'outlined' | 'text' | 'icon';
   color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
   disabled?: boolean;

@@ -106,9 +106,6 @@ const StepPreview: React.FC<StepPreviewProps> = ({
       case 'payment_info': {
         return <PaymentIcon {...iconProps} />;
       }
-      case 'review_booking': {
-        return <ReviewIcon {...iconProps} />;
-      }
       case 'confirmation': {
         return <ConfirmationIcon {...iconProps} />;
       }
@@ -444,46 +441,6 @@ const StepPreview: React.FC<StepPreviewProps> = ({
                 </Stack>
               </Box>
             )}
-          </Box>
-        );
-      }
-
-      case 'review_booking': {
-        return (
-          <Box>
-            <Typography variant="subtitle1" gutterBottom>
-              Review Your Booking
-            </Typography>
-            <Typography color="text.secondary" gutterBottom>
-              Please review all details before confirming your booking.
-            </Typography>
-            
-            <Box sx={{ 
-              p: 2, 
-              ...glassPresets.light,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              borderRadius: tokens.spacing.radius.lg
-            }}>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Event Date</Typography>
-                  <Typography>Saturday, March 15, 2024 at 2:00 PM</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Package</Typography>
-                  <Typography>Premium Package</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Contact</Typography>
-                  <Typography>John Doe (john.doe@example.com)</Typography>
-                </Box>
-                <Divider />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Total Amount</Typography>
-                  <Typography variant="h6" color="primary">{formatCurrency(1250, 'PHP')}</Typography>
-                </Box>
-              </Stack>
-            </Box>
           </Box>
         );
       }

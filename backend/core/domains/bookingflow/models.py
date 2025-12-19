@@ -378,20 +378,12 @@ class VenueSelectionStepConfiguration(BaseModel):
 
 
 class DateTimeStepConfiguration(BaseModel):
-    """Enhanced configuration for date and time selection step with availability checking
-
-    NOTE: Duration-related fields (min_duration_hours, max_duration_hours, default_duration_hours,
-    allow_time_selection) are deprecated as of Phase 3 DateTime Simplification.
-    Duration is now calculated from venue selections and their additional hours.
-    These fields are kept for backward compatibility only.
-    """
+    """Enhanced configuration for date and time selection step with availability checking."""
     step = models.OneToOneField(
         BookingFlowStep,
         on_delete=models.CASCADE,
         related_name='datetime_config'
     )
-    # DEPRECATED: Duration fields kept for backward compatibility
-    allow_time_selection = models.BooleanField(default=True)
     allow_multi_day = models.BooleanField(default=False)
     min_event_days = models.PositiveIntegerField(
         default=1,
@@ -402,9 +394,6 @@ class DateTimeStepConfiguration(BaseModel):
         help_text="Maximum consecutive days allowed for multi-day events"
     )
     show_calendar_view = models.BooleanField(default=True)
-    min_duration_hours = models.PositiveIntegerField(default=1)  # DEPRECATED
-    max_duration_hours = models.PositiveIntegerField(default=24)  # DEPRECATED
-    default_duration_hours = models.PositiveIntegerField(default=4)  # DEPRECATED
     
     # Availability settings - Enhanced from availability_check step
     enable_real_time_availability = models.BooleanField(default=True)

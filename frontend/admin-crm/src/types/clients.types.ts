@@ -1,10 +1,6 @@
 // frontend/admin-crm/src/types/clients.types.ts
 
-// Import Event interface from events domain to avoid duplication
 import type { Event } from './events.types';
-
-// Re-export Event for backward compatibility
-export type { Event };
 
 export interface ClientProfile {
   phone?: string;

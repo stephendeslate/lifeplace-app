@@ -9,8 +9,8 @@ import type {
   ClientInvitation,
   AcceptInvitationData,
   AcceptInvitationResponse,
-  Event
 } from '../types/clients.types';
+import type { Event } from '../types/events.types';
 import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export const clientsApi = {

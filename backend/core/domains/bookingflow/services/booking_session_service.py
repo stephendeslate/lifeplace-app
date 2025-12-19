@@ -1722,8 +1722,6 @@ class BookingSessionService:
                 start_date_str = step_data.get('start_date')
                 if not start_date_str:
                     errors['start_date'] = ["Date selection is required"]
-                if config.allow_time_selection and not step_data.get('start_time'):
-                    errors['start_time'] = ["Time selection is required"]
 
                 # Availability validation - check if date conflicts with CONFIRMED events
                 if start_date_str and not errors.get('start_date'):

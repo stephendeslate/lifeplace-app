@@ -15,7 +15,6 @@ from .models import (
     ContractNote
 )
 from .serializers import (
-    ContractSigningSerializer,
     ContractTemplateCreateUpdateSerializer,
     ContractTemplateDetailSerializer,
     ContractTemplateSerializer,
@@ -32,13 +31,12 @@ from .serializers import (
     PreviewContractSerializer,
 )
 from .services import (
-    ContractTemplateService, 
+    ContractTemplateService,
     EventContractService,
     ContractSignatureService,
     ContractAmendmentService,
     ContractDocumentService,
     ContractNoteService,
-    LegacyContractService
 )
 from .pdf_service import ContractPDFService
 
@@ -146,7 +144,7 @@ class EventContractViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Prefetch related objects for efficiency
         queryset = EventContract.objects.select_related(
-            'event', 'template', 'signed_by', 'original_contract'
+            'event', 'template', 'original_contract'
         ).prefetch_related(
             'signatures__signer',
             'amendment_requests',
@@ -170,8 +168,6 @@ class EventContractViewSet(viewsets.ModelViewSet):
             return EventContractCreateSerializer
         if self.action in ['update', 'partial_update']:
             return EventContractUpdateSerializer
-        if self.action == 'sign':
-            return ContractSigningSerializer
         return EventContractSerializer
     
     def retrieve(self, request, *args, **kwargs):
