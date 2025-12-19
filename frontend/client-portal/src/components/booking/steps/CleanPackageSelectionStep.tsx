@@ -211,22 +211,6 @@ const PackageCard: React.FC<PackageCardProps> = ({
                 sx={{ backgroundColor: alpha('#fff', 0.1) }}
               />
             )}
-            {pkg.category_name && (
-              <Chip
-                label={pkg.category_name}
-                size="small"
-                variant="outlined"
-                sx={{ backgroundColor: alpha('#fff', 0.1) }}
-              />
-            )}
-            {pkg.pricing_model_display && (
-              <Chip
-                label={pkg.pricing_model_display}
-                size="small"
-                variant="outlined"
-                sx={{ backgroundColor: alpha('#fff', 0.1) }}
-              />
-            )}
           </Stack>
 
           {/* Pricing */}
