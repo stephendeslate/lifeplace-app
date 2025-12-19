@@ -46,13 +46,13 @@ export const vipApi = {
     if (filters?.is_active !== undefined) {
       params.append('is_active', filters.is_active.toString());
     }
-    const response = await api.get(`/vip/tiers/?${params.toString()}`);
+    const response = await api.get<VIPTier[] | { results: VIPTier[] }>(`/vip/tiers/?${params.toString()}`);
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
 
   getActiveTiers: async (): Promise<VIPTierListItem[]> => {
-    const response = await api.get('/vip/tiers/active/');
+    const response = await api.get<VIPTierListItem[] | { results: VIPTierListItem[] }>('/vip/tiers/active/');
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
@@ -91,7 +91,7 @@ export const vipApi = {
     if (filters?.benefit_type) params.append('benefit_type', filters.benefit_type);
     if (filters?.application_mode) params.append('application_mode', filters.application_mode);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    const response = await api.get(`/vip/benefits/?${params.toString()}`);
+    const response = await api.get<VIPBenefit[] | { results: VIPBenefit[] }>(`/vip/benefits/?${params.toString()}`);
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
@@ -116,7 +116,7 @@ export const vipApi = {
   },
 
   getBenefitTypes: async (): Promise<BenefitTypeOption[]> => {
-    const response = await api.get('/vip/benefits/benefit_types/');
+    const response = await api.get<BenefitTypeOption[] | { results: BenefitTypeOption[] }>('/vip/benefits/benefit_types/');
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
@@ -134,7 +134,7 @@ export const vipApi = {
     if (filters?.tier) params.append('tier', filters.tier.toString());
     if (filters?.status) params.append('status', filters.status);
     if (filters?.search) params.append('search', filters.search);
-    const response = await api.get(`/vip/client-status/?${params.toString()}`);
+    const response = await api.get<ClientVIPStatusListItem[] | { results: ClientVIPStatusListItem[] }>(`/vip/client-status/?${params.toString()}`);
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
@@ -169,7 +169,7 @@ export const vipApi = {
   },
 
   getClientTierHistory: async (clientStatusId: number): Promise<VIPTierHistory[]> => {
-    const response = await api.get(
+    const response = await api.get<VIPTierHistory[] | { results: VIPTierHistory[] }>(
       `/vip/client-status/${clientStatusId}/tier_history/`
     );
     const data = response.data;
@@ -177,7 +177,7 @@ export const vipApi = {
   },
 
   getClientPointTransactions: async (clientStatusId: number): Promise<VIPPointTransaction[]> => {
-    const response = await api.get(
+    const response = await api.get<VIPPointTransaction[] | { results: VIPPointTransaction[] }>(
       `/vip/client-status/${clientStatusId}/point_transactions/`
     );
     const data = response.data;
@@ -195,7 +195,7 @@ export const vipApi = {
     const params = new URLSearchParams();
     if (filters?.client) params.append('client', filters.client.toString());
     if (filters?.transaction_type) params.append('transaction_type', filters.transaction_type);
-    const response = await api.get(`/vip/point-transactions/?${params.toString()}`);
+    const response = await api.get<VIPPointTransaction[] | { results: VIPPointTransaction[] }>(`/vip/point-transactions/?${params.toString()}`);
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },

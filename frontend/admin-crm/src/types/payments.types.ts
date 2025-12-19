@@ -737,6 +737,27 @@ export interface UpdatePaymentSettingsData {
   // CHILD/YOUTH PRICING SETTINGS
   child_pricing_enabled?: boolean;
   child_pricing_tiers?: ChildPricingTier[];
+  // SERVICE CHARGE SETTINGS
+  service_charge_enabled?: boolean;
+  service_charge_percentage?: number;
+  // RESCHEDULING FEE SETTINGS
+  rescheduling_fee_enabled?: boolean;
+  rescheduling_fee_type?: 'PERCENTAGE' | 'FIXED';
+  rescheduling_fee_percentage?: number;
+  rescheduling_fee_fixed_amount?: number | null;
+  rescheduling_grace_period_hours?: number;
+  // LATE CHECKOUT FEE SETTINGS
+  late_checkout_fee_enabled?: boolean;
+  late_checkout_fee_type?: 'PERCENTAGE' | 'FIXED' | 'HOURLY';
+  late_checkout_fee_amount?: number;
+  late_checkout_fee_percentage?: number;
+  late_checkout_grace_minutes?: number;
+  late_checkout_max_hours?: number;
+  // DATE HOLDING SETTINGS
+  date_hold_enabled?: boolean;
+  date_hold_duration_days?: number;
+  date_hold_max_extensions?: number;
+  date_hold_extension_days?: number;
 }
 
 // Filter Types

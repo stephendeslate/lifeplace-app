@@ -34,7 +34,6 @@ import {
   Inventory as PackageIcon,
   Add as AddonIcon,
   ContactMail as ContactIcon,
-  RateReview as ReviewIcon,
   Celebration as ConfirmationIcon,
   Info as IntroIcon,
   Schedule as PricingIcon,

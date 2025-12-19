@@ -83,7 +83,7 @@ export const AnalyticsDashboard: React.FC = () => {
         <KPICard
           title="Total Revenue"
           value={formatCurrency(kpis?.total_revenue ?? 0)}
-          trend={kpis?.revenue_trend}
+          trend={kpis?.total_revenue_trend}
           trendLabel="vs previous period"
           isLoading={kpisLoading}
           color="success"
