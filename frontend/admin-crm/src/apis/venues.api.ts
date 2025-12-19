@@ -2,7 +2,6 @@
 
 import api from '../utils/api';
 import type {
-  Venue,
   VenueListItem,
   VenueDetail,
   VenueOperatingRules,
@@ -55,12 +54,12 @@ export const venuesApi = {
   },
 
   getAllVenues: async (): Promise<VenueListItem[]> => {
-    const response = await api.get('/venues/venues/all/');
+    const response = await api.get<VenueListItem[]>('/venues/venues/all/');
     return response.data;
   },
 
   getActiveVenues: async (): Promise<VenueListItem[]> => {
-    const response = await api.get('/venues/venues/active/');
+    const response = await api.get<VenueListItem[]>('/venues/venues/active/');
     return response.data;
   },
 
@@ -113,7 +112,7 @@ export const venuesApi = {
   },
 
   getPackagesForVenue: async (venueId: number): Promise<PackageVenue[]> => {
-    const response = await api.get(`/venues/venues/${venueId}/packages/`);
+    const response = await api.get<PackageVenue[]>(`/venues/venues/${venueId}/packages/`);
     return response.data;
   },
 

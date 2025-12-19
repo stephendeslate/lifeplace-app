@@ -39,6 +39,7 @@ export interface QuoteTemplateProduct {
 export interface EventQuote {
   id: number;
   event: number;
+  event_type?: number | null;
   event_details?: {
     id: number;
     name: string;

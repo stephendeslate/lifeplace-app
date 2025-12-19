@@ -186,6 +186,7 @@ const defaultProduct: ProductOption = {
   maximum_hours: null,
   advance_booking_days: 30,
   maximum_booking_days: null,
+  event_days: null,
   sku: null,
   sort_order: 1,
   event_type: null,

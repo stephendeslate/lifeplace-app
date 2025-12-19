@@ -213,12 +213,16 @@ const ProgramSettingsTab = () => {
     return <Box sx={{ p: 3, textAlign: 'center' }}>Loading settings...</Box>;
   }
 
+  const handleFormChange = (name: string, value: unknown) => {
+    setFormValues(prev => ({ ...prev, [name]: value }));
+  };
+
   return (
     <ModernCard>
       <ModernForm
         sections={settingsFormSections}
         values={formValues}
-        onChange={setFormValues}
+        onChange={handleFormChange}
         onSubmit={handleSaveSettings}
         isSubmitting={isUpdatingSettings}
         submitLabel="Save Settings"
@@ -286,7 +290,7 @@ const TiersTab = () => {
       key: 'min_completed_bookings',
       label: 'Min. Bookings',
       align: 'center',
-      render: (value) => value ?? '-',
+      render: (value) => value != null ? String(value) : '-',
     },
     {
       key: 'benefits_count',

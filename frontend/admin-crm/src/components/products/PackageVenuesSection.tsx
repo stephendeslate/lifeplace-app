@@ -32,7 +32,7 @@ import {
   Star as PrimaryIcon,
 } from '@mui/icons-material';
 import { useVenues, usePackageVenues } from '../../hooks/useVenues';
-import type { Venue, PackageVenueInline } from '../../types/venues.types';
+import type { VenueListItem, PackageVenueInline } from '../../types/venues.types';
 
 interface PackageVenuesSectionProps {
   packageId: number;
@@ -42,7 +42,7 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
   packageId,
 }) => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [selectedVenue, setSelectedVenue] = useState<VenueListItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [editingNotes, setEditingNotes] = useState<{ id: number; notes: string } | null>(null);
   const [editingDuration, setEditingDuration] = useState<{ id: number; hours: string } | null>(null);

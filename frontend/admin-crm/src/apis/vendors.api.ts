@@ -34,12 +34,12 @@ export const vendorsApi = {
   },
 
   getAllVendors: async (): Promise<VendorListItem[]> => {
-    const response = await api.get('/vendors/vendors/all/');
+    const response = await api.get<VendorListItem[]>('/vendors/vendors/all/');
     return response.data;
   },
 
   getActiveVendors: async (): Promise<VendorListItem[]> => {
-    const response = await api.get('/vendors/vendors/active/');
+    const response = await api.get<VendorListItem[]>('/vendors/vendors/active/');
     return response.data;
   },
 
@@ -77,7 +77,7 @@ export const vendorsApi = {
   // === Service Categories ===
 
   getServiceCategories: async (): Promise<Array<{ value: VendorServiceCategory; label: string }>> => {
-    const response = await api.get('/vendors/vendors/categories/');
+    const response = await api.get<Array<{ value: VendorServiceCategory; label: string }>>('/vendors/vendors/categories/');
     return response.data;
   },
 
@@ -99,7 +99,7 @@ export const vendorsApi = {
   },
 
   getPackagesForVendor: async (vendorId: number): Promise<PackageVendor[]> => {
-    const response = await api.get(`/vendors/vendors/${vendorId}/packages/`);
+    const response = await api.get<PackageVendor[]>(`/vendors/vendors/${vendorId}/packages/`);
     return response.data;
   },
 

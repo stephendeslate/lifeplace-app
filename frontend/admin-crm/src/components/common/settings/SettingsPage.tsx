@@ -94,6 +94,9 @@ export interface SettingsPageProps<T = Record<string, unknown>> {
   
   // Event handlers
   onRowClick?: (row: T, index: number) => void;
+
+  // UI customization
+  hidePageHeader?: boolean;
 }
 
 export const SettingsPage = <T extends { id: string | number }>({

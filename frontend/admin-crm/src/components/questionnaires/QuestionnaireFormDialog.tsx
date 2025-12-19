@@ -54,6 +54,7 @@ const defaultFieldData: QuestionnaireFieldFormData = {
   required: false,
   order: 1,
   options: [],
+  is_guest_count: false,
 };
 
 export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = ({
@@ -90,6 +91,7 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
             required: field.required,
             order: field.order || index + 1,
             options: field.options || [],
+            is_guest_count: field.is_guest_count || false,
           })) || [],
         });
       } else {
