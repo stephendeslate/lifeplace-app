@@ -23,7 +23,6 @@ import {
   AccountTree,
   Message,
   Inventory,
-  RequestQuote,
 } from '@mui/icons-material';
 import type { NavigationGroup } from '../types/layout.types';
 
@@ -104,6 +103,13 @@ export const navigationConfig: NavigationGroup[] = [
           },
         ],
       },
+      {
+        id: 'tasks',
+        label: 'Tasks',
+        path: '/tasks',
+        icon: Assignment,
+        roles: ['ADMIN'],
+      },
      ],
     roles: ['ADMIN'],
   },
@@ -137,13 +143,6 @@ export const navigationConfig: NavigationGroup[] = [
         label: 'Clients',
         path: '/clients',
         icon: People,
-        roles: ['ADMIN'],
-      },
-      {
-        id: 'quotes',
-        label: 'Quotes',
-        path: '/quotes',
-        icon: RequestQuote,
         roles: ['ADMIN'],
       },
       {

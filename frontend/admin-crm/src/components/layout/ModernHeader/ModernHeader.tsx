@@ -34,6 +34,7 @@ import {
   Brightness4,
   Dashboard,
   Analytics,
+  Assignment,
   Event,
   People,
   Payment,
@@ -55,6 +56,7 @@ import { createTransition } from '../../../design-system/utils/animations';
 const navigationItems = [
   { label: 'Dashboard', path: '/dashboard', icon: Dashboard },
   { label: 'Analytics', path: '/analytics', icon: Analytics },
+  { label: 'Tasks', path: '/tasks', icon: Assignment },
   { label: 'Events', path: '/events', icon: Event },
   { label: 'Calendar', path: '/calendar', icon: CalendarMonth },
   { label: 'Clients', path: '/clients', icon: People },

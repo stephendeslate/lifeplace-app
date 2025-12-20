@@ -44,6 +44,7 @@ import { formatCurrency } from '../../utils/currency';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
+import { TasksSummaryWidget } from '../../components/dashboard/TasksSummaryWidget';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -347,6 +348,9 @@ export const Dashboard: React.FC = () => {
             {/* Left Column - Enhanced Business Operations */}
             <Box>
               <Stack spacing={4}>
+                {/* Tasks Summary Widget */}
+                <TasksSummaryWidget />
+
                 {/* Modern Activity & Alerts Section */}
                 <Card 
                   elevation={0}
