@@ -102,6 +102,7 @@ const defaultWorkflowTemplate: WorkflowTemplate = {
   event_type_name: '',
   is_active: true,
   stages_count: 0,
+  events_using_count: 0,
   stages: [],
   created_at: '',
   updated_at: '',

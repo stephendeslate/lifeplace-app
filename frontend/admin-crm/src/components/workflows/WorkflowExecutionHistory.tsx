@@ -244,7 +244,7 @@ export const WorkflowExecutionHistory: React.FC<WorkflowExecutionHistoryProps> =
             value={filterProcessed === '' ? '' : filterProcessed ? 'true' : 'false'}
             label="Status"
             onChange={(e) => {
-              const val = e.target.value;
+              const val = e.target.value as string;
               setFilterProcessed(val === '' ? '' : val === 'true');
             }}
           >
