@@ -662,11 +662,8 @@ class BookingSessionService:
 
             except Exception as e:
                 logger.error(f"🔥 COMPLETION_FAILED: Failed to create event from session {session.session_id}: {str(e)}")
-                # ROLLBACK SAFEGUARD: If event creation fails, reset completion status
-                session.is_completed = False
-                session.completed_at = None
-                session.save()
-                logger.info(f"🔥 ROLLBACK: Reset completion status for session {session.session_id}")
+                # Note: No manual rollback needed - the atomic block automatically rolls back
+                # all changes (including is_completed=True) when an exception is raised
                 raise EventCreationFailed(f"Failed to create event: {str(e)}")
     
     @staticmethod
@@ -1246,6 +1243,13 @@ class BookingSessionService:
             completion_type: 'payment' for immediate payment, 'quote' for quote request
         """
         from core.domains.events.services import EventService
+
+        # IDEMPOTENCY CHECK: If session already has a linked event, return it
+        # This handles race conditions where event creation is triggered multiple times
+        if session.created_event:
+            logger.warning(f"🔧 EVENT_DUPLICATE_PREVENTED: Session {session.session_id} already has event "
+                          f"{session.created_event.id}. Returning existing event.")
+            return session.created_event
 
         # Extract event data from session
         booking_data = session.booking_data
@@ -1888,6 +1892,14 @@ class BookingSessionService:
             EventQuote: The created quote
         """
         logger.info(f"Creating quote from booking session {session.session_id} for event {event.id}")
+
+        # IDEMPOTENCY CHECK: Return existing quote if one already exists for this event
+        # This handles race conditions where completion is triggered multiple times
+        existing_quote = EventQuote.objects.filter(event=event, version=1).first()
+        if existing_quote:
+            logger.warning(f"🔧 QUOTE_DUPLICATE_PREVENTED: Quote already exists for event {event.id} "
+                          f"(quote_id={existing_quote.id}, status={existing_quote.status}). Returning existing quote.")
+            return existing_quote
 
         # Use centralized pricing service for consistent calculations
         from core.domains.sales.pricing_service import PricingCalculationService
