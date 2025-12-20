@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatInTimeZone } from 'date-fns-tz';
+import { isValid, parseISO } from 'date-fns';
 import {
   Box,
   Typography,
@@ -41,6 +42,18 @@ import { AnimatedElement } from '../../design-system/components/AnimatedElement'
 import { useAcceptQuote, useRejectQuote } from '../../hooks/useEventQuotes';
 import { QuoteRejectionDialog } from '../../components/common/QuoteRejectionDialog';
 
+
+// Helper function to safely format dates - validates before formatting to prevent RangeError
+const safeFormatDate = (dateString: string | null | undefined, timezone: string, format: string, fallback = 'Date not available'): string => {
+  if (!dateString) return fallback;
+  try {
+    const date = parseISO(dateString);
+    if (!isValid(date)) return fallback;
+    return formatInTimeZone(dateString, timezone, format);
+  } catch {
+    return fallback;
+  }
+};
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -363,7 +376,7 @@ const Dashboard: React.FC = () => {
                               {task.title || task.description || 'Urgent Task'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {task.eventName} - Due: {formatInTimeZone(task.due_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                              {task.eventName} - Due: {safeFormatDate(task.due_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                             </Typography>
                           </Box>
                           <Button
@@ -472,9 +485,9 @@ const Dashboard: React.FC = () => {
                               {dashboardData.eventStatus.nextUpcomingEvent.name}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                              {formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
-                              {formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
-                                ` - ${formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}`
+                              {safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                              {safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
+                                ` - ${safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}`
                               }
                             </Typography>
                             <Chip
@@ -645,7 +658,7 @@ const Dashboard: React.FC = () => {
                               {message.subject || 'No Subject'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {formatInTimeZone(message.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                              {safeFormatDate(message.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                             </Typography>
                           </Box>
                           <Chip
