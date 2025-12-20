@@ -287,21 +287,18 @@ class AdminInvitationService:
         try:
             # Import here to avoid circular imports
             from core.domains.communications.services import CommunicationService
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
 
             communication_service = CommunicationService()
 
-            # Get frontend URL from settings
-            frontend_url = getattr(settings, 'ADMIN_FRONTEND_URL', 'http://localhost:5173')
-            invitation_link = f"{frontend_url}/accept-invitation/{invitation.id}"
-
-            # Prepare context data for template
-            context_data = {
-                'first_name': invitation.first_name,
-                'last_name': invitation.last_name,
-                'invited_by': invitation.invited_by.get_full_name(),
-                'invitation_link': invitation_link,
-                'expiry_date': invitation.expires_at.strftime('%B %d, %Y at %I:%M %p')
-            }
+            # Generate context using the unified context service
+            context_data = CommunicationContextService.generate_context(
+                context_type=ContextType.ADMIN,
+                admin_user=invitation.invited_by,
+                invitation=invitation,
+            )
 
             # Choose template based on invitation type
             if invitation.is_upgrade:

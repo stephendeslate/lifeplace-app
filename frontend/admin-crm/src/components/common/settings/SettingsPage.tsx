@@ -61,27 +61,27 @@ export interface SettingsPageConfig<T = Record<string, unknown>> {
 export interface SettingsPageProps<T = Record<string, unknown>> {
   // Configuration
   config: SettingsPageConfig<T>;
-  
+
   // Data
   data: T[];
   isLoading?: boolean;
   error?: string;
-  
+
   // Default values for forms
   defaultValues: T;
-  
+
   // Actions
   onRefresh?: () => void;
   onCreate?: (data: T) => Promise<void>;
   onUpdate?: (id: string | number, data: T) => Promise<void>;
   onDelete?: (id: string | number) => Promise<void>;
   onDuplicate?: (item: T) => Promise<void>;
-  
+
   // Loading states
   isCreating?: boolean;
   isUpdating?: boolean;
   isDeleting?: boolean;
-  
+
   // Custom actions
   customHeaderActions?: HeaderAction[];
   customTableActions?: Array<{
@@ -91,12 +91,20 @@ export interface SettingsPageProps<T = Record<string, unknown>> {
     color?: 'default' | 'primary' | 'secondary' | 'error';
     show?: (row: T) => boolean;
   }>;
-  
+
   // Event handlers
   onRowClick?: (row: T, index: number) => void;
 
   // UI customization
   hidePageHeader?: boolean;
+
+  // Custom form rendering - when provided, replaces the default SettingsFormDialog
+  customFormRenderer?: (props: {
+    open: boolean;
+    onClose: () => void;
+    item: T | null;
+    onSave: () => void;
+  }) => React.ReactNode;
 }
 
 export const SettingsPage = <T extends { id: string | number }>({
@@ -115,6 +123,7 @@ export const SettingsPage = <T extends { id: string | number }>({
   customHeaderActions = [],
   customTableActions = [],
   onRowClick,
+  customFormRenderer,
 }: SettingsPageProps<T>) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
@@ -150,11 +159,14 @@ export const SettingsPage = <T extends { id: string | number }>({
     },
   ], [data]);
 
+  // Check if form editing is available (either via handlers or custom renderer)
+  const hasFormCapability = Boolean(onCreate || onUpdate || customFormRenderer);
+
   // Header actions
   const headerActions: HeaderAction[] = [
     ...customHeaderActions,
     ...(features.refresh && onRefresh ? [createRefreshAction(onRefresh)] : []),
-    ...(features.create && onCreate ? [createAddAction(
+    ...(features.create && hasFormCapability ? [createAddAction(
       `Add ${config.form.title}`,
       () => {
         setEditingItem(null);
@@ -169,7 +181,7 @@ export const SettingsPage = <T extends { id: string | number }>({
       ...action,
       onClick: action.onClick,
     })),
-    ...(features.edit && onUpdate ? createStandardActions(
+    ...(features.edit && hasFormCapability ? createStandardActions(
       (item: T) => {
         setEditingItem(item);
         setDialogOpen(true);
@@ -229,7 +241,7 @@ export const SettingsPage = <T extends { id: string | number }>({
           error={error}
           emptyState={{
             ...config.table.emptyState,
-            primaryAction: features.create && onCreate ? {
+            primaryAction: features.create && hasFormCapability ? {
               label: `Create ${config.form.title}`,
               onClick: () => {
                 setEditingItem(null);
@@ -245,24 +257,36 @@ export const SettingsPage = <T extends { id: string | number }>({
         />
       </Box>
 
-      {/* Form Dialog */}
+      {/* Form Dialog - use custom renderer if provided, otherwise use default */}
       {(features.create || features.edit) && (
-        <SettingsFormDialog
-          open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          title={config.form.title}
-          subtitle={config.form.subtitle}
-          sections={config.form.sections}
-          item={editingItem}
-          defaultValues={defaultValues}
-          onSubmit={handleFormSubmit}
-          onDelete={features.delete && editingItem ? handleFormDelete : undefined}
-          validate={config.form.validation}
-          maxWidth={config.form.maxWidth}
-          showDelete={features.delete && Boolean(editingItem)}
-          isSubmitting={editingItem ? isUpdating : isCreating}
-          isDeleting={isDeleting}
-        />
+        customFormRenderer ? (
+          customFormRenderer({
+            open: dialogOpen,
+            onClose: () => setDialogOpen(false),
+            item: editingItem,
+            onSave: () => {
+              setDialogOpen(false);
+              onRefresh?.();
+            },
+          })
+        ) : (
+          <SettingsFormDialog
+            open={dialogOpen}
+            onClose={() => setDialogOpen(false)}
+            title={config.form.title}
+            subtitle={config.form.subtitle}
+            sections={config.form.sections}
+            item={editingItem}
+            defaultValues={defaultValues}
+            onSubmit={handleFormSubmit}
+            onDelete={features.delete && editingItem ? handleFormDelete : undefined}
+            validate={config.form.validation}
+            maxWidth={config.form.maxWidth}
+            showDelete={features.delete && Boolean(editingItem)}
+            isSubmitting={editingItem ? isUpdating : isCreating}
+            isDeleting={isDeleting}
+          />
+        )
       )}
     </ModernSettingsLayout>
   );

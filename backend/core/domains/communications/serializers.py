@@ -9,14 +9,21 @@ from .template_sandbox import validate_template_for_save
 
 class CommunicationTemplateSerializer(serializers.ModelSerializer):
     """Serializer for communication templates"""
+
+    # Include context_type label for display
+    context_type_display = serializers.CharField(
+        source='get_context_type_display', read_only=True
+    )
+
     class Meta:
         model = CommunicationTemplate
         fields = [
-            'id', 'name', 'channel', 'category', 'subject_template',
-            'body_template', 'is_system', 'variables_schema',
+            'id', 'name', 'channel', 'category', 'context_type', 'context_type_display',
+            'include_client_context', 'include_event_context',
+            'subject_template', 'body_template', 'is_system',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'context_type_display']
 
     def validate_name(self, value):
         """Check that the template name is unique (case insensitive)"""
@@ -42,8 +49,18 @@ class CommunicationTemplateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(errors)
         return value
 
+    def validate_context_type(self, value):
+        """Validate context_type is valid"""
+        from .context_service import ContextType
+        valid_types = [choice[0] for choice in ContextType.CHOICES]
+        if value not in valid_types:
+            raise serializers.ValidationError(
+                f"Invalid context_type. Must be one of: {', '.join(valid_types)}"
+            )
+        return value
+
     def validate(self, data):
-        """Validate channel-specific requirements"""
+        """Validate channel-specific and context-specific requirements"""
         # Email channel requires subject
         if data.get('channel') == 'EMAIL' and not data.get('subject_template'):
             raise serializers.ValidationError("Email templates must have a subject.")
@@ -51,6 +68,14 @@ class CommunicationTemplateSerializer(serializers.ModelSerializer):
         # SMS channel doesn't need subject
         if data.get('channel') == 'SMS' and data.get('subject_template'):
             data['subject_template'] = None
+
+        # include_client_context and include_event_context only apply to MANUAL context type
+        from .context_service import ContextType
+        context_type = data.get('context_type', ContextType.MANUAL)
+        if context_type != ContextType.MANUAL:
+            # Reset these flags for non-MANUAL templates
+            data['include_client_context'] = False
+            data['include_event_context'] = False
 
         return data
 

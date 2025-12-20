@@ -165,23 +165,21 @@ class WorkflowStage(BaseModel):
 
             # Send email using template
             from core.domains.communications.services import CommunicationService
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
             try:
                 # Instantiate communication service
                 comm_service = CommunicationService()
 
-                context_data = {
-                    'client_name': event.client.get_full_name(),
-                    'event_date': event.start_date.strftime('%B %d, %Y'),
-                    'event_time': event.start_date.strftime('%I:%M %p'),
-                    'venue_name': 'LifePlace Retreat & Events Center',
-                    'total_amount': str(event.total_amount_due) if event.total_amount_due else '0',
-                    'deposit_amount': str(float(event.total_amount_due) * 0.30) if event.total_amount_due else '0',
-                    'booking_reference': f'LP{event.id:05d}',
-                    'valid_until': (timezone.now() + timedelta(days=30)).strftime('%B %d, %Y'),
-                    'event_id': event.id,
-                    'event_name': event.name or '',
-                    'stage_name': self.name
-                }
+                # Generate context using the unified context service
+                context_data = CommunicationContextService.generate_context(
+                    context_type=ContextType.EVENT,
+                    client=event.client,
+                    event=event,
+                )
+                # Add workflow-specific context
+                context_data['stage_name'] = self.name
 
                 comm_service.send_communication_by_template(
                     template=self.email_template,
@@ -274,18 +272,19 @@ class WorkflowStage(BaseModel):
                 if self.email_template:
                     try:
                         from core.domains.communications.services import CommunicationService
+                        from core.domains.communications.context_service import (
+                            CommunicationContextService, ContextType
+                        )
 
-                        context_data = {
-                            'client_name': event.client.get_full_name(),
-                            'event_date': event.start_date.strftime('%B %d, %Y'),
-                            'venue_name': 'LifePlace Retreat & Events Center',
-                            'total_amount': str(event.total_amount_due) if event.total_amount_due else '0',
-                            'contract_link': f'/contracts/{contract.id}/sign',
-                            'signature_deadline': valid_until.strftime('%B %d, %Y'),
-                            'event': event,
-                            'stage': self,
-                            'contract': contract
-                        }
+                        # Generate context using the unified context service
+                        context_data = CommunicationContextService.generate_context(
+                            context_type=ContextType.CONTRACT,
+                            client=event.client,
+                            event=event,
+                            contract=contract,
+                        )
+                        # Add stage-specific context
+                        context_data['stage_name'] = self.name
 
                         CommunicationService.send_communication_by_template(
                             template=self.email_template,
