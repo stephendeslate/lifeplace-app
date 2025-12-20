@@ -6,6 +6,7 @@ import { useToastActions } from '../contexts/ToastContext';
 import type {
   WorkflowTemplateFilters,
   WorkflowStageFilters,
+  WorkflowTriggerFilters,
   CreateWorkflowTemplateData,
   UpdateWorkflowTemplateData,
   CreateWorkflowStageData,
@@ -238,5 +239,64 @@ export const useWorkflowStages = (filters?: WorkflowStageFilters) => {
     // Hooks for specific queries
     useWorkflowStage,
     useStagesForTemplate,
+  };
+};
+
+export const useWorkflowTriggers = (filters?: WorkflowTriggerFilters) => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToastActions();
+
+  // Queries
+  const {
+    data: triggers = [],
+    isLoading: isLoadingTriggers,
+    error: triggersError,
+    refetch: refetchTriggers
+  } = useQuery({
+    queryKey: ['workflow-triggers', filters],
+    queryFn: () => workflowsApi.getWorkflowTriggers(filters),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+
+  const useWorkflowTrigger = (id: number) => {
+    return useQuery({
+      queryKey: ['workflow-trigger', id],
+      queryFn: () => workflowsApi.getWorkflowTrigger(id),
+      enabled: !!id,
+    });
+  };
+
+  // Mutations
+  const manualTriggerMutation = useMutation({
+    mutationFn: ({ stageId, eventId }: { stageId: number; eventId: number }) =>
+      workflowsApi.manuallyTriggerStage(stageId, eventId),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['workflow-triggers'] });
+      showSuccess('Trigger Executed', result.message);
+    },
+    onError: (error: ApiError) => {
+      const message = error.response?.data?.detail || 'Failed to trigger stage automation';
+      showError('Trigger Failed', message);
+    },
+  });
+
+  return {
+    // Data
+    triggers,
+
+    // Loading states
+    isLoadingTriggers,
+    isTriggering: manualTriggerMutation.isPending,
+
+    // Error states
+    triggersError,
+    triggerError: manualTriggerMutation.error,
+
+    // Actions
+    manualTrigger: manualTriggerMutation.mutate,
+    refetchTriggers,
+
+    // Hooks for specific queries
+    useWorkflowTrigger,
   };
 };

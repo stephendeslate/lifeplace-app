@@ -53,8 +53,10 @@ import {
   EventFeedback,
   EventQuestionnaires,
   EventQuotes,
-  ContractStatusChip
+  ContractStatusChip,
+  WorkflowProgressStepper,
 } from '../../components/events';
+import { useWorkflowProgress } from '../../hooks/useWorkflowProgress';
 import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
 import { contractsApi } from '../../apis/contracts.api';
 import type { Contract } from '../../types/contracts.types';
@@ -127,6 +129,12 @@ const EventDetail: React.FC = () => {
     data: quotesData
   } = useEventQuotes(eventId);
   const quotesCount = quotesData?.results?.length || 0;
+
+  // Get workflow progress for this event
+  const {
+    data: workflowProgress,
+    isLoading: isLoadingProgress
+  } = useWorkflowProgress(eventId);
 
   // Mutations
   const updatePreferencesMutation = useUpdatePreferences();
@@ -366,6 +374,14 @@ const EventDetail: React.FC = () => {
           </Stack>
         </Stack>
       </Paper>
+
+      {/* Workflow Progress Stepper */}
+      {workflowProgress && workflowProgress.total_stages > 0 && (
+        <WorkflowProgressStepper
+          progress={workflowProgress}
+          variant="stepper"
+        />
+      )}
 
       {/* Quick Stats */}
       {(event.upcoming_tasks.length > 0 || event.accessible_documents_count > 0 || event.has_notes) && (

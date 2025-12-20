@@ -21,10 +21,11 @@ import {
   Edit as EditIcon,
   CheckCircle as ActiveIcon,
   Cancel as InactiveIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { useWorkflowTemplates, useWorkflowStages } from '../../../hooks/useWorkflows';
+import { useWorkflowTemplates, useWorkflowStages, useWorkflowTriggers } from '../../../hooks/useWorkflows';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type {
   WorkflowTemplate,
@@ -48,6 +49,7 @@ import { SettingsFormDialog } from '../../../components/common/settings/Settings
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 import { WorkflowStageFormDialog } from '../../../components/workflows/WorkflowStageFormDialog';
 import { WorkflowStagesTable } from '../../../components/workflows/WorkflowStagesTable';
+import { WorkflowExecutionHistory } from '../../../components/workflows/WorkflowExecutionHistory';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -105,6 +107,15 @@ export const WorkflowTemplateDetails: React.FC = () => {
   } = useWorkflowStages();
 
   const { data: stages = [], isLoading: isLoadingStages } = useStagesForTemplate(templateId);
+
+  // Hooks for workflow triggers (execution history)
+  const {
+    triggers,
+    isLoadingTriggers,
+    manualTrigger,
+    isTriggering,
+    refetchTriggers,
+  } = useWorkflowTriggers({ template_id: templateId });
 
   // Get event types for the form
   const { eventTypes = [] } = useEventTypes();
@@ -382,6 +393,7 @@ export const WorkflowTemplateDetails: React.FC = () => {
         >
           <Tab icon={<WorkflowIcon />} label="Overview" iconPosition="start" />
           <Tab icon={<StagesIcon />} label={getTabLabel('Stages', stages.length)} iconPosition="start" />
+          <Tab icon={<HistoryIcon />} label={getTabLabel('History', triggers.length)} iconPosition="start" />
         </Tabs>
       </ModernGlassCard>
 
@@ -586,6 +598,21 @@ export const WorkflowTemplateDetails: React.FC = () => {
             </Stack>
           )}
         </Box>
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={2}>
+        {/* Execution History */}
+        <WorkflowExecutionHistory
+          triggers={triggers}
+          isLoading={isLoadingTriggers}
+          onRefresh={refetchTriggers}
+          onManualTrigger={(stageId, eventId) => {
+            manualTrigger({ stageId, eventId });
+          }}
+          isTriggering={isTriggering}
+          stages={stages}
+          templateId={templateId}
+        />
       </TabPanel>
 
       {/* Dialogs */}

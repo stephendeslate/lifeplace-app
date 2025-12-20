@@ -316,6 +316,80 @@ class WorkflowStage(BaseModel):
                 client=event.client
             )
 
+        elif self.automation_type == 'REMINDER':
+            # Send reminder notification
+            from core.domains.notifications.services import NotificationService
+            try:
+                reminder_type = self.metadata.get('reminder_type', 'WORKFLOW_REMINDER')
+                days_until_due = self.metadata.get('days_until_due', 7)
+
+                NotificationService.create_notification(
+                    recipient=event.client,
+                    notification_type_code=reminder_type,
+                    context={
+                        'stage_name': self.name,
+                        'event_name': event.name or f"{getattr(event, 'event_type', 'Event')}",
+                        'event_id': event.id,
+                        'event_date': event.start_date.strftime('%B %d, %Y') if event.start_date else 'TBD',
+                        'days_until_due': days_until_due,
+                        'action_url': f'/events/{event.id}',
+                    },
+                    event=event,
+                    client=event.client
+                )
+                logger.info(f"Sent reminder notification for event {event.id}, stage '{self.name}'")
+            except Exception as e:
+                logger.error(f"Failed to send reminder notification: {e}")
+
+        elif self.automation_type == 'QUOTE':
+            # Auto-generate quote
+            from core.domains.sales.models import EventQuote
+            try:
+                # Check if a quote already exists for this event
+                if EventQuote.objects.filter(event=event).exists():
+                    logger.info(f"Quote already exists for event {event.id}, skipping auto-generation")
+                    return
+
+                # Find quote template from metadata or by event type
+                from core.domains.sales.models import QuoteTemplate
+                quote_template_id = self.metadata.get('quote_template_id')
+                quote_template = None
+
+                if quote_template_id:
+                    try:
+                        quote_template = QuoteTemplate.objects.get(id=quote_template_id, is_active=True)
+                    except QuoteTemplate.DoesNotExist:
+                        logger.warning(f"Quote template ID {quote_template_id} not found or inactive")
+
+                # Fallback to event type template
+                if not quote_template and event.event_type:
+                    quote_template = QuoteTemplate.objects.filter(
+                        event_type=event.event_type,
+                        is_active=True
+                    ).first()
+
+                # Fallback to any active template
+                if not quote_template:
+                    quote_template = QuoteTemplate.objects.filter(is_active=True).first()
+
+                if quote_template:
+                    # Apply template to create quote
+                    quote = quote_template.apply_to_event(event)
+                    logger.info(f"Created automated quote {quote.id} for event {event.id}")
+
+                    # Log timeline entry
+                    from core.domains.events.models import EventTimeline
+                    EventTimeline.objects.create(
+                        event=event,
+                        action_type='QUOTE_CREATED',
+                        description=f"Automated quote created via workflow stage '{self.name}'",
+                        is_public=True
+                    )
+                else:
+                    logger.warning(f"No active quote template found for event {event.id}")
+            except Exception as e:
+                logger.error(f"Failed to generate automated quote: {e}", exc_info=True)
+
 
 class WorkflowTrigger(BaseModel):
     """Records of workflow trigger events for automation"""

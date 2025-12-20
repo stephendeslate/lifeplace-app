@@ -5,7 +5,28 @@ from django.db import transaction
 from rest_framework import serializers
 
 from .basic_serializers import WorkflowStageSerializer, WorkflowTemplateSerializer
-from .models import WorkflowStage, WorkflowTemplate
+from .models import WorkflowStage, WorkflowTemplate, WorkflowTrigger
+
+
+class WorkflowTriggerSerializer(serializers.ModelSerializer):
+    """Serializer for WorkflowTrigger model"""
+    trigger_type_display = serializers.CharField(source='get_trigger_type_display', read_only=True)
+    stage_name = serializers.CharField(source='stage.name', read_only=True, allow_null=True)
+    event_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WorkflowTrigger
+        fields = [
+            'id', 'event', 'event_name', 'stage', 'stage_name',
+            'trigger_type', 'trigger_type_display', 'details',
+            'result_data', 'processed', 'processed_at', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+    def get_event_name(self, obj):
+        if obj.event:
+            return obj.event.name or f"Event #{obj.event.id}"
+        return None
 
 
 class WorkflowStageDetailSerializer(WorkflowStageSerializer):

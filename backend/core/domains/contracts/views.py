@@ -39,6 +39,7 @@ from .services import (
     ContractNoteService,
 )
 from .pdf_service import ContractPDFService
+from .tasks import send_contract_sent_notification
 
 
 class ContractTemplateViewSet(viewsets.ModelViewSet):
@@ -410,10 +411,13 @@ class EventContractViewSet(viewsets.ModelViewSet):
         try:
             # Update contract status to SENT
             updated_contract = EventContractService.update_contract(
-                contract.id, 
+                contract.id,
                 {'status': 'SENT'}
             )
-            
+
+            # Send notification to client about the new contract
+            send_contract_sent_notification.delay(updated_contract.id)
+
             return Response(
                 EventContractDetailSerializer(updated_contract).data,
                 status=status.HTTP_200_OK

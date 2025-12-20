@@ -7,6 +7,8 @@ import type {
   SignatureSubmission,
   PendingContractsResponse,
   ContractStatus,
+  ContractAmendment,
+  ContractDocument,
 } from '../types/contracts.types';
 
 // Interface for detailed contract status  
@@ -186,6 +188,18 @@ export const contractsApi = {
   getMySignatures: async (): Promise<{ count: number; signatures: ContractSignature[] }> => {
     const response = await api.get('/contracts/client/signatures/my_signatures/');
     return response.data as { count: number; signatures: ContractSignature[] };
+  },
+
+  // Get amendments for a contract
+  getContractAmendments: async (contractId: string): Promise<ContractAmendment[]> => {
+    const response = await api.get(`/contracts/client/contracts/${contractId}/amendments/`);
+    return response.data as ContractAmendment[];
+  },
+
+  // Get documents for a contract
+  getContractDocuments: async (contractId: string): Promise<ContractDocument[]> => {
+    const response = await api.get(`/contracts/client/contracts/${contractId}/documents/`);
+    return response.data as ContractDocument[];
   },
 };
 

@@ -389,6 +389,11 @@ export const useApproveAmendment = () => {
       contractsApi.approveAmendment(id, reviewNotes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractAmendments'] });
+      showToast({
+        type: 'success',
+        title: 'Amendment Approved',
+        message: 'Contract amendment has been approved successfully.',
+      });
     },
     onError: (error: unknown) => {
       const message = (error && typeof error === 'object' && 'response' in error)

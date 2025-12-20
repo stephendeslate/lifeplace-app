@@ -193,6 +193,76 @@ def schedule_contract_expiry_reminders(self):
     max_retries=3,
     default_retry_delay=60,
 )
+def send_contract_sent_notification(self, contract_id: int):
+    """
+    Send notification when a contract is sent to the client.
+
+    Notifies the client that they have a new contract ready for review
+    and signature, including a link to view and sign the contract.
+
+    Args:
+        contract_id: ID of the sent contract
+    """
+    from .models import EventContract
+    from core.domains.notifications.services import NotificationService
+
+    try:
+        contract = EventContract.objects.select_related('event', 'event__client').get(id=contract_id)
+
+        if contract.status != 'SENT':
+            logger.info(f"Contract {contract_id} is not in SENT status (status: {contract.status})")
+            return {'status': 'skipped', 'reason': f'status_{contract.status.lower()}'}
+
+        client = contract.event.client
+        if not client:
+            logger.warning(f"Contract {contract_id} event has no client")
+            return {'status': 'skipped', 'reason': 'no_client'}
+
+        # Format dates
+        event_date_formatted = (
+            contract.event.start_date.strftime("%B %d, %Y")
+            if contract.event.start_date else "your event"
+        )
+        valid_until_formatted = (
+            contract.valid_until.strftime("%B %d, %Y")
+            if contract.valid_until else "the expiration date"
+        )
+
+        # Send notification to client
+        NotificationService.create_notification(
+            recipient=client,
+            notification_type='CONTRACT_SENT',
+            title='Your Contract is Ready',
+            message=(
+                f'A new contract for {event_date_formatted} is ready for your review. '
+                f'Please review and sign the contract before {valid_until_formatted}.'
+            ),
+            related_event=contract.event,
+            priority='HIGH',
+            channels=['IN_APP', 'EMAIL'],
+            data={
+                'contract_id': contract.id,
+                'event_id': contract.event.id,
+                'valid_until': str(contract.valid_until) if contract.valid_until else None,
+            }
+        )
+
+        logger.info(f"Sent contract sent notification for contract {contract_id}")
+        return {'status': 'sent', 'contract_id': contract_id}
+
+    except EventContract.DoesNotExist:
+        logger.warning(f"Contract {contract_id} not found for sent notification")
+        return {'status': 'error', 'reason': 'contract_not_found'}
+    except Exception as e:
+        logger.error(f"Error sending contract sent notification for contract {contract_id}: {e}")
+        raise  # Let Celery retry
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+)
 def notify_contract_expired(self, contract_id: int):
     """
     Send notification when a contract has expired.

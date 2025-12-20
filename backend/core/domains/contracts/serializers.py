@@ -32,25 +32,41 @@ class ContractSignatureSerializer(serializers.ModelSerializer):
     """Serializer for contract signatures"""
     signer = UserSerializer(read_only=True)
     role_display = serializers.CharField(source='get_role_display', read_only=True)
-    
+
     class Meta:
         model = ContractSignature
         fields = [
             'id', 'contract', 'signer', 'role', 'role_display', 'signature_data',
             'signed_at', 'signer_name', 'signer_title', 'signer_email',
-            'is_verified', 'verification_method', 'created_at', 'updated_at'
+            'is_verified', 'verification_method',
+            # Security/compliance fields
+            'device_fingerprint', 'legal_disclosure_accepted',
+            'electronic_consent_timestamp', 'signature_intent_confirmed',
+            'signature_metadata', 'signature_confidence_score',
+            'ip_address', 'user_agent',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'signed_at', 'created_at', 'updated_at']
 
 
 class ContractSignatureCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating contract signatures"""
-    
+    # Security fields - optional with defaults
+    device_fingerprint = serializers.CharField(required=False, allow_blank=True, default='')
+    legal_disclosure_accepted = serializers.BooleanField(required=False, default=False)
+    electronic_consent_timestamp = serializers.DateTimeField(required=False, allow_null=True, default=None)
+    signature_intent_confirmed = serializers.BooleanField(required=False, default=False)
+    signature_metadata = serializers.JSONField(required=False, default=dict)
+
     class Meta:
         model = ContractSignature
         fields = [
             'contract', 'signer', 'role', 'signature_data', 'signer_name',
-            'signer_title', 'signer_email', 'verification_method', 'ip_address', 'user_agent'
+            'signer_title', 'signer_email', 'verification_method', 'ip_address', 'user_agent',
+            # Security/compliance fields
+            'device_fingerprint', 'legal_disclosure_accepted',
+            'electronic_consent_timestamp', 'signature_intent_confirmed',
+            'signature_metadata'
         ]
     
     def validate(self, data):

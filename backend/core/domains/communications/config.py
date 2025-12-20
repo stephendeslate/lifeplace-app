@@ -74,7 +74,7 @@ class CommunicationConfig:
         'BULK_SEND_LIMIT': 100,
         'TEMPLATE_PREVIEW_PER_MINUTE': 30
     }
-    
+
     # Cache configuration
     CACHE_TIMEOUTS = {
         'TEMPLATE_LIST': 1800,  # 30 minutes
@@ -82,7 +82,41 @@ class CommunicationConfig:
         'TEMPLATE_PREVIEW': 3600,  # 1 hour
         'ANALYTICS': 300,  # 5 minutes
         'VARIABLE_SCHEMAS': 14400,  # 4 hours
+        'DELIVERY_QUEUE': 86400,  # 24 hours for delivery retry queue
     }
+
+    # Data retention configuration
+    RETENTION = {
+        'RECORD_RETENTION_DAYS': 90,  # Days to retain communication records
+        'WEBHOOK_LOG_RETENTION_DAYS': 30,  # Days to retain webhook logs
+    }
+
+    # Circuit breaker configuration for provider resilience
+    CIRCUIT_BREAKER = {
+        'FAILURE_THRESHOLD': 5,  # Consecutive failures before opening circuit
+        'RECOVERY_TIMEOUT_SECONDS': 60,  # Seconds to wait before half-open
+        'HALF_OPEN_SUCCESS_THRESHOLD': 2,  # Successes needed to close circuit
+    }
+
+    @classmethod
+    def get_retention_days(cls, retention_key: str) -> int:
+        """Get data retention period from configuration"""
+        custom_retention = getattr(settings, 'COMMUNICATION_RETENTION', {})
+
+        if retention_key in custom_retention:
+            return custom_retention[retention_key]
+
+        return cls.RETENTION.get(retention_key, 90)  # Default 90 days
+
+    @classmethod
+    def get_circuit_breaker_config(cls, config_key: str) -> int:
+        """Get circuit breaker configuration"""
+        custom_config = getattr(settings, 'COMMUNICATION_CIRCUIT_BREAKER', {})
+
+        if config_key in custom_config:
+            return custom_config[config_key]
+
+        return cls.CIRCUIT_BREAKER.get(config_key, 5)  # Default threshold
     
     @classmethod
     def get_template_name(cls, template_key: str) -> str:

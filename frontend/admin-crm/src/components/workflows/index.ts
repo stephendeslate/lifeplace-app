@@ -6,3 +6,4 @@ export { WorkflowStagesTable } from './WorkflowStagesTable';
 export { WorkflowStageFormDialog } from './WorkflowStageFormDialog';
 export { WorkflowStageReorderDialog } from './WorkflowStageReorderDialog';
 export { WorkflowVisualization } from './WorkflowVisualization';
+export { WorkflowExecutionHistory } from './WorkflowExecutionHistory';

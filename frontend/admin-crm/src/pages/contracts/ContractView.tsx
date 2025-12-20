@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { useEventContract, useSendContract } from '../../hooks/useContracts';
 import { contractsApi } from '../../apis/contracts.api';
 import { formatCurrency } from '../../utils/currency';
+import { ContractAmendmentsSection } from '../../components/contracts';
 
 export const ContractView: React.FC = () => {
   const { contractId } = useParams<{ contractId: string }>();
@@ -287,6 +288,9 @@ export const ContractView: React.FC = () => {
             </Stack>
           </Paper>
         )}
+
+        {/* Amendments Section */}
+        <ContractAmendmentsSection contract={contract} />
 
         {/* Contract Content */}
         <Paper sx={{ p: 3 }}>

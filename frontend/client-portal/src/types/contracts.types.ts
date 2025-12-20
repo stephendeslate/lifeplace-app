@@ -309,6 +309,23 @@ export interface ContractAmendment {
   updated_at: string;
 }
 
+export type DocumentType = 'ATTACHMENT' | 'ADDENDUM' | 'SCHEDULE' | 'TERMS' | 'WAIVER' | 'OTHER';
+
+export interface ContractDocument {
+  id: string;
+  contract: string;
+  name: string;
+  description: string;
+  document_type: DocumentType;
+  document_type_display: string;
+  file: string;
+  version: number;
+  is_active: boolean;
+  uploaded_by?: User;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ContractVersion {
   id: string;
   contract_id: string;

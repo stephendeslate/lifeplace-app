@@ -4,6 +4,7 @@ from rest_framework import serializers
 from django.template import Template, TemplateSyntaxError
 
 from .models import CommunicationTemplate, CommunicationRecord
+from .template_sandbox import validate_template_for_save
 
 
 class CommunicationTemplateSerializer(serializers.ModelSerializer):
@@ -11,8 +12,8 @@ class CommunicationTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunicationTemplate
         fields = [
-            'id', 'name', 'channel', 'category', 'subject_template', 
-            'body_template', 'is_system', 'variables_schema', 
+            'id', 'name', 'channel', 'category', 'subject_template',
+            'body_template', 'is_system', 'variables_schema',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -25,25 +26,32 @@ class CommunicationTemplateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A template with this name already exists.")
         return value
 
+    def validate_subject_template(self, value):
+        """Validate subject template for security and syntax"""
+        if value:
+            is_valid, errors = validate_template_for_save(value)
+            if not is_valid:
+                raise serializers.ValidationError(errors)
+        return value
+
+    def validate_body_template(self, value):
+        """Validate body template for security and syntax"""
+        if value:
+            is_valid, errors = validate_template_for_save(value)
+            if not is_valid:
+                raise serializers.ValidationError(errors)
+        return value
+
     def validate(self, data):
-        """Validate template syntax and channel-specific requirements"""
-        # Validate Django template syntax
-        try:
-            if 'subject_template' in data and data['subject_template']:
-                Template(data['subject_template'])
-            if 'body_template' in data:
-                Template(data['body_template'])
-        except TemplateSyntaxError as e:
-            raise serializers.ValidationError(f"Template syntax error: {str(e)}")
-        
+        """Validate channel-specific requirements"""
         # Email channel requires subject
         if data.get('channel') == 'EMAIL' and not data.get('subject_template'):
             raise serializers.ValidationError("Email templates must have a subject.")
-        
+
         # SMS channel doesn't need subject
         if data.get('channel') == 'SMS' and data.get('subject_template'):
             data['subject_template'] = None
-        
+
         return data
 
 

@@ -1,12 +1,10 @@
 # backend/core/domains/workflows/engine.py
 import logging
 
-from core.domains.events.models import Event, EventTask, EventTimeline
-from core.domains.sales.models import EventQuote
+from core.domains.events.models import Event, EventTimeline
 from core.domains.workflows.models import WorkflowStage
 from core.domains.workflows.tasks import schedule_stage_actions
 from django.db import transaction
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +58,17 @@ class WorkflowEngine:
 
                 # Execute stage actions
                 cls.execute_stage_actions(event, first_stage)
+
+                # Execute automation for any stages with trigger_on_event_created
+                # These run in addition to the first stage's automation
+                stages_with_event_trigger = event.workflow_template.stages.filter(
+                    trigger_on_event_created=True
+                ).exclude(id=first_stage.id).order_by('stage', 'order')
+
+                for triggered_stage in stages_with_event_trigger:
+                    logger.info(f"Executing trigger_on_event_created automation for stage '{triggered_stage.name}' on event {event.id}")
+                    if triggered_stage.is_automated:
+                        triggered_stage._execute_automation(event)
 
                 logger.info(f"Assigned initial workflow stage '{first_stage.name}' to event {event.id} (completion_type: {event.completion_type})")
         except Exception as e:
@@ -231,99 +240,3 @@ class WorkflowEngine:
             # Schedule delayed actions if needed
             if stage.trigger_time and stage.trigger_time.startswith('AFTER_'):
                 schedule_stage_actions.delay(event.id, stage.id)
-    
-    @classmethod
-    def _execute_immediate_actions(cls, event, stage):
-        """Execute immediate actions for a stage"""
-        if not stage.is_automated:
-            return
-            
-        # Create a task for the stage if it has a task description
-        if stage.task_description:
-            # Calculate due date (default to 3 days from now)
-            due_date = timezone.now() + timezone.timedelta(days=3)
-            
-            # Create the task
-            EventTask.objects.create(
-                event=event,
-                title=stage.name,
-                description=stage.task_description,
-                due_date=due_date,
-                priority='MEDIUM',
-                status='PENDING',
-                workflow_stage=stage,
-                is_visible_to_client=False
-            )
-            
-            logger.info(f"Created task '{stage.name}' for event {event.id}")
-        
-        # Handle different automation types
-        if stage.automation_type == 'EMAIL' and stage.email_template:
-            cls._handle_email_automation(event, stage)
-        elif stage.automation_type == 'QUOTE' and stage.stage == 'LEAD':
-            cls._handle_quote_automation(event, stage)
-            
-    @classmethod
-    def _handle_email_automation(cls, event, stage):
-        """Handle email automation for a stage"""
-        # Implementation would connect to communications service
-        # to send emails using the specified template
-        logger.info(f"Trigger email for event {event.id} using template {stage.email_template}")
-        
-        # In a real implementation, you would:
-        # 1. Get the email template
-        # 2. Render it with event context
-        # 3. Send the email to the client or staff
-        # 4. Log the communication
-        
-        # Log the action
-        EventTimeline.objects.create(
-            event=event,
-            action_type='CLIENT_MESSAGE',
-            description=f"Automated email sent: {stage.name}",
-            is_public=True
-        )
-    
-    @classmethod
-    def _handle_quote_automation(cls, event, stage):
-        """Handle quote generation automation"""
-        # Check if a quote already exists
-        if EventQuote.objects.filter(event=event).exists():
-            logger.info(f"Quote already exists for event {event.id}")
-            return
-            
-        # Find an appropriate quote template
-        # This could be based on event type or other criteria
-        from core.domains.sales.models import QuoteTemplate
-        
-        try:
-            quote_template = None
-            
-            # Try to find a template matching the event type
-            if event.event_type:
-                quote_template = QuoteTemplate.objects.filter(
-                    event_type=event.event_type,
-                    is_active=True
-                ).first()
-            
-            # Fall back to any active template if none found
-            if not quote_template:
-                quote_template = QuoteTemplate.objects.filter(
-                    is_active=True
-                ).first()
-            
-            if quote_template:
-                # Create quote from template
-                quote = quote_template.apply_to_event(event)
-                
-                logger.info(f"Created automated quote for event {event.id}")
-                
-                # Log the action
-                EventTimeline.objects.create(
-                    event=event,
-                    action_type='QUOTE_CREATED',
-                    description=f"Automated quote created",
-                    is_public=True
-                )
-        except Exception as e:
-            logger.error(f"Error creating automated quote: {str(e)}")

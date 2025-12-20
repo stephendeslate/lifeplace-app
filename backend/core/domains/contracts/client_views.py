@@ -169,14 +169,14 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         Submit a client signature for the contract
         """
         contract = self.get_object()
-        
+
         # Validate that client can sign
         if not self._can_client_sign(contract, request.user):
             return Response(
                 {'error': 'You cannot sign this contract at this time'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Prepare signature data
         signature_data = {
             'contract': contract.id,
@@ -188,23 +188,32 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
             'signer_email': request.data.get('signer_email', request.user.email),
             'verification_method': request.data.get('verification_method', 'electronic_signature'),
         }
-        
-        # Additional metadata
+
+        # Parse electronic consent timestamp from signature_timestamp
+        electronic_consent_timestamp = None
+        signature_timestamp_str = request.data.get('signature_timestamp', '')
+        if signature_timestamp_str:
+            try:
+                from django.utils.dateparse import parse_datetime
+                electronic_consent_timestamp = parse_datetime(signature_timestamp_str)
+            except (ValueError, TypeError):
+                pass
+
+        # Additional metadata - stored in signature_metadata JSON field
         signature_metadata = {
             'user_agent': request.META.get('HTTP_USER_AGENT', ''),
             'ip_address': request.META.get('REMOTE_ADDR', ''),
-            'device_fingerprint': request.data.get('device_fingerprint', ''),
-            'signature_timestamp': request.data.get('signature_timestamp', ''),
             'screen_resolution': request.data.get('screen_resolution', ''),
+            'signature_timestamp': signature_timestamp_str,
         }
-        
+
         # Validate signature data
         serializer = ContractSignatureCreateSerializer(data=signature_data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
-            # Create the signature
+            # Create the signature with all security/compliance fields
             signature = ContractSignatureService.add_signature(
                 contract_id=contract.id,
                 user_id=request.user.id,
@@ -214,8 +223,14 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
                 signer_title=signature_data['signer_title'],
                 signer_email=signature_data['signer_email'],
                 verification_method=signature_data['verification_method'],
-                ip_address=signature_metadata['ip_address'],
-                user_agent=signature_metadata['user_agent']
+                ip_address=request.META.get('REMOTE_ADDR', ''),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                # Security/compliance fields
+                device_fingerprint=request.data.get('device_fingerprint', ''),
+                legal_disclosure_accepted=request.data.get('legal_disclosure_accepted', False),
+                electronic_consent_timestamp=electronic_consent_timestamp,
+                signature_intent_confirmed=request.data.get('signature_intent_confirmed', False),
+                signature_metadata=signature_metadata,
             )
             
             # Re-render contract content with the new signature
@@ -323,6 +338,48 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
                 {'error': f'Failed to generate PDF: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @action(detail=True, methods=['get'])
+    def amendments(self, request, pk=None):
+        """
+        Get amendments for a contract (read-only for clients)
+        """
+        contract = self.get_object()
+
+        # Import models and serializers
+        from .models import ContractAmendment
+        from .serializers import ContractAmendmentSerializer
+
+        # Get amendments for this contract
+        amendments = ContractAmendment.objects.filter(
+            original_contract=contract
+        ).select_related(
+            'requested_by', 'reviewed_by'
+        ).order_by('-requested_at')
+
+        serializer = ContractAmendmentSerializer(amendments, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def documents(self, request, pk=None):
+        """
+        Get documents for a contract (read-only for clients)
+        Only returns active documents
+        """
+        contract = self.get_object()
+
+        # Import models and serializers
+        from .models import ContractDocument
+        from .serializers import ContractDocumentSerializer
+
+        # Get active documents for this contract
+        documents = ContractDocument.objects.filter(
+            contract=contract,
+            is_active=True
+        ).select_related('uploaded_by').order_by('-created_at')
+
+        serializer = ContractDocumentSerializer(documents, many=True)
+        return Response(serializer.data)
 
 
 class ClientSignatureViewSet(viewsets.ReadOnlyModelViewSet):

@@ -433,44 +433,51 @@ class ContractSignatureService:
     def add_signature(contract_id, user_id, signature_data, role='CLIENT', **signature_details):
         """
         Add a signature to a contract
-        
+
         Args:
             contract_id: ID of the contract to sign
             user_id: ID of the user signing
             signature_data: Signature image data
             role: Role of the signer
-            **signature_details: Additional signature details
-            
+            **signature_details: Additional signature details including:
+                - signer_name, signer_title, signer_email
+                - verification_method, ip_address, user_agent
+                - device_fingerprint: Device identification for security tracking
+                - legal_disclosure_accepted: Whether signer accepted e-signature disclosure
+                - electronic_consent_timestamp: When consent was given
+                - signature_intent_confirmed: Whether signer confirmed intent
+                - signature_metadata: Additional metadata (dict)
+
         Returns:
             The created ContractSignature instance
         """
         contract = EventContractService.get_contract_by_id(contract_id)
-        
+
         # Validate contract can be signed
         if contract.status not in ['SENT', 'PARTIALLY_SIGNED']:
             raise InvalidContractStatus(
                 detail=f"Contract is in {contract.status} status and cannot be signed"
             )
-        
+
         if contract.valid_until and contract.valid_until < datetime.date.today():
             raise ContractExpired()
-        
+
         if not signature_data:
             raise SignatureRequired()
-        
+
         # Check if signature for this role already exists
         if ContractSignature.objects.filter(contract=contract, role=role).exists():
             raise SignatureAlreadyExists(
                 detail=f"A signature for role '{role}' already exists"
             )
-        
+
         # Check if role is required for this contract
         required_roles = contract.template.get_signature_requirements()
         if role not in required_roles:
             raise InvalidSignatureRole(
                 detail=f"Role '{role}' is not required for this contract"
             )
-        
+
         with transaction.atomic():
             signature = ContractSignature.objects.create(
                 contract=contract,
@@ -482,11 +489,17 @@ class ContractSignatureService:
                 signer_email=signature_details.get('signer_email', ''),
                 verification_method=signature_details.get('verification_method', ''),
                 ip_address=signature_details.get('ip_address'),
-                user_agent=signature_details.get('user_agent', '')
+                user_agent=signature_details.get('user_agent', ''),
+                # Security/compliance fields
+                device_fingerprint=signature_details.get('device_fingerprint', ''),
+                legal_disclosure_accepted=signature_details.get('legal_disclosure_accepted', False),
+                electronic_consent_timestamp=signature_details.get('electronic_consent_timestamp'),
+                signature_intent_confirmed=signature_details.get('signature_intent_confirmed', False),
+                signature_metadata=signature_details.get('signature_metadata', {}),
             )
-            
+
             logger.info(f"Added {role} signature to contract {contract_id} by user {user_id}")
-            
+
             # Contract status will be updated automatically via the model's save method
             return signature
     
