@@ -177,9 +177,9 @@ export const ContractAmendmentsTable: React.FC<ContractAmendmentsTableProps> = (
   );
 
   return (
-    <ModernTable<ContractAmendment>
-      columns={columns}
-      data={amendments}
+    <ModernTable
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      data={amendments as unknown as Record<string, unknown>[]}
       loading={isLoading}
       emptyState={emptyState}
     />

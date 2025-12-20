@@ -133,7 +133,7 @@ const EventDetail: React.FC = () => {
   // Get workflow progress for this event
   const {
     data: workflowProgress,
-    isLoading: isLoadingProgress
+    isLoading: _isLoadingProgress
   } = useWorkflowProgress(eventId);
 
   // Mutations
