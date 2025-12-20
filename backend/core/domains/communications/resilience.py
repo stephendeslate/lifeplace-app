@@ -191,7 +191,13 @@ class ProviderManager:
                     'fallback_order': config.get('fallback_order', 999)
                 }
                 
-                self.circuit_breakers[provider_name] = CircuitBreaker(provider_name)
+                # Create circuit breaker with configurable thresholds
+                from .config import CommunicationConfig
+                self.circuit_breakers[provider_name] = CircuitBreaker(
+                    provider_name,
+                    failure_threshold=CommunicationConfig.get_circuit_breaker_config('FAILURE_THRESHOLD'),
+                    recovery_timeout=CommunicationConfig.get_circuit_breaker_config('RECOVERY_TIMEOUT_SECONDS'),
+                )
                 logger.info(f"Loaded communication provider: {provider_name}")
                 
             except Exception as e:
@@ -285,10 +291,13 @@ class ProviderManager:
 
 class DeliveryQueue:
     """Queue for handling failed deliveries with retry"""
-    
+
     def __init__(self):
         self.queue_key = "communication_delivery_queue"
         self.processing_key = "communication_processing_queue"
+        # Use configurable cache timeout (default 24 hours = 86400 seconds)
+        from .config import CommunicationConfig
+        self.cache_timeout = CommunicationConfig.get_cache_timeout('DELIVERY_QUEUE') or 86400
     
     def add_failed_delivery(self, delivery_data: Dict):
         """Add failed delivery to retry queue"""
@@ -301,7 +310,7 @@ class DeliveryQueue:
         # Add to queue (using cache as simple queue)
         queue = cache.get(self.queue_key, [])
         queue.append(delivery_data)
-        cache.set(self.queue_key, queue, timeout=86400)  # 24 hours
+        cache.set(self.queue_key, queue, timeout=self.cache_timeout)
         
         logger.info(f"Added failed delivery to retry queue: {delivery_data.get('record_id')}")
     
@@ -323,7 +332,7 @@ class DeliveryQueue:
             # else: drop deliveries that exceeded max retries
         
         # Update queue
-        cache.set(self.queue_key, remaining_deliveries, timeout=86400)
+        cache.set(self.queue_key, remaining_deliveries, timeout=self.cache_timeout)
         
         return ready_deliveries
     

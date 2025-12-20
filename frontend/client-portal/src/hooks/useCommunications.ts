@@ -153,12 +153,12 @@ export const useCommunications = () => {
         queryClient.setQueryData(['communication-records'], (oldData: unknown) => {
           if (!oldData) return oldData;
 
-          return (oldData as Array<Record<string, unknown>>).map((record: Record<string, unknown>) => 
-            record.id === recordId 
-              ? { 
-                  ...record, 
-                  is_opened: false, 
-                  opened_at: null 
+          return (oldData as Array<Record<string, unknown>>).map((record: Record<string, unknown>) =>
+            record.id === recordId
+              ? {
+                  ...record,
+                  is_opened: false,
+                  opened_at: null
                 }
               : record
           );
@@ -184,19 +184,36 @@ export const useCommunications = () => {
     });
   };
 
+  // Mark all as read mutation
+  const useMarkAllAsRead = () => {
+    return useMutation({
+      mutationFn: (filters?: { channel?: string; category?: string }) =>
+        communicationsApi.markAllAsRead(filters),
+      onSuccess: (result) => {
+        // Invalidate all communication-related queries
+        queryClient.invalidateQueries({ queryKey: ['communication-records'] });
+        showSuccess('Marked as Read', `${result.updated_count} messages marked as read`);
+      },
+      onError: (error: unknown) => {
+        const message = ErrorHandler.extractMessage(error);
+        showError('Update Failed', message);
+      },
+    });
+  };
+
   return {
     // Template operations
     useTemplates,
     useTemplate,
-    
+
     // Record operations
     useRecords,
     useRecord,
-    
+
     // Preview and send operations
     usePreviewTemplate,
     useSendManual,
-    
+
     // Analytics
     useAnalytics,
     useVariableSchemas,
@@ -204,6 +221,7 @@ export const useCommunications = () => {
     // Read status operations
     useMarkAsRead,
     useMarkAsUnread,
+    useMarkAllAsRead,
   };
 };
 

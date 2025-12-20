@@ -62,8 +62,9 @@ def execute_delayed_stage_action(event_id, stage_id):
         
         # Check if the event is still in this stage
         if event.current_stage_id == stage_id:
-            # Execute the immediate actions (as if they were delayed)
-            WorkflowEngine._execute_immediate_actions(event, stage)
+            # Execute the stage automation
+            if stage.is_automated:
+                stage._execute_automation(event)
             
             # Check if we should progress to next stage
             WorkflowEngine.progress_workflow(

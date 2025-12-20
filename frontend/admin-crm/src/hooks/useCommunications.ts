@@ -170,6 +170,80 @@ export const useCommunications = () => {
     });
   };
 
+  // Mark all as read
+  const useMarkAllAsRead = () => {
+    return useMutation({
+      mutationFn: (filters?: { client_id?: number; channel?: string; category?: string }) =>
+        communicationsApi.markAllAsRead(filters),
+      onSuccess: (result) => {
+        queryClient.invalidateQueries({ queryKey: ['communication-records'] });
+        showSuccess('Marked as Read', `${result.updated_count} messages marked as read`);
+      },
+      onError: (error: unknown) => {
+        const message = (error && typeof error === 'object' && 'response' in error)
+          ? String((error as { response?: { data?: { error?: string } } }).response?.data?.error) || 'Failed to mark messages as read'
+          : 'Failed to mark messages as read';
+        showError('Operation Failed', message);
+      },
+    });
+  };
+
+  // Template history
+  const useTemplateHistory = (templateId: number) => {
+    return useQuery({
+      queryKey: ['communication-template-history', templateId],
+      queryFn: () => communicationsApi.getTemplateHistory(templateId),
+      enabled: !!templateId,
+    });
+  };
+
+  // Rollback template
+  const useRollbackTemplate = () => {
+    return useMutation({
+      mutationFn: ({ templateId, version }: { templateId: number; version: number }) =>
+        communicationsApi.rollbackTemplate(templateId, version),
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: ['communication-templates'] });
+        queryClient.invalidateQueries({ queryKey: ['communication-template', data.id] });
+        queryClient.invalidateQueries({ queryKey: ['communication-template-history', data.id] });
+        showSuccess('Template Rolled Back', 'Template has been rolled back to the selected version');
+      },
+      onError: (error: unknown) => {
+        const message = (error && typeof error === 'object' && 'response' in error)
+          ? String((error as { response?: { data?: { error?: string } } }).response?.data?.error) || 'Failed to rollback template'
+          : 'Failed to rollback template';
+        showError('Rollback Failed', message);
+      },
+    });
+  };
+
+  // Duplicate template
+  const useDuplicateTemplate = () => {
+    return useMutation({
+      mutationFn: ({ templateId, newName }: { templateId: number; newName?: string }) =>
+        communicationsApi.duplicateTemplate(templateId, newName),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['communication-templates'] });
+        showSuccess('Template Duplicated', 'Template has been duplicated successfully');
+      },
+      onError: (error: unknown) => {
+        const message = (error && typeof error === 'object' && 'response' in error)
+          ? String((error as { response?: { data?: { error?: string } } }).response?.data?.error) || 'Failed to duplicate template'
+          : 'Failed to duplicate template';
+        showError('Duplication Failed', message);
+      },
+    });
+  };
+
+  // Template usage statistics
+  const useTemplateStats = (templateId: number, days: number = 30) => {
+    return useQuery({
+      queryKey: ['communication-template-stats', templateId, days],
+      queryFn: () => communicationsApi.getTemplateStats(templateId, days),
+      enabled: !!templateId,
+    });
+  };
+
   return {
     // Templates
     useTemplates,
@@ -179,11 +253,16 @@ export const useCommunications = () => {
     useDeleteTemplate,
     usePreviewTemplate,
     useVariableSchemas,
+    useTemplateHistory,
+    useRollbackTemplate,
+    useDuplicateTemplate,
+    useTemplateStats,
     // Records
     useRecords,
     useRecord,
     useSendManual,
     useSendBulk,
     useAnalytics,
+    useMarkAllAsRead,
   };
 };

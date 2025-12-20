@@ -4,13 +4,16 @@ import api from '../utils/api';
 import type {
   WorkflowTemplate,
   WorkflowStage,
+  WorkflowTrigger,
   CreateWorkflowTemplateData,
   UpdateWorkflowTemplateData,
   CreateWorkflowStageData,
   UpdateWorkflowStageData,
   WorkflowTemplateFilters,
   WorkflowStageFilters,
+  WorkflowTriggerFilters,
   ReorderStagesData,
+  ManualTriggerResponse,
 } from '../types/workflows.types';
 import type { PaginatedResponse } from '../types/common.types';
 
@@ -90,6 +93,32 @@ export const workflowsApi = {
   // Template-specific stages
   getStagesForTemplate: async (templateId: number): Promise<WorkflowStage[]> => {
     const response = await api.get<WorkflowStage[]>(`/workflows/templates/${templateId}/stages/`);
+    return response.data;
+  },
+
+  // Workflow Triggers
+  getWorkflowTriggers: async (filters?: WorkflowTriggerFilters): Promise<WorkflowTrigger[]> => {
+    const params = new URLSearchParams();
+    if (filters?.event_id) params.append('event_id', filters.event_id.toString());
+    if (filters?.template_id) params.append('template_id', filters.template_id.toString());
+    if (filters?.trigger_type) params.append('trigger_type', filters.trigger_type);
+    if (filters?.processed !== undefined) params.append('processed', filters.processed.toString());
+
+    const response = await api.get(`/workflows/triggers/?${params.toString()}`);
+    const data = response.data as PaginatedResponse<WorkflowTrigger> | WorkflowTrigger[];
+    return Array.isArray(data) ? data : data.results || [];
+  },
+
+  getWorkflowTrigger: async (id: number): Promise<WorkflowTrigger> => {
+    const response = await api.get<WorkflowTrigger>(`/workflows/triggers/${id}/`);
+    return response.data;
+  },
+
+  manuallyTriggerStage: async (stageId: number, eventId: number): Promise<ManualTriggerResponse> => {
+    const response = await api.post<ManualTriggerResponse>(
+      `/workflows/stages/${stageId}/trigger/`,
+      { event_id: eventId }
+    );
     return response.data;
   },
 };

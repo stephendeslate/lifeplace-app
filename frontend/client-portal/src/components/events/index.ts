@@ -11,3 +11,4 @@ export { default as EventQuestionnaires } from './EventQuestionnaires';
 export { default as EventQuotes } from './EventQuotes';
 export { default as ContractStatusChip } from './ContractStatusChip';
 export { default as FileUpload } from './FileUpload';
+export { WorkflowProgressStepper } from './WorkflowProgressStepper';

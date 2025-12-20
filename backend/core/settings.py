@@ -257,14 +257,33 @@ REST_FRAMEWORK = {
     # Throttling rates - disabled in development
     'DEFAULT_THROTTLE_RATES': {
         'analytics': '999999/hour' if DEBUG else '1000/hour',
-        'public_tracking': '999999/hour' if DEBUG else '100/hour', 
+        'public_tracking': '999999/hour' if DEBUG else '100/hour',
         'admin_analytics': '999999/hour' if DEBUG else '2000/hour',
         'anon': '999999/hour' if DEBUG else '100/hour',
         'user': '999999/hour' if DEBUG else '1000/hour',
         'notifications': '999999/hour' if DEBUG else '200/hour',
         'notifications_admin': '999999/hour' if DEBUG else '500/hour',
+        # Communications domain throttle rates
+        'communications_manual_send': '999999/min' if DEBUG else '60/min',
+        'communications_bulk_send': '999999/hour' if DEBUG else '10/hour',
+        'communications_preview': '999999/min' if DEBUG else '30/min',
+        'communications_admin': '999999/hour' if DEBUG else '500/hour',
+        'communications_webhook': '999999/hour' if DEBUG else '200/hour',
     },
 }
+
+# Communications throttle disabled in debug mode by default
+COMMUNICATION_THROTTLE_DISABLED = DEBUG
+
+# Communications daily recipient limit for bulk sends
+COMMUNICATION_DAILY_RECIPIENT_LIMIT = 1000
+
+# Communications webhook security settings
+# In production, require webhook signature verification (default: True in production)
+COMMUNICATIONS_ENFORCE_WEBHOOK_SIGNATURE = not DEBUG
+
+# Brevo webhook secret (should be set in environment for production)
+BREVO_WEBHOOK_SECRET = os.getenv('BREVO_WEBHOOK_SECRET', None)
 
 # Cache configuration with Redis
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')

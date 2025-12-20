@@ -8,6 +8,7 @@ export interface WorkflowTemplate {
   event_type_name?: string;
   is_active: boolean;
   stages_count: number;
+  events_using_count: number;
   stages?: WorkflowStage[]; // Optional in list view, populated in detail view
   created_at: string;
   updated_at: string;
@@ -186,4 +187,57 @@ export interface WorkflowStageFormDialogProps {
 
 export interface WorkflowVisualizationProps {
   template: WorkflowTemplate;
+}
+
+// Workflow Trigger types
+export type TriggerType =
+  | 'PAYMENT_RECEIVED'
+  | 'PAYMENT_PLAN_CREATED'
+  | 'PAYMENT_OVERDUE'
+  | 'QUOTE_ACCEPTED'
+  | 'CONTRACT_SIGNED'
+  | 'EVENT_CREATED'
+  | 'EVENT_COMPLETED'
+  | 'TASK_COMPLETED'
+  | 'DATE_TRIGGER'
+  | 'MANUAL_TRIGGER';
+
+export const TRIGGER_TYPES = [
+  { value: 'PAYMENT_RECEIVED', label: 'Payment Received' },
+  { value: 'PAYMENT_PLAN_CREATED', label: 'Payment Plan Created' },
+  { value: 'PAYMENT_OVERDUE', label: 'Payment Overdue' },
+  { value: 'QUOTE_ACCEPTED', label: 'Quote Accepted' },
+  { value: 'CONTRACT_SIGNED', label: 'Contract Signed' },
+  { value: 'EVENT_CREATED', label: 'Event Created' },
+  { value: 'EVENT_COMPLETED', label: 'Event Completed' },
+  { value: 'TASK_COMPLETED', label: 'Task Completed' },
+  { value: 'DATE_TRIGGER', label: 'Date/Time Trigger' },
+  { value: 'MANUAL_TRIGGER', label: 'Manual Trigger' },
+] as const;
+
+export interface WorkflowTrigger {
+  id: number;
+  event: number;
+  event_name: string;
+  stage: number | null;
+  stage_name: string | null;
+  trigger_type: TriggerType;
+  trigger_type_display: string;
+  details: string;
+  result_data: Record<string, unknown>;
+  processed: boolean;
+  processed_at: string | null;
+  created_at: string;
+}
+
+export interface WorkflowTriggerFilters {
+  event_id?: number;
+  template_id?: number;
+  trigger_type?: TriggerType;
+  processed?: boolean;
+}
+
+export interface ManualTriggerResponse {
+  message: string;
+  trigger_id: number;
 }

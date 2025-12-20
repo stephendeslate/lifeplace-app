@@ -12,3 +12,6 @@ export { useInvoicePayments } from './useInvoicePayments';
 export { default as useNotifications } from './useNotifications';
 export { default as useNotificationPreferences } from './useNotificationPreferences';
 export { default as useNotificationRealtime } from './useNotificationRealtime';
+
+// Contract history hooks
+export * from './useContractHistory';

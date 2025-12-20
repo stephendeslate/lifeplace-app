@@ -45,6 +45,7 @@ app.conf.update(
         'core.domains.analytics.tasks.*': {'queue': 'analytics'},
         'core.domains.events.tasks.*': {'queue': 'events'},
         'core.domains.contracts.tasks.*': {'queue': 'contracts'},
+        'core.domains.questionnaires.tasks.*': {'queue': 'events'},
         'core.domains.sales.tasks.*': {'queue': 'sales'},
         'sales.*': {'queue': 'sales'},
     },
@@ -118,6 +119,12 @@ app.conf.update(
             'task': 'sales.send_quote_expiry_reminders',
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'sales'}
+        },
+        # Questionnaire reminder tasks
+        'schedule-questionnaire-reminders': {
+            'task': 'core.domains.questionnaires.tasks.schedule_questionnaire_reminders',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'events'}
         },
     },
 )
