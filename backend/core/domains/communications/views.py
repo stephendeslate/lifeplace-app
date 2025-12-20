@@ -165,9 +165,11 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
                 'name': entry.name,
                 'channel': entry.channel,
                 'category': entry.category,
+                'context_type': entry.context_type,
+                'include_client_context': entry.include_client_context,
+                'include_event_context': entry.include_event_context,
                 'subject_template': entry.subject_template,
                 'body_template': entry.body_template,
-                'variables_schema': entry.variables_schema,
                 'reason': entry.reason,
                 'notes': entry.notes,
                 'changed_by': {
@@ -225,9 +227,11 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
             template.name = history_entry.name
             template.channel = history_entry.channel
             template.category = history_entry.category
+            template.context_type = history_entry.context_type
+            template.include_client_context = history_entry.include_client_context
+            template.include_event_context = history_entry.include_event_context
             template.subject_template = history_entry.subject_template
             template.body_template = history_entry.body_template
-            template.variables_schema = history_entry.variables_schema
             template.save()
 
         # Clear cache for this template
@@ -271,10 +275,12 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
                 name=new_name,
                 channel=template.channel,
                 category=template.category,
+                context_type=template.context_type,
+                include_client_context=template.include_client_context,
+                include_event_context=template.include_event_context,
                 subject_template=template.subject_template,
                 body_template=template.body_template,
                 is_system=False,  # Duplicates are never system templates
-                variables_schema=template.variables_schema,
             )
 
         return Response(
@@ -343,7 +349,16 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def variable_schemas(self, request):
-        """Get available variable schemas for templates - available to both admins and clients"""
+        """
+        Get available variable schemas for templates.
+        Returns context types and variable groups with metadata.
+        Available to both admins and clients.
+        """
+        from .context_service import (
+            ContextType, REQUIRED_OBJECTS, VARIABLE_GROUPS,
+            CommunicationContextService
+        )
+
         # Try to get from cache first
         cached_schemas = communications_cache_service.get_cached_variable_schemas()
 
@@ -351,26 +366,40 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
             logger.debug("Variable schemas served from cache")
             return Response(cached_schemas)
 
-        # Cache miss - build schemas
-        schemas = {
-            'client_variables': {
-                'first_name': 'Client first name',
-                'last_name': 'Client last name',
-                'email': 'Client email address',
-                'company': 'Client company name'
-            },
-            'system_variables': {
-                'site_name': 'Site name (LifePlace)',
-                'current_date': 'Current date',
-                'support_email': 'Support email address'
-            },
-            'admin_invitation_variables': {
-                'first_name': 'Invitee first name',
-                'last_name': 'Invitee last name',
-                'invitation_link': 'Link to accept invitation',
-                'invited_by': 'Name of admin who sent invitation',
-                'expiry_date': 'Invitation expiry date'
+        # Cache miss - build comprehensive schema response
+        # Build context types info
+        context_types = {}
+        context_type_descriptions = {
+            ContextType.CLIENT: "For client-focused communications (welcome emails, invitations)",
+            ContextType.EVENT: "For event-related communications (reminders, updates)",
+            ContextType.BOOKING: "For booking flow communications (confirmations, payment reminders)",
+            ContextType.QUOTE: "For quote-related communications (quote sent, follow-ups)",
+            ContextType.CONTRACT: "For contract communications (signature requests)",
+            ContextType.ADMIN: "For admin user communications (invitations, role changes)",
+            ContextType.NOTIFICATION: "For system notifications (alerts, digests)",
+            ContextType.MANUAL: "For ad-hoc staff communications (custom messages)",
+        }
+
+        for context_type, label in ContextType.CHOICES:
+            context_types[context_type] = {
+                'label': label,
+                'required_objects': REQUIRED_OBJECTS.get(context_type, []),
+                'description': context_type_descriptions.get(context_type, ''),
             }
+
+        # Build variable groups with simplified structure for frontend
+        variable_groups = {}
+        for group_key, group_data in VARIABLE_GROUPS.items():
+            variable_groups[group_key] = {
+                'label': group_data['label'],
+                'icon': group_data.get('icon', 'help'),
+                'available_in': group_data['available_in'],
+                'variables': group_data['variables'],
+            }
+
+        schemas = {
+            'context_types': context_types,
+            'variable_groups': variable_groups,
         }
 
         # Cache the schemas

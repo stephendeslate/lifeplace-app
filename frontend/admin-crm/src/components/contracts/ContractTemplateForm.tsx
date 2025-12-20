@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/contracts/ContractTemplateForm.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -15,7 +15,6 @@ import {
   Alert,
   Stack,
   CircularProgress,
-  Chip,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -30,8 +29,11 @@ import {
 } from '@mui/icons-material';
 import { useEventTypes } from '../../hooks/useEvents';
 import { useCreateContractTemplate, useUpdateContractTemplate } from '../../hooks/useContracts';
-import type { 
-  ContractTemplate, 
+import { useTemplateVariables } from '../../hooks/useTemplateVariables';
+import { TemplateContentEditor, TemplateVariableInserter } from '../shared';
+import type { TemplateContentEditorHandle } from '../../types/templates.types';
+import type {
+  ContractTemplate,
   CreateContractTemplateData,
 } from '../../types/contracts.types';
 
@@ -62,10 +64,11 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [variableInput, setVariableInput] = useState('');
+  const editorRef = useRef<TemplateContentEditorHandle>(null);
 
   const { useActiveEventTypes } = useEventTypes();
   const { data: eventTypes = [] } = useActiveEventTypes();
+  const { data: variableSchemas } = useTemplateVariables('contracts');
 
   const createTemplateMutation = useCreateContractTemplate();
   const updateTemplateMutation = useUpdateContractTemplate();
@@ -100,21 +103,10 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
     }
   };
 
-  const handleAddVariable = () => {
-    if (variableInput.trim() && !formData.variables?.includes(variableInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        variables: [...(prev.variables || []), variableInput.trim()]
-      }));
-      setVariableInput('');
+  const handleVariableInsert = (variable: string) => {
+    if (editorRef.current) {
+      editorRef.current.insertVariable(variable);
     }
-  };
-
-  const handleRemoveVariable = (variableToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      variables: prev.variables?.filter(v => v !== variableToRemove) || []
-    }));
   };
 
   const validateForm = () => {
@@ -209,64 +201,30 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
           <Typography variant="subtitle1" gutterBottom fontWeight="medium">
             Contract Content
           </Typography>
-          
-          <TextField
-            label="Contract Content"
+
+          <TemplateContentEditor
+            ref={editorRef}
             value={formData.content}
-            onChange={(e) => handleInputChange('content', e.target.value)}
+            onChange={(value) => handleInputChange('content', value)}
+            mode="html"
+            showModeToggle={false}
+            placeholder="Enter contract content with {{variable_name}} placeholders..."
+            rows={12}
             error={!!errors.content}
-            helperText={errors.content || 'Use variables like {{client_name}}, {{event_date}}, etc.'}
-            multiline
-            rows={10}
-            required
-            fullWidth
+            helperText={errors.content || 'Use {{variable_name}} syntax for dynamic content'}
           />
         </Box>
 
-        {/* Variables */}
+        {/* Variable Helper */}
         <Box>
           <Typography variant="subtitle1" gutterBottom fontWeight="medium">
-            Template Variables
+            Insert Variables
           </Typography>
-          
-          <Stack spacing={2}>
-            <Box display="flex" gap={2} alignItems="flex-end">
-              <TextField
-                label="Add Variable"
-                value={variableInput}
-                onChange={(e) => setVariableInput(e.target.value)}
-                placeholder="e.g., client_name, event_date"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddVariable();
-                  }
-                }}
-                sx={{ flex: 1 }}
-              />
-              <Button
-                onClick={handleAddVariable}
-                disabled={!variableInput.trim()}
-                variant="outlined"
-              >
-                Add
-              </Button>
-            </Box>
 
-            {formData.variables && formData.variables.length > 0 && (
-              <Box display="flex" flexWrap="wrap" gap={1}>
-                {formData.variables.map((variable) => (
-                  <Chip
-                    key={variable}
-                    label={`{{${variable}}}`}
-                    onDelete={() => handleRemoveVariable(variable)}
-                    color="secondary"
-                    variant="outlined"
-                  />
-                ))}
-              </Box>
-            )}
-          </Stack>
+          <TemplateVariableInserter
+            variableSchemas={variableSchemas}
+            onVariableInsert={handleVariableInsert}
+          />
         </Box>
 
         {/* Advanced Settings */}

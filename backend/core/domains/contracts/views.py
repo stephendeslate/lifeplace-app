@@ -135,6 +135,126 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
         
         return Response(preview_data)
 
+    @action(detail=False, methods=['get'])
+    def variable_schemas(self, request):
+        """
+        Get available variable schemas for contract templates.
+        Returns grouped variables with descriptions that can be used in templates.
+        Uses the new format with variable_groups structure for frontend compatibility.
+        """
+        # Contract templates have a single context type - all variables are always available
+        context_types = {
+            'CONTRACT': {
+                'label': 'Contract',
+                'required_objects': ['event', 'client'],
+                'description': 'Contract templates have access to all variables',
+            }
+        }
+
+        # Variable groups in the new format matching communications
+        variable_groups = {
+            'event': {
+                'label': 'Event',
+                'icon': 'event',
+                'available_in': ['CONTRACT'],
+                'variables': {
+                    'event_name': {'description': 'Name of the event', 'required': True},
+                    'event_title': {'description': 'Event title (alias for event_name)', 'required': True},
+                    'event_date': {'description': 'Event date (formatted)', 'required': True},
+                    'event_type': {'description': 'Type of event', 'required': False},
+                    'event_type_name': {'description': 'Event type name', 'required': False},
+                    'venue': {'description': 'Event venue/location', 'required': False},
+                    'location': {'description': 'Event location (alias for venue)', 'required': False},
+                    'start_date': {'description': 'Event start date', 'required': True},
+                    'end_date': {'description': 'Event end date', 'required': True},
+                    'start_date_long': {'description': 'Event start date (long format)', 'required': True},
+                    'end_date_long': {'description': 'Event end date (long format)', 'required': True},
+                    'start_time': {'description': 'Event start time', 'required': False},
+                    'end_time': {'description': 'Event end time', 'required': False},
+                    'guest_count': {'description': 'Number of guests', 'required': False},
+                },
+            },
+            'client': {
+                'label': 'Client',
+                'icon': 'person',
+                'available_in': ['CONTRACT'],
+                'variables': {
+                    'client_name': {'description': 'Full name of client', 'required': True},
+                    'client_full_name': {'description': 'Client full name (alias)', 'required': True},
+                    'client_first_name': {'description': 'Client first name', 'required': True},
+                    'client_last_name': {'description': 'Client last name', 'required': True},
+                    'client_email': {'description': 'Client email address', 'required': True},
+                    'client_phone': {'description': 'Client phone number', 'required': False},
+                    'client_company': {'description': 'Client company name', 'required': False},
+                    'client_address': {'description': 'Client full address', 'required': False},
+                },
+            },
+            'financial': {
+                'label': 'Financial',
+                'icon': 'payments',
+                'available_in': ['CONTRACT'],
+                'variables': {
+                    'total_price': {'description': 'Total contract price', 'required': True},
+                    'total_amount': {'description': 'Total amount (alias for total_price)', 'required': True},
+                    'contract_value': {'description': 'Contract value (alias for total_price)', 'required': True},
+                    'total_price_formatted': {'description': 'Formatted price with currency symbol', 'required': True},
+                    'subtotal': {'description': 'Subtotal before tax', 'required': True},
+                    'subtotal_formatted': {'description': 'Formatted subtotal with currency', 'required': True},
+                    'tax_amount': {'description': 'Tax amount', 'required': False},
+                    'tax_amount_formatted': {'description': 'Formatted tax with currency', 'required': False},
+                    'discount_amount': {'description': 'Discount applied', 'required': False},
+                    'discount_amount_formatted': {'description': 'Formatted discount with currency', 'required': False},
+                    'amount_due': {'description': 'Amount currently due', 'required': True},
+                    'amount_paid': {'description': 'Amount already paid', 'required': True},
+                    'amount_remaining': {'description': 'Remaining balance', 'required': True},
+                    'deposit_amount': {'description': 'Required deposit amount', 'required': True},
+                    'deposit_percentage': {'description': 'Deposit percentage', 'required': True},
+                    'balance_amount': {'description': 'Balance after deposit', 'required': True},
+                    'balance_due_date': {'description': 'Date balance is due', 'required': False},
+                },
+            },
+            'contract': {
+                'label': 'Contract',
+                'icon': 'description',
+                'available_in': ['CONTRACT'],
+                'variables': {
+                    'contract_date': {'description': 'Date contract was created', 'required': True},
+                    'contract_date_long': {'description': 'Contract date (long format)', 'required': True},
+                    'signature_date': {'description': 'Date of signature', 'required': False},
+                    'signature_date_long': {'description': 'Signature date (long format)', 'required': False},
+                    'today': {'description': "Today's date", 'required': True},
+                    'current_date': {'description': 'Current date (ISO format)', 'required': True},
+                    'current_year': {'description': 'Current year', 'required': True},
+                    'payment_terms': {'description': 'Payment terms text', 'required': True},
+                    'cancellation_policy': {'description': 'Cancellation policy text', 'required': True},
+                    'refund_policy_text': {'description': 'Refund policy text', 'required': False},
+                    'services_description': {'description': 'Description of services', 'required': True},
+                },
+            },
+            'signature': {
+                'label': 'Signature',
+                'icon': 'draw',
+                'available_in': ['CONTRACT'],
+                'variables': {
+                    'SIGNATURE_CLIENT': {'description': 'Client signature placeholder', 'required': True},
+                    'SIGNATURE_COMPANY_REP': {'description': 'Company representative signature placeholder', 'required': True},
+                    'SIGNATURE_WITNESS': {'description': 'Witness signature placeholder', 'required': False},
+                    'client_signer_name': {'description': 'Name of client signer', 'required': True},
+                    'company_rep_signer_name': {'description': 'Name of company representative', 'required': True},
+                    'witness_signer_name': {'description': 'Name of witness', 'required': False},
+                    'client_signature_date': {'description': 'Date client signed', 'required': False},
+                    'company_rep_signature_date': {'description': 'Date company rep signed', 'required': False},
+                    'witness_signature_date': {'description': 'Date witness signed', 'required': False},
+                },
+            },
+        }
+
+        schemas = {
+            'context_types': context_types,
+            'variable_groups': variable_groups,
+        }
+        return Response(schemas)
+
 
 class EventContractViewSet(viewsets.ModelViewSet):
     """

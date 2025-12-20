@@ -1,13 +1,14 @@
 // Contract Templates Settings Page - Standardized Version
-// Migrated to use the unified settings system with minimal configuration
+// Migrated to use the unified settings system with custom form for variable insertion
 
 import React, { useState } from 'react';
 import { Description as ContractIcon, Preview as PreviewIcon } from '@mui/icons-material';
 import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
-import { TemplatePreviewDialog } from '../../../components/common';
-import { useContractTemplates, useCreateContractTemplate, useUpdateContractTemplate, useDeleteContractTemplate } from '../../../hooks/useContracts';
+import { TemplatePreviewDialog, ModernDialog } from '../../../components/common';
+import { ContractTemplateForm } from '../../../components/contracts';
+import { useContractTemplates, useDeleteContractTemplate } from '../../../hooks/useContracts';
 import { contractsApi } from '../../../apis/contracts.api';
-import type { ContractTemplate, CreateContractTemplateData, UpdateContractTemplateData } from '../../../types/contracts.types';
+import type { ContractTemplate } from '../../../types/contracts.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Table columns configuration
@@ -178,61 +179,11 @@ export const ContractTemplates = () => {
   // Data hooks
   const { data: contractTemplates = [], isLoading, error, refetch } = useContractTemplates();
 
-  // Mutation hooks
-  const createMutation = useCreateContractTemplate();
-  const updateMutation = useUpdateContractTemplate();
+  // Mutation hooks (only need delete - create/update handled by ContractTemplateForm)
   const deleteMutation = useDeleteContractTemplate();
 
   // Action handlers
   const handleRefresh = () => refetch();
-
-  const handleCreate = async (data: ContractTemplate) => {
-    const createData: CreateContractTemplateData = {
-      name: data.name,
-      description: data.description,
-      event_type: data.event_type,
-      content: data.content,
-      variables: data.variables,
-      requires_signature: data.requires_signature,
-      requires_witness: data.requires_witness,
-      requires_company_signature: data.requires_company_signature,
-      allows_amendments: data.allows_amendments,
-      amendment_requires_signature: data.amendment_requires_signature,
-      sections: data.sections,
-      signature_requirements: data.signature_requirements,
-    };
-
-    return new Promise<void>((resolve, reject) => {
-      createMutation.mutate(createData, {
-        onSuccess: () => { refetch(); resolve(); },
-        onError: reject,
-      });
-    });
-  };
-
-  const handleUpdate = async (id: string | number, data: ContractTemplate) => {
-    const updateData: UpdateContractTemplateData = {
-      name: data.name,
-      description: data.description,
-      event_type: data.event_type,
-      content: data.content,
-      variables: data.variables,
-      requires_signature: data.requires_signature,
-      requires_witness: data.requires_witness,
-      requires_company_signature: data.requires_company_signature,
-      allows_amendments: data.allows_amendments,
-      amendment_requires_signature: data.amendment_requires_signature,
-      sections: data.sections,
-      signature_requirements: data.signature_requirements,
-    };
-
-    return new Promise<void>((resolve, reject) => {
-      updateMutation.mutate({ id: Number(id), data: updateData }, {
-        onSuccess: () => { refetch(); resolve(); },
-        onError: reject,
-      });
-    });
-  };
 
   const handleDelete = async (id: string | number) => {
     return new Promise<void>((resolve, reject) => {
@@ -242,6 +193,28 @@ export const ContractTemplates = () => {
       });
     });
   };
+
+  // Custom form renderer that uses ContractTemplateForm with variable insertion
+  const renderCustomForm = ({ open, onClose, item, onSave }: {
+    open: boolean;
+    onClose: () => void;
+    item: ContractTemplate | null;
+    onSave: () => void;
+  }) => (
+    <ModernDialog
+      open={open}
+      onClose={onClose}
+      title={item ? 'Edit Contract Template' : 'Create Contract Template'}
+      maxWidth="lg"
+      fullWidth
+    >
+      <ContractTemplateForm
+        template={item || undefined}
+        onSave={onSave}
+        onCancel={onClose}
+      />
+    </ModernDialog>
+  );
 
   // Preview handlers
   const handlePreview = (template: ContractTemplate) => {
@@ -281,13 +254,10 @@ export const ContractTemplates = () => {
         isLoading={isLoading}
         error={error?.message}
         onRefresh={handleRefresh}
-        onCreate={handleCreate}
-        onUpdate={handleUpdate}
         onDelete={handleDelete}
-        isCreating={createMutation.isPending}
-        isUpdating={updateMutation.isPending}
         isDeleting={deleteMutation.isPending}
         customTableActions={customTableActions}
+        customFormRenderer={renderCustomForm}
       />
 
       {/* Preview Dialog */}

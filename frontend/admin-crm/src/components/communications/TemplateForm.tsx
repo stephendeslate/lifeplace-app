@@ -5,6 +5,8 @@ import {
   Box,
   Button,
   FormControl,
+  FormControlLabel,
+  Checkbox,
   InputLabel,
   MenuItem,
   Select,
@@ -16,19 +18,23 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Paper,
+  Tooltip,
 } from '@mui/material';
 import {
   Save as SaveIcon,
   Cancel as CancelIcon,
   Preview as PreviewIcon,
   Code as CodeIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Info as InfoIcon,
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import { sanitizeHTML } from '../../utils/security';
 import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../types/communications.types';
 import RichTextEditor, { type RichTextEditorHandle } from '../shared/RichTextEditor';
-import VariableInserter from './VariableInserter';
+import { TemplateVariableInserter } from '../shared';
+import type { TemplateStarter, ContextType } from '../../types/templates.types';
+import { CONTEXT_TYPE_LABELS, CONTEXT_TYPE_DESCRIPTIONS } from '../../types/templates.types';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { 
@@ -54,9 +60,11 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     name: '',
     channel: 'EMAIL',
     category: 'MANUAL',
+    context_type: 'MANUAL' as ContextType,
+    include_client_context: false,
+    include_event_context: false,
     subject_template: '',
     body_template: '',
-    variables_schema: {}
   });
 
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
@@ -77,9 +85,11 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
         name: template.name,
         channel: template.channel,
         category: template.category,
+        context_type: (template.context_type || 'MANUAL') as ContextType,
+        include_client_context: template.include_client_context || false,
+        include_event_context: template.include_event_context || false,
         subject_template: template.subject_template || '',
         body_template: template.body_template,
-        variables_schema: template.variables_schema
       });
     }
   }, [template]);
@@ -160,22 +170,22 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     }
   };
 
-  const getTemplateTemplates = () => {
-    const templates = {
-      welcome: {
-        subject: 'Welcome to {{ site_name }}!',
-        body: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  // Template content data (used by loadTemplate)
+  const templateContentData: Record<string, { subject: string; body: string }> = {
+    welcome: {
+      subject: 'Welcome to {{ site_name }}!',
+      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background-color: #1976d2; color: white; padding: 24px; text-align: center;">
     <h1>Welcome to {{ site_name }}!</h1>
   </div>
-  
+
   <div style="padding: 24px;">
     <h2>Hello {{ first_name }}!</h2>
-    
+
     <p>Thank you for joining {{ site_name }}. We're excited to help you manage your events and create memorable experiences.</p>
-    
+
     <p>If you have any questions, feel free to contact our support team.</p>
-    
+
     <div style="text-align: center; margin: 24px 0;">
       <a href="{{ login_link }}" style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
         Get Started
@@ -183,10 +193,10 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     </div>
   </div>
 </div>`
-      },
-      reminder: {
-        subject: 'Reminder: {{ event_name }}',
-        body: `<p>Hello <strong>{{ first_name }}</strong>,</p>
+    },
+    reminder: {
+      subject: 'Reminder: {{ event_name }}',
+      body: `<p>Hello <strong>{{ first_name }}</strong>,</p>
 
 <p>This is a friendly reminder about your upcoming event:</p>
 
@@ -200,10 +210,10 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
 
 <p>Best regards,<br>
 The {{ site_name }} Team</p>`
-      },
-      followup: {
-        subject: 'Thank you for choosing {{ site_name }}',
-        body: `<p>Dear <strong>{{ first_name }}</strong>,</p>
+    },
+    followup: {
+      subject: 'Thank you for choosing {{ site_name }}',
+      body: `<p>Dear <strong>{{ first_name }}</strong>,</p>
 
 <p>Thank you for allowing us to be part of your special event. We hope everything went perfectly!</p>
 
@@ -213,32 +223,55 @@ The {{ site_name }} Team</p>`
 
 <p>Best regards,<br>
 The {{ site_name }} Team</p>`
-      }
-    };
+    },
+    // SMS templates
+    sms_reminder: {
+      subject: '',
+      body: `Hi {{ first_name }}! Reminder: {{ event_name }} on {{ event_date }} at {{ venue }}. Looking forward to working with you! - {{ site_name }}`
+    },
+    sms_confirmation: {
+      subject: '',
+      body: `Hi {{ first_name }}! Your booking for {{ event_name }} is confirmed for {{ event_date }}. We'll be in touch soon! - {{ site_name }}`
+    }
+  };
 
+  // Template starters for the TemplateVariableInserter component
+  const getTemplateStarters = (): Record<string, TemplateStarter> => {
     if (formData.channel === 'SMS') {
       return {
-        reminder: {
-          subject: '',
-          body: `Hi {{ first_name }}! Reminder: {{ event_name }} on {{ event_date }} at {{ venue }}. Looking forward to working with you! - {{ site_name }}`
+        sms_reminder: {
+          name: 'SMS Reminder',
+          description: 'A short reminder message for upcoming events'
         },
-        confirmation: {
-          subject: '',
-          body: `Hi {{ first_name }}! Your booking for {{ event_name }} is confirmed for {{ event_date }}. We'll be in touch soon! - {{ site_name }}`
+        sms_confirmation: {
+          name: 'SMS Confirmation',
+          description: 'Confirm a booking or appointment'
         }
       };
     }
 
-    return templates;
+    return {
+      welcome: {
+        name: 'Welcome Email',
+        description: 'Welcomes new users to the platform with a branded template'
+      },
+      reminder: {
+        name: 'Event Reminder',
+        description: 'Reminds clients about upcoming events with event details'
+      },
+      followup: {
+        name: 'Follow-up Email',
+        description: 'Thanks clients after an event and invites feedback'
+      }
+    };
   };
 
   const loadTemplate = (templateKey: string) => {
-    const templates = getTemplateTemplates();
-    const template = templates[templateKey as keyof typeof templates];
-    
-    if (template) {
-      handleInputChange('subject_template', template.subject);
-      handleInputChange('body_template', template.body);
+    const templateContent = templateContentData[templateKey];
+
+    if (templateContent) {
+      handleInputChange('subject_template', templateContent.subject);
+      handleInputChange('body_template', templateContent.body);
     }
   };
 
@@ -357,6 +390,81 @@ The {{ site_name }} Team</p>`
                     </Select>
                   </FormControl>
                 </Box>
+
+                {/* Context Type Selector */}
+                <FormControl fullWidth>
+                  <InputLabel sx={{ color: tokens.color.neutral[600], fontWeight: 500 }}>
+                    Context Type
+                    <Tooltip title="Determines which variables are available and what data is required when sending">
+                      <InfoIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: 'middle', color: 'text.secondary' }} />
+                    </Tooltip>
+                  </InputLabel>
+                  <Select
+                    value={formData.context_type}
+                    label="Context Type"
+                    onChange={(e) => handleInputChange('context_type', e.target.value)}
+                    disabled={template?.is_system}
+                    sx={{
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: tokens.color.borders.glass,
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: tokens.color.primary[300],
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: tokens.color.primary[500],
+                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+                      },
+                      '& .MuiSelect-select': {
+                        ...glassPresets.light,
+                        borderRadius: tokens.spacing.radius.lg,
+                      },
+                    }}
+                  >
+                    {Object.entries(CONTEXT_TYPE_LABELS).map(([value, label]) => (
+                      <MenuItem key={value} value={value}>
+                        <Box>
+                          <Typography variant="body2">{label}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {CONTEXT_TYPE_DESCRIPTIONS[value as ContextType]}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* MANUAL context type options */}
+                {formData.context_type === 'MANUAL' && (
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Optional Context
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                      Include additional variables when a client or event is provided at send time.
+                    </Typography>
+                    <Stack direction="row" spacing={2}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={formData.include_client_context}
+                            onChange={(e) => handleInputChange('include_client_context', e.target.checked)}
+                          />
+                        }
+                        label="Include client details"
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={formData.include_event_context}
+                            onChange={(e) => handleInputChange('include_event_context', e.target.checked)}
+                          />
+                        }
+                        label="Include event details"
+                      />
+                    </Stack>
+                  </Paper>
+                )}
               </Stack>
           </ModernCard>
 
@@ -553,11 +661,13 @@ The {{ site_name }} Team</p>`
             size="medium"
             animation="none"
           >
-              <VariableInserter
+              <TemplateVariableInserter
                 variableSchemas={variableSchemas}
+                contextType={formData.context_type}
                 onVariableInsert={handleVariableInsert}
                 onTemplateLoad={loadTemplate}
-                channel={formData.channel}
+                templateStarters={getTemplateStarters()}
+                showFormattingTips={formData.channel === 'EMAIL'}
               />
           </ModernCard>
 

@@ -7,30 +7,51 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from .context_service import ContextType
+
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
 
 class CommunicationTemplate(BaseModel):
     """Template for communications across different channels"""
     name = models.CharField(max_length=100, unique=True)
-    
+
     CHANNEL_CHOICES = (
         ('EMAIL', 'Email'),
         ('SMS', 'SMS'),
     )
     channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES, default='EMAIL')
-    
+
     CATEGORY_CHOICES = (
         ('SYSTEM', 'System'),
         ('MANUAL', 'Manual'),
         ('AUTO', 'Auto'),
     )
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='MANUAL')
-    
+
+    # Context type determines which variables are available and required objects at send time
+    CONTEXT_TYPE_CHOICES = ContextType.CHOICES
+    context_type = models.CharField(
+        max_length=20,
+        choices=CONTEXT_TYPE_CHOICES,
+        default=ContextType.MANUAL,
+        help_text="Determines which variables are available and required objects at send time"
+    )
+
+    # For MANUAL context type, optionally include client/event context
+    include_client_context = models.BooleanField(
+        default=False,
+        help_text="For MANUAL templates: include client variables if client is provided"
+    )
+    include_event_context = models.BooleanField(
+        default=False,
+        help_text="For MANUAL templates: include event variables if event is provided"
+    )
+
     subject_template = models.CharField(max_length=200, blank=True, null=True)  # For email only
     body_template = models.TextField()
     is_system = models.BooleanField(default=False)
-    variables_schema = models.JSONField(default=dict, blank=True, help_text="Expected variables for template")
 
     class Meta:
         verbose_name = 'Communication Template'
@@ -66,9 +87,11 @@ class CommunicationTemplateHistory(BaseModel):
     name = models.CharField(max_length=100)
     channel = models.CharField(max_length=10)
     category = models.CharField(max_length=10)
+    context_type = models.CharField(max_length=20, default=ContextType.MANUAL)
+    include_client_context = models.BooleanField(default=False)
+    include_event_context = models.BooleanField(default=False)
     subject_template = models.CharField(max_length=200, blank=True, null=True)
     body_template = models.TextField()
-    variables_schema = models.JSONField(default=dict, blank=True)
 
     reason = models.CharField(
         max_length=20,
@@ -122,9 +145,11 @@ class CommunicationTemplateHistory(BaseModel):
             name=template.name,
             channel=template.channel,
             category=template.category,
+            context_type=template.context_type,
+            include_client_context=template.include_client_context,
+            include_event_context=template.include_event_context,
             subject_template=template.subject_template,
             body_template=template.body_template,
-            variables_schema=template.variables_schema,
             reason=reason,
             changed_by=changed_by,
             notes=notes

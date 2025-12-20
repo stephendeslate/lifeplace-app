@@ -310,17 +310,20 @@ class BookingSessionService:
                             if create_account and password:
                                 try:
                                     from core.domains.communications.services import CommunicationService
+                                    from core.domains.communications.context_service import (
+                                        CommunicationContextService, ContextType
+                                    )
 
                                     # Initialize communication service
                                     comm_service = CommunicationService()
 
-                                    # Prepare template context
-                                    template_data = {
-                                        'client_name': user.get_full_name() or user.first_name or user.email,
-                                        'email': user.email,
-                                        'first_name': user.first_name,
-                                        'booking_in_progress': True,
-                                    }
+                                    # Generate context using the unified context service
+                                    template_data = CommunicationContextService.generate_context(
+                                        context_type=ContextType.CLIENT,
+                                        client=user,
+                                    )
+                                    # Add booking-specific flag
+                                    template_data['booking_in_progress'] = True
 
                                     # Send welcome email using existing template
                                     comm_service.send_communication(
@@ -674,6 +677,9 @@ class BookingSessionService:
         The actual quote email will be sent later when admin reviews and sends the quote.
         """
         from core.domains.communications.services import CommunicationService
+        from core.domains.communications.context_service import (
+            CommunicationContextService, ContextType
+        )
 
         try:
             # Initialize communication service
@@ -682,22 +688,22 @@ class BookingSessionService:
             # Extract client message from booking session
             metadata = BookingSessionService._extract_booking_metadata(session)
 
-            # Prepare acknowledgment email context
-            template_data = {
-                'client_name': session.client.get_full_name(),
-                'event_name': event.name or f'Event #{event.id}',
-                'event_date': event.start_date.strftime('%B %d, %Y') if event.start_date else 'TBD',
-                'event_time': event.start_date.strftime('%I:%M %p') if event.start_date else 'TBD',
-                'event_type': event.event_type.name if event.event_type else 'Event',
-                'client_message': metadata.get('combined_message', ''),
-            }
+            # Generate context using the centralized context service
+            context_data = CommunicationContextService.generate_context(
+                context_type=ContextType.EVENT,
+                client=session.client,
+                event=event,
+            )
+
+            # Add custom context specific to this template
+            context_data['client_message'] = metadata.get('combined_message', '')
 
             # Send acknowledgment using "Events - Welcome New Lead" template
             # This template is designed for initial inquiry acknowledgments
             comm_service.send_communication(
                 template_name='Events - Welcome New Lead',
                 recipient=session.client.email,
-                context_data=template_data,
+                context_data=context_data,
                 client=session.client,
                 sent_by=None,
                 use_async=True,  # ASYNC: Queue email for background processing
@@ -718,6 +724,9 @@ class BookingSessionService:
         event info, packages, addons, pricing, and dates.
         """
         from core.domains.communications.services import CommunicationService
+        from core.domains.communications.context_service import (
+            CommunicationContextService, ContextType
+        )
 
         try:
             # Check if confirmation email template is configured
@@ -732,99 +741,33 @@ class BookingSessionService:
             # Instantiate communication service
             comm_service = CommunicationService()
 
-            # Extract booking data for email context
+            # Get invoice for financial context
+            from core.domains.payments.models import Invoice
+            invoice = None
+            try:
+                invoice = Invoice.objects.filter(event=event).first()
+            except Exception as e:
+                logger.warning(f"Could not fetch invoice for email context: {e}")
+
+            # Generate context using the unified context service
+            context_data = CommunicationContextService.generate_context(
+                context_type=ContextType.BOOKING,
+                client=session.client,
+                event=event,
+                booking_session=session,
+                invoice=invoice,
+            )
+
+            # Add booking-specific extras not covered by context service
             booking_data = session.booking_data
-
-            # Extract date/time info from session data
-            event_date = None
-            event_time = None
-            duration = None
-
-            # Look for date/time data in step data
-            for step_key, step_data in booking_data.items():
-                if isinstance(step_data, dict) and 'start_date' in step_data:
-                    event_date = step_data.get('start_date')
-                    event_time = step_data.get('start_time', '')
-                    duration = step_data.get('duration')
-                    break
-
-            # Format date and time for display
-            if event_date and event.start_date:
-                event_date_formatted = event.start_date.strftime('%B %d, %Y')
-                event_time_formatted = event.start_date.strftime('%I:%M %p')
-            else:
-                event_date_formatted = 'TBD'
-                event_time_formatted = 'TBD'
-
-            # Extract packages and addons
             selected_packages = booking_data.get('selected_packages', [])
             selected_addons = booking_data.get('selected_addons', [])
 
-            # Get invoice and payment data for enhanced context
-            from core.domains.payments.models import Invoice, PaymentSettings
-            from decimal import Decimal
-
-            invoice = None
-            deposit_percentage = Decimal('0')
-            deposit_amount = Decimal('0')
-            balance_amount = Decimal('0')
-            balance_due_date = ''
-            balance_due_days = 0
-
-            try:
-                # Get the invoice for this event
-                invoice = Invoice.objects.filter(event=event).first()
-                if invoice:
-                    # Get payment settings for deposit info
-                    payment_settings = PaymentSettings.get_default_settings()
-                    deposit_percentage = payment_settings.default_deposit_percentage
-
-                    # Calculate deposit and balance
-                    if event.total_price:
-                        deposit_amount = event.total_price * (deposit_percentage / Decimal('100'))
-                        balance_amount = event.total_price - deposit_amount
-
-                    # Get balance due date
-                    if invoice.due_date:
-                        balance_due_date = invoice.due_date.strftime('%B %d, %Y')
-                        # Calculate days until due
-                        balance_due_days = (invoice.due_date - datetime.now().date()).days
-            except Exception as e:
-                logger.warning(f"Could not fetch invoice data for email context: {e}")
-
-            # Extract guest count from booking data
-            guest_count = booking_data.get('guest_count', '')
-            for step_key, step_data in booking_data.items():
-                if isinstance(step_data, dict) and 'guest_count' in step_data:
-                    guest_count = step_data.get('guest_count', '')
-                    break
-
-            # Build enhanced email context with all required variables
-            context_data = {
-                'client_name': session.client.get_full_name(),
-                'booking_reference': str(session.session_id)[-8:].upper(),
-                'event_type': event.event_type.name if event.event_type else 'Event',
-                'event_date': event_date_formatted,
-                'event_time': event_time_formatted,
-                'duration': duration or '',
-                'guest_count': guest_count or '',
-                'total_price': str(event.total_price) if event.total_price else '0',
-                'selected_packages': selected_packages,
-                'selected_addons': selected_addons,
-                'email': session.client.email,
-                'phone': booking_data.get('phone', ''),
-                'dashboard_url': 'https://lifeplacealfonso.com/portal',
-                # Payment-related context
-                'deposit_percentage': str(deposit_percentage),
-                'deposit_amount': str(deposit_amount),
-                'balance_amount': str(balance_amount),
-                'balance_due_date': balance_due_date,
-                'balance_due_days': str(balance_due_days),
-                # Policy information (use defaults if not configured)
-                'late_fee_amount': '0',  # Default - should be configured in settings
-                'refund_policy_text': 'Please contact us for refund policy details.',
-                'services_description': ', '.join([pkg.get('name', '') for pkg in selected_packages if isinstance(pkg, dict)]) if selected_packages else '',
-            }
+            context_data['selected_packages'] = selected_packages
+            context_data['selected_addons'] = selected_addons
+            context_data['services_description'] = ', '.join(
+                [pkg.get('name', '') for pkg in selected_packages if isinstance(pkg, dict)]
+            ) if selected_packages else ''
 
             # Send confirmation email
             comm_service.send_communication(

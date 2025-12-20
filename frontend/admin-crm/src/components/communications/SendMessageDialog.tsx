@@ -36,7 +36,7 @@ import {
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import { sanitizeHTML } from '../../utils/security';
-import { VariableInserter } from './VariableInserter';
+import { TemplateVariableInserter } from '../shared';
 import type { Client } from '../../types/clients.types';
 
 interface SendMessageDialogProps {
@@ -386,10 +386,10 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <VariableInserter
+                <TemplateVariableInserter
                   variableSchemas={variableSchemas}
                   onVariableInsert={handleVariableInsert}
-                  channel={formData.channel}
+                  showFormattingTips={formData.channel === 'EMAIL'}
                 />
                 
                 <Box mt={2}>

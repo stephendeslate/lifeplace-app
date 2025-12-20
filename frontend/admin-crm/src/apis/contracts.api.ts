@@ -21,6 +21,7 @@ import type {
   ContractSignatureFilters,
   ContractAmendmentFilters,
 } from '../types/contracts.types';
+import type { VariableSchemas } from '../types/templates.types';
 import type { PaginatedResponse } from '../types/common.types';
 
 export const contractsApi = {
@@ -96,6 +97,11 @@ export const contractsApi = {
       context_used: Record<string, unknown>;
       available_variables?: Record<string, string>;
     }>(`/contracts/templates/${id}/preview/`, requestData);
+    return response.data;
+  },
+
+  getVariableSchemas: async (): Promise<VariableSchemas> => {
+    const response = await api.get<VariableSchemas>('/contracts/templates/variable_schemas/');
     return response.data;
   },
 

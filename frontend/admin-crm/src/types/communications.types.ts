@@ -1,14 +1,22 @@
 // frontend/admin-crm/src/types/communications.types.ts
 
+import type { ContextType, VariableSchemas } from './templates.types';
+
+// Re-export for convenience
+export type { VariableSchemas };
+
 export interface CommunicationTemplate {
   id: number;
   name: string;
   channel: 'EMAIL' | 'SMS';
   category: 'SYSTEM' | 'MANUAL' | 'AUTO';
+  context_type: ContextType;
+  context_type_display: string;
+  include_client_context: boolean;
+  include_event_context: boolean;
   subject_template?: string;
   body_template: string;
   is_system: boolean;
-  variables_schema: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -41,9 +49,11 @@ export interface CreateTemplateData {
   name: string;
   channel: 'EMAIL' | 'SMS';
   category: 'SYSTEM' | 'MANUAL' | 'AUTO';
+  context_type: ContextType;
+  include_client_context?: boolean;
+  include_event_context?: boolean;
   subject_template?: string;
   body_template: string;
-  variables_schema?: Record<string, unknown>;
 }
 
 export type UpdateTemplateData = Partial<CreateTemplateData>;
@@ -97,13 +107,6 @@ export interface AnalyticsData {
   delivery_rate: number;
   open_rate: number;
   failure_rate: number;
-}
-
-export interface VariableSchemas {
-  client_variables: Record<string, string>;
-  system_variables: Record<string, string>;
-  admin_invitation_variables: Record<string, string>;
-  manual_template_variables?: Record<string, string>;
 }
 
 export interface CommunicationFilters {

@@ -101,9 +101,33 @@ def send_quote_expiry_reminders():
                     message=f"Quote expiry reminder: expires on {quote.valid_until}"
                 )
 
-                # Send reminder email (using communication service)
+                # Send reminder email using communication service and context service
                 from core.domains.communications.services import CommunicationService
-                CommunicationService.send_quote_expiry_reminder(quote)
+                from core.domains.communications.context_service import (
+                    CommunicationContextService, ContextType
+                )
+
+                client = quote.event.client
+                if client and client.email:
+                    comm_service = CommunicationService()
+
+                    # Generate context using the unified context service
+                    template_data = CommunicationContextService.generate_context(
+                        context_type=ContextType.QUOTE,
+                        client=client,
+                        event=quote.event,
+                        quote=quote,
+                    )
+
+                    comm_service.send_communication(
+                        template_name='quote_expiry_reminder',
+                        recipient=client.email,
+                        context_data=template_data,
+                        client=client,
+                        sent_by=None,
+                        use_async=True,
+                        event=quote.event
+                    )
 
                 logger.info(f"Sent expiry reminder for quote {quote.id}")
                 count += 1

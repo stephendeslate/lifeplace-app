@@ -131,21 +131,22 @@ class EventQuote(BaseModel):
         # Send email notification to client
         try:
             from core.domains.communications.services import CommunicationService
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
 
             client = self.event.client
             if client and client.email:
                 # Initialize communication service
                 comm_service = CommunicationService()
 
-                template_data = {
-                    'client_name': client.get_full_name(),
-                    'quote_id': self.id,
-                    'quote_version': self.version,
-                    'total_amount': str(self.total_amount),
-                    'valid_until': self.valid_until.strftime('%B %d, %Y') if self.valid_until else 'N/A',
-                    'event_name': self.event.name or f'Event #{self.event.id}',
-                    'event_date': self.event.start_date.strftime('%B %d, %Y') if self.event.start_date else 'TBD',
-                }
+                # Generate context using the unified context service
+                template_data = CommunicationContextService.generate_context(
+                    context_type=ContextType.QUOTE,
+                    client=client,
+                    event=self.event,
+                    quote=self,
+                )
 
                 comm_service.send_communication(
                     template_name='quote_sent_to_client',

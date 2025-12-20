@@ -169,9 +169,11 @@ export interface TemplateHistoryEntry {
   name: string;
   channel: string;
   category: string;
+  context_type: string;
+  include_client_context: boolean;
+  include_event_context: boolean;
   subject_template: string | null;
   body_template: string;
-  variables_schema: Record<string, string>;
   reason: 'CREATE' | 'UPDATE' | 'ROLLBACK' | 'SYSTEM';
   notes: string;
   changed_by: { id: number; email: string; first_name: string; last_name: string } | null;

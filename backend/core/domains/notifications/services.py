@@ -323,9 +323,12 @@ class NotificationService:
         """Send email notification using the communication service"""
         try:
             from core.domains.communications.services import CommunicationService
-            
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+
             communication_service = CommunicationService()
-            
+
             # Render email template
             if notification_type.default_email_template:
                 email_body = Template(notification_type.default_email_template).render(Context(context))
@@ -340,25 +343,35 @@ class NotificationService:
                     {f'<p><a href="{context.get("action_url", "")}" style="background-color: #1976d2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">View Details</a></p>' if context.get("action_url") else ''}
                 </div>
                 """
-            
+
             # Send via communication service using config
             from core.domains.communications.config import communication_config
-            
+
             try:
                 email_template_name = communication_config.get_template_name('EMAIL_LAYOUT')
             except ValueError:
                 # Fallback to notification-specific template
                 email_template_name = communication_config.get_template_name('NOTIFICATION_EMAIL')
-            
+
+            # Generate base context using the unified context service
+            base_context = CommunicationContextService.generate_context(
+                context_type=ContextType.NOTIFICATION,
+                user=notification.recipient,
+                notification=notification,
+            )
+
+            # Merge with caller context and add custom fields
+            context_data = {
+                **base_context,
+                **context,
+                'custom_subject': notification.title,
+                'custom_body': email_body,
+            }
+
             record = communication_service.send_communication_by_template(
                 template_name=email_template_name,
                 recipient=notification.recipient.email,
-                context_data={
-                    **context,
-                    'custom_subject': notification.title,
-                    'custom_body': email_body,
-                    'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
-                },
+                context_data=context_data,
                 sent_by=None  # System notification
             )
             
@@ -380,39 +393,52 @@ class NotificationService:
         """Send SMS notification using the communication service"""
         try:
             from core.domains.communications.services import CommunicationService
-            
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+
             communication_service = CommunicationService()
-            
+
             # Render SMS template (limited to 160 characters)
             if notification_type.default_sms_template:
                 sms_content = Template(notification_type.default_sms_template).render(Context(context))
             else:
                 # Fallback to truncated title
                 sms_content = f"{notification.title[:140]}... - LifePlace"
-            
+
             # Get user's phone number from profile
             phone_number = getattr(notification.recipient.profile, 'phone', None) if hasattr(notification.recipient, 'profile') else None
-            
+
             if not phone_number:
                 raise Exception("Recipient has no phone number configured")
-            
+
             # Send via communication service using config
             from core.domains.communications.config import communication_config
-            
+
             try:
                 sms_template_name = communication_config.get_template_name('SMS_LAYOUT')
             except ValueError:
                 # Fallback to notification-specific template
                 sms_template_name = communication_config.get_template_name('NOTIFICATION_SMS')
-            
+
+            # Generate base context using the unified context service
+            base_context = CommunicationContextService.generate_context(
+                context_type=ContextType.NOTIFICATION,
+                user=notification.recipient,
+                notification=notification,
+            )
+
+            # Merge with caller context and add custom fields
+            context_data = {
+                **base_context,
+                **context,
+                'custom_body': sms_content,
+            }
+
             record = communication_service.send_communication_by_template(
                 template_name=sms_template_name,
                 recipient=phone_number,
-                context_data={
-                    **context,
-                    'custom_body': sms_content,
-                    'site_name': 'LifePlace',
-                },
+                context_data=context_data,
                 sent_by=None  # System notification
             )
             
@@ -776,9 +802,12 @@ class NotificationDigestService:
         """Send email digest"""
         try:
             from core.domains.communications.services import CommunicationService
-            
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+
             communication_service = CommunicationService()
-            
+
             # Prepare digest content
             notifications_list = []
             for notification in digest.notifications.all()[:10]:  # Limit to 10 for email
@@ -787,14 +816,14 @@ class NotificationDigestService:
                     'content': notification.content[:100] + '...' if len(notification.content) > 100 else notification.content,
                     'action_url': notification.action_url
                 })
-            
+
             # Create email content
             email_content = f"""
             <h2>Your {digest.get_frequency_display()} Notification Digest</h2>
             <p>You have {digest.notification_count} unread notifications:</p>
             <ul>
             """
-            
+
             for notif in notifications_list:
                 email_content += f"""
                 <li>
@@ -803,37 +832,50 @@ class NotificationDigestService:
                     {f'<br><a href="{notif["action_url"]}">View Details</a>' if notif['action_url'] else ''}
                 </li>
                 """
-            
+
             email_content += "</ul>"
-            
+
             if digest.notification_count > 10:
                 email_content += f"<p>And {digest.notification_count - 10} more notifications...</p>"
-            
+
             # Send via communication service using config
             from core.domains.communications.config import communication_config
-            
+
             try:
                 digest_template_name = communication_config.get_template_name('DIGEST_EMAIL')
             except ValueError:
                 # Fallback to manual layout
                 digest_template_name = communication_config.get_template_name('EMAIL_LAYOUT')
-            
+
+            # Generate base context using the unified context service
+            # For digests, we skip validation since we don't have a single notification object
+            base_context = CommunicationContextService.generate_context(
+                context_type=ContextType.NOTIFICATION,
+                user=digest.user,
+                validate=False,  # No single notification for digest
+            )
+
+            # Merge with digest-specific context
+            context_data = {
+                **base_context,
+                'custom_subject': f'Your {digest.get_frequency_display()} Notification Digest',
+                'custom_body': email_content,
+                'first_name': digest.user.first_name,
+                'last_name': digest.user.last_name,
+                'title': f'Your {digest.get_frequency_display()} Notification Digest',
+                'content': f'You have {digest.notification_count} unread notifications',
+            }
+
             record = communication_service.send_communication_by_template(
                 template_name=digest_template_name,
                 recipient=digest.user.email,
-                context_data={
-                    'custom_subject': f'Your {digest.get_frequency_display()} Notification Digest',
-                    'custom_body': email_content,
-                    'first_name': digest.user.first_name,
-                    'last_name': digest.user.last_name,
-                    'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
-                },
+                context_data=context_data,
                 sent_by=None
             )
-            
+
             if not record:
                 raise Exception("Failed to send digest email")
-                
+
         except Exception as e:
             logger.error(f"Failed to send email digest: {str(e)}")
             raise e
@@ -843,36 +885,53 @@ class NotificationDigestService:
         """Send SMS digest summary"""
         try:
             from core.domains.communications.services import CommunicationService
-            
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+            from core.domains.communications.config import communication_config
+
             communication_service = CommunicationService()
-            
+
             # Get user's phone number
             phone_number = getattr(digest.user.profile, 'phone', None) if hasattr(digest.user, 'profile') else None
-            
+
             if not phone_number:
                 raise Exception("User has no phone number configured")
-            
+
             # Create SMS content (limited)
             sms_content = f"You have {digest.notification_count} unread notifications. Check your portal for details. - LifePlace"
-            
+
             # Send via communication service using config
             try:
                 sms_template_name = communication_config.get_template_name('SMS_LAYOUT')
             except ValueError:
                 # Fallback to notification SMS template
                 sms_template_name = communication_config.get_template_name('NOTIFICATION_SMS')
-            
+
+            # Generate base context using the unified context service
+            # For digests, we skip validation since we don't have a single notification object
+            base_context = CommunicationContextService.generate_context(
+                context_type=ContextType.NOTIFICATION,
+                user=digest.user,
+                validate=False,  # No single notification for digest
+            )
+
+            # Merge with digest-specific context
+            context_data = {
+                **base_context,
+                'custom_body': sms_content,
+                'first_name': digest.user.first_name,
+                'title': 'Notification Digest',
+                'content': f'You have {digest.notification_count} unread notifications',
+            }
+
             record = communication_service.send_communication_by_template(
                 template_name=sms_template_name,
                 recipient=phone_number,
-                context_data={
-                    'custom_body': sms_content,
-                    'first_name': digest.user.first_name,
-                    'site_name': 'LifePlace',
-                },
+                context_data=context_data,
                 sent_by=None
             )
-            
+
             if not record:
                 raise Exception("Failed to send digest SMS")
                 
