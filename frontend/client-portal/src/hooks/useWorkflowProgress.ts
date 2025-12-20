@@ -1,7 +1,7 @@
 // frontend/client-portal/src/hooks/useWorkflowProgress.ts
 
 import { useQuery } from '@tanstack/react-query';
-import { workflowsApi, WorkflowProgress } from '../apis/workflows.api';
+import { workflowsApi, type WorkflowProgress } from '../apis/workflows.api';
 
 export const useWorkflowProgress = (eventId: number) => {
   return useQuery<WorkflowProgress>({

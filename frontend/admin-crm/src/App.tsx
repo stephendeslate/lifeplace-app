@@ -12,7 +12,7 @@ import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
 import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
 import { ContractEdit, ContractView, ContractSign } from './pages/contracts';
-import { QuotesPage } from './pages/quotes';
+import { TasksPage } from './pages/tasks';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
@@ -237,15 +237,18 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Quote Management Routes */}
+      {/* Tasks Route */}
       <Route
-        path="/quotes"
+        path="/tasks"
         element={
           <ProtectedRoute>
-            <QuotesPage />
+            <TasksPage />
           </ProtectedRoute>
         }
       />
+
+      {/* Legacy quotes route redirects to tasks */}
+      <Route path="/quotes" element={<Navigate to="/tasks" replace />} />
 
       {/* Client Management Routes */}
       <Route
