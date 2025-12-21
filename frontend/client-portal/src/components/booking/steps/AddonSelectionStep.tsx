@@ -67,6 +67,21 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
     }), {});
   });
 
+  // Sync venue hours when props change (e.g., when navigating from package selection)
+  React.useEffect(() => {
+    const propsHours = Object.entries(venueAdditionalHoursData).reduce((acc, [key, value]) => ({
+      ...acc,
+      [parseInt(key)]: value
+    }), {} as Record<number, number>);
+
+    // Only update if the props have hours that aren't in local state
+    const hasNewHours = Object.keys(propsHours).length > 0 &&
+      Object.keys(venueAdditionalHours).length === 0;
+    if (hasNewHours) {
+      setVenueAdditionalHours(propsHours);
+    }
+  }, [venueAdditionalHoursData]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Group addons by category if enabled
   const groupedAddons = useMemo(() => {
     if (!groupByCategory) {

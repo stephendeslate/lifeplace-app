@@ -80,6 +80,12 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     [];
   const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
 
+  // Get venue_additional_hours from addon_selection or package_selection step data
+  const venueAdditionalHours = state.stepData.addon_selection?.venue_additional_hours ||
+    state.stepData.package_selection?.venue_additional_hours ||
+    (state.currentSession?.booking_data?.venue_additional_hours as Record<string, number> | undefined) ||
+    undefined;
+
   // Use simplified unified pricing hook
   const {
     pricing,
@@ -91,7 +97,8 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   } = useSimplePricing(
     selectedPackages,
     selectedAddons,
-    stepData.applied_discount_code
+    stepData.applied_discount_code,
+    venueAdditionalHours
   );
 
 
@@ -124,7 +131,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     } catch (error) {
       console.error('Failed to update pricing data:', error);
     }
-  }, [stepData, onDataChange, pricing.total, state.totalPrice, actions]);
+  }, [stepData, onDataChange, pricing.total, state.totalPrice, actions.updateStepData, actions.updateTotalPrice]);
 
   // Update pricing data when total changes
   useEffect(() => {

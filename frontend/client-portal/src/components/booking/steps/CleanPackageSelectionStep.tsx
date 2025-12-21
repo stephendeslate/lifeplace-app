@@ -43,6 +43,7 @@ import type { VenueSelectionStepData, DateTimeStepData } from '../../../types/bo
 import type { RentableVenue, RentableVenueWithEventType } from '../../../types/booking/venues.types';
 import { ProductsApi } from '../../../apis/booking/products.api';
 import { VenuesApi } from '../../../apis/booking/venues.api';
+import { useBooking } from '../../../contexts/BookingContext';
 
 interface PackageCardProps {
   pkg: ProductOption;
@@ -518,6 +519,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   eventTypeId,
 }) => {
   const theme = useTheme();
+  const { state, actions } = useBooking();
 
   // Calculate event days from datetime step data
   const eventDays = useMemo(() => {
@@ -545,10 +547,39 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 
   const [availablePackages, setAvailablePackages] = useState<ProductOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [venueAdditionalHours, setVenueAdditionalHours] = useState<Record<number, number>>({});
+  const [venueAdditionalHours, setVenueAdditionalHours] = useState<Record<number, number>>(() => {
+    // Initialize from stepData if available
+    if (stepData.venue_additional_hours) {
+      return Object.entries(stepData.venue_additional_hours).reduce((acc, [key, value]) => ({
+        ...acc,
+        [parseInt(key)]: value
+      }), {} as Record<number, number>);
+    }
+    return {};
+  });
   const selectionType = (config?.selection_type || 'SINGLE') as 'SINGLE' | 'MULTIPLE';
   const minSelection = config?.min_selection || 1;
   const maxSelection = config?.max_selection || 1;
+
+  // Sync venue hours from stepData when it changes (e.g., when navigating back to this step)
+  useEffect(() => {
+    if (stepData.venue_additional_hours && Object.keys(stepData.venue_additional_hours).length > 0) {
+      const hoursFromStep = Object.entries(stepData.venue_additional_hours).reduce((acc, [key, value]) => ({
+        ...acc,
+        [parseInt(key)]: value
+      }), {} as Record<number, number>);
+
+      // Only update if actually different to avoid infinite loops
+      const currentKeys = Object.keys(venueAdditionalHours).sort().join(',');
+      const newKeys = Object.keys(hoursFromStep).sort().join(',');
+      const currentVals = Object.values(venueAdditionalHours).sort().join(',');
+      const newVals = Object.values(hoursFromStep).sort().join(',');
+
+      if (currentKeys !== newKeys || currentVals !== newVals) {
+        setVenueAdditionalHours(hoursFromStep);
+      }
+    }
+  }, [stepData.venue_additional_hours]);
 
   // Apply event_days filtering to available packages
   const filteredPackages = useMemo(() => {
@@ -688,21 +719,30 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     loadPackages();
   }, [config?.available_packages_details, config?.available_categories]);
 
-  // Sync venue hours changes to parent
-  useEffect(() => {
-    if (stepData.selected_packages && stepData.selected_packages.length > 0) {
-      // Convert venue hours to string keys for API
-      const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
-        ...acc,
-        [key]: value
-      }), {} as Record<string, number>);
+  // Helper to build complete data with venue hours (same pattern as AddonSelectionStep)
+  const buildCompleteData = useCallback((packages: SelectedPackage[]): PackageSelectionStepData => {
+    const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
+      ...acc,
+      [key]: value  // Keep as string key for API
+    }), {} as Record<string, number>);
 
-      onDataChange({
-        selected_packages: stepData.selected_packages,
-        venue_additional_hours: venueHoursForApi
-      });
+    const dataToSend: PackageSelectionStepData = {
+      selected_packages: packages,
+    };
+
+    if (selectedVenues.length > 0 && Object.keys(venueHoursForApi).length > 0) {
+      dataToSend.venue_additional_hours = venueHoursForApi;
     }
-  }, [venueAdditionalHours]);
+
+    return dataToSend;
+  }, [venueAdditionalHours, selectedVenues.length]);
+
+  // Effect to update venue hours when they change (without changing packages)
+  useEffect(() => {
+    if (selectedVenues.length > 0 && stepData.selected_packages && stepData.selected_packages.length > 0) {
+      onDataChange(buildCompleteData(stepData.selected_packages));
+    }
+  }, [venueAdditionalHours]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate totals and selection state
   const selectedPackageIds = useMemo(() =>
@@ -712,22 +752,36 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   const totalSelected = stepData.selected_packages?.length || 0;
   const canSelectMore = selectionType === 'MULTIPLE' && totalSelected < maxSelection;
 
-  // Calculate total price including excess hours for venues
-  const totalPrice = useMemo(() => {
+  // Calculate subtotal for display (packages + excess hours)
+  const subtotalPrice = useMemo(() => {
     const packagesPrice = stepData.selected_packages?.reduce((sum, pkg) => {
       const price = parseFloat(pkg.price || '0');
       return sum + (price * (pkg.quantity || 1));
     }, 0) || 0;
 
-    // Add excess hours cost for selected venues
+    // Add excess hours cost for selected venues (using effective pricing for event-type-specific rates)
     const excessHoursCost = selectedVenues.reduce((sum, venue) => {
       const additionalHours = venueAdditionalHours[venue.id] || 0;
-      const excessPrice = parseFloat(venue.standalone_excess_hour_price || '0');
+      const effectivePricing = VenuesApi.getEffectivePricing(venue);
+      const excessPrice = parseFloat(effectivePricing.excessHourPrice || '0');
       return sum + (additionalHours * excessPrice);
     }, 0);
 
     return packagesPrice + excessHoursCost;
   }, [stepData.selected_packages, selectedVenues, venueAdditionalHours]);
+
+  // Calculate total with tax for display (using configured rate from backend)
+  const totalPrice = useMemo(() => {
+    const tax = subtotalPrice * state.taxRate;
+    return subtotalPrice + tax;
+  }, [subtotalPrice, state.taxRate]);
+
+  // Update global price immediately for optimistic UI (footer "Current Total" display)
+  useEffect(() => {
+    if (totalPrice > 0) {
+      actions.setOptimisticPrice(totalPrice.toFixed(2));
+    }
+  }, [totalPrice, actions.setOptimisticPrice]);
 
   // Check if custom bundle is selected
   const isCustomBundleSelected = selectedPackageIds.includes(-1);
@@ -736,18 +790,9 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   const handlePackageSelect = useCallback((pkg: ProductOption) => {
     const isCurrentlySelected = selectedPackageIds.includes(pkg.id);
 
-    // Convert venue hours to string keys for API
-    const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
-      ...acc,
-      [key]: value
-    }), {} as Record<string, number>);
-
     if (selectionType === 'SINGLE') {
       if (isCurrentlySelected) {
-        onDataChange({
-          selected_packages: [],
-          venue_additional_hours: venueHoursForApi
-        });
+        onDataChange(buildCompleteData([]));
       } else {
         const selectedPkg: SelectedPackage = {
           product_id: pkg.id,
@@ -764,19 +809,13 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
           selectedPkg.venue_ids = selectedVenueIds;
         }
 
-        onDataChange({
-          selected_packages: [selectedPkg],
-          venue_additional_hours: venueHoursForApi
-        });
+        onDataChange(buildCompleteData([selectedPkg]));
       }
     } else {
       // MULTIPLE selection
       if (isCurrentlySelected) {
         const updatedPackages = stepData.selected_packages?.filter(p => p.product_id !== pkg.id) || [];
-        onDataChange({
-          selected_packages: updatedPackages,
-          venue_additional_hours: venueHoursForApi
-        });
+        onDataChange(buildCompleteData(updatedPackages));
       } else if (canSelectMore) {
         const selectedPkg: SelectedPackage = {
           product_id: pkg.id,
@@ -793,52 +832,48 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         }
 
         const updatedPackages = [...(stepData.selected_packages || []), selectedPkg];
-        onDataChange({
-          selected_packages: updatedPackages,
-          venue_additional_hours: venueHoursForApi
-        });
+        onDataChange(buildCompleteData(updatedPackages));
       }
     }
-  }, [stepData.selected_packages, selectedPackageIds, selectionType, canSelectMore, venueAdditionalHours, onDataChange, selectedVenueIds]);
+  }, [stepData.selected_packages, selectedPackageIds, selectionType, canSelectMore, onDataChange, selectedVenueIds, buildCompleteData]);
 
   // Handle quantity change
   const handleQuantityChange = useCallback((pkg: ProductOption, quantity: number) => {
     if (quantity === 0) {
       const updatedPackages = stepData.selected_packages?.filter(p => p.product_id !== pkg.id) || [];
-      // Convert venue hours to string keys for API
-      const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
-        ...acc,
-        [key]: value
-      }), {} as Record<string, number>);
-      onDataChange({
-        selected_packages: updatedPackages,
-        venue_additional_hours: venueHoursForApi
-      });
+      onDataChange(buildCompleteData(updatedPackages));
     } else {
       const updatedPackages = stepData.selected_packages?.map(p =>
         p.product_id === pkg.id
           ? { ...p, quantity }
           : p
       ) || [];
-      // Convert venue hours to string keys for API
-      const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
+      onDataChange(buildCompleteData(updatedPackages));
+    }
+  }, [stepData.selected_packages, onDataChange, buildCompleteData]);
+
+  // Handle venue hours change - update local state AND sync to parent immediately
+  const handleVenueHoursChange = useCallback((venueId: number, hours: number) => {
+    // Update local state
+    const newHours = {
+      ...venueAdditionalHours,
+      [venueId]: hours
+    };
+    setVenueAdditionalHours(newHours);
+
+    // Immediately sync to parent with updated hours (same pattern as addon selection)
+    if (stepData.selected_packages && stepData.selected_packages.length > 0) {
+      const venueHoursForApi = Object.entries(newHours).reduce((acc, [key, value]) => ({
         ...acc,
         [key]: value
       }), {} as Record<string, number>);
+
       onDataChange({
-        selected_packages: updatedPackages,
+        selected_packages: stepData.selected_packages,
         venue_additional_hours: venueHoursForApi
       });
     }
-  }, [stepData.selected_packages, venueAdditionalHours, onDataChange]);
-
-  // Handle venue hours change
-  const handleVenueHoursChange = useCallback((venueId: number, hours: number) => {
-    setVenueAdditionalHours(prev => ({
-      ...prev,
-      [venueId]: hours
-    }));
-  }, []);
+  }, [venueAdditionalHours, stepData.selected_packages, onDataChange]);
 
   const hasFieldError = useCallback((fieldName: string) => {
     return !!(validationErrors[fieldName]?.length > 0);

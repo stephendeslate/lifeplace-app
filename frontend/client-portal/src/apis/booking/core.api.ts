@@ -377,9 +377,17 @@ export class BookingCoreApi {
  */
 static async calculatePricing(
     sessionId: string,
-    discountCode?: string
+    discountCode?: string,
+    venueAdditionalHours?: Record<string, number>
   ): Promise<PricingCalculation> {
-    const data = discountCode ? { discount_code: discountCode } : {};
+    const data: Record<string, unknown> = {};
+    if (discountCode) {
+      data.discount_code = discountCode;
+    }
+    // Pass venue_additional_hours directly to avoid race condition with debounced session updates
+    if (venueAdditionalHours && Object.keys(venueAdditionalHours).length > 0) {
+      data.venue_additional_hours = venueAdditionalHours;
+    }
 
     const response = await api.post<PricingCalculation>(
       `/bookingflow/public/flows/session/${sessionId}/calculate-pricing/`,

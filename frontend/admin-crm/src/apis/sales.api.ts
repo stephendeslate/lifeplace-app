@@ -269,6 +269,30 @@ export const salesApi = {
     return response.data;
   },
 
+  // Get booking session line items for an event
+  getBookingSessionLineItems: async (eventId: number): Promise<{
+    has_booking_session: boolean;
+    session_id?: string;
+    line_items?: {
+      description: string;
+      quantity: number;
+      unit_price: string;
+      total: string;
+      product_id: number | null;
+      base_unit_price: string;
+      excess_hours: number | null;
+      excess_hour_price: string | null;
+      excess_cost: string;
+      item_type: string;
+    }[];
+    subtotal?: string;
+    tax_amount?: string;
+    total_amount?: string;
+  }> => {
+    const response = await api.get(`/sales/quotes/booking_session_line_items/?event_id=${eventId}`);
+    return response.data;
+  },
+
   // Line Item Pricing Calculation (venue-based hours)
   calculateLineItemPricing: async (data: {
     product_id: number;

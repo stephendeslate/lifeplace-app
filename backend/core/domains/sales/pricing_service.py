@@ -25,7 +25,8 @@ class PricingLineItem:
     total_unit_price: Decimal = Decimal('0.00')  # base_unit_price + excess per unit
     line_total: Decimal = Decimal('0.00')  # total_unit_price * quantity
     tax_rate: Decimal = Decimal('0.00')
-    
+    item_type: str = 'PACKAGE'  # 'PACKAGE' or 'ADDON'
+
     def __post_init__(self):
         """Calculate derived fields after initialization"""
         self.excess_cost = (self.excess_hour_price or Decimal('0')) * (self.excess_hours or 0)
@@ -42,6 +43,7 @@ class PricingBreakdown:
     vip_discount_amount: Decimal = Decimal('0.00')
     service_charge_amount: Decimal = Decimal('0.00')
     tax_amount: Decimal = Decimal('0.00')
+    tax_rate: Decimal = Decimal('0.00')  # Tax rate as percentage (e.g., 12.00 for 12%)
     total_amount: Decimal = Decimal('0.00')
     applied_discount: Optional[Discount] = None
     applied_vip_benefits: List[str] = None  # List of applied VIP benefit descriptions
@@ -65,7 +67,8 @@ class PricingCalculationService:
     def get_venue_hours_info(
         product_id: int,
         venue_additional_hours: Dict[str, int],
-        event_type_id: Optional[int] = None
+        event_type_id: Optional[int] = None,
+        venue_ids: Optional[List[int]] = None
     ) -> Tuple[Decimal, List[Dict[str, Any]]]:
         """
         Calculate venue-based excess hours pricing.
@@ -74,6 +77,7 @@ class PricingCalculationService:
             product_id: The package/product ID
             venue_additional_hours: Dict mapping venue_id (as string) -> additional hours (int)
             event_type_id: Optional event type ID for event-type-specific pricing
+            venue_ids: Optional list of venue IDs for custom bundles (used when product_id is -1)
 
         Returns:
             Tuple of (total_cost: Decimal, venue_details: list of dicts)
@@ -81,16 +85,24 @@ class PricingCalculationService:
         if not venue_additional_hours:
             return Decimal('0.00'), []
 
-        # Query PackageVenue to get venues for this package
-        package_venues = PackageVenue.objects.filter(
-            package_id=product_id
-        ).select_related('venue')
+        from core.domains.venues.models import Venue
+
+        # For custom bundles (product_id = -1), use venue_ids directly
+        if product_id == -1 and venue_ids:
+            venues = list(Venue.objects.filter(id__in=venue_ids))
+            logger.info(f"Custom bundle: fetching {len(venues)} venues directly from venue_ids")
+        else:
+            # Query PackageVenue to get venues for this package
+            package_venues = PackageVenue.objects.filter(
+                package_id=product_id
+            ).select_related('venue')
+            venues = [pv.venue for pv in package_venues]
 
         # Pre-fetch event type configurations if event_type_id is provided
         event_type_configs = {}
-        if event_type_id:
+        if event_type_id and venues:
             configs = VenueEventTypeConfiguration.objects.filter(
-                venue__in=[pv.venue for pv in package_venues],
+                venue__in=venues,
                 event_type_id=event_type_id
             ).select_related('venue')
             event_type_configs = {config.venue_id: config for config in configs}
@@ -98,13 +110,13 @@ class PricingCalculationService:
         total_cost = Decimal('0.00')
         venue_details = []
 
-        for pv in package_venues:
-            venue_id_str = str(pv.venue.id)
+        for venue in venues:
+            venue_id_str = str(venue.id)
             additional_hours = venue_additional_hours.get(venue_id_str, 0)
 
             if additional_hours > 0:
                 # Check for event-type-specific configuration
-                event_config = event_type_configs.get(pv.venue.id)
+                event_config = event_type_configs.get(venue.id)
 
                 if event_config:
                     # Use event-type-specific pricing
@@ -112,30 +124,30 @@ class PricingCalculationService:
                     excess_hour_price = event_config.get_effective_excess_hour_price() or Decimal('0')
                     is_all_day = event_config.is_all_day_access
                     logger.info(
-                        f"Using event-type config for {pv.venue.name}: "
+                        f"Using event-type config for {venue.name}: "
                         f"included={included_hours}h, excess_price=₱{excess_hour_price}, all_day={is_all_day}"
                     )
                 else:
                     # Fall back to venue defaults
-                    included_hours = pv.venue.standalone_included_hours or Decimal('0')
-                    excess_hour_price = pv.venue.standalone_excess_hour_price or Decimal('0')
+                    included_hours = venue.standalone_included_hours or Decimal('0')
+                    excess_hour_price = venue.standalone_excess_hour_price or Decimal('0')
                     is_all_day = False
 
                 # For all-day access, no excess charges apply
                 if is_all_day:
                     venue_cost = Decimal('0.00')
-                    logger.info(f"Venue {pv.venue.name}: All-day access - no excess charges")
+                    logger.info(f"Venue {venue.name}: All-day access - no excess charges")
                 else:
                     # Calculate cost for this venue
                     venue_cost = Decimal(str(additional_hours)) * excess_hour_price
                     total_cost += venue_cost
                     logger.info(
-                        f"Venue {pv.venue.name}: {additional_hours}h additional @ ₱{excess_hour_price}/h = ₱{venue_cost}"
+                        f"Venue {venue.name}: {additional_hours}h additional @ ₱{excess_hour_price}/h = ₱{venue_cost}"
                     )
 
                 venue_details.append({
-                    'venue_id': pv.venue.id,
-                    'venue_name': pv.venue.name,
+                    'venue_id': venue.id,
+                    'venue_name': venue.name,
                     'included_hours': float(included_hours),
                     'additional_hours': additional_hours,
                     'excess_hour_price': float(excess_hour_price),
@@ -165,8 +177,6 @@ class PricingCalculationService:
         Returns:
             PricingBreakdown: Complete pricing breakdown
         """
-        logger.info("=== CENTRALIZED PRICING CALCULATION ===")
-
         # Extract venue_additional_hours from booking_data if not provided explicitly
         if venue_additional_hours is None:
             venue_additional_hours = booking_data.get('venue_additional_hours', {})
@@ -178,29 +188,17 @@ class PricingCalculationService:
             if event_type_id is None:
                 event_type_id = booking_data.get('booking_flow', {}).get('event_type_id')
 
-        logger.info(f"Venue additional hours: {venue_additional_hours}")
-        logger.info(f"Event type ID: {event_type_id}")
-
         line_items = []
+
+        # DEBUG: Log booking_data structure
+        logger.info(f"DEBUG calculate_from_booking_data: booking_data keys = {list(booking_data.keys()) if booking_data else 'None'}")
 
         # Get selected packages and addons from booking data (single source of truth approach)
         selected_packages = PricingCalculationService._extract_selected_items(booking_data, 'selected_packages')
         selected_addons = PricingCalculationService._extract_selected_items(booking_data, 'selected_addons')
-        
-        logger.info(f"Found {len(selected_packages)} packages and {len(selected_addons)} addons")
-        
-        # Debug: Log the booking data structure to understand addon location
-        if len(selected_addons) == 0:
-            logger.warning("No addons found! Booking data keys: " + str(list(booking_data.keys())))
-            # Try to find addons with different key variations
-            for key, value in booking_data.items():
-                if 'addon' in key.lower() or 'add_on' in key.lower():
-                    logger.info(f"Found potential addon key: {key} = {value}")
-                if isinstance(value, dict):
-                    for sub_key in value.keys():
-                        if 'addon' in sub_key.lower() or 'add_on' in sub_key.lower():
-                            logger.info(f"Found potential addon in {key}.{sub_key} = {value[sub_key]}")
-        
+
+        logger.info(f"DEBUG: extracted {len(selected_packages)} packages, {len(selected_addons)} addons")
+
         # Process packages (which can have excess hours)
         for package_data in selected_packages:
             line_item = PricingCalculationService._create_package_line_item(
@@ -241,11 +239,10 @@ class PricingCalculationService:
         if breakdown.service_charge_amount > 0:
             logger.info(f"Applied service charge: ₱{breakdown.service_charge_amount}")
 
-        # Apply tax using single-source-of-truth logic
-        tax_rate = PricingCalculationService.get_applicable_tax_rate(line_items)
-        if tax_rate > 0:
-            PricingCalculationService.apply_tax(breakdown, tax_rate)
-            logger.info(f"Applied tax: {tax_rate}% - ₱{breakdown.tax_amount}")
+        # Apply tax using per-item tax rates
+        PricingCalculationService.apply_item_based_tax(breakdown)
+        if breakdown.tax_amount > 0:
+            logger.info(f"Applied per-item tax: ₱{breakdown.tax_amount}")
 
         logger.info(f"Final total: ₱{breakdown.total_amount}")
         return breakdown
@@ -255,6 +252,7 @@ class PricingCalculationService:
         """Extract selected packages or addons from booking data with single source of truth logic"""
         # First check root level (preferred location)
         if item_type in booking_data:
+            logger.info(f"DEBUG _extract_selected_items: Found {item_type} at root level with {len(booking_data[item_type])} items")
             return booking_data[item_type]
         
         # Fallback: search in step data (take first occurrence only)
@@ -282,7 +280,8 @@ class PricingCalculationService:
                     if alt_key in step_data:
                         logger.info(f"Found {item_type} in step {step_key} using alternative key: {alt_key}")
                         return step_data[alt_key]
-        
+
+        logger.warning(f"DEBUG _extract_selected_items: {item_type} NOT FOUND in booking_data. Keys present: {list(booking_data.keys())}")
         return []
     
     @staticmethod
@@ -307,20 +306,49 @@ class PricingCalculationService:
     ) -> Optional[PricingLineItem]:
         """Create a line item for a package, including venue-based excess hours calculation"""
         try:
+            from core.domains.products.models import ProductOption
+
             name = package_data.get('name', 'Package')
             quantity = int(package_data.get('quantity', 1))
             base_price = Decimal(str(package_data.get('price', 0)))
             product_id = package_data.get('product_id')
 
-            logger.info(f"Processing package: {name}, base_price: ₱{base_price}, quantity: {quantity}")
+            # For custom bundles, get venue_ids from package data
+            is_custom_bundle = package_data.get('is_custom_bundle', False)
+            venue_ids = package_data.get('venue_ids', []) if is_custom_bundle else None
+
+            # Determine tax rate based on product's is_tax_inclusive flag
+            tax_rate = Decimal('0.00')
+            if product_id and product_id != -1:
+                try:
+                    product = ProductOption.objects.get(id=product_id)
+                    if product.is_tax_inclusive:
+                        # Price already includes tax, no additional tax
+                        tax_rate = Decimal('0.00')
+                        logger.info(f"Package {name}: Tax-inclusive, tax_rate=0%")
+                    else:
+                        # Use default tax rate from settings
+                        default_tax = TaxRate.objects.filter(is_default=True).first()
+                        tax_rate = default_tax.rate if default_tax else Decimal('0.00')
+                        logger.info(f"Package {name}: Not tax-inclusive, using default tax_rate={tax_rate}%")
+                except ProductOption.DoesNotExist:
+                    logger.warning(f"Product {product_id} not found, defaulting tax_rate=0%")
+            else:
+                # Custom bundle - check if is_tax_inclusive is in package_data
+                if package_data.get('is_tax_inclusive', False):
+                    tax_rate = Decimal('0.00')
+                else:
+                    default_tax = TaxRate.objects.filter(is_default=True).first()
+                    tax_rate = default_tax.rate if default_tax else Decimal('0.00')
+                logger.info(f"Custom bundle {name}: tax_rate={tax_rate}%")
 
             # Calculate excess hours using venue-based hours system
             excess_hours = None
             excess_hour_price = None
 
-            if venue_additional_hours and product_id:
+            if venue_additional_hours and (product_id or venue_ids):
                 total_cost, venue_details = PricingCalculationService.get_venue_hours_info(
-                    product_id, venue_additional_hours, event_type_id
+                    product_id or -1, venue_additional_hours, event_type_id, venue_ids
                 )
 
                 if total_cost > 0:
@@ -348,7 +376,7 @@ class PricingCalculationService:
                 base_unit_price=base_price,
                 excess_hours=excess_hours,
                 excess_hour_price=excess_hour_price,
-                tax_rate=Decimal('0.00')
+                tax_rate=tax_rate
             )
 
         except (ValueError, TypeError, KeyError) as e:
@@ -359,20 +387,45 @@ class PricingCalculationService:
     def _create_addon_line_item(addon_data: Dict[str, Any]) -> Optional[PricingLineItem]:
         """Create a line item for an addon"""
         try:
+            from core.domains.products.models import ProductOption
+
             name = addon_data.get('name', 'Add-on')
             quantity = int(addon_data.get('quantity', 1))
             price = Decimal(str(addon_data.get('price', 0)))
             product_id = addon_data.get('product_id')
-            
+
+            # Determine tax rate based on product's is_tax_inclusive flag
+            tax_rate = Decimal('0.00')
+            if product_id and product_id != -1:
+                try:
+                    product = ProductOption.objects.get(id=product_id)
+                    if product.is_tax_inclusive:
+                        # Price already includes tax, no additional tax
+                        tax_rate = Decimal('0.00')
+                        logger.info(f"Add-on {name}: Tax-inclusive, tax_rate=0%")
+                    else:
+                        # Use default tax rate from settings
+                        default_tax = TaxRate.objects.filter(is_default=True).first()
+                        tax_rate = default_tax.rate if default_tax else Decimal('0.00')
+                        logger.info(f"Add-on {name}: Not tax-inclusive, using default tax_rate={tax_rate}%")
+                except ProductOption.DoesNotExist:
+                    logger.warning(f"Product {product_id} not found, defaulting tax_rate=0%")
+            else:
+                # No product_id - use default tax rate
+                default_tax = TaxRate.objects.filter(is_default=True).first()
+                tax_rate = default_tax.rate if default_tax else Decimal('0.00')
+                logger.info(f"Add-on {name}: No product_id, using default tax_rate={tax_rate}%")
+
             return PricingLineItem(
                 product_id=product_id,
                 name=name,
                 description=name,
                 quantity=quantity,
                 base_unit_price=price,
-                tax_rate=Decimal('0.00')
+                tax_rate=tax_rate,
+                item_type='ADDON'
             )
-            
+
         except (ValueError, TypeError, KeyError) as e:
             logger.warning(f"Error creating addon line item: {e}")
             return None
@@ -500,7 +553,8 @@ class PricingCalculationService:
 
     @staticmethod
     def apply_tax(breakdown: PricingBreakdown, tax_rate: Decimal):
-        """Apply tax to the pricing breakdown"""
+        """Apply tax to the pricing breakdown (legacy single-rate method)"""
+        breakdown.tax_rate = tax_rate  # Store the tax rate for frontend use
         taxable_amount = breakdown.subtotal - breakdown.discount_amount - breakdown.vip_discount_amount
         breakdown.tax_amount = (taxable_amount * (tax_rate / 100)).quantize(Decimal('0.01'))
         # Recalculate total after applying tax (includes service charge)
@@ -511,7 +565,56 @@ class PricingCalculationService:
             + breakdown.service_charge_amount
             + breakdown.tax_amount
         )
-    
+
+    @staticmethod
+    def apply_item_based_tax(breakdown: PricingBreakdown):
+        """
+        Apply tax based on each line item's individual tax rate.
+
+        Tax-inclusive products have tax_rate=0 (price already includes tax).
+        Non-tax-inclusive products have the default system tax rate.
+
+        Discounts are applied proportionally to reduce the taxable amount per item.
+        """
+        if not breakdown.line_items:
+            breakdown.tax_amount = Decimal('0.00')
+            return
+
+        # Calculate discount ratio to apply proportionally
+        total_discount = breakdown.discount_amount + breakdown.vip_discount_amount
+        discount_ratio = Decimal('0')
+        if breakdown.subtotal > 0:
+            discount_ratio = total_discount / breakdown.subtotal
+
+        # Calculate tax per line item
+        total_tax = Decimal('0.00')
+        for item in breakdown.line_items:
+            # Item's taxable amount after proportional discount
+            item_discount = (item.line_total * discount_ratio).quantize(Decimal('0.01'))
+            item_taxable = item.line_total - item_discount
+
+            # Apply item's specific tax rate
+            item_tax = (item_taxable * (item.tax_rate / 100)).quantize(Decimal('0.01'))
+            total_tax += item_tax
+
+            if item.tax_rate > 0:
+                logger.info(
+                    f"Item tax: {item.name} - taxable ₱{item_taxable} @ {item.tax_rate}% = ₱{item_tax}"
+                )
+
+        breakdown.tax_amount = total_tax
+
+        # Recalculate total
+        breakdown.total_amount = (
+            breakdown.subtotal
+            - breakdown.discount_amount
+            - breakdown.vip_discount_amount
+            + breakdown.service_charge_amount
+            + breakdown.tax_amount
+        )
+
+        logger.info(f"Per-item tax calculated: ₱{breakdown.tax_amount}")
+
     @staticmethod
     def calculate_pricing_breakdown(pricing_line_items: List[PricingLineItem]) -> PricingBreakdown:
         """Calculate pricing breakdown from PricingLineItem objects"""
