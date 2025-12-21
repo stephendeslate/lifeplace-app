@@ -32,6 +32,12 @@ export const useInvoicePayments = () => {
       queryClient.invalidateQueries({ queryKey: financialKeys.paymentSummary() });
       queryClient.invalidateQueries({ queryKey: financialKeys.paymentPlans() });
 
+      // Payment triggers backend workflow automation (PAYMENT_RECEIVED)
+      // that may progress workflow stages, create tasks, update event status
+      // Invalidate events and contracts to reflect any workflow-triggered changes
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+
       showToast({
         type: 'success',
         title: 'Payment Successful'

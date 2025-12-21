@@ -106,18 +106,23 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
     onSuccess: (signedContract, { contractId }) => {
       // Update the specific contract in cache
       queryClient.setQueryData(['contracts', contractId], signedContract);
-      
+
       // Update the contracts list
       queryClient.setQueryData(['contracts'], (oldData: Contract[] | undefined) => {
         if (!oldData) return [signedContract];
-        return oldData.map(contract => 
+        return oldData.map(contract =>
           contract.id === contractId ? signedContract : contract
         );
       });
-      
+
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['contracts', 'pending'] });
-      
+
+      // Contract signing (when fully signed) triggers backend workflow automation
+      // that may create tasks, send notifications, progress workflow stages
+      // Invalidate events to reflect any workflow-triggered changes
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+
       // Trigger signature event
       simulateSignatureEvent(contractId, 'signature_added');
     },
