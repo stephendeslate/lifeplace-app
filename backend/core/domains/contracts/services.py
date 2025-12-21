@@ -353,7 +353,15 @@ class EventContractService:
         # Use contract value from context if not provided
         if contract_value is None:
             contract_value = event.total_price
-        
+
+        # Calculate next amendment number for this event
+        max_amendment = EventContract.objects.filter(
+            event_id=event_id
+        ).aggregate(
+            max_num=models.Max('amendment_number')
+        )['max_num']
+        next_amendment_number = (max_amendment or -1) + 1
+
         with transaction.atomic():
             contract = EventContract.objects.create(
                 event_id=event_id,
@@ -362,7 +370,7 @@ class EventContractService:
                 content=rendered_content,
                 valid_until=valid_until,
                 contract_value=contract_value,
-                amendment_number=0
+                amendment_number=next_amendment_number
             )
             
             logger.info(f"Created new contract for event {event_id} using template {template.name}")

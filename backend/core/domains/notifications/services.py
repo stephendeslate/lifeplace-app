@@ -234,7 +234,7 @@ class NotificationService:
             enhanced_context.update({
                 'event_id': event.id,
                 'event_name': event.name or f"{event.event_type} Event",
-                'event_start_date': event.start_date,
+                'event_start_date': event.start_date.isoformat() if event.start_date else None,
             })
             
         # Add client context if provided

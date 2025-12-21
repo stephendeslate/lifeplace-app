@@ -272,15 +272,30 @@ class EventContractViewSet(viewsets.ModelViewSet):
             'documents',
             'notes'
         )
-        
+
         # Admin gets all contracts, clients get only their own
         if self.request.user.role == 'ADMIN':
-            return queryset.order_by('-created_at')
+            queryset = queryset.order_by('-created_at')
         else:
             # Client users only see contracts from their events
-            return queryset.filter(
+            queryset = queryset.filter(
                 event__client=self.request.user
             ).order_by('-created_at')
+
+        # Apply query parameter filters
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+
+        event_id = self.request.query_params.get('event_id')
+        if event_id:
+            queryset = queryset.filter(event_id=event_id)
+
+        template = self.request.query_params.get('template')
+        if template:
+            queryset = queryset.filter(template_id=template)
+
+        return queryset
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
