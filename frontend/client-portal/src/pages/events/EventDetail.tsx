@@ -38,12 +38,14 @@ import {
   Assignment as QuestionnaireIcon,
   Feedback as FeedbackIcon,
   RequestQuote as RequestQuoteIcon,
+  Receipt as InvoiceIcon,
   Login as CheckInIcon,
   Note as NotesIcon,
 } from '@mui/icons-material';
 import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
 import { formatPhilippinesTime } from '../../utils/timezone';
 import { useEventQuotes } from '../../hooks/useEventQuotes';
+import { useInvoices } from '../../hooks/useFinancial';
 import {
   EventStatusBadge,
   EventCountdown,
@@ -53,6 +55,7 @@ import {
   EventFeedback,
   EventQuestionnaires,
   EventQuotes,
+  EventInvoices,
   EventNotes,
   ContractStatusChip,
   WorkflowProgressStepper,
@@ -126,6 +129,12 @@ const EventDetail: React.FC = () => {
     data: quotesData
   } = useEventQuotes(eventId);
   const quotesCount = quotesData?.results?.length || 0;
+
+  // Get invoices for this event
+  const {
+    data: invoicesData
+  } = useInvoices({ event: eventId });
+  const invoicesCount = invoicesData?.results?.length || 0;
 
   // Get workflow progress for this event
   const {
@@ -450,19 +459,26 @@ const EventDetail: React.FC = () => {
             aria-controls="event-tabpanel-5"
           />
           <Tab
-            label="Check-in"
-            icon={<CheckInIcon />}
+            label={`Invoices${invoicesCount > 0 ? ` (${invoicesCount})` : ''}`}
+            icon={<InvoiceIcon />}
             iconPosition="start"
             id="event-tab-6"
             aria-controls="event-tabpanel-6"
+          />
+          <Tab
+            label="Check-in"
+            icon={<CheckInIcon />}
+            iconPosition="start"
+            id="event-tab-7"
+            aria-controls="event-tabpanel-7"
           />
           {hasContracts && (
             <Tab
               label={`Contracts (${eventContracts.length})`}
               icon={<ContractIcon />}
               iconPosition="start"
-              id="event-tab-7"
-              aria-controls="event-tabpanel-7"
+              id="event-tab-8"
+              aria-controls="event-tabpanel-8"
             />
           )}
           {event.has_notes && (
@@ -470,8 +486,8 @@ const EventDetail: React.FC = () => {
               label="Notes"
               icon={<NotesIcon />}
               iconPosition="start"
-              id={hasContracts ? "event-tab-8" : "event-tab-7"}
-              aria-controls={hasContracts ? "event-tabpanel-8" : "event-tabpanel-7"}
+              id={hasContracts ? "event-tab-9" : "event-tab-8"}
+              aria-controls={hasContracts ? "event-tabpanel-9" : "event-tabpanel-8"}
             />
           )}
         </Tabs>
@@ -501,11 +517,15 @@ const EventDetail: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={6}>
+          <EventInvoices eventId={eventId} />
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={7}>
           <EventCheckIn eventId={eventId} event={event} />
         </TabPanel>
 
         {hasContracts && (
-          <TabPanel value={activeTab} index={7}>
+          <TabPanel value={activeTab} index={8}>
             {isLoadingContracts ? (
               <Box>
                 {[1, 2].map((item) => (
@@ -594,7 +614,7 @@ const EventDetail: React.FC = () => {
         )}
 
         {event.has_notes && (
-          <TabPanel value={activeTab} index={hasContracts ? 8 : 7}>
+          <TabPanel value={activeTab} index={hasContracts ? 9 : 8}>
             <EventNotes eventId={eventId} />
           </TabPanel>
         )}
