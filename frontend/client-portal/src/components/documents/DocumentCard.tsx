@@ -61,12 +61,6 @@ const getDocumentIcon = (doc: DocumentItem): React.ReactNode => {
   return typeIcons[doc.type] || <FileIcon sx={{ fontSize: 40, color: '#757575' }} />;
 };
 
-// Check if document can be previewed (images)
-const canPreview = (doc: DocumentItem): boolean => {
-  const ext = doc.fileType.toLowerCase();
-  return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext);
-};
-
 export const DocumentCard: React.FC<DocumentCardProps> = ({
   document,
   onDownload,
@@ -177,12 +171,12 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
       </CardContent>
 
       <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
-        {canPreview(document) && onPreview && (
-          <Tooltip title="Preview">
+        {onPreview && (
+          <Tooltip title="View">
             <IconButton
               size="small"
               onClick={() => onPreview(document)}
-              aria-label={`Preview ${document.name}`}
+              aria-label={`View ${document.name}`}
             >
               <ViewIcon fontSize="small" />
             </IconButton>
