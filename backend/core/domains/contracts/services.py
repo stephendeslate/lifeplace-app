@@ -5,7 +5,7 @@ import re
 from decimal import Decimal
 
 from django.db import models, transaction
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.utils import timezone
 
 from .exceptions import (
@@ -358,9 +358,10 @@ class EventContractService:
         max_amendment = EventContract.objects.filter(
             event_id=event_id
         ).aggregate(
-            max_num=models.Max('amendment_number')
+            max_num=Max('amendment_number')
         )['max_num']
-        next_amendment_number = (max_amendment or -1) + 1
+        # Use explicit None check since 0 is a valid amendment_number
+        next_amendment_number = 0 if max_amendment is None else max_amendment + 1
 
         with transaction.atomic():
             contract = EventContract.objects.create(
