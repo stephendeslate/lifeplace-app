@@ -1,6 +1,6 @@
 // frontend/client-portal/src/pages/documents/DocumentsPage.tsx
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -32,7 +32,9 @@ import {
 import { useDocuments } from '../../hooks/useDocuments';
 import { useEvents } from '../../hooks/useEvents';
 import { contractsApi } from '../../apis/contracts.api';
+import { eventsApi } from '../../apis/events.api';
 import { DocumentList, DocumentUploadDialog } from '../../components/documents';
+import { FileViewerDialog } from '../../components/common/FileViewerDialog';
 import type {
   DocumentFilters,
   DocumentType,
@@ -61,6 +63,10 @@ export const DocumentsPage: React.FC = () => {
 
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+
+  // View dialog state
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState<DocumentItem | null>(null);
 
   // Get events for upload dialog
   const { useEventsList } = useEvents();
@@ -130,12 +136,35 @@ export const DocumentsPage: React.FC = () => {
     }
   };
 
-  // Handle document preview (for images)
+  // Handle document preview
   const handlePreview = (document: DocumentItem) => {
-    if (document.downloadUrl) {
-      window.open(document.downloadUrl, '_blank');
-    }
+    setViewingDocument(document);
+    setViewDialogOpen(true);
   };
+
+  const handleViewDialogClose = () => {
+    setViewDialogOpen(false);
+    setViewingDocument(null);
+  };
+
+  // Get file blob for preview (extract numeric ID from document ID format "file-123")
+  const getFileBlob = useCallback(async (fileId: number | string) => {
+    if (!viewingDocument) {
+      throw new Error('No document selected');
+    }
+
+    // For contracts, use the contracts API
+    if (viewingDocument.type === 'CONTRACT' && viewingDocument.contractId) {
+      return contractsApi.downloadContractPdf(viewingDocument.contractId);
+    }
+
+    // For regular files, extract the numeric ID from "file-123" format
+    const numericId = typeof fileId === 'string'
+      ? parseInt(fileId.replace('file-', ''), 10)
+      : fileId;
+
+    return eventsApi.getDocumentBlob(viewingDocument.eventId, numericId);
+  }, [viewingDocument]);
 
   // Handle upload success
   const handleUploadSuccess = () => {
@@ -343,6 +372,21 @@ export const DocumentsPage: React.FC = () => {
         onClose={() => setUploadDialogOpen(false)}
         onSuccess={handleUploadSuccess}
         eventOptions={uploadEventOptions}
+      />
+
+      {/* File Viewer Dialog */}
+      <FileViewerDialog
+        open={viewDialogOpen}
+        onClose={handleViewDialogClose}
+        file={viewingDocument ? {
+          id: viewingDocument.id,
+          name: viewingDocument.name,
+          fileType: viewingDocument.fileType,
+          fileSize: viewingDocument.fileSize,
+          downloadUrl: viewingDocument.downloadUrl,
+        } : null}
+        onDownload={viewingDocument ? () => handleDownload(viewingDocument) : undefined}
+        getFileBlob={getFileBlob}
       />
     </Box>
   );

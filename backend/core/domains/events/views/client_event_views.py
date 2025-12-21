@@ -589,6 +589,45 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
             'rebook_history': history,
         })
 
+    @action(detail=True, methods=['get'], url_path='documents/(?P<file_id>[^/.]+)/download')
+    def download_document(self, request, pk=None, file_id=None):
+        """Download a client-accessible document"""
+        from django.http import FileResponse
+
+        try:
+            event = Event.objects.get(id=pk, client_id=request.user.id)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            # Get the file, ensuring it's public (visible to client)
+            event_file = EventFile.objects.get(
+                id=file_id,
+                event=event,
+                is_public=True
+            )
+        except EventFile.DoesNotExist:
+            return Response(
+                {"detail": "Document not found or not accessible"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not event_file.file:
+            return Response(
+                {"detail": "File not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        response = FileResponse(
+            event_file.file.open('rb'),
+            content_type=event_file.mime_type or 'application/octet-stream'
+        )
+        response['Content-Disposition'] = f'inline; filename="{event_file.name}"'
+        return response
+
     @action(detail=True, methods=['post'])
     def self_check_in(self, request, pk=None):
         """

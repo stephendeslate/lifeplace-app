@@ -1,6 +1,8 @@
 # backend/core/domains/events/views/event_file_views.py
+from django.http import FileResponse
 from core.utils.permissions import IsAdmin
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
@@ -64,3 +66,21 @@ class EventFileViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        """Download the file"""
+        event_file = self.get_object()
+
+        if not event_file.file:
+            return Response(
+                {'detail': 'File not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        response = FileResponse(
+            event_file.file.open('rb'),
+            content_type=event_file.mime_type or 'application/octet-stream'
+        )
+        response['Content-Disposition'] = f'inline; filename="{event_file.name}"'
+        return response

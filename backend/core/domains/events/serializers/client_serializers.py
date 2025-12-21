@@ -234,13 +234,14 @@ class ClientEventTimelineSerializer(serializers.ModelSerializer):
 class ClientEventFileSerializer(serializers.ModelSerializer):
     """File serializer for client accessible documents"""
     download_url = serializers.SerializerMethodField()
-    
+    file_type = serializers.CharField(source='mime_type', read_only=True)
+
     class Meta:
         model = EventFile
         fields = [
-            'id', 'name', 'category', 'size', 'created_at', 'download_url'
+            'id', 'name', 'category', 'size', 'created_at', 'download_url', 'file_type'
         ]
-    
+
     def get_download_url(self, obj):
         """Generate secure download URL"""
         request = self.context.get('request')

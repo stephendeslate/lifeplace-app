@@ -179,6 +179,13 @@ export const eventsApi = {
     return response.data;
   },
 
+  getEventFileBlob: async (id: number): Promise<Blob> => {
+    const response = await api.get<Blob>(`/events/event-files/${id}/download/`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
   // Check-in/out operations
   checkIn: async (eventId: number, notes?: string): Promise<Event> => {
     const response = await api.post<Event>(`/events/events/${eventId}/check_in/`, { notes });

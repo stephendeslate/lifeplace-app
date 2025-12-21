@@ -316,6 +316,11 @@ export const useEventFiles = (eventId: number, category?: string) => {
     }
   };
 
+  // Function to get file blob for viewing
+  const getFileBlob = async (fileId: number): Promise<Blob> => {
+    return eventsApi.getEventFileBlob(fileId);
+  };
+
   return {
     files,
     isLoading,
@@ -328,5 +333,6 @@ export const useEventFiles = (eventId: number, category?: string) => {
     deleteFile: deleteFileMutation.mutate,
     isDeleting: deleteFileMutation.isPending,
     downloadFile,
+    getFileBlob,
   };
 };

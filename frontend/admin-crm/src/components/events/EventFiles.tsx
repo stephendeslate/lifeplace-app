@@ -47,9 +47,11 @@ import {
   PictureAsPdf as PdfIcon,
   Image as ImageIcon,
   Description as DocIcon,
+  RemoveRedEye as PreviewIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useEventFiles } from '../../hooks/useEvents';
+import { FileViewerDialog } from '../common/FileViewerDialog';
 import type { Event, EventFile, FileCategory, CreateEventFileData } from '../../types/events.types';
 
 interface EventFilesProps {
@@ -104,8 +106,10 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
   const [selectedFile, setSelectedFile] = useState<EventFile | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingFile, setViewingFile] = useState<EventFile | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  
+
   // Upload form state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
@@ -123,6 +127,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
     deleteFile,
     isDeleting,
     downloadFile,
+    getFileBlob,
   } = useEventFiles(event.id, selectedCategory);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, file: EventFile) => {
@@ -219,6 +224,17 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
 
   const handleDownloadClick = (file: EventFile) => {
     downloadFile(file);
+  };
+
+  const handleViewClick = (file: EventFile) => {
+    setViewingFile(file);
+    setViewDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleViewDialogClose = () => {
+    setViewDialogOpen(false);
+    setViewingFile(null);
   };
 
   if (isLoading) {
@@ -341,6 +357,14 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
                 </TableCell>
                 <TableCell align="right">
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Tooltip title="View">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleViewClick(file)}
+                      >
+                        <PreviewIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title="Download">
                       <IconButton
                         size="small"
@@ -369,6 +393,12 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
+        <MenuItem onClick={() => selectedFile && handleViewClick(selectedFile)}>
+          <ListItemIcon>
+            <PreviewIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>View File</ListItemText>
+        </MenuItem>
         <MenuItem onClick={handleEditClick}>
           <ListItemIcon>
             <EditIcon fontSize="small" />
@@ -547,6 +577,15 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
           </Stack>
         </CardContent>
       </Card>
+
+      {/* File Viewer Dialog */}
+      <FileViewerDialog
+        open={viewDialogOpen}
+        onClose={handleViewDialogClose}
+        file={viewingFile}
+        onDownload={viewingFile ? () => downloadFile(viewingFile) : undefined}
+        getFileBlob={getFileBlob}
+      />
     </Box>
   );
 };
