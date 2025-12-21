@@ -180,8 +180,8 @@ export const EventProfile: React.FC = () => {
     : 0;
   const { data: workflowStages = [], isLoading: isLoadingStages } = useStagesForTemplate(templateId);
 
-  // Get counts for tabs
-  const { data: communications = [] } = useRecords({ client_id: clientId });
+  // Get counts for tabs - filter by event_id to only show communications for this specific event
+  const { data: communications = [] } = useRecords({ event_id: eventId });
   const communicationsCount = communications.length;
   // Get available questionnaires for this event type
   const { useActiveQuestionnaires } = useQuestionnaires();
@@ -203,14 +203,36 @@ export const EventProfile: React.FC = () => {
       ? event.current_stage
       : null;
 
+    // Stage type ordering (must match backend)
+    const stageTypeOrder: Record<string, number> = {
+      'LEAD': 1,
+      'PRODUCTION': 2,
+      'POST_PRODUCTION': 3
+    };
+
     return workflowStages.map((stage: WorkflowStageType) => {
       // Determine stage status based on current stage and event progress
       let status: 'completed' | 'active' | 'pending' | 'blocked' | 'skipped' = 'pending';
 
       if (currentStageObj && stage.id === currentStageObj.id) {
         status = 'active';
-      } else if (currentStageObj && stage.order < currentStageObj.order) {
-        status = 'completed';
+      } else if (currentStageObj) {
+        // Compare by stage type first, then by order within same type
+        const currentTypeOrder = stageTypeOrder[currentStageObj.stage] || 0;
+        const stageTypeOrderVal = stageTypeOrder[stage.stage] || 0;
+
+        if (stageTypeOrderVal < currentTypeOrder) {
+          // Earlier stage type = completed
+          status = 'completed';
+        } else if (stageTypeOrderVal > currentTypeOrder) {
+          // Later stage type = pending
+          status = 'pending';
+        } else {
+          // Same stage type, compare by order
+          if (stage.order < currentStageObj.order) {
+            status = 'completed';
+          }
+        }
       }
 
       // Find associated tasks for this stage

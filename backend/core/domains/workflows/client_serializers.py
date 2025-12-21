@@ -17,8 +17,13 @@ class ClientWorkflowStageSerializer(serializers.ModelSerializer):
         if not event or not event.current_stage:
             return 'pending'
 
-        current_order = event.current_stage.order
+        # Check if this is the current stage first
+        if obj.id == event.current_stage_id:
+            return 'current'
+
+        current_order = int(event.current_stage.order) if event.current_stage.order is not None else 0
         current_type = event.current_stage.stage
+        obj_order = int(obj.order) if obj.order is not None else 0
 
         # Compare by stage type order first, then by order within type
         stage_type_order = {'LEAD': 1, 'PRODUCTION': 2, 'POST_PRODUCTION': 3}
@@ -30,10 +35,8 @@ class ClientWorkflowStageSerializer(serializers.ModelSerializer):
         elif obj_type_order > current_type_order:
             return 'pending'
         else:  # Same stage type
-            if obj.order < current_order:
+            if obj_order < current_order:
                 return 'completed'
-            elif obj.id == event.current_stage_id:
-                return 'current'
             else:
                 return 'pending'
 

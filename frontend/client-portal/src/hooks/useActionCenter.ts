@@ -370,8 +370,12 @@ export const useActionCenter = (options: UseActionCenterOptions = {}): UseAction
     });
 
     // ============ PAYMENTS (Outstanding Invoices) ============
+    // Filter invoices that are truly outstanding (not fully paid)
+    // Check both status AND remaining_amount/is_fully_paid to handle edge cases
     const outstandingInvoices = invoices.filter(invoice =>
-      invoice.status === 'ISSUED' || invoice.status === 'PARTIALLY_PAID'
+      (invoice.status === 'ISSUED' || invoice.status === 'PARTIALLY_PAID') &&
+      !invoice.is_fully_paid &&
+      parseFloat(invoice.remaining_amount || '0') > 0
     );
 
     outstandingInvoices.forEach(invoice => {
