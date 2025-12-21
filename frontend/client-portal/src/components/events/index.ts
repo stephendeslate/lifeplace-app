@@ -9,6 +9,7 @@ export { default as EventTasks } from './EventTasks';
 export { default as EventFeedback } from './EventFeedback';
 export { default as EventQuestionnaires } from './EventQuestionnaires';
 export { default as EventQuotes } from './EventQuotes';
+export { default as EventNotes } from './EventNotes';
 export { default as ContractStatusChip } from './ContractStatusChip';
 export { default as FileUpload } from './FileUpload';
 export { WorkflowProgressStepper } from './WorkflowProgressStepper';

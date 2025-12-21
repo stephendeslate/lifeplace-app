@@ -13,11 +13,21 @@ export const useEventQuestionnaires = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
 
-  // Active Questionnaires Query
+  // Active Questionnaires Query (all active questionnaires)
   const useActiveQuestionnaires = (filters?: QuestionnaireFilters) => {
     return useQuery({
       queryKey: ['active-questionnaires', filters],
       queryFn: () => questionnairesApi.getActiveQuestionnaires(),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+  };
+
+  // Questionnaires for a specific event (filtered by booking flow)
+  const useQuestionnairesForEvent = (eventId: number) => {
+    return useQuery({
+      queryKey: ['event-questionnaires', eventId],
+      queryFn: () => questionnairesApi.getQuestionnairesForEvent(eventId),
+      enabled: !!eventId,
       staleTime: 5 * 60 * 1000, // 5 minutes
     });
   };
@@ -58,6 +68,7 @@ export const useEventQuestionnaires = () => {
   return {
     // Questionnaire operations
     useActiveQuestionnaires,
+    useQuestionnairesForEvent,
 
     // Response operations
     useEventResponses,

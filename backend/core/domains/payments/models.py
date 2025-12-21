@@ -562,14 +562,20 @@ class Payment(BaseModel):
 
     def complete_payment(self):
         """Mark payment as complete and handle related processes"""
+        # Idempotency check: refresh from database and check if already completed
+        self.refresh_from_db()
+        if self.status == 'COMPLETED' and self.paid_on:
+            # Already completed, skip to avoid duplicate timeline entries
+            return
+
         self.status = 'COMPLETED'
         self.paid_on = timezone.now().date()
         self.save()
-        
+
         # Generate receipt if payment completed
         if not self.receipt_number:
             self.generate_receipt()
-        
+
         # Record in event timeline
         from core.domains.events.models import EventTimeline
         EventTimeline.objects.create(

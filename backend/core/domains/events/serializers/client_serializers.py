@@ -180,14 +180,15 @@ class ClientEventDetailSerializer(ClientEventSerializer):
         return obj.files.filter(is_public=True).count()
     
     def get_has_notes(self, obj):
-        """Check if there are any notes for this event"""
+        """Check if there are any client-visible notes for this event"""
         from core.domains.notes.models import Note
         from django.contrib.contenttypes.models import ContentType
 
         event_ct = ContentType.objects.get_for_model(Event)
         return Note.objects.filter(
             content_type=event_ct,
-            object_id=obj.id
+            object_id=obj.id,
+            is_client_visible=True  # Only count client-visible notes
         ).exists()
 
     def get_can_self_check_in(self, obj):

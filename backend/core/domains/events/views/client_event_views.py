@@ -142,11 +142,14 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
             status=status.HTTP_200_OK
         )
     
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get', 'post'])
     def notes(self, request, pk=None):
-        """Get notes for the event - integrates with notes domain"""
+        """Get or create notes for the event - integrates with notes domain"""
         from core.domains.notes.services import NoteService
-        
+        from core.domains.notes.models import Note
+        from django.contrib.contenttypes.models import ContentType
+        from rest_framework import serializers
+
         # Verify event ownership first
         try:
             event = Event.objects.get(id=pk, client_id=request.user.id)
@@ -155,17 +158,66 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "Event not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
-        # Get notes for this event
-        notes = NoteService.get_notes_for_object(
-            content_type_model='event',
-            object_id=pk,
-            user=request.user
-        )
-        
-        from core.domains.notes.serializers import NoteSerializer
-        serializer = NoteSerializer(notes, many=True)
-        return Response(serializer.data)
+
+        if request.method == 'GET':
+            # Get only client-visible notes for this event
+            notes = NoteService.get_notes_for_object(
+                content_type_model='event',
+                object_id=pk,
+                user=request.user,
+                client_visible_only=True  # Only show visible notes to clients
+            )
+
+            # Use anonymous serializer (no author info for clients)
+            class ClientNoteSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Note
+                    fields = ['id', 'title', 'content', 'created_at', 'updated_at']
+
+            serializer = ClientNoteSerializer(notes, many=True)
+            return Response(serializer.data)
+
+        else:  # POST - Create a new note
+            content = request.data.get('content', '').strip()
+            title = request.data.get('title', '').strip()
+
+            if not content:
+                return Response(
+                    {"detail": "Note content is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create note - client notes are always visible to both parties
+            note = Note.objects.create(
+                content_type=ContentType.objects.get_for_model(Event),
+                object_id=event.id,
+                title=title,
+                content=content,
+                created_by=request.user,
+                is_client_visible=True  # Client notes are always shared
+            )
+
+            # Add timeline entry
+            from ..models import EventTimeline
+            EventTimeline.objects.create(
+                event=event,
+                action_type='NOTE_ADDED',
+                description="Client added a note",
+                actor=request.user,
+                is_public=True
+            )
+
+            logger.info(f"Client {request.user.id} created note {note.id} for event {pk}")
+
+            class ClientNoteSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Note
+                    fields = ['id', 'title', 'content', 'created_at', 'updated_at']
+
+            return Response(
+                ClientNoteSerializer(note).data,
+                status=status.HTTP_201_CREATED
+            )
     
     @action(detail=True, methods=['get'])
     def tasks(self, request, pk=None):

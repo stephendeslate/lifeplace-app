@@ -32,7 +32,6 @@ import {
   Timeline as TimelineIcon,
   Folder as DocumentsIcon,
   Task as TasksIcon,
-  Note as NotesIcon,
   CalendarToday as CalendarIcon,
   Payment as PaymentIcon,
   Assignment as ContractIcon,
@@ -40,10 +39,10 @@ import {
   Feedback as FeedbackIcon,
   RequestQuote as RequestQuoteIcon,
   Login as CheckInIcon,
+  Note as NotesIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
 import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
+import { formatPhilippinesTime } from '../../utils/timezone';
 import { useEventQuotes } from '../../hooks/useEventQuotes';
 import {
   EventStatusBadge,
@@ -54,6 +53,7 @@ import {
   EventFeedback,
   EventQuestionnaires,
   EventQuotes,
+  EventNotes,
   ContractStatusChip,
   WorkflowProgressStepper,
 } from '../../components/events';
@@ -105,18 +105,13 @@ const EventDetail: React.FC = () => {
 
   // Data fetching with contract integration
   const eventId = parseInt(id || '0');
-  const { useEventWithContracts, useEventNotes, useUpdatePreferences, useEventContracts } = useEventsWithContracts();
-  
-  const { 
-    data: event, 
-    isLoading: isLoadingEvent, 
-    error: eventError 
+  const { useEventWithContracts, useUpdatePreferences, useEventContracts } = useEventsWithContracts();
+
+  const {
+    data: event,
+    isLoading: isLoadingEvent,
+    error: eventError
   } = useEventWithContracts(eventId);
-  
-  const { 
-    data: notes = [], 
-    isLoading: isLoadingNotes 
-  } = useEventNotes(eventId);
   
   // Get contracts for this event
   const {
@@ -232,8 +227,6 @@ const EventDetail: React.FC = () => {
     );
   }
 
-  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
-
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       {/* Breadcrumbs */}
@@ -319,9 +312,9 @@ const EventDetail: React.FC = () => {
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CalendarIcon fontSize="small" color="action" />
                     <Typography variant="body1">
-                      {formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'EEEE, MMMM dd, yyyy')}
-                      {event.end_date && formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
-                        ` - ${formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'MMMM dd, yyyy')}`
+                      {formatPhilippinesTime(event.start_date, false, 'EEEE, MMMM dd, yyyy')}
+                      {event.end_date && formatPhilippinesTime(event.start_date, false, 'yyyy-MM-dd') !== formatPhilippinesTime(event.end_date, false, 'yyyy-MM-dd') &&
+                        ` - ${formatPhilippinesTime(event.end_date, false, 'MMMM dd, yyyy')}`
                       }
                     </Typography>
                   </Stack>
@@ -386,12 +379,12 @@ const EventDetail: React.FC = () => {
       )}
 
       {/* Quick Stats */}
-      {(event.upcoming_tasks.length > 0 || event.accessible_documents_count > 0 || event.has_notes) && (
+      {(event.upcoming_tasks.length > 0 || event.accessible_documents_count > 0) && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
           {event.upcoming_tasks.length > 0 && (
             <Box sx={(theme) => ({
               flexGrow: 0,
-              flexBasis: { xs: '100%', sm: `calc(33.333% - ${theme.spacing(4/3)})` },
+              flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
             })}>
               <Paper sx={{ p: 2, textAlign: 'center' }}>
                 <Typography variant="h4" color="warning.main">
@@ -403,11 +396,11 @@ const EventDetail: React.FC = () => {
               </Paper>
             </Box>
           )}
-          
+
           {event.accessible_documents_count > 0 && (
             <Box sx={(theme) => ({
               flexGrow: 0,
-              flexBasis: { xs: '100%', sm: `calc(33.333% - ${theme.spacing(4/3)})` },
+              flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
             })}>
               <Paper sx={{ p: 2, textAlign: 'center' }}>
                 <Typography variant="h4" color="info.main">
@@ -415,22 +408,6 @@ const EventDetail: React.FC = () => {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Documents
-                </Typography>
-              </Paper>
-            </Box>
-          )}
-          
-          {event.has_notes && (
-            <Box sx={(theme) => ({
-              flexGrow: 0,
-              flexBasis: { xs: '100%', sm: `calc(33.333% - ${theme.spacing(4/3)})` },
-            })}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h4" color="primary.main">
-                  {notes.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Notes
                 </Typography>
               </Paper>
             </Box>
@@ -508,7 +485,7 @@ const EventDetail: React.FC = () => {
           )}
           {event.has_notes && (
             <Tab
-              label={`Notes (${notes.length})`}
+              label="Notes"
               icon={<NotesIcon />}
               iconPosition="start"
               id={hasContracts ? "event-tab-8" : "event-tab-7"}
@@ -636,27 +613,7 @@ const EventDetail: React.FC = () => {
 
         {event.has_notes && (
           <TabPanel value={activeTab} index={hasContracts ? 8 : 7}>
-            {isLoadingNotes ? (
-              <Box>
-                {[1, 2, 3].map((item) => (
-                  <Skeleton key={item} variant="rectangular" height={100} sx={{ mb: 2 }} />
-                ))}
-              </Box>
-            ) : (
-              <Stack spacing={2}>
-                {notes.map((note) => (
-                  <Paper key={note.id} sx={{ p: 2 }}>
-                    <Typography variant="body1" paragraph>
-                      {note.content}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {format(new Date(note.created_at), 'MMM dd, yyyy at h:mm a')}
-                      {note.created_by && ` • ${note.created_by}`}
-                    </Typography>
-                  </Paper>
-                ))}
-              </Stack>
-            )}
+            <EventNotes eventId={eventId} />
           </TabPanel>
         )}
       </Paper>

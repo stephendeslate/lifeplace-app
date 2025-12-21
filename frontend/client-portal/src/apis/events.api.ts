@@ -64,6 +64,12 @@ export const eventsApi = {
     return response.data;
   },
 
+  // Create a note for an event
+  createEventNote: async (id: number, data: { content: string; title?: string }): Promise<EventNote> => {
+    const response = await api.post<EventNote>(`/client/events/${id}/notes/`, data);
+    return response.data;
+  },
+
   // Download file utility (browser-based download)
   downloadFile: async (url: string, filename: string): Promise<void> => {
     try {

@@ -13,27 +13,37 @@ class NoteService:
     """Service for working with notes"""
     
     @staticmethod
-    def get_notes_for_object(content_type_model, object_id, user=None):
-        """Get all notes for a specific object"""
+    def get_notes_for_object(content_type_model, object_id, user=None, client_visible_only=False):
+        """Get all notes for a specific object
+
+        Args:
+            content_type_model: The content type model name (e.g., 'event', 'client')
+            object_id: The ID of the object to get notes for
+            user: The user requesting the notes (optional)
+            client_visible_only: If True, only return notes with is_client_visible=True
+        """
         try:
             # Map content_type_model aliases to actual model names
             content_type_mapping = {
                 'client': 'user',  # 'client' is actually a User model with role 'CLIENT'
             }
-            
+
             # Check if we need to map the content type
             if content_type_model in content_type_mapping:
                 content_type_model = content_type_mapping[content_type_model]
-                
+
             content_type = ContentType.objects.get(model=content_type_model.lower())
         except ContentType.DoesNotExist:
             raise InvalidContentType(f"Content type '{content_type_model}' does not exist")
-        
+
         notes = Note.objects.filter(
             content_type=content_type,
             object_id=object_id
         )
-        
+
+        if client_visible_only:
+            notes = notes.filter(is_client_visible=True)
+
         return notes
     
     @staticmethod
@@ -116,9 +126,9 @@ class NoteService:
         
         with transaction.atomic():
             for key, value in data.items():
-                if key in ['title', 'content']:
+                if key in ['title', 'content', 'is_client_visible']:
                     setattr(note, key, value)
-            
+
             note.save()
             logger.info(f"Note {note_id} updated by user {user.id}")
             return note

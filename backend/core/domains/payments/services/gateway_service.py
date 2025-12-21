@@ -366,15 +366,14 @@ class PaymentGatewayService:
                 if intent.status == 'succeeded':
                     transaction_record.status = 'COMPLETED'
                     transaction_record.save()
+                    # Note: PaymentTransaction.save() already handles calling complete_payment()
+                    # via on_commit, so we don't need to call it again here
 
                     # Save payment method if requested and not already saved
                     if payment_data.get('save_payment_method', False) and intent.payment_method:
                         PaymentGatewayService._save_stripe_payment_method(
                             intent.payment_method, payment.event.client, gateway
                         )
-
-                    # Defer payment completion until after atomic transaction
-                    transaction.on_commit(lambda: payment.complete_payment())
                 elif intent.status == 'requires_action':
                     # Handle 3D Secure or other authentication
                     transaction_record.status = 'PENDING'

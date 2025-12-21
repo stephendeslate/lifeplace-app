@@ -66,6 +66,33 @@ export const useEvents = () => {
     });
   };
 
+  // Create event note mutation
+  const useCreateEventNote = () => {
+    return useMutation({
+      mutationFn: ({ eventId, data }: { eventId: number; data: { content: string; title?: string } }) =>
+        eventsApi.createEventNote(eventId, data),
+      onSuccess: (_, variables) => {
+        showSuccess('Note Added', 'Your note has been added successfully.');
+
+        // Invalidate notes query to refresh the list
+        queryClient.invalidateQueries({ queryKey: ['event-notes', variables.eventId] });
+
+        // Invalidate event detail to update has_notes flag
+        queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
+
+        // Invalidate timeline to show new note entry
+        queryClient.invalidateQueries({ queryKey: ['event-timeline', variables.eventId] });
+      },
+      onError: (error: unknown) => {
+        const err = error as { response?: { data?: { detail?: string; error?: string } } };
+        const message = err.response?.data?.detail ||
+                       err.response?.data?.error ||
+                       'Failed to add note. Please try again.';
+        showError('Note Failed', message);
+      },
+    });
+  };
+
   // Get upcoming events only
   const useUpcomingEvents = () => {
     return useQuery({
@@ -303,6 +330,7 @@ export const useEvents = () => {
     useUploadEventFile,
     useSubmitEventFeedback,
     useUpdateEventFeedback,
+    useCreateEventNote,
 
     // Utility functions
     prefetchEvent,

@@ -61,13 +61,13 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
   const [formData, setFormData] = useState<ResponseFormData>({});
   const [expandedPanel, setExpandedPanel] = useState<string | false>(false);
 
-  const { useActiveQuestionnaires, useEventResponses, useSaveEventResponses } = useEventQuestionnaires();
+  const { useQuestionnairesForEvent, useEventResponses, useSaveEventResponses } = useEventQuestionnaires();
 
   const {
     data: questionnaires = [],
     isLoading: isLoadingQuestionnaires,
     error: questionnairesError
-  } = useActiveQuestionnaires();
+  } = useQuestionnairesForEvent(eventId);
 
   const {
     data: responses = [],
