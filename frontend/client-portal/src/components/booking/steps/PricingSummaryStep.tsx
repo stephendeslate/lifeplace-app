@@ -139,10 +139,24 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       const timeoutId = setTimeout(() => {
         updatePricingData();
       }, 300);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [pricing.total, hasItems, calculatingPricing, updatePricingData]);
+
+  // Sync pricing breakdown to context for footer display
+  useEffect(() => {
+    if (hasItems && !calculatingPricing) {
+      actions.setPricingBreakdown({
+        subtotal: pricing.subtotal.toFixed(2),
+        tax: pricing.tax.toFixed(2),
+        discount: pricing.discount.toFixed(2),
+        formattedSubtotal: pricing.formattedSubtotal,
+        formattedTax: pricing.formattedTax,
+        formattedDiscount: pricing.formattedDiscount,
+      });
+    }
+  }, [pricing, hasItems, calculatingPricing, actions]);
 
   // Handle discount code application
   const handleApplyDiscount = async () => {
@@ -673,11 +687,21 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                       {config?.terms_text || (
                         <>
                           I agree to the{' '}
-                          <a href={config?.terms_url || '/terms'} target="_blank" rel="noreferrer" style={{ color: 'blue' }}>
+                          <a
+                            href={config?.effective_terms_url || config?.terms_url || '/terms'}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: 'inherit', textDecoration: 'underline' }}
+                          >
                             Terms of Service
                           </a>{' '}
                           and{' '}
-                          <a href={config?.privacy_url || '/privacy'} target="_blank" rel="noreferrer" style={{ color: 'blue' }}>
+                          <a
+                            href={config?.effective_privacy_url || config?.privacy_url || '/privacy'}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: 'inherit', textDecoration: 'underline' }}
+                          >
                             Privacy Policy
                           </a>
                         </>
@@ -700,7 +724,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                   />
                 )}
 
-                {validationErrors.terms_accepted && (
+                {config?.require_terms_acceptance !== false && validationErrors.terms_accepted && (
                   <Alert severity="error" sx={{ mt: 2 }}>
                     {validationErrors.terms_accepted[0]}
                   </Alert>

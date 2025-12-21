@@ -287,23 +287,33 @@ export interface AddonSelectionStepConfiguration {
 export interface PricingSummaryStepConfiguration {
   id: number;
   step: number;
-  
+
   // Display options
   show_package_breakdown: boolean;
   show_addon_breakdown: boolean;
   show_tax_breakdown: boolean;
   show_discount_field: boolean;
   show_subtotal: boolean;
-  
+
   // Behavior options
   allow_discount_codes: boolean;
   calculate_tax: boolean;
-  
+
   // Custom messaging
   header_text: string;
   footer_text: string;
   discount_help_text: string;
-  
+
+  // Terms and Legal
+  show_terms_checkbox: boolean;
+  show_marketing_consent: boolean;
+  require_terms_acceptance: boolean;
+  terms_text: string;
+  terms_url: string;
+  privacy_url: string;
+  effective_terms_url?: string;
+  effective_privacy_url?: string;
+
   created_at: string;
   updated_at: string;
 }

@@ -1560,18 +1560,35 @@ class BookingSessionService:
         try:
             from django.contrib.contenttypes.models import ContentType
             Note = ContentType.objects.get(app_label='notes', model='note').model_class()
-            
+            event_content_type = ContentType.objects.get_for_model(event)
+
             note_text = f"Created from booking session {session.session_id}"
             if session.booking_flow.is_test_mode:
                 note_text += " (Test Mode)"
-                
+
             Note.objects.create(
-                content_type=ContentType.objects.get_for_model(event),
+                content_type=event_content_type,
                 object_id=event.id,
                 content=note_text,
                 created_by=session.client,
                 is_client_visible=False,  # Internal system note, not shown to clients
             )
+
+            # Create a separate note for client special requests if provided
+            metadata = BookingSessionService._extract_booking_metadata(session)
+            special_requests = metadata.get('special_requests', '').strip()
+
+            if special_requests:
+                Note.objects.create(
+                    content_type=event_content_type,
+                    object_id=event.id,
+                    title="Client Special Requests",
+                    content=special_requests,
+                    created_by=session.client,
+                    is_client_visible=True,  # Client's own message, visible to them
+                )
+                logger.info(f"Created special requests note for event {event.id}")
+
         except Exception as e:
             logger.warning(f"Could not create note for event: {e}")
 
@@ -1722,10 +1739,13 @@ class BookingSessionService:
                     errors['applied_discount_code'] = ["Unable to validate discount code"]
 
             # Validate terms acceptance (consolidated from review step)
-            config = getattr(step, 'pricing_summary_config', None)
-            if config and getattr(config, 'show_terms_checkbox', True):
-                if not step_data.get('terms_accepted'):
-                    errors['terms_accepted'] = ["You must accept the terms and conditions"]
+            config = getattr(step, 'pricing_config', None)
+            if config:
+                show_terms = getattr(config, 'show_terms_checkbox', True)
+                require_terms = getattr(config, 'require_terms_acceptance', True)
+                if show_terms and require_terms:
+                    if not step_data.get('terms_accepted'):
+                        errors['terms_accepted'] = ["You must accept the terms and conditions"]
         
         # Common validation for all step types
         if hasattr(step, f"{step.step_type}_config"):

@@ -22,6 +22,7 @@ import {
   Save as SaveIcon,
   Refresh as RefreshIcon,
   Visibility as PreviewIcon,
+  Gavel as GavelIcon,
 } from '@mui/icons-material';
 import type { 
   BookingFlowStep
@@ -46,6 +47,12 @@ interface PricingSummaryConfigFormData {
   header_text: string;
   footer_text: string;
   discount_help_text: string;
+  show_terms_checkbox: boolean;
+  show_marketing_consent: boolean;
+  require_terms_acceptance: boolean;
+  terms_text: string;
+  terms_url: string;
+  privacy_url: string;
 }
 
 const defaultFormData: PricingSummaryConfigFormData = {
@@ -59,6 +66,12 @@ const defaultFormData: PricingSummaryConfigFormData = {
   header_text: 'Review your order',
   footer_text: '',
   discount_help_text: 'Enter discount code',
+  show_terms_checkbox: true,
+  show_marketing_consent: true,
+  require_terms_acceptance: true,
+  terms_text: '',
+  terms_url: '',
+  privacy_url: '',
 };
 
 export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> = ({
@@ -90,6 +103,12 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
         header_text: typeof config.header_text === 'string' ? config.header_text : defaultFormData.header_text,
         footer_text: typeof config.footer_text === 'string' ? config.footer_text : defaultFormData.footer_text,
         discount_help_text: typeof config.discount_help_text === 'string' ? config.discount_help_text : defaultFormData.discount_help_text,
+        show_terms_checkbox: typeof config.show_terms_checkbox === 'boolean' ? config.show_terms_checkbox : defaultFormData.show_terms_checkbox,
+        show_marketing_consent: typeof config.show_marketing_consent === 'boolean' ? config.show_marketing_consent : defaultFormData.show_marketing_consent,
+        require_terms_acceptance: typeof config.require_terms_acceptance === 'boolean' ? config.require_terms_acceptance : defaultFormData.require_terms_acceptance,
+        terms_text: typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
+        terms_url: typeof config.terms_url === 'string' ? config.terms_url : defaultFormData.terms_url,
+        privacy_url: typeof config.privacy_url === 'string' ? config.privacy_url : defaultFormData.privacy_url,
       });
       setHasUnsavedChanges(false);
     } else {
@@ -142,6 +161,12 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
         header_text: typeof config.header_text === 'string' ? config.header_text : defaultFormData.header_text,
         footer_text: typeof config.footer_text === 'string' ? config.footer_text : defaultFormData.footer_text,
         discount_help_text: typeof config.discount_help_text === 'string' ? config.discount_help_text : defaultFormData.discount_help_text,
+        show_terms_checkbox: typeof config.show_terms_checkbox === 'boolean' ? config.show_terms_checkbox : defaultFormData.show_terms_checkbox,
+        show_marketing_consent: typeof config.show_marketing_consent === 'boolean' ? config.show_marketing_consent : defaultFormData.show_marketing_consent,
+        require_terms_acceptance: typeof config.require_terms_acceptance === 'boolean' ? config.require_terms_acceptance : defaultFormData.require_terms_acceptance,
+        terms_text: typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
+        terms_url: typeof config.terms_url === 'string' ? config.terms_url : defaultFormData.terms_url,
+        privacy_url: typeof config.privacy_url === 'string' ? config.privacy_url : defaultFormData.privacy_url,
       });
     } else {
       setFormData(defaultFormData);
@@ -308,7 +333,7 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
               <DiscountIcon />
               Custom Messaging
             </Typography>
-            
+
             <Stack spacing={2}>
               <TextField
                 label="Header Text"
@@ -318,7 +343,7 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 fullWidth
                 placeholder="Review your order"
               />
-              
+
               <TextField
                 label="Footer Text"
                 value={formData.footer_text}
@@ -329,7 +354,7 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 rows={3}
                 placeholder="Optional footer message (e.g., terms and conditions)"
               />
-              
+
               <TextField
                 label="Discount Help Text"
                 value={formData.discount_help_text}
@@ -338,6 +363,89 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 fullWidth
                 placeholder="Enter discount code"
                 helperText="Text shown in or near the discount code field"
+              />
+            </Stack>
+          </Box>
+        </ModernCard>
+
+        {/* Terms & Legal Options */}
+        <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <GavelIcon />
+              Terms & Legal
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.show_terms_checkbox}
+                      onChange={(e) => handleFormChange('show_terms_checkbox', e.target.checked)}
+                      disabled={isSaving}
+                    />
+                  }
+                  label="Show Terms Checkbox"
+                />
+              </Box>
+
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.require_terms_acceptance}
+                      onChange={(e) => handleFormChange('require_terms_acceptance', e.target.checked)}
+                      disabled={isSaving || !formData.show_terms_checkbox}
+                    />
+                  }
+                  label="Require Terms Acceptance"
+                />
+              </Box>
+
+              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.show_marketing_consent}
+                      onChange={(e) => handleFormChange('show_marketing_consent', e.target.checked)}
+                      disabled={isSaving}
+                    />
+                  }
+                  label="Show Marketing Consent"
+                />
+              </Box>
+            </Box>
+
+            <Stack spacing={2}>
+              <TextField
+                label="Custom Terms Label"
+                value={formData.terms_text}
+                onChange={(e) => handleFormChange('terms_text', e.target.value)}
+                disabled={isSaving}
+                fullWidth
+                placeholder="Leave empty for default text"
+                helperText="Custom text for the terms checkbox label"
+              />
+
+              <TextField
+                label="Custom Terms URL"
+                value={formData.terms_url}
+                onChange={(e) => handleFormChange('terms_url', e.target.value)}
+                disabled={isSaving}
+                fullWidth
+                placeholder="https://... (leave empty for global Terms page)"
+                helperText="Override the default Terms of Service link"
+              />
+
+              <TextField
+                label="Custom Privacy URL"
+                value={formData.privacy_url}
+                onChange={(e) => handleFormChange('privacy_url', e.target.value)}
+                disabled={isSaving}
+                fullWidth
+                placeholder="https://... (leave empty for global Privacy page)"
+                helperText="Override the default Privacy Policy link"
               />
             </Stack>
           </Box>

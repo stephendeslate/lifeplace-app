@@ -49,6 +49,14 @@ export interface BookingState {
   // Pricing
   totalPrice: string;
   taxRate: number; // Tax rate as decimal (e.g., 0.12 for 12%)
+  pricingBreakdown: {
+    subtotal: string;
+    tax: string;
+    discount: string;
+    formattedSubtotal: string;
+    formattedTax: string;
+    formattedDiscount: string;
+  };
   breakdown: {
     item_name: string;
     quantity: number;
@@ -97,6 +105,7 @@ export interface BookingActions {
   updateTotalPrice: (newTotalPrice: string) => Promise<void>;
   setOptimisticPrice: (price: string) => void; // Immediate local update without backend sync
   setTaxRate: (rate: number) => void; // Store tax rate from backend for local calculations
+  setPricingBreakdown: (breakdown: { subtotal: string; tax: string; discount: string; formattedSubtotal: string; formattedTax: string; formattedDiscount: string }) => void;
 
   // Utilities
   calculatePricing: () => Promise<void>;

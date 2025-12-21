@@ -147,7 +147,12 @@ export const pricingSummaryStepSchema = z.object({
     unit_price: z.number().min(0),
     total_price: z.number().min(0),
     type: z.enum(['PACKAGE', 'ADDON', 'TAX', 'DISCOUNT', 'FEE']),
-  })),
+  })).optional(),
+  // Terms and consent fields (optional - backend validates based on step config)
+  terms_accepted: z.boolean().optional(),
+  marketing_consent: z.boolean().optional().default(false),
+  special_requests: z.string().max(1000).optional().or(z.literal('')),
+  applied_discount_code: z.string().optional(),
 });
 
 export const reviewStepSchema = z.object({

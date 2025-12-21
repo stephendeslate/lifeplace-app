@@ -15,6 +15,7 @@ import {
   Psychology,
   CurrencyExchange,
   Star,
+  Gavel,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -138,6 +139,19 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/commerce/vip-loyalty',
         icon: Star,
         description: 'Configure VIP program and rewards',
+      },
+    ],
+  },
+  {
+    id: 'legal',
+    label: 'Legal & Compliance',
+    items: [
+      {
+        id: 'legal-documents',
+        label: 'Legal Documents',
+        path: '/settings/legal/legal-documents',
+        icon: Gavel,
+        description: 'Manage Terms of Service and Privacy Policy',
       },
     ],
   },

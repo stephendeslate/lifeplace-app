@@ -44,6 +44,7 @@ import type { RentableVenue, RentableVenueWithEventType } from '../../../types/b
 import { ProductsApi } from '../../../apis/booking/products.api';
 import { VenuesApi } from '../../../apis/booking/venues.api';
 import { useBooking } from '../../../contexts/BookingContext';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 
 interface PackageCardProps {
   pkg: ProductOption;
@@ -520,6 +521,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 }) => {
   const theme = useTheme();
   const { state, actions } = useBooking();
+  const { formatAmount } = useCurrencySettings();
 
   // Calculate event days from datetime step data
   const eventDays = useMemo(() => {
@@ -780,8 +782,19 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   useEffect(() => {
     if (totalPrice > 0) {
       actions.setOptimisticPrice(totalPrice.toFixed(2));
+
+      // Also update pricing breakdown for detailed footer display
+      const tax = subtotalPrice * state.taxRate;
+      actions.setPricingBreakdown({
+        subtotal: subtotalPrice.toFixed(2),
+        tax: tax.toFixed(2),
+        discount: '0.00', // Discount is calculated in PricingSummaryStep
+        formattedSubtotal: formatAmount(subtotalPrice),
+        formattedTax: formatAmount(tax),
+        formattedDiscount: '',
+      });
     }
-  }, [totalPrice, actions.setOptimisticPrice]);
+  }, [totalPrice, subtotalPrice, state.taxRate, formatAmount, actions]);
 
   // Check if custom bundle is selected
   const isCustomBundleSelected = selectedPackageIds.includes(-1);

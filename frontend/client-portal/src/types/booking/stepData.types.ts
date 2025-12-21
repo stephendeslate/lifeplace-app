@@ -91,6 +91,10 @@ export interface PaymentStepData {
   save_payment_method?: boolean;
   completion_type?: 'payment' | 'quote';
   quote_message?: string; // Client message for quote requests
+  // Calculated deposit values (stored for use in confirmation step)
+  deposit_amount?: number; // Actual deposit amount calculated from effective payment terms
+  deposit_percentage?: number; // Deposit percentage used (from flow override or global default)
+  balance_due_days?: number; // Days before event when balance is due
 }
 
 export type PaymentMethodType = 

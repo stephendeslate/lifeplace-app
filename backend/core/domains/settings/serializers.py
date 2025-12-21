@@ -1,7 +1,7 @@
 # backend/core/domains/settings/serializers.py
 
 from rest_framework import serializers
-from .models import AppSettings, CurrencySettings
+from .models import AppSettings, CurrencySettings, LegalDocument
 
 
 class AppSettingsSerializer(serializers.ModelSerializer):
@@ -208,3 +208,57 @@ class SupportedCurrenciesSerializer(serializers.Serializer):
             },
         ]
         return currencies
+
+
+class LegalDocumentSerializer(serializers.ModelSerializer):
+    """
+    Full serializer for legal documents (admin use)
+    Includes document_type_display for readable document type
+    """
+    document_type_display = serializers.CharField(source='get_document_type_display', read_only=True)
+    last_updated_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LegalDocument
+        fields = [
+            'id', 'document_type', 'document_type_display', 'title', 'content',
+            'version', 'effective_date', 'is_published', 'last_updated_by',
+            'last_updated_by_name', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'document_type_display']
+
+    def get_last_updated_by_name(self, obj):
+        """Get the name of the user who last updated the document"""
+        if obj.last_updated_by:
+            return f"{obj.last_updated_by.first_name} {obj.last_updated_by.last_name}".strip() or obj.last_updated_by.email
+        return None
+
+
+class LegalDocumentUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating legal documents
+    Only allows updating specific fields
+    """
+
+    class Meta:
+        model = LegalDocument
+        fields = ['title', 'content', 'version', 'effective_date', 'is_published']
+
+    def validate_version(self, value):
+        """Validate version format"""
+        if not value:
+            raise serializers.ValidationError("Version cannot be empty")
+        return value
+
+
+class PublicLegalDocumentSerializer(serializers.ModelSerializer):
+    """
+    Public read-only serializer for legal documents
+    Only exposes necessary fields for public viewing
+    """
+    document_type_display = serializers.CharField(source='get_document_type_display', read_only=True)
+
+    class Meta:
+        model = LegalDocument
+        fields = ['document_type', 'document_type_display', 'title', 'content', 'version', 'effective_date']
+        read_only_fields = fields
