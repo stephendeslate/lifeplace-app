@@ -47,7 +47,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { useContractsForEvent, useContractTemplates, useCreateEventContract, useSendContract } from '../../hooks/useContracts';
+import { useContractsForEvent, useContractTemplates, useCreateEventContract, useSendContract, useVoidContract } from '../../hooks/useContracts';
 import { contractsApi } from '../../apis/contracts.api';
 import type { Event } from '../../types/events.types';
 import type { EventContract } from '../../types/contracts.types';
@@ -110,6 +110,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   const { data: templates = [], isLoading: isLoadingTemplates, error: templatesError } = useContractTemplates();
   const { mutate: createContract, isPending: isCreating } = useCreateEventContract();
   const { mutate: sendContract } = useSendContract();
+  const { mutate: voidContract } = useVoidContract();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, contract: EventContract) => {
     setAnchorEl(event.currentTarget);
@@ -202,8 +203,9 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   };
 
   const handleVoidContract = (contract: EventContract) => {
-    // Implementation for voiding contract
-    console.log('Void contract:', contract.id);
+    if (window.confirm('Are you sure you want to void this contract? This action cannot be undone.')) {
+      voidContract({ id: contract.id, reason: 'Voided by admin' });
+    }
     handleMenuClose();
   };
 
@@ -535,9 +537,9 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                 <Typography variant="h6">
                   {formatContractAmount(
                     contracts
-                      .filter((c) => c.contract_value)
+                      .filter((c) => c.contract_value && c.status !== 'VOID')
                       .reduce((sum, c) => sum + parseFloat(c.contract_value || '0'), 0),
-                    contracts.find(c => c.contract_value)?.currency
+                    contracts.find(c => c.contract_value && c.status !== 'VOID')?.currency
                   )}
                 </Typography>
               </Box>
