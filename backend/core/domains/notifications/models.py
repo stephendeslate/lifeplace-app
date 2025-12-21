@@ -9,7 +9,7 @@ class NotificationType(BaseModel):
     code = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    category = models.CharField(max_length=100, 
+    category = models.CharField(max_length=100,
         choices=[
             ('SYSTEM', 'System'),
             ('EVENT', 'Event Management'),
@@ -19,6 +19,7 @@ class NotificationType(BaseModel):
             ('CONTRACT', 'Contract Management'),
             ('WORKFLOW', 'Workflow Updates'),
             ('COMMUNICATION', 'Communication Updates'),
+            ('MARKETING', 'Marketing & Promotions'),
         ],
         default='SYSTEM'
     )
@@ -100,7 +101,18 @@ class NotificationPreference(BaseModel):
     communication_email = models.BooleanField(default=False)
     communication_sms = models.BooleanField(default=False)
     communication_in_app = models.BooleanField(default=True)
-    
+
+    # Marketing preferences (opt-in only for GDPR/CAN-SPAM compliance)
+    marketing_email = models.BooleanField(
+        default=False,
+        help_text="User has explicitly consented to receive marketing emails"
+    )
+    marketing_sms = models.BooleanField(
+        default=False,
+        help_text="User has explicitly consented to receive marketing SMS"
+    )
+    marketing_in_app = models.BooleanField(default=True)
+
     # Advanced preferences
     quiet_hours_enabled = models.BooleanField(default=False)
     quiet_hours_start = models.TimeField(null=True, blank=True)

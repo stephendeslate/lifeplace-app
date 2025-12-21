@@ -566,12 +566,28 @@ class BookingSessionService:
                 elif completion_type == 'payment':
                     logger.info(f"Processing payment completion for session {session.session_id}")
 
-                    # Accept the quote first - this sets event status to CONFIRMED and event.accepted_quote
-                    logger.info(f"Accepting quote {quote.id} for payment completion (event status before: {event.status})")
-                    quote.accept()
-                    # Refresh event to get updated status
-                    event.refresh_from_db()
-                    logger.info(f"Quote {quote.id} accepted - event status after: {event.status}")
+                    # Handle quote acceptance - quote may already be ACCEPTED if created via create_quote_from_booking_session
+                    logger.info(f"Processing quote {quote.id} for payment completion (quote status: {quote.status}, event status: {event.status})")
+
+                    if quote.status == 'ACCEPTED':
+                        # Quote was auto-accepted during creation - just ensure event fields are set
+                        if event.status != 'CONFIRMED':
+                            event.status = 'CONFIRMED'
+                        if event.accepted_quote != quote:
+                            event.accepted_quote = quote
+                        event.save()
+                        logger.info(f"Quote {quote.id} already accepted - ensured event fields are set (event status: {event.status})")
+                    elif quote.status == 'SENT':
+                        # Standard flow - accept the quote which sets event status and accepted_quote
+                        quote.accept()
+                        event.refresh_from_db()
+                        logger.info(f"Quote {quote.id} accepted via standard flow - event status: {event.status}")
+                    else:
+                        # Unexpected status - log warning and try to proceed
+                        logger.warning(f"Quote {quote.id} has unexpected status '{quote.status}' - attempting to set event fields")
+                        event.status = 'CONFIRMED'
+                        event.accepted_quote = quote
+                        event.save()
 
                     # Create invoice from the accepted quote
                     # Pass booking_flow_id so invoice due date uses flow-specific payment terms
@@ -642,6 +658,17 @@ class BookingSessionService:
                 # FINALIZE: Link the created event to the session
                 session.created_event = event
                 session.save()
+
+                # Apply marketing consent from booking to user's preferences
+                try:
+                    metadata = BookingSessionService._extract_booking_metadata(session)
+                    marketing_consent = metadata.get('marketing_consent', False)
+                    if session.client:
+                        BookingSessionService._apply_marketing_consent(session.client, marketing_consent)
+                        logger.info(f"Applied marketing consent ({marketing_consent}) for user {session.client.id}")
+                except Exception as e:
+                    # Don't fail the booking if marketing consent update fails
+                    logger.warning(f"Failed to apply marketing consent: {e}")
 
                 # ASYNC: Update analytics in background
                 try:
@@ -806,6 +833,8 @@ class BookingSessionService:
             - combined_message: Combined message from both sources
             - payment_type: Payment preference (FULL/DEPOSIT)
             - completion_type: Flow completion type (payment/quote)
+            - marketing_consent: User's marketing consent preference (bool)
+            - terms_accepted: User's terms acceptance (bool)
         """
         metadata = {
             'quote_message': '',
@@ -813,6 +842,8 @@ class BookingSessionService:
             'combined_message': '',
             'payment_type': 'FULL',
             'completion_type': 'payment',
+            'marketing_consent': False,
+            'terms_accepted': False,
         }
 
         # FIXED: Iterate through step data to find payment and review step data
@@ -829,11 +860,14 @@ class BookingSessionService:
                     if step_data.get('completion_type'):
                         metadata['completion_type'] = step_data.get('completion_type', 'payment')
 
-                # Extract from pricing_summary step (now contains special_requests and terms_accepted)
-                # Pricing summary step data has special_requests, terms_accepted, and marketing_consent fields
-                if 'special_requests' in step_data or 'terms_accepted' in step_data:
+                # Extract from pricing_summary step (contains special_requests, terms_accepted, marketing_consent)
+                if 'special_requests' in step_data or 'terms_accepted' in step_data or 'marketing_consent' in step_data:
                     if step_data.get('special_requests'):
                         metadata['special_requests'] = step_data.get('special_requests', '').strip()
+                    if 'terms_accepted' in step_data:
+                        metadata['terms_accepted'] = bool(step_data.get('terms_accepted', False))
+                    if 'marketing_consent' in step_data:
+                        metadata['marketing_consent'] = bool(step_data.get('marketing_consent', False))
 
         # Combine messages
         messages = []
@@ -844,6 +878,48 @@ class BookingSessionService:
         metadata['combined_message'] = '\n\n'.join(messages)
 
         return metadata
+
+    @staticmethod
+    def _apply_marketing_consent(user, marketing_consent: bool):
+        """Apply marketing consent preference to user's NotificationPreference
+
+        This updates the user's marketing preferences based on their consent during booking.
+        Per GDPR/CAN-SPAM requirements, marketing defaults to opt-out (False), and this
+        method sets the preference based on explicit user consent.
+
+        Args:
+            user: The User instance to update
+            marketing_consent: Boolean indicating whether user consented to marketing
+
+        Returns:
+            bool: True if preference was updated, False if skipped
+        """
+        if user is None:
+            logger.info("Cannot apply marketing consent: no user provided")
+            return False
+
+        try:
+            from core.domains.notifications.models import NotificationPreference
+
+            # Get or create notification preference for user
+            preference, created = NotificationPreference.objects.get_or_create(user=user)
+
+            # Update marketing preferences based on consent
+            # "Latest wins" policy: each booking updates the preference to current selection
+            preference.marketing_email = marketing_consent
+            preference.marketing_sms = marketing_consent  # Apply to both email and SMS
+            preference.save(update_fields=['marketing_email', 'marketing_sms', 'updated_at'])
+
+            if created:
+                logger.info(f"Created NotificationPreference for user {user.id} with marketing_consent={marketing_consent}")
+            else:
+                logger.info(f"Updated NotificationPreference for user {user.id}: marketing_consent={marketing_consent}")
+
+            return True
+
+        except Exception as e:
+            logger.warning(f"Failed to apply marketing consent for user {user.id if user else 'None'}: {e}")
+            return False
 
     @staticmethod
     def _extract_payment_data(session):

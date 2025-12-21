@@ -44,9 +44,11 @@ export const useConfirmation = (
   }, [sessionId]);
 
   // Extract completion type from session data
+  // Default to 'quote' when no explicit selection - aligns with industry best practices
+  // for high-consideration event bookings (captures leads that would otherwise be lost)
   const getCompletionType = useCallback((): 'payment' | 'quote' => {
     if (!sessionDetails?.booking_data) {
-      return 'payment'; // Default to payment if no session data
+      return 'quote'; // Default to quote if no session data
     }
 
     // Search through all step data for completion_type
@@ -67,7 +69,7 @@ export const useConfirmation = (
       }
     }
 
-    return 'payment'; // Default to payment if completion_type not found
+    return 'quote'; // Default to quote if completion_type not found
   }, [sessionDetails]);
 
   // Complete the booking

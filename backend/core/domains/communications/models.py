@@ -27,6 +27,7 @@ class CommunicationTemplate(BaseModel):
         ('SYSTEM', 'System'),
         ('MANUAL', 'Manual'),
         ('AUTO', 'Auto'),
+        ('MARKETING', 'Marketing'),
     )
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='MANUAL')
 
@@ -181,6 +182,7 @@ class CommunicationRecord(BaseModel):
         ('SYSTEM', 'System'),
         ('MANUAL', 'Manual'),
         ('AUTO', 'Auto'),
+        ('MARKETING', 'Marketing'),
     )
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='MANUAL')
 
