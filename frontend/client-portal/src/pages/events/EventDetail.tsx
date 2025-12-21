@@ -39,6 +39,7 @@ import {
   Assignment as QuestionnaireIcon,
   Feedback as FeedbackIcon,
   RequestQuote as RequestQuoteIcon,
+  Login as CheckInIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -56,6 +57,7 @@ import {
   ContractStatusChip,
   WorkflowProgressStepper,
 } from '../../components/events';
+import { EventCheckIn } from '../../components/events/EventCheckIn';
 import { useWorkflowProgress } from '../../hooks/useWorkflowProgress';
 import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
 import { contractsApi } from '../../apis/contracts.api';
@@ -488,13 +490,20 @@ const EventDetail: React.FC = () => {
             id="event-tab-5"
             aria-controls="event-tabpanel-5"
           />
+          <Tab
+            label="Check-in"
+            icon={<CheckInIcon />}
+            iconPosition="start"
+            id="event-tab-6"
+            aria-controls="event-tabpanel-6"
+          />
           {hasContracts && (
             <Tab
               label={`Contracts (${eventContracts.length})`}
               icon={<ContractIcon />}
               iconPosition="start"
-              id="event-tab-6"
-              aria-controls="event-tabpanel-6"
+              id="event-tab-7"
+              aria-controls="event-tabpanel-7"
             />
           )}
           {event.has_notes && (
@@ -502,8 +511,8 @@ const EventDetail: React.FC = () => {
               label={`Notes (${notes.length})`}
               icon={<NotesIcon />}
               iconPosition="start"
-              id={hasContracts ? "event-tab-7" : "event-tab-6"}
-              aria-controls={hasContracts ? "event-tabpanel-7" : "event-tabpanel-6"}
+              id={hasContracts ? "event-tab-8" : "event-tab-7"}
+              aria-controls={hasContracts ? "event-tabpanel-8" : "event-tabpanel-7"}
             />
           )}
         </Tabs>
@@ -532,8 +541,12 @@ const EventDetail: React.FC = () => {
           <EventQuotes eventId={eventId} />
         </TabPanel>
 
+        <TabPanel value={activeTab} index={6}>
+          <EventCheckIn eventId={eventId} event={event} />
+        </TabPanel>
+
         {hasContracts && (
-          <TabPanel value={activeTab} index={6}>
+          <TabPanel value={activeTab} index={7}>
             {isLoadingContracts ? (
               <Box>
                 {[1, 2].map((item) => (
@@ -622,7 +635,7 @@ const EventDetail: React.FC = () => {
         )}
 
         {event.has_notes && (
-          <TabPanel value={activeTab} index={hasContracts ? 7 : 6}>
+          <TabPanel value={activeTab} index={hasContracts ? 8 : 7}>
             {isLoadingNotes ? (
               <Box>
                 {[1, 2, 3].map((item) => (

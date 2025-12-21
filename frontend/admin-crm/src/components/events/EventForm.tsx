@@ -21,6 +21,26 @@ import { useClients } from '../../hooks/useClients';
 import { useEventTypes } from '../../hooks/useEvents';
 import { useWorkflowTemplates } from '../../hooks/useWorkflows';
 
+// Format date as local ISO string (naive datetime - assumes Philippine time)
+const toLocalISOString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
+// Parse datetime string as local time (naive - assumes Philippine time)
+const parseLocalDateTime = (dateString: string): Date | null => {
+  if (!dateString) return null;
+  // Remove 'Z' suffix if present to treat as local time
+  const localString = dateString.replace('Z', '');
+  const date = new Date(localString);
+  return isNaN(date.getTime()) ? null : date;
+};
+
 interface EventFormProps {
   event?: Event | null;
   onSubmit: (data: CreateEventData | UpdateEventData) => void;
@@ -41,6 +61,8 @@ const getInitialFormData = (event?: Event | null): EventFormData => {
       lead_source: '',
       total_price: '',
       num_participants: '',
+      scheduled_check_in_time: '',
+      scheduled_checkout_time: '',
     };
   }
 
@@ -79,6 +101,8 @@ const getInitialFormData = (event?: Event | null): EventFormData => {
     lead_source: event.lead_source || '',
     total_price: event.total_price || '',
     num_participants: event.num_participants?.toString() || '',
+    scheduled_check_in_time: event.scheduled_check_in_time || '',
+    scheduled_checkout_time: event.scheduled_checkout_time || '',
   };
 };
 
@@ -159,6 +183,8 @@ export const EventForm: React.FC<EventFormProps> = ({
       lead_source: formData.lead_source || undefined,
       total_price: formData.total_price ? parseFloat(formData.total_price).toString() : null,
       num_participants: formData.num_participants ? parseInt(formData.num_participants) : null,
+      scheduled_check_in_time: formData.scheduled_check_in_time || null,
+      scheduled_checkout_time: formData.scheduled_checkout_time || null,
     };
 
     onSubmit(submitData);
@@ -277,9 +303,9 @@ export const EventForm: React.FC<EventFormProps> = ({
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
           <DateTimePicker
             label="Start Date & Time *"
-            value={formData.start_date ? new Date(formData.start_date) : null}
+            value={parseLocalDateTime(formData.start_date)}
             onChange={(newValue) => {
-              handleChange('start_date', newValue ? newValue.toISOString() : '');
+              handleChange('start_date', newValue ? toLocalISOString(newValue) : '');
             }}
             slotProps={{
               textField: {
@@ -292,11 +318,11 @@ export const EventForm: React.FC<EventFormProps> = ({
 
           <DateTimePicker
             label="End Date & Time"
-            value={formData.end_date ? new Date(formData.end_date) : null}
+            value={parseLocalDateTime(formData.end_date)}
             onChange={(newValue) => {
-              handleChange('end_date', newValue ? newValue.toISOString() : '');
+              handleChange('end_date', newValue ? toLocalISOString(newValue) : '');
             }}
-            minDateTime={formData.start_date ? new Date(formData.start_date) : undefined}
+            minDateTime={parseLocalDateTime(formData.start_date) ?? undefined}
             slotProps={{
               textField: {
                 fullWidth: true,
@@ -305,6 +331,45 @@ export const EventForm: React.FC<EventFormProps> = ({
               },
             }}
           />
+        </Box>
+
+        {/* Scheduled Check-in/Checkout Times */}
+        <Box>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+            Scheduled Check-in / Checkout Times
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+            <DateTimePicker
+              label="Scheduled Check-in"
+              value={parseLocalDateTime(formData.scheduled_check_in_time)}
+              onChange={(newValue) => {
+                handleChange('scheduled_check_in_time', newValue ? toLocalISOString(newValue) : '');
+              }}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  size: 'small',
+                },
+              }}
+            />
+
+            <DateTimePicker
+              label="Scheduled Checkout"
+              value={parseLocalDateTime(formData.scheduled_checkout_time)}
+              onChange={(newValue) => {
+                handleChange('scheduled_checkout_time', newValue ? toLocalISOString(newValue) : '');
+              }}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  size: 'small',
+                },
+              }}
+            />
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+            Leave blank to use event start/end dates as defaults for check-in tracking
+          </Typography>
         </Box>
 
         {/* Lead Source, Total Price, and Number of Guests Row */}

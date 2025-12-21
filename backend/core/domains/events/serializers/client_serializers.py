@@ -129,11 +129,20 @@ class ClientEventDetailSerializer(ClientEventSerializer):
     accessible_documents_count = serializers.SerializerMethodField()
     has_notes = serializers.SerializerMethodField()
 
+    # Check-in fields for client self-check-in
+    check_in_status = serializers.CharField(read_only=True)
+    scheduled_check_in_time = serializers.DateTimeField(read_only=True)
+    actual_check_in_time = serializers.DateTimeField(read_only=True)
+    can_self_check_in = serializers.SerializerMethodField()
+
     class Meta(ClientEventSerializer.Meta):
         fields = ClientEventSerializer.Meta.fields + [
             'current_stage', 'total_price', 'preferences',
             'upcoming_tasks', 'recent_updates', 'accessible_documents_count',
-            'has_notes'
+            'has_notes',
+            # Check-in fields
+            'check_in_status', 'scheduled_check_in_time', 'actual_check_in_time',
+            'can_self_check_in'
         ]
     
     def get_upcoming_tasks(self, obj):
@@ -180,6 +189,26 @@ class ClientEventDetailSerializer(ClientEventSerializer):
             content_type=event_ct,
             object_id=obj.id
         ).exists()
+
+    def get_can_self_check_in(self, obj):
+        """
+        Client can self-check-in if:
+        - Event status is CONFIRMED
+        - Check-in status is PENDING
+        - Today is the event day (based on scheduled_check_in_time or start_date)
+        """
+        if obj.status != 'CONFIRMED' or obj.check_in_status != 'PENDING':
+            return False
+
+        from django.utils import timezone
+        now = timezone.now()
+        event_date = obj.scheduled_check_in_time or obj.start_date
+
+        if not event_date:
+            return False
+
+        # Check if today matches event date (event day only)
+        return now.date() == event_date.date()
 
 
 class ClientEventTimelineSerializer(serializers.ModelSerializer):

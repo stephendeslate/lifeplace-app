@@ -3,7 +3,7 @@ import logging
 import uuid
 from datetime import timedelta, datetime, date, time
 from decimal import Decimal
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from django.db import transaction
 from core.domains.events.models import Event, EventProductOption
@@ -1398,14 +1398,70 @@ class BookingSessionService:
         # NOTE: total_amount_due is now automatically computed from invoices, no manual setting needed
         event_data['event_products'] = event_products
         logger.info(f"PREPARE_EVENT_DATA: setting event_data total_price to ₱{total_price} (total_amount_due computed from invoices)")
-        
+
+        # AUTO-POPULATE SCHEDULED CHECK-IN/CHECKOUT TIMES FROM VENUE RULES
+        # Extract venue_id from booking data and calculate times using VenueService
+        venue_id = BookingSessionService._extract_venue_id_from_booking_data(booking_data)
+        if venue_id:
+            try:
+                from core.domains.venues.models import Venue
+                from core.domains.venues.services import VenueService
+                from decimal import Decimal
+
+                venue = Venue.objects.get(id=venue_id)
+                event_data['venue'] = venue
+
+                # Get start_date for calculation
+                start_date = event_data.get('start_date')
+                if start_date:
+                    # Ensure start_date is a datetime
+                    if isinstance(start_date, str):
+                        start_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+
+                    program_date = start_date.date()
+                    program_start_time = start_date.time()
+
+                    # Calculate duration from end_date or use default
+                    end_date = event_data.get('end_date')
+                    if end_date:
+                        if isinstance(end_date, str):
+                            end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                        duration_hours = (end_date - start_date).total_seconds() / 3600
+                    else:
+                        duration_hours = 4  # Default 4 hours
+
+                    # Calculate event times using venue service
+                    calculated_times = VenueService.calculate_event_times(
+                        venue=venue,
+                        program_date=program_date,
+                        program_start_time=program_start_time,
+                        program_hours=Decimal(str(max(1, duration_hours))),
+                    )
+
+                    # Set scheduled check-in/checkout times
+                    event_data['scheduled_check_in_time'] = calculated_times.ingress_start
+                    event_data['scheduled_checkout_time'] = calculated_times.scheduled_checkout
+
+                    logger.info(
+                        f"AUTO_SCHEDULED_TIMES: venue={venue.name}, "
+                        f"check_in={calculated_times.ingress_start}, "
+                        f"checkout={calculated_times.scheduled_checkout}"
+                    )
+
+            except Venue.DoesNotExist:
+                logger.warning(f"Venue with id={venue_id} not found. Skipping scheduled time calculation.")
+            except Exception as e:
+                logger.warning(f"Could not calculate venue times: {e}")
+
         # CRITICAL VALIDATION: Only allow known Event model fields
         # NOTE: 'id' is explicitly excluded since Django auto-generates it
         allowed_event_fields = {
             'client', 'event_type', 'status', 'completion_type', 'name', 'start_date', 'end_date',
             'workflow_template', 'current_stage', 'lead_source', 'last_contacted',
             'total_price', 'event_products', 'payment_status', 'total_amount_due',
-            'total_amount_paid', 'preferences', 'guest_count', 'description'
+            'total_amount_paid', 'preferences', 'guest_count', 'description',
+            # Check-in/checkout scheduled times (auto-populated from venue rules)
+            'scheduled_check_in_time', 'scheduled_checkout_time', 'venue'
         }
         
         # Filter out any fields that shouldn't be in event creation
@@ -2150,3 +2206,56 @@ class BookingSessionService:
                 continue
 
         return event_products
+
+    @staticmethod
+    def _extract_venue_id_from_booking_data(booking_data: Dict[str, Any]) -> Optional[int]:
+        """
+        Extract venue ID from booking session data.
+
+        Looks in multiple locations where venue might be stored:
+        1. package_selection step data
+        2. selected_packages with venue_id
+        3. venue_additional_hours keys
+        4. datetime step data
+        """
+        # Check package_selection step
+        package_selection = booking_data.get('package_selection', {})
+        if isinstance(package_selection, dict):
+            venue_id = package_selection.get('venue_id')
+            if venue_id:
+                try:
+                    return int(venue_id)
+                except (ValueError, TypeError):
+                    pass
+
+        # Check selected_packages for venue_id
+        selected_packages = booking_data.get('selected_packages', [])
+        if isinstance(selected_packages, list) and selected_packages:
+            for pkg in selected_packages:
+                if isinstance(pkg, dict) and pkg.get('venue_id'):
+                    try:
+                        return int(pkg['venue_id'])
+                    except (ValueError, TypeError):
+                        pass
+
+        # Check venue_additional_hours keys (stores venue_id as key)
+        venue_hours = booking_data.get('venue_additional_hours', {})
+        if isinstance(venue_hours, dict) and venue_hours:
+            try:
+                # Get first venue_id from the keys
+                first_key = next(iter(venue_hours.keys()))
+                return int(first_key)
+            except (ValueError, TypeError, StopIteration):
+                pass
+
+        # Check datetime step data
+        datetime_data = booking_data.get('datetime', {})
+        if isinstance(datetime_data, dict):
+            venue_id = datetime_data.get('venue_id')
+            if venue_id:
+                try:
+                    return int(venue_id)
+                except (ValueError, TypeError):
+                    pass
+
+        return None

@@ -77,6 +77,9 @@ export interface Event {
   can_rebook?: boolean;
 }
 
+// Check-in status type
+export type CheckInStatus = 'PENDING' | 'CHECKED_IN' | 'CHECKED_OUT' | 'NO_SHOW';
+
 // Detailed Event interface matching backend ClientEventDetailSerializer
 export interface EventDetail extends Event {
   current_stage: WorkflowStage;
@@ -93,6 +96,11 @@ export interface EventDetail extends Event {
     signed_count: number;
     percentage: number;
   };
+  // Check-in fields for client self-check-in
+  check_in_status: CheckInStatus;
+  scheduled_check_in_time: string | null;
+  actual_check_in_time: string | null;
+  can_self_check_in: boolean;
 }
 
 // Contract summary for events

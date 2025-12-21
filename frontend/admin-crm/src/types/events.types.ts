@@ -164,6 +164,8 @@ export interface CreateEventData {
   lead_source?: string;
   total_price?: string | null;
   num_participants?: number | null;
+  scheduled_check_in_time?: string | null;
+  scheduled_checkout_time?: string | null;
 }
 
 export type UpdateEventData = Partial<CreateEventData>;
@@ -202,6 +204,8 @@ export interface EventFormData {
   lead_source: string;
   total_price: string;
   num_participants: string;
+  scheduled_check_in_time: string;
+  scheduled_checkout_time: string;
 }
 
 // Component prop types
