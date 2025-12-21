@@ -379,39 +379,21 @@ const EventDetail: React.FC = () => {
       )}
 
       {/* Quick Stats */}
-      {(event.upcoming_tasks.length > 0 || event.accessible_documents_count > 0) && (
+      {event.upcoming_tasks.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          {event.upcoming_tasks.length > 0 && (
-            <Box sx={(theme) => ({
-              flexGrow: 0,
-              flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
-            })}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h4" color="warning.main">
-                  {event.upcoming_tasks.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Upcoming Tasks
-                </Typography>
-              </Paper>
-            </Box>
-          )}
-
-          {event.accessible_documents_count > 0 && (
-            <Box sx={(theme) => ({
-              flexGrow: 0,
-              flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
-            })}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h4" color="info.main">
-                  {event.accessible_documents_count}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Documents
-                </Typography>
-              </Paper>
-            </Box>
-          )}
+          <Box sx={(theme) => ({
+            flexGrow: 0,
+            flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
+          })}>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h4" color="warning.main">
+                {event.upcoming_tasks.length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Upcoming Tasks
+              </Typography>
+            </Paper>
+          </Box>
         </Box>
       )}
 

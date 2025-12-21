@@ -184,7 +184,8 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
       setIsPublic(selectedFile.is_public);
       setEditDialogOpen(true);
     }
-    handleMenuClose();
+    // Only close the menu, don't clear selectedFile (needed for save)
+    setAnchorEl(null);
   };
 
   const handleEditSubmit = () => {
