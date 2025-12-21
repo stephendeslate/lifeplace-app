@@ -102,8 +102,9 @@ export const useTasks = () => {
   const { data: sentQuotes = [] } = useEventQuotes({ status: 'SENT' });
 
   // Fetch contracts (SENT and PARTIALLY_SIGNED statuses)
-  const { data: sentContracts = [] } = useEventContracts({ status: 'SENT' });
-  const { data: partiallySignedContracts = [] } = useEventContracts({ status: 'PARTIALLY_SIGNED' });
+  // Poll every 30s to detect signature changes made from client-portal
+  const { data: sentContracts = [] } = useEventContracts({ status: 'SENT' }, { refetchInterval: 30000 });
+  const { data: partiallySignedContracts = [] } = useEventContracts({ status: 'PARTIALLY_SIGNED' }, { refetchInterval: 30000 });
 
   // Fetch payments (PENDING and FAILED statuses)
   const { payments: allPayments = [], isLoadingPayments } = usePayments({});

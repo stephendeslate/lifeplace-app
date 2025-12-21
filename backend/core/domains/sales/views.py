@@ -372,6 +372,78 @@ class EventQuoteViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'])
+    def booking_session_line_items(self, request):
+        """Get line items from a booking session for an event.
+
+        This allows admin to populate quote line items from the booking session
+        data when editing quotes for events that came from booking flows.
+
+        Query params:
+        - event_id: The event ID to get booking session data for
+
+        Returns list of calculated line items based on booking session data.
+        """
+        from core.domains.bookingflow.models import BookingSession
+        from core.domains.sales.pricing_service import PricingCalculationService
+
+        event_id = request.query_params.get('event_id')
+        if not event_id:
+            return Response(
+                {"detail": "event_id parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Find booking session for this event
+        try:
+            session = BookingSession.objects.select_related('booking_flow').get(
+                created_event_id=event_id
+            )
+        except BookingSession.DoesNotExist:
+            return Response(
+                {"detail": "No booking session found for this event", "has_booking_session": False},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Get event_type_id for event-type-specific pricing
+        event_type_id = None
+        if session.booking_flow and session.booking_flow.event_type:
+            event_type_id = session.booking_flow.event_type_id
+
+        # Calculate pricing using centralized service
+        pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
+            booking_data=session.booking_data,
+            event_type_id=event_type_id
+        )
+
+        # Convert line items to response format
+        line_items = []
+        for item in pricing_breakdown.line_items:
+            # Handle custom bundles (product_id=-1) by returning None
+            product_id = item.product_id if item.product_id != -1 else None
+
+            line_items.append({
+                'description': item.description,
+                'quantity': item.quantity,
+                'unit_price': str(item.total_unit_price),
+                'total': str(item.line_total),
+                'product_id': product_id,
+                'base_unit_price': str(item.base_unit_price),
+                'excess_hours': item.excess_hours,
+                'excess_hour_price': str(item.excess_hour_price) if item.excess_hour_price else None,
+                'excess_cost': str(item.excess_cost),
+                'item_type': item.item_type,
+            })
+
+        return Response({
+            'has_booking_session': True,
+            'session_id': str(session.session_id),
+            'line_items': line_items,
+            'subtotal': str(pricing_breakdown.subtotal),
+            'tax_amount': str(pricing_breakdown.tax_amount),
+            'total_amount': str(pricing_breakdown.total_amount),
+        })
+
 
 class QuoteLineItemViewSet(viewsets.ModelViewSet):
     """ViewSet for managing quote line items"""

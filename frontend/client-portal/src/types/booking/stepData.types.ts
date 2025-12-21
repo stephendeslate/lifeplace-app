@@ -153,6 +153,7 @@ export interface PricingLineItem {
 export interface PricingCalculation {
   subtotal: string;
   tax: string;
+  tax_rate: string; // Tax rate as percentage (e.g., "12.00" for 12%)
   discount: string;
   total: string;
   discount_details?: {

@@ -20,7 +20,7 @@ import {
   Chip,
   Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon, Info as InfoIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, Info as InfoIcon, Refresh as RefreshIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -94,6 +94,8 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   const [lineItems, setLineItems] = useState<LineItemFormData[]>([]);
   const [isCalculating, setIsCalculating] = useState<number | null>(null);
   const [overriddenItems, setOverriddenItems] = useState<Set<number>>(new Set());
+  const [hasBookingSession, setHasBookingSession] = useState<boolean | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Initialize line items from quote
   useEffect(() => {
@@ -135,6 +137,56 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
       ]);
     }
   }, [quote, products]);
+
+  // Check if the event has a booking session
+  useEffect(() => {
+    const checkBookingSession = async () => {
+      if (quote.event) {
+        try {
+          const result = await salesApi.getBookingSessionLineItems(quote.event);
+          setHasBookingSession(result.has_booking_session);
+        } catch {
+          setHasBookingSession(false);
+        }
+      }
+    };
+    checkBookingSession();
+  }, [quote.event]);
+
+  // Handler to import line items from booking session
+  const handleImportFromBookingSession = async () => {
+    if (!quote.event) return;
+
+    setIsImporting(true);
+    try {
+      const result = await salesApi.getBookingSessionLineItems(quote.event);
+      if (result.has_booking_session && result.line_items && result.line_items.length > 0) {
+        // Convert booking session line items to form data format
+        const importedItems: LineItemFormData[] = result.line_items.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: parseFloat(item.total),
+          product_id: item.product_id,
+          base_unit_price: item.base_unit_price,
+          excess_hours: item.excess_hours,
+          excess_hour_price: item.excess_hour_price,
+          excess_cost: item.excess_cost,
+          has_excess_hours: item.excess_hours !== null && item.excess_hours > 0,
+        }));
+        setLineItems(importedItems);
+        setOverriddenItems(new Set());
+        showToast({ type: 'success', title: 'Import Successful', message: `Imported ${importedItems.length} line item(s) from booking session` });
+      } else {
+        showToast({ type: 'warning', title: 'No Items', message: 'No line items found in booking session' });
+      }
+    } catch (error) {
+      console.error('Failed to import from booking session:', error);
+      showToast({ type: 'error', title: 'Import Failed', message: 'Failed to import line items from booking session' });
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const handleAddLineItem = () => {
     setLineItems([
@@ -536,14 +588,30 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Line Items</Typography>
-              <Button
-                startIcon={<AddIcon />}
-                onClick={handleAddLineItem}
-                variant="outlined"
-                size="small"
-              >
-                Add Item
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {hasBookingSession && (
+                  <Tooltip title="Import line items from the booking session that created this event">
+                    <Button
+                      startIcon={<DownloadIcon />}
+                      onClick={handleImportFromBookingSession}
+                      variant="outlined"
+                      size="small"
+                      color="secondary"
+                      disabled={isImporting}
+                    >
+                      {isImporting ? 'Importing...' : 'Import from Booking'}
+                    </Button>
+                  </Tooltip>
+                )}
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={handleAddLineItem}
+                  variant="outlined"
+                  size="small"
+                >
+                  Add Item
+                </Button>
+              </Box>
             </Box>
 
             <TableContainer component={Paper} variant="outlined">

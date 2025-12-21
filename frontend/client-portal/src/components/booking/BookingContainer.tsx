@@ -371,27 +371,25 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
 
         {/* Pricing Summary (if available) */}
         {state.totalPrice !== '0.00' && (
-          <AnimatedElement animation="slideUp" delay={500}>
-            <GlassCard
-              variant="light"
-              intensity="subtle"
-              sx={{
-                mt: 3,
-                p: 2,
-                backgroundColor: alpha(theme.palette.success.main, 0.08),
-                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Current Total:
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                  {formatAmount(state.totalPrice || '0')}
-                </Typography>
-              </Box>
-            </GlassCard>
-          </AnimatedElement>
+          <GlassCard
+            variant="light"
+            intensity="subtle"
+            sx={{
+              mt: 3,
+              p: 2,
+              backgroundColor: alpha(theme.palette.success.main, 0.08),
+              border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Current Total:
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                {formatAmount(state.totalPrice || '0')}
+              </Typography>
+            </Box>
+          </GlassCard>
         )}
       </Container>
     </Box>

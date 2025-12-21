@@ -28,9 +28,10 @@ export interface SimplePricingBreakdown {
 export const useSimplePricing = (
   selectedPackages: SelectedPackage[] = [],
   selectedAddons: SelectedAddon[] = [],
-  discountCode?: string
+  discountCode?: string,
+  venueAdditionalHours?: Record<string, number>
 ) => {
-  const { state } = useBooking();
+  const { state, actions } = useBooking();
   const [pricing, setPricing] = useState<SimplePricingBreakdown>({
     subtotal: 0,
     tax: 0,
@@ -49,6 +50,9 @@ export const useSimplePricing = (
   const hasItems = selectedPackages.length > 0 || selectedAddons.length > 0;
   const totalItemCount = selectedPackages.reduce((sum, pkg) => sum + pkg.quantity, 0) +
                         selectedAddons.reduce((sum, addon) => sum + addon.quantity, 0);
+
+  // Serialize venue hours for dependency comparison
+  const venueHoursKey = JSON.stringify(venueAdditionalHours || {});
 
   // Calculate pricing using server API
   const calculatePricing = useCallback(async () => {
@@ -73,13 +77,20 @@ export const useSimplePricing = (
     try {
       const result = await BookingCoreApi.calculatePricing(
         state.currentSession.session_id,
-        discountCode
+        discountCode,
+        venueAdditionalHours
       );
 
       const subtotal = parseFloat(result.subtotal);
       const tax = parseFloat(result.tax);
       const discount = parseFloat(result.discount);
       const total = parseFloat(result.total);
+
+      // Store the tax rate from backend for optimistic calculations
+      if (result.tax_rate) {
+        const taxRateDecimal = parseFloat(result.tax_rate) / 100; // Convert from percentage to decimal
+        actions.setTaxRate(taxRateDecimal);
+      }
 
       setPricing({
         subtotal,
@@ -117,7 +128,7 @@ export const useSimplePricing = (
     } finally {
       setLoading(false);
     }
-  }, [state.currentSession, hasItems, discountCode, selectedPackages, selectedAddons]);
+  }, [state.currentSession, hasItems, discountCode, selectedPackages, selectedAddons, venueAdditionalHours, venueHoursKey]);
 
   // Recalculate when dependencies change
   useEffect(() => {

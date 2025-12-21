@@ -41,6 +41,7 @@ const initialState: BookingState = {
   paymentGateways: [],
   selectedPaymentGateway: null,
   totalPrice: '0.00',
+  taxRate: 0.12, // Default 12% tax rate, updated from backend
   breakdown: [],
   recoverableSession: null,
 };
@@ -62,6 +63,7 @@ type BookingAction =
   | { type: 'SET_PAYMENT_GATEWAYS'; payload: PaymentGateway[] }
   | { type: 'SELECT_PAYMENT_GATEWAY'; payload: PaymentGateway }
   | { type: 'SET_TOTAL_PRICE'; payload: string }
+  | { type: 'SET_TAX_RATE'; payload: number }
   | { type: 'RESET_BOOKING' }
   | { type: 'SET_RECOVERABLE_SESSION'; payload: { sessionId: string; lastUpdated: string; stepName: string } | null };
 
@@ -136,7 +138,10 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
     
     case 'SET_TOTAL_PRICE':
       return { ...state, totalPrice: action.payload };
-    
+
+    case 'SET_TAX_RATE':
+      return { ...state, taxRate: action.payload };
+
     case 'RESET_BOOKING':
       return initialState;
 
@@ -536,9 +541,19 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (stepType === 'package_selection' && data.selected_packages) {
         formattedData = { selected_packages: data.selected_packages };
         bookingDataUpdate.selected_packages = data.selected_packages;
+        // Include venue_additional_hours if present
+        if (data.venue_additional_hours) {
+          (formattedData as Record<string, unknown>).venue_additional_hours = data.venue_additional_hours;
+          bookingDataUpdate.venue_additional_hours = data.venue_additional_hours;
+        }
       } else if (stepType === 'addon_selection' && data.selected_addons) {
         formattedData = { selected_addons: data.selected_addons };
         bookingDataUpdate.selected_addons = data.selected_addons;
+        // Include venue_additional_hours if present for pricing calculation
+        if (data.venue_additional_hours) {
+          (formattedData as Record<string, unknown>).venue_additional_hours = data.venue_additional_hours;
+          bookingDataUpdate.venue_additional_hours = data.venue_additional_hours;
+        }
       }
 
       // IMMEDIATELY update local state for responsive UI
@@ -787,7 +802,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     updateTotalPrice: useCallback(async (newTotalPrice: string) => {
       dispatch({ type: 'SET_TOTAL_PRICE', payload: newTotalPrice });
-      
+
       if (state.currentSession && state.currentSession.current_step) {
         try {
           await BookingCoreApi.updateSessionData(
@@ -801,6 +816,16 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       }
     }, [state.currentSession]),
+
+    // Immediate local price update without backend sync (for optimistic UI updates)
+    setOptimisticPrice: useCallback((price: string) => {
+      dispatch({ type: 'SET_TOTAL_PRICE', payload: price });
+    }, []),
+
+    // Store tax rate from backend for local calculations
+    setTaxRate: useCallback((rate: number) => {
+      dispatch({ type: 'SET_TAX_RATE', payload: rate });
+    }, []),
 
     calculatePricing: useCallback(async () => {
       // Placeholder - pricing is calculated in the PricingSummaryStep

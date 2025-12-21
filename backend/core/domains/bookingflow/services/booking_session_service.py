@@ -1172,6 +1172,11 @@ class BookingSessionService:
         from core.domains.products.models import ProductOption
         
         # Extract selected products/packages from booking data
+        # Get default tax rate for non-tax-inclusive products
+        from core.domains.payments.models import TaxRate
+        default_tax = TaxRate.objects.filter(is_default=True).first()
+        default_tax_rate = default_tax.rate if default_tax else Decimal('0.00')
+
         for step_key, step_data in session.booking_data.items():
             if isinstance(step_data, dict):
                 # Handle package selections
@@ -1181,17 +1186,22 @@ class BookingSessionService:
                         for package_id in packages:
                             try:
                                 package = ProductOption.objects.get(id=package_id)
+                                # Set tax_rate based on product's is_tax_inclusive flag
+                                tax_rate = Decimal('0.00') if package.is_tax_inclusive else default_tax_rate
                                 QuoteLineItem.objects.create(
                                     quote=quote,
                                     product=package,
                                     quantity=1,
                                     unit_price=package.base_price,
                                     total=package.base_price,
-                                    description=f'Package: {package.name}'
+                                    description=f'Package: {package.name}',
+                                    tax_rate=tax_rate,
+                                    item_type='PACKAGE',
+                                    base_unit_price=package.base_price
                                 )
                             except ProductOption.DoesNotExist:
                                 continue
-                
+
                 # Handle addon selections
                 if 'selected_addons' in step_data:
                     addons = step_data['selected_addons']
@@ -1199,13 +1209,18 @@ class BookingSessionService:
                         for addon_id in addons:
                             try:
                                 addon = ProductOption.objects.get(id=addon_id)
+                                # Set tax_rate based on product's is_tax_inclusive flag
+                                tax_rate = Decimal('0.00') if addon.is_tax_inclusive else default_tax_rate
                                 QuoteLineItem.objects.create(
                                     quote=quote,
                                     product=addon,
                                     quantity=1,
                                     unit_price=addon.base_price,
                                     total=addon.base_price,
-                                    description=f'Add-on: {addon.name}'
+                                    description=f'Add-on: {addon.name}',
+                                    tax_rate=tax_rate,
+                                    item_type='ADDON',
+                                    base_unit_price=addon.base_price
                                 )
                             except ProductOption.DoesNotExist:
                                 continue
@@ -1893,13 +1908,31 @@ class BookingSessionService:
         """
         logger.info(f"Creating quote from booking session {session.session_id} for event {event.id}")
 
-        # IDEMPOTENCY CHECK: Return existing quote if one already exists for this event
-        # This handles race conditions where completion is triggered multiple times
+        # DEBUG: Log booking data structure to diagnose empty line items issue
+        booking_data_keys = list(session.booking_data.keys()) if session.booking_data else []
+        has_packages = 'selected_packages' in session.booking_data if session.booking_data else False
+        packages_count = len(session.booking_data.get('selected_packages', [])) if session.booking_data else 0
+        has_addons = 'selected_addons' in session.booking_data if session.booking_data else False
+        addons_count = len(session.booking_data.get('selected_addons', [])) if session.booking_data else 0
+        logger.info(f"DEBUG booking_data keys: {booking_data_keys}")
+        logger.info(f"DEBUG has_packages: {has_packages}, count: {packages_count}")
+        logger.info(f"DEBUG has_addons: {has_addons}, count: {addons_count}")
+        if has_packages:
+            logger.info(f"DEBUG selected_packages: {session.booking_data.get('selected_packages')}")
+
+        # IDEMPOTENCY CHECK: Check if quote exists and has line items
+        # If quote exists but is empty (created by workflow automation), populate it with booking session line items
         existing_quote = EventQuote.objects.filter(event=event, version=1).first()
         if existing_quote:
-            logger.warning(f"🔧 QUOTE_DUPLICATE_PREVENTED: Quote already exists for event {event.id} "
-                          f"(quote_id={existing_quote.id}, status={existing_quote.status}). Returning existing quote.")
-            return existing_quote
+            existing_line_items_count = existing_quote.line_items.count()
+            if existing_line_items_count > 0:
+                logger.warning(f"🔧 QUOTE_DUPLICATE_PREVENTED: Quote already exists for event {event.id} "
+                              f"(quote_id={existing_quote.id}, status={existing_quote.status}, "
+                              f"line_items={existing_line_items_count}). Returning existing quote.")
+                return existing_quote
+            else:
+                logger.info(f"🔧 QUOTE_EMPTY_DETECTED: Quote {existing_quote.id} exists but has no line items. "
+                           f"Will populate with booking session line items.")
 
         # Use centralized pricing service for consistent calculations
         from core.domains.sales.pricing_service import PricingCalculationService
@@ -1956,25 +1989,39 @@ class BookingSessionService:
         max_valid_until = event_date - timedelta(days=1)  # At least 1 day before event
         quote_valid_until = min(default_valid_until, max_valid_until)
 
-        # Create the quote with conditional status
-        # Initialize with basic values, will be recalculated after line items are added
-        quote = EventQuote.objects.create(
-            event=event,
-            version=1,
-            status=quote_status,
-            subtotal=Decimal('0.00'),  # Will be recalculated
-            tax_amount=Decimal('0.00'),  # Will be recalculated
-            discount_amount=pricing_breakdown.discount_amount,
-            total_amount=Decimal('0.00'),  # Will be recalculated
-            valid_until=quote_valid_until,
-            accepted_at=accepted_at,
-            created_by=session.client,
-            notes=notes,  # Use client message in notes
-            client_message=client_message,  # Also store in client_message field
-            discount=pricing_breakdown.applied_discount
-        )
-        
-        logger.info(f"Created quote {quote.id} with status {quote.status}")
+        # Either use existing empty quote or create new one
+        if existing_quote and existing_quote.line_items.count() == 0:
+            # Populate the existing empty quote with booking session data
+            quote = existing_quote
+            quote.status = quote_status
+            quote.discount_amount = pricing_breakdown.discount_amount
+            quote.valid_until = quote_valid_until
+            quote.accepted_at = accepted_at
+            quote.created_by = session.client
+            quote.notes = notes
+            quote.client_message = client_message
+            quote.discount = pricing_breakdown.applied_discount
+            quote.save()
+            logger.info(f"Updated existing empty quote {quote.id} with booking session data")
+        else:
+            # Create new quote with conditional status
+            # Initialize with basic values, will be recalculated after line items are added
+            quote = EventQuote.objects.create(
+                event=event,
+                version=1,
+                status=quote_status,
+                subtotal=Decimal('0.00'),  # Will be recalculated
+                tax_amount=Decimal('0.00'),  # Will be recalculated
+                discount_amount=pricing_breakdown.discount_amount,
+                total_amount=Decimal('0.00'),  # Will be recalculated
+                valid_until=quote_valid_until,
+                accepted_at=accepted_at,
+                created_by=session.client,
+                notes=notes,  # Use client message in notes
+                client_message=client_message,  # Also store in client_message field
+                discount=pricing_breakdown.applied_discount
+            )
+            logger.info(f"Created quote {quote.id} with status {quote.status}")
         
         # Create line items from pricing breakdown
         BookingSessionService._create_quote_line_items_from_pricing_breakdown(quote, pricing_breakdown, session)
@@ -2021,6 +2068,12 @@ class BookingSessionService:
         logger.info(f"Creating {len(pricing_breakdown.line_items)} line items from pricing breakdown")
         
         for pricing_item in pricing_breakdown.line_items:
+            # Handle custom bundles (product_id=-1) by setting to None
+            # Custom bundles don't have a valid product reference
+            product_id = pricing_item.product_id
+            if product_id == -1:
+                product_id = None
+
             QuoteLineItem.objects.create(
                 quote=quote,
                 description=pricing_item.description,
@@ -2028,7 +2081,7 @@ class BookingSessionService:
                 unit_price=pricing_item.total_unit_price,  # Already includes excess hours
                 tax_rate=pricing_item.tax_rate,
                 total=pricing_item.line_total,
-                product_id=pricing_item.product_id,
+                product_id=product_id,
                 notes=f"Generated from booking session {session.session_id}",
                 # Enhanced pricing fields for DRY compliance
                 item_type=getattr(pricing_item, 'item_type', 'PACKAGE'),

@@ -54,7 +54,7 @@ export const StepRenderer: React.FC = () => {
     } catch (error) {
       console.error('Failed to update step data:', error);
     }
-  }, [currentStep, actions]);
+  }, [currentStep, actions.updateStepData]);
 
   const handleValidation = useCallback(async (data: unknown): Promise<StepValidationResult> => {
     if (!currentStep) {
@@ -214,10 +214,14 @@ export const StepRenderer: React.FC = () => {
       const venueConfig = state.currentFlow?.enabled_steps?.find((s: { step_type: string; configuration_data?: unknown }) => s.step_type === 'venue_selection')?.configuration_data as { available_venues_details?: RentableVenue[] } | undefined;
       const selectedVenues = venueConfig?.available_venues_details?.filter(v => selectedVenueIds.includes(v.id)) || [];
 
-      // Get existing venue_additional_hours from package_selection step data or addon_selection step data
+      // Get existing venue_additional_hours from multiple sources (step data, booking data)
       const packageSelectionData = state.stepData.package_selection;
       const addonSelectionData = state.stepData.addon_selection;
-      const venueAdditionalHours = addonSelectionData?.venue_additional_hours || packageSelectionData?.venue_additional_hours || {};
+      const bookingDataHours = state.currentSession?.booking_data?.venue_additional_hours as Record<string, number> | undefined;
+      const venueAdditionalHours = addonSelectionData?.venue_additional_hours ||
+        packageSelectionData?.venue_additional_hours ||
+        bookingDataHours ||
+        {};
 
       return (
         <AddonSelectionStep

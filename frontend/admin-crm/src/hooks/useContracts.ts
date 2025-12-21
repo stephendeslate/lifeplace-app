@@ -118,10 +118,14 @@ export const useDeleteContractTemplate = () => {
 };
 
 // Event Contracts
-export const useEventContracts = (filters?: EventContractFilters) => {
+export const useEventContracts = (
+  filters?: EventContractFilters,
+  options?: { refetchInterval?: number }
+) => {
   return useQuery({
     queryKey: ['eventContracts', filters],
     queryFn: () => contractsApi.getEventContracts(filters),
+    refetchInterval: options?.refetchInterval,
   });
 };
 

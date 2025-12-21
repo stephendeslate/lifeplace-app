@@ -539,8 +539,9 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             if discount_code:
                 booking_data['applied_discount_code'] = discount_code
 
-            # Extract venue_additional_hours from session
-            venue_additional_hours = booking_data.get('venue_additional_hours', {})
+            # Extract venue_additional_hours - prefer request body over session data
+            # This allows frontend to pass current local state for real-time pricing updates
+            venue_additional_hours = request.data.get('venue_additional_hours') or booking_data.get('venue_additional_hours', {})
 
             # Get event_type_id from booking flow for event-type-specific pricing
             event_type_id = None
@@ -597,6 +598,7 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({
                 'subtotal': str(pricing_breakdown.subtotal.quantize(Decimal('0.01'))),
                 'tax': str(pricing_breakdown.tax_amount.quantize(Decimal('0.01'))),
+                'tax_rate': str(pricing_breakdown.tax_rate.quantize(Decimal('0.01'))),
                 'discount': str(pricing_breakdown.discount_amount.quantize(Decimal('0.01'))),
                 'total': str(pricing_breakdown.total_amount.quantize(Decimal('0.01'))),
                 'discount_details': discount_details,

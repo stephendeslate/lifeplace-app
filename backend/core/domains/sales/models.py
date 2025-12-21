@@ -277,7 +277,7 @@ class QuoteTemplate(BaseModel):
         )
         
         # Add products from template
-        for template_product in self.quotetemplateplateproduct_set.all():
+        for template_product in self.quotetemplateproduct_set.all():
             QuoteLineItem.objects.create(
                 quote=quote,
                 description=template_product.product.name,
