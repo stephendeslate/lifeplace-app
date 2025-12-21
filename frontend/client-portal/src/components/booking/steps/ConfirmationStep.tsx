@@ -83,7 +83,9 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   // Get payment info from booking state
   const paymentInfo = state.stepData.payment_info;
   const paymentType = paymentInfo?.payment_type || 'FULL';
-  const completionType = paymentInfo?.completion_type || 'payment';
+  // Default to 'quote' when no explicit selection made - aligns with industry best practices
+  // for high-consideration event bookings (captures leads that would otherwise be lost)
+  const completionType = paymentInfo?.completion_type || 'quote';
 
   // Calculate pricing using simplified pricing hook
   const { pricing } = useSimplePricing(

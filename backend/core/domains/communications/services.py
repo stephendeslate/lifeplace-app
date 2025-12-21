@@ -225,6 +225,7 @@ class CommunicationService:
         'SYSTEM': 'system',
         'MANUAL': 'communication',
         'AUTO': 'communication',
+        'MARKETING': 'marketing',
     }
 
     def __init__(self):

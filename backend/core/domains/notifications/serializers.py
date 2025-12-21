@@ -42,7 +42,7 @@ class NotificationPreferenceSerializer(serializers.ModelSerializer):
         model = NotificationPreference
         fields = [
             'id', 'user', 'email_enabled', 'sms_enabled', 'in_app_enabled',
-            
+
             # Category preferences
             'system_email', 'system_sms', 'system_in_app',
             'event_email', 'event_sms', 'event_in_app',
@@ -52,11 +52,14 @@ class NotificationPreferenceSerializer(serializers.ModelSerializer):
             'contract_email', 'contract_sms', 'contract_in_app',
             'workflow_email', 'workflow_sms', 'workflow_in_app',
             'communication_email', 'communication_sms', 'communication_in_app',
-            
+
+            # Marketing preferences (explicit consent required)
+            'marketing_email', 'marketing_sms', 'marketing_in_app',
+
             # Advanced preferences
             'quiet_hours_enabled', 'quiet_hours_start', 'quiet_hours_end',
             'digest_frequency', 'disabled_types', 'disabled_types_details',
-            
+
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
