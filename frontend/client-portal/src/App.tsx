@@ -24,6 +24,7 @@ import { FacilitiesPage } from './pages/facilities';
 // Action Center and Records imports
 import { ActionCenterPage } from './pages/actions/ActionCenterPage';
 import { RecordsPage } from './pages/records/RecordsPage';
+import { TermsPage, PrivacyPage } from './pages/legal';
 
 
 // Import booking components
@@ -452,28 +453,22 @@ const AppRouter: React.FC = () => {
       />
 
       {/* Legal pages */}
-      <Route 
-        path="/privacy" 
+      <Route
+        path="/privacy"
         element={
           <PublicLayout>
-            <PlaceholderPage 
-              title="Privacy Policy" 
-              description="Your privacy is important to us"
-            />
+            <PrivacyPage />
           </PublicLayout>
-        } 
+        }
       />
-      
-      <Route 
-        path="/terms" 
+
+      <Route
+        path="/terms"
         element={
           <PublicLayout>
-            <PlaceholderPage 
-              title="Terms of Service" 
-              description="Terms and conditions for using our services"
-            />
+            <TermsPage />
           </PublicLayout>
-        } 
+        }
       />
 
 

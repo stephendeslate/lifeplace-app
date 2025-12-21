@@ -257,23 +257,34 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   }), [pricing]);
 
   // Prepare payment summary
+  // PRIORITY: Use stored deposit values from PaymentStep (calculated from effective_payment_terms)
+  // FALLBACK: Recalculate from global paymentPlanSettings if stored values not available
   const paymentSummary: PaymentSummary = useMemo(() => {
     const totalAmount = pricing.total;
 
     let depositAmount = 0;
-    if (paymentType === 'DEPOSIT' && paymentPlanSettings) {
-      depositAmount = (totalAmount * paymentPlanSettings.default_deposit_percentage) / 100;
+    if (paymentType === 'DEPOSIT') {
+      // Use stored deposit amount from payment step (calculated with effective_payment_terms)
+      // Fall back to recalculating from global settings if not available
+      if (paymentInfo?.deposit_amount !== undefined) {
+        depositAmount = paymentInfo.deposit_amount;
+      } else if (paymentPlanSettings) {
+        depositAmount = (totalAmount * paymentPlanSettings.default_deposit_percentage) / 100;
+      }
     }
 
     const amountPaid = paymentType === 'DEPOSIT' ? depositAmount : totalAmount;
     const remainingBalance = paymentType === 'DEPOSIT' ? totalAmount - depositAmount : 0;
+
+    // Use stored balance_due_days from payment step, fall back to global settings
+    const balanceDueDays = paymentInfo?.balance_due_days ?? paymentPlanSettings?.balance_due_days;
 
     return {
       paymentType,
       totalAmount: totalAmount.toString(),
       amountPaid: amountPaid.toString(),
       remainingBalance: remainingBalance.toString(),
-      balanceDueDays: paymentPlanSettings?.balance_due_days,
+      balanceDueDays,
       paymentMethod: paymentInfo?.payment_method,
       completionType,
       quoteMessage: paymentInfo?.quote_message,

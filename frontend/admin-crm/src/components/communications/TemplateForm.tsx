@@ -15,8 +15,6 @@ import {
   Alert,
   Stack,
   CircularProgress,
-  ToggleButton,
-  ToggleButtonGroup,
   Paper,
   Tooltip,
 } from '@mui/material';
@@ -24,16 +22,14 @@ import {
   Save as SaveIcon,
   Cancel as CancelIcon,
   Preview as PreviewIcon,
-  Code as CodeIcon,
-  Edit as EditIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import { sanitizeHTML } from '../../utils/security';
 import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../types/communications.types';
-import RichTextEditor, { type RichTextEditorHandle } from '../shared/RichTextEditor';
-import { TemplateVariableInserter } from '../shared';
-import type { TemplateStarter, ContextType } from '../../types/templates.types';
+import { TemplateContentEditor, TemplateVariableInserter } from '../shared';
+import type { TemplateContentEditorHandle } from '../shared';
+import type { TemplateStarter, ContextType, TemplateEditorMode } from '../../types/templates.types';
 import { CONTEXT_TYPE_LABELS, CONTEXT_TYPE_DESCRIPTIONS } from '../../types/templates.types';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
@@ -48,8 +44,6 @@ interface TemplateFormProps {
   onSave: () => void;
   onCancel: () => void;
 }
-
-type EditorMode = 'visual' | 'html';
 
 export const TemplateForm: React.FC<TemplateFormProps> = ({
   template,
@@ -67,8 +61,8 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     body_template: '',
   });
 
-  const [editorMode, setEditorMode] = useState<EditorMode>('visual');
-  const richTextEditorRef = useRef<RichTextEditorHandle>(null);
+  const [editorMode, setEditorMode] = useState<TemplateEditorMode>('visual');
+  const editorRef = useRef<TemplateContentEditorHandle>(null);
 
   const { useCreateTemplate, useUpdateTemplate, useVariableSchemas, usePreviewTemplate } = useCommunications();
   const { mutate: createTemplate, isPending: isCreating } = useCreateTemplate();
@@ -144,29 +138,8 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
   };
 
   const handleVariableInsert = (variable: string) => {
-    if (editorMode === 'visual' && richTextEditorRef.current) {
-      // Use the rich text editor's insert method
-      richTextEditorRef.current.insertVariable(variable);
-    } else {
-      // For HTML mode, insert at textarea cursor position
-      const textarea = document.getElementById('body-template-html') as HTMLTextAreaElement;
-      if (textarea) {
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = formData.body_template;
-        const before = text.substring(0, start);
-        const after = text.substring(end);
-        
-        const variableText = `{{ ${variable} }}`;
-        const newText = before + variableText + after;
-        handleInputChange('body_template', newText);
-        
-        // Set cursor position after inserted variable
-        setTimeout(() => {
-          textarea.focus();
-          textarea.selectionStart = textarea.selectionEnd = start + variableText.length;
-        }, 0);
-      }
+    if (editorRef.current) {
+      editorRef.current.insertVariable(variable);
     }
   };
 
@@ -478,70 +451,27 @@ The {{ site_name }} Team</p>`
                 <Typography variant="h6">
                   Template Content
                 </Typography>
-                <Stack direction="row" spacing={1}>
-                  {formData.channel === 'EMAIL' && (
-                    <ToggleButtonGroup
-                      value={editorMode}
-                      exclusive
-                      onChange={(_, value) => value && setEditorMode(value)}
-                      size="small"
-                      sx={{
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.full,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        overflow: 'hidden',
-                        '& .MuiToggleButton-root': {
-                          border: 'none',
-                          borderRadius: 0,
-                          px: 2,
-                          py: 0.5,
-                          fontWeight: 500,
-                          color: tokens.color.neutral[600],
-                          '&.Mui-selected': {
-                            background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                            color: 'white',
-                            '&:hover': {
-                              background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-                            },
-                          },
-                          '&:hover': {
-                            background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[50]} 100%)`,
-                          },
-                        },
-                      }}
-                    >
-                      <ToggleButton value="visual">
-                        <EditIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                        Visual
-                      </ToggleButton>
-                      <ToggleButton value="html">
-                        <CodeIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                        HTML
-                      </ToggleButton>
-                    </ToggleButtonGroup>
-                  )}
-                  <Button
-                    variant="outlined"
-                    startIcon={<PreviewIcon />}
-                    onClick={handlePreview}
-                    disabled={!formData.body_template || isPreviewing}
-                    sx={{
-                      ...glassPresets.light,
-                      border: `1px solid ${tokens.color.primary[300]}`,
-                      borderRadius: tokens.spacing.radius.full,
-                      px: 3,
-                      fontWeight: 600,
-                      color: tokens.color.primary[600],
-                      '&:hover': {
-                        ...glassPresets.medium,
-                        border: `1px solid ${tokens.color.primary[500]}`,
-                        background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[50]} 100%)`,
-                      },
-                    }}
-                  >
-                    {isPreviewing ? <CircularProgress size={20} color="primary" /> : 'Preview'}
-                  </Button>
-                </Stack>
+                <Button
+                  variant="outlined"
+                  startIcon={<PreviewIcon />}
+                  onClick={handlePreview}
+                  disabled={!formData.body_template || isPreviewing}
+                  sx={{
+                    ...glassPresets.light,
+                    border: `1px solid ${tokens.color.primary[300]}`,
+                    borderRadius: tokens.spacing.radius.full,
+                    px: 3,
+                    fontWeight: 600,
+                    color: tokens.color.primary[600],
+                    '&:hover': {
+                      ...glassPresets.medium,
+                      border: `1px solid ${tokens.color.primary[500]}`,
+                      background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[50]} 100%)`,
+                    },
+                  }}
+                >
+                  {isPreviewing ? <CircularProgress size={20} color="primary" /> : 'Preview'}
+                </Button>
               </Box>
 
               <Stack spacing={2}>
@@ -575,83 +505,30 @@ The {{ site_name }} Team</p>`
                   />
                 )}
 
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {formData.channel === 'SMS' ? 'Message Content' : 'Email Body'}
-                    {formData.channel === 'EMAIL' && (
-                      <span> ({editorMode === 'visual' ? 'Visual Editor' : 'HTML Source'})</span>
-                    )}
-                  </Typography>
-                  
-                  {formData.channel === 'SMS' || editorMode === 'html' ? (
-                    // SMS or HTML mode - use textarea
-                    <Box>
-                      <TextField
-                        id="body-template-html"
-                        value={formData.body_template}
-                        onChange={(e) => handleInputChange('body_template', e.target.value)}
-                        required
-                        fullWidth
-                        multiline
-                        rows={formData.channel === 'SMS' ? 4 : 12}
-                        placeholder={
-                          formData.channel === 'SMS' 
-                            ? "Hi {{ first_name }}! Your message here..."
-                            : "<div>Your HTML email template here...</div>"
-                        }
-                        helperText={
-                          formData.channel === 'SMS' 
-                            ? "Keep SMS messages under 160 characters for best delivery"
-                            : "Raw HTML - be careful with syntax"
-                        }
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                          '& .MuiInputBase-input': {
-                            fontFamily: editorMode === 'html' ? 'monospace' : 'inherit',
-                            color: tokens.color.neutral[700],
-                          },
-                          '& .MuiInputLabel-root': {
-                            color: tokens.color.neutral[600],
-                            fontWeight: 500,
-                          },
-                        }}
-                      />
-
-                      {formData.channel === 'SMS' && (
-                        <Box mt={1}>
-                          <Typography variant="caption" color="text.secondary">
-                            Character count: {formData.body_template.length}/160
-                            {formData.body_template.length > 160 && (
-                              <span style={{ color: 'orange' }}> (Will be sent as multiple messages)</span>
-                            )}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  ) : (
-                    // Email visual mode - use mui-tiptap rich text editor
-                    <RichTextEditor
-                      ref={richTextEditorRef}
-                      value={formData.body_template}
-                      onChange={(value) => handleInputChange('body_template', value)}
-                      placeholder="Start typing your email content... Use variables for dynamic content."
-                      minHeight={10}
-                      showVariableInsert={true}
-                      onVariableInsert={handleVariableInsert}
-                    />
-                  )}
-                </Box>
+                <TemplateContentEditor
+                  ref={editorRef}
+                  value={formData.body_template}
+                  onChange={(value) => handleInputChange('body_template', value)}
+                  mode={formData.channel === 'SMS' ? 'text' : editorMode}
+                  onModeChange={setEditorMode}
+                  showModeToggle={formData.channel === 'EMAIL'}
+                  availableModes={formData.channel === 'SMS' ? ['text'] : ['visual', 'html']}
+                  label={formData.channel === 'SMS' ? 'Message Content' : 'Email Body'}
+                  placeholder={
+                    formData.channel === 'SMS'
+                      ? 'Hi {{ first_name }}! Your message here...'
+                      : 'Start typing your email content... Use variables for dynamic content.'
+                  }
+                  minHeight={formData.channel === 'SMS' ? 100 : 300}
+                  rows={formData.channel === 'SMS' ? 4 : 12}
+                  showCharacterCount={formData.channel === 'SMS'}
+                  maxCharacters={formData.channel === 'SMS' ? 160 : undefined}
+                  helperText={
+                    formData.channel === 'SMS'
+                      ? 'Keep SMS messages under 160 characters for best delivery'
+                      : undefined
+                  }
+                />
               </Stack>
           </ModernCard>
 

@@ -322,3 +322,70 @@ class CurrencySettings(BaseModel):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }
+
+
+class LegalDocument(BaseModel):
+    """
+    Stores global legal documents (Terms of Service, Privacy Policy).
+    Follows singleton pattern per document type like CurrencySettings.
+    """
+    DOCUMENT_TYPE_CHOICES = [
+        ('TERMS_OF_SERVICE', 'Terms of Service'),
+        ('PRIVACY_POLICY', 'Privacy Policy'),
+    ]
+
+    document_type = models.CharField(
+        max_length=50,
+        choices=DOCUMENT_TYPE_CHOICES,
+        unique=True,
+        help_text="Type of legal document"
+    )
+    title = models.CharField(max_length=255, default="")
+    content = models.TextField(blank=True, help_text="Rich text content of the document")
+    version = models.CharField(max_length=50, default="1.0")
+    effective_date = models.DateField(null=True, blank=True)
+    is_published = models.BooleanField(default=False)
+    last_updated_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='updated_legal_documents'
+    )
+
+    class Meta:
+        verbose_name = "Legal Document"
+        verbose_name_plural = "Legal Documents"
+
+    def __str__(self):
+        return f"{self.get_document_type_display()} v{self.version}"
+
+    @classmethod
+    def get_valid_document_types(cls):
+        """Return list of valid document type codes"""
+        return [choice[0] for choice in cls.DOCUMENT_TYPE_CHOICES]
+
+    @classmethod
+    def get_document(cls, document_type):
+        """Get or create a document by type (validates document_type)"""
+        # Validate document_type before creating
+        valid_types = cls.get_valid_document_types()
+        if document_type not in valid_types:
+            raise ValueError(f"Invalid document type: '{document_type}'. Must be one of: {valid_types}")
+
+        doc, created = cls.objects.get_or_create(
+            document_type=document_type,
+            defaults={
+                'title': dict(cls.DOCUMENT_TYPE_CHOICES).get(document_type, document_type),
+                'content': '',
+                'is_published': False,
+            }
+        )
+        return doc
+
+    @classmethod
+    def get_terms_of_service(cls):
+        return cls.get_document('TERMS_OF_SERVICE')
+
+    @classmethod
+    def get_privacy_policy(cls):
+        return cls.get_document('PRIVACY_POLICY')

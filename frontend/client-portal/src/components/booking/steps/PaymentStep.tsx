@@ -116,7 +116,8 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   }), [stepData, config]);
 
   // Calculate amounts based on payment type
-  // CONSOLIDATED: Uses global PaymentPlanSettings for deposit percentage (NO HARDCODED VALUES)
+  // PRIORITY: Use flow-specific terms from config.effective_payment_terms
+  // FALLBACK: Use global PaymentPlanSettings if effective_payment_terms not available
   const amounts = useMemo(() => {
     const total = parseFloat(totalAmount || '0');
 
@@ -135,12 +136,20 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         formattedDeposit: currencyFormatAmount(0),
         formattedDueNow: currencyFormatAmount(0),
         formattedRemaining: currencyFormatAmount(0),
+        allowRefunds: false,
+        refundPercentage: 0,
+        refundDeadlineHours: 0,
       };
     }
 
-    // Use global payment plan settings (single source of truth) - NO HARDCODED FALLBACKS
-    const depositPercentage = paymentPlanSettings.default_deposit_percentage;
-    const balanceDueDays = paymentPlanSettings.balance_due_days;
+    // PRIORITY: Use flow-specific terms from effective_payment_terms
+    // FALLBACK: Use global payment plan settings
+    const effectiveTerms = config?.effective_payment_terms;
+    const depositPercentage = effectiveTerms?.deposit_percentage ?? paymentPlanSettings.default_deposit_percentage;
+    const balanceDueDays = effectiveTerms?.balance_due_days ?? paymentPlanSettings.balance_due_days;
+    const allowRefunds = effectiveTerms?.allow_refunds ?? paymentPlanSettings.allow_refunds;
+    const refundPercentage = effectiveTerms?.refund_percentage ?? paymentPlanSettings.refund_percentage;
+    const refundDeadlineHours = effectiveTerms?.refund_deadline_hours ?? paymentPlanSettings.refund_deadline_hours;
 
     let depositAmount = 0;
     if (config?.accept_deposit) {
@@ -161,6 +170,10 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
       formattedDeposit: currencyFormatAmount(depositAmount),
       formattedDueNow: currencyFormatAmount(dueNow),
       formattedRemaining: currencyFormatAmount(remaining),
+      // Refund policy (for display in UI)
+      allowRefunds,
+      refundPercentage,
+      refundDeadlineHours,
     };
   }, [totalAmount, paymentData.payment_type, config, paymentPlanSettings, currencyFormatAmount]);
 
@@ -318,6 +331,24 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     }
   }, [stepData.payment_method_id]);
 
+  // Sync calculated deposit values to step data for use in confirmation step
+  // This ensures the confirmation step shows the same values that were displayed here
+  React.useEffect(() => {
+    // Only update if values have changed to avoid infinite loops
+    const shouldUpdate =
+      stepData.deposit_amount !== amounts.deposit ||
+      stepData.deposit_percentage !== amounts.depositPercentage ||
+      stepData.balance_due_days !== amounts.balanceDueDays;
+
+    if (shouldUpdate && amounts.deposit !== undefined) {
+      updateData({
+        deposit_amount: amounts.deposit,
+        deposit_percentage: amounts.depositPercentage,
+        balance_due_days: amounts.balanceDueDays,
+      });
+    }
+  }, [amounts.deposit, amounts.depositPercentage, amounts.balanceDueDays, stepData.deposit_amount, stepData.deposit_percentage, stepData.balance_due_days, updateData]);
+
   if (gatewaysLoading || isLoadingPaymentSettings) {
     return (
       <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" p={3}>
@@ -433,8 +464,8 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
                   {config?.accept_deposit && (
                     <>• Balance of {amounts.formattedRemaining} due {amounts.balanceDueDays} days before event<br/></>
                   )}
-                  {paymentPlanSettings?.allow_refunds && (
-                    <>• {paymentPlanSettings.refund_percentage}% refund if cancelled within {paymentPlanSettings.refund_deadline_hours} hours</>
+                  {amounts.allowRefunds && (
+                    <>• {amounts.refundPercentage}% refund if cancelled within {amounts.refundDeadlineHours} hours</>
                   )}
                 </Typography>
               </Box>
@@ -707,8 +738,8 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
           </Box>
         </Box>
 
-        {/* Refund Policy - CONSOLIDATED from global settings (DRY compliance) */}
-        {paymentPlanSettings?.allow_refunds && (
+        {/* Refund Policy - Uses effective payment terms (flow overrides + global defaults) */}
+        {amounts.allowRefunds && (
           <Alert
             severity="info"
             sx={{
@@ -720,9 +751,9 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
               Refund Policy
             </Typography>
             <Typography variant="body2">
-              {paymentPlanSettings.refund_percentage}% refund available if cancelled within {paymentPlanSettings.refund_deadline_hours} hours of booking.
+              {amounts.refundPercentage}% refund available if cancelled within {amounts.refundDeadlineHours} hours of booking.
             </Typography>
-            {paymentPlanSettings.refund_policy_text && (
+            {paymentPlanSettings?.refund_policy_text && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                 {paymentPlanSettings.refund_policy_text}
               </Typography>

@@ -90,6 +90,41 @@ export interface ContactInfoStepConfiguration extends StepConfiguration {
   require_account_creation: boolean;
 }
 
+// Effective payment terms - merged flow-specific overrides with global defaults
+// Returned by backend PaymentTermsResolver.get_terms_for_step()
+export interface EffectivePaymentTerms {
+  // Deposit settings
+  deposit_type: 'PERCENTAGE' | 'FIXED';
+  deposit_percentage: number;
+  deposit_fixed_amount: number | null;
+  deposit_is_refundable: boolean;
+  deposit_is_deductible: boolean;
+  deposit_waived_on_full_payment: boolean;
+  // Late fee settings
+  late_fee_enabled: boolean;
+  late_fee_type: 'FIXED' | 'PERCENTAGE';
+  late_fee_amount: number;
+  late_fee_percentage: number;
+  // Security deposit settings
+  security_deposit_enabled: boolean;
+  security_deposit_amount: number;
+  security_deposit_is_refundable: boolean;
+  security_deposit_description: string;
+  // Cancellation/refund settings
+  cancellation_admin_fee_percentage: number;
+  allow_refunds: boolean;
+  refund_percentage: number;
+  refund_deadline_hours: number;
+  // Payment schedule settings
+  downpayment_percentage: number;
+  downpayment_due_days: number;
+  balance_due_days: number;
+  balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE';
+  // Other settings
+  currency: string;
+  grace_period_days?: number;
+}
+
 // FULLY CONSOLIDATED: ALL payment business logic now in PaymentPlanSettings (payments domain)
 // This configuration contains ONLY UI/UX flags and custom text
 //
@@ -97,6 +132,8 @@ export interface ContactInfoStepConfiguration extends StepConfiguration {
 // - deposit_type, deposit_amount, balance_due_days (payment plan calculation)
 // - allow_refunds, refund_deadline_hours, refund_percentage, refund_policy_text (refund policy)
 // - allowed_gateways, default_gateway, available_payment_methods (payment gateway defaults)
+//
+// ADDED: effective_payment_terms - merged flow-specific overrides with global defaults
 export interface PaymentInfoStepConfiguration extends StepConfiguration {
   // UI/UX FLAGS ONLY - what payment options to show
   accept_full_payment: boolean;
@@ -109,6 +146,10 @@ export interface PaymentInfoStepConfiguration extends StepConfiguration {
   payment_terms: string;
   quote_request_button_text: string;
   quote_request_description: string;
+
+  // Effective payment terms (merged flow + global settings)
+  // Optional for backwards compatibility - falls back to global PaymentPlanSettings if missing
+  effective_payment_terms?: EffectivePaymentTerms;
 }
 
 export interface ConfirmationStepConfiguration extends StepConfiguration {
@@ -142,9 +183,12 @@ export interface PricingSummaryStepConfiguration extends StepConfiguration {
   show_terms_checkbox?: boolean;
   show_marketing_consent?: boolean;
   show_special_requests?: boolean;
+  require_terms_acceptance?: boolean;
   terms_text?: string;
   terms_url?: string;
   privacy_url?: string;
+  effective_terms_url?: string;
+  effective_privacy_url?: string;
 }
 
 // Product types from products domain (needed for package/addon steps)

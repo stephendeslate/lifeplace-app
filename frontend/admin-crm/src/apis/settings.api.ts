@@ -2,16 +2,18 @@
 
 import api from '../utils/api';
 import type { User } from '../types/auth.types';
-import type { 
-  AccountSettingsFormData, 
-  PasswordChangeFormData, 
+import type {
+  AccountSettingsFormData,
+  PasswordChangeFormData,
   AdminUser,
   AdminInvitation,
   InviteAdminFormData,
   AcceptInvitationFormData,
   AcceptInvitationResponse,
   CreateAdminUserData,
-  UpdateAdminUserData
+  UpdateAdminUserData,
+  LegalDocument,
+  LegalDocumentUpdateData
 } from '../types/settings.types';
 
 // Define paginated response types
@@ -94,13 +96,37 @@ export const settingsApi = {
   },
 
   acceptInvitation: async (
-    invitationId: string, 
+    invitationId: string,
     data: AcceptInvitationFormData
   ): Promise<AcceptInvitationResponse> => {
     const response = await api.post<AcceptInvitationResponse>(
-      `/users/invitations/${invitationId}/accept/`, 
+      `/users/invitations/${invitationId}/accept/`,
       data
     );
     return response.data;
+  },
+
+  /**
+   * Legal Documents Management
+   */
+  getLegalDocuments: async (): Promise<LegalDocument[]> => {
+    const response = await api.get<{ success: boolean; data: LegalDocument[] }>('/settings/legal/');
+    return response.data.data;
+  },
+
+  getLegalDocument: async (documentType: string): Promise<LegalDocument> => {
+    const response = await api.get<{ success: boolean; data: LegalDocument }>(`/settings/legal/${documentType}/`);
+    return response.data.data;
+  },
+
+  updateLegalDocument: async (
+    documentType: string,
+    data: LegalDocumentUpdateData
+  ): Promise<LegalDocument> => {
+    const response = await api.put<{ success: boolean; data: LegalDocument }>(
+      `/settings/legal/${documentType}/`,
+      data
+    );
+    return response.data.data;
   },
 };

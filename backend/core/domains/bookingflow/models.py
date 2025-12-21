@@ -660,25 +660,55 @@ class PricingSummaryStepConfiguration(BaseModel):
         on_delete=models.CASCADE,
         related_name='pricing_config'
     )
-    
+
     # Display options
     show_package_breakdown = models.BooleanField(default=True)
     show_addon_breakdown = models.BooleanField(default=True)
     show_tax_breakdown = models.BooleanField(default=True)
     show_discount_field = models.BooleanField(default=True)
     show_subtotal = models.BooleanField(default=True)
-    
+
     # Behavior options
     allow_discount_codes = models.BooleanField(default=True)
     calculate_tax = models.BooleanField(default=True)
-    
+
     # Custom messaging
     header_text = models.CharField(max_length=255, blank=True, default="Review your order")
     footer_text = models.TextField(blank=True)
     discount_help_text = models.CharField(
-        max_length=255, 
+        max_length=255,
         blank=True,
         default="Enter discount code"
+    )
+
+    # Terms and Legal Configuration
+    show_terms_checkbox = models.BooleanField(
+        default=True,
+        help_text="Show terms acceptance checkbox"
+    )
+    show_marketing_consent = models.BooleanField(
+        default=True,
+        help_text="Show marketing consent checkbox"
+    )
+    require_terms_acceptance = models.BooleanField(
+        default=True,
+        help_text="Require terms acceptance before proceeding"
+    )
+    terms_text = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="Custom terms label text (empty = use default)"
+    )
+    terms_url = models.URLField(
+        blank=True,
+        default="",
+        help_text="Custom Terms of Service URL (empty = use global)"
+    )
+    privacy_url = models.URLField(
+        blank=True,
+        default="",
+        help_text="Custom Privacy Policy URL (empty = use global)"
     )
 
     class Meta:
@@ -1041,6 +1071,7 @@ class PaymentTermsConfiguration(BaseModel):
             'cancellation_admin_fee_percentage': get_value('cancellation_admin_fee_percentage', 'cancellation_admin_fee_percentage'),
             'refund_percentage': global_settings.refund_percentage,  # Always from global
             'allow_refunds': global_settings.allow_refunds,  # Always from global
+            'refund_deadline_hours': global_settings.refund_deadline_hours,  # Always from global
             # Payment schedule settings
             'downpayment_percentage': get_value('downpayment_percentage', 'downpayment_percentage'),
             'downpayment_due_days': get_value('downpayment_due_days', 'downpayment_due_days'),

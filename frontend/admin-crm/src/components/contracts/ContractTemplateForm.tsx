@@ -31,7 +31,7 @@ import { useEventTypes } from '../../hooks/useEvents';
 import { useCreateContractTemplate, useUpdateContractTemplate } from '../../hooks/useContracts';
 import { useTemplateVariables } from '../../hooks/useTemplateVariables';
 import { TemplateContentEditor, TemplateVariableInserter } from '../shared';
-import type { TemplateContentEditorHandle } from '../../types/templates.types';
+import type { TemplateContentEditorHandle, TemplateEditorMode } from '../../types/templates.types';
 import type {
   ContractTemplate,
   CreateContractTemplateData,
@@ -64,6 +64,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [editorMode, setEditorMode] = useState<TemplateEditorMode>('visual');
   const editorRef = useRef<TemplateContentEditorHandle>(null);
 
   const { useActiveEventTypes } = useEventTypes();
@@ -206,12 +207,16 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
             ref={editorRef}
             value={formData.content}
             onChange={(value) => handleInputChange('content', value)}
-            mode="html"
-            showModeToggle={false}
+            mode={editorMode}
+            onModeChange={setEditorMode}
+            showModeToggle={true}
+            availableModes={['visual', 'html']}
             placeholder="Enter contract content with {{variable_name}} placeholders..."
             rows={12}
+            minHeight={300}
             error={!!errors.content}
             helperText={errors.content || 'Use {{variable_name}} syntax for dynamic content'}
+            label="Contract Content"
           />
         </Box>
 

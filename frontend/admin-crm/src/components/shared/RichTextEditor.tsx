@@ -175,41 +175,63 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       
       <Box
         sx={{
-          // Force the editor container to respect our height
-          '& .MuiRichTextEditor-root': {
-            height: 'auto',
+          border: '1px solid',
+          borderColor: error ? 'error.main' : 'rgba(0, 0, 0, 0.23)',
+          borderRadius: 1,
+          overflow: 'hidden',
+          '&:hover': {
+            borderColor: error ? 'error.main' : 'rgba(0, 0, 0, 0.87)',
           },
-          // Control the toolbar height
-          '& .MuiRichTextEditor-toolbar': {
-            minHeight: 'auto',
-            padding: '8px',
+          '&:focus-within': {
+            borderColor: error ? 'error.main' : 'primary.main',
+            borderWidth: 2,
+            margin: '-1px', // Compensate for thicker border
           },
-          // Style the editor field wrapper
+          ...(disabled && {
+            opacity: 0.6,
+            pointerEvents: 'none',
+          }),
+          // Compact toolbar styling
+          '& .MuiTiptap-MenuControlsContainer-root, & [class*="MenuControlsContainer"]': {
+            padding: '4px 8px',
+            gap: '2px',
+            flexWrap: 'wrap',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+            backgroundColor: 'rgba(0, 0, 0, 0.02)',
+          },
+          // Smaller toolbar buttons
+          '& .MuiTiptap-MenuButton-root, & [class*="MenuButton"]': {
+            padding: '4px',
+            minWidth: '28px',
+            minHeight: '28px',
+          },
+          '& .MuiTiptap-MenuButton-root svg, & [class*="MenuButton"] svg': {
+            fontSize: '18px',
+          },
+          // Compact heading select
+          '& .MuiTiptap-MenuSelectHeading-root, & [class*="MenuSelectHeading"]': {
+            minHeight: '28px',
+            '& .MuiSelect-select': {
+              padding: '4px 8px',
+              fontSize: '0.8125rem',
+            },
+          },
+          // Hide the MUI outlined input wrapper styling
           '& .MuiOutlinedInput-root': {
-            minHeight: minHeight + 48, // Add space for toolbar
-            maxHeight: minHeight + 48,
-            alignItems: 'flex-start',
-            padding: 0,
-            ...(error && {
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'error.main',
-              },
-            }),
-            ...(disabled && {
-              opacity: 0.6,
-              pointerEvents: 'none',
-            }),
+            border: 'none',
+            '& .MuiOutlinedInput-notchedOutline': {
+              border: 'none',
+            },
           },
           // Control the actual editor content area
           '& .ProseMirror': {
-            minHeight: minHeight - 48, // Subtract toolbar height
-            maxHeight: minHeight - 48,
+            minHeight: minHeight,
             padding: '12px 14px',
             outline: 'none',
             fontSize: '1rem',
             fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
             lineHeight: 1.5,
-            overflow: 'auto', // Allow scrolling if content exceeds height
+            overflow: 'auto',
             '& p': {
               margin: '0 0 8px 0',
               '&:last-child': {

@@ -117,3 +117,26 @@ export interface SettingsFormProps {
   isLoading?: boolean;
   submitLabel?: string;
 }
+
+export interface LegalDocument {
+  id: number;
+  document_type: 'TERMS_OF_SERVICE' | 'PRIVACY_POLICY';
+  document_type_display: string;
+  title: string;
+  content: string;
+  version: string;
+  effective_date: string | null;
+  is_published: boolean;
+  last_updated_by: number | null;
+  last_updated_by_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LegalDocumentUpdateData {
+  title?: string;
+  content?: string;
+  version?: string;
+  effective_date?: string | null;
+  is_published?: boolean;
+}

@@ -209,15 +209,36 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
             return []
 
 class PricingSummaryStepConfigurationSerializer(serializers.ModelSerializer):
+    effective_terms_url = serializers.SerializerMethodField()
+    effective_privacy_url = serializers.SerializerMethodField()
+
     class Meta:
         model = PricingSummaryStepConfiguration
         fields = [
             'id', 'step', 'show_package_breakdown', 'show_addon_breakdown',
             'show_tax_breakdown', 'show_discount_field', 'show_subtotal',
             'allow_discount_codes', 'calculate_tax', 'header_text',
-            'footer_text', 'discount_help_text', 'created_at', 'updated_at'
+            'footer_text', 'discount_help_text',
+            # Terms and Legal Configuration
+            'show_terms_checkbox', 'show_marketing_consent',
+            'require_terms_acceptance', 'terms_text',
+            'terms_url', 'privacy_url',
+            'effective_terms_url', 'effective_privacy_url',
+            'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'effective_terms_url', 'effective_privacy_url', 'created_at', 'updated_at']
+
+    def get_effective_terms_url(self, obj):
+        """Return custom URL or fall back to global default"""
+        if obj.terms_url:
+            return obj.terms_url
+        return '/terms'
+
+    def get_effective_privacy_url(self, obj):
+        """Return custom URL or fall back to global default"""
+        if obj.privacy_url:
+            return obj.privacy_url
+        return '/privacy'
 
 
 class ContactInfoStepConfigurationSerializer(serializers.ModelSerializer):
@@ -242,7 +263,12 @@ class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
     - deposit_type, deposit_amount, balance_due_days (payment calculations)
     - allow_refunds, refund_deadline_hours, refund_percentage, refund_policy_text (refund policy)
     - allowed_gateways, default_gateway, available_payment_methods (payment gateways)
+
+    ADDED: effective_payment_terms - merged flow-specific overrides with global defaults
     """
+    # Computed field with effective payment terms (flow overrides + global defaults)
+    effective_payment_terms = serializers.SerializerMethodField()
+
     class Meta:
         model = PaymentInfoStepConfiguration
         fields = [
@@ -257,10 +283,28 @@ class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
             'payment_terms',
             'quote_request_button_text',
             'quote_request_description',
+            # Effective payment terms (merged flow + global settings)
+            'effective_payment_terms',
             # Timestamps
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'step', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'step', 'effective_payment_terms', 'created_at', 'updated_at']
+
+    def get_effective_payment_terms(self, obj):
+        """
+        Get effective payment terms for this step.
+        Uses PaymentTermsResolver to merge flow-specific overrides with global defaults.
+        """
+        from core.domains.payments.services.payment_terms_resolver import PaymentTermsResolver
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            return PaymentTermsResolver.get_terms_for_step(obj.step.id)
+        except Exception as e:
+            logger.warning(f"Error getting effective payment terms for step {obj.step.id}: {e}")
+            # Fall back to global settings
+            return PaymentTermsResolver.get_global_settings()
 
 
 class PaymentTermsConfigurationSerializer(serializers.ModelSerializer):

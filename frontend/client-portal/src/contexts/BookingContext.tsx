@@ -42,6 +42,14 @@ const initialState: BookingState = {
   selectedPaymentGateway: null,
   totalPrice: '0.00',
   taxRate: 0.12, // Default 12% tax rate, updated from backend
+  pricingBreakdown: {
+    subtotal: '0.00',
+    tax: '0.00',
+    discount: '0.00',
+    formattedSubtotal: '',
+    formattedTax: '',
+    formattedDiscount: '',
+  },
   breakdown: [],
   recoverableSession: null,
 };
@@ -64,6 +72,7 @@ type BookingAction =
   | { type: 'SELECT_PAYMENT_GATEWAY'; payload: PaymentGateway }
   | { type: 'SET_TOTAL_PRICE'; payload: string }
   | { type: 'SET_TAX_RATE'; payload: number }
+  | { type: 'SET_PRICING_BREAKDOWN'; payload: { subtotal: string; tax: string; discount: string; formattedSubtotal: string; formattedTax: string; formattedDiscount: string } }
   | { type: 'RESET_BOOKING' }
   | { type: 'SET_RECOVERABLE_SESSION'; payload: { sessionId: string; lastUpdated: string; stepName: string } | null };
 
@@ -141,6 +150,9 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
 
     case 'SET_TAX_RATE':
       return { ...state, taxRate: action.payload };
+
+    case 'SET_PRICING_BREAKDOWN':
+      return { ...state, pricingBreakdown: action.payload };
 
     case 'RESET_BOOKING':
       return initialState;
@@ -668,6 +680,13 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           true // mark_completed = true to proceed to next step
         );
 
+        // Check for validation errors in the response
+        if (response.validation_errors && Object.keys(response.validation_errors).length > 0) {
+          dispatch({ type: 'SET_VALIDATION_ERRORS', payload: response.validation_errors as Record<string, string[]> });
+          // Don't proceed - validation failed
+          return;
+        }
+
         const responseData = response as unknown as Record<string, unknown>;
         const updatedSession: BookingSession = {
           ...state.currentSession,
@@ -825,6 +844,11 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Store tax rate from backend for local calculations
     setTaxRate: useCallback((rate: number) => {
       dispatch({ type: 'SET_TAX_RATE', payload: rate });
+    }, []),
+
+    // Update pricing breakdown for footer display
+    setPricingBreakdown: useCallback((breakdown: { subtotal: string; tax: string; discount: string; formattedSubtotal: string; formattedTax: string; formattedDiscount: string }) => {
+      dispatch({ type: 'SET_PRICING_BREAKDOWN', payload: breakdown });
     }, []),
 
     calculatePricing: useCallback(async () => {
