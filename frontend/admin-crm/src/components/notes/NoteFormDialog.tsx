@@ -12,8 +12,10 @@ import {
   Typography,
   CircularProgress,
   Stack,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
-import { Save as SaveIcon } from '@mui/icons-material';
+import { Save as SaveIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import { 
   type NoteFormDialogProps,
   type NoteFormData,
@@ -24,6 +26,7 @@ import {
 const defaultFormData: NoteFormData = {
   title: '',
   content: '',
+  is_client_visible: false, // Default to internal (admin-only)
 };
 
 export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
@@ -44,6 +47,7 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
         setFormData({
           title: editingNote.title || '',
           content: editingNote.content || '',
+          is_client_visible: editingNote.is_client_visible || false,
         });
       } else {
         setFormData(defaultFormData);
@@ -89,6 +93,7 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
       const updateData: UpdateNoteData = {
         title: formData.title.trim() || undefined,
         content: formData.content.trim(),
+        is_client_visible: formData.is_client_visible,
       };
       onSubmit(updateData);
     } else {
@@ -98,6 +103,7 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
         content: formData.content.trim(),
         content_type_model: contentType,
         object_id: objectId,
+        is_client_visible: formData.is_client_visible,
       };
       onSubmit(createData);
     }
@@ -161,9 +167,45 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
                   onKeyDown={handleKeyDown}
                 />
 
+                <Box sx={{
+                  p: 2,
+                  bgcolor: formData.is_client_visible ? 'success.50' : 'grey.50',
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: formData.is_client_visible ? 'success.200' : 'grey.300',
+                }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.is_client_visible}
+                        onChange={(e) => setFormData(prev => ({ ...prev, is_client_visible: e.target.checked }))}
+                        disabled={isLoading}
+                        color="success"
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <VisibilityIcon fontSize="small" color={formData.is_client_visible ? 'success' : 'disabled'} />
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">
+                            {formData.is_client_visible ? 'Visible to Client' : 'Internal Only'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {formData.is_client_visible
+                              ? 'This note will be visible to the client in their portal'
+                              : 'This note will only be visible to admins'
+                            }
+                          </Typography>
+                        </Box>
+                      </Box>
+                    }
+                    sx={{ m: 0 }}
+                  />
+                </Box>
+
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    💡 <strong>Tip:</strong> Press Ctrl+Enter (Cmd+Enter on Mac) to save quickly
+                    Press Ctrl+Enter (Cmd+Enter on Mac) to save quickly
                   </Typography>
                 </Box>
               </Stack>

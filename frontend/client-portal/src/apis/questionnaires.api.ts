@@ -16,6 +16,13 @@ export const questionnairesApi = {
     return (data as { results?: Questionnaire[] }).results || (data as Questionnaire[]);
   },
 
+  // Get questionnaires configured for a specific event's booking flow
+  getQuestionnairesForEvent: async (eventId: number): Promise<Questionnaire[]> => {
+    const response = await api.get(`/questionnaires/questionnaires/for_event/${eventId}/`);
+    const data = response.data as { results?: Questionnaire[] } | Questionnaire[];
+    return (data as { results?: Questionnaire[] }).results || (data as Questionnaire[]);
+  },
+
   // Get responses for specific event
   getEventResponses: async (eventId: number): Promise<QuestionnaireResponse[]> => {
     const response = await api.get(`/questionnaires/responses/?event=${eventId}`);

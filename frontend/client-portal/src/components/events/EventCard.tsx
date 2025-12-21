@@ -16,7 +16,7 @@ import {
   CalendarToday as CalendarIcon,
   ArrowForward as ArrowIcon,
 } from '@mui/icons-material';
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatPhilippinesTime } from '../../utils/timezone';
 import type { Event } from '../../types/events.types';
 import EventStatusBadge from './EventStatusBadge';
 import EventCountdown from './EventCountdown';
@@ -30,7 +30,6 @@ interface EventCardProps {
 
 const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }) => {
   const theme = useTheme();
-  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
 
   if (loading) {
     return (
@@ -136,9 +135,9 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
               <Stack direction="row" spacing={1} alignItems="center" mb={1}>
                 <CalendarIcon fontSize="small" color="action" />
                 <Typography variant="body2" color="text.secondary">
-                  {formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
-                  {event.end_date && formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
-                    ` - ${formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}`
+                  {formatPhilippinesTime(event.start_date, false, 'MMM dd, yyyy')}
+                  {event.end_date && formatPhilippinesTime(event.start_date, false, 'yyyy-MM-dd') !== formatPhilippinesTime(event.end_date, false, 'yyyy-MM-dd') &&
+                    ` - ${formatPhilippinesTime(event.end_date, false, 'MMM dd, yyyy')}`
                   }
                 </Typography>
               </Stack>

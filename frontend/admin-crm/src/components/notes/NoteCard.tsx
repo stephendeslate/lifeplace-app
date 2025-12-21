@@ -21,6 +21,8 @@ import {
   Person as PersonIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 import type { NoteCardProps } from '../../types/notes.types';
 
@@ -112,6 +114,18 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             )}
             
             <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+              {/* Visibility indicator */}
+              <Tooltip title={note.is_client_visible ? 'Visible to client in their portal' : 'Internal note - only visible to admins'}>
+                <Chip
+                  icon={note.is_client_visible ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                  label={note.is_client_visible ? 'Shared' : 'Internal'}
+                  size="small"
+                  color={note.is_client_visible ? 'success' : 'default'}
+                  variant={note.is_client_visible ? 'filled' : 'outlined'}
+                  sx={{ height: 24, fontSize: '0.75rem' }}
+                />
+              </Tooltip>
+
               {note.created_by_name && (
                 <Chip
                   icon={<PersonIcon />}
@@ -121,13 +135,13 @@ export const NoteCard: React.FC<NoteCardProps> = ({
                   sx={{ height: 24, fontSize: '0.75rem' }}
                 />
               )}
-              
+
               <Tooltip title={new Date(note.created_at).toLocaleString()}>
                 <Typography variant="caption" color="text.secondary">
                   {formatDate(note.created_at)}
                 </Typography>
               </Tooltip>
-              
+
               {note.updated_at !== note.created_at && (
                 <Tooltip title={`Updated: ${new Date(note.updated_at).toLocaleString()}`}>
                   <Typography variant="caption" color="text.secondary">

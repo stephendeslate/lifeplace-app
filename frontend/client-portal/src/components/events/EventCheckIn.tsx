@@ -19,18 +19,16 @@ import {
   Schedule as ScheduleIcon,
   AccessTime as TimeIcon,
 } from '@mui/icons-material';
-import { formatInTimeZone } from 'date-fns-tz';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { formatPhilippinesTime } from '../../utils/timezone';
 import { eventsApi } from '../../apis/events.api';
-import { useToast } from '../../providers/ToastProvider';
+import { useToastActions } from '../../contexts/ToastContext';
 import type { EventDetail, CheckInStatus } from '../../types/events.types';
 
 interface EventCheckInProps {
   eventId: number;
   event: EventDetail;
 }
-
-const PHILIPPINE_TIMEZONE = 'Asia/Manila';
 
 const getStatusConfig = (status: CheckInStatus) => {
   switch (status) {
@@ -73,7 +71,7 @@ const getStatusConfig = (status: CheckInStatus) => {
 };
 
 export const EventCheckIn: React.FC<EventCheckInProps> = ({ eventId, event }) => {
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
   const queryClient = useQueryClient();
   const [isCheckingIn, setIsCheckingIn] = useState(false);
 
@@ -89,11 +87,11 @@ export const EventCheckIn: React.FC<EventCheckInProps> = ({ eventId, event }) =>
       // Update the cache with the new event data
       queryClient.setQueryData(['event', eventId], updatedEvent);
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      showToast('Successfully checked in!', 'success');
+      showSuccess('Successfully checked in!');
     },
     onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
       const errorMessage = error.response?.data?.detail || 'Failed to check in. Please try again.';
-      showToast(errorMessage, 'error');
+      showError(errorMessage);
     },
     onSettled: () => {
       setIsCheckingIn(false);
@@ -107,11 +105,7 @@ export const EventCheckIn: React.FC<EventCheckInProps> = ({ eventId, event }) =>
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return 'Not set';
     try {
-      return formatInTimeZone(
-        new Date(dateString),
-        PHILIPPINE_TIMEZONE,
-        'MMMM d, yyyy h:mm a'
-      );
+      return formatPhilippinesTime(dateString, false, 'MMMM d, yyyy h:mm a');
     } catch {
       return 'Invalid date';
     }

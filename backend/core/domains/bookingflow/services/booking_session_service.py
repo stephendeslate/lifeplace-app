@@ -1570,6 +1570,7 @@ class BookingSessionService:
                 object_id=event.id,
                 content=note_text,
                 created_by=session.client,
+                is_client_visible=False,  # Internal system note, not shown to clients
             )
         except Exception as e:
             logger.warning(f"Could not create note for event: {e}")

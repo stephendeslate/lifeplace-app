@@ -15,6 +15,22 @@ export const BUSINESS_TIMEZONE_FULL = 'Philippines Time';
 export const BUSINESS_TIMEZONE_OFFSET = '+08:00';
 
 /**
+ * Parse a datetime string as Philippines Time.
+ *
+ * The backend sends naive datetimes (without timezone info) that are meant to be PHT.
+ * This function appends the PHT offset to ensure correct parsing regardless of the
+ * user's browser timezone.
+ */
+export function parseAsPhilippinesTime(dateString: string): Date {
+  // If the string already has timezone info (ends with Z, +XX:XX, or -XX:XX), parse as-is
+  if (/[Zz]$/.test(dateString) || /[+-]\d{2}:\d{2}$/.test(dateString)) {
+    return parseISO(dateString);
+  }
+  // Append PHT offset to naive datetime strings
+  return parseISO(`${dateString}${BUSINESS_TIMEZONE_OFFSET}`);
+}
+
+/**
  * Format a date/time for display - ALWAYS in Philippines timezone
  * This is the primary formatting function - all times are Philippines time
  */
@@ -23,7 +39,7 @@ export function formatPhilippinesTime(
   includeTimezone: boolean = true,
   formatString: string = 'MMMM d, yyyy \'at\' h:mm a'
 ): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  const dateObj = typeof date === 'string' ? parseAsPhilippinesTime(date) : date;
   const formatted = formatInTimeZone(dateObj, BUSINESS_TIMEZONE, formatString);
   
   if (includeTimezone) {
@@ -77,7 +93,7 @@ export function getTimezoneNotice(context: 'booking' | 'confirmation' | 'general
  * Format date for date picker (always in Philippines timezone)
  */
 export function formatDateForPicker(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  const dateObj = typeof date === 'string' ? parseAsPhilippinesTime(date) : date;
   return formatInTimeZone(dateObj, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
 }
 
@@ -85,7 +101,7 @@ export function formatDateForPicker(date: Date | string): string {
  * Format time for time picker (always in Philippines timezone)
  */
 export function formatTimeForPicker(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  const dateObj = typeof date === 'string' ? parseAsPhilippinesTime(date) : date;
   return formatInTimeZone(dateObj, BUSINESS_TIMEZONE, 'HH:mm');
 }
 
@@ -101,7 +117,7 @@ export function combineDateAndTime(dateString: string, timeString: string): Date
  * Business hours check (9 AM - 6 PM Philippines time)
  */
 export function isWithinBusinessHours(date: Date | string): boolean {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  const dateObj = typeof date === 'string' ? parseAsPhilippinesTime(date) : date;
   const philippinesTime = toZonedTime(dateObj, BUSINESS_TIMEZONE);
   const hours = philippinesTime.getHours();
   const dayOfWeek = philippinesTime.getDay();

@@ -119,20 +119,86 @@ class QuestionnaireViewSet(viewsets.ModelViewSet):
     def active(self, request):
         """Get only active questionnaires"""
         active_questionnaires = QuestionnaireService.get_all_questionnaires(is_active=True)
-        
+
         # Add prefetch_related for better performance
         active_questionnaires = active_questionnaires.prefetch_related('fields')
-        
+
         page = self.paginate_queryset(active_questionnaires)
-        
+
         if page is not None:
             # Use QuestionnaireDetailSerializer instead of self.get_serializer
             serializer = QuestionnaireDetailSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-        
-        # Use QuestionnaireDetailSerializer instead of self.get_serializer  
+
+        # Use QuestionnaireDetailSerializer instead of self.get_serializer
         serializer = QuestionnaireDetailSerializer(active_questionnaires, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='for_event/(?P<event_id>[^/.]+)')
+    def for_event(self, request, event_id=None):
+        """Get questionnaires configured for a specific event's booking flow"""
+        from core.domains.events.models import Event
+        from core.domains.bookingflow.models import BookingSession, QuestionnaireStepConfiguration
+
+        try:
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Try to get the booking session for this event
+        booking_session = BookingSession.objects.filter(created_event=event).first()
+
+        if booking_session and booking_session.booking_flow:
+            # Get the questionnaire step configuration for this booking flow
+            questionnaire_step = booking_session.booking_flow.steps.filter(
+                step_type='questionnaire',
+                is_enabled=True
+            ).first()
+
+            if questionnaire_step:
+                try:
+                    questionnaire_config = QuestionnaireStepConfiguration.objects.get(step=questionnaire_step)
+                    # Get questionnaires from the configuration, ordered by their step items
+                    questionnaire_ids = list(questionnaire_config.questionnaire_items.filter(
+                        questionnaire__is_active=True
+                    ).order_by('order').values_list('questionnaire_id', flat=True))
+
+                    if questionnaire_ids:
+                        questionnaires = Questionnaire.objects.filter(
+                            id__in=questionnaire_ids,
+                            is_active=True
+                        ).prefetch_related('fields')
+
+                        # Maintain order from step items
+                        questionnaires = sorted(
+                            list(questionnaires),
+                            key=lambda q: questionnaire_ids.index(q.id)
+                        )
+
+                        serializer = QuestionnaireDetailSerializer(questionnaires, many=True)
+                        return Response(serializer.data)
+                except QuestionnaireStepConfiguration.DoesNotExist:
+                    pass
+
+        # Fallback: return questionnaires that have responses for this event
+        # This handles events that may have been created before booking flow tracking
+        questionnaire_ids = QuestionnaireResponse.objects.filter(
+            event_id=event_id
+        ).values_list('field__questionnaire_id', flat=True).distinct()
+
+        if questionnaire_ids:
+            questionnaires = Questionnaire.objects.filter(
+                id__in=questionnaire_ids,
+                is_active=True
+            ).prefetch_related('fields')
+            serializer = QuestionnaireDetailSerializer(questionnaires, many=True)
+            return Response(serializer.data)
+
+        # If no booking flow and no responses, return empty list
+        return Response([])
 
 
 class QuestionnaireFieldViewSet(viewsets.ModelViewSet):
