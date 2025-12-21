@@ -500,6 +500,9 @@ class InvoiceSerializer(serializers.ModelSerializer):
     is_fully_paid = serializers.BooleanField(read_only=True)
     is_partially_paid = serializers.BooleanField(read_only=True)
 
+    # Effective payment terms (booking flow override or global defaults)
+    effective_payment_terms = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Invoice
         fields = [
@@ -508,7 +511,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'status', 'status_display', 'notes', 'payment_terms', 'quote',
             'quote_details', 'invoice_pdf', 'line_items', 'taxes',
             'related_payments', 'paid_amount', 'remaining_amount',
-            'is_fully_paid', 'is_partially_paid',
+            'is_fully_paid', 'is_partially_paid', 'effective_payment_terms',
             'created_at', 'updated_at',
         ]
         read_only_fields = [
@@ -519,6 +522,33 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def get_related_payments(self, obj):
         payments = obj.related_payments.all()
         return BasicPaymentSerializer(payments, many=True).data
+
+    def get_effective_payment_terms(self, obj):
+        """
+        Get effective payment terms for this invoice.
+        Uses PaymentTermsResolver to check for booking flow specific overrides,
+        falling back to global settings if no override exists.
+        """
+        from .services.payment_terms_resolver import PaymentTermsResolver
+
+        try:
+            terms = PaymentTermsResolver.get_terms_for_event(obj.event_id)
+            # Convert Decimal values to float for JSON serialization
+            return {
+                'deposit_type': terms.get('deposit_type'),
+                'deposit_percentage': float(terms.get('deposit_percentage', 0)),
+                'deposit_fixed_amount': float(terms.get('deposit_fixed_amount', 0)) if terms.get('deposit_fixed_amount') else None,
+                'deposit_is_refundable': terms.get('deposit_is_refundable'),
+                'deposit_is_deductible': terms.get('deposit_is_deductible'),
+                'deposit_waived_on_full_payment': terms.get('deposit_waived_on_full_payment'),
+                'balance_due_days': terms.get('balance_due_days'),
+                'balance_due_type': terms.get('balance_due_type'),
+                'grace_period_days': terms.get('grace_period_days'),
+                'currency': terms.get('currency'),
+            }
+        except Exception:
+            # Fall back to global settings on any error
+            return None
 
 
 class PaymentInstallmentSerializer(serializers.ModelSerializer):

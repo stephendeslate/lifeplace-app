@@ -61,6 +61,11 @@ export interface NotificationPreference {
   communication_sms: boolean;
   communication_in_app: boolean;
 
+  // Marketing preferences (explicit consent required - GDPR/CAN-SPAM)
+  marketing_email: boolean;
+  marketing_sms: boolean;
+  marketing_in_app: boolean;
+
   // Advanced preferences
   quiet_hours_enabled: boolean;
   quiet_hours_start: string | null;
@@ -110,7 +115,8 @@ export type NotificationCategory =
   | 'CLIENT'
   | 'CONTRACT'
   | 'WORKFLOW'
-  | 'COMMUNICATION';
+  | 'COMMUNICATION'
+  | 'MARKETING';
 
 /**
  * Notification priority levels
@@ -134,6 +140,7 @@ export const NOTIFICATION_CATEGORIES = [
   { value: 'CONTRACT', label: 'Contracts', icon: 'Description' },
   { value: 'WORKFLOW', label: 'Progress', icon: 'AccountTree' },
   { value: 'COMMUNICATION', label: 'Messages', icon: 'Message' },
+  { value: 'MARKETING', label: 'Marketing & Promotions', icon: 'Campaign' },
 ] as const;
 
 /**
@@ -218,6 +225,11 @@ export interface UpdateNotificationPreferenceData {
   communication_sms?: boolean;
   communication_in_app?: boolean;
 
+  // Marketing preferences (explicit consent required - GDPR/CAN-SPAM)
+  marketing_email?: boolean;
+  marketing_sms?: boolean;
+  marketing_in_app?: boolean;
+
   // Advanced preferences
   quiet_hours_enabled?: boolean;
   quiet_hours_start?: string | null;
@@ -231,7 +243,7 @@ export interface UpdateNotificationPreferenceData {
  */
 export type CategoryPreferenceKey =
   | 'system' | 'event' | 'task' | 'payment'
-  | 'client' | 'contract' | 'workflow' | 'communication';
+  | 'client' | 'contract' | 'workflow' | 'communication' | 'marketing';
 
 /**
  * Delivery method types

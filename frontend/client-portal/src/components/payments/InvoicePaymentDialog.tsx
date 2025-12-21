@@ -71,15 +71,27 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   const [customAmountError, setCustomAmountError] = useState<string | null>(null);
 
   // Hooks for payment settings and currency
-  const { data: paymentSettings, isLoading: isLoadingPaymentSettings } = usePaymentPlanSettings();
+  // Global settings used as fallback if invoice doesn't have effective_payment_terms
+  const { data: globalPaymentSettings, isLoading: isLoadingPaymentSettings } = usePaymentPlanSettings();
   const { formatAmount } = useCurrencySettings();
 
   // Calculate payment amounts based on payment type
+  // Priority: invoice.effective_payment_terms (booking flow override) > globalPaymentSettings (global defaults)
   const paymentAmounts = useMemo(() => {
     const paymentStatus = FinancialApi.calculateInvoicePaymentStatus(invoice);
     const remainingAmount = paymentStatus.amountRemaining;
 
-    if (!paymentSettings) {
+    // Use invoice's effective payment terms (resolved from booking flow or global)
+    // Fall back to global settings if not available
+    const effectiveTerms = invoice.effective_payment_terms;
+    const depositPercentage = effectiveTerms?.deposit_percentage
+      ?? globalPaymentSettings?.default_deposit_percentage
+      ?? 0;
+    const balanceDueDays = effectiveTerms?.balance_due_days
+      ?? globalPaymentSettings?.balance_due_days
+      ?? 0;
+
+    if (depositPercentage === 0 && !effectiveTerms && !globalPaymentSettings) {
       return {
         full: remainingAmount,
         deposit: 0,
@@ -89,7 +101,6 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
       };
     }
 
-    const depositPercentage = paymentSettings.default_deposit_percentage;
     const depositAmount = (parseFloat(invoice.total_amount) * depositPercentage) / 100;
     const balanceAmount = parseFloat(invoice.total_amount) - depositAmount;
 
@@ -98,9 +109,9 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
       deposit: depositAmount,
       depositPercentage,
       remaining: balanceAmount,
-      balanceDueDays: paymentSettings.balance_due_days,
+      balanceDueDays,
     };
-  }, [invoice, paymentSettings]);
+  }, [invoice, globalPaymentSettings]);
 
   // Detect if deposit has already been paid
   const isDepositAlreadyPaid = useMemo(() => {
@@ -454,7 +465,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
             <>
               <Stack spacing={3}>
                   {/* Payment Type Selector */}
-                  {!isLoadingPaymentSettings && paymentSettings && (
+                  {!isLoadingPaymentSettings && (invoice.effective_payment_terms || globalPaymentSettings) && (
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         Payment Type

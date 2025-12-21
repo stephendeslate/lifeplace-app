@@ -319,9 +319,12 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
 
             # Calculate requested payment amount
             if payment_type == 'DEPOSIT':
-                from core.domains.payments.models import PaymentSettings
-                settings = PaymentSettings.get_default_settings()
-                requested_amount = (invoice.total_amount * settings.default_deposit_percentage) / Decimal('100')
+                # Use PaymentTermsResolver to get effective deposit percentage
+                # (booking flow override or global default)
+                from .services.payment_terms_resolver import PaymentTermsResolver
+                terms = PaymentTermsResolver.get_terms_for_event(invoice.event_id)
+                deposit_percentage = Decimal(str(terms.get('deposit_percentage', 50)))
+                requested_amount = (invoice.total_amount * deposit_percentage) / Decimal('100')
             else:
                 # For FULL payment type, use remaining amount
                 requested_amount = payment_data.get('amount', invoice.remaining_amount)
