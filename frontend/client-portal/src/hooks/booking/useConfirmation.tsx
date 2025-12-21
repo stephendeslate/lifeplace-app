@@ -87,6 +87,10 @@ export const useConfirmation = (
       const result = await BookingCoreApi.completeBooking(sessionId, completionType);
       setCompletionResult(result);
 
+      // Clear the session from localStorage to prevent "Resume Booking" dialog
+      // from showing for completed bookings
+      BookingCoreApi.clearSessionFromLocal(sessionId);
+
       // Reload session details to get updated information
       await loadSessionDetails();
 
