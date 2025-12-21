@@ -259,4 +259,12 @@ export const eventsApi = {
     const response = await api.post<EventDetail>(`/client/events/${id}/self_check_in/`);
     return response.data;
   },
+
+  // Get file blob for viewing (used for PDF preview to bypass X-Frame-Options)
+  getDocumentBlob: async (eventId: number, fileId: number): Promise<Blob> => {
+    const response = await api.get<Blob>(`/client/events/${eventId}/documents/${fileId}/download/`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
