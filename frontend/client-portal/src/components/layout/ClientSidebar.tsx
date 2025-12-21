@@ -31,6 +31,7 @@ import {
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { useActionCount } from '../../hooks/useActionCenter';
+import { useUnreadRecordsCount } from '../../hooks/useCommunications';
 
 interface ClientSidebarProps {
   open: boolean;
@@ -126,6 +127,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { count: actionCount } = useActionCount();
+  const { count: unreadRecordsCount } = useUnreadRecordsCount();
 
   // Enhanced navigation items with dynamic badges
   const getEnhancedNavigationItems = (): NavigationItem[] => {
@@ -134,6 +136,12 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
         return {
           ...item,
           badge: actionCount > 0 ? actionCount : undefined,
+        };
+      }
+      if (item.id === 'records') {
+        return {
+          ...item,
+          badge: unreadRecordsCount > 0 ? unreadRecordsCount : undefined,
         };
       }
       return item;
