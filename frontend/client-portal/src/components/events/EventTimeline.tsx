@@ -21,7 +21,7 @@ import {
   Person as PersonIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
-import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from 'date-fns';
+import { formatDistance, isToday, isYesterday, isThisWeek } from 'date-fns';
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import { useEvents } from '../../hooks/useEvents';
 import { GlassCard } from '../../design-system/components/GlassCard';
@@ -93,12 +93,13 @@ const formatActionType = (actionType: string): string => {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
-// Helper to get date group label
+// Helper to get date group label (using PHT timezone)
 const getDateGroupLabel = (dateString: string): string => {
-  const date = new Date(dateString);
-  if (isToday(date)) return 'Today';
-  if (isYesterday(date)) return 'Yesterday';
-  if (isThisWeek(date)) return 'This Week';
+  const datePHT = toZonedTime(dateString, PHILIPPINE_TIMEZONE);
+
+  if (isToday(datePHT)) return 'Today';
+  if (isYesterday(datePHT)) return 'Yesterday';
+  if (isThisWeek(datePHT)) return 'This Week';
   return 'Earlier';
 };
 
@@ -119,11 +120,19 @@ const TimelineEventItem: React.FC<TimelineEventItemProps> = ({
   const actionColor = getActionColor(item.action_type);
   const actionIcon = getActionIcon(item.action_type);
 
+  // Parse created_at - if no timezone specified, treat as PHT (+08:00)
+  const createdAtStr = item.created_at;
+  const hasTimezone = createdAtStr.includes('+') || createdAtStr.includes('Z') || createdAtStr.includes('-', 10);
+  const normalizedTimestamp = hasTimezone ? createdAtStr : `${createdAtStr}+08:00`;
+
+  const postedTime = new Date(normalizedTimestamp);
+  const currentTime = new Date();
+
   const formattedDate = {
-    date: formatInTimeZone(item.created_at, PHILIPPINE_TIMEZONE, 'MMM d'),
-    time: formatInTimeZone(item.created_at, PHILIPPINE_TIMEZONE, 'h:mm a'),
-    // Use the raw date for relative time comparison (not zoned)
-    relative: formatDistanceToNow(new Date(item.created_at), { addSuffix: true }),
+    date: formatInTimeZone(normalizedTimestamp, PHILIPPINE_TIMEZONE, 'MMM d'),
+    time: formatInTimeZone(normalizedTimestamp, PHILIPPINE_TIMEZONE, 'h:mm a'),
+    // Relative time is timezone-independent (absolute difference)
+    relative: formatDistance(postedTime, currentTime, { addSuffix: true }),
   };
 
   return (
@@ -270,7 +279,7 @@ const TimelineEventItem: React.FC<TimelineEventItemProps> = ({
                     display: 'block',
                   }}
                 >
-                  {formattedDate.date} at {formattedDate.time}
+                  {formattedDate.date} at {formattedDate.time} PHT
                 </Typography>
                 <Typography
                   variant="caption"
