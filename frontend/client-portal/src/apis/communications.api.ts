@@ -97,4 +97,10 @@ export const communicationsApi = {
     const response = await api.post<{ updated_count: number; opened_at: string }>('/communications/records/mark_all_as_read/', filters || {});
     return response.data;
   },
+
+  // Get unread count
+  getUnreadCount: async (): Promise<{ unread_count: number }> => {
+    const response = await api.get<{ unread_count: number }>('/communications/records/unread_count/');
+    return response.data;
+  },
 };

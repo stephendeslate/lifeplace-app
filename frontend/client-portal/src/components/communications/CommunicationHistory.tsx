@@ -311,7 +311,20 @@ export const CommunicationHistory: React.FC = () => {
                 {records
                   .filter((r) => ['SENT', 'DELIVERED'].includes(r.delivery_status))
                   .map((record) => (
-                  <TableRow key={record.id} hover>
+                  <TableRow
+                    key={record.id}
+                    hover
+                    onClick={() => handleViewDetail(record)}
+                    sx={{
+                      cursor: 'pointer',
+                      backgroundColor: record.is_opened
+                        ? 'transparent'
+                        : alpha(theme.palette.info.main, 0.04),
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                      },
+                    }}
+                  >
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
                         {getChannelIcon(record.channel)}
@@ -388,7 +401,10 @@ export const CommunicationHistory: React.FC = () => {
                     <TableCell>
                       <IconButton
                         size="small"
-                        onClick={() => handleViewDetail(record)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetail(record);
+                        }}
                         title="View message"
                         sx={{
                           backgroundColor: alpha('#fff', 0.1),

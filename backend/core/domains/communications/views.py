@@ -830,6 +830,43 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
     @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        """Get count of unread communication records for the current user"""
+        try:
+            # Clients can only see their own unread count
+            if request.user.role == 'CLIENT':
+                count = CommunicationRecord.objects.filter(
+                    client=request.user,
+                    is_opened=False,
+                    is_deleted=False
+                ).count()
+            else:
+                # Admins can optionally filter by client_id
+                client_id = request.query_params.get('client_id')
+                if client_id:
+                    count = CommunicationRecord.objects.filter(
+                        client_id=client_id,
+                        is_opened=False,
+                        is_deleted=False
+                    ).count()
+                else:
+                    # Return total unread count across all clients
+                    count = CommunicationRecord.objects.filter(
+                        is_opened=False,
+                        is_deleted=False
+                    ).count()
+
+            return Response({
+                'unread_count': count
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to get unread count: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['get'])
     def health_check(self, request):
         """Get communication system health status"""
         # Only admins can access health check
