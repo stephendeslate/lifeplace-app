@@ -119,7 +119,7 @@ export const eventsApi = {
     if (category) params.append('category', category);
     params.append('event', eventId.toString());
     
-    const response = await api.get(`/events/files/?${params.toString()}`);
+    const response = await api.get(`/events/event-files/?${params.toString()}`);
     
     // Handle paginated response - extract results array
     if (response.data && typeof response.data === 'object' && 'results' in response.data) {
@@ -131,7 +131,7 @@ export const eventsApi = {
   },
 
   getEventFile: async (id: number): Promise<EventFile> => {
-    const response = await api.get<EventFile>(`/events/files/${id}/`);
+    const response = await api.get<EventFile>(`/events/event-files/${id}/`);
     return response.data;
   },
 
@@ -144,7 +144,7 @@ export const eventsApi = {
     if (data.description) formData.append('description', data.description);
     if (data.is_public !== undefined) formData.append('is_public', data.is_public.toString());
 
-    const response = await api.post<EventFile>('/events/files/', formData, {
+    const response = await api.post<EventFile>('/events/event-files/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -160,7 +160,7 @@ export const eventsApi = {
     if (data.is_public !== undefined) formData.append('is_public', data.is_public.toString());
     if (file) formData.append('file', file);
 
-    const response = await api.patch<EventFile>(`/events/files/${id}/`, formData, {
+    const response = await api.patch<EventFile>(`/events/event-files/${id}/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -169,11 +169,11 @@ export const eventsApi = {
   },
 
   deleteEventFile: async (id: number): Promise<void> => {
-    await api.delete(`/events/files/${id}/`);
+    await api.delete(`/events/event-files/${id}/`);
   },
 
   downloadEventFile: async (id: number): Promise<Blob> => {
-    const response = await api.get<Blob>(`/events/files/${id}/download/`, {
+    const response = await api.get<Blob>(`/events/event-files/${id}/download/`, {
       responseType: 'blob',
     });
     return response.data;

@@ -470,33 +470,36 @@ class Event(BaseModel):
     def workflow_progress(self):
         """
         Calculate workflow progress percentage - REDIS CACHED for performance
+        Returns percentage of COMPLETED stages (not including current in-progress stage)
         """
         if not self.workflow_template_id or not self.current_stage_id:
             return 0
-        
+
         # Use Redis cache service
         from .cache_service import EventCacheService
-        
+
         cached_progress = EventCacheService.get_workflow_progress(self.id)
         if cached_progress is not None:
             return cached_progress
-        
+
         try:
             # More efficient query using values_list
             stage_ids = list(self.workflow_template.stages.values_list('id', flat=True).order_by('stage', 'order'))
-            
+
             if not stage_ids:
                 return 0
-            
-            # Find position without loading all objects
+
+            # Find position of current stage (0-indexed)
             try:
-                current_position = stage_ids.index(self.current_stage_id) + 1
+                current_index = stage_ids.index(self.current_stage_id)
             except ValueError:
-                current_position = 0
-            
-            # Calculate progress percentage
-            progress = (current_position / len(stage_ids)) * 100 if stage_ids else 0
-            
+                current_index = 0
+
+            # Calculate progress percentage based on COMPLETED stages
+            # (stages before current, not including current)
+            completed_count = current_index  # 0-indexed, so this is count of stages before current
+            progress = (completed_count / len(stage_ids)) * 100 if stage_ids else 0
+
             # Cache in Redis
             EventCacheService.set_workflow_progress(self.id, progress)
             return progress
