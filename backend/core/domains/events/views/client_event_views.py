@@ -312,7 +312,7 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
         file_obj = serializer.save(
             event=event,
             uploaded_by=request.user,
-            is_public=False  # Client uploads are private by default
+            is_public=True  # Client uploads are visible to the client
         )
         
         # Add timeline entry

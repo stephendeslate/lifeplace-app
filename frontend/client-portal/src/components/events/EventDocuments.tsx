@@ -55,7 +55,8 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
-  const getFileIcon = (fileType: string) => {
+  const getFileIcon = (fileType?: string) => {
+    if (!fileType) return <FileIcon color="action" />;
     const type = fileType.toLowerCase();
     
     if (type.includes('pdf')) return <PdfIcon color="error" />;
@@ -247,7 +248,7 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
           </ListItem>
         ))}
       </List>
-      
+
       <Box sx={{ mt: 2, px: 2, textAlign: 'center' }}>
         <Typography variant="caption" color="text.secondary">
           {documents.length} document{documents.length !== 1 ? 's' : ''} available
