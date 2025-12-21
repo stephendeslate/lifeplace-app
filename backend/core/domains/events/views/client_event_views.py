@@ -536,3 +536,73 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
             'has_been_rebooked': event.rebooked_events.exists(),
             'rebook_history': history,
         })
+
+    @action(detail=True, methods=['post'])
+    def self_check_in(self, request, pk=None):
+        """
+        Allow client to check themselves in on event day.
+
+        POST /client/events/{id}/self_check_in/
+
+        Validates:
+        - Event must be CONFIRMED
+        - Check-in status must be PENDING
+        - Today must be the event day (based on scheduled_check_in_time or start_date)
+
+        Returns the updated event detail with check-in status.
+        """
+        from django.utils import timezone
+        from ..services import CheckInService
+        from ..models import EventTimeline
+
+        # Get event (ownership verified via queryset)
+        try:
+            event = Event.objects.get(id=pk, client_id=request.user.id)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Validate event is confirmed
+        if event.status != 'CONFIRMED':
+            return Response(
+                {"detail": "Event must be confirmed to check in."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate pending check-in status
+        if event.check_in_status != 'PENDING':
+            return Response(
+                {"detail": "Event has already been checked in or marked as no-show."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate event day restriction
+        now = timezone.now()
+        event_date = event.scheduled_check_in_time or event.start_date
+        if not event_date or now.date() != event_date.date():
+            return Response(
+                {"detail": "Check-in is only available on the event day."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Perform check-in using existing service
+        result = CheckInService.check_in(
+            event=event,
+            staff_user=request.user,  # Client user for tracking
+            notes="Self check-in by client"
+        )
+
+        if not result['success']:
+            return Response(
+                {"detail": result['error']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        event.refresh_from_db()
+
+        logger.info(f"Client {request.user.id} self-checked-in for event {pk}")
+
+        serializer = ClientEventDetailSerializer(event, context={'request': request})
+        return Response(serializer.data)

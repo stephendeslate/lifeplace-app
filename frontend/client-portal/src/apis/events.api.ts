@@ -247,4 +247,10 @@ export const eventsApi = {
     }>(`/events/public/availability/?${queryParams.toString()}`);
     return response.data;
   },
+
+  // Self check-in for client on event day
+  selfCheckIn: async (id: number): Promise<EventDetail> => {
+    const response = await api.post<EventDetail>(`/client/events/${id}/self_check_in/`);
+    return response.data;
+  },
 };
