@@ -296,9 +296,11 @@ class InvoiceService:
             payment_type = payment_data.get('payment_type', 'FULL')
 
             if payment_type == 'DEPOSIT':
-                # Calculate deposit using PaymentSettings (DRY - same calculation as booking flow)
-                settings = PaymentSettings.get_default_settings()
-                deposit_percentage = settings.default_deposit_percentage
+                # Use PaymentTermsResolver to get effective deposit percentage
+                # (booking flow override or global default)
+                from .payment_terms_resolver import PaymentTermsResolver
+                terms = PaymentTermsResolver.get_terms_for_event(invoice.event_id)
+                deposit_percentage = Decimal(str(terms.get('deposit_percentage', 50)))
                 payment_amount = (invoice.total_amount * deposit_percentage) / Decimal('100')
                 description = f'Deposit payment for invoice {invoice.invoice_id} ({deposit_percentage}%)'
             elif payment_type == 'CUSTOM':
@@ -481,9 +483,11 @@ class InvoiceService:
 
             # Calculate payment amount based on payment type
             if payment_type == 'DEPOSIT':
-                # Calculate deposit using PaymentSettings (DRY)
-                settings = PaymentSettings.get_default_settings()
-                deposit_percentage = settings.default_deposit_percentage
+                # Use PaymentTermsResolver to get effective deposit percentage
+                # (booking flow override or global default)
+                from .payment_terms_resolver import PaymentTermsResolver
+                terms = PaymentTermsResolver.get_terms_for_event(invoice.event_id)
+                deposit_percentage = Decimal(str(terms.get('deposit_percentage', 50)))
                 payment_amount = (invoice.total_amount * deposit_percentage) / Decimal('100')
                 description = f'Deposit payment for invoice {invoice.invoice_id} ({deposit_percentage}%)'
             elif payment_type == 'CUSTOM':

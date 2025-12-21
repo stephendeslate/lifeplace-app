@@ -551,6 +551,7 @@ class NotificationService:
                 'contract_email', 'contract_sms', 'contract_in_app',
                 'workflow_email', 'workflow_sms', 'workflow_in_app',
                 'communication_email', 'communication_sms', 'communication_in_app',
+                'marketing_email', 'marketing_sms', 'marketing_in_app',
                 'quiet_hours_enabled'
             ]
             

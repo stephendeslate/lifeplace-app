@@ -320,6 +320,20 @@ export interface Payment {
   updated_at: string;
 }
 
+// Effective payment terms resolved from booking flow override or global defaults
+export interface EffectivePaymentTerms {
+  deposit_type: 'PERCENTAGE' | 'FIXED' | null;
+  deposit_percentage: number;
+  deposit_fixed_amount: number | null;
+  deposit_is_refundable: boolean | null;
+  deposit_is_deductible: boolean | null;
+  deposit_waived_on_full_payment: boolean | null;
+  balance_due_days: number | null;
+  balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE' | null;
+  grace_period_days: number | null;
+  currency: string | null;
+}
+
 export interface Invoice {
   id: number;
   invoice_id: string;
@@ -365,6 +379,8 @@ export interface Invoice {
   remaining_amount: string; // Decimal as string - total_amount - paid_amount
   is_fully_paid: boolean; // paid_amount >= total_amount
   is_partially_paid: boolean; // 0 < paid_amount < total_amount
+  // Effective payment terms (booking flow override or global defaults)
+  effective_payment_terms?: EffectivePaymentTerms | null;
   created_at: string;
   updated_at: string;
 }

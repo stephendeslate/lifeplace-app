@@ -41,6 +41,7 @@ import {
   Person as PersonIcon,
   Description as ContractIcon,
   AccountTree as WorkflowIcon,
+  Campaign as CampaignIcon,
 } from '@mui/icons-material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -76,6 +77,8 @@ const getCategoryIcon = (categoryValue: string) => {
       return <ContractIcon fontSize="small" />;
     case 'WORKFLOW':
       return <WorkflowIcon fontSize="small" />;
+    case 'MARKETING':
+      return <CampaignIcon fontSize="small" />;
     default:
       return <InAppIcon fontSize="small" />;
   }
@@ -131,6 +134,10 @@ export const NotificationPreferencesDialog: React.FC<
         communication_email: preferences.communication_email,
         communication_sms: preferences.communication_sms,
         communication_in_app: preferences.communication_in_app,
+        // Marketing preferences
+        marketing_email: preferences.marketing_email,
+        marketing_sms: preferences.marketing_sms,
+        marketing_in_app: preferences.marketing_in_app,
       });
 
       // Parse quiet hours times
