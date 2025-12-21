@@ -28,12 +28,14 @@ import {
   Payment as PaymentIcon,
   Warning as WarningIcon,
   AttachMoney as MoneyIcon,
-  TrendingUp as TrendingUpIcon,
   AccessTime as AccessTimeIcon,
   PriorityHigh as PriorityIcon,
   ShoppingCart as BookingIcon,
   ArrowForward as ArrowForwardIcon,
+  History as HistoryIcon,
+  Update as UpdateIcon,
 } from '@mui/icons-material';
+import { getRelativeTime } from '../../utils/eventHelpers';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useUnfinishedBookings } from '../../hooks/useUnfinishedBookings';
@@ -517,45 +519,83 @@ const Dashboard: React.FC = () => {
                     </GlassCard>
                   </Box>
 
-                  {/* Current Event Progress */}
+                  {/* Recent Activity */}
                   <Box sx={{ flex: 1 }}>
                     <GlassCard variant="light" intensity="subtle" sx={{ height: '100%' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                          Current Event Progress
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <HistoryIcon fontSize="small" color="action" />
+                          Recent Activity
                         </Typography>
-                        {dashboardData.eventStatus.currentEventProgress ? (
-                          <Box>
-                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                              {dashboardData.eventStatus.currentEventProgress.event.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                              {dashboardData.eventStatus.currentEventProgress.completedTasks} of {dashboardData.eventStatus.currentEventProgress.totalTasks} tasks completed
-                            </Typography>
-                            <Box sx={{ mb: 2 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={dashboardData.eventStatus.currentEventProgress.progressPercentage}
-                                sx={{ height: 8, borderRadius: 4 }}
-                              />
-                              <Typography variant="body2" sx={{ textAlign: 'center', mt: 1 }}>
-                                {dashboardData.eventStatus.currentEventProgress.progressPercentage}% Complete
-                              </Typography>
-                            </Box>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              fullWidth
-                              onClick={() => handleViewEvent(dashboardData.eventStatus.currentEventProgress!.event.id)}
-                            >
-                              View Progress
-                            </Button>
-                          </Box>
+                        {dashboardData.eventStatus.recentUpdates.length > 0 ? (
+                          <Stack spacing={1.5}>
+                            {dashboardData.eventStatus.recentUpdates.slice(0, 4).map((update) => (
+                              <Box
+                                key={update.id}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: 1.5,
+                                  p: 1.5,
+                                  borderRadius: 1,
+                                  backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  '&:hover': {
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                                    borderColor: alpha(theme.palette.primary.main, 0.2),
+                                  },
+                                }}
+                                onClick={() => handleViewEvent(update.eventId)}
+                              >
+                                <Box
+                                  sx={{
+                                    p: 0.75,
+                                    borderRadius: 1,
+                                    backgroundColor: alpha(theme.palette.info.main, 0.1),
+                                    color: theme.palette.info.main,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <UpdateIcon fontSize="small" />
+                                </Box>
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: 500,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {update.description}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {update.eventName} · {getRelativeTime(update.created_at)}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            ))}
+                            {dashboardData.eventStatus.recentUpdates.length > 4 && (
+                              <Button
+                                variant="text"
+                                size="small"
+                                onClick={() => navigate('/events')}
+                                sx={{ alignSelf: 'center', mt: 0.5 }}
+                              >
+                                View All Activity
+                              </Button>
+                            )}
+                          </Stack>
                         ) : (
                           <Box sx={{ textAlign: 'center', py: 3 }}>
-                            <TrendingUpIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                            <HistoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
                             <Typography variant="body2" color="text.secondary">
-                              No events currently in progress
+                              No recent activity
                             </Typography>
                           </Box>
                         )}
