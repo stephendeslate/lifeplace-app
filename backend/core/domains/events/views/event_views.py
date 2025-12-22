@@ -2,6 +2,7 @@
 from ..serializers import EventProductOptionSerializer, EventTaskDetailSerializer
 from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin, IsAdminOrClient
+from django.db.models import Prefetch
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework import filters, status, viewsets
@@ -10,6 +11,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from ..models import Event, EventProductOption, EventTask, EventType
+from core.domains.payments.models import Invoice
+from core.domains.sales.models import EventQuote
 from ..cache_service import EventCacheService
 from ..serializers import (
     EventCreateUpdateSerializer,
@@ -163,8 +166,28 @@ class EventViewSet(viewsets.ModelViewSet):
             'workflow_template',  # Join workflow template
             'current_stage',  # Join current workflow stage
         )
-        
-        # For detail view, prefetch all related objects
+
+        # Prefetch invoices and quotes for all views to prevent N+1 in EventSerializer
+        # The serializer's get_current_total_amount, get_current_quote, get_current_invoice
+        # all query these related objects
+        queryset = queryset.prefetch_related(
+            Prefetch(
+                'invoices',
+                queryset=Invoice.objects.filter(
+                    status__in=['DRAFT', 'SENT', 'PAID']
+                ).order_by('-created_at'),
+                to_attr='_prefetched_invoices'
+            ),
+            Prefetch(
+                'quotes',
+                queryset=EventQuote.objects.filter(
+                    status='ACCEPTED'
+                ).order_by('-created_at'),
+                to_attr='_prefetched_quotes'
+            ),
+        )
+
+        # For detail view, prefetch additional related objects
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related(
                 'tasks__assigned_to',  # Prefetch tasks with assigned users
@@ -175,7 +198,7 @@ class EventViewSet(viewsets.ModelViewSet):
                 'feedback__submitted_by',  # Prefetch feedback submitters
                 'feedback__response_by',  # Prefetch feedback responders
             )
-        
+
         return queryset
     
     def retrieve(self, request, *args, **kwargs):
