@@ -1,7 +1,20 @@
 # Consent Management UI Specification
 
 ## Overview
+
 This document specifies the consent management UI requirements for Philippines Data Privacy Act (DPA) compliance. The design covers consent collection, withdrawal, history tracking, and privacy dashboard functionality.
+
+### Implementation Status
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| **Backend ConsentRecord Model** | ✅ Implemented | `backend/core/domains/users/models.py` |
+| **Backend DPA Endpoints** | ✅ Implemented | `backend/core/domains/users/views.py` |
+| **Backend Rate Limiting** | ✅ Implemented | `backend/core/domains/users/throttling.py` |
+| **Frontend Privacy Dashboard** | 🔲 Needs Implementation | See Section 4.2 |
+| **Frontend Consent History UI** | 🔲 Needs Implementation | See Section 4.3 |
+| **Frontend Account Deletion Flow** | 🔲 Needs Implementation | See Section 4.6 |
+| **Mobile App Privacy Screens** | 🔲 Needs Implementation | See Section 7 |
 
 ---
 
@@ -45,6 +58,8 @@ This document specifies the consent management UI requirements for Philippines D
 ## 3. Current State Analysis
 
 ### Existing Implementation
+
+#### Frontend
 **File:** `frontend/client-portal/src/components/notifications/NotificationPreferencesDialog.tsx`
 
 **Current Features:**
@@ -53,28 +68,34 @@ This document specifies the consent management UI requirements for Philippines D
 - Quiet hours configuration
 - Digest frequency settings
 
-**Missing for DPA Compliance:**
-1. No consent timestamp tracking
-2. No privacy policy version tracking
-3. No consent history/audit trail UI
-4. No withdrawal confirmation flow
-5. No processing purpose explanations
-6. No data access/export UI
-7. No account deletion UI
+**UI Components Needed:**
+1. Consent history/audit trail UI
+2. Withdrawal confirmation flow
+3. Processing purpose explanations
+4. Data access/export UI
+5. Account deletion UI
 
-### Backend Gaps
-**File:** `backend/core/domains/notifications/models.py`
+#### Backend (✅ Implemented)
+**File:** `backend/core/domains/users/models.py`
 
-**Missing Fields:**
-```python
-# Fields to add to NotificationPreference or new ConsentRecord model
-marketing_email_consented_at = models.DateTimeField(null=True, blank=True)
-marketing_sms_consented_at = models.DateTimeField(null=True, blank=True)
-marketing_push_consented_at = models.DateTimeField(null=True, blank=True)
-analytics_consented_at = models.DateTimeField(null=True, blank=True)
-privacy_policy_version = models.CharField(max_length=20)
-privacy_policy_accepted_at = models.DateTimeField(null=True, blank=True)
-```
+The `ConsentRecord` model is fully implemented and provides:
+- ✅ Immutable audit trail of all consent changes
+- ✅ Timestamp tracking via `created_at` (inherited from BaseModel)
+- ✅ Privacy policy version tracking
+- ✅ Device/source context for compliance auditing
+- ✅ Helper methods for consent status checks
+
+**File:** `backend/core/domains/users/views.py`
+
+DPA compliance endpoints are fully implemented:
+- ✅ `GET /api/users/me/consents/` - List all consent statuses
+- ✅ `POST /api/users/me/consents/{type}/withdraw/` - Withdraw consent
+- ✅ `GET /api/users/me/data/` - Data access (Right to Access)
+- ✅ `GET /api/users/me/export/` - Data export (Right to Portability)
+- ✅ `DELETE /api/users/me/` - Account deletion (Right to Erasure)
+- ✅ `PATCH /api/users/me/correct/` - Data correction
+- ✅ `POST /api/users/me/object/` - Processing objection
+- ✅ `GET /api/users/me/privacy-requests/` - View request history
 
 ---
 
@@ -471,19 +492,63 @@ privacy_policy_accepted_at = models.DateTimeField(null=True, blank=True)
 
 ## 5. Enhanced NotificationPreferencesDialog
 
-Update the existing dialog to include consent timestamps and explanations.
+Update the existing dialog to integrate with the `ConsentRecord` backend model.
 
-**Modifications Required:**
+**TypeScript Types (matching backend ConsentRecord model):**
 
 ```typescript
-// Add to existing dialog
-interface ConsentStatus {
-  enabled: boolean;
-  consentedAt: string | null;
-  withdrawnAt: string | null;
+// src/types/consent.types.ts
+
+// Matches ConsentRecord.CONSENT_TYPE_CHOICES
+type ConsentType =
+  | 'MARKETING_EMAIL'
+  | 'MARKETING_SMS'
+  | 'MARKETING_PUSH'
+  | 'ANALYTICS'
+  | 'THIRD_PARTY_SHARING'
+  | 'SENSITIVE_DATA'
+  | 'PRIVACY_POLICY'
+  | 'TERMS_OF_SERVICE';
+
+// Matches ConsentRecord.ACTION_CHOICES
+type ConsentAction = 'GRANT' | 'WITHDRAW' | 'UPDATE';
+
+// Matches ConsentRecord.SOURCE_CHOICES
+type ConsentSource = 'REGISTRATION' | 'SETTINGS' | 'PRIVACY_DASHBOARD' | 'API' | 'ADMIN';
+
+// Single consent record from backend
+interface ConsentRecord {
+  id: string;
+  consent_type: ConsentType;
+  action: ConsentAction;
+  consent_text: string;
+  privacy_policy_version: string;
+  source: ConsentSource;
+  ip_address: string | null;
+  user_agent: string;
+  device_type: 'ios' | 'android' | 'web' | '';
+  created_at: string; // ISO timestamp - this IS the consent timestamp
 }
 
-// Marketing section with consent info
+// Consent status for UI display (derived from most recent ConsentRecord)
+interface ConsentStatus {
+  consent_type: ConsentType;
+  purpose: string;
+  status: 'granted' | 'not_granted';
+  granted_at: string | null; // created_at from most recent GRANT record
+  can_withdraw: boolean;
+}
+
+// Response from GET /api/users/me/consents/
+interface ConsentsResponse {
+  consents: ConsentStatus[];
+}
+```
+
+**UI Implementation Example:**
+
+```typescript
+// Marketing section with consent info from ConsentRecord
 <Box>
   <Typography variant="subtitle2">
     Marketing Communications
@@ -495,16 +560,16 @@ interface ConsentStatus {
   <FormControlLabel
     control={
       <Switch
-        checked={formData.marketing_email}
-        onChange={() => handleConsentToggle('marketing_email')}
+        checked={consent.status === 'granted'}
+        onChange={() => handleConsentToggle(consent.consent_type)}
       />
     }
     label={
       <Box>
         <Typography>Marketing Emails</Typography>
-        {formData.marketing_email_consented_at && (
+        {consent.granted_at && (
           <Typography variant="caption" color="text.secondary">
-            Consented: {formatDate(formData.marketing_email_consented_at)}
+            Consented: {formatDate(consent.granted_at)}
           </Typography>
         )}
       </Box>
@@ -515,82 +580,112 @@ interface ConsentStatus {
 
 ---
 
-## 6. Backend Model Updates
+## 6. Backend Model Reference (✅ Implemented)
 
-### ConsentRecord Model (New)
+### ConsentRecord Model
+
+**File:** `backend/core/domains/users/models.py`
+
+The `ConsentRecord` model is fully implemented as an immutable audit trail. Each consent action (grant or withdraw) creates a new record, providing complete history.
 
 ```python
-# backend/core/domains/users/models.py
-
 class ConsentRecord(BaseModel):
-    """Audit trail for consent changes"""
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='consent_records'
-    )
+    """
+    Immutable audit trail of consent grants and withdrawals.
+    Each record represents a single consent action (grant or withdraw).
+    DPA Compliance: Sec. 12 - Consent requirements
+    """
 
-    consent_type = models.CharField(max_length=50, choices=[
-        ('marketing_email', 'Marketing Email'),
-        ('marketing_sms', 'Marketing SMS'),
-        ('marketing_push', 'Marketing Push'),
-        ('analytics', 'Usage Analytics'),
-        ('third_party', 'Third Party Sharing'),
-        ('sensitive_data', 'Sensitive Data Processing'),
-        ('privacy_policy', 'Privacy Policy'),
-        ('terms_of_service', 'Terms of Service'),
-    ])
+    CONSENT_TYPE_CHOICES = [
+        ('MARKETING_EMAIL', 'Marketing Email'),
+        ('MARKETING_SMS', 'Marketing SMS'),
+        ('MARKETING_PUSH', 'Marketing Push Notifications'),
+        ('ANALYTICS', 'Usage Analytics'),
+        ('THIRD_PARTY_SHARING', 'Third-Party Sharing'),
+        ('SENSITIVE_DATA', 'Sensitive Personal Information Processing'),
+        ('PRIVACY_POLICY', 'Privacy Policy Acceptance'),
+        ('TERMS_OF_SERVICE', 'Terms of Service Acceptance'),
+    ]
 
-    action = models.CharField(max_length=20, choices=[
-        ('granted', 'Consent Granted'),
-        ('withdrawn', 'Consent Withdrawn'),
-        ('renewed', 'Consent Renewed'),
-    ])
+    ACTION_CHOICES = [
+        ('GRANT', 'Consent Granted'),
+        ('WITHDRAW', 'Consent Withdrawn'),
+        ('UPDATE', 'Consent Updated'),
+    ]
 
-    # Context
-    privacy_policy_version = models.CharField(max_length=20, blank=True)
-    source = models.CharField(max_length=50, choices=[
-        ('registration', 'Registration'),
-        ('settings', 'Settings'),
-        ('booking_flow', 'Booking Flow'),
-        ('email_link', 'Email Link'),
-        ('api', 'API'),
-    ])
+    SOURCE_CHOICES = [
+        ('REGISTRATION', 'Registration'),
+        ('SETTINGS', 'Settings Change'),
+        ('PRIVACY_DASHBOARD', 'Privacy Dashboard'),
+        ('API', 'API Request'),
+        ('ADMIN', 'Admin Action'),
+    ]
 
-    # Device context (for audit)
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='consent_records')
+    consent_type = models.CharField(max_length=30, choices=CONSENT_TYPE_CHOICES)
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+
+    # The actual text the user consented to (for legal proof)
+    consent_text = models.TextField(blank=True, help_text="The exact text shown to user at time of consent")
+
+    # Version tracking
+    privacy_policy_version = models.CharField(max_length=20, blank=True, help_text="Privacy policy version at time of consent")
+
+    # Source and context
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='SETTINGS')
+
+    # Request metadata (for audit)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
-    device_type = models.CharField(max_length=20, blank=True)
+    device_type = models.CharField(max_length=20, blank=True)  # ios, android, web
 
     class Meta:
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', 'consent_type', '-created_at']),
+            models.Index(fields=['user', '-created_at']),
         ]
-
-    def __str__(self):
-        return f"{self.user.email} - {self.consent_type} - {self.action}"
 ```
 
-### NotificationPreference Updates
+### Key Helper Methods
 
 ```python
-# Add consent timestamp fields
-marketing_email_consented_at = models.DateTimeField(null=True, blank=True)
-marketing_email_withdrawn_at = models.DateTimeField(null=True, blank=True)
-marketing_sms_consented_at = models.DateTimeField(null=True, blank=True)
-marketing_sms_withdrawn_at = models.DateTimeField(null=True, blank=True)
-marketing_push_consented_at = models.DateTimeField(null=True, blank=True)
-marketing_push_withdrawn_at = models.DateTimeField(null=True, blank=True)
-analytics_consented_at = models.DateTimeField(null=True, blank=True)
-analytics_opted_out_at = models.DateTimeField(null=True, blank=True)
+@classmethod
+def get_current_consent(cls, user, consent_type):
+    """Get the most recent consent record for a user and type"""
+    return cls.objects.filter(user=user, consent_type=consent_type).order_by('-created_at').first()
 
-# Privacy policy tracking
-privacy_policy_version = models.CharField(max_length=20, default='1.0')
-privacy_policy_accepted_at = models.DateTimeField(null=True, blank=True)
-terms_version = models.CharField(max_length=20, default='1.0')
-terms_accepted_at = models.DateTimeField(null=True, blank=True)
+@classmethod
+def is_consented(cls, user, consent_type):
+    """Check if user has active consent for a type"""
+    record = cls.get_current_consent(user, consent_type)
+    return record and record.action == 'GRANT'
+
+@classmethod
+def record_consent(cls, user, consent_type, granted, request=None, source='SETTINGS', consent_text=''):
+    """Record a consent action - creates immutable audit record"""
+    return cls.objects.create(
+        user=user,
+        consent_type=consent_type,
+        action='GRANT' if granted else 'WITHDRAW',
+        consent_text=consent_text,
+        source=source,
+        ip_address=cls._get_client_ip(request) if request else None,
+        user_agent=request.META.get('HTTP_USER_AGENT', '') if request else '',
+        device_type=cls._get_device_type(request) if request else '',
+    )
 ```
+
+### Design Rationale
+
+This normalized audit table approach is **superior** to adding timestamp fields directly to `NotificationPreference` because:
+
+1. **Complete History**: Every consent change is preserved, not just the most recent
+2. **Immutability**: Records are never updated, only new records created (legally defensible)
+3. **Audit Context**: Each record captures IP, user agent, device type, and source
+4. **Policy Versioning**: Tracks which privacy policy version was in effect
+5. **Consent Text**: Can store the exact wording shown to the user (for legal disputes)
+6. **DPA Compliance**: Meets Philippines Data Privacy Act Sec. 12 requirements for consent evidence
 
 ---
 
@@ -638,20 +733,76 @@ mobile-app/src/
 
 ---
 
-## 8. API Integration
+## 8. API Integration (✅ Implemented)
 
-### Required Endpoints
+### Implemented Endpoints
 
-These endpoints are specified in `DATA_SUBJECT_RIGHTS_API.md`:
+**File:** `backend/core/domains/users/views.py` and `backend/core/domains/users/urls.py`
 
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /api/users/me/consents/` | Get current consent status |
-| `PATCH /api/users/me/consents/` | Update consents |
-| `GET /api/users/me/consents/history/` | Get consent audit trail |
-| `GET /api/users/me/data/` | Get all personal data |
-| `GET /api/users/me/export/` | Request data export |
-| `DELETE /api/users/me/` | Request account deletion |
+| Endpoint | Method | Purpose | View Class |
+|----------|--------|---------|------------|
+| `/api/users/me/consents/` | GET | Get current consent status for all types | `ConsentListView` |
+| `/api/users/me/consents/{type}/withdraw/` | POST | Withdraw specific consent | `ConsentWithdrawView` |
+| `/api/users/me/data/` | GET | Right to Access - view all personal data | `DataAccessView` |
+| `/api/users/me/export/` | GET | Right to Portability - download data (JSON/CSV) | `DataExportView` |
+| `/api/users/me/delete/` | DELETE | Right to Erasure - delete account | `AccountDeletionView` |
+| `/api/users/me/correct/` | PATCH | Right to Correction - correct personal data | `DataCorrectionView` |
+| `/api/users/me/object/` | POST | Right to Object - object to processing | `ProcessingObjectionView` |
+| `/api/users/me/privacy-requests/` | GET | View status of privacy requests | `PrivacyRequestListView` |
+
+### Response Examples
+
+**GET /api/users/me/consents/**
+```json
+{
+  "consents": [
+    {
+      "consent_type": "MARKETING_EMAIL",
+      "purpose": "Marketing emails",
+      "status": "not_granted",
+      "granted_at": null,
+      "can_withdraw": true
+    },
+    {
+      "consent_type": "ANALYTICS",
+      "purpose": "Usage analytics",
+      "status": "granted",
+      "granted_at": "2025-01-15T10:30:00Z",
+      "can_withdraw": true
+    },
+    {
+      "consent_type": "PRIVACY_POLICY",
+      "purpose": "Privacy Policy",
+      "status": "granted",
+      "granted_at": "2025-01-15T10:30:00Z",
+      "can_withdraw": false
+    }
+  ]
+}
+```
+
+**POST /api/users/me/consents/MARKETING_EMAIL/withdraw/**
+```json
+{
+  "status": "withdrawn",
+  "consent_type": "MARKETING_EMAIL",
+  "withdrawn_at": "2025-01-20T15:45:00Z",
+  "effective_immediately": true
+}
+```
+
+### Rate Limiting (Implemented)
+
+**File:** `backend/core/domains/users/throttling.py`
+
+| Endpoint Type | Rate Limit | Throttle Class |
+|---------------|-----------|----------------|
+| Data Access | 10/day | `DataAccessThrottle` |
+| Data Export | 1/day | `DataExportThrottle` |
+| Account Deletion | 1/day | `AccountDeletionThrottle` |
+| Data Correction | 5/day | `DataCorrectionThrottle` |
+| Processing Objection | 3/day | `ProcessingObjectionThrottle` |
+| Consent Management | 20/hour | `ConsentManagementThrottle` |
 
 ---
 
@@ -684,21 +835,30 @@ All consent UI must meet WCAG 2.1 AA:
 
 ## 10. Implementation Priority
 
-### Phase 1 (Critical - Before Launch)
-1. Registration consent screen
-2. Basic consent toggles with timestamps
-3. Privacy policy version tracking
-4. Consent withdrawal confirmation
+### Backend (✅ Complete)
+All backend components are implemented:
+- ConsentRecord model with full audit trail
+- All DPA compliance API endpoints
+- Rate limiting for privacy endpoints
+- DataSubjectRightsService for data access/export/deletion
 
-### Phase 2 (High Priority)
-1. Privacy dashboard
-2. Consent history screen
-3. Data download request
+### Frontend Phase 1 (Critical - Before Launch)
+1. Registration consent screen (Section 4.1)
+2. Basic consent toggles integrated with `/api/users/me/consents/` endpoint
+3. Privacy policy version display
+4. Consent withdrawal confirmation dialog (Section 4.4)
 
-### Phase 3 (Required)
-1. Account deletion flow
-2. Data correction request
-3. Enhanced audit logging
+### Frontend Phase 2 (High Priority)
+1. Privacy dashboard (Section 4.2)
+2. Consent history screen using ConsentRecord history (Section 4.3)
+3. Data download request UI (Section 4.5)
+
+### Frontend Phase 3 (Required)
+1. Account deletion flow with 3-step confirmation (Section 4.6)
+2. Data correction request UI
+
+### Mobile App (See Section 7)
+Mirror frontend implementation using React Native components
 
 ---
 
@@ -740,7 +900,18 @@ test('user can grant and withdraw marketing consent', async ({ page }) => {
 
 ## Sources
 
+### Legal References
 - Philippines Data Privacy Act of 2012 (R.A. 10173)
 - NPC Circular 16-01 (Consent Requirements)
-- Existing NotificationPreferencesDialog implementation
-- DATA_SUBJECT_RIGHTS_API.md specification
+
+### Implementation References
+- `backend/core/domains/users/models.py` - ConsentRecord and PrivacyRequest models
+- `backend/core/domains/users/views.py` - DPA compliance API endpoints (lines 700-1000)
+- `backend/core/domains/users/dpa_service.py` - DataSubjectRightsService
+- `backend/core/domains/users/throttling.py` - Rate limiting for privacy endpoints
+- `frontend/client-portal/src/components/notifications/NotificationPreferencesDialog.tsx` - Existing UI
+
+### Related Documentation
+- `docs/compliance/DATA_SUBJECT_RIGHTS_API.md` - API specification
+- `docs/compliance/DPA_REQUIREMENTS.md` - Full DPA requirements
+- `docs/compliance/DATA_INVENTORY.md` - Data inventory for compliance
