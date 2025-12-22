@@ -85,7 +85,7 @@ app.conf.update(
         },
         'notification-delivery-stats': {
             'task': 'core.domains.notifications.tasks.collect_delivery_metrics',
-            'schedule': 5 * 60,  # Every 5 minutes
+            'schedule': 15 * 60,  # Every 15 minutes (was 5 min - saves 192 task executions/day)
             'options': {'queue': 'analytics'}
         },
         # Event deadline tasks
@@ -141,7 +141,7 @@ app.conf.update(
         # Push notification maintenance tasks
         'check-push-receipts': {
             'task': 'core.domains.notifications.tasks.check_push_receipts',
-            'schedule': 15 * 60,  # Every 15 minutes
+            'schedule': 30 * 60,  # Every 30 minutes (was 15 min - saves 48 task executions/day)
             'options': {'queue': 'notifications'}
         },
         'cleanup-inactive-push-tokens': {

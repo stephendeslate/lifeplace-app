@@ -1,14 +1,32 @@
 # backend/core/domains/analytics/services/operations_analytics.py
+from django.core.cache import cache
 from django.db.models import Count, Sum, Q
 from django.db.models.functions import ExtractMonth, ExtractWeekDay, ExtractHour
 
+# Cache timeouts (in seconds)
+ANALYTICS_CACHE_TIMEOUT = 60 * 60  # 1 hour - analytics data doesn't need real-time updates
+
 
 class OperationsAnalyticsService:
-    """Service for operations and resource analytics - queries existing models directly."""
+    """Service for operations and resource analytics - queries existing models directly.
+
+    OPTIMIZATION: All aggregate queries are cached for 1 hour to reduce database load.
+    Cache is keyed by date range to ensure data consistency.
+    """
+
+    @staticmethod
+    def _get_cache_key(prefix, start_date, end_date):
+        """Generate a consistent cache key for date-range queries."""
+        return f"analytics:{prefix}:{start_date}:{end_date}"
 
     @staticmethod
     def get_venue_usage(start_date, end_date):
-        """Venue utilization report."""
+        """Venue utilization report (cached for 1 hour)."""
+        cache_key = OperationsAnalyticsService._get_cache_key('venue_usage', start_date, end_date)
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
+
         from core.domains.events.models import Event
 
         results = Event.objects.filter(
@@ -28,7 +46,7 @@ class OperationsAnalyticsService:
 
         total_bookings = sum(r['booking_count'] for r in results) or 1  # Avoid division by zero
 
-        return [
+        result = [
             {
                 'venue_id': r['venue__id'],
                 'venue_name': r['venue__name'] or 'Unknown Venue',
@@ -42,9 +60,17 @@ class OperationsAnalyticsService:
             for r in results
         ]
 
+        cache.set(cache_key, result, ANALYTICS_CACHE_TIMEOUT)
+        return result
+
     @staticmethod
     def get_calendar_utilization(start_date, end_date):
-        """Peak and off-peak analysis by month and day of week."""
+        """Peak and off-peak analysis by month and day of week (cached for 1 hour)."""
+        cache_key = OperationsAnalyticsService._get_cache_key('calendar_util', start_date, end_date)
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
+
         from core.domains.events.models import Event
 
         # By month
@@ -81,7 +107,7 @@ class OperationsAnalyticsService:
             5: 'Thursday', 6: 'Friday', 7: 'Saturday'
         }
 
-        return {
+        result = {
             'by_month': [
                 {
                     'month': m['month'],
@@ -101,9 +127,17 @@ class OperationsAnalyticsService:
             ]
         }
 
+        cache.set(cache_key, result, ANALYTICS_CACHE_TIMEOUT)
+        return result
+
     @staticmethod
     def get_booking_time_analysis(start_date, end_date):
-        """Analyze when bookings are typically made (hour of day)."""
+        """Analyze when bookings are typically made (hour of day) - cached for 1 hour."""
+        cache_key = OperationsAnalyticsService._get_cache_key('booking_time', start_date, end_date)
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
+
         from core.domains.events.models import Event
 
         results = Event.objects.filter(
@@ -114,7 +148,7 @@ class OperationsAnalyticsService:
             booking_count=Count('id')
         ).order_by('hour')
 
-        return [
+        result = [
             {
                 'hour': r['hour'],
                 'hour_label': f"{r['hour']:02d}:00",
@@ -122,6 +156,9 @@ class OperationsAnalyticsService:
             }
             for r in results
         ]
+
+        cache.set(cache_key, result, ANALYTICS_CACHE_TIMEOUT)
+        return result
 
     @staticmethod
     def get_kitchen_usage_placeholder():

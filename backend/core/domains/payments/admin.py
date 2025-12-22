@@ -189,12 +189,9 @@ class PaymentPlanAdmin(admin.ModelAdmin):
     check_overdue.short_description = "Check for overdue installments"
 
     def suspend_plans(self, request, queryset):
-        """Suspend selected payment plans"""
-        suspended = 0
-        for plan in queryset.filter(status='ACTIVE'):
-            plan.status = 'SUSPENDED'
-            plan.save(update_fields=['status'])
-            suspended += 1
+        """Suspend selected payment plans (optimized with bulk update)"""
+        # Use bulk update instead of individual saves for better performance
+        suspended = queryset.filter(status='ACTIVE').update(status='SUSPENDED')
         self.message_user(request, f"Suspended {suspended} payment plans.")
     suspend_plans.short_description = "Suspend payment plans"
 
@@ -271,13 +268,22 @@ class PaymentInstallmentAdmin(admin.ModelAdmin):
     mark_as_paid.short_description = "Mark as paid"
 
     def waive_installments(self, request, queryset):
-        """Waive selected installments"""
-        waived = 0
-        for installment in queryset.filter(status__in=['PENDING', 'OVERDUE']):
-            installment.status = 'WAIVED'
-            installment.save(update_fields=['status'])
-            installment.payment_plan.update_status()
-            waived += 1
+        """Waive selected installments (partially optimized)"""
+        # Get the installments that will be waived
+        installments_to_waive = queryset.filter(status__in=['PENDING', 'OVERDUE'])
+        waived = installments_to_waive.count()
+
+        # Get unique payment plans that need status updates
+        payment_plan_ids = set(installments_to_waive.values_list('payment_plan_id', flat=True))
+
+        # Bulk update the installment statuses
+        installments_to_waive.update(status='WAIVED')
+
+        # Update each payment plan's status (required for business logic)
+        from .models import PaymentPlan
+        for plan in PaymentPlan.objects.filter(id__in=payment_plan_ids):
+            plan.update_status()
+
         self.message_user(request, f"Waived {waived} installments.")
     waive_installments.short_description = "Waive installments"
 

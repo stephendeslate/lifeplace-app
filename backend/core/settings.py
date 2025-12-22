@@ -137,7 +137,11 @@ if not DATABASE_URL:
         DATABASE_URL = 'postgres://localhost:5432/lifeplace-app'
 
 DATABASES = {
-    'default': dj_database_url.parse(DATABASE_URL)
+    'default': {
+        **dj_database_url.parse(DATABASE_URL),
+        'CONN_MAX_AGE': 600,  # Keep connections alive for 10 minutes
+        'CONN_HEALTH_CHECKS': True,  # Verify connections before use (Django 4.1+)
+    }
 }
 
 
@@ -320,7 +324,7 @@ CACHES = {
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
-            # 'PARSER_CLASS': 'redis.connection.HiredisParser',  # Faster parser - disabled until hiredis is properly configured
+            'PARSER_CLASS': 'redis.connection.HiredisParser',  # 10x faster Redis parsing
             'PICKLE_VERSION': -1,  # Use latest pickle protocol
             'SOCKET_CONNECT_TIMEOUT': 10,  # Increased from 5 to 10 seconds for production
             'SOCKET_TIMEOUT': 10,  # Increased from 5 to 10 seconds for production

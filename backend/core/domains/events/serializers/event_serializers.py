@@ -211,32 +211,52 @@ class EventSerializer(serializers.ModelSerializer):
     
     def get_current_total_amount(self, obj):
         """Get current total amount from invoice or quote (single source of truth)
-        
+
         Returns the final total amount including tax that the client should pay.
         Priority: Invoice total → Quote total → Legacy event.total_price
+
+        OPTIMIZATION: Uses prefetched data when available to avoid N+1 queries.
         """
         try:
             # Priority 1: Most recent invoice (includes tax)
-            latest_invoice = obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at').first()
-            if latest_invoice:
-                return str(latest_invoice.total_amount)  # This should include tax
-            
+            # Use prefetched data if available (set by EventViewSet)
+            if hasattr(obj, '_prefetched_invoices'):
+                invoices = obj._prefetched_invoices
+            else:
+                invoices = list(obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at')[:1])
+
+            if invoices:
+                return str(invoices[0].total_amount)
+
             # Priority 2: Most recent accepted quote (includes tax)
-            latest_quote = obj.quotes.filter(status='ACCEPTED').order_by('-created_at').first()
-            if latest_quote:
-                return str(latest_quote.total_amount)  # This should include tax
-            
+            if hasattr(obj, '_prefetched_quotes'):
+                quotes = obj._prefetched_quotes
+            else:
+                quotes = list(obj.quotes.filter(status='ACCEPTED').order_by('-created_at')[:1])
+
+            if quotes:
+                return str(quotes[0].total_amount)
+
             # Fallback: event.total_price (legacy)
             return str(obj.total_price) if obj.total_price else None
-            
+
         except Exception:
             return str(obj.total_price) if obj.total_price else None
     
     def get_current_quote(self, obj):
-        """Get current quote summary"""
+        """Get current quote summary
+
+        OPTIMIZATION: Uses prefetched data when available to avoid N+1 queries.
+        """
         try:
-            latest_quote = obj.quotes.filter(status='ACCEPTED').order_by('-created_at').first()
-            if latest_quote:
+            # Use prefetched data if available (set by EventViewSet)
+            if hasattr(obj, '_prefetched_quotes'):
+                quotes = obj._prefetched_quotes
+            else:
+                quotes = list(obj.quotes.filter(status='ACCEPTED').order_by('-created_at')[:1])
+
+            if quotes:
+                latest_quote = quotes[0]
                 return {
                     'id': latest_quote.id,
                     'version': latest_quote.version,
@@ -250,10 +270,19 @@ class EventSerializer(serializers.ModelSerializer):
             return None
     
     def get_current_invoice(self, obj):
-        """Get current invoice summary"""
+        """Get current invoice summary
+
+        OPTIMIZATION: Uses prefetched data when available to avoid N+1 queries.
+        """
         try:
-            latest_invoice = obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at').first()
-            if latest_invoice:
+            # Use prefetched data if available (set by EventViewSet)
+            if hasattr(obj, '_prefetched_invoices'):
+                invoices = obj._prefetched_invoices
+            else:
+                invoices = list(obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at')[:1])
+
+            if invoices:
+                latest_invoice = invoices[0]
                 return {
                     'id': latest_invoice.id,
                     'invoice_number': latest_invoice.invoice_number,
