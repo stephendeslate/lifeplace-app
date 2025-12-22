@@ -1,12 +1,20 @@
 # backend/core/domains/users/views.py
 from core.utils.permissions import IsAdmin, IsOwnerOrAdmin
 from core.utils.security import (
-    LoginRateThrottle, 
+    LoginRateThrottle,
     RegistrationRateThrottle,
     validate_email_format,
     validate_password_strength,
     validate_request_data,
     sanitize_input
+)
+from .throttling import (
+    DataAccessThrottle,
+    DataExportThrottle,
+    AccountDeletionThrottle,
+    DataCorrectionThrottle,
+    ProcessingObjectionThrottle,
+    ConsentManagementThrottle,
 )
 from core.utils.security_logging import security_logger, SecurityEventType
 from django.contrib.auth import authenticate
@@ -697,6 +705,7 @@ class DataAccessView(APIView):
     Right to Access - View all personal data
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [DataAccessThrottle]
 
     def get(self, request):
         report = DataSubjectRightsService.generate_data_access_report(request.user)
@@ -727,7 +736,7 @@ class DataExportView(APIView):
     Right to Portability - Export personal data
     """
     permission_classes = [permissions.IsAuthenticated]
-    throttle_scope = 'data_export'  # Limit to 1/day
+    throttle_classes = [DataExportThrottle]  # Limit to 1/day
 
     def get(self, request):
         format = request.query_params.get('format', 'json')
@@ -763,6 +772,7 @@ class AccountDeletionView(APIView):
     Right to Erasure - Delete account
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AccountDeletionThrottle]
 
     def delete(self, request):
         user = request.user
@@ -826,6 +836,7 @@ class DataCorrectionView(APIView):
     Right to Correction - Correct personal data
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [DataCorrectionThrottle]
 
     def patch(self, request):
         corrections = request.data.get('corrections', [])
@@ -866,6 +877,7 @@ class ProcessingObjectionView(APIView):
     Right to Object - Object to processing
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ProcessingObjectionThrottle]
 
     def post(self, request):
         objection_type = request.data.get('objection_type')
@@ -906,6 +918,7 @@ class ConsentListView(APIView):
     View all active consents
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ConsentManagementThrottle]
 
     def get(self, request):
         user = request.user
@@ -939,6 +952,7 @@ class ConsentWithdrawView(APIView):
     Withdraw a specific consent
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ConsentManagementThrottle]
 
     def post(self, request, consent_type):
         user = request.user

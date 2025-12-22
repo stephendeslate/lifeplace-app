@@ -272,6 +272,11 @@ REST_FRAMEWORK = {
         'communications_webhook': '999999/hour' if DEBUG else '200/hour',
         # DPA Compliance throttle rates
         'data_export': '999999/day' if DEBUG else '1/day',  # Limit data exports to 1/day
+        'data_access': '999999/hour' if DEBUG else '10/hour',  # Limit data access requests
+        'account_deletion': '999999/day' if DEBUG else '1/day',  # Limit deletion requests
+        'data_correction': '999999/day' if DEBUG else '5/day',  # Limit correction requests
+        'processing_objection': '999999/day' if DEBUG else '3/day',  # Limit objection requests
+        'consent_management': '999999/hour' if DEBUG else '20/hour',  # Limit consent operations
     },
 }
 

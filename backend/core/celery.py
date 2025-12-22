@@ -138,6 +138,17 @@ app.conf.update(
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'notifications'}
         },
+        # Push notification maintenance tasks
+        'check-push-receipts': {
+            'task': 'core.domains.notifications.tasks.check_push_receipts',
+            'schedule': 15 * 60,  # Every 15 minutes
+            'options': {'queue': 'notifications'}
+        },
+        'cleanup-inactive-push-tokens': {
+            'task': 'core.domains.notifications.tasks.cleanup_inactive_push_tokens',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'notifications'}
+        },
     },
 )
 

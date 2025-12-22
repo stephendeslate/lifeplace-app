@@ -1,15 +1,27 @@
 # core/domains/security/urls.py
 
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import SecurityBreachViewSet
 
 app_name = 'security'
 
-# Security breach management is primarily done through Django Admin
-# API endpoints for programmatic access can be added here as needed
+router = DefaultRouter()
+router.register(r'breaches', SecurityBreachViewSet, basename='breach')
+
 urlpatterns = [
-    # Future endpoints:
-    # path('breaches/', BreachListView.as_view(), name='breach-list'),
-    # path('breaches/<int:pk>/', BreachDetailView.as_view(), name='breach-detail'),
-    # path('breaches/<int:pk>/notify-npc/', NotifyNPCView.as_view(), name='notify-npc'),
-    # path('breaches/<int:pk>/notify-users/', NotifyUsersView.as_view(), name='notify-users'),
+    path('', include(router.urls)),
 ]
+
+# Available endpoints:
+# GET    /api/security/breaches/                    - List all breaches
+# POST   /api/security/breaches/                    - Create new breach
+# GET    /api/security/breaches/{id}/               - Get breach details
+# PUT    /api/security/breaches/{id}/               - Update breach
+# PATCH  /api/security/breaches/{id}/               - Partial update breach
+# DELETE /api/security/breaches/{id}/               - Delete breach
+# POST   /api/security/breaches/{id}/notify-npc/    - Trigger NPC notification
+# POST   /api/security/breaches/{id}/notify-users/  - Trigger user notifications
+# POST   /api/security/breaches/{id}/assess-impact/ - Assess breach impact
+# GET    /api/security/breaches/{id}/timeline/      - Get breach timeline
+# GET    /api/security/breaches/summary/            - Get breaches summary
