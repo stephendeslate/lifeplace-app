@@ -205,12 +205,15 @@ class NotificationService:
             
             if preferences.is_notification_enabled(notification_type, 'in_app'):
                 enabled_methods.append('in_app')
-                
+
             if preferences.is_notification_enabled(notification_type, 'email'):
                 enabled_methods.append('email')
-                
+
             if preferences.is_notification_enabled(notification_type, 'sms'):
                 enabled_methods.append('sms')
+
+            if preferences.is_notification_enabled(notification_type, 'push'):
+                enabled_methods.append('push')
         
         # If no delivery methods are enabled and it's not a system notification, skip
         if not enabled_methods and not notification_type.is_system:
@@ -303,7 +306,12 @@ class NotificationService:
                         NotificationService._send_sms_notification(
                             notification, notification_type, enhanced_context
                         )
-                        
+
+                    elif method == 'push':
+                        NotificationService._send_push_notification(
+                            notification, notification_type, enhanced_context
+                        )
+
                 except Exception as e:
                     logger.error(f"Failed to deliver notification via {method}: {str(e)}")
                     notification.add_delivery_method(method, success=False, error=str(e))
@@ -454,7 +462,82 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Failed to send SMS notification: {str(e)}")
             raise e
-    
+
+    @staticmethod
+    def _send_push_notification(notification, notification_type, context):
+        """Send push notification via Expo Push service"""
+        try:
+            from .models import DevicePushToken
+
+            # Get active push tokens for the recipient
+            push_tokens = DevicePushToken.objects.filter(
+                user=notification.recipient,
+                is_active=True
+            )
+
+            if not push_tokens.exists():
+                logger.debug(f"No active push tokens for user {notification.recipient.id}")
+                return
+
+            # Prepare push data
+            push_data = {
+                'notification_id': str(notification.id),
+                'notification_type': notification_type.code,
+                'category': notification_type.category,
+            }
+
+            if notification.action_url:
+                push_data['action_url'] = notification.action_url
+            if notification.event_id:
+                push_data['event_id'] = str(notification.event_id)
+            if notification.client_id:
+                push_data['client_id'] = str(notification.client_id)
+
+            # Calculate unread badge count
+            unread_count = notification.recipient.notifications.filter(is_read=False).count()
+
+            # Send to all active devices
+            success_count = 0
+            for token in push_tokens:
+                try:
+                    result = PushNotificationService.send_push_notification(
+                        push_token=token.token,
+                        title=notification.title,
+                        body=notification.content[:200] if len(notification.content) > 200 else notification.content,
+                        data=push_data,
+                        badge=unread_count,
+                        priority=notification_type.priority.lower() if notification_type.priority in ['HIGH', 'URGENT'] else 'default',
+                        category_id=notification_type.category,
+                    )
+
+                    if result.get('success'):
+                        token.record_success()
+                        success_count += 1
+                    else:
+                        error = result.get('error', 'Unknown error')
+                        if result.get('permanent_failure'):
+                            token.record_failure(permanent=True)
+                        else:
+                            token.record_failure(permanent=False)
+                        logger.warning(f"Push failed for token {token.id}: {error}")
+
+                except Exception as e:
+                    logger.error(f"Error sending push to token {token.id}: {str(e)}")
+                    token.record_failure(permanent=False)
+
+            if success_count > 0:
+                notification.add_delivery_method('push', success=True)
+                logger.info(f"Push notification sent to {success_count} devices for user {notification.recipient.id}")
+            else:
+                notification.add_delivery_method('push', success=False, error="Failed to deliver to any device")
+
+        except ImportError as e:
+            logger.warning(f"Push notification dependencies not available: {str(e)}")
+            raise Exception("Push service not available")
+        except Exception as e:
+            logger.error(f"Failed to send push notification: {str(e)}")
+            raise e
+
     @staticmethod
     def bulk_action(user_id: int, notification_ids: List[int], action: str):
         """Perform bulk actions on multiple notifications"""
@@ -542,16 +625,16 @@ class NotificationService:
             
             # Update boolean fields
             boolean_fields = [
-                'email_enabled', 'sms_enabled', 'in_app_enabled',
-                'system_email', 'system_sms', 'system_in_app',
-                'event_email', 'event_sms', 'event_in_app',
-                'task_email', 'task_sms', 'task_in_app',
-                'payment_email', 'payment_sms', 'payment_in_app',
-                'client_email', 'client_sms', 'client_in_app',
-                'contract_email', 'contract_sms', 'contract_in_app',
-                'workflow_email', 'workflow_sms', 'workflow_in_app',
-                'communication_email', 'communication_sms', 'communication_in_app',
-                'marketing_email', 'marketing_sms', 'marketing_in_app',
+                'email_enabled', 'sms_enabled', 'in_app_enabled', 'push_enabled',
+                'system_email', 'system_sms', 'system_in_app', 'system_push',
+                'event_email', 'event_sms', 'event_in_app', 'event_push',
+                'task_email', 'task_sms', 'task_in_app', 'task_push',
+                'payment_email', 'payment_sms', 'payment_in_app', 'payment_push',
+                'client_email', 'client_sms', 'client_in_app', 'client_push',
+                'contract_email', 'contract_sms', 'contract_in_app', 'contract_push',
+                'workflow_email', 'workflow_sms', 'workflow_in_app', 'workflow_push',
+                'communication_email', 'communication_sms', 'communication_in_app', 'communication_push',
+                'marketing_email', 'marketing_sms', 'marketing_in_app', 'marketing_push',
                 'quiet_hours_enabled'
             ]
             
@@ -671,7 +754,7 @@ class NotificationStatsService:
         
         # Delivery rates by method
         delivery_rates = {}
-        for method in ['email', 'sms', 'in_app']:
+        for method in ['email', 'sms', 'in_app', 'push']:
             successful = notifications.filter(delivered_via__contains=[method]).count()
             attempted = notifications.filter(
                 delivery_attempts__has_key=method
@@ -713,7 +796,7 @@ class NotificationStatsService:
         
         # Stats by delivery method
         delivery_stats = {}
-        for method in ['email', 'sms', 'in_app']:
+        for method in ['email', 'sms', 'in_app', 'push']:
             delivered = notifications.filter(delivered_via__contains=[method]).count()
             delivery_stats[method] = delivered
         
@@ -935,7 +1018,372 @@ class NotificationDigestService:
 
             if not record:
                 raise Exception("Failed to send digest SMS")
-                
+
         except Exception as e:
             logger.error(f"Failed to send SMS digest: {str(e)}")
             raise e
+
+
+class PushNotificationService:
+    """Service for handling Expo push notifications"""
+
+    _client = None
+
+    @classmethod
+    def get_push_client(cls):
+        """Get or create Expo PushClient (connection pooled)"""
+        if cls._client is None:
+            try:
+                from exponent_server_sdk import PushClient
+                cls._client = PushClient()
+            except ImportError:
+                logger.error("exponent-server-sdk not installed")
+                raise ImportError("exponent-server-sdk package is required for push notifications")
+        return cls._client
+
+    @staticmethod
+    def is_valid_expo_token(token: str) -> bool:
+        """Validate Expo push token format"""
+        if not token or not isinstance(token, str):
+            return False
+        # Expo tokens are in format: ExponentPushToken[xxxx] or ExpoPushToken[xxxx]
+        return (
+            token.startswith('ExponentPushToken[') or
+            token.startswith('ExpoPushToken[')
+        ) and token.endswith(']')
+
+    @staticmethod
+    def get_user_push_tokens(user_id: int):
+        """Get all active push tokens for a user"""
+        from .models import DevicePushToken
+        return DevicePushToken.objects.filter(
+            user_id=user_id,
+            is_active=True
+        ).order_by('-last_used_at')
+
+    @staticmethod
+    def register_token(
+        user,
+        token: str,
+        device_type: str = 'ios',
+        device_id: str = '',
+        device_name: str = '',
+        app_version: str = ''
+    ):
+        """Register or update a push token for a user"""
+        from .models import DevicePushToken
+
+        if not PushNotificationService.is_valid_expo_token(token):
+            raise ValueError(f"Invalid Expo push token format: {token}")
+
+        # Try to find existing token
+        existing = DevicePushToken.objects.filter(user=user, token=token).first()
+
+        if existing:
+            # Reactivate and update existing token
+            existing.is_active = True
+            existing.device_type = device_type
+            existing.device_id = device_id or existing.device_id
+            existing.device_name = device_name or existing.device_name
+            existing.app_version = app_version or existing.app_version
+            existing.failure_count = 0
+            existing.save()
+            logger.info(f"Reactivated push token for user {user.id}")
+            return existing
+
+        # If same device_id exists with different token, deactivate old one
+        if device_id:
+            DevicePushToken.objects.filter(
+                user=user,
+                device_id=device_id
+            ).exclude(token=token).update(is_active=False)
+
+        # Create new token
+        push_token = DevicePushToken.objects.create(
+            user=user,
+            token=token,
+            device_type=device_type,
+            device_id=device_id,
+            device_name=device_name,
+            app_version=app_version,
+        )
+        logger.info(f"Registered new push token for user {user.id}")
+        return push_token
+
+    @staticmethod
+    def unregister_token(user, token: str = None, device_id: str = None):
+        """Unregister a push token by token value or device_id"""
+        from .models import DevicePushToken
+
+        if not token and not device_id:
+            raise ValueError("Either token or device_id must be provided")
+
+        query = DevicePushToken.objects.filter(user=user)
+
+        if token:
+            query = query.filter(token=token)
+        elif device_id:
+            query = query.filter(device_id=device_id)
+
+        count = query.update(is_active=False)
+        logger.info(f"Deactivated {count} push token(s) for user {user.id}")
+        return count
+
+    @classmethod
+    def send_push_notification(
+        cls,
+        push_token: str,
+        title: str,
+        body: str,
+        data: Optional[Dict[str, Any]] = None,
+        badge: Optional[int] = None,
+        sound: str = 'default',
+        priority: str = 'default',
+        channel_id: str = 'default',
+        category_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Send a push notification to a single device
+
+        Args:
+            push_token: Expo push token
+            title: Notification title
+            body: Notification body
+            data: Custom data payload
+            badge: Badge count (iOS)
+            sound: Sound to play
+            priority: 'default', 'normal', or 'high'
+            channel_id: Android notification channel
+            category_id: iOS category identifier
+
+        Returns:
+            Dict with 'success', 'ticket_id', 'error', 'permanent_failure' keys
+        """
+        try:
+            from exponent_server_sdk import (
+                PushClient,
+                PushMessage,
+                PushServerError,
+                DeviceNotRegisteredError,
+            )
+
+            if not cls.is_valid_expo_token(push_token):
+                return {
+                    'success': False,
+                    'error': 'Invalid token format',
+                    'permanent_failure': True
+                }
+
+            client = cls.get_push_client()
+
+            message = PushMessage(
+                to=push_token,
+                title=title,
+                body=body,
+                data=data or {},
+                badge=badge,
+                sound=sound,
+                priority=priority,
+                channel_id=channel_id,
+                category_id=category_id,
+            )
+
+            try:
+                response = client.publish(message)
+                response.validate_response()
+
+                # Cache ticket ID for receipt checking
+                if response.push_message and hasattr(response, 'id'):
+                    cls._cache_ticket(response.id, push_token)
+
+                return {
+                    'success': True,
+                    'ticket_id': getattr(response, 'id', None),
+                    'error': None,
+                    'permanent_failure': False
+                }
+
+            except DeviceNotRegisteredError:
+                logger.warning(f"Device not registered: {push_token[:30]}...")
+                return {
+                    'success': False,
+                    'error': 'Device not registered',
+                    'permanent_failure': True
+                }
+
+            except PushServerError as e:
+                logger.error(f"Push server error: {str(e)}")
+                return {
+                    'success': False,
+                    'error': str(e),
+                    'permanent_failure': False
+                }
+
+        except ImportError:
+            logger.error("exponent-server-sdk not installed")
+            return {
+                'success': False,
+                'error': 'Push service not configured',
+                'permanent_failure': False
+            }
+        except Exception as e:
+            logger.error(f"Unexpected error sending push: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e),
+                'permanent_failure': False
+            }
+
+    @classmethod
+    def send_push_to_user(
+        cls,
+        user_id: int,
+        title: str,
+        body: str,
+        data: Optional[Dict[str, Any]] = None,
+        badge: Optional[int] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Send push notification to all of a user's active devices
+
+        Returns:
+            Dict with 'total_devices', 'successful', 'failed', 'results' keys
+        """
+        tokens = cls.get_user_push_tokens(user_id)
+
+        results = {
+            'total_devices': tokens.count(),
+            'successful': 0,
+            'failed': 0,
+            'results': []
+        }
+
+        for token in tokens:
+            result = cls.send_push_notification(
+                push_token=token.token,
+                title=title,
+                body=body,
+                data=data,
+                badge=badge,
+                **kwargs
+            )
+
+            results['results'].append({
+                'device_id': token.device_id,
+                'device_type': token.device_type,
+                **result
+            })
+
+            if result['success']:
+                results['successful'] += 1
+                token.record_success()
+            else:
+                results['failed'] += 1
+                token.record_failure(permanent=result.get('permanent_failure', False))
+
+        return results
+
+    @staticmethod
+    def _cache_ticket(ticket_id: str, push_token: str):
+        """Cache push ticket for later receipt checking"""
+        try:
+            from django.core.cache import cache
+            cache_key = f"push_ticket:{ticket_id}"
+            cache.set(cache_key, push_token, timeout=86400)  # 24 hours
+        except Exception as e:
+            logger.warning(f"Failed to cache push ticket: {str(e)}")
+
+    @classmethod
+    def check_receipts(cls, ticket_ids: List[str]) -> Dict[str, Any]:
+        """
+        Check push notification receipts for delivery status
+
+        Args:
+            ticket_ids: List of ticket IDs to check
+
+        Returns:
+            Dict mapping ticket_id to receipt status
+        """
+        try:
+            from exponent_server_sdk import PushClient
+            from django.core.cache import cache
+
+            client = cls.get_push_client()
+            results = {}
+
+            # Batch check receipts
+            try:
+                receipts = client.get_receipts(ticket_ids)
+
+                for ticket_id, receipt in receipts.items():
+                    # Get cached token for this ticket
+                    cache_key = f"push_ticket:{ticket_id}"
+                    push_token = cache.get(cache_key)
+
+                    if receipt.status == 'ok':
+                        results[ticket_id] = {
+                            'status': 'delivered',
+                            'push_token': push_token
+                        }
+                    elif receipt.status == 'error':
+                        results[ticket_id] = {
+                            'status': 'failed',
+                            'error': receipt.message,
+                            'details': getattr(receipt, 'details', None),
+                            'push_token': push_token
+                        }
+
+                        # Handle DeviceNotRegistered error
+                        if receipt.details and receipt.details.get('error') == 'DeviceNotRegistered':
+                            if push_token:
+                                cls._deactivate_token_by_value(push_token)
+
+                    # Clean up cache
+                    cache.delete(cache_key)
+
+            except Exception as e:
+                logger.error(f"Error checking receipts: {str(e)}")
+
+            return results
+
+        except ImportError:
+            logger.error("exponent-server-sdk not installed")
+            return {}
+
+    @staticmethod
+    def _deactivate_token_by_value(token: str):
+        """Deactivate a push token by its value"""
+        from .models import DevicePushToken
+        count = DevicePushToken.objects.filter(
+            token=token,
+            is_active=True
+        ).update(is_active=False)
+        if count > 0:
+            logger.info(f"Deactivated unregistered push token: {token[:30]}...")
+
+    @staticmethod
+    def cleanup_inactive_tokens(days: int = 90) -> int:
+        """
+        Clean up inactive or stale push tokens
+
+        Args:
+            days: Number of days of inactivity before cleanup
+
+        Returns:
+            Number of tokens deleted
+        """
+        from .models import DevicePushToken
+        cutoff_date = timezone.now() - timedelta(days=days)
+
+        # Delete tokens that are:
+        # 1. Inactive (deactivated)
+        # 2. OR haven't been used in X days
+        deleted_count, _ = DevicePushToken.objects.filter(
+            Q(is_active=False, updated_at__lt=cutoff_date) |
+            Q(last_used_at__lt=cutoff_date) |
+            Q(last_used_at__isnull=True, created_at__lt=cutoff_date)
+        ).delete()
+
+        logger.info(f"Cleaned up {deleted_count} stale push tokens")
+        return deleted_count
