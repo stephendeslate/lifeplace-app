@@ -82,3 +82,6 @@ honcho==1.1.0
 
 # Error tracking and monitoring (production)
 sentry-sdk[django]==2.19.2
+
+# Push notifications (Expo)
+exponent-server-sdk==2.1.0

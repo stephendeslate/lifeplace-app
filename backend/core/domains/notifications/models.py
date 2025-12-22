@@ -47,6 +47,7 @@ class NotificationType(BaseModel):
     is_system = models.BooleanField(default=False, help_text="System notifications cannot be disabled")
     supports_email = models.BooleanField(default=True)
     supports_sms = models.BooleanField(default=False)
+    supports_push = models.BooleanField(default=True, help_text="Whether this notification type can be sent via push")
     auto_read_after_days = models.PositiveIntegerField(null=True, blank=True)
     
     class Meta:
@@ -68,39 +69,48 @@ class NotificationPreference(BaseModel):
     email_enabled = models.BooleanField(default=True)
     sms_enabled = models.BooleanField(default=False)
     in_app_enabled = models.BooleanField(default=True)
+    push_enabled = models.BooleanField(default=True, help_text="Enable push notifications to mobile devices")
     
     # Delivery preferences by category
     system_email = models.BooleanField(default=True)
     system_sms = models.BooleanField(default=False)
     system_in_app = models.BooleanField(default=True)
-    
+    system_push = models.BooleanField(default=True)
+
     event_email = models.BooleanField(default=True)
     event_sms = models.BooleanField(default=False)
     event_in_app = models.BooleanField(default=True)
-    
+    event_push = models.BooleanField(default=True)
+
     task_email = models.BooleanField(default=True)
     task_sms = models.BooleanField(default=False)
     task_in_app = models.BooleanField(default=True)
-    
+    task_push = models.BooleanField(default=True)
+
     payment_email = models.BooleanField(default=True)
     payment_sms = models.BooleanField(default=True)  # Important for payments
     payment_in_app = models.BooleanField(default=True)
-    
+    payment_push = models.BooleanField(default=True)  # Important for payments
+
     client_email = models.BooleanField(default=True)
     client_sms = models.BooleanField(default=False)
     client_in_app = models.BooleanField(default=True)
-    
+    client_push = models.BooleanField(default=True)
+
     contract_email = models.BooleanField(default=True)
     contract_sms = models.BooleanField(default=False)
     contract_in_app = models.BooleanField(default=True)
-    
+    contract_push = models.BooleanField(default=True)
+
     workflow_email = models.BooleanField(default=False)  # Less critical
     workflow_sms = models.BooleanField(default=False)
     workflow_in_app = models.BooleanField(default=True)
-    
+    workflow_push = models.BooleanField(default=False)  # Less critical
+
     communication_email = models.BooleanField(default=False)
     communication_sms = models.BooleanField(default=False)
     communication_in_app = models.BooleanField(default=True)
+    communication_push = models.BooleanField(default=True)
 
     # Marketing preferences (opt-in only for GDPR/CAN-SPAM compliance)
     marketing_email = models.BooleanField(
@@ -112,6 +122,10 @@ class NotificationPreference(BaseModel):
         help_text="User has explicitly consented to receive marketing SMS"
     )
     marketing_in_app = models.BooleanField(default=True)
+    marketing_push = models.BooleanField(
+        default=False,
+        help_text="User has explicitly consented to receive marketing push notifications"
+    )
 
     # Advanced preferences
     quiet_hours_enabled = models.BooleanField(default=False)
@@ -150,13 +164,15 @@ class NotificationPreference(BaseModel):
         # Check if type is specifically disabled
         if self.disabled_types.filter(id=notification_type.id).exists():
             return False
-            
+
         # Check if delivery method is supported by notification type
         if method == 'email' and not notification_type.supports_email:
             return False
         if method == 'sms' and not notification_type.supports_sms:
             return False
-            
+        if method == 'push' and not getattr(notification_type, 'supports_push', True):
+            return False
+
         # Check category and global preferences
         return self.is_delivery_method_enabled(notification_type.category, method)
 
@@ -279,6 +295,103 @@ class NotificationDigest(BaseModel):
     class Meta:
         ordering = ['-created_at']
         unique_together = [['user', 'frequency', 'period_start']]
-    
+
     def __str__(self):
         return f"{self.frequency} digest for {self.user.email} ({self.notification_count} notifications)"
+
+
+class DevicePushToken(BaseModel):
+    """Stores Expo push tokens for user devices"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='push_tokens'
+    )
+
+    # Expo Push Token (format: ExponentPushToken[xxxx] or ExpoPushToken[xxxx])
+    token = models.CharField(
+        max_length=255,
+        db_index=True,
+        help_text="Expo push token (ExponentPushToken[xxx])"
+    )
+
+    # Device identification
+    device_id = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Unique device identifier for token management"
+    )
+    device_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('ios', 'iOS'),
+            ('android', 'Android'),
+            ('web', 'Web'),
+        ],
+        default='ios'
+    )
+    device_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="User-friendly device name (e.g., 'John's iPhone')"
+    )
+
+    # Status tracking
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Set to False when DeviceNotRegisteredError is received"
+    )
+    last_used_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last time a push was successfully sent to this device"
+    )
+    failure_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Consecutive failure count for automatic deactivation"
+    )
+
+    # App context
+    app_version = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="App version when token was registered"
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = [['user', 'token']]
+        indexes = [
+            models.Index(fields=['user', 'is_active'], name='notif_push_user_active_idx'),
+            models.Index(fields=['token'], name='notif_push_token_idx'),
+        ]
+
+    def __str__(self):
+        return f"Push token for {self.user.email} ({self.device_type})"
+
+    def deactivate(self, reason: str = None):
+        """Deactivate token (e.g., when device is unregistered)"""
+        import logging
+        logger = logging.getLogger(__name__)
+        self.is_active = False
+        self.save(update_fields=['is_active', 'updated_at'])
+        logger.info(f"Deactivated push token {self.id} for user {self.user_id}: {reason}")
+
+    def record_success(self):
+        """Record successful push delivery"""
+        from django.utils import timezone
+        self.last_used_at = timezone.now()
+        self.failure_count = 0
+        self.save(update_fields=['last_used_at', 'failure_count', 'updated_at'])
+
+    def record_failure(self, permanent: bool = False):
+        """Record push delivery failure"""
+        if permanent:
+            self.deactivate(reason="Permanent delivery failure")
+        else:
+            self.failure_count += 1
+            # Auto-deactivate after 5 consecutive failures
+            if self.failure_count >= 5:
+                self.deactivate(reason="Too many consecutive failures")
+            else:
+                self.save(update_fields=['failure_count', 'updated_at'])
