@@ -12,6 +12,7 @@ A complete step-by-step guide for building the LifePlace mobile application usin
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
+   - [1.5 Development Workflow: Expo Go vs EAS Builds](#15-development-workflow-expo-go-vs-eas-builds) ⭐ **Read First**
 2. [Environment Setup (macOS)](#2-environment-setup-macos)
 3. [Project Initialization](#3-project-initialization)
 4. [Project Structure](#4-project-structure)
@@ -95,6 +96,240 @@ Key API domains:
 | Storage | Expo SecureStore | SDK 52 | Secure token storage |
 | Payments | Stripe React Native | Latest | Payment processing |
 | UI | Custom Components | - | Following STYLING_GUIDE.md |
+
+### 1.5 Development Workflow: Expo Go vs EAS Builds
+
+> **IMPORTANT**: Understanding when to use Expo Go vs EAS Development Builds is critical for efficient development. Read this section before starting.
+
+#### What's the Difference?
+
+| Aspect | Expo Go | EAS Development Build |
+|--------|---------|----------------------|
+| **What it is** | Pre-built app from App Store/Play Store | Custom app binary compiled for your project |
+| **Setup time** | Instant (download and scan QR) | 10-15 minutes per build |
+| **Hot reload** | ~1 second | ~1 second (after initial build) |
+| **Native modules** | Limited to Expo's built-in set | Any native module you need |
+| **Best for** | Learning, prototyping, UI development | Full features, production testing |
+
+#### When to Use Each
+
+```
+Development Timeline:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 1: Expo Go              PHASE 2: EAS Build           PHASE 3: Production
+  (Weeks 1-2)                   (Weeks 3-4)                  (Final)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ Project setup              ✅ Stripe payments            ✅ App Store build
+  ✅ Navigation/routing         ✅ Push notifications         ✅ Security hardening
+  ✅ All UI screens             ✅ SSL certificate pinning    ✅ Final testing
+  ✅ Theme/styling              ✅ Root/jailbreak detection
+  ✅ Forms & validation         ✅ Biometric authentication
+  ✅ API integration            ✅ Secure token storage
+  ✅ State management           ✅ Production API testing
+  ✅ Booking flow (UI)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Fast iteration                Full native features         Ship to users
+  (scan QR, instant reload)     (rebuild only for new
+                                 native dependencies)
+```
+
+#### Feature Compatibility Matrix
+
+| Feature | Expo Go | EAS Build | When You'll Need It |
+|---------|:-------:|:---------:|---------------------|
+| Navigation & Routing | ✅ | ✅ | Day 1 |
+| UI Components | ✅ | ✅ | Day 1 |
+| API Calls (Axios) | ✅ | ✅ | Day 1 |
+| TanStack Query | ✅ | ✅ | Day 1 |
+| Zustand State | ✅ | ✅ | Day 1 |
+| React Hook Form | ✅ | ✅ | Day 1 |
+| AsyncStorage | ✅ | ✅ | Week 1 |
+| Expo SecureStore | ⚠️ Partial | ✅ | Week 2 (auth tokens) |
+| Expo Image | ✅ | ✅ | Week 1 |
+| Expo LinearGradient | ✅ | ✅ | Week 1 |
+| **Stripe Payments** | ❌ | ✅ | Week 3 (Payment step) |
+| **Push Notifications** | ⚠️ Limited | ✅ | Week 3 |
+| **SSL Certificate Pinning** | ❌ | ✅ | Week 4 (Security) |
+| **Root/Jailbreak Detection** | ❌ | ✅ | Week 4 (Security) |
+| **Biometric Auth** | ❌ | ✅ | Week 3-4 |
+| WebView (Contracts) | ✅ | ✅ | Week 2 |
+| Signature Capture | ⚠️ Check lib | ✅ | Week 2 |
+
+**Legend:** ✅ Full support | ⚠️ Partial/Limited | ❌ Not available
+
+#### Recommended Development Approach
+
+**Phase 1: Start with Expo Go (Weeks 1-2)**
+
+```bash
+# Start development server
+cd /Users/user/Desktop/lifeplace-app/mobile-app
+npx expo start
+
+# Scan QR code with Expo Go app on your phone
+# Changes reload in ~1 second
+```
+
+Build these features first:
+1. All navigation structure (`app/` directory)
+2. All UI screens and components
+3. Theme system and styling
+4. Form validation
+5. API integration layer
+6. Authentication flow (UI only, mock secure storage)
+7. Booking flow (all steps except payment)
+8. Event list and detail screens
+9. Profile screens
+
+**Phase 2: Transition to EAS Build (Week 3)**
+
+Switch to EAS when you need to implement:
+- Stripe payment processing
+- Push notifications
+- Secure token storage (production-ready)
+- Any feature marked ❌ in the table above
+
+```bash
+# One-time setup
+npm install -g eas-cli
+eas login
+eas build:configure
+
+# Create development builds (10-15 min each)
+eas build --profile development --platform ios
+eas build --profile development --platform android
+
+# After build completes, install on device, then:
+npx expo start --dev-client
+```
+
+**Phase 3: Security & Production (Week 4+)**
+
+With EAS builds, implement:
+- SSL certificate pinning
+- Root/jailbreak detection
+- Biometric authentication
+- Production API endpoints
+- Final security hardening
+
+#### Handling Features That Require EAS
+
+For features that won't work in Expo Go, use conditional checks to prevent crashes:
+
+```typescript
+// src/utils/platform.ts
+import Constants from 'expo-constants';
+
+/**
+ * Returns true if running in a custom development build (EAS) or production.
+ * Returns false if running in Expo Go.
+ */
+export const isNativeBuild = (): boolean => {
+  return Constants.appOwnership !== 'expo';
+};
+
+/**
+ * Returns true if running in Expo Go (limited native module support).
+ */
+export const isExpoGo = (): boolean => {
+  return Constants.appOwnership === 'expo';
+};
+```
+
+```typescript
+// src/utils/security.ts
+import { isExpoGo } from './platform';
+
+export const initializeSecurity = async (): Promise<void> => {
+  if (isExpoGo()) {
+    console.warn('⚠️ Security features disabled in Expo Go. Use EAS build for full security.');
+    return;
+  }
+
+  // These will only run in EAS builds
+  await initSSLPinning();
+  await initRootDetection();
+  await initBiometrics();
+};
+```
+
+```typescript
+// src/hooks/usePayment.ts
+import { isExpoGo } from '@/utils/platform';
+
+export const usePayment = () => {
+  // Mock implementation for Expo Go development
+  if (isExpoGo()) {
+    return {
+      initPaymentSheet: async () => {
+        console.log('💳 [MOCK] Payment sheet would open here');
+        return { error: null };
+      },
+      presentPaymentSheet: async () => {
+        console.log('💳 [MOCK] Payment confirmed');
+        return { error: null };
+      },
+      loading: false,
+    };
+  }
+
+  // Real Stripe implementation for EAS builds
+  return useStripePayment();
+};
+```
+
+#### Quick Reference: Development Commands
+
+```bash
+# ─────────────────────────────────────────────────────────
+# EXPO GO DEVELOPMENT (Phase 1)
+# ─────────────────────────────────────────────────────────
+npx expo start                    # Start dev server
+npx expo start --clear            # Start with cache cleared
+npx expo start --ios              # Open in iOS Simulator
+npx expo start --android          # Open in Android Emulator
+
+# ─────────────────────────────────────────────────────────
+# EAS BUILD SETUP (One-time, Phase 2)
+# ─────────────────────────────────────────────────────────
+npm install -g eas-cli            # Install EAS CLI
+eas login                         # Login to Expo account
+eas build:configure               # Create eas.json config
+
+# ─────────────────────────────────────────────────────────
+# EAS DEVELOPMENT BUILDS
+# ─────────────────────────────────────────────────────────
+eas build --profile development --platform ios      # Build iOS (~15 min)
+eas build --profile development --platform android  # Build Android (~10 min)
+eas build --profile development --platform all      # Build both
+
+# ─────────────────────────────────────────────────────────
+# EAS BUILD DEVELOPMENT (Phase 2+)
+# ─────────────────────────────────────────────────────────
+npx expo start --dev-client       # Start dev server for EAS builds
+
+# ─────────────────────────────────────────────────────────
+# PRODUCTION BUILDS (Phase 3)
+# ─────────────────────────────────────────────────────────
+eas build --profile production --platform ios       # App Store build
+eas build --profile production --platform android   # Play Store build
+eas submit --platform ios                           # Submit to App Store
+eas submit --platform android                       # Submit to Play Store
+```
+
+#### When to Rebuild EAS Builds
+
+You only need to rebuild when:
+- ✅ Adding a NEW native dependency (e.g., `npx expo install expo-camera`)
+- ✅ Updating native configuration in `app.json`
+- ✅ Changing iOS/Android specific settings
+- ✅ Updating Expo SDK version
+
+You do NOT need to rebuild for:
+- ❌ JavaScript/TypeScript code changes (hot reload works)
+- ❌ Adding pure JavaScript packages
+- ❌ Styling changes
+- ❌ API endpoint changes
 
 ---
 
