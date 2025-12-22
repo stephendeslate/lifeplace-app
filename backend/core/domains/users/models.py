@@ -169,3 +169,237 @@ class PasswordResetToken(BaseModel):
 
     def __str__(self):
         return f"Password reset token for {self.user.email}"
+
+
+class ConsentRecord(BaseModel):
+    """
+    Immutable audit trail of consent grants and withdrawals.
+    Each record represents a single consent action (grant or withdraw).
+    DPA Compliance: Sec. 12 - Consent requirements
+    """
+
+    CONSENT_TYPE_CHOICES = [
+        ('MARKETING_EMAIL', 'Marketing Email'),
+        ('MARKETING_SMS', 'Marketing SMS'),
+        ('MARKETING_PUSH', 'Marketing Push Notifications'),
+        ('ANALYTICS', 'Usage Analytics'),
+        ('THIRD_PARTY_SHARING', 'Third-Party Sharing'),
+        ('SENSITIVE_DATA', 'Sensitive Personal Information Processing'),
+        ('PRIVACY_POLICY', 'Privacy Policy Acceptance'),
+        ('TERMS_OF_SERVICE', 'Terms of Service Acceptance'),
+    ]
+
+    ACTION_CHOICES = [
+        ('GRANT', 'Consent Granted'),
+        ('WITHDRAW', 'Consent Withdrawn'),
+        ('UPDATE', 'Consent Updated'),
+    ]
+
+    SOURCE_CHOICES = [
+        ('REGISTRATION', 'Registration'),
+        ('SETTINGS', 'Settings Change'),
+        ('PRIVACY_DASHBOARD', 'Privacy Dashboard'),
+        ('API', 'API Request'),
+        ('ADMIN', 'Admin Action'),
+    ]
+
+    user = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='consent_records'
+    )
+
+    consent_type = models.CharField(max_length=30, choices=CONSENT_TYPE_CHOICES)
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+
+    # The actual text the user consented to (for legal proof)
+    consent_text = models.TextField(
+        blank=True,
+        help_text="The exact text shown to user at time of consent"
+    )
+
+    # Version tracking
+    privacy_policy_version = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Privacy policy version at time of consent"
+    )
+
+    # Source and context
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='SETTINGS')
+
+    # Request metadata (for audit)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    device_type = models.CharField(max_length=20, blank=True)  # ios, android, web
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'consent_type', '-created_at']),
+            models.Index(fields=['user', '-created_at']),
+        ]
+        verbose_name = 'Consent Record'
+        verbose_name_plural = 'Consent Records'
+
+    def __str__(self):
+        return f"{self.user.email} - {self.consent_type} - {self.action}"
+
+    @classmethod
+    def get_current_consent(cls, user, consent_type):
+        """Get the most recent consent record for a user and type"""
+        return cls.objects.filter(
+            user=user,
+            consent_type=consent_type
+        ).order_by('-created_at').first()
+
+    @classmethod
+    def is_consented(cls, user, consent_type):
+        """Check if user has active consent for a type"""
+        record = cls.get_current_consent(user, consent_type)
+        return record and record.action == 'GRANT'
+
+    @classmethod
+    def record_consent(cls, user, consent_type, granted, request=None, source='SETTINGS', consent_text=''):
+        """Record a consent action"""
+        return cls.objects.create(
+            user=user,
+            consent_type=consent_type,
+            action='GRANT' if granted else 'WITHDRAW',
+            consent_text=consent_text,
+            source=source,
+            ip_address=cls._get_client_ip(request) if request else None,
+            user_agent=request.META.get('HTTP_USER_AGENT', '') if request else '',
+            device_type=cls._get_device_type(request) if request else '',
+        )
+
+    @staticmethod
+    def _get_client_ip(request):
+        """Extract client IP from request"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR')
+
+    @staticmethod
+    def _get_device_type(request):
+        """Determine device type from user agent"""
+        ua = request.META.get('HTTP_USER_AGENT', '').lower()
+        if 'iphone' in ua or 'ipad' in ua:
+            return 'ios'
+        elif 'android' in ua:
+            return 'android'
+        return 'web'
+
+
+class PrivacyRequest(BaseModel):
+    """
+    Track Data Subject Rights requests per DPA requirements.
+    Response timeframe: 30 working days (extendable by 15 days).
+    """
+
+    REQUEST_TYPE_CHOICES = [
+        ('ACCESS', 'Data Access'),
+        ('EXPORT', 'Data Export/Portability'),
+        ('DELETION', 'Account Deletion/Erasure'),
+        ('CORRECTION', 'Data Correction'),
+        ('OBJECTION', 'Processing Objection'),
+    ]
+
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('PROCESSING', 'Processing'),
+        ('COMPLETED', 'Completed'),
+        ('REJECTED', 'Rejected'),
+        ('CANCELLED', 'Cancelled by User'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    user = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,  # Keep record even if user deleted
+        null=True,
+        related_name='privacy_requests'
+    )
+    user_email = models.EmailField(
+        help_text="Preserved for audit even after user deletion"
+    )
+
+    request_type = models.CharField(max_length=20, choices=REQUEST_TYPE_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+
+    # Request details
+    request_data = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Additional data submitted with request (e.g., corrections)"
+    )
+
+    # Response details
+    response_data = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Result data (e.g., export download URL)"
+    )
+    rejection_reason = models.TextField(blank=True)
+
+    # Processing
+    processed_at = models.DateTimeField(null=True, blank=True)
+    processed_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='processed_privacy_requests'
+    )
+
+    # For deletion requests - track what was deleted
+    deletion_summary = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Summary of deleted, anonymized, and retained data"
+    )
+
+    # Audit
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['request_type', 'status']),
+        ]
+        verbose_name = 'Privacy Request'
+        verbose_name_plural = 'Privacy Requests'
+
+    def __str__(self):
+        return f"{self.request_type} - {self.user_email} - {self.status}"
+
+    def days_since_submission(self):
+        """Calculate working days since submission"""
+        delta = timezone.now() - self.created_at
+        return delta.days
+
+    def is_overdue(self):
+        """Check if 30 working day deadline is passed"""
+        return self.days_since_submission() > 30 and self.status in ['PENDING', 'PROCESSING']
+
+    def complete(self, processed_by=None, response_data=None):
+        """Mark request as completed"""
+        self.status = 'COMPLETED'
+        self.processed_at = timezone.now()
+        self.processed_by = processed_by
+        if response_data:
+            self.response_data = response_data
+        self.save()
+
+    def reject(self, reason, processed_by=None):
+        """Mark request as rejected"""
+        self.status = 'REJECTED'
+        self.rejection_reason = reason
+        self.processed_at = timezone.now()
+        self.processed_by = processed_by
+        self.save()

@@ -47,6 +47,7 @@ app.conf.update(
         'core.domains.contracts.tasks.*': {'queue': 'contracts'},
         'core.domains.questionnaires.tasks.*': {'queue': 'events'},
         'core.domains.sales.tasks.*': {'queue': 'sales'},
+        'core.domains.security.tasks.*': {'queue': 'notifications'},
         'sales.*': {'queue': 'sales'},
     },
     
@@ -125,6 +126,17 @@ app.conf.update(
             'task': 'core.domains.questionnaires.tasks.schedule_questionnaire_reminders',
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'events'}
+        },
+        # Security breach monitoring tasks
+        'check-breach-notification-deadlines': {
+            'task': 'core.domains.security.tasks.check_notification_deadlines',
+            'schedule': 60 * 60,  # Hourly
+            'options': {'queue': 'notifications'}
+        },
+        'send-daily-breach-summary': {
+            'task': 'core.domains.security.tasks.send_daily_breach_summary',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'notifications'}
         },
     },
 )

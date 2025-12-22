@@ -389,3 +389,69 @@ class LegalDocument(BaseModel):
     @classmethod
     def get_privacy_policy(cls):
         return cls.get_document('PRIVACY_POLICY')
+
+
+class MobileAppVersion(BaseModel):
+    """Mobile app version configuration per platform"""
+
+    PLATFORM_CHOICES = [
+        ('ios', 'iOS'),
+        ('android', 'Android'),
+        ('all', 'All Platforms'),
+    ]
+
+    platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES)
+
+    # Version numbers (semver format)
+    minimum_required_version = models.CharField(
+        max_length=20,
+        help_text="Minimum version allowed (force update below this)"
+    )
+    recommended_version = models.CharField(
+        max_length=20,
+        help_text="Recommended version (soft prompt to update)"
+    )
+    latest_version = models.CharField(
+        max_length=20,
+        help_text="Latest available version"
+    )
+
+    # Store URLs
+    ios_store_url = models.URLField(blank=True)
+    android_store_url = models.URLField(blank=True)
+
+    # Update messages
+    update_title = models.CharField(max_length=100, default="Update Available")
+    update_message = models.TextField(default="A new version is available with improvements.")
+    force_title = models.CharField(max_length=100, default="Update Required")
+    force_message = models.TextField(default="Please update to continue using the app.")
+
+    # Deprecation
+    deprecation_date = models.DateField(null=True, blank=True)
+    sunset_date = models.DateField(null=True, blank=True)
+    deprecation_message = models.TextField(blank=True)
+
+    # Maintenance mode
+    is_maintenance_mode = models.BooleanField(default=False)
+    maintenance_message = models.TextField(blank=True)
+    maintenance_end = models.DateTimeField(null=True, blank=True)
+
+    # Feature flags (JSON for flexibility)
+    feature_flags = models.JSONField(default=dict, blank=True)
+
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['platform'],
+                condition=models.Q(is_active=True),
+                name='unique_active_platform_config'
+            )
+        ]
+        verbose_name = "Mobile App Version"
+        verbose_name_plural = "Mobile App Versions"
+
+    def __str__(self):
+        return f"{self.get_platform_display()} - v{self.latest_version}"

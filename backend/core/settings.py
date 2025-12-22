@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'core.domains.settings',  # Currency and application settings management
     'core.domains.messaging',  # Real-time messaging system
     'core.domains.vip',  # VIP & Loyalty program
+    'core.domains.security',  # Security & breach management
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -269,6 +270,8 @@ REST_FRAMEWORK = {
         'communications_preview': '999999/min' if DEBUG else '30/min',
         'communications_admin': '999999/hour' if DEBUG else '500/hour',
         'communications_webhook': '999999/hour' if DEBUG else '200/hour',
+        # DPA Compliance throttle rates
+        'data_export': '999999/day' if DEBUG else '1/day',  # Limit data exports to 1/day
     },
 }
 
@@ -597,6 +600,21 @@ SITE_NAME = os.getenv('SITE_NAME', 'LifePlace')
 BUSINESS_TIMEZONE = 'Asia/Manila'  # Primary business location (Philippines)
 BUSINESS_TIMEZONE_DISPLAY = 'PHT'  # Display abbreviation
 BUSINESS_TIMEZONE_OFFSET = '+08:00'  # UTC offset
+
+# Mobile App Configuration
+MOBILE_APP_IOS_STORE_URL = os.getenv('MOBILE_APP_IOS_STORE_URL', '')
+MOBILE_APP_ANDROID_STORE_URL = os.getenv('MOBILE_APP_ANDROID_STORE_URL', '')
+
+# DPA Compliance Configuration
+DPO_EMAIL = os.getenv('DPO_EMAIL', 'dpo@lifeplace.com')
+DPO_PHONE = os.getenv('DPO_PHONE', '')
+SECURITY_TEAM_EMAIL = os.getenv('SECURITY_TEAM_EMAIL', '')
+
+# Data Retention (in years) - Philippines DPA and BIR requirements
+DATA_RETENTION_FINANCIAL = int(os.getenv('DATA_RETENTION_FINANCIAL', '10'))  # BIR requirement
+DATA_RETENTION_CONTRACTS = int(os.getenv('DATA_RETENTION_CONTRACTS', '10'))  # Legal evidence
+DATA_RETENTION_ACCOUNT = int(os.getenv('DATA_RETENTION_ACCOUNT', '7'))  # Post-deletion
+DATA_RETENTION_SECURITY_LOGS = int(os.getenv('DATA_RETENTION_SECURITY_LOGS', '1'))
 
 # Sentry Error Tracking (Production Only)
 SENTRY_DSN = os.getenv('SENTRY_DSN')
