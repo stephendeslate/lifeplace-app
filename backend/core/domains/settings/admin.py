@@ -1,7 +1,7 @@
 # backend/core/domains/settings/admin.py
 
 from django.contrib import admin
-from .models import AppSettings, CurrencySettings, LegalDocument
+from .models import AppSettings, CurrencySettings, LegalDocument, MobileAppVersion
 
 
 @admin.register(AppSettings)
@@ -91,3 +91,46 @@ class LegalDocumentAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Prevent deletion of legal documents
         return False
+
+
+@admin.register(MobileAppVersion)
+class MobileAppVersionAdmin(admin.ModelAdmin):
+    list_display = [
+        'platform', 'latest_version', 'minimum_required_version',
+        'recommended_version', 'is_active', 'is_maintenance_mode', 'updated_at'
+    ]
+    list_filter = ['platform', 'is_active', 'is_maintenance_mode']
+    search_fields = ['platform', 'latest_version']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+    ordering = ['platform', '-created_at']
+
+    fieldsets = (
+        ('Platform', {
+            'fields': ('platform', 'is_active')
+        }),
+        ('Version Numbers', {
+            'fields': ('minimum_required_version', 'recommended_version', 'latest_version')
+        }),
+        ('Store URLs', {
+            'fields': ('ios_store_url', 'android_store_url')
+        }),
+        ('Update Messages', {
+            'fields': ('update_title', 'update_message', 'force_title', 'force_message')
+        }),
+        ('Deprecation', {
+            'fields': ('deprecation_date', 'sunset_date', 'deprecation_message'),
+            'classes': ('collapse',)
+        }),
+        ('Maintenance Mode', {
+            'fields': ('is_maintenance_mode', 'maintenance_message', 'maintenance_end'),
+            'classes': ('collapse',)
+        }),
+        ('Feature Flags', {
+            'fields': ('feature_flags',),
+            'classes': ('collapse',)
+        }),
+        ('Metadata', {
+            'fields': ('id', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )

@@ -1,7 +1,7 @@
 # backend/core/domains/settings/serializers.py
 
 from rest_framework import serializers
-from .models import AppSettings, CurrencySettings, LegalDocument
+from .models import AppSettings, CurrencySettings, LegalDocument, MobileAppVersion
 
 
 class AppSettingsSerializer(serializers.ModelSerializer):
@@ -262,3 +262,28 @@ class PublicLegalDocumentSerializer(serializers.ModelSerializer):
         model = LegalDocument
         fields = ['document_type', 'document_type_display', 'title', 'content', 'version', 'effective_date']
         read_only_fields = fields
+
+
+class MobileVersionResponseSerializer(serializers.Serializer):
+    """Response serializer for mobile version check"""
+    status = serializers.CharField()
+    platform = serializers.CharField(required=False)
+    version_info = serializers.DictField(required=False)
+    update_required = serializers.BooleanField()
+    update_recommended = serializers.BooleanField()
+    force_update = serializers.BooleanField()
+    update_urls = serializers.DictField(required=False)
+    messages = serializers.DictField(required=False)
+    deprecation = serializers.DictField(required=False)
+    feature_flags = serializers.DictField()
+    maintenance = serializers.DictField(required=False)
+
+
+class MobileAppVersionSerializer(serializers.ModelSerializer):
+    """Admin serializer for managing mobile app versions"""
+    platform_display = serializers.CharField(source='get_platform_display', read_only=True)
+
+    class Meta:
+        model = MobileAppVersion
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at']

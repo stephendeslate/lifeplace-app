@@ -6,11 +6,15 @@ from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 from core.views import health_check, readiness_check
+from core.domains.settings.views import MobileVersionCheckView
 
 urlpatterns = [
     # Health check endpoints (no auth required)
     path('health/', health_check, name='health_check'),
     path('ready/', readiness_check, name='readiness_check'),
+
+    # Mobile app version check (public endpoint)
+    path('api/mobile/version/', MobileVersionCheckView.as_view(), name='mobile-version-check'),
 
     path('admin/', admin.site.urls),
     path('api/users/', include('core.domains.users.urls')),
@@ -32,6 +36,7 @@ urlpatterns = [
     path('api/settings/', include('core.domains.settings.urls')),
     path('api/messaging/', include('core.domains.messaging.urls')),
     path('api/vip/', include('core.domains.vip.urls')),
+    path('api/security/', include('core.domains.security.urls')),
     # Client-specific endpoint routing for frontend compatibility
     path('api/client/', include('core.domains.events.client_urls')),
 ]

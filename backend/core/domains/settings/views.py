@@ -5,7 +5,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from .models import AppSettings, CurrencySettings, LegalDocument
+from django.utils import timezone
+from packaging import version as semver
+from .models import AppSettings, CurrencySettings, LegalDocument, MobileAppVersion
 from .serializers import (
     CurrencySettingsSerializer,
     CurrencySettingsCreateSerializer,
@@ -15,6 +17,7 @@ from .serializers import (
     LegalDocumentSerializer,
     LegalDocumentUpdateSerializer,
     PublicLegalDocumentSerializer,
+    MobileAppVersionSerializer,
 )
 from .services import AppSettingsService, CurrencySettingsService
 import logging
@@ -339,3 +342,103 @@ class PublicLegalDocumentView(APIView):
                 'success': False,
                 'message': 'Failed to retrieve legal document'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class MobileVersionCheckView(APIView):
+    """
+    Public endpoint for mobile app version checking.
+
+    GET /api/mobile/version/?platform=ios&current_version=1.0.0
+    """
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = []  # No throttling for version checks
+
+    def get(self, request):
+        platform = request.query_params.get('platform', 'ios')
+        current_version_str = request.query_params.get('current_version', '0.0.0')
+
+        # Get active config for platform (or 'all')
+        config = MobileAppVersion.objects.filter(
+            platform__in=[platform, 'all'],
+            is_active=True
+        ).first()
+
+        # No config - allow app to proceed
+        if not config:
+            return Response({
+                "status": "ok",
+                "update_required": False,
+                "update_recommended": False,
+                "force_update": False,
+                "feature_flags": {}
+            })
+
+        # Check maintenance mode first
+        if config.is_maintenance_mode:
+            return Response({
+                "status": "maintenance",
+                "update_required": False,
+                "update_recommended": False,
+                "force_update": False,
+                "feature_flags": config.feature_flags or {},
+                "maintenance": {
+                    "is_maintenance": True,
+                    "message": config.maintenance_message,
+                    "expected_end": config.maintenance_end.isoformat() if config.maintenance_end else None
+                }
+            })
+
+        # Parse and compare versions
+        try:
+            current = semver.parse(current_version_str)
+            minimum = semver.parse(config.minimum_required_version)
+            recommended = semver.parse(config.recommended_version)
+        except Exception:
+            return Response(
+                {"status": "error", "message": "Invalid version format"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        update_required = current < minimum
+        update_recommended = current < recommended
+
+        # Check deprecation
+        is_deprecated = False
+        if config.deprecation_date:
+            is_deprecated = timezone.now().date() >= config.deprecation_date
+
+        return Response({
+            "status": "update_required" if update_required else ("deprecated" if is_deprecated else "ok"),
+            "platform": platform,
+            "version_info": {
+                "minimum_required": config.minimum_required_version,
+                "recommended": config.recommended_version,
+                "latest": config.latest_version,
+                "current": current_version_str
+            },
+            "update_required": update_required,
+            "update_recommended": update_recommended,
+            "force_update": update_required,
+            "update_urls": {
+                "ios": config.ios_store_url,
+                "android": config.android_store_url
+            },
+            "messages": {
+                "update_title": config.update_title,
+                "update_message": config.update_message,
+                "force_title": config.force_title,
+                "force_message": config.force_message
+            },
+            "deprecation": {
+                "is_deprecated": is_deprecated,
+                "deprecation_date": config.deprecation_date.isoformat() if config.deprecation_date else None,
+                "sunset_date": config.sunset_date.isoformat() if config.sunset_date else None,
+                "message": config.deprecation_message
+            },
+            "feature_flags": config.feature_flags or {},
+            "maintenance": {
+                "is_maintenance": False,
+                "message": None,
+                "expected_end": None
+            }
+        })
