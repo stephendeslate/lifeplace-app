@@ -324,7 +324,7 @@ CACHES = {
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
-            'PARSER_CLASS': 'redis.connection.HiredisParser',  # 10x faster Redis parsing
+            # Note: HiRedis is auto-detected in redis-py 5.x+ when installed
             'PICKLE_VERSION': -1,  # Use latest pickle protocol
             'SOCKET_CONNECT_TIMEOUT': 10,  # Increased from 5 to 10 seconds for production
             'SOCKET_TIMEOUT': 10,  # Increased from 5 to 10 seconds for production
