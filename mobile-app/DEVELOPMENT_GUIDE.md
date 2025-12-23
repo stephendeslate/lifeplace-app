@@ -93,7 +93,7 @@ Key API domains:
 | Forms | React Hook Form | 7.x | Form handling |
 | Validation | Zod | 3.x | Schema validation |
 | HTTP | Axios | 1.x | API calls |
-| Storage | Expo SecureStore | SDK 52 | Secure token storage |
+| Storage | Expo SecureStore | SDK 54 | Secure token storage |
 | Payments | Stripe React Native | Latest | Payment processing |
 | UI | Custom Components | - | Following STYLING_GUIDE.md |
 
@@ -460,8 +460,8 @@ watchman --version
    - Open Xcode
    - Go to **Xcode → Settings → Locations**
    - Ensure "Command Line Tools" shows your Xcode version
-   - Go to **Xcode → Settings → Components**
-   - Install iOS 17 or 18 Simulator
+   - Go to **Xcode → Settings → Platforms**
+   - Install iOS 26 Simulator (or latest available)
 
 5. **Verify Installation**:
    ```bash
@@ -579,6 +579,14 @@ eas --version
 >
 > Over 75% of Expo projects are now using the New Architecture. See [Expo New Architecture docs](https://docs.expo.dev/guides/new-architecture/) for details.
 
+> **iOS 26 & Xcode 26 Support**: Expo SDK 54 fully supports iOS 26 and Xcode 26. Key features include:
+> - iOS 26 Liquid Glass icons (use the new Icon Composer app)
+> - Native Tabs with proper iOS system-level navigation
+> - Precompiled XCFrameworks for faster build times (reduced from ~120s to ~10s)
+> - EAS Build defaults to Xcode 26 for SDK 54 projects
+>
+> Minimum Node version required: 20.19.4. See [Expo SDK 54 changelog](https://expo.dev/changelog/sdk-54) for details.
+
 ### 2.9 Install Expo Go on Your Device (Optional)
 
 For testing on a physical device:
@@ -611,8 +619,8 @@ Expected output (versions may vary):
 
 Node.js: v20.x.x
 npm: 10.x.x
-Watchman: 2024.xx.xx.xx
-Xcode: Xcode 15.x
+Watchman: 2025.xx.xx.xx
+Xcode: Xcode 26.x
 CocoaPods: 1.x.x
 Android SDK: /Users/YOUR_USERNAME/Library/Android/sdk
 Expo CLI: x.x.x
@@ -11721,6 +11729,7 @@ Follow this guide step by step to build a production-ready mobile app that provi
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.4 | December 2025 | Updated for iOS 26 and Xcode 26 compatibility. Updated iOS Simulator references from iOS 17/18 to iOS 26. Updated Xcode version references to 26.x. Aligned Expo SecureStore SDK version to 54. |
 | 1.3 | December 2025 | Added comprehensive sections for Error Handling (ErrorBoundary, API error handler, network state), Performance Optimization (expo-image, FlashList, memoization, bundle size), Accessibility (VoiceOver/TalkBack, Dynamic Type, color contrast), Offline Support (storage persistence, mutation queuing, edge cases), Testing & Monitoring (Jest setup, Sentry, Firebase Analytics), and Deployment (EAS Build, App Store/Play Store submission, OTA updates). Updated Table of Contents and Summary. |
 | 1.2 | December 2025 | Verified API endpoints against backend URLs. Added complete API endpoint reference. Fixed Payments API to match `/api/payments/client/` structure. Added CSRF note for mobile. |
 | 1.1 | December 2025 | Updated to Expo SDK 54, React Native 0.81, React 19. Fixed API endpoints to match actual client-portal implementation. |
@@ -11729,4 +11738,4 @@ Follow this guide step by step to build a production-ready mobile app that provi
 ---
 
 *Last Updated: December 2025*
-*Version: 1.3*
+*Version: 1.4*
