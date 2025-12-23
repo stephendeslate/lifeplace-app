@@ -22,22 +22,80 @@ A comprehensive design system for the LifePlace React Native mobile application,
 
 ## Brand Foundation
 
+### About LifePlace
+
+**LifePlace Retreat & Event Center** is a serene, nature-inspired venue for retreats, events, and special occasions, located in Alfonso near Tagaytay City, Cavite, Philippines.
+
+#### Core Theme
+The brand revolves around **spiritual renewal**, **abundance**, and **living life to the full**, directly inspired by the biblical quote from **John 10:10b**: *"I have come that they may have life, and have it to the full."*
+
+This theme emphasizes:
+- **Peace** - A tranquil escape from everyday life
+- **Community** - Spaces that foster connection and togetherness
+- **Transformation** - Environments for personal and group growth
+
+#### Target Experiences
+LifePlace appeals to groups seeking:
+- Relaxation and spiritual retreats
+- Team building and corporate events
+- Camping and outdoor adventures
+- Workshops and training sessions
+- Milestone celebrations (weddings, birthdays, anniversaries)
+
+#### Venue Characteristics
+- Accessibility to nature with cool, refreshing environments
+- Versatile facilities blending indoor comfort with outdoor openness
+- Exceptional spaces that foster connection and memorable moments
+- Positioned as an ideal spot for reinvention and delight
+
 ### Brand Essence
-LifePlace embodies **peaceful retreat**, **natural connection**, and **memorable experiences**. The mobile app should feel:
-- **Serene & Inviting** - Calm, welcoming interface
+
+LifePlace's branding is **minimalist**, **elegant**, and **nature-oriented**, evoking feelings of tranquility, growth, and spirituality.
+
+The mobile app should feel:
+- **Serene & Inviting** - Calm, welcoming interface that reflects peace
 - **Premium yet Accessible** - Elegant without being intimidating
-- **Nature-Connected** - Organic shapes, earthy warmth
-- **Modern & Clean** - Minimal clutter, focused content
+- **Nature-Connected** - Organic shapes, earthy warmth, rustic-modern aesthetic
+- **Spiritually Grounded** - Subtle references to abundance and fullness of life
+
+### Visual Theme
+
+**Rustic-Modern with Nature-Inspired Serenity**
+
+The aesthetic blends:
+- **Organic elements**: Wood textures, greenery, natural motifs
+- **Clean design**: White spaces, simple fonts, minimal clutter
+- **Symbolic imagery**: Wheat sheaves representing harvest and fullness of life
+
+This creates a balanced, inviting feel that positions LifePlace as a "place of life" – peaceful, inclusive, and transformative.
 
 ### Design Principles
-1. **Imagery First** - Large, immersive photography drives emotional connection
-2. **Effortless Navigation** - Clear hierarchy, intuitive flows
-3. **Warm Minimalism** - Clean layouts with warm, organic touches
-4. **Consistent Rhythm** - Predictable spacing and component patterns
+
+1. **Imagery First** - High-quality photography of lush landscapes, venues, and events drives emotional connection. Style should be realistic and aspirational with warm lighting and soft focus on details.
+
+2. **Effortless Navigation** - Clear hierarchy, intuitive flows, straightforward menu structure
+
+3. **Warm Minimalism** - Clean layouts with warm, organic touches; avoid clutter and prioritize open space
+
+4. **Nature Motifs** - Subtle use of natural elements (wheat sheaves, leaves, wood textures) as decorative accents
+
+5. **Consistent Rhythm** - Predictable spacing and component patterns for a calming user experience
+
+### Logo Elements
+
+The LifePlace logo features:
+- **Icon**: A stylized wheat sheaf (two symmetrical wheat stalks forming a flame-like or vase shape) symbolizing growth, nourishment, and biblical abundance
+- **Primary text**: "LifePlace" in a flowing, handwritten script font for an organic, personal feel
+- **Tagline**: "RETREAT AND EVENT CENTER" in uppercase sans-serif for clarity and professionalism
+- **Rendering**: Typically monochromatic for versatility across media
 
 ---
 
 ## Color System
+
+### Brand Color Philosophy
+
+The LifePlace color palette is **neutral and earth-toned**, emphasizing natural harmony and spirituality. Colors promote a calming aesthetic with high contrast ratios (above 4.5:1) for accessibility. Avoid vibrant colors to maintain the serene brand identity.
 
 ### Primary Palette
 
@@ -45,30 +103,38 @@ LifePlace embodies **peaceful retreat**, **natural connection**, and **memorable
 export const colors = {
   // Primary Brand Colors
   primary: {
-    charcoal: '#32373C',      // Primary actions, headers, text
-    charcoalLight: '#4A5056', // Secondary text, icons
-    charcoalDark: '#1E2226',  // Pressed states
+    black: '#000000',         // Logo text, headings, body copy, navigation links
+    blackLight: '#1A1A1A',    // Secondary text emphasis
   },
 
-  // Accent Colors
+  // Accent Colors - Nature Inspired
   accent: {
-    lavender: '#A886CD',      // Highlights, badges, special elements
-    lavenderLight: '#C4A8E3', // Hover/light states
-    lavenderDark: '#8A6AAE',  // Pressed states
-    lavenderSubtle: '#F5F0FA', // Background tints
+    wood: '#8B4513',          // Saddle Brown - Wood tones, borders, buttons, hover states
+    woodLight: '#A0522D',     // Sienna - Lighter wood accent
+    woodDark: '#654321',      // Dark brown - Pressed states
+    woodSubtle: '#F5EDE5',    // Light wood tint for backgrounds
   },
 
-  // Secondary Accent (Nature-inspired)
+  // Secondary Accent - Growth/Nature
   secondary: {
-    sage: '#4AA485',          // Success states, nature elements
-    sageLight: '#6BB99D',     // Hover states
-    sageDark: '#3A8A6D',      // Pressed states
-    sageSubtle: '#EDF7F3',    // Background tints
+    forest: '#228B22',        // Forest Green - CTAs, highlights, icons (wheat)
+    forestLight: '#32CD32',   // Lime green - Hover states
+    forestDark: '#1B6B1B',    // Dark green - Pressed states
+    forestSubtle: '#EDF7ED',  // Light green tint for backgrounds
+  },
+
+  // Tertiary Accent - Serene/Cool
+  tertiary: {
+    teal: '#008080',          // Teal - Secondary accents, links, progress bars
+    tealLight: '#20B2AA',     // Light sea green
+    tealDark: '#006666',      // Dark teal
+    tealSubtle: '#E6F3F3',    // Light teal tint
   },
 
   // Neutral Palette
   neutral: {
-    white: '#FFFFFF',
+    white: '#FFFFFF',         // Page backgrounds, logo base, content sections
+    beige: '#F5F5DC',         // Beige - Section backgrounds, subtle patterns, overlay tints
     cream: '#FAF9F7',         // Warm off-white backgrounds
     sand: '#F5F3EF',          // Card backgrounds, sections
     warmGray: '#E8E5E0',      // Borders, dividers
@@ -78,50 +144,77 @@ export const colors = {
 
   // Semantic Colors
   semantic: {
-    success: '#4AA485',
-    warning: '#E5A84B',
-    error: '#D64545',
-    info: '#5B8DEF',
+    success: '#228B22',       // Forest Green - aligned with brand
+    warning: '#E5A84B',       // Warm amber
+    error: '#D64545',         // Soft red
+    info: '#008080',          // Teal - aligned with brand
   },
 
-  // Gradients
+  // Gradients - Nature Inspired
   gradients: {
     imageOverlay: ['transparent', 'rgba(0,0,0,0.7)'],
-    heroFade: ['rgba(50,55,60,0)', 'rgba(50,55,60,0.85)'],
-    premiumCard: ['rgba(168,134,205,0.1)', 'rgba(74,164,133,0.1)'],
+    heroFade: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)'],
+    natureFade: ['#FFFFFF', '#90EE90'],  // White to Light Green - Hero banners, background fades
+    premiumCard: ['rgba(139,69,19,0.05)', 'rgba(34,139,34,0.05)'],  // Subtle wood to green
   },
 };
 ```
+
+### Color Reference Table
+
+| Color Role | Description | HEX | RGB | Usage Examples |
+|------------|-------------|-----|-----|----------------|
+| Primary Text/Logo | Deep black for text, icons, and outlines | `#000000` | rgb(0, 0, 0) | Logo text, headings, body copy, navigation links |
+| Background/Base | Pure white for clean, airy canvases | `#FFFFFF` | rgb(255, 255, 255) | Page backgrounds, logo base, content sections |
+| Accent - Wood/Brown | Warm brown for rustic elements | `#8B4513` | rgb(139, 69, 19) | Venue wood tones, borders, buttons, hover states, cards, footers |
+| Accent - Green/Foliage | Medium green for nature and growth motifs | `#228B22` | rgb(34, 139, 34) | Call-to-action buttons, highlights, wheat icons, section dividers |
+| Accent - Teal/Roof | Soft teal-blue for subtle highlights | `#008080` | rgb(0, 128, 128) | Secondary accents, links, progress bars (use sparingly) |
+| Neutral - Beige/Wall | Light beige for backgrounds or subtle fills | `#F5F5DC` | rgb(245, 245, 220) | Section backgrounds, subtle patterns, overlay tints on images |
+| Gradient - Nature | Soft transition from white to light green | `#FFFFFF` to `#90EE90` | rgb(255,255,255) to rgb(144,238,144) | Hero banners, background fades, loading animations |
 
 ### Color Usage Guidelines
 
 | Element | Color | Notes |
 |---------|-------|-------|
-| Primary buttons | `charcoal` | White text |
-| Secondary buttons | `white` | Charcoal border & text |
-| Accent buttons | `lavender` | White text |
-| Success actions | `sage` | Booking confirmations |
-| Backgrounds | `white` or `cream` | Main content |
-| Cards | `white` | Subtle shadow |
-| Inactive tabs | `gray` | Active: `charcoal` |
-| Price tags | `charcoal` | Semi-transparent background |
-| Favorite icon | `error` when active | Outline when inactive |
+| Primary buttons | `primary.black` | White text |
+| Secondary buttons | `neutral.white` | Black border & text |
+| CTA/Accent buttons | `secondary.forest` | White text - for key actions |
+| Warm accent buttons | `accent.wood` | White text - for booking confirmations |
+| Backgrounds | `neutral.white` or `neutral.beige` | Main content areas |
+| Cards | `neutral.white` | Subtle shadow, clean appearance |
+| Section backgrounds | `neutral.beige` or `neutral.cream` | Subtle warmth |
+| Inactive tabs | `neutral.gray` | Active: `primary.black` |
+| Price tags | `primary.black` | Clear, professional |
+| Links | `tertiary.teal` | Subtle, serene accent |
+| Progress indicators | `tertiary.teal` | Calming visual feedback |
+| Success states | `secondary.forest` | Nature-aligned positive feedback |
+| Favorite icon | `semantic.error` when active | Outline when inactive |
 
 ---
 
 ## Typography
+
+### Typography Philosophy
+
+LifePlace typography emphasizes **readability**, **warmth**, and **approachability**. The font choices balance organic, personal feels for branding elements with clean, professional sans-serif for content, ensuring high contrast and generous spacing to evoke calm.
 
 ### Font Stack
 
 ```typescript
 export const typography = {
   fontFamily: {
-    // Primary - Clean, modern sans-serif
+    // Display/Headings - Script-style for branding warmth (logo, special headings)
+    // Note: For logo text "LifePlace", use a script font similar to Brush Script or Pacifico
+    display: Platform.select({
+      ios: 'SF Pro Display',
+      android: 'Roboto',
+    }),
+    // Primary - Clean, modern sans-serif for main content
     primary: Platform.select({
       ios: 'SF Pro Display',
       android: 'Roboto',
     }),
-    // Secondary - For body text
+    // Secondary - For body text, readable and clear
     secondary: Platform.select({
       ios: 'SF Pro Text',
       android: 'Roboto',
@@ -129,6 +222,15 @@ export const typography = {
   },
 };
 ```
+
+### Typography Guidelines
+
+| Element | Style | Weight | Size | Notes |
+|---------|-------|--------|------|-------|
+| Logo "LifePlace" | Script/Cursive | Medium-Bold | 48-72px | Fluid curves, organic feel |
+| Tagline "RETREAT AND EVENT CENTER" | Sans-serif, Uppercase | Bold | 14-18px | Clear, professional |
+| Body text | Sans-serif | Regular | 16-18px | Line-height 1.5-1.8 for easy reading |
+| Subheadings | Sans-serif, Uppercase | Bold | 14-18px | High contrast, generous spacing |
 
 ### Type Scale
 
@@ -358,7 +460,7 @@ export const shadows = {
 ```typescript
 const PrimaryButton = {
   container: {
-    backgroundColor: colors.primary.charcoal,
+    backgroundColor: colors.primary.black,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -371,7 +473,7 @@ const PrimaryButton = {
     color: colors.neutral.white,
   },
   pressed: {
-    backgroundColor: colors.primary.charcoalDark,
+    backgroundColor: colors.primary.blackLight,
   },
   disabled: {
     backgroundColor: colors.neutral.warmGray,
@@ -386,23 +488,23 @@ const SecondaryButton = {
     backgroundColor: colors.neutral.white,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colors.primary.charcoal,
+    borderColor: colors.primary.black,
     paddingVertical: 15,
     paddingHorizontal: 24,
     minHeight: 52,
   },
   text: {
     ...typeScale.labelLarge,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
 };
 ```
 
-#### Accent Button (CTA)
+#### CTA Button (Nature Green)
 ```typescript
-const AccentButton = {
+const CTAButton = {
   container: {
-    backgroundColor: colors.accent.lavender,
+    backgroundColor: colors.secondary.forest,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -410,6 +512,28 @@ const AccentButton = {
   text: {
     ...typeScale.labelLarge,
     color: colors.neutral.white,
+  },
+  pressed: {
+    backgroundColor: colors.secondary.forestDark,
+  },
+};
+```
+
+#### Accent Button (Warm Wood)
+```typescript
+const AccentButton = {
+  container: {
+    backgroundColor: colors.accent.wood,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+  },
+  text: {
+    ...typeScale.labelLarge,
+    color: colors.neutral.white,
+  },
+  pressed: {
+    backgroundColor: colors.accent.woodDark,
   },
 };
 ```
@@ -428,7 +552,7 @@ const IconButton = {
   },
   icon: {
     size: 24,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
 };
 ```
@@ -481,7 +605,7 @@ const VenueCardFeatured = {
     position: 'absolute',
     top: spacing.md,
     left: spacing.md,
-    backgroundColor: colors.accent.lavender,
+    backgroundColor: colors.secondary.forest,  // Nature green for overnight badge
     borderRadius: 8,
     paddingVertical: spacing.xxs,
     paddingHorizontal: spacing.sm,
@@ -518,7 +642,7 @@ const PackageCardFeatured = {
   },
   title: {
     ...typeScale.titleLarge,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
     marginBottom: spacing.xxs,
   },
   description: {
@@ -532,7 +656,7 @@ const PackageCardFeatured = {
   },
   priceMain: {
     ...typeScale.priceMain,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
   priceUnit: {
     ...typeScale.priceUnit,
@@ -629,12 +753,12 @@ const CategoryChip = {
     borderColor: colors.neutral.warmGray,
   },
   containerActive: {
-    backgroundColor: colors.primary.charcoal,
-    borderColor: colors.primary.charcoal,
+    backgroundColor: colors.primary.black,
+    borderColor: colors.primary.black,
   },
   text: {
     ...typeScale.labelMedium,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
   textActive: {
     color: colors.neutral.white,
@@ -655,16 +779,16 @@ const VenueFeatureChip = {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     borderRadius: 8,
-    backgroundColor: colors.neutral.sand,
+    backgroundColor: colors.neutral.beige,  // Warm beige background
     gap: spacing.xs,
   },
   icon: {
     size: 16,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
   text: {
     ...typeScale.labelSmall,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
 };
 ```
@@ -737,7 +861,7 @@ const Badge = {
     paddingVertical: spacing.xxs,
     paddingHorizontal: spacing.sm,
     borderRadius: 6,
-    backgroundColor: colors.accent.lavender,
+    backgroundColor: colors.secondary.forest,  // Nature green for badges
   },
   text: {
     ...typeScale.labelSmall,
@@ -753,7 +877,7 @@ const Badge = {
 ```typescript
 const TextInput = {
   container: {
-    backgroundColor: colors.neutral.sand,
+    backgroundColor: colors.neutral.beige,  // Warm beige background
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -762,7 +886,7 @@ const TextInput = {
     minHeight: 52,
   },
   containerFocused: {
-    borderColor: colors.primary.charcoal,
+    borderColor: colors.primary.black,
     backgroundColor: colors.neutral.white,
   },
   label: {
@@ -772,7 +896,7 @@ const TextInput = {
   },
   input: {
     ...typeScale.bodyLarge,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
   placeholder: {
     color: colors.neutral.gray,
@@ -786,7 +910,7 @@ const SearchBar = {
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.neutral.sand,
+    backgroundColor: colors.neutral.beige,  // Warm beige background
     borderRadius: 16,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -799,13 +923,13 @@ const SearchBar = {
   input: {
     flex: 1,
     ...typeScale.bodyMedium,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
   actionButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: colors.primary.charcoal,
+    backgroundColor: colors.primary.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -846,13 +970,13 @@ const BottomNavBar = {
     color: colors.neutral.gray,
   },
   iconActive: {
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
   activeIndicator: {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: colors.primary.charcoal,
+    backgroundColor: colors.primary.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -862,7 +986,7 @@ const BottomNavBar = {
     marginTop: spacing.xxs,
   },
   labelActive: {
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
     fontWeight: '600',
   },
 };
@@ -898,7 +1022,7 @@ const Header = {
   },
   title: {
     ...typeScale.titleMedium,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
   },
 };
 ```
@@ -958,7 +1082,7 @@ const StarRating = {
   },
   text: {
     ...typeScale.labelMedium,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
     marginLeft: spacing.xs,
   },
   reviewCount: {
@@ -972,7 +1096,7 @@ const StarRating = {
 ```typescript
 const ReviewCard = {
   container: {
-    backgroundColor: colors.neutral.sand,
+    backgroundColor: colors.neutral.beige,  // Warm beige background
     borderRadius: 16,
     padding: spacing.lg,
   },
@@ -989,7 +1113,7 @@ const ReviewCard = {
   },
   quote: {
     ...typeScale.bodyMedium,
-    color: colors.primary.charcoal,
+    color: colors.primary.black,
     fontStyle: 'italic',
   },
 };
@@ -998,6 +1122,20 @@ const ReviewCard = {
 ---
 
 ## Icons & Imagery
+
+### Iconography Philosophy
+
+LifePlace icons should be **simple**, **line-based**, and **minimal** to align with the clean, serene brand aesthetic. Icons serve as subtle visual cues rather than dominant elements.
+
+### Brand-Specific Icons
+
+| Symbol | Usage | Style |
+|--------|-------|-------|
+| Wheat sheaves | Growth themes, abundance, fullness of life | Line icon, symmetrical |
+| Cross | Sanctuary/chapel facilities | Simple line cross |
+| Tent | Camping experiences | Line-based tent outline |
+| Group/People | Team building, community | Minimal human figures |
+| Tree/Leaf | Nature, outdoor themes | Organic line shapes |
 
 ### Icon Library
 Use **Phosphor Icons** or **Feather Icons** for consistency. Recommended icons:
@@ -1080,9 +1218,18 @@ const iconStyles = {
 
 ### Image Guidelines
 
+#### Imagery Style
+
+LifePlace imagery should be:
+- **Photo-centric**: High-quality photographs dominate, building trust and immersion
+- **Realistic and aspirational**: Warm lighting, soft focus on details
+- **Subject matter**: Venue facilities, weddings, retreats, natural surroundings
+- **Details**: Floral decorations, wooden structures, green foliage, people in celebratory or reflective settings
+- **Composition**: Wide-angle shots to emphasize spaciousness; avoid abstract graphics or illustrations
+
 #### Aspect Ratios
 - **Hero images**: 16:9 or full-bleed
-- **Property cards**: 4:3
+- **Venue cards**: 4:3
 - **Gallery thumbnails**: 1:1
 - **List images**: 1:1
 
@@ -1099,7 +1246,7 @@ const imageStyles = {
     width: '100%',
     height: 300,
   },
-  // With gradient overlay
+  // With gradient overlay - for text readability
   withOverlay: {
     // Apply LinearGradient from transparent to rgba(0,0,0,0.6)
   },
@@ -1115,8 +1262,8 @@ const imageStyles = {
 #### Placeholder & Loading States
 ```typescript
 const imagePlaceholder = {
-  backgroundColor: colors.neutral.sand,
-  // Use skeleton animation with shimmer effect
+  backgroundColor: colors.neutral.beige,  // Warm beige aligned with brand
+  // Use skeleton animation with shimmer effect for calming transitions
 };
 ```
 
@@ -1536,7 +1683,7 @@ const styles = StyleSheet.create({
 
 ### Dark Mode Considerations
 ```typescript
-// Future dark mode palette
+// Future dark mode palette - maintaining brand serenity
 export const darkColors = {
   background: '#1A1D1F',
   surface: '#252A2E',
@@ -1546,8 +1693,9 @@ export const darkColors = {
     secondary: 'rgba(255,255,255,0.7)',
   },
   accent: {
-    lavender: '#B896DD', // Slightly lighter for dark mode
-    sage: '#5BC49D',
+    wood: '#A0522D',     // Sienna - lighter brown for dark mode
+    forest: '#32CD32',   // Lighter green for dark mode
+    teal: '#20B2AA',     // Light sea green
   },
 };
 ```
@@ -1956,5 +2104,30 @@ interface EventFeedback {
 
 ---
 
+## Interactive Elements Guidelines
+
+### Buttons
+- **Shape**: Rectangular with rounded corners (12px radius)
+- **Hover/Press effects**: Subtle color shifts or shadows for engagement
+- **Primary CTA**: Forest green (`#228B22`) with white text
+- **Secondary**: White with black border and text
+- **Warm accent**: Wood brown (`#8B4513`) for booking confirmations
+
+### Navigation
+- **Menu style**: Horizontal bar with dropdowns for subpages
+- **Bottom navigation**: Rounded top corners, clean icons, active state indicator
+
+### Forms
+- **Input fields**: Clean inputs with placeholder text
+- **Submit buttons**: Green accents to tie into nature theme
+- **Validation**: Subtle, non-intrusive error states
+
+### Advanced Interactions (Future)
+- **Parallax scrolling**: For immersive venue tours
+- **Interactive maps**: For facility exploration
+- **Smooth transitions**: Calming animations between screens
+
+---
+
 *Last updated: December 2024*
-*Version: 1.1 - Updated with backend data reference*
+*Version: 2.0 - Comprehensive brand identity update with LifePlace business theme, styling overview, and complete color palette*

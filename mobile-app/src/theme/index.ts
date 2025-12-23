@@ -1,8 +1,10 @@
 /**
  * LifePlace Mobile App Theme
  *
- * Design system based on modern hospitality app patterns
- * combined with LifePlace brand identity.
+ * Design system based on the STYLING_GUIDE.md with nature-inspired,
+ * rustic-modern aesthetic aligned with LifePlace brand identity.
+ *
+ * Brand essence: Serene, premium yet accessible, nature-connected
  */
 
 import { Platform, Dimensions } from 'react-native';
@@ -16,43 +18,51 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const colors = {
   // Primary Brand Colors
   primary: {
-    charcoal: '#32373C',
-    charcoalLight: '#4A5056',
-    charcoalDark: '#1E2226',
+    black: '#000000',
+    blackLight: '#1A1A1A',
   },
 
-  // Accent Colors - Lavender (from LifePlace branding)
+  // Accent Colors - Wood/Nature Inspired
   accent: {
-    lavender: '#A886CD',
-    lavenderLight: '#C4A8E3',
-    lavenderDark: '#8A6AAE',
-    lavenderSubtle: '#F5F0FA',
+    wood: '#8B4513', // Saddle Brown - primary accent
+    woodLight: '#A0522D', // Sienna - hover states
+    woodDark: '#654321', // Dark brown - pressed states
+    woodSubtle: '#F5EDE5', // Light wood tint for backgrounds
   },
 
-  // Secondary Accent - Nature-inspired Sage
+  // Secondary Accent - Growth/Nature (Forest Green)
   secondary: {
-    sage: '#4AA485',
-    sageLight: '#6BB99D',
-    sageDark: '#3A8A6D',
-    sageSubtle: '#EDF7F3',
+    forest: '#228B22', // Forest Green - CTAs, success
+    forestLight: '#32CD32', // Lime green - hover
+    forestDark: '#1B6B1B', // Dark green - pressed
+    forestSubtle: '#EDF7ED', // Light green tint
+  },
+
+  // Tertiary Accent - Serene/Cool (Teal)
+  tertiary: {
+    teal: '#008080', // Teal - links, progress
+    tealLight: '#20B2AA', // Light sea green
+    tealDark: '#006666', // Dark teal
+    tealSubtle: '#E6F3F3', // Light teal tint
   },
 
   // Neutral Palette
   neutral: {
     white: '#FFFFFF',
-    cream: '#FAF9F7',
-    sand: '#F5F3EF',
-    warmGray: '#E8E5E0',
-    gray: '#9B9590',
-    darkGray: '#6B6560',
+    beige: '#F5F5DC', // Section backgrounds
+    cream: '#FAF9F7', // Page backgrounds
+    sand: '#F5F3EF', // Card backgrounds
+    warmGray: '#E8E5E0', // Borders, dividers
+    gray: '#9B9590', // Placeholder text
+    darkGray: '#6B6560', // Secondary text
   },
 
   // Semantic Colors
   semantic: {
-    success: '#4AA485',
-    warning: '#E5A84B',
-    error: '#D64545',
-    info: '#5B8DEF',
+    success: '#228B22', // Aligned with forest green
+    warning: '#E5A84B', // Warm amber
+    error: '#D64545', // Soft red
+    info: '#008080', // Aligned with teal
   },
 
   // Transparency helpers
@@ -77,19 +87,19 @@ export const gradients = {
     end: { x: 0, y: 1 },
   },
   heroFade: {
-    colors: ['rgba(50,55,60,0)', 'rgba(50,55,60,0.85)'],
+    colors: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)'],
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
+  },
+  natureFade: {
+    colors: ['#FFFFFF', '#90EE90'],
     start: { x: 0, y: 0 },
     end: { x: 0, y: 1 },
   },
   premiumCard: {
-    colors: ['rgba(168,134,205,0.1)', 'rgba(74,164,133,0.1)'],
+    colors: ['rgba(139,69,19,0.05)', 'rgba(34,139,34,0.05)'],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
-  },
-  accentButton: {
-    colors: [colors.accent.lavender, colors.accent.lavenderDark],
-    start: { x: 0, y: 0 },
-    end: { x: 1, y: 0 },
   },
 } as const;
 
@@ -298,7 +308,7 @@ export const layout = {
 export const shadows = {
   // Subtle - Cards at rest
   sm: {
-    shadowColor: colors.primary.charcoal,
+    shadowColor: colors.primary.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -307,7 +317,7 @@ export const shadows = {
 
   // Medium - Elevated cards, modals
   md: {
-    shadowColor: colors.primary.charcoal,
+    shadowColor: colors.primary.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 16,
@@ -316,7 +326,7 @@ export const shadows = {
 
   // Large - Bottom sheets, floating elements
   lg: {
-    shadowColor: colors.primary.charcoal,
+    shadowColor: colors.primary.black,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 24,
@@ -325,7 +335,7 @@ export const shadows = {
 
   // Extra large - Overlays
   xl: {
-    shadowColor: colors.primary.charcoal,
+    shadowColor: colors.primary.black,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
     shadowRadius: 32,
@@ -334,7 +344,7 @@ export const shadows = {
 
   // Bottom navigation specific
   bottomNav: {
-    shadowColor: colors.primary.charcoal,
+    shadowColor: colors.primary.black,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -388,54 +398,77 @@ export const componentStyles = {
   // Buttons
   button: {
     primary: {
-      backgroundColor: colors.primary.charcoal,
-      borderRadius: layout.borderRadius.md,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.xl,
-      minHeight: layout.buttonHeight,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-    },
-    primaryText: {
-      ...typeScale.labelLarge,
-      color: colors.neutral.white,
+      container: {
+        backgroundColor: colors.primary.black,
+        borderRadius: layout.borderRadius.md,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        minHeight: layout.buttonHeight,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+      },
+      text: {
+        ...typeScale.labelLarge,
+        color: colors.neutral.white,
+      },
     },
     secondary: {
-      backgroundColor: colors.neutral.white,
-      borderRadius: layout.borderRadius.md,
-      borderWidth: 1.5,
-      borderColor: colors.primary.charcoal,
-      paddingVertical: spacing.md - 1.5,
-      paddingHorizontal: spacing.xl,
-      minHeight: layout.buttonHeight,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
+      container: {
+        backgroundColor: colors.neutral.white,
+        borderRadius: layout.borderRadius.md,
+        borderWidth: 1.5,
+        borderColor: colors.primary.black,
+        paddingVertical: spacing.md - 1.5,
+        paddingHorizontal: spacing.xl,
+        minHeight: layout.buttonHeight,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+      },
+      text: {
+        ...typeScale.labelLarge,
+        color: colors.primary.black,
+      },
     },
-    secondaryText: {
-      ...typeScale.labelLarge,
-      color: colors.primary.charcoal,
+    cta: {
+      container: {
+        backgroundColor: colors.secondary.forest,
+        borderRadius: layout.borderRadius.md,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        minHeight: layout.buttonHeight,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+      },
+      text: {
+        ...typeScale.labelLarge,
+        color: colors.neutral.white,
+      },
     },
     accent: {
-      backgroundColor: colors.accent.lavender,
-      borderRadius: layout.borderRadius.md,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.xl,
-      minHeight: layout.buttonHeight,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-    },
-    accentText: {
-      ...typeScale.labelLarge,
-      color: colors.neutral.white,
+      container: {
+        backgroundColor: colors.accent.wood,
+        borderRadius: layout.borderRadius.md,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        minHeight: layout.buttonHeight,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+      },
+      text: {
+        ...typeScale.labelLarge,
+        color: colors.neutral.white,
+      },
     },
     icon: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: colors.alpha.white90,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      ...shadows.sm,
+      container: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.alpha.white90,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        ...shadows.sm,
+      },
     },
   },
 
@@ -470,12 +503,12 @@ export const componentStyles = {
       borderColor: colors.neutral.warmGray,
     },
     active: {
-      backgroundColor: colors.primary.charcoal,
-      borderColor: colors.primary.charcoal,
+      backgroundColor: colors.primary.black,
+      borderColor: colors.primary.black,
     },
     text: {
       ...typeScale.labelMedium,
-      color: colors.primary.charcoal,
+      color: colors.primary.black,
     },
     textActive: {
       color: colors.neutral.white,
@@ -485,24 +518,40 @@ export const componentStyles = {
   // Input
   input: {
     container: {
-      backgroundColor: colors.neutral.sand,
+      backgroundColor: colors.neutral.beige,
       borderRadius: layout.borderRadius.md,
       borderWidth: 1,
       borderColor: 'transparent',
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
       minHeight: layout.inputHeight,
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
     },
     containerFocused: {
-      borderColor: colors.primary.charcoal,
+      borderColor: colors.primary.black,
       backgroundColor: colors.neutral.white,
     },
-    text: {
+    containerError: {
+      borderColor: colors.semantic.error,
+    },
+    input: {
       ...typeScale.bodyLarge,
-      color: colors.primary.charcoal,
+      color: colors.primary.black,
+      flex: 1,
     },
     placeholder: {
       color: colors.neutral.gray,
+    },
+    label: {
+      ...typeScale.labelSmall,
+      color: colors.neutral.gray,
+      marginBottom: spacing.xs,
+    },
+    error: {
+      ...typeScale.labelSmall,
+      color: colors.semantic.error,
+      marginTop: spacing.xxs,
     },
   },
 
@@ -511,7 +560,7 @@ export const componentStyles = {
     container: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      backgroundColor: colors.neutral.sand,
+      backgroundColor: colors.neutral.beige,
       borderRadius: layout.borderRadius.lg,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
@@ -520,7 +569,7 @@ export const componentStyles = {
     input: {
       flex: 1,
       ...typeScale.bodyMedium,
-      color: colors.primary.charcoal,
+      color: colors.primary.black,
     },
   },
 
@@ -547,7 +596,7 @@ export const componentStyles = {
       width: 48,
       height: 48,
       borderRadius: layout.borderRadius.lg,
-      backgroundColor: colors.primary.charcoal,
+      backgroundColor: colors.primary.black,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
     },
@@ -557,7 +606,7 @@ export const componentStyles = {
       marginTop: spacing.xxs,
     },
     labelActive: {
-      color: colors.primary.charcoal,
+      color: colors.primary.black,
       fontWeight: fontWeights.semibold,
     },
   },
@@ -582,7 +631,16 @@ export const componentStyles = {
     },
     title: {
       ...typeScale.titleMedium,
-      color: colors.primary.charcoal,
+      color: colors.primary.black,
+    },
+    backButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.alpha.white90,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      ...shadows.sm,
     },
   },
 } as const;

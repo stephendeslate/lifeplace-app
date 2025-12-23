@@ -34,7 +34,7 @@ echo "🛑 Press Ctrl+C to stop all services"
 echo "=========================================="
 
 # Start Daphne in foreground
-daphne -p 8000 core.asgi:application
+daphne -b 0.0.0.0 -p 8000 core.asgi:application
 
 # Cleanup function - runs on script exit
 cleanup() {
