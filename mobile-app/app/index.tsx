@@ -1,66 +1,45 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+/**
+ * Root Index
+ *
+ * Entry point that redirects based on authentication state.
+ *
+ * BEHAVIOR:
+ * - If authenticated -> redirect to (tabs)
+ * - If not authenticated -> redirect to (auth)/login
+ * - While loading -> show loading indicator
+ */
 
-// Use direct relative import to avoid potential path alias issues on initial load
-import { colors, spacing, typeScale } from '../src/theme/index';
+import { Redirect } from 'expo-router';
+import { View, ActivityIndicator } from 'react-native';
 
-export default function HomeScreen() {
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Hello LifePlace</Text>
-        <Text style={styles.subtitle}>Mobile App</Text>
-        <Text style={styles.body}>
-          Your theme is working correctly!
-        </Text>
-        <View style={styles.colorSwatch}>
-          <View style={[styles.colorBox, { backgroundColor: colors.primary.charcoal }]} />
-          <View style={[styles.colorBox, { backgroundColor: colors.accent.lavender }]} />
-          <View style={[styles.colorBox, { backgroundColor: colors.secondary.sage }]} />
-        </View>
+import { useAuthStore } from '@/stores/authStore';
+import { colors } from '@/theme';
+
+export default function Index() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+
+  // Show loading while hydrating auth state from SecureStore
+  if (!isHydrated) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: colors.neutral.cream,
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.primary.black} />
       </View>
-    </SafeAreaView>
-  );
-}
+    );
+  }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.neutral.cream,
-  },
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  title: {
-    fontSize: typeScale.displayLarge.fontSize,
-    lineHeight: typeScale.displayLarge.lineHeight,
-    fontWeight: typeScale.displayLarge.fontWeight,
-    color: colors.primary.charcoal,
-  },
-  subtitle: {
-    fontSize: typeScale.headlineMedium.fontSize,
-    lineHeight: typeScale.headlineMedium.lineHeight,
-    fontWeight: typeScale.headlineMedium.fontWeight,
-    color: colors.accent.lavender,
-    marginTop: spacing.sm,
-  },
-  body: {
-    fontSize: typeScale.bodyLarge.fontSize,
-    lineHeight: typeScale.bodyLarge.lineHeight,
-    color: colors.neutral.darkGray,
-    marginTop: spacing.xl,
-  },
-  colorSwatch: {
-    flexDirection: 'row',
-    marginTop: spacing.xxl,
-    gap: spacing.md,
-  },
-  colorBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-  },
-});
+  // Redirect based on auth state
+  // Note: Using "/" redirects to (tabs)/index, "/login" to (auth)/login
+  if (isAuthenticated) {
+    return <Redirect href="/profile" />;
+  }
+
+  return <Redirect href="/login" />;
+}
