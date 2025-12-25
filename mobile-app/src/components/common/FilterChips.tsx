@@ -152,8 +152,9 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+    height: 28,
     borderRadius: theme.borderRadius.full,
     borderWidth: 1,
   },

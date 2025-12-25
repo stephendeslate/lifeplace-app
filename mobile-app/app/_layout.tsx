@@ -13,9 +13,11 @@
  * NAVIGATION STRUCTURE:
  * - (auth) - Auth screens (login, register) - shown when not authenticated
  * - (tabs) - Main app with bottom tabs - shown when authenticated
- * - booking - Booking flow (slides up from bottom)
- * - events/[id] - Event detail (pushes from right)
- * - And other detail screens...
+ * - events - Event screens (has nested [id] route)
+ * - payments - Payment screens (has nested [id] route)
+ * - contracts - Contract screens (has nested [id] route)
+ * - quotes - Quote screens (has nested [id] route)
+ * - actions - Action center
  */
 
 import { useEffect } from 'react';
@@ -95,38 +97,20 @@ export default function RootLayout() {
                   }}
                 />
 
-                {/* Booking flow - slides up from bottom */}
-                <Stack.Screen
-                  name="booking"
-                  options={{
-                    presentation: 'card',
-                    animation: 'slide_from_bottom',
-                  }}
-                />
+                {/* Events section - has its own _layout.tsx for nested routes */}
+                <Stack.Screen name="events" />
 
-                {/* Event detail - standard push */}
-                <Stack.Screen name="events/[id]" />
-
-                {/* Payment screens - standard push */}
-                <Stack.Screen name="payments/[id]" />
-
-                {/* Contract screens - standard push */}
-                <Stack.Screen name="contracts/[id]" />
-
-                {/* Quote screens - standard push */}
-                <Stack.Screen name="quotes/[id]" />
-
-                {/* Action Center - standard push */}
-                <Stack.Screen name="actions" />
-
-                {/* Payments index - standard push */}
+                {/* Payments section - has its own _layout.tsx for nested routes */}
                 <Stack.Screen name="payments" />
 
-                {/* Contracts index - standard push */}
+                {/* Contracts section - has its own _layout.tsx for nested routes */}
                 <Stack.Screen name="contracts" />
 
-                {/* Quotes index - standard push */}
+                {/* Quotes section - has its own _layout.tsx for nested routes */}
                 <Stack.Screen name="quotes" />
+
+                {/* Action Center */}
+                <Stack.Screen name="actions" />
               </Stack>
             </ToastProvider>
           </AuthProvider>
