@@ -221,42 +221,353 @@ Reference: [DEVELOPMENT_GUIDE.md lines 4486-4762](DEVELOPMENT_GUIDE.md)
 
 ---
 
-## Phase 6: Booking Flow
+## Phase 6: Booking Flow (Full Feature Parity)
 
-### 6.1 Booking Flow Core
-Reference: [DEVELOPMENT_GUIDE.md lines 2900-3200](DEVELOPMENT_GUIDE.md)
+> **Reference:** [BOOKING_FLOW_GAP_ANALYSIS.md](BOOKING_FLOW_GAP_ANALYSIS.md) for complete feature breakdown
+> **Client-Portal Source:** `frontend/client-portal/src/` (apis, hooks, types, components, contexts)
+
+### 6.1 Type Definitions
+Create all booking-related TypeScript interfaces matching client-portal.
+
+- [ ] Create `src/types/booking/index.ts` - Re-export hub
+- [ ] Create `src/types/booking/core.types.ts` - EventType, BookingFlow, BookingFlowStep, StepType
+- [ ] Create `src/types/booking/api.types.ts` - Session create/update/response, ValidationError
+- [ ] Create `src/types/booking/payment.types.ts` - PaymentGateway, PaymentGatewayResponse
+- [ ] Create `src/types/booking/questionnaire.types.ts` - Questionnaire, QuestionnaireField, field types
+- [ ] Create `src/types/booking/venues.types.ts` - RentableVenue, VenueOperatingRules, VenueSelectionStepData
+- [ ] Create `src/types/booking/stepData.types.ts` - All step data interfaces, SelectedPackage/Addon
+- [ ] Create `src/types/booking/stepConfigurations.types.ts` - All step config interfaces
+- [ ] Create `src/types/booking/bookingData.types.ts` - BookingData, SessionUpdatePayload, BookingSession
+- [ ] Create `src/types/booking/state.types.ts` - BookingProgress, BookingUIState, BookingState, BookingActions
+
+### 6.2 Utility Files
+Create booking-specific utilities adapted for React Native.
+
+- [ ] Create `src/utils/bookingHelpers.ts` - Validation, formatting, session utilities
+- [ ] Create `src/utils/bookingValidation.ts` - Zod schemas for all 10 steps
+- [ ] Create `src/utils/timezone.ts` - Philippines timezone (Asia/Manila) handling
+- [ ] Create `src/utils/currency.ts` - PHP currency formatting with multi-currency support
+- [ ] Create `src/utils/errorHandler.ts` - API error extraction, validation error handling
+- [ ] Create `src/utils/bookingStorage.ts` - Session persistence via expo-secure-store
+- [ ] Create `src/utils/security.ts` - Input sanitization, XSS prevention
+
+### 6.3 API Layer (Complete)
+Create all 9 booking-related API files matching client-portal.
+
 - [ ] Create `src/apis/booking/core.api.ts`
+  - `getEventTypes()`, `getAvailableFlows()`, `getFlowById()`
+  - `startSession()`, `getSession()`, `updateSessionData()`, `validateStepData()`
+  - `completeBooking()`, `abandonSession()`, `calculatePricing()`
+  - Session management: expiry checks, localStorage persistence, cleanup
+- [ ] Create `src/apis/booking/introduction.api.ts`
+  - `validateStepData()`, `updateStepData()`, `formatStepData()`, `getDefaultData()`
+- [ ] Create `src/apis/booking/datetime.api.ts`
+  - `checkAvailability()`, `validateStepData()`, `formatDate()` (Philippines TZ)
+- [ ] Create `src/apis/booking/venues.api.ts`
+  - `getRentableVenues()`, `getVenue()`, `getEffectivePricing()`
+  - `findMatchingPackages()`, `createFromVenues()` (custom bundles)
+  - `calculateTimes()`, `getVenueAvailability()`, `calculateEarlyCheckinFee()`
 - [ ] Create `src/apis/booking/products.api.ts`
+  - `getPackages()`, `getAddons()`, `getProductsByIds()`
+  - `validateDiscountCode()`, `calculatePackagePrice()`, `calculateTotalWithExcessHours()`
 - [ ] Create `src/apis/booking/questionnaire.api.ts`
-- [ ] Create `src/hooks/booking/useBookingFlow.ts`
-- [ ] Create `src/hooks/booking/useBookingSession.ts`
+  - `getQuestionnaires()`, `getQuestionnaireDetail()`, `getQuestionnaireFields()`
+  - `validateResponses()`, `formatResponses()`, `processFileUploads()`
+- [ ] Create `src/apis/booking/contact_info.api.ts`
+  - `validateData()`, `isValidEmail()`, `isValidPhone()` (PH format)
+  - `getDefaultDataFromUser()` (pre-fill for authenticated users)
+- [ ] Create `src/apis/booking/payment.api.ts`
+  - `getFlowPaymentGateways()`, `getPaymentGateway()`, `getGatewayPublicConfig()`
+  - `calculateDepositAmount()`, `validatePaymentMethod()`, `getSupportedPaymentMethods()`
+- [ ] Create `src/apis/booking/confirmation.api.ts`
+  - `getSessionDetails()`, `sendConfirmationEmail()`, `generateBookingReference()`
+  - `getNextStepsContent()`, `getSupportContact()`
 
-### 6.2 Booking Flow Screens
+### 6.4 Hooks Layer (Complete)
+Create all 10 booking-related hooks matching client-portal.
+
+- [ ] Create `src/hooks/booking/useBookingCore.tsx`
+  - `useEventTypes()`, `useBookingFlows()`, `useBookingFlow()`
+  - `useBookingSession()` - session state, updateStepData, validateStep, abandonSession
+  - `useFlowPaymentGateways()`, `useSessionTimer()`, `useSessionRecovery()`
+- [ ] Create `src/hooks/booking/useIntroduction.tsx`
+  - `useIntroduction()` - full step management with save/validate
+  - `useIntroductionData()` - standalone data management
+- [ ] Create `src/hooks/booking/useDateTime.tsx`
+  - `useDateTime()` - date selection, availability checking, venue rules
+  - `useDateTimeData()` - standalone data only
+- [ ] Create `src/hooks/booking/useVenues.tsx`
+  - `useRentableVenues()`, `useVenue()`, `useVenueAvailability()`
+- [ ] Create `src/hooks/booking/useProducts.tsx`
+  - `usePackages()`, `useAddons()`, `useProductsByIds()`
+- [ ] Create `src/hooks/booking/useQuestionnaire.tsx`
+  - `useQuestionnaires()`, `useQuestionnaireDetail()`, `useQuestionnaireFields()`
+  - `useQuestionnaireResponses()` - response management, validation, completion %
+  - `useQuestionnaireFileUpload()` - file upload with expo-document-picker
+- [ ] Create `src/hooks/booking/useContactInfo.tsx`
+  - `useContactInfo()` - config, validation, user pre-fill
+  - `useContactInfoValidation()` - lightweight validation only
+- [ ] Create `src/hooks/booking/usePayment.tsx`
+  - `usePaymentGateways()`, `useFlowPaymentGateways()`, `usePaymentGateway()`
+  - `usePaymentCalculations()`, `usePaymentValidation()`, `useGatewayConfig()`
+  - `usePaymentFlow()` - complete payment selection and amount management
+  - `useGatewaySelection()` - gateway filtering
+- [ ] Create `src/hooks/booking/useConfirmation.tsx`
+  - `useConfirmation()` - completion handling, navigation, status
+  - `useConfirmationDisplay()` - display-only mode
+- [ ] Create `src/hooks/booking/useSimplePricing.tsx`
+  - `useSimplePricing()` - unified pricing with packages, addons, discounts, venue excess hours
+
+### 6.5 Context & State Management
+Create BookingContext matching client-portal architecture.
+
+- [ ] Create `src/contexts/BookingContext.tsx`
+  - **BookingState**: flows, session, stepData, progress, ui, payment, pricing, recovery
+  - **BookingActions**: flow management, session CRUD, navigation, completion, pricing
+  - Debounced backend sync (1-second debounce)
+  - Session persistence to expo-secure-store
+  - Session recovery on mount
+  - Expired session cleanup
+- [ ] Create `src/providers/BookingProvider.tsx`
+  - Wrap booking screens only (not app-wide)
+  - Session timer integration
+  - Error boundary wrapper
+
+### 6.6 Container & Navigation Components
+Create booking flow infrastructure components.
+
+- [ ] Create `src/components/booking/BookingContainer.tsx`
+  - Header with flow name and close button
+  - Progress indicator
+  - Session timer display
+  - Error alerts
+  - Pricing summary footer
+  - Navigation buttons (Back/Next)
+- [ ] Create `src/components/booking/StepRenderer.tsx`
+  - Central router for step components
+  - Data change callbacks
+  - Validation integration
+- [ ] Create `src/components/booking/BookingProgressIndicator.tsx`
+  - Linear, stepper, and compact variants
+  - Mobile-optimized layout
+  - Step labels and descriptions
+- [ ] Create `src/components/booking/SessionTimer.tsx`
+  - Countdown display
+  - Warning at low time
+  - Expiry handling
+- [ ] Create `src/components/booking/SessionRecoverySheet.tsx`
+  - Bottom sheet for recovery prompt
+  - Restore/discard options
+  - Session info display
+- [ ] Create `src/components/booking/BookingNavigation.tsx`
+  - Back/Next/Skip buttons
+  - Loading states
+  - Validation feedback
+
+### 6.7 Event Type Selection
+- [ ] Create `src/components/booking/EventTypeSelection.tsx`
+  - Event type cards with features and pricing
+  - Loading and error states
+  - Modal detail dialogs
+- [ ] Create `src/components/booking/EventTypeCard.tsx`
+  - Featured image, name, description
+  - Key features list
+  - Starting price display
+- [ ] Create `src/components/booking/EventTypeDetailModal.tsx`
+  - Full event type details
+  - Gallery support
+  - Book now action
+
+### 6.8 Step Screens
+Create all 10 booking step screens with full feature parity.
+
+#### Layout
 - [ ] Create `app/booking/_layout.tsx`
-- [ ] Create `app/booking/[flowId]/index.tsx` (Introduction)
+  - BookingProvider wrapper
+  - Navigation configuration
+  - Session recovery check
+
+#### 6.8.1 Introduction Step
+- [ ] Create `app/booking/[flowId]/index.tsx`
+- [ ] Features:
+  - Terms acknowledgment checkbox with validation
+  - Animated welcome header with event type
+  - Configuration-driven content (title, description)
+  - Accessibility announcements
+  - Success indicator when acknowledged
+
+#### 6.8.2 Venue Selection Step
 - [ ] Create `app/booking/[flowId]/venue.tsx`
+- [ ] Create `src/components/booking/VenueCard.tsx`
+- [ ] Features:
+  - Multi-venue selection with min/max constraints
+  - Event-type-specific pricing display
+  - Capacity display (people icons, range)
+  - Included hours per venue
+  - Excess hour rates display
+  - All-day access detection
+  - Featured images and location metadata
+  - Toggle-based selection UI
+  - Real-time validation
+
+#### 6.8.3 DateTime Step
 - [ ] Create `app/booking/[flowId]/datetime.tsx`
+- [ ] Create `src/components/booking/EventCalendar.tsx`
+- [ ] Features:
+  - Interactive calendar with availability overlay
+  - Blocked dates display
+  - Single-day OR multi-day range modes (configurable)
+  - Min/max day range constraints
+  - Venue operating rules display (check-in/check-out times)
+  - Real-time availability checking via API
+  - Philippines timezone handling (Asia/Manila)
+  - Human-readable date formatting
+
+#### 6.8.4 Package Selection Step
 - [ ] Create `app/booking/[flowId]/package.tsx`
-- [ ] Create `app/booking/[flowId]/addons.tsx`
-- [ ] Create `app/booking/[flowId]/questionnaire.tsx`
-- [ ] Create `app/booking/[flowId]/summary.tsx`
-- [ ] Create `app/booking/[flowId]/contact.tsx`
-- [ ] Create `app/booking/[flowId]/payment.tsx`
-- [ ] Create `app/booking/[flowId]/confirmation.tsx`
-
-### 6.3 Booking Components
-- [ ] Create `src/components/booking/StepProgressBar.tsx`
-- [ ] Create `src/components/booking/VenueSelectionCard.tsx`
 - [ ] Create `src/components/booking/PackageCard.tsx`
-- [ ] Create `src/components/booking/AddonCard.tsx`
-- [ ] Create `src/components/booking/PricingSummary.tsx`
-- [ ] Create `src/components/booking/DateTimePicker.tsx`
-- [ ] Create `src/components/booking/QuestionnaireRenderer.tsx`
+- [ ] Create `src/components/booking/CustomBundleCard.tsx`
+- [ ] Create `src/components/booking/VenueHoursSelector.tsx`
+- [ ] Features:
+  - **Dual Mode**: Pre-made packages OR custom bundle from venues
+  - Custom bundle pricing with 10% multi-venue discount
+  - Venue additional hours selector per venue
+  - All-day access venues skip hours selector
+  - Pricing model display (HOURLY vs FIXED)
+  - Quantity selector for multiple selection mode
+  - Event days filtering based on date range
+  - Featured indicator badges
+  - Collapsible details (min/max hours, advance booking)
+  - Real-time pricing updates
 
-### 6.4 Questionnaire System
-- [ ] Create dynamic form renderer
-- [ ] Support all field types
-- [ ] Implement validation
+#### 6.8.5 Addon Selection Step
+- [ ] Create `app/booking/[flowId]/addons.tsx`
+- [ ] Create `src/components/booking/AddonCard.tsx`
+- [ ] Create `src/components/booking/AddonQuantitySelector.tsx`
+- [ ] Features:
+  - Optional category grouping
+  - Per-addon quantity selector (increment/decrement)
+  - Min/max selection constraints
+  - Venue additional hours section (continuation from package)
+  - Progress indicator (selected count / total)
+  - Tax rate and price_with_tax inclusion
+  - Featured addon badges
+  - Summary card showing selected items with totals
+
+#### 6.8.6 Questionnaire Step
+- [ ] Create `app/booking/[flowId]/questionnaire.tsx`
+- [ ] Create `src/components/booking/QuestionnaireRenderer.tsx`
+- [ ] Create `src/components/booking/fields/TextField.tsx`
+- [ ] Create `src/components/booking/fields/TextareaField.tsx`
+- [ ] Create `src/components/booking/fields/NumberField.tsx`
+- [ ] Create `src/components/booking/fields/EmailField.tsx`
+- [ ] Create `src/components/booking/fields/PhoneField.tsx`
+- [ ] Create `src/components/booking/fields/DateField.tsx`
+- [ ] Create `src/components/booking/fields/TimeField.tsx`
+- [ ] Create `src/components/booking/fields/SelectField.tsx`
+- [ ] Create `src/components/booking/fields/MultiSelectField.tsx`
+- [ ] Create `src/components/booking/fields/RadioField.tsx`
+- [ ] Create `src/components/booking/fields/CheckboxField.tsx`
+- [ ] Create `src/components/booking/fields/FileUploadField.tsx`
+- [ ] Create `src/components/booking/fields/RatingField.tsx`
+- [ ] Features:
+  - Multiple questionnaire support per flow
+  - All 14 field types supported
+  - File upload with expo-document-picker (size/type validation)
+  - Completion progress bar
+  - Required field validation
+  - Dynamic field visibility (conditional logic)
+  - Dynamic questionnaire visibility
+  - Field ordering by order field
+  - Grouped by questionnaire name
+
+#### 6.8.7 Pricing Summary Step
+- [ ] Create `app/booking/[flowId]/summary.tsx`
+- [ ] Create `src/components/booking/PricingBreakdown.tsx`
+- [ ] Create `src/components/booking/DiscountCodeInput.tsx`
+- [ ] Create `src/components/booking/TermsCheckbox.tsx`
+- [ ] Create `src/components/booking/BookingReviewSection.tsx`
+- [ ] Features:
+  - Itemized package breakdown with excess hour details
+  - Itemized addon breakdown with quantities
+  - Per-venue excess hours breakdown
+  - Subtotal, tax, discount, total display
+  - Discount code input with apply/remove
+  - Discount validation states (validating, error, success)
+  - Terms & conditions checkbox with URL
+  - Marketing consent checkbox (optional)
+  - Special requests textarea
+  - Contact info summary display
+  - Custom header/footer text from config
+  - Real-time pricing recalculation
+
+#### 6.8.8 Contact Info Step
+- [ ] Create `app/booking/[flowId]/contact.tsx`
+- [ ] Create `src/components/booking/ContactForm.tsx`
+- [ ] Create `src/components/booking/ValidationIndicator.tsx`
+- [ ] Features:
+  - Auto-fill from authenticated user profile
+  - "Welcome back" banner for logged-in users
+  - Real-time field validation with visual states
+  - Philippines phone format (+63 / 0 prefix, 10-11 digits)
+  - Field strength indicators (progress bars)
+  - Account creation option with password field
+  - Password visibility toggle
+  - Custom fields from configuration
+  - Configurable required fields
+
+#### 6.8.9 Payment Step
+- [ ] Create `app/booking/[flowId]/payment.tsx`
+- [ ] Create `src/components/booking/CompletionChoiceScreen.tsx`
+- [ ] Create `src/components/booking/PaymentTypeSelector.tsx`
+- [ ] Create `src/components/booking/GatewaySelector.tsx`
+- [ ] Create `src/components/booking/QuoteRequestForm.tsx`
+- [ ] Create `src/components/booking/StripePaymentForm.tsx`
+- [ ] Create `src/components/booking/SavedPaymentMethods.tsx`
+- [ ] Create `src/components/booking/RefundPolicyDisplay.tsx`
+- [ ] Features:
+  - **Completion choice screen** (if quote requests enabled):
+    - Option 1: Secure booking with deposit/full payment
+    - Option 2: Request custom quote
+    - Trust signals (price locked, date reserved, secure)
+  - **Payment type selection**: Deposit vs. full payment
+  - Dynamic amount display based on payment plan settings
+  - Balance due date information
+  - **For authenticated users**: Saved payment method selector
+  - **Gateway selection**: Stripe, PayPal, GCash, etc.
+  - Stripe React Native integration (@stripe/stripe-react-native)
+  - **Quote request flow**: Special requirements textarea
+  - Refund policy display with deadline hours
+
+#### 6.8.10 Confirmation Step
+- [ ] Create `app/booking/[flowId]/confirmation.tsx`
+- [ ] Create `src/components/booking/ConfirmationStatus.tsx`
+- [ ] Create `src/components/booking/BookingSummaryCard.tsx`
+- [ ] Create `src/components/booking/PaymentSummaryCard.tsx`
+- [ ] Create `src/components/booking/QuestionnaireSummaryCard.tsx`
+- [ ] Create `src/components/booking/ContactSummaryCard.tsx`
+- [ ] Create `src/components/booking/NextStepsCard.tsx`
+- [ ] Features:
+  - Status display states (processing, success, failed, pending)
+  - Retry button for failed state
+  - BookingSummaryCard (packages, addons, pricing)
+  - PaymentSummaryCard (amounts, terms, refund policy)
+  - QuestionnaireSummaryCard (collected responses in accordion)
+  - Contact information card
+  - Special requests display
+  - Booking/quote reference (copyable chip)
+  - Next steps content (configurable action items)
+  - Navigate to dashboard (authenticated) or home
+  - Support contact links
+
+### 6.9 Session Management
+- [ ] Implement session timer with expiry countdown
+- [ ] Session persistence to expo-secure-store
+- [ ] Session recovery bottom sheet on mount
+- [ ] Debounced backend synchronization (1-second debounce)
+- [ ] Expired session cleanup on app start
+- [ ] Session abandonment tracking with reason
+- [ ] beforeunload equivalent (AppState listener)
 
 ---
 
@@ -578,8 +889,20 @@ Reference: [MOBILE_VERSION_API.md](../docs/api/MOBILE_VERSION_API.md)
 
 ## Key Reference Documents
 
+### Mobile App Documentation
 - [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) - Complete implementation guide
 - [STYLING_GUIDE.md](STYLING_GUIDE.md) - Design system details
+- [BOOKING_IMPLEMENTATION.md](BOOKING_IMPLEMENTATION.md) - Booking flow code examples
+- [BOOKING_FLOW_GAP_ANALYSIS.md](BOOKING_FLOW_GAP_ANALYSIS.md) - Feature parity requirements
+
+### Client-Portal Reference (Source of Truth)
+- `frontend/client-portal/src/apis/booking/` - API layer (9 files)
+- `frontend/client-portal/src/hooks/booking/` - React Query hooks (8 files)
+- `frontend/client-portal/src/types/booking/` - TypeScript types (10 files)
+- `frontend/client-portal/src/components/booking/` - Component implementations
+- `frontend/client-portal/src/contexts/BookingContext.tsx` - State management
+
+### Project Documentation
 - [../docs/security/MOBILE_SECURITY.md](../docs/security/MOBILE_SECURITY.md) - Security requirements
 - [../docs/compliance/APP_STORE_COMPLIANCE.md](../docs/compliance/APP_STORE_COMPLIANCE.md) - App Store compliance
 - [../docs/compliance/CONSENT_MANAGEMENT_UI.md](../docs/compliance/CONSENT_MANAGEMENT_UI.md) - Privacy UI specs

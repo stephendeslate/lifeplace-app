@@ -129,10 +129,11 @@ Both frontend apps use:
 ### Booking Flow System
 
 The booking flow is a core feature that allows dynamic multi-step forms:
-- Steps: Introduction, Contact Info, DateTime, Package Selection, Add-ons, Questionnaire, Payment, Review, Confirmation
+- Steps (10 types): Introduction, Venue Selection, DateTime, Package Selection, Add-ons, Questionnaire, Pricing Summary, Contact Info, Payment, Confirmation
 - Each step has configurable behavior via `BookingFlowStep` configurations
 - Session management tracks user progress
 - Analytics integration for conversion tracking
+- Note: "Review" step was deprecated and migrated to "Pricing Summary"
 
 ### Payment Integration
 

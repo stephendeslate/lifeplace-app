@@ -21,7 +21,11 @@
       "infoPlist": {
         "NSCameraUsageDescription": "LifePlace needs camera access to upload photos for your event.",
         "NSPhotoLibraryUsageDescription": "LifePlace needs photo library access to upload photos for your event."
-      }
+      },
+      "associatedDomains": [
+        "applinks:app.lifeplace.com",
+        "applinks:*.lifeplace.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +37,40 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.com",
+              "pathPrefix": "/actions"
+            },
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.com",
+              "pathPrefix": "/quotes"
+            },
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.com",
+              "pathPrefix": "/contracts"
+            },
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.com",
+              "pathPrefix": "/payments"
+            },
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.com",
+              "pathPrefix": "/events"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {

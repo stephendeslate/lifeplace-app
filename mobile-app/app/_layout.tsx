@@ -30,6 +30,7 @@ import { queryClient } from '@/utils/queryClient';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { useAuthStore } from '@/stores/authStore';
+import { useDeepLinking } from '@/hooks/useDeepLinking';
 import { colors } from '@/theme';
 
 // Prevent splash screen from auto-hiding until we're ready
@@ -42,6 +43,14 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   // Wait for auth hydration before hiding splash screen
   const isHydrated = useAuthStore((state) => state.isHydrated);
+
+  // Initialize deep linking handler
+  useDeepLinking({
+    handleInitialLink: true,
+    onDeepLinkReceived: (url) => {
+      console.log('Deep link received:', url);
+    },
+  });
 
   useEffect(() => {
     if (isHydrated) {
@@ -106,6 +115,18 @@ export default function RootLayout() {
 
                 {/* Quote screens - standard push */}
                 <Stack.Screen name="quotes/[id]" />
+
+                {/* Action Center - standard push */}
+                <Stack.Screen name="actions" />
+
+                {/* Payments index - standard push */}
+                <Stack.Screen name="payments" />
+
+                {/* Contracts index - standard push */}
+                <Stack.Screen name="contracts" />
+
+                {/* Quotes index - standard push */}
+                <Stack.Screen name="quotes" />
               </Stack>
             </ToastProvider>
           </AuthProvider>
