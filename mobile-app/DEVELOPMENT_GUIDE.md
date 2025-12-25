@@ -5914,6 +5914,51 @@ export default function MessagesScreen() {
 
 The booking flow is the core feature of the app, implementing a multi-step wizard that matches the web client-portal patterns.
 
+> **Important References:**
+> - [BOOKING_IMPLEMENTATION.md](BOOKING_IMPLEMENTATION.md) - Complete implementation guide with code examples
+> - [BOOKING_FLOW_GAP_ANALYSIS.md](BOOKING_FLOW_GAP_ANALYSIS.md) - Feature parity requirements from client-portal
+> - [ROADMAP.md Phase 6](ROADMAP.md#phase-6-booking-flow-full-feature-parity) - Implementation checklist
+
+### Architecture Overview
+
+The booking flow requires the following components for full feature parity with client-portal:
+
+| Category | Files Required | Description |
+|----------|---------------|-------------|
+| **Types** | 10 files | Complete TypeScript interfaces in `src/types/booking/` |
+| **APIs** | 9 files | API layer in `src/apis/booking/` |
+| **Hooks** | 10 files | React Query hooks in `src/hooks/booking/` |
+| **Context** | 1 file | BookingContext with complete state management |
+| **Utilities** | 7 files | Validation, formatting, storage in `src/utils/` |
+| **Components** | 40+ files | Step screens and reusable components |
+
+### Step Types (10 total)
+
+1. **Introduction** - Terms acknowledgment
+2. **Venue Selection** - Multi-venue selection with pricing
+3. **DateTime** - Calendar with availability checking
+4. **Package Selection** - Pre-made packages or custom bundles
+5. **Addon Selection** - Optional add-ons with quantities
+6. **Questionnaire** - Dynamic forms with 14 field types
+7. **Pricing Summary** - Discount codes, terms, review
+8. **Contact Info** - Contact collection with validation
+9. **Payment** - Deposit/full payment or quote request
+10. **Confirmation** - Booking completion and reference
+
+### Key Features Required
+
+- **Session Management**: Persistence via expo-secure-store, recovery on mount, debounced sync
+- **Philippines Timezone**: All dates/times in Asia/Manila
+- **Real-time Validation**: Field-level with visual indicators
+- **Pricing Calculation**: Server-side with venue excess hours support
+- **Multiple Payment Gateways**: Stripe, PayPal, GCash support
+- **Quote Request Flow**: Alternative to immediate payment
+- **File Uploads**: Via expo-document-picker in questionnaires
+
+For detailed implementation code, see [BOOKING_IMPLEMENTATION.md](BOOKING_IMPLEMENTATION.md).
+
+---
+
 ### 12.1 Booking Types
 
 Create `src/types/booking.ts`:
@@ -5943,14 +5988,14 @@ export interface BookingFlowStep {
 
 export type StepType =
   | 'introduction'
-  | 'contact_info'
-  | 'datetime'
+  | 'venue_selection'
+  | 'date_time'
+  | 'questionnaire'
   | 'package_selection'
   | 'addon_selection'
-  | 'questionnaire'
   | 'pricing_summary'
-  | 'payment'
-  | 'review'
+  | 'contact_info'
+  | 'payment_info'
   | 'confirmation';
 
 export interface BookingFlow {

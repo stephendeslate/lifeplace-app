@@ -646,11 +646,125 @@ export const componentStyles = {
 } as const;
 
 // =============================================================================
+// COLOR SCALES (for compatibility with semantic color references)
+// =============================================================================
+
+/**
+ * Extended color scales for more granular color usage.
+ * Maps numeric scales (100-900) to semantic color intensities.
+ */
+export const colorScales = {
+  primary: {
+    50: '#F5F5F5',
+    100: '#E8E8E8',
+    200: '#D1D1D1',
+    300: '#A8A8A8',
+    400: '#6B6B6B',
+    500: colors.primary.black, // Base
+    600: colors.primary.black,
+    700: colors.primary.black,
+    800: colors.primary.blackLight,
+    900: '#0A0A0A',
+  },
+  neutral: {
+    50: colors.neutral.cream,
+    100: colors.neutral.sand,
+    200: colors.neutral.warmGray,
+    300: '#D1CCC7',
+    400: colors.neutral.gray,
+    500: colors.neutral.gray,
+    600: colors.neutral.darkGray,
+    700: '#4A4540',
+    800: '#2D2A26',
+    900: colors.primary.black,
+  },
+  success: {
+    50: colors.secondary.forestSubtle,
+    100: '#D1EAD1',
+    500: colors.semantic.success,
+    600: colors.secondary.forestDark,
+    700: '#155415',
+  },
+  warning: {
+    50: '#FEF6E7',
+    100: '#FDE8C4',
+    500: colors.semantic.warning,
+    600: '#CC8F3D',
+    700: '#AA7032',
+  },
+  error: {
+    50: '#FCE8E8',
+    100: '#F7C4C4',
+    500: colors.semantic.error,
+    600: '#B33636',
+    700: '#8C2A2A',
+  },
+  info: {
+    50: colors.tertiary.tealSubtle,
+    100: '#CCE5E5',
+    500: colors.semantic.info,
+    600: colors.tertiary.tealDark,
+    700: '#004D4D',
+  },
+} as const;
+
+// =============================================================================
+// TYPOGRAPHY FONTS (for component compatibility)
+// =============================================================================
+
+export const typographyFonts = {
+  regular: fontFamily.primary,
+  medium: fontFamily.primary,
+  semibold: fontFamily.primaryBold,
+  bold: fontFamily.primaryBold,
+} as const;
+
+export const typographySizes = {
+  xs: 10,
+  sm: 12,
+  md: 14,
+  lg: 16,
+  xl: 18,
+  xxl: 20,
+  '2xl': 20,
+  '3xl': 24,
+  '4xl': 28,
+  '5xl': 32,
+} as const;
+
+// =============================================================================
 // THEME OBJECT
 // =============================================================================
 
-const theme = {
-  colors,
+const themeObject = {
+  colors: {
+    ...colorScales,
+    // Named colors from base colors (for component compatibility)
+    primary: {
+      ...colorScales.primary,
+      black: colors.primary.black,
+      blackLight: colors.primary.blackLight,
+    },
+    neutral: {
+      ...colorScales.neutral,
+      white: colors.neutral.white,
+      cream: colors.neutral.cream,
+      sand: colors.neutral.sand,
+      warmGray: colors.neutral.warmGray,
+      gray: colors.neutral.gray,
+      darkGray: colors.neutral.darkGray,
+      beige: colors.neutral.beige,
+    },
+    accent: colors.accent,
+    secondary: colors.secondary,
+    tertiary: colors.tertiary,
+    semantic: colors.semantic,
+    alpha: colors.alpha,
+    // Semantic shortcuts
+    surface: colors.neutral.white,
+    background: colors.neutral.cream,
+    border: colors.neutral.warmGray,
+  },
   gradients,
   fontFamily,
   fontWeights,
@@ -660,11 +774,19 @@ const theme = {
   shadows,
   animation,
   componentStyles,
+  typography: {
+    fonts: typographyFonts,
+    sizes: typographySizes,
+  },
+  borderRadius: layout.borderRadius,
 } as const;
 
-export type Theme = typeof theme;
+export type Theme = typeof themeObject;
 export type Colors = typeof colors;
 export type Spacing = typeof spacing;
 export type TypeScale = typeof typeScale;
 
-export default theme;
+// Named export for convenience
+export { themeObject as theme };
+
+export default themeObject;
