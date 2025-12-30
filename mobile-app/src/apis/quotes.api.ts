@@ -68,7 +68,7 @@ export const quotesApi = {
     if (filters?.page_size) params.append('page_size', filters.page_size.toString());
 
     const queryString = params.toString();
-    const url = queryString ? `/quotes/?${queryString}` : '/quotes/';
+    const url = queryString ? `/sales/client/quotes/?${queryString}` : '/sales/client/quotes/';
     const response = await api.get<QuotesListResponse>(url);
     return response.data;
   },
@@ -105,7 +105,7 @@ export const quotesApi = {
    * Get a single quote by ID
    */
   getQuote: async (id: number): Promise<Quote> => {
-    const response = await api.get<Quote>(`/quotes/${id}/`);
+    const response = await api.get<Quote>(`/sales/client/quotes/${id}/`);
     return response.data;
   },
 
@@ -113,7 +113,7 @@ export const quotesApi = {
    * Accept a quote
    */
   acceptQuote: async (id: number): Promise<Quote> => {
-    const response = await api.post<Quote>(`/quotes/${id}/accept/`);
+    const response = await api.post<Quote>(`/sales/client/quotes/${id}/accept/`);
     return response.data;
   },
 
@@ -121,7 +121,7 @@ export const quotesApi = {
    * Reject a quote
    */
   rejectQuote: async (id: number, data: { reason: string }): Promise<Quote> => {
-    const response = await api.post<Quote>(`/quotes/${id}/reject/`, data);
+    const response = await api.post<Quote>(`/sales/client/quotes/${id}/reject/`, data);
     return response.data;
   },
 };

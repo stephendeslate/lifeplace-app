@@ -26,28 +26,29 @@ export const QuestionnaireAPI = {
    */
   getQuestionnaires: async (eventTypeId?: number): Promise<Questionnaire[]> => {
     const params = eventTypeId ? { event_type: eventTypeId } : {};
-    const response = await api.get<Questionnaire[]>('/questionnaires/public/', { params });
+    const response = await api.get<Questionnaire[]>('/questionnaires/questionnaires/', { params });
     return response.data;
   },
 
   /**
    * Get questionnaire by ID.
    *
-   * GET /questionnaires/public/:questionnaireId/
+   * GET /questionnaires/questionnaires/:questionnaireId/
    */
   getQuestionnaire: async (questionnaireId: number): Promise<Questionnaire> => {
-    const response = await api.get<Questionnaire>(`/questionnaires/public/${questionnaireId}/`);
+    const response = await api.get<Questionnaire>(`/questionnaires/questionnaires/${questionnaireId}/`);
     return response.data;
   },
 
   /**
    * Get questionnaire fields.
    *
-   * GET /questionnaires/public/:questionnaireId/fields/
+   * GET /questionnaires/fields/?questionnaire=:questionnaireId
    */
   getQuestionnaireFields: async (questionnaireId: number): Promise<QuestionnaireField[]> => {
     const response = await api.get<QuestionnaireField[]>(
-      `/questionnaires/public/${questionnaireId}/fields/`
+      `/questionnaires/fields/`,
+      { params: { questionnaire: questionnaireId } }
     );
     return response.data;
   },
@@ -123,7 +124,7 @@ export const QuestionnaireAPI = {
       type: mimeType,
     } as unknown as Blob);
 
-    const response = await api.post<UploadedFile>('/questionnaires/public/upload/', formData, {
+    const response = await api.post<UploadedFile>('/questionnaires/responses/upload/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -135,10 +136,10 @@ export const QuestionnaireAPI = {
   /**
    * Delete an uploaded file.
    *
-   * DELETE /questionnaires/public/upload/:fileId/
+   * DELETE /questionnaires/responses/upload/:fileId/
    */
   deleteFile: async (fileId: string): Promise<void> => {
-    await api.delete(`/questionnaires/public/upload/${fileId}/`);
+    await api.delete(`/questionnaires/responses/upload/${fileId}/`);
   },
 
   /**

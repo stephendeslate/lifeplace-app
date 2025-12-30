@@ -113,11 +113,63 @@ export interface InvoiceFilters {
 
 export const paymentsApi = {
   /**
-   * Get financial overview for the current client
+   * Get financial overview for the current client.
+   * Computed from invoice data since backend doesn't have a dedicated overview endpoint.
    */
   getFinancialOverview: async (): Promise<FinancialOverview> => {
-    const response = await api.get<FinancialOverview>('/payments/overview/');
-    return response.data;
+    // Fetch all invoices to compute the overview
+    const invoicesResponse = await api.get<InvoicesListResponse>('/payments/client/invoices/');
+    const invoices = invoicesResponse.data.results;
+
+    const now = new Date();
+    let totalOutstanding = 0;
+    let totalPaid = 0;
+    let totalOverdue = 0;
+    let pendingCount = 0;
+    let overdueCount = 0;
+    let currency = 'PHP'; // Default currency
+    let nextPaymentDue: FinancialOverview['next_payment_due'] = null;
+
+    for (const invoice of invoices) {
+      const amountDue = parseFloat(invoice.amount_due) || 0;
+      const amountPaid = parseFloat(invoice.amount_paid) || 0;
+      currency = invoice.currency || currency;
+
+      totalPaid += amountPaid;
+
+      if (invoice.status === 'OVERDUE') {
+        totalOverdue += amountDue;
+        totalOutstanding += amountDue;
+        overdueCount++;
+      } else if (['ISSUED', 'PARTIALLY_PAID'].includes(invoice.status)) {
+        totalOutstanding += amountDue;
+        pendingCount++;
+
+        // Track next payment due (earliest due date with amount due)
+        if (amountDue > 0 && invoice.due_date) {
+          const dueDate = new Date(invoice.due_date);
+          if (dueDate >= now) {
+            if (!nextPaymentDue || dueDate < new Date(nextPaymentDue.due_date)) {
+              nextPaymentDue = {
+                amount: invoice.amount_due,
+                due_date: invoice.due_date,
+                invoice_id: invoice.id,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      total_outstanding: totalOutstanding.toFixed(2),
+      total_paid: totalPaid.toFixed(2),
+      total_overdue: totalOverdue.toFixed(2),
+      currency,
+      pending_invoices_count: pendingCount,
+      overdue_invoices_count: overdueCount,
+      next_payment_due: nextPaymentDue,
+    };
   },
 
   /**
@@ -187,7 +239,7 @@ export const paymentsApi = {
     if (filters?.page_size) params.append('page_size', filters.page_size.toString());
 
     const queryString = params.toString();
-    const url = queryString ? `/payments/?${queryString}` : '/payments/';
+    const url = queryString ? `/payments/client/payments/?${queryString}` : '/payments/client/payments/';
     const response = await api.get<PaymentsListResponse>(url);
     return response.data;
   },
@@ -203,7 +255,7 @@ export const paymentsApi = {
     if (filters?.page_size) params.append('page_size', filters.page_size.toString());
 
     const queryString = params.toString();
-    const url = queryString ? `/payments/invoices/?${queryString}` : '/payments/invoices/';
+    const url = queryString ? `/payments/client/invoices/?${queryString}` : '/payments/client/invoices/';
     const response = await api.get<InvoicesListResponse>(url);
     return response.data;
   },
@@ -220,7 +272,7 @@ export const paymentsApi = {
    * Get a single invoice by ID
    */
   getInvoice: async (id: number): Promise<Invoice> => {
-    const response = await api.get<Invoice>(`/payments/invoices/${id}/`);
+    const response = await api.get<Invoice>(`/payments/client/invoices/${id}/`);
     return response.data;
   },
 
@@ -228,7 +280,7 @@ export const paymentsApi = {
    * Get a single payment by ID
    */
   getPayment: async (id: number): Promise<Payment> => {
-    const response = await api.get<Payment>(`/payments/${id}/`);
+    const response = await api.get<Payment>(`/payments/client/payments/${id}/`);
     return response.data;
   },
 
@@ -241,7 +293,7 @@ export const paymentsApi = {
     const response = await api.post<{
       client_secret: string;
       payment_intent_id: string;
-    }>(`/payments/invoices/${invoiceId}/create_payment_intent/`);
+    }>(`/payments/client/invoices/${invoiceId}/create_payment_intent/`);
     return response.data;
   },
 
@@ -249,7 +301,7 @@ export const paymentsApi = {
    * Download invoice as PDF
    */
   downloadInvoice: async (id: number): Promise<Blob> => {
-    const response = await api.get<Blob>(`/payments/invoices/${id}/download/`, {
+    const response = await api.get<Blob>(`/payments/client/invoices/${id}/download/`, {
       responseType: 'blob',
     });
     return response.data;

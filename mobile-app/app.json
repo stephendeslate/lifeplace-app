@@ -24,9 +24,12 @@
         "NSFaceIDUsageDescription": "LifePlace uses Face ID to securely authenticate you and protect your account.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
+        "applinks:app.lifeplace.com",
+        "applinks:*.lifeplace.com",
         "applinks:app.lifeplace.com",
         "applinks:*.lifeplace.com"
       ]
@@ -73,7 +76,10 @@
               "pathPrefix": "/events"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -134,6 +140,11 @@
     "experiments": {
       "typedRoutes": true
     },
-    "scheme": "lifeplace"
+    "scheme": "lifeplace",
+    "extra": {
+      "eas": {
+        "projectId": "53b517db-6212-4786-8680-4c555a74fdf4"
+      }
+    }
   }
 }

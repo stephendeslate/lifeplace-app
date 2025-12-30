@@ -1927,3 +1927,5 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-12-24 04:58:33,744 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
 🔒 SECURITY 2025-12-24 04:59:28,206 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
 🔒 SECURITY 2025-12-26 01:56:17,959 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-31 04:45:17,368 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-31 05:36:43,383 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
