@@ -2,6 +2,7 @@
  * PaymentStep
  *
  * Payment method selection and processing with multiple gateway support.
+ * Integrates with Stripe for card payments.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -12,9 +13,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  TextInput,
 } from 'react-native';
-import { Image } from 'expo-image';
 import {
   CreditCard,
   Wallet,
@@ -24,11 +23,12 @@ import {
   Check,
   Warning,
   Info,
-  CaretRight,
 } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatCurrency } from '@/utils/currency';
+import { StripeCardField } from '@/components/payment/StripeCardField';
+import { useBookingPayment } from '@/hooks/booking/useBookingPayment';
 import type { StepComponentProps } from '../StepRenderer';
 import type {
   PaymentStepData,
@@ -95,6 +95,16 @@ export function PaymentStep({
 }: PaymentStepProps) {
   const { state } = useBookingContext();
 
+  // Stripe booking payment hook
+  const {
+    cardComplete,
+    isLoading: isPaymentLoading,
+    error: paymentError,
+    handleCardChange,
+    initializePayment,
+    clientSecret,
+  } = useBookingPayment();
+
   const {
     enabled_gateways = ['stripe', 'gcash', 'paymaya', 'bank_transfer'],
     default_gateway = 'stripe',
@@ -109,12 +119,12 @@ export function PaymentStep({
   const [paymentOption, setPaymentOption] = useState<'full' | 'deposit'>(
     data.payment_option || 'deposit'
   );
-  const [isProcessing, setIsProcessing] = useState(false);
 
   // Calculate amounts from booking state
   const totalAmount = state.pricingSummary?.total || 0;
   const depositAmount = totalAmount * (minimum_deposit_percentage / 100);
   const balanceAmount = totalAmount - depositAmount;
+  const amountToPay = paymentOption === 'full' ? totalAmount : depositAmount;
 
   const availableGateways = GATEWAY_OPTIONS.filter((g) =>
     enabled_gateways.includes(g.id)
@@ -129,26 +139,65 @@ export function PaymentStep({
     }
   }, [data]);
 
-  const handleGatewaySelect = useCallback(async (gateway: PaymentGateway) => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSelectedGateway(gateway);
-    onDataChange({
-      ...data,
-      selected_gateway: gateway,
-    });
-  }, [data, onDataChange]);
+  // Update data when card completeness changes
+  useEffect(() => {
+    if (selectedGateway === 'stripe') {
+      onDataChange({
+        ...data,
+        card_complete: cardComplete,
+      });
+    }
+  }, [cardComplete, selectedGateway]);
 
-  const handlePaymentOptionChange = useCallback(async (option: 'full' | 'deposit') => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPaymentOption(option);
-    onDataChange({
-      ...data,
-      payment_option: option,
-      amount_to_pay: option === 'full' ? totalAmount : depositAmount,
-    });
-  }, [data, totalAmount, depositAmount, onDataChange]);
+  const handleGatewaySelect = useCallback(
+    async (gateway: PaymentGateway) => {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setSelectedGateway(gateway);
 
-  const amountToPay = paymentOption === 'full' ? totalAmount : depositAmount;
+      onDataChange({
+        ...data,
+        selected_gateway: gateway,
+        payment_method: gateway === 'stripe' ? 'CREDIT_CARD' : gateway.toUpperCase(),
+      });
+
+      // Initialize payment intent for Stripe
+      if (gateway === 'stripe' && amountToPay > 0) {
+        await initializePayment(
+          amountToPay,
+          paymentOption === 'full' ? 'FULL' : 'DEPOSIT'
+        );
+      }
+    },
+    [data, onDataChange, amountToPay, paymentOption, initializePayment]
+  );
+
+  const handlePaymentOptionChange = useCallback(
+    async (option: 'full' | 'deposit') => {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setPaymentOption(option);
+      const newAmount = option === 'full' ? totalAmount : depositAmount;
+
+      onDataChange({
+        ...data,
+        payment_option: option,
+        amount_to_pay: newAmount,
+      });
+
+      // Re-initialize payment intent if Stripe is selected
+      if (selectedGateway === 'stripe' && newAmount > 0) {
+        await initializePayment(newAmount, option === 'full' ? 'FULL' : 'DEPOSIT');
+      }
+    },
+    [data, totalAmount, depositAmount, onDataChange, selectedGateway, initializePayment]
+  );
+
+  // Handle Stripe card field changes
+  const handleStripeCardChange = useCallback(
+    (details: { complete: boolean; validationError?: { message: string } }) => {
+      handleCardChange(details as any);
+    },
+    [handleCardChange]
+  );
 
   return (
     <ScrollView
@@ -159,9 +208,7 @@ export function PaymentStep({
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Payment</Text>
-        <Text style={styles.subtitle}>
-          Select your preferred payment method
-        </Text>
+        <Text style={styles.subtitle}>Select your preferred payment method</Text>
       </View>
 
       {/* Amount Summary */}
@@ -187,19 +234,19 @@ export function PaymentStep({
             onPress={() => handlePaymentOptionChange('deposit')}
           >
             <View style={styles.paymentOptionLeft}>
-              <View style={[
-                styles.radioOuter,
-                paymentOption === 'deposit' && styles.radioOuterSelected,
-              ]}>
+              <View
+                style={[
+                  styles.radioOuter,
+                  paymentOption === 'deposit' && styles.radioOuterSelected,
+                ]}
+              >
                 {paymentOption === 'deposit' && <View style={styles.radioInner} />}
               </View>
               <View>
                 <Text style={styles.paymentOptionTitle}>
                   Pay Reservation Fee ({minimum_deposit_percentage}%)
                 </Text>
-                <Text style={styles.paymentOptionDesc}>
-                  Pay balance before event
-                </Text>
+                <Text style={styles.paymentOptionDesc}>Pay balance before event</Text>
               </View>
             </View>
             <Text style={styles.paymentOptionAmount}>
@@ -215,17 +262,17 @@ export function PaymentStep({
             onPress={() => handlePaymentOptionChange('full')}
           >
             <View style={styles.paymentOptionLeft}>
-              <View style={[
-                styles.radioOuter,
-                paymentOption === 'full' && styles.radioOuterSelected,
-              ]}>
+              <View
+                style={[
+                  styles.radioOuter,
+                  paymentOption === 'full' && styles.radioOuterSelected,
+                ]}
+              >
                 {paymentOption === 'full' && <View style={styles.radioInner} />}
               </View>
               <View>
                 <Text style={styles.paymentOptionTitle}>Pay in Full</Text>
-                <Text style={styles.paymentOptionDesc}>
-                  No remaining balance
-                </Text>
+                <Text style={styles.paymentOptionDesc}>No remaining balance</Text>
               </View>
             </View>
             <Text style={styles.paymentOptionAmount}>
@@ -250,10 +297,12 @@ export function PaymentStep({
               onPress={() => handleGatewaySelect(gateway.id)}
             >
               <View style={styles.methodLeft}>
-                <View style={[
-                  styles.methodIcon,
-                  selectedGateway === gateway.id && styles.methodIconSelected,
-                ]}>
+                <View
+                  style={[
+                    styles.methodIcon,
+                    selectedGateway === gateway.id && styles.methodIconSelected,
+                  ]}
+                >
                   {gateway.icon}
                 </View>
                 <View style={styles.methodInfo}>
@@ -264,10 +313,12 @@ export function PaymentStep({
                   )}
                 </View>
               </View>
-              <View style={[
-                styles.checkCircle,
-                selectedGateway === gateway.id && styles.checkCircleSelected,
-              ]}>
+              <View
+                style={[
+                  styles.checkCircle,
+                  selectedGateway === gateway.id && styles.checkCircleSelected,
+                ]}
+              >
                 {selectedGateway === gateway.id && (
                   <Check size={14} color={colors.neutral.white} weight="bold" />
                 )}
@@ -276,6 +327,24 @@ export function PaymentStep({
           ))}
         </View>
       </View>
+
+      {/* Stripe Card Field - Only show when Stripe is selected */}
+      {selectedGateway === 'stripe' && (
+        <View style={styles.cardFieldSection}>
+          {isPaymentLoading && !clientSecret ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={colors.secondary.forest} />
+              <Text style={styles.loadingText}>Preparing payment...</Text>
+            </View>
+          ) : (
+            <StripeCardField
+              onCardChange={handleStripeCardChange}
+              error={paymentError}
+              disabled={isPaymentLoading}
+            />
+          )}
+        </View>
+      )}
 
       {/* Amount to Pay */}
       <View style={styles.payNowSection}>
@@ -290,7 +359,8 @@ export function PaymentStep({
           <View style={styles.balanceNote}>
             <Info size={16} color={colors.tertiary.teal} />
             <Text style={styles.balanceNoteText}>
-              Remaining balance of {formatCurrency(balanceAmount, { currency: 'PHP' })} will be due 7 days before your event.
+              Remaining balance of {formatCurrency(balanceAmount, { currency: 'PHP' })}{' '}
+              will be due 7 days before your event.
             </Text>
           </View>
         )}
@@ -302,7 +372,8 @@ export function PaymentStep({
         <View style={styles.securityContent}>
           <Text style={styles.securityTitle}>Secure Payment</Text>
           <Text style={styles.securityText}>
-            Your payment information is encrypted and secure. We never store your full card details.
+            Your payment information is encrypted and secure. We never store your full
+            card details.
           </Text>
         </View>
         <Lock size={16} color={colors.secondary.forest} />
@@ -312,9 +383,15 @@ export function PaymentStep({
       {validationErrors?.selected_gateway && (
         <View style={styles.errorContainer}>
           <Warning size={16} color={colors.semantic.error} />
-          <Text style={styles.errorText}>
-            {validationErrors.selected_gateway[0]}
-          </Text>
+          <Text style={styles.errorText}>{validationErrors.selected_gateway[0]}</Text>
+        </View>
+      )}
+
+      {/* Card Error */}
+      {paymentError && !validationErrors?.selected_gateway && (
+        <View style={styles.errorContainer}>
+          <Warning size={16} color={colors.semantic.error} />
+          <Text style={styles.errorText}>{paymentError}</Text>
         </View>
       )}
     </ScrollView>
@@ -378,7 +455,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     borderWidth: 2,
     borderColor: 'transparent',
-    ...shadows.xs,
+    ...shadows.sm,
   },
   paymentOptionCardSelected: {
     borderColor: colors.primary.black,
@@ -487,6 +564,22 @@ const styles = StyleSheet.create({
   checkCircleSelected: {
     backgroundColor: colors.secondary.forest,
     borderColor: colors.secondary.forest,
+  },
+  cardFieldSection: {
+    marginBottom: spacing.lg,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    padding: spacing.lg,
+    backgroundColor: colors.neutral.sand,
+    borderRadius: layout.borderRadius.md,
+  },
+  loadingText: {
+    ...typeScale.bodyMedium,
+    color: colors.neutral.darkGray,
   },
   payNowSection: {
     backgroundColor: colors.neutral.white,
