@@ -25,7 +25,7 @@ interface ContractCardProps {
   testID?: string;
 }
 
-export function ContractCard({ contract, onPress, testID }: ContractCardProps) {
+export const ContractCard = React.memo(function ContractCard({ contract, onPress, testID }: ContractCardProps) {
   const daysUntilExpiry = contract.expires_at ? getDaysUntil(contract.expires_at) : null;
   const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 3 && daysUntilExpiry > 0;
   const isExpired = daysUntilExpiry !== null && daysUntilExpiry <= 0;
@@ -120,7 +120,7 @@ export function ContractCard({ contract, onPress, testID }: ContractCardProps) {
       <CaretRight size={20} color={theme.colors.neutral.gray} />
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

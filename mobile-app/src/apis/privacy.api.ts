@@ -136,11 +136,13 @@ export const objectToProcessing = async (
 
 /**
  * Right to Erasure - Delete account
+ *
+ * Backend endpoint: DELETE /users/me/delete/
  */
 export const deleteAccount = async (
   data: AccountDeletionRequest
 ): Promise<AccountDeletionResponse> => {
-  const response = await api.delete('/users/me/', { data });
+  const response = await api.delete('/users/me/delete/', { data });
   return response.data;
 };
 

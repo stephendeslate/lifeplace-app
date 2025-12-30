@@ -216,6 +216,7 @@ export const EventCard = memo(function EventCard({ event, onPress, compact = fal
               style={styles.thumbnailImage}
               contentFit="cover"
               transition={200}
+              cachePolicy="memory-disk"
             />
           </View>
         )}

@@ -8,7 +8,7 @@ import React from 'react';
 import { Badge, type BadgeVariant } from '@/components/common/Badge';
 import type { InvoiceStatus } from '@/apis/payments.api';
 
-interface InvoiceStatusBadgeProps {
+export interface InvoiceStatusBadgeProps {
   status: InvoiceStatus;
   size?: 'small' | 'medium' | 'large';
 }

@@ -12,13 +12,13 @@ import { InvoiceStatusBadge } from './InvoiceStatusBadge';
 import { formatCurrency, formatCardDate } from '@/utils/formatting';
 import type { Invoice } from '@/apis/payments.api';
 
-interface InvoiceCardProps {
+export interface InvoiceCardProps {
   invoice: Invoice;
   onPress: () => void;
   testID?: string;
 }
 
-export function InvoiceCard({ invoice, onPress, testID }: InvoiceCardProps) {
+export const InvoiceCard = React.memo(function InvoiceCard({ invoice, onPress, testID }: InvoiceCardProps) {
   const amountDue = parseFloat(invoice.amount_due);
   const totalAmount = parseFloat(invoice.total_amount);
   const amountPaid = parseFloat(invoice.amount_paid);
@@ -97,7 +97,7 @@ export function InvoiceCard({ invoice, onPress, testID }: InvoiceCardProps) {
       <CaretRight size={20} color={theme.colors.neutral.gray} />
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

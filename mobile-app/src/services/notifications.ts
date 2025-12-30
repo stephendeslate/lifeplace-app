@@ -17,6 +17,7 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 import { colors } from '@/theme';
+import { notificationLogger as logger } from '@/utils/logger';
 
 // =============================================================================
 // CONFIGURE NOTIFICATION HANDLER
@@ -72,7 +73,7 @@ export const NotificationService = {
    */
   requestPermissions: async (): Promise<boolean> => {
     if (!Device.isDevice) {
-      console.log('Push notifications require a physical device');
+      logger.info('Push notifications require a physical device');
       return false;
     }
 
@@ -96,14 +97,14 @@ export const NotificationService = {
    */
   getExpoPushToken: async (): Promise<string | null> => {
     if (!Device.isDevice) {
-      console.log('Push notifications require a physical device');
+      logger.info('Push notifications require a physical device');
       return null;
     }
 
     // Check permissions
     const hasPermission = await NotificationService.requestPermissions();
     if (!hasPermission) {
-      console.log('Push notification permission denied');
+      logger.info('Push notification permission denied');
       return null;
     }
 
@@ -112,7 +113,7 @@ export const NotificationService = {
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
 
       if (!projectId) {
-        console.warn('EAS Project ID not configured in app.config.js');
+        logger.warn('EAS Project ID not configured in app.config.js');
       }
 
       const tokenResult = await Notifications.getExpoPushTokenAsync({
@@ -121,7 +122,7 @@ export const NotificationService = {
 
       return tokenResult.data;
     } catch (error) {
-      console.error('Error getting push token:', error);
+      logger.error('Error getting push token:', error);
       return null;
     }
   },
@@ -133,7 +134,7 @@ export const NotificationService = {
     try {
       await SecureStore.setItemAsync(PUSH_TOKEN_KEY, token);
     } catch (error) {
-      console.error('Failed to store push token:', error);
+      logger.error('Failed to store push token:', error);
     }
   },
 
@@ -144,7 +145,7 @@ export const NotificationService = {
     try {
       return await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
     } catch (error) {
-      console.error('Failed to get stored push token:', error);
+      logger.error('Failed to get stored push token:', error);
       return null;
     }
   },
@@ -156,7 +157,7 @@ export const NotificationService = {
     try {
       await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
     } catch (error) {
-      console.error('Failed to clear stored push token:', error);
+      logger.error('Failed to clear stored push token:', error);
     }
   },
 
@@ -179,7 +180,7 @@ export const NotificationService = {
 
       return deviceId;
     } catch (error) {
-      console.error('Failed to get device ID:', error);
+      logger.error('Failed to get device ID:', error);
       // Return a temporary ID if storage fails
       return `temp-${Date.now()}`;
     }
@@ -263,7 +264,7 @@ export const NotificationService = {
         sound: 'default',
       });
     } catch (error) {
-      console.error('Failed to setup Android channels:', error);
+      logger.error('Failed to setup Android channels:', error);
     }
   },
 
@@ -349,6 +350,67 @@ export const NotificationService = {
   },
 
   // ===========================================================================
+  // BACKEND REGISTRATION
+  // ===========================================================================
+
+  /**
+   * Register push token with the backend
+   * Stores device info along with the Expo push token
+   */
+  registerTokenWithBackend: async (token: string): Promise<boolean> => {
+    try {
+      // Dynamic import to avoid circular dependency
+      const { api } = await import('@/utils/api');
+
+      const deviceId = await NotificationService.getDeviceId();
+      const deviceName = NotificationService.getDeviceName();
+      const deviceType = NotificationService.getDeviceType();
+
+      await api.post('/notifications/push-tokens/', {
+        token,
+        device_type: deviceType,
+        device_id: deviceId,
+        device_name: deviceName,
+        app_version: Constants.expoConfig?.version || '1.0.0',
+      });
+
+      logger.info('Push token registered with backend');
+      return true;
+    } catch (error) {
+      logger.error('Failed to register push token with backend:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Unregister push token from the backend
+   * Should be called on logout
+   */
+  unregisterTokenFromBackend: async (): Promise<boolean> => {
+    try {
+      // Dynamic import to avoid circular dependency
+      const { api } = await import('@/utils/api');
+
+      const deviceId = await NotificationService.getDeviceId();
+      const storedToken = await NotificationService.getStoredPushToken();
+
+      await api.post('/notifications/push-tokens/unregister/', {
+        token: storedToken,
+        device_id: deviceId,
+      });
+
+      // Clear the stored token
+      await NotificationService.clearStoredPushToken();
+
+      logger.info('Push token unregistered from backend');
+      return true;
+    } catch (error) {
+      logger.error('Failed to unregister push token from backend:', error);
+      return false;
+    }
+  },
+
+  // ===========================================================================
   // FULL REGISTRATION FLOW
   // ===========================================================================
 
@@ -358,6 +420,7 @@ export const NotificationService = {
    * 2. Get Expo push token
    * 3. Setup Android channels
    * 4. Store token locally
+   * 5. Register token with backend
    *
    * Returns the token if successful, null otherwise.
    */
@@ -375,7 +438,25 @@ export const NotificationService = {
     // Store token for later cleanup
     await NotificationService.storePushToken(token);
 
+    // Register with backend
+    await NotificationService.registerTokenWithBackend(token);
+
     return token;
+  },
+
+  /**
+   * Unregister for push notifications
+   * Should be called on logout
+   */
+  unregisterForPushNotifications: async (): Promise<void> => {
+    // Unregister from backend
+    await NotificationService.unregisterTokenFromBackend();
+
+    // Clear badge
+    await NotificationService.clearBadge();
+
+    // Dismiss all notifications
+    await NotificationService.dismissAllNotifications();
   },
 };
 

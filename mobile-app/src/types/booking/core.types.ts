@@ -18,6 +18,9 @@ export interface EventType {
   features?: string[];
   starting_price?: string;
   color?: string;
+  // Additional properties
+  gallery_images?: string[];
+  is_featured?: boolean;
 }
 
 /**
@@ -72,6 +75,31 @@ export interface StepDisplayCondition {
 }
 
 /**
+ * Step validation rules - defines constraints for step data
+ */
+export interface StepValidationRules {
+  // Field-level requirements
+  required_fields?: string[];
+  min_selections?: number;
+  max_selections?: number;
+  // Numeric constraints
+  min_value?: number;
+  max_value?: number;
+  // Text constraints
+  min_length?: number;
+  max_length?: number;
+  pattern?: string;
+  // Date constraints
+  min_date?: string;
+  max_date?: string;
+  // File constraints
+  max_file_size_mb?: number;
+  allowed_file_types?: string[];
+  // Custom validation message
+  error_message?: string;
+}
+
+/**
  * Individual step in a booking flow
  */
 export interface BookingFlowStep {
@@ -86,7 +114,7 @@ export interface BookingFlowStep {
   is_enabled: boolean;
   display_conditions?: StepDisplayCondition[];
   configuration: StepConfiguration;
-  validation_rules?: Record<string, unknown>;
+  validation_rules?: StepValidationRules;
 }
 
 /**
@@ -116,6 +144,8 @@ export interface BookingFlow {
   description?: string;
   event_type: EventType;
   enabled_steps: BookingFlowStep[];
+  /** @deprecated Use enabled_steps instead. Kept for backward compatibility */
+  steps?: BookingFlowStep[];
   is_active: boolean;
   require_authentication: boolean;
   allow_guest_booking: boolean;

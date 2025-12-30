@@ -27,20 +27,20 @@ import {
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatCurrency } from '@/utils/currency';
-import { StripeCardField } from '@/components/payment/StripeCardField';
+import { StripeCardField } from '@/components/payments';
 import { useBookingPayment } from '@/hooks/booking/useBookingPayment';
 import type { StepComponentProps } from '../StepRenderer';
 import type {
   PaymentStepData,
-  PaymentStepConfiguration,
-  PaymentGateway,
+  PaymentInfoStepConfiguration,
+  PaymentGatewayCode,
 } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
 
-type PaymentStepProps = StepComponentProps<PaymentStepData, PaymentStepConfiguration>;
+type PaymentStepProps = StepComponentProps<PaymentStepData, PaymentInfoStepConfiguration>;
 
 interface GatewayOption {
-  id: PaymentGateway;
+  id: PaymentGatewayCode;
   name: string;
   description: string;
   icon: React.ReactNode;
@@ -105,58 +105,63 @@ export function PaymentStep({
     clientSecret,
   } = useBookingPayment();
 
-  const {
-    enabled_gateways = ['stripe', 'gcash', 'paymaya', 'bank_transfer'],
-    default_gateway = 'stripe',
-    allow_partial_payment = true,
-    minimum_deposit_percentage = 50,
-    show_payment_plans = true,
-  } = configuration || {};
+  // Map configuration to local variables with defaults
+  // Note: PaymentInfoStepConfiguration uses different property names
+  const acceptDeposit = configuration?.accept_deposit ?? true;
+  const acceptFullPayment = configuration?.accept_full_payment ?? true;
+  const showPaymentPlans = configuration?.allow_payment_plans ?? true;
+  const depositPercentage = configuration?.effective_payment_terms?.deposit_percentage ?? 50;
 
-  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>(
-    data.selected_gateway || default_gateway
+  // Default enabled gateways (these would come from backend in production)
+  const enabledGateways: PaymentGatewayCode[] = ['stripe', 'gcash', 'paymaya', 'bank_transfer'];
+  const defaultGateway: PaymentGatewayCode = 'stripe';
+
+  const [selectedGateway, setSelectedGateway] = useState<PaymentGatewayCode | null>(
+    (data.payment_gateway_code as PaymentGatewayCode) || defaultGateway
   );
   const [paymentOption, setPaymentOption] = useState<'full' | 'deposit'>(
-    data.payment_option || 'deposit'
+    data.payment_type === 'FULL' ? 'full' : 'deposit'
   );
 
   // Calculate amounts from booking state
-  const totalAmount = state.pricingSummary?.total || 0;
-  const depositAmount = totalAmount * (minimum_deposit_percentage / 100);
+  const totalAmount = parseFloat(state.pricingBreakdown?.total || '0') || 0;
+  const depositAmount = totalAmount * (depositPercentage / 100);
   const balanceAmount = totalAmount - depositAmount;
   const amountToPay = paymentOption === 'full' ? totalAmount : depositAmount;
 
   const availableGateways = GATEWAY_OPTIONS.filter((g) =>
-    enabled_gateways.includes(g.id)
+    enabledGateways.includes(g.id)
   );
 
   useEffect(() => {
-    if (data.selected_gateway) {
-      setSelectedGateway(data.selected_gateway);
+    if (data.payment_gateway_code) {
+      setSelectedGateway(data.payment_gateway_code as PaymentGatewayCode);
     }
-    if (data.payment_option) {
-      setPaymentOption(data.payment_option);
+    if (data.payment_type) {
+      setPaymentOption(data.payment_type === 'FULL' ? 'full' : 'deposit');
     }
   }, [data]);
 
   // Update data when card completeness changes
+  // Note: cardComplete state is tracked in the hook, not in step data
   useEffect(() => {
-    if (selectedGateway === 'stripe') {
+    if (selectedGateway === 'stripe' && cardComplete) {
+      // Card is complete and ready for payment
       onDataChange({
         ...data,
-        card_complete: cardComplete,
+        payment_method: 'CREDIT_CARD',
       });
     }
-  }, [cardComplete, selectedGateway]);
+  }, [cardComplete, selectedGateway, data, onDataChange]);
 
   const handleGatewaySelect = useCallback(
-    async (gateway: PaymentGateway) => {
+    async (gateway: PaymentGatewayCode) => {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setSelectedGateway(gateway);
 
       onDataChange({
         ...data,
-        selected_gateway: gateway,
+        payment_gateway_code: gateway,
         payment_method: gateway === 'stripe' ? 'CREDIT_CARD' : gateway.toUpperCase(),
       });
 
@@ -179,8 +184,8 @@ export function PaymentStep({
 
       onDataChange({
         ...data,
-        payment_option: option,
-        amount_to_pay: newAmount,
+        payment_type: option === 'full' ? 'FULL' : 'DEPOSIT',
+        deposit_amount: option === 'deposit' ? newAmount : undefined,
       });
 
       // Re-initialize payment intent if Stripe is selected
@@ -222,7 +227,7 @@ export function PaymentStep({
       </View>
 
       {/* Payment Options */}
-      {allow_partial_payment && show_payment_plans && (
+      {acceptDeposit && showPaymentPlans && (
         <View style={styles.paymentOptions}>
           <Text style={styles.sectionTitle}>Payment Option</Text>
 
@@ -244,7 +249,7 @@ export function PaymentStep({
               </View>
               <View>
                 <Text style={styles.paymentOptionTitle}>
-                  Pay Reservation Fee ({minimum_deposit_percentage}%)
+                  Pay Reservation Fee ({depositPercentage}%)
                 </Text>
                 <Text style={styles.paymentOptionDesc}>Pay balance before event</Text>
               </View>

@@ -15,7 +15,7 @@ interface QuoteLineItemProps {
   currency?: string;
 }
 
-export function QuoteLineItem({ item, currency = 'PHP' }: QuoteLineItemProps) {
+export const QuoteLineItem = React.memo(function QuoteLineItem({ item, currency = 'PHP' }: QuoteLineItemProps) {
   return (
     <View style={styles.container}>
       <View style={styles.left}>
@@ -27,7 +27,7 @@ export function QuoteLineItem({ item, currency = 'PHP' }: QuoteLineItemProps) {
       <Text style={styles.total}>{formatCurrency(item.total_price, currency)}</Text>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

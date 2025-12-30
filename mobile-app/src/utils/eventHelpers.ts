@@ -55,7 +55,7 @@ export function isEventOngoing(event: Event): boolean {
  * Check if an event is active (not cancelled or completed)
  */
 export function isEventActive(event: Event): boolean {
-  return event.status === 'CONFIRMED' || event.status === 'IN_PROGRESS';
+  return event.status === 'LEAD' || event.status === 'CONFIRMED';
 }
 
 /**
@@ -64,8 +64,8 @@ export function isEventActive(event: Event): boolean {
 export function eventRequiresAttention(event: Event): boolean {
   return (
     event.pending_signature_required === true ||
-    event.payment_status === 'OVERDUE' ||
-    event.payment_status === 'PENDING'
+    event.payment_status === 'UNPAID' ||
+    event.payment_status === 'PARTIALLY_PAID'
   );
 }
 
@@ -78,12 +78,10 @@ export function eventRequiresAttention(event: Event): boolean {
  */
 export function getEventStatusColor(status: EventStatus): string {
   switch (status) {
-    case 'DRAFT':
-      return theme.colors.neutral[500];
+    case 'LEAD':
+      return theme.colors.warning[500];
     case 'CONFIRMED':
       return theme.colors.primary[500];
-    case 'IN_PROGRESS':
-      return theme.colors.warning[500];
     case 'COMPLETED':
       return theme.colors.success[500];
     case 'CANCELLED':
@@ -98,12 +96,10 @@ export function getEventStatusColor(status: EventStatus): string {
  */
 export function getEventStatusBgColor(status: EventStatus): string {
   switch (status) {
-    case 'DRAFT':
-      return theme.colors.neutral[100];
+    case 'LEAD':
+      return theme.colors.warning[100];
     case 'CONFIRMED':
       return theme.colors.primary[100];
-    case 'IN_PROGRESS':
-      return theme.colors.warning[100];
     case 'COMPLETED':
       return theme.colors.success[100];
     case 'CANCELLED':
@@ -120,12 +116,10 @@ export function getPaymentStatusColor(status: PaymentStatus): string {
   switch (status) {
     case 'PAID':
       return theme.colors.success[500];
-    case 'PARTIAL':
+    case 'PARTIALLY_PAID':
       return theme.colors.warning[500];
-    case 'PENDING':
+    case 'UNPAID':
       return theme.colors.neutral[500];
-    case 'OVERDUE':
-      return theme.colors.error[500];
     default:
       return theme.colors.neutral[500];
   }
@@ -219,12 +213,10 @@ export function getCheckInStatusColor(status: CheckInStatus): string {
  */
 export function getEventStatusLabel(status: EventStatus): string {
   switch (status) {
-    case 'DRAFT':
-      return 'Draft';
+    case 'LEAD':
+      return 'Lead';
     case 'CONFIRMED':
       return 'Confirmed';
-    case 'IN_PROGRESS':
-      return 'In Progress';
     case 'COMPLETED':
       return 'Completed';
     case 'CANCELLED':
@@ -241,12 +233,10 @@ export function getPaymentStatusLabel(status: PaymentStatus): string {
   switch (status) {
     case 'PAID':
       return 'Paid';
-    case 'PARTIAL':
+    case 'PARTIALLY_PAID':
       return 'Partially Paid';
-    case 'PENDING':
-      return 'Pending';
-    case 'OVERDUE':
-      return 'Overdue';
+    case 'UNPAID':
+      return 'Unpaid';
     default:
       return status;
   }
@@ -285,14 +275,12 @@ export function getContractStatusLabel(status: ContractStatus): string {
  */
 export function getEventStatusIcon(
   status: EventStatus
-): 'calendar' | 'check-circle' | 'clock' | 'x-circle' | 'file' {
+): 'calendar' | 'check-circle' | 'clock' | 'x-circle' {
   switch (status) {
-    case 'DRAFT':
-      return 'file';
+    case 'LEAD':
+      return 'clock';
     case 'CONFIRMED':
       return 'calendar';
-    case 'IN_PROGRESS':
-      return 'clock';
     case 'COMPLETED':
       return 'check-circle';
     case 'CANCELLED':

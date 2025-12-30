@@ -7,7 +7,7 @@
 import React, { useCallback } from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { colors, spacing } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { EventTypeSelection } from '@/components/booking';
@@ -29,20 +29,20 @@ export default function BookingIndexScreen() {
       if (flows.length === 1) {
         // If only one flow, start it directly
         actions.selectFlow(flows[0]);
-        const sessionId = await actions.startSession(flows[0].id);
-        router.push(`/booking/${flows[0].id}`);
+        await actions.startSession(flows[0].id);
+        router.push(`/booking/${flows[0].id}` as Href);
       } else if (flows.length > 1) {
         // If multiple flows, could show a flow selector (for now, pick the first)
         actions.selectFlow(flows[0]);
-        const sessionId = await actions.startSession(flows[0].id);
-        router.push(`/booking/${flows[0].id}`);
+        await actions.startSession(flows[0].id);
+        router.push(`/booking/${flows[0].id}` as Href);
       } else {
         // No flows available for this event type - still try to start
         const allFlows = state.availableFlows;
         if (allFlows.length > 0) {
           actions.selectFlow(allFlows[0]);
-          const sessionId = await actions.startSession(allFlows[0].id);
-          router.push(`/booking/${allFlows[0].id}`);
+          await actions.startSession(allFlows[0].id);
+          router.push(`/booking/${allFlows[0].id}` as Href);
         }
       }
     } catch (error) {

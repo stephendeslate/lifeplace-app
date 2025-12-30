@@ -9,6 +9,7 @@ import { eventsApi } from './events.api';
 import { quotesApi } from './quotes.api';
 import { contractsApi } from './contracts.api';
 import { paymentsApi } from './payments.api';
+import { communicationsApi } from './communications.api';
 import type {
   DashboardData,
   CriticalActions,
@@ -41,14 +42,23 @@ export const dashboardApi = {
    */
   getDashboardData: async (): Promise<DashboardData> => {
     // Fetch all data in parallel
-    const [events, pendingQuotes, overduePayments, financialSummary, pendingContracts] =
-      await Promise.all([
-        eventsApi.getEvents(),
-        quotesApi.getPendingQuotes(),
-        paymentsApi.getOverduePayments(),
-        paymentsApi.getFinancialSummary(),
-        contractsApi.getPendingSignatureContracts(),
-      ]);
+    const [
+      events,
+      pendingQuotes,
+      overduePayments,
+      financialSummary,
+      pendingContracts,
+      unreadCountResult,
+      recentMessages,
+    ] = await Promise.all([
+      eventsApi.getEvents(),
+      quotesApi.getPendingQuotes(),
+      paymentsApi.getOverduePayments(),
+      paymentsApi.getFinancialSummary(),
+      contractsApi.getPendingSignatureContracts(),
+      communicationsApi.getUnreadCount().catch(() => ({ unread_count: 0 })),
+      communicationsApi.getRecentMessages(5).catch(() => []),
+    ]);
 
     // Process critical actions
     const criticalActions = dashboardApi.buildCriticalActions(
@@ -61,10 +71,10 @@ export const dashboardApi = {
     // Process event status
     const eventStatus = dashboardApi.buildEventStatus(events);
 
-    // Build communications (placeholder for now - needs communications API)
+    // Build communications from real API data
     const communications: Communications = {
-      unread_count: 0,
-      recent_messages: [],
+      unread_count: unreadCountResult.unread_count,
+      recent_messages: recentMessages,
       important_notifications: dashboardApi.buildNotifications(
         pendingQuotes,
         overduePayments,

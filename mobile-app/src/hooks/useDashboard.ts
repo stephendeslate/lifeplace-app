@@ -68,6 +68,7 @@ export function useDashboard(): UseDashboardReturn {
   const overduePaymentsQuery = useOverduePayments();
   const financialSummaryQuery = useFinancialSummary();
   const pendingContractsQuery = usePendingContracts();
+  const urgentTasksQuery = useUrgentTasks();
 
   // Calculate loading state
   const isLoading =
@@ -75,14 +76,16 @@ export function useDashboard(): UseDashboardReturn {
     pendingQuotesQuery.isLoading ||
     overduePaymentsQuery.isLoading ||
     financialSummaryQuery.isLoading ||
-    pendingContractsQuery.isLoading;
+    pendingContractsQuery.isLoading ||
+    urgentTasksQuery.isLoading;
 
   const isRefetching =
     upcomingEventsQuery.isFetching ||
     pendingQuotesQuery.isFetching ||
     overduePaymentsQuery.isFetching ||
     financialSummaryQuery.isFetching ||
-    pendingContractsQuery.isFetching;
+    pendingContractsQuery.isFetching ||
+    urgentTasksQuery.isFetching;
 
   // Calculate error state
   const error =
@@ -90,7 +93,8 @@ export function useDashboard(): UseDashboardReturn {
     pendingQuotesQuery.error ||
     overduePaymentsQuery.error ||
     financialSummaryQuery.error ||
-    pendingContractsQuery.error;
+    pendingContractsQuery.error ||
+    urgentTasksQuery.error;
 
   // Memoized data aggregation
   const data = useMemo<DashboardResult | undefined>(() => {
@@ -101,6 +105,7 @@ export function useDashboard(): UseDashboardReturn {
     const pendingQuotes = pendingQuotesQuery.data || [];
     const overduePayments = overduePaymentsQuery.data || [];
     const pendingContracts = pendingContractsQuery.data || [];
+    const urgentTasks = urgentTasksQuery.data || [];
 
     // Find next upcoming event
     const sortedUpcoming = [...upcomingEvents].sort(
@@ -113,7 +118,7 @@ export function useDashboard(): UseDashboardReturn {
         pendingQuotes: pendingQuotes.slice(0, 5),
         overduePayments: overduePayments.slice(0, 5),
         pendingContracts: pendingContracts.slice(0, 5),
-        urgentTasks: [], // TODO: Implement urgent tasks query
+        urgentTasks: urgentTasks.slice(0, 5),
       },
       nextEvent,
       financialSummary: financialSummaryQuery.data || null,
@@ -125,6 +130,7 @@ export function useDashboard(): UseDashboardReturn {
     overduePaymentsQuery.data,
     pendingContractsQuery.data,
     financialSummaryQuery.data,
+    urgentTasksQuery.data,
   ]);
 
   // Refetch function

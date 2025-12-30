@@ -17,7 +17,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Fingerprint, FaceScan, LockKey, SignOut } from 'phosphor-react-native';
+import { Fingerprint, Scan, LockKey, SignOut } from 'phosphor-react-native';
 
 import { colors, spacing, typeScale, layout } from '@/theme';
 import { useBiometrics } from '@/hooks/useBiometrics';
@@ -87,7 +87,7 @@ export function BiometricLockScreen({
           {isAuthenticating ? (
             <ActivityIndicator size="large" color={colors.neutral.white} />
           ) : isFaceID ? (
-            <FaceScan size={80} color={colors.neutral.white} weight="light" />
+            <Scan size={80} color={colors.neutral.white} weight="light" />
           ) : (
             <Fingerprint size={80} color={colors.neutral.white} weight="light" />
           )}

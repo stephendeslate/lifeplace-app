@@ -13,6 +13,7 @@ export type {
   PaymentTermsConfig,
   StepConfiguration as BaseStepConfiguration,
   StepDisplayCondition,
+  StepValidationRules,
 } from './core.types';
 
 export { STEP_TYPE_LABELS } from './core.types';
@@ -60,9 +61,12 @@ export type {
   Questionnaire,
   QuestionnaireStepItem,
   UploadedFile,
+  QuestionnaireFieldValue,
+  QuestionnaireFieldValues,
   QuestionnaireStepData,
   FormattedQuestionnaireResponse,
   QuestionnaireStepConfiguration,
+  QuestionnaireFieldResponse,
 } from './questionnaire.types';
 
 export { QUESTIONNAIRE_FIELD_TYPE_LABELS } from './questionnaire.types';
@@ -92,6 +96,8 @@ export type {
 
 // Step Data Types
 export type {
+  ContactCustomFields,
+  ProductAttributes,
   IntroductionStepData,
   DateTimeStepData,
   SelectedPackage,
@@ -141,6 +147,9 @@ export type {
 
 // State Management Types
 export type {
+  StepDataMap,
+  AnyStepData,
+  PartialStepDataState,
   BookingProgress,
   BookingUIState,
   RecoverableSession,

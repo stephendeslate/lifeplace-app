@@ -74,9 +74,9 @@ export function EventTypeSelection({
     return (
       <View style={styles.errorContainer}>
         <EmptyState
-          icon={<MagnifyingGlass size={48} color={colors.neutral.gray} />}
+          customIcon={<MagnifyingGlass size={48} color={colors.neutral.gray} />}
           title="Couldn't Load Events"
-          message="There was a problem loading event types. Please try again."
+          description="There was a problem loading event types. Please try again."
           actionLabel="Retry"
           onAction={() => refetch()}
         />
@@ -89,9 +89,9 @@ export function EventTypeSelection({
     return (
       <View style={styles.emptyContainer}>
         <EmptyState
-          icon={<Sparkle size={48} color={colors.neutral.gray} />}
+          customIcon={<Sparkle size={48} color={colors.neutral.gray} />}
           title="No Events Available"
-          message="There are no event types available for booking at this time."
+          description="There are no event types available for booking at this time."
         />
       </View>
     );

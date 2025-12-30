@@ -34,7 +34,7 @@ import * as Haptics from 'expo-haptics';
 type ContactInfoStepProps = StepComponentProps<ContactInfoStepData, ContactInfoStepConfiguration>;
 
 interface FormField {
-  key: keyof ContactInfoStepData;
+  key: string;
   label: string;
   placeholder: string;
   icon: React.ReactNode;
@@ -69,7 +69,7 @@ export function ContactInfoStep({
     setFormData(data);
   }, [data]);
 
-  const handleFieldChange = useCallback((field: keyof ContactInfoStepData, value: string) => {
+  const handleFieldChange = useCallback((field: string, value: string) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
     onDataChange(newData);
@@ -188,7 +188,7 @@ export function ContactInfoStep({
           {field.icon}
           <TextInput
             style={[styles.input, field.multiline && styles.inputMultiline]}
-            value={formData[field.key] || ''}
+            value={(formData[field.key] as string) || ''}
             onChangeText={(value) => handleFieldChange(field.key, value)}
             onFocus={() => handleFieldFocus(field.key)}
             onBlur={handleFieldBlur}

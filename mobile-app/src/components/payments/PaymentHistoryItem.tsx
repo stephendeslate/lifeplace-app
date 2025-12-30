@@ -17,7 +17,7 @@ import { theme } from '@/theme';
 import { formatCurrency, formatCardDate } from '@/utils/formatting';
 import type { Payment, PaymentStatus } from '@/apis/payments.api';
 
-interface PaymentHistoryItemProps {
+export interface PaymentHistoryItemProps {
   payment: Payment;
   onPress?: () => void;
   testID?: string;

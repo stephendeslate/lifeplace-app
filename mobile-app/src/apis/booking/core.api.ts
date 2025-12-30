@@ -12,6 +12,7 @@ import type {
   BookingFlowStep,
   BookingSessionCreate,
   BookingSessionStartResponse,
+  BookingSessionGetResponse,
   BookingSessionUpdateResponse,
   BookingCompletionResult,
   StepValidationResult,
@@ -101,8 +102,8 @@ export const BookingCoreAPI = {
    *
    * GET /bookingflow/public/flows/session/:sessionId/
    */
-  getSession: async (sessionId: string): Promise<BookingSessionStartResponse> => {
-    const response = await api.get<BookingSessionStartResponse>(
+  getSession: async (sessionId: string): Promise<BookingSessionGetResponse> => {
+    const response = await api.get<BookingSessionGetResponse>(
       `/bookingflow/public/flows/session/${sessionId}/`
     );
     return response.data;

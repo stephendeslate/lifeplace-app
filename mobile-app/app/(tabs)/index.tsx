@@ -19,7 +19,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { MagnifyingGlass, Bell, ArrowRight } from 'phosphor-react-native';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -54,7 +54,7 @@ export default function DashboardScreen() {
   const handleQuickAction = (action: QuickActionType) => {
     switch (action) {
       case 'new-booking':
-        router.push('/booking' as never);
+        router.push('/booking' as Href);
         break;
       case 'my-events':
         router.push('/events');
@@ -73,19 +73,19 @@ export default function DashboardScreen() {
   };
 
   const handleEventPress = (eventId: number) => {
-    router.push(`/events/${eventId}` as never);
+    router.push(`/events/${eventId}` as Href);
   };
 
   const handleQuotePress = (eventId: number) => {
-    router.push(`/events/${eventId}?tab=quotes` as never);
+    router.push(`/events/${eventId}?tab=quotes` as Href);
   };
 
   const handlePaymentPress = (eventId: number) => {
-    router.push(`/events/${eventId}?tab=invoices` as never);
+    router.push(`/events/${eventId}?tab=invoices` as Href);
   };
 
   const handleContractPress = (eventId: number) => {
-    router.push(`/events/${eventId}?tab=contracts` as never);
+    router.push(`/events/${eventId}?tab=contracts` as Href);
   };
 
   const hasCriticalActions =
@@ -220,7 +220,7 @@ export default function DashboardScreen() {
                 title="No Upcoming Events"
                 description="Start planning your next event with us!"
                 actionLabel="Book Now"
-                onAction={() => router.push('/booking' as never)}
+                onAction={() => router.push('/booking' as Href)}
               />
             </Card>
           </View>
@@ -269,7 +269,7 @@ export default function DashboardScreen() {
           {/* Search Bar - navigates to explore screen */}
           <Pressable
             style={styles.searchBar}
-            onPress={() => router.push('/explore' as never)}
+            onPress={() => router.push('/explore' as Href)}
           >
             <MagnifyingGlass size={20} color={colors.neutral.gray} />
             <Text style={styles.searchPlaceholder}>
@@ -283,7 +283,7 @@ export default function DashboardScreen() {
               <Text style={styles.subsectionTitle}>Featured Venues</Text>
               <Pressable
                 style={styles.viewAllButton}
-                onPress={() => router.push('/explore?tab=venues' as never)}
+                onPress={() => router.push('/explore?tab=venues' as Href)}
               >
                 <Text style={styles.viewAllText}>View All</Text>
                 <ArrowRight size={16} color={theme.colors.primary[600]} />
@@ -305,7 +305,7 @@ export default function DashboardScreen() {
                     key={venue.id}
                     venue={venue}
                     compact
-                    onPress={() => router.push(`/venues/${venue.id}` as never)}
+                    onPress={() => router.push(`/venues/${venue.id}` as Href)}
                     onPressIn={() => prefetchVenue(venue.id)}
                   />
                 ))
@@ -325,7 +325,7 @@ export default function DashboardScreen() {
               <Text style={styles.subsectionTitle}>Popular Packages</Text>
               <Pressable
                 style={styles.viewAllButton}
-                onPress={() => router.push('/explore?tab=packages' as never)}
+                onPress={() => router.push('/explore?tab=packages' as Href)}
               >
                 <Text style={styles.viewAllText}>View All</Text>
                 <ArrowRight size={16} color={theme.colors.primary[600]} />
@@ -347,7 +347,7 @@ export default function DashboardScreen() {
                     key={pkg.id}
                     package={pkg}
                     compact
-                    onPress={() => router.push(`/packages/${pkg.id}` as never)}
+                    onPress={() => router.push(`/packages/${pkg.id}` as Href)}
                     onPressIn={() => prefetchPackage(pkg.id)}
                   />
                 ))

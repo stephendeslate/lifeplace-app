@@ -4,10 +4,13 @@ module.exports = {
 
   // Transform files with babel
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@shopify/flash-list|@tanstack/react-query|zustand|phosphor-react-native|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|date-fns|date-fns-tz|zod|axios)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@shopify/flash-list|@tanstack/react-query|zustand|phosphor-react-native|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|date-fns|date-fns-tz|zod|axios|msw|@mswjs|until-async)',
   ],
 
-  // Setup files
+  // Setup files (run before test framework is installed)
+  setupFiles: ['<rootDir>/src/test/polyfills.ts'],
+
+  // Setup files (run after test framework is installed)
   setupFilesAfterEnv: [
     '@testing-library/jest-native/extend-expect',
     '<rootDir>/src/test/setup.ts',
@@ -17,12 +20,22 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@test/(.*)$': '<rootDir>/src/test/$1',
+    '^msw/node$': '<rootDir>/node_modules/msw/lib/node/index.js',
+    '^@mswjs/interceptors/(.*)$': '<rootDir>/node_modules/@mswjs/interceptors/$1',
   },
 
   // Test file patterns
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{ts,tsx}',
+    '<rootDir>/src/**/__tests__/**/*.{test,spec}.{ts,tsx}',
     '<rootDir>/src/**/*.{test,spec}.{ts,tsx}',
+  ],
+
+  // Ignore test utility files
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/src/__tests__/utils.tsx',
+    '<rootDir>/src/__tests__/mocks/',
+    '<rootDir>/src/test/',
   ],
 
   // Coverage configuration

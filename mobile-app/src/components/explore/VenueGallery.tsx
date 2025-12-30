@@ -23,15 +23,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'phosphor-react-native';
 
 import { colors, spacing, typeScale, layout } from '@/theme';
+import { FALLBACK_IMAGES } from '@/constants/images';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-interface VenueGalleryProps {
+export interface VenueGalleryProps {
   images: string[];
   featuredImage?: string | null;
 }
-
-const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/800x600/FAF9F7/9B9590?text=Venue';
 
 export function VenueGallery({ images, featuredImage }: VenueGalleryProps) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -42,7 +41,7 @@ export function VenueGallery({ images, featuredImage }: VenueGalleryProps) {
     ? [featuredImage, ...images.filter((img) => img !== featuredImage)]
     : images.length > 0
     ? images
-    : [PLACEHOLDER_IMAGE];
+    : [FALLBACK_IMAGES.venue];
 
   const handleImagePress = (index: number) => {
     setCurrentIndex(index);
@@ -84,6 +83,7 @@ export function VenueGallery({ images, featuredImage }: VenueGalleryProps) {
                 style={styles.image}
                 contentFit="cover"
                 transition={200}
+                cachePolicy="memory-disk"
               />
             </Pressable>
           )}
@@ -156,6 +156,7 @@ export function VenueGallery({ images, featuredImage }: VenueGalleryProps) {
                   style={styles.modalImage}
                   contentFit="contain"
                   transition={200}
+                  cachePolicy="memory-disk"
                 />
               </View>
             )}

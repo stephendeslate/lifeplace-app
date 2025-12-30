@@ -16,28 +16,29 @@ import { ErrorHandler } from '@/utils/errorHandler';
 
 export default function BookingFlowScreen() {
   const { flowId } = useLocalSearchParams<{ flowId: string }>();
-  const { state, dispatch } = useBookingContext();
+  const { state, actions } = useBookingContext();
+  const numericFlowId = flowId ? parseInt(flowId, 10) : 0;
 
   const {
     data: flow,
     isLoading: flowLoading,
     error: flowError,
-  } = useBookingFlow(flowId);
+  } = useBookingFlow(numericFlowId);
 
-  const startSession = useStartSession();
+  const startSessionMutation = useStartSession();
 
   // Initialize session when flow loads
   useEffect(() => {
-    if (flow && !state.session) {
-      startSession.mutate(
+    if (flow && !state.currentSession) {
+      startSessionMutation.mutate(
         {
-          flowId: parseInt(flowId, 10),
-          eventTypeId: state.selectedEventType?.id,
+          flowId: numericFlowId,
         },
         {
-          onSuccess: (session) => {
-            dispatch({ type: 'SET_SESSION', payload: session });
-            dispatch({ type: 'SET_CURRENT_FLOW', payload: flow });
+          onSuccess: async (response) => {
+            // Load the session into context
+            await actions.loadSession(response.session_id);
+            actions.selectFlow(flow);
           },
           onError: (error) => {
             ErrorHandler.handle(error, {
@@ -48,17 +49,16 @@ export default function BookingFlowScreen() {
         }
       );
     }
-  }, [flow, flowId, state.session, state.selectedEventType]);
+  }, [flow, numericFlowId, state.currentSession]);
 
-  // Update current step when flow changes
+  // Update progress when flow changes
   useEffect(() => {
-    if (flow?.steps && flow.steps.length > 0 && !state.currentStep) {
-      const firstStep = flow.steps[0];
-      dispatch({ type: 'SET_CURRENT_STEP', payload: firstStep });
+    if (flow?.steps && flow.steps.length > 0 && state.progress.currentStepIndex === 0) {
+      actions.goToStep(0);
     }
-  }, [flow?.steps, state.currentStep]);
+  }, [flow?.steps]);
 
-  if (flowLoading || startSession.isPending) {
+  if (flowLoading || startSessionMutation.isPending) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary.black} />

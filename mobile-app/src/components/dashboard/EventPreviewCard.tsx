@@ -96,6 +96,7 @@ export const EventPreviewCard = memo(function EventPreviewCard({ event, onPress,
             style={styles.image}
             contentFit="cover"
             transition={200}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={styles.imagePlaceholder}>

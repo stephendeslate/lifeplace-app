@@ -27,7 +27,14 @@ import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatCurrency } from '@/utils/currency';
 import type { StepComponentProps } from '../StepRenderer';
-import type { PricingSummaryStepData, PricingSummaryStepConfiguration } from '@/types/booking';
+import type {
+  PricingSummaryStepData,
+  PricingSummaryStepConfiguration,
+  SelectedPackage,
+  SelectedAddon,
+  PackageSelectionStepData,
+  AddonSelectionStepData,
+} from '@/types/booking';
 
 type PricingSummaryStepProps = StepComponentProps<PricingSummaryStepData, PricingSummaryStepConfiguration>;
 
@@ -64,14 +71,17 @@ export function PricingSummaryStep({
 
   // Calculate pricing from booking state
   const pricing = useMemo(() => {
-    const packages = state.stepData.package_selection?.selected_packages || [];
-    const addons = state.stepData.addon_selection?.selected_addons || [];
+    const packageStepData = state.stepData.package_selection as PackageSelectionStepData | undefined;
+    const addonStepData = state.stepData.addon_selection as AddonSelectionStepData | undefined;
 
-    const packageSubtotal = packages.reduce((sum, pkg) => {
+    const packages: SelectedPackage[] = packageStepData?.selected_packages || [];
+    const addons: SelectedAddon[] = addonStepData?.selected_addons || [];
+
+    const packageSubtotal = packages.reduce<number>((sum, pkg) => {
       return sum + parseFloat(pkg.price) * pkg.quantity;
     }, 0);
 
-    const addonSubtotal = addons.reduce((sum, addon) => {
+    const addonSubtotal = addons.reduce<number>((sum, addon) => {
       return sum + parseFloat(addon.price) * addon.quantity;
     }, 0);
 
@@ -82,7 +92,7 @@ export function PricingSummaryStep({
     const taxAmount = subtotal * taxRate;
 
     // Discount (would come from promo code)
-    const discountAmount = data.discount_amount || 0;
+    const discountAmount = typeof data.discount_amount === 'number' ? data.discount_amount : 0;
 
     const total = subtotal + taxAmount - discountAmount;
 

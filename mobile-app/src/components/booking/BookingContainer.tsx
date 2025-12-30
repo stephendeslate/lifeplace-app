@@ -16,9 +16,10 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { X, Warning } from 'phosphor-react-native';
-import { router } from 'expo-router';
+import { router, type Href, useNavigation } from 'expo-router';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { BookingProgressIndicator, type ProgressVariant } from './BookingProgressIndicator';
@@ -26,6 +27,7 @@ import { SessionTimer } from './SessionTimer';
 import { BookingNavigation } from './BookingNavigation';
 import { StepRenderer } from './StepRenderer';
 import { PricingSummaryBar } from './PricingSummaryBar';
+import { BreadcrumbNavigation, type BreadcrumbItem } from '@/components/common';
 import { formatCurrency } from '@/utils/currency';
 
 interface BookingContainerProps {
@@ -35,6 +37,8 @@ interface BookingContainerProps {
   showPricing?: boolean;
   showNavigation?: boolean;
   progressVariant?: ProgressVariant;
+  showBreadcrumbs?: boolean;
+  allowBreadcrumbNavigation?: boolean;
   onClose?: () => void;
   customHeader?: React.ReactNode;
   customFooter?: React.ReactNode;
@@ -47,6 +51,8 @@ export function BookingContainer({
   showPricing = true,
   showNavigation = true,
   progressVariant = 'stepper',
+  showBreadcrumbs = false,
+  allowBreadcrumbNavigation = true,
   onClose,
   customHeader,
   customFooter,
@@ -66,26 +72,91 @@ export function BookingContainer({
   } = state;
 
   const [showError, setShowError] = useState(false);
+  const navigation = useNavigation();
+
+  // Check if user has unsaved progress
+  const hasUnsavedProgress = currentSession && progress.currentStepIndex > 0;
+
+  // Prevent accidental navigation away with back gesture/button
+  useEffect(() => {
+    if (!hasUnsavedProgress) return;
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // Prevent the default behavior of leaving the screen
+      e.preventDefault();
+
+      // Show confirmation dialog
+      Alert.alert(
+        'Exit Booking?',
+        'Your booking progress will be saved. You can resume later from where you left off.',
+        [
+          {
+            text: 'Stay',
+            style: 'cancel',
+          },
+          {
+            text: 'Exit',
+            style: 'destructive',
+            onPress: () => navigation.dispatch(e.data.action),
+          },
+        ]
+      );
+    });
+
+    return unsubscribe;
+  }, [navigation, hasUnsavedProgress]);
+
+  // Get current step
+  const currentStep = currentFlow?.enabled_steps[progress.currentStepIndex];
+  const steps = currentFlow?.enabled_steps || [];
+
+  // Generate breadcrumb items from steps
+  const breadcrumbItems: BreadcrumbItem[] = steps.map((step, index) => ({
+    id: step.id,
+    label: step.title || getStepDisplayName(step.step_type),
+    isCompleted: progress.completedSteps.includes(step.id),
+    isDisabled: index > progress.currentStepIndex && !progress.completedSteps.includes(step.id),
+  }));
+
+  // Handle breadcrumb navigation
+  const handleBreadcrumbPress = useCallback((index: number) => {
+    if (index < progress.currentStepIndex) {
+      actions.goToStep(index);
+    }
+  }, [actions, progress.currentStepIndex]);
 
   // Handle close/exit
   const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
     } else {
-      // Show confirmation if there's an active session
-      if (currentSession) {
-        // TODO: Show confirmation dialog
-        router.back();
+      // Show confirmation if there's an active session with progress
+      if (currentSession && progress.currentStepIndex > 0) {
+        Alert.alert(
+          'Exit Booking?',
+          'Your booking progress will be saved. You can resume later from where you left off.',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Exit',
+              style: 'destructive',
+              onPress: () => router.back(),
+            },
+          ]
+        );
       } else {
         router.back();
       }
     }
-  }, [onClose, currentSession]);
+  }, [onClose, currentSession, progress.currentStepIndex]);
 
   // Handle session expiry
   const handleSessionExpired = useCallback(() => {
     actions.resetBooking();
-    router.replace('/booking');
+    router.replace('/booking' as Href);
   }, [actions]);
 
   // Handle navigation
@@ -107,21 +178,23 @@ export function BookingContainer({
 
   // Handle step data changes
   const handleDataChange = useCallback((data: Record<string, unknown>) => {
-    actions.updateStepData(data);
-  }, [actions]);
+    if (currentStep?.step_type) {
+      actions.updateStepData(currentStep.step_type, data);
+    }
+  }, [actions, currentStep?.step_type]);
 
   // Handle step validation
-  const handleValidate = useCallback(async () => {
-    const result = await actions.validateStep();
+  const handleValidate = useCallback(async (): Promise<{ isValid: boolean; errors: Record<string, string[]> }> => {
+    if (!currentStep?.id) {
+      return { isValid: false, errors: {} };
+    }
+    const stepData = state.stepData[currentStep.step_type] || {};
+    const result = await actions.validateStep(currentStep.id, stepData as Record<string, unknown>);
     return {
       isValid: result?.isValid ?? false,
-      errors: result?.errors ?? {},
+      errors: (result?.errors as Record<string, string[]>) ?? {},
     };
-  }, [actions]);
-
-  // Get current step
-  const currentStep = currentFlow?.enabled_steps[progress.currentStepIndex];
-  const steps = currentFlow?.enabled_steps || [];
+  }, [actions, currentStep?.id, currentStep?.step_type, state.stepData]);
 
   // Clear error after timeout
   useEffect(() => {
@@ -171,8 +244,21 @@ export function BookingContainer({
           </View>
         )}
 
+        {/* Breadcrumb Navigation (alternative to Progress Indicator) */}
+        {showBreadcrumbs && steps.length > 0 && (
+          <BreadcrumbNavigation
+            items={breadcrumbItems}
+            currentIndex={progress.currentStepIndex}
+            onItemPress={handleBreadcrumbPress}
+            allowBackNavigation={allowBreadcrumbNavigation}
+            showHome
+            homeLabel="Booking"
+            onHomePress={handleClose}
+          />
+        )}
+
         {/* Progress Indicator */}
-        {showProgress && steps.length > 0 && (
+        {showProgress && !showBreadcrumbs && steps.length > 0 && (
           <View style={styles.progressContainer}>
             <BookingProgressIndicator
               steps={steps}
@@ -328,5 +414,22 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
 });
+
+// Helper function to get human-readable step names
+function getStepDisplayName(stepType: string): string {
+  const names: Record<string, string> = {
+    introduction: 'Welcome',
+    venue_selection: 'Venue',
+    date_time: 'Date & Time',
+    package_selection: 'Package',
+    addon_selection: 'Add-ons',
+    questionnaire: 'Details',
+    pricing_summary: 'Summary',
+    contact_info: 'Contact',
+    payment_info: 'Payment',
+    confirmation: 'Complete',
+  };
+  return names[stepType] || stepType;
+}
 
 export default BookingContainer;

@@ -224,6 +224,66 @@ export async function getEventTypes(): Promise<EventType[]> {
 }
 
 // =============================================================================
+// BATCH FETCH FUNCTIONS
+// =============================================================================
+
+/**
+ * Batch fetch multiple venues by IDs
+ * Uses Promise.all for parallel requests
+ * Note: If backend adds batch endpoint, update this to use single request
+ */
+export async function getVenuesByIds(venueIds: number[]): Promise<Map<number, VenuePublic>> {
+  if (venueIds.length === 0) return new Map();
+
+  const results = await Promise.all(
+    venueIds.map(async (id) => {
+      try {
+        const venue = await getVenueById(id);
+        return { id, venue, error: null };
+      } catch (error) {
+        return { id, venue: null, error };
+      }
+    })
+  );
+
+  const venueMap = new Map<number, VenuePublic>();
+  for (const result of results) {
+    if (result.venue) {
+      venueMap.set(result.id, result.venue);
+    }
+  }
+  return venueMap;
+}
+
+/**
+ * Batch fetch multiple packages by IDs
+ * Uses Promise.all for parallel requests
+ * Note: If backend adds batch endpoint, update this to use single request
+ */
+export async function getPackagesByIds(packageIds: number[]): Promise<Map<number, PackagePublic>> {
+  if (packageIds.length === 0) return new Map();
+
+  const results = await Promise.all(
+    packageIds.map(async (id) => {
+      try {
+        const pkg = await getPackageById(id);
+        return { id, pkg, error: null };
+      } catch (error) {
+        return { id, pkg: null, error };
+      }
+    })
+  );
+
+  const packageMap = new Map<number, PackagePublic>();
+  for (const result of results) {
+    if (result.pkg) {
+      packageMap.set(result.id, result.pkg);
+    }
+  }
+  return packageMap;
+}
+
+// =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
 

@@ -30,7 +30,7 @@ interface SavedPaymentMethod {
   is_default: boolean;
 }
 
-interface SavedPaymentMethodsProps {
+export interface SavedPaymentMethodsProps {
   selectedId?: number;
   onSelect?: (method: SavedPaymentMethod) => void;
   showAddButton?: boolean;

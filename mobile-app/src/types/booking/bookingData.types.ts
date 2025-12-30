@@ -14,6 +14,7 @@ import type {
   DateTimeStepData,
   VenueSelectionStepData,
 } from './stepData.types';
+import type { QuestionnaireFieldValues } from './questionnaire.types';
 
 /**
  * Questionnaire response for storage
@@ -21,7 +22,7 @@ import type {
 export interface QuestionnaireResponse {
   questionnaire_id: number;
   questionnaire_name?: string;
-  responses: Record<string, unknown>;
+  responses: QuestionnaireFieldValues;
   uploaded_file_urls?: string[];
 }
 
@@ -87,7 +88,7 @@ export interface BookingData {
  */
 export interface SessionUpdatePayload {
   step_id: number;
-  booking_data: Record<string, unknown>;
+  booking_data: Partial<BookingData>;
   mark_completed?: boolean;
 }
 
@@ -97,19 +98,20 @@ export interface SessionUpdatePayload {
 export interface BookingSession {
   session_id: string;
   booking_flow: number;
+  booking_flow_id?: number; // Alias for booking_flow
   booking_flow_name?: string;
   event_type_name?: string;
   current_step?: BookingFlowStep;
   current_step_id?: number;
   completed_steps: number[];
-  progress_percentage: number;
+  progress_percentage?: number;
   expires_at: string;
-  is_completed: boolean;
-  is_abandoned: boolean;
+  is_completed?: boolean;
+  is_abandoned?: boolean;
   total_price?: string;
   booking_data: BookingData;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   client_id?: number;
   created_event_id?: number;
   validation_errors?: Record<string, string[]>;

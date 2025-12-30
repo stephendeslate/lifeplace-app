@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Fingerprint,
-  FaceScan,
+  Scan,
   ShieldCheck,
   Info,
   CheckCircle,
@@ -104,7 +104,7 @@ export default function BiometricSettingsScreen() {
         {/* Header Icon */}
         <View style={styles.headerIcon}>
           {isFaceID ? (
-            <FaceScan size={60} color={colors.secondary.forest} weight="light" />
+            <Scan size={60} color={colors.secondary.forest} weight="light" />
           ) : (
             <Fingerprint size={60} color={colors.secondary.forest} weight="light" />
           )}

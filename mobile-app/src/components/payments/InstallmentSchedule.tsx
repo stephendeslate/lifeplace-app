@@ -13,7 +13,7 @@ import { colors, spacing, typeScale, layout } from '@/theme';
 import { formatCurrency, type CurrencyCode } from '@/utils/currency';
 import type { Installment } from '@/hooks/usePaymentPlan';
 
-interface InstallmentScheduleProps {
+export interface InstallmentScheduleProps {
   installments: Installment[];
   currency?: CurrencyCode;
 }

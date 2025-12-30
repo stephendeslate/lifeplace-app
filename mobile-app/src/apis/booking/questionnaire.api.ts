@@ -147,7 +147,7 @@ export const QuestionnaireAPI = {
   formatStepData: (data: QuestionnaireStepData): QuestionnaireStepData => {
     return {
       responses: data.responses || {},
-      uploaded_files: data.uploaded_files || {},
+      uploaded_files: data.uploaded_files || [],
     };
   },
 
@@ -278,7 +278,7 @@ export const QuestionnaireAPI = {
   getDefaultData: (): QuestionnaireStepData => {
     return {
       responses: {},
-      uploaded_files: {},
+      uploaded_files: [],
     };
   },
 
@@ -349,7 +349,8 @@ export const QuestionnaireAPI = {
         conditionMet = true;
     }
 
-    return show_when === 'show' ? conditionMet : !conditionMet;
+    // show_when: true means show when condition is met, false means hide when condition is met
+    return show_when === true ? conditionMet : !conditionMet;
   },
 
   /**

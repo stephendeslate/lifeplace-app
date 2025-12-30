@@ -8,6 +8,7 @@
  * Note: React Native requires different input implementations than web
  */
 export type QuestionnaireFieldType =
+  // Lowercase variants
   | 'text'
   | 'textarea'
   | 'number'
@@ -24,12 +25,31 @@ export type QuestionnaireFieldType =
   | 'radio'
   | 'file'
   | 'rating'
-  | 'range';
+  | 'range'
+  // Uppercase variants (for API compatibility)
+  | 'TEXT'
+  | 'TEXTAREA'
+  | 'NUMBER'
+  | 'EMAIL'
+  | 'PHONE'
+  | 'URL'
+  | 'DATE'
+  | 'TIME'
+  | 'DATETIME'
+  | 'BOOLEAN'
+  | 'CHECKBOX'
+  | 'SELECT'
+  | 'MULTI_SELECT'
+  | 'MULTISELECT'
+  | 'RADIO'
+  | 'FILE'
+  | 'RATING'
+  | 'RANGE';
 
 /**
  * Field type labels for display
  */
-export const QUESTIONNAIRE_FIELD_TYPE_LABELS: Record<QuestionnaireFieldType, string> = {
+export const QUESTIONNAIRE_FIELD_TYPE_LABELS: Partial<Record<QuestionnaireFieldType, string>> = {
   text: 'Text',
   textarea: 'Long Text',
   number: 'Number',
@@ -47,6 +67,25 @@ export const QUESTIONNAIRE_FIELD_TYPE_LABELS: Record<QuestionnaireFieldType, str
   file: 'File Upload',
   rating: 'Rating',
   range: 'Range Slider',
+  // Uppercase variants
+  TEXT: 'Text',
+  TEXTAREA: 'Long Text',
+  NUMBER: 'Number',
+  EMAIL: 'Email',
+  PHONE: 'Phone',
+  URL: 'URL',
+  DATE: 'Date',
+  TIME: 'Time',
+  DATETIME: 'Date & Time',
+  BOOLEAN: 'Yes/No',
+  CHECKBOX: 'Checkbox',
+  SELECT: 'Dropdown',
+  MULTI_SELECT: 'Multiple Choice',
+  MULTISELECT: 'Multiple Choice',
+  RADIO: 'Single Choice',
+  FILE: 'File Upload',
+  RATING: 'Rating',
+  RANGE: 'Range Slider',
 };
 
 /**
@@ -74,10 +113,23 @@ export interface QuestionnaireValidationRules {
   pattern_message?: string;
   allowed_file_types?: string[];
   max_file_size_mb?: number;
+  max_file_size?: number; // Alias for max_file_size_mb (bytes)
   max_files?: number;
   min_rating?: number;
   max_rating?: number;
   custom_validation?: string;
+  // Date/time specific
+  min_date?: string;
+  max_date?: string;
+  time_interval?: number; // minutes
+  // Number/slider specific
+  step?: number;
+  unit?: string;
+  // Address field specific
+  show_address_line2?: boolean;
+  show_province?: boolean;
+  show_postal_code?: boolean;
+  show_country?: boolean;
 }
 
 /**
@@ -95,6 +147,11 @@ export interface ConditionalRule {
 export interface ConditionalLogic {
   rules: ConditionalRule[];
   logic_type: 'all' | 'any';
+  // Alternative format for simple conditions
+  show_when?: boolean;
+  depends_on?: number | string; // field_id or field name
+  expected_value?: unknown;
+  comparison?: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty';
 }
 
 /**
@@ -111,6 +168,7 @@ export interface QuestionnaireField {
   options?: FieldOption[];
   validation_rules?: QuestionnaireValidationRules;
   conditional_display?: ConditionalLogic;
+  conditional_logic?: ConditionalLogic;
   default_value?: unknown;
   width?: 'full' | 'half' | 'third';
   section?: string;
@@ -163,10 +221,30 @@ export interface UploadedFile {
 }
 
 /**
+ * Possible values for questionnaire field responses
+ * Maps to the QuestionnaireFieldType discriminated union
+ */
+export type QuestionnaireFieldValue =
+  | string // text, textarea, email, phone, url, date, time, datetime
+  | number // number, rating, range
+  | boolean // boolean, checkbox
+  | string[] // multi_select
+  | null; // cleared/empty
+
+/**
+ * Type-safe questionnaire field responses
+ * Keys are in format `field_${fieldId}` where fieldId is a number
+ * Using string index for dynamic field IDs while providing type safety for values
+ */
+export interface QuestionnaireFieldValues {
+  [key: string]: QuestionnaireFieldValue;
+}
+
+/**
  * Questionnaire step data - user responses
  */
 export interface QuestionnaireStepData {
-  responses: Record<string, unknown>; // field_${fieldId}: value
+  responses: QuestionnaireFieldValues;
   uploaded_files?: UploadedFile[];
   completion_percentage?: number;
 }
@@ -195,4 +273,22 @@ export interface QuestionnaireStepConfiguration {
   allowed_file_types?: string[];
   show_progress_bar: boolean;
   group_by_section: boolean;
+}
+
+/**
+ * Individual field response from questionnaire fields
+ */
+export interface QuestionnaireFieldResponse {
+  field_id: number;
+  field_type: QuestionnaireFieldType;
+  value: unknown;
+}
+
+/**
+ * Complete questionnaire response
+ */
+export interface QuestionnaireResponse {
+  questionnaire_id: number;
+  responses: QuestionnaireFieldResponse[];
+  completed_at?: string;
 }

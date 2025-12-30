@@ -68,10 +68,11 @@ export function useBiometrics(): UseBiometricsReturn {
   });
 
   // Query whether biometrics are enabled
+  // Uses 5-minute staleTime since toggle mutation invalidates on change
   const enabledQuery = useQuery({
     queryKey: QUERY_KEYS.enabled,
     queryFn: () => BiometricService.isEnabled(),
-    staleTime: 0, // Always check fresh
+    staleTime: 5 * 60 * 1000, // 5 minutes - mutation invalidates on change
   });
 
   // Mutation for enabling/disabling biometrics

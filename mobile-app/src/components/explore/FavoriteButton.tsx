@@ -18,7 +18,7 @@ import { useFavorite } from '@/stores/favoritesStore';
 import { colors } from '@/theme';
 import type { FavoriteType } from '@/types/explore.types';
 
-interface FavoriteButtonProps {
+export interface FavoriteButtonProps {
   type: FavoriteType;
   itemId: number;
   size?: number;

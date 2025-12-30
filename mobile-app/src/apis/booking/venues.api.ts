@@ -102,7 +102,7 @@ export const VenuesAPI = {
     venue: RentableVenue | RentableVenueWithEventType
   ): {
     basePrice: string;
-    includedHours: string;
+    includedHours: number;
     excessHourPrice: string;
     isAllDayAccess: boolean;
   } => {
@@ -111,19 +111,19 @@ export const VenuesAPI = {
     // If venue has event-type-specific config, use effective_* fields
     if (venueWithEventType.has_event_type_config) {
       return {
-        basePrice: venueWithEventType.effective_base_price || venue.standalone_base_price,
-        includedHours: venueWithEventType.effective_included_hours || venue.standalone_included_hours,
+        basePrice: venueWithEventType.effective_base_price || venue.standalone_base_price || venue.base_price,
+        includedHours: venueWithEventType.effective_included_hours ?? venue.standalone_included_hours ?? venue.included_hours,
         excessHourPrice:
-          venueWithEventType.effective_excess_hour_price || venue.standalone_excess_hour_price,
+          venueWithEventType.effective_excess_hour_price || venue.standalone_excess_hour_price || venue.excess_hour_rate,
         isAllDayAccess: venueWithEventType.is_all_day_access || false,
       };
     }
 
     // Fallback to standalone pricing
     return {
-      basePrice: venue.standalone_base_price,
-      includedHours: venue.standalone_included_hours,
-      excessHourPrice: venue.standalone_excess_hour_price,
+      basePrice: venue.standalone_base_price || venue.base_price,
+      includedHours: venue.standalone_included_hours ?? venue.included_hours,
+      excessHourPrice: venue.standalone_excess_hour_price || venue.excess_hour_rate,
       isAllDayAccess: false,
     };
   },
@@ -207,12 +207,14 @@ export const VenuesAPI = {
   ): Promise<{ available: boolean; reason?: string }> => {
     try {
       const availability = await VenuesAPI.getVenueAvailability(venueId, date, date);
-      const blockedDate = availability.blocked_dates.find((b) => b.date === date);
 
-      if (blockedDate) {
+      // Check if date is in blocked_dates array
+      if (availability.blocked_dates.includes(date)) {
+        // Check conflicts for a reason
+        const conflict = availability.conflicts?.find((c) => c.date === date);
         return {
           available: false,
-          reason: blockedDate.reason || 'Date not available',
+          reason: conflict?.reason || 'Date not available',
         };
       }
 
@@ -317,11 +319,11 @@ export const VenuesAPI = {
       totalBasePrice += basePrice;
 
       return {
-        venue_id: venue.id,
-        venue_name: venue.name,
+        id: venue.id,
+        name: venue.name,
         base_price: pricing.basePrice,
         included_hours: pricing.includedHours,
-        excess_hour_price: pricing.excessHourPrice,
+        excess_hour_rate: pricing.excessHourPrice,
       };
     });
 

@@ -47,8 +47,9 @@ import type {
   SelectedAddon,
   BookingCompletionResult,
   StepValidationResult,
-  createInitialBookingState,
+  ValidationError,
 } from '@/types/booking';
+import { createInitialBookingState } from '@/types/booking';
 
 // =============================================================================
 // ACTION TYPES
@@ -253,6 +254,26 @@ export function BookingProvider({ children }: BookingProviderProps) {
   const [state, dispatch] = useReducer(bookingReducer, createInitialBookingState());
 
   // ===========================================================================
+  // SESSION EXPIRY CHECK
+  // ===========================================================================
+
+  /**
+   * Check if the current session has expired.
+   * Returns true if session is still valid, false if expired.
+   */
+  const verifySessionNotExpired = useCallback((): boolean => {
+    if (!state.currentSession?.expires_at) return true;
+
+    if (isSessionExpired(state.currentSession.expires_at)) {
+      showToast('Your booking session has expired. Please start a new booking.', 'error');
+      dispatch({ type: 'CLEAR_SESSION' });
+      dispatch({ type: 'RESET' });
+      return false;
+    }
+    return true;
+  }, [state.currentSession?.expires_at, showToast]);
+
+  // ===========================================================================
   // FLOW MANAGEMENT
   // ===========================================================================
 
@@ -306,9 +327,10 @@ export function BookingProvider({ children }: BookingProviderProps) {
             sessionId: response.session_id,
             session: {
               session_id: response.session_id,
+              booking_flow: flowId,
               booking_flow_id: flowId,
               booking_data: response.booking_data || {},
-              current_step_id: response.current_step_id,
+              current_step_id: response.current_step_id ?? response.current_step?.id,
               completed_steps: response.completed_steps || [],
               expires_at: response.expires_at,
             },
@@ -338,9 +360,10 @@ export function BookingProvider({ children }: BookingProviderProps) {
           sessionId,
           session: {
             session_id: sessionId,
-            booking_flow_id: response.booking_flow_id,
+            booking_flow: response.booking_flow ?? response.booking_flow_id ?? 0,
+            booking_flow_id: response.booking_flow_id ?? response.booking_flow,
             booking_data: response.booking_data || {},
-            current_step_id: response.current_step_id,
+            current_step_id: response.current_step_id ?? response.current_step?.id,
             completed_steps: response.completed_steps || [],
             expires_at: response.expires_at,
             total_price: response.total_price,
@@ -372,6 +395,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
   const saveStepData = useCallback(
     async (stepId: number, data: Record<string, unknown>, markCompleted: boolean = false) => {
       if (!state.sessionId) throw new Error('No active session');
+      if (!verifySessionNotExpired()) throw new Error('Session expired');
 
       dispatch({ type: 'SET_UI_STATE', payload: { isSaving: true } });
       try {
@@ -417,21 +441,32 @@ export function BookingProvider({ children }: BookingProviderProps) {
         dispatch({ type: 'SET_UI_STATE', payload: { isSaving: false } });
       }
     },
-    [state.sessionId, state.currentSession]
+    [state.sessionId, state.currentSession, verifySessionNotExpired]
   );
 
   const validateStep = useCallback(
     async (stepId: number, data: Record<string, unknown>): Promise<StepValidationResult> => {
       if (!state.sessionId) throw new Error('No active session');
+      if (!verifySessionNotExpired()) throw new Error('Session expired');
 
       dispatch({ type: 'SET_UI_STATE', payload: { isValidating: true } });
       try {
         const result = await BookingCoreAPI.validateStepData(state.sessionId, stepId, data);
 
         if (!result.isValid && result.errors) {
+          // Convert ValidationError[] to Record<string, string[]> if needed
+          let validationErrors: Record<string, string[]> = {};
+          if (Array.isArray(result.errors)) {
+            for (const err of result.errors as ValidationError[]) {
+              if (!validationErrors[err.field]) validationErrors[err.field] = [];
+              validationErrors[err.field].push(err.message);
+            }
+          } else {
+            validationErrors = result.errors as Record<string, string[]>;
+          }
           dispatch({
             type: 'SET_UI_STATE',
-            payload: { validationErrors: result.errors },
+            payload: { validationErrors },
           });
         } else {
           dispatch({
@@ -445,7 +480,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
         dispatch({ type: 'SET_UI_STATE', payload: { isValidating: false } });
       }
     },
-    [state.sessionId]
+    [state.sessionId, verifySessionNotExpired]
   );
 
   const abandonSession = useCallback(
@@ -475,6 +510,9 @@ export function BookingProvider({ children }: BookingProviderProps) {
       const step = state.currentFlow.steps[stepIndex];
       if (!step || !state.sessionId) return;
 
+      // Verify session hasn't expired before navigating
+      if (!verifySessionNotExpired()) return;
+
       try {
         await BookingCoreAPI.goToStep(state.sessionId, step.id);
 
@@ -491,7 +529,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
         showToast(message, 'error');
       }
     },
-    [state.currentFlow, state.sessionId, showToast]
+    [state.currentFlow, state.sessionId, showToast, verifySessionNotExpired]
   );
 
   const nextStep = useCallback(async (): Promise<boolean> => {
@@ -521,6 +559,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
   const completeBooking = useCallback(
     async (completionType: 'payment' | 'quote' = 'payment'): Promise<BookingCompletionResult> => {
       if (!state.sessionId) throw new Error('No active session');
+      if (!verifySessionNotExpired()) throw new Error('Session expired');
 
       dispatch({ type: 'SET_UI_STATE', payload: { isSubmitting: true } });
       try {
@@ -542,7 +581,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
         dispatch({ type: 'SET_UI_STATE', payload: { isSubmitting: false } });
       }
     },
-    [state.sessionId, showToast]
+    [state.sessionId, showToast, verifySessionNotExpired]
   );
 
   // ===========================================================================
@@ -552,7 +591,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
   const fetchPaymentGateways = useCallback(async (flowId: number) => {
     try {
       const response = await BookingCoreAPI.getFlowPaymentGateways(flowId);
-      dispatch({ type: 'SET_PAYMENT_GATEWAYS', payload: response.gateways || [] });
+      dispatch({ type: 'SET_PAYMENT_GATEWAYS', payload: response.available_gateways || [] });
     } catch (error) {
       console.warn('Failed to fetch payment gateways:', error);
     }

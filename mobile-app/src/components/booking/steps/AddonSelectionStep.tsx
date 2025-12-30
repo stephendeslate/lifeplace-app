@@ -22,9 +22,9 @@ import type { StepComponentProps } from '../StepRenderer';
 import type {
   AddonSelectionStepData,
   AddonSelectionStepConfiguration,
-  ProductOption,
   SelectedAddon,
 } from '@/types/booking';
+import type { ProductOption } from '@/apis/booking/products.api';
 import * as Haptics from 'expo-haptics';
 
 type AddonSelectionStepProps = StepComponentProps<AddonSelectionStepData, AddonSelectionStepConfiguration>;
@@ -74,10 +74,10 @@ export function AddonSelectionStep({
       const newAddon: SelectedAddon = {
         product_id: addon.id,
         name: addon.name,
-        price: addon.price,
+        price: addon.base_price,
         quantity: newQty,
-        tax_rate: addon.tax_rate,
-        category_id: addon.category_id,
+        tax_rate: parseFloat(addon.tax_rate),
+        category_id: addon.category_id ?? undefined,
       };
       newSelection = [...selectedAddons, newAddon];
     } else {
@@ -215,18 +215,19 @@ interface AddonCardProps {
 }
 
 function AddonCard({ addon, quantity, onQuantityChange }: AddonCardProps) {
-  const { name, description, image_url, price, is_featured } = addon;
+  const { name, description, thumbnail_url, base_price } = addon;
   const isSelected = quantity > 0;
 
   return (
     <View style={[styles.addonCard, isSelected && styles.addonCardSelected]}>
       {/* Image */}
-      {image_url ? (
+      {thumbnail_url ? (
         <Image
-          source={{ uri: image_url }}
+          source={{ uri: thumbnail_url }}
           style={styles.addonImage}
           contentFit="cover"
           transition={200}
+          cachePolicy="memory-disk"
         />
       ) : (
         <View style={[styles.addonImage, styles.addonImagePlaceholder]}>
@@ -238,11 +239,6 @@ function AddonCard({ addon, quantity, onQuantityChange }: AddonCardProps) {
       <View style={styles.addonContent}>
         <View style={styles.addonHeader}>
           <Text style={styles.addonName} numberOfLines={1}>{name}</Text>
-          {is_featured && (
-            <View style={styles.popularBadge}>
-              <Text style={styles.popularBadgeText}>Popular</Text>
-            </View>
-          )}
         </View>
 
         {description && (
@@ -253,7 +249,7 @@ function AddonCard({ addon, quantity, onQuantityChange }: AddonCardProps) {
 
         <View style={styles.addonFooter}>
           <Text style={styles.addonPrice}>
-            {formatCurrency(parseFloat(price), { currency: 'PHP' })}
+            {formatCurrency(parseFloat(base_price), { currency: 'PHP' })}
           </Text>
 
           {/* Quantity Controls */}

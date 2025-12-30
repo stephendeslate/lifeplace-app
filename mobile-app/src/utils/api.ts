@@ -166,6 +166,7 @@ export type ApiResponse<T> = Promise<T>;
 
 /**
  * Standard error response from the backend.
+ * Note: For error message extraction, use getErrorMessage from '@/utils/errorHandler'
  */
 export interface ApiError {
   detail?: string;
@@ -173,47 +174,38 @@ export interface ApiError {
   errors?: Record<string, string[]>;
 }
 
+// =============================================================================
+// REQUEST CANCELLATION
+// =============================================================================
+
 /**
- * Extract error message from API error response.
+ * Creates a cancelable API request.
+ * Use this when you need to cancel requests on component unmount.
+ *
+ * @example
+ * const { signal, cancel } = createCancelableRequest();
+ * const data = await api.get('/endpoint', { signal });
+ * // Call cancel() on unmount to abort the request
  */
-export const getErrorMessage = (error: unknown): string => {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as ApiError | undefined;
+export function createCancelableRequest() {
+  const controller = new AbortController();
+  return {
+    signal: controller.signal,
+    cancel: () => controller.abort(),
+  };
+}
 
-    // Check for detail message
-    if (data?.detail) {
-      return data.detail;
-    }
-
-    // Check for field errors
-    if (data?.errors) {
-      const firstField = Object.keys(data.errors)[0];
-      if (firstField && data.errors[firstField]?.[0]) {
-        return data.errors[firstField][0];
-      }
-    }
-
-    // Fallback to status text
-    if (error.response?.statusText) {
-      return error.response.statusText;
-    }
-
-    // Network error
-    if (error.code === 'ECONNABORTED') {
-      return 'Request timed out. Please try again.';
-    }
-
-    if (!error.response) {
-      return 'Network error. Please check your connection.';
-    }
+/**
+ * Helper to check if an error was caused by request cancellation.
+ */
+export function isRequestCancelled(error: unknown): boolean {
+  if (axios.isCancel(error)) {
+    return true;
   }
-
-  // Generic error
-  if (error instanceof Error) {
-    return error.message;
+  if (error instanceof Error && error.name === 'AbortError') {
+    return true;
   }
-
-  return 'An unexpected error occurred.';
-};
+  return false;
+}
 
 export default api;

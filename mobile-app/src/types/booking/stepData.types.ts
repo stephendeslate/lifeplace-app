@@ -4,7 +4,21 @@
  * Adapted from: frontend/client-portal/src/types/booking/stepData.types.ts
  */
 
-import type { UploadedFile } from './questionnaire.types';
+import type { UploadedFile, QuestionnaireFieldValues } from './questionnaire.types';
+
+/**
+ * Custom field values for contact info - typically strings or numbers
+ */
+export interface ContactCustomFields {
+  [key: string]: string | number | boolean | null;
+}
+
+/**
+ * Product attributes - key-value pairs for product metadata
+ */
+export interface ProductAttributes {
+  [key: string]: string | number | boolean | string[] | null;
+}
 
 /**
  * Introduction step data
@@ -106,7 +120,7 @@ export interface AddonSelectionStepData {
  * Questionnaire step data - responses and uploads
  */
 export interface QuestionnaireStepData {
-  responses: Record<string, unknown>; // field_${fieldId}: value
+  responses: QuestionnaireFieldValues;
   uploaded_files?: UploadedFile[];
   questionnaire_ids?: number[]; // Which questionnaires were answered
 }
@@ -116,12 +130,15 @@ export interface QuestionnaireStepData {
  */
 export interface PricingSummaryStepData {
   applied_discount_code?: string;
+  promo_code?: string; // Alias for applied_discount_code
   discount_amount?: string;
   discount_percentage?: number;
   special_requests?: string;
   terms_accepted: boolean;
   marketing_consent?: boolean;
   privacy_consent?: boolean;
+  // Index signature for dynamic field access
+  [key: string]: string | number | boolean | undefined;
 }
 
 /**
@@ -140,7 +157,17 @@ export interface ContactInfoStepData {
   job_title?: string;
   create_account?: boolean;
   password?: string;
-  custom_fields?: Record<string, unknown>;
+  custom_fields?: ContactCustomFields;
+  // Alternative field names used by some components
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  company_position?: string;
+  address_line1?: string;
+  address_line2?: string;
+  special_requests?: string;
+  // Index signature for dynamic field access
+  [key: string]: string | boolean | ContactCustomFields | undefined;
 }
 
 /**
@@ -252,27 +279,49 @@ export interface ProductOption {
   name: string;
   description?: string;
   short_description?: string;
+  // Price field - can be either 'price' or 'base_price' from API
   price: string;
+  base_price?: string;
   price_with_tax?: string;
-  tax_rate?: number;
-  category_id?: number;
-  category_name?: string;
-  product_type: 'package' | 'addon' | 'service';
+  tax_rate?: number | string;
+  category_id?: number | null;
+  category_name?: string | null;
+  // Type field - can be 'product_type' or 'type' from API
+  product_type: 'package' | 'addon' | 'service' | 'PACKAGE' | 'PRODUCT';
+  type?: 'PACKAGE' | 'PRODUCT';
   is_active: boolean;
   is_featured?: boolean;
   featured_image_url?: string;
+  image_url?: string;
+  thumbnail_url?: string | null;
   gallery_images?: string[];
-  included_hours?: number;
+  images?: Array<{ id: number; image_url: string; alt_text: string }>;
+  included_hours?: number | null;
   excess_hour_rate?: string;
+  excess_hour_price?: string | null;
   min_quantity?: number;
-  max_quantity?: number;
+  max_quantity?: number | null;
+  minimum_quantity?: number;
+  maximum_quantity?: number | null;
   stock?: number;
-  attributes?: Record<string, unknown>;
+  attributes?: ProductAttributes;
   venues?: Array<{
     id: number;
     name: string;
     included_hours: number;
   }>;
+  included_venues?: Array<{ venue_id: number; venue_name: string }>;
+  // Additional API fields
+  currency?: string;
+  pricing_model?: 'FIXED' | 'HOURLY' | 'DAILY' | 'CUSTOM';
+  min_hours?: number;
+  max_hours?: number;
+  unit_label?: string | null;
+  has_excess_hours?: boolean;
+  sort_order?: number;
+  advance_booking_days?: number | null;
+  maximum_booking_days?: number | null;
+  features?: string[];
 }
 
 /**

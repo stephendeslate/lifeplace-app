@@ -34,6 +34,12 @@ const statusConfig: Record<
     icon: React.ComponentType<IconProps>;
   }
 > = {
+  LEAD: {
+    label: 'Lead',
+    color: theme.colors.neutral[600],
+    bgColor: theme.colors.neutral[100],
+    icon: FileText,
+  },
   DRAFT: {
     label: 'Draft',
     color: theme.colors.neutral[600],

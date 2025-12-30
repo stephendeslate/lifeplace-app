@@ -24,7 +24,7 @@ interface CategoryOption {
   name: string;
 }
 
-interface CategoryChipsProps {
+export interface CategoryChipsProps {
   options: CategoryOption[];
   selectedId: number | null;
   onSelect: (id: number | null) => void;

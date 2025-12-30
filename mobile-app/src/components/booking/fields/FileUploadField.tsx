@@ -187,6 +187,7 @@ export function FileUploadField({ field, value, onChange, error }: FileUploadFie
                   source={{ uri: file.uri }}
                   style={styles.fileThumbnail}
                   contentFit="cover"
+                  cachePolicy="memory-disk"
                 />
               ) : (
                 <View style={styles.fileIconContainer}>

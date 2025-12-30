@@ -11,6 +11,7 @@ import { WarningCircle, ArrowClockwise, House } from 'phosphor-react-native';
 import { router } from 'expo-router';
 
 import { colors, spacing, typeScale } from '@/theme';
+import { crashReporter } from '@/utils/crashReporting';
 
 interface Props {
   children: ReactNode;
@@ -38,8 +39,11 @@ export class ErrorBoundary extends Component<Props, State> {
     // Log to error reporting service
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
-    // TODO: Send to error tracking service
-    // crashReporter.captureException(error, { componentStack: errorInfo.componentStack });
+    // Send to crash reporting service
+    crashReporter.captureException(error, {
+      componentStack: errorInfo.componentStack,
+      errorBoundary: true,
+    });
 
     this.props.onError?.(error, errorInfo);
   }

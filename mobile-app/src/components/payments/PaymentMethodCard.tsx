@@ -17,7 +17,7 @@ import {
 import { theme } from '@/theme';
 import type { PaymentMethod } from '@/apis/payments.api';
 
-interface PaymentMethodCardProps {
+export interface PaymentMethodCardProps {
   method: PaymentMethod;
   label?: string;
   last4?: string;

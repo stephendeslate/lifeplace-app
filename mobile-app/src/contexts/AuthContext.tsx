@@ -23,10 +23,11 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { AuthAPI } from '@/apis/auth.api';
 import { queryClient, clearAllQueries } from '@/utils/queryClient';
-import { getErrorMessage } from '@/utils/api';
+import { getErrorMessage } from '@/utils/errorHandler';
 import { NotificationService } from '@/services/notifications';
 import { unregisterPushToken } from '@/apis/notifications.api';
 import { clearBadge } from '@/utils/notificationHandler';
+import { getPendingDeepLink, navigateToDeepLink } from '@/utils/deepLinking';
 import type {
   User,
   LoginCredentials,
@@ -125,8 +126,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setTokens(response.tokens.access, response.tokens.refresh);
         setUser(response.user);
 
-        // Navigate to main app (using /profile as valid typed route)
-        router.replace('/profile');
+        // Check for pending deep link (from pre-auth navigation attempt)
+        const pendingDeepLink = getPendingDeepLink();
+        if (pendingDeepLink) {
+          // Navigate to the pending deep link destination
+          navigateToDeepLink(pendingDeepLink);
+        } else {
+          // Navigate to main app (using /profile as valid typed route)
+          router.replace('/profile');
+        }
       } catch (error) {
         throw new Error(getErrorMessage(error));
       } finally {
@@ -151,8 +159,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setTokens(response.tokens.access, response.tokens.refresh);
         setUser(response.user);
 
-        // Navigate to main app (using /profile as valid typed route)
-        router.replace('/profile');
+        // Check for pending deep link (from pre-auth navigation attempt)
+        const pendingDeepLink = getPendingDeepLink();
+        if (pendingDeepLink) {
+          // Navigate to the pending deep link destination
+          navigateToDeepLink(pendingDeepLink);
+        } else {
+          // Navigate to main app (using /profile as valid typed route)
+          router.replace('/profile');
+        }
       } catch (error) {
         throw new Error(getErrorMessage(error));
       } finally {

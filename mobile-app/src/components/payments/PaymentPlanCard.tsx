@@ -13,7 +13,7 @@ import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { formatCurrency, type CurrencyCode } from '@/utils/currency';
 import type { PaymentPlan } from '@/hooks/usePaymentPlan';
 
-interface PaymentPlanCardProps {
+export interface PaymentPlanCardProps {
   plan: PaymentPlan;
   onPayNow?: () => void;
 }

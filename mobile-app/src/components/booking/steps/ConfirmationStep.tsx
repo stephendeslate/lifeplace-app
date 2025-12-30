@@ -34,7 +34,14 @@ import { formatCurrency } from '@/utils/currency';
 import { formatPhilippinesTime } from '@/utils/timezone';
 import { format, parseISO } from 'date-fns';
 import type { StepComponentProps } from '../StepRenderer';
-import type { ConfirmationStepData, ConfirmationStepConfiguration } from '@/types/booking';
+import type {
+  ConfirmationStepData,
+  ConfirmationStepConfiguration,
+  DateTimeStepData,
+  VenueSelectionStepData,
+  ContactInfoStepData,
+  PaymentStepData,
+} from '@/types/booking';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 
@@ -50,20 +57,24 @@ export function ConfirmationStep({
   const { state } = useBookingContext();
 
   const {
-    show_calendar_link = true,
-    show_share_options = true,
+    show_add_to_calendar = true,
+    show_share_buttons = true,
     show_next_steps = true,
-    confirmation_message,
+    custom_success_message,
     redirect_url,
   } = configuration || {};
 
-  // Get booking details from state
-  const bookingRef = data.booking_reference || state.session?.id?.slice(0, 8).toUpperCase() || 'PENDING';
-  const eventDate = state.stepData.datetime?.start_date;
-  const venue = state.stepData.venue_selection?.selected_venues?.[0];
-  const contactInfo = state.stepData.contact_info;
-  const total = state.pricingSummary?.total || 0;
-  const amountPaid = state.stepData.payment?.amount_to_pay || total * 0.5;
+  // Get booking details from state with proper type casting
+  const bookingRef = data.booking_reference || state.currentSession?.session_id?.slice(0, 8).toUpperCase() || 'PENDING';
+  const dateTimeData = state.stepData.date_time as DateTimeStepData | undefined;
+  const venueData = state.stepData.venue_selection as VenueSelectionStepData | undefined;
+  const contactInfo = state.stepData.contact_info as ContactInfoStepData | undefined;
+  const paymentData = state.stepData.payment as PaymentStepData | undefined;
+
+  const eventDate = dateTimeData?.start_date;
+  const venueIds = venueData?.selected_venue_ids;
+  const total = parseFloat(state.pricingBreakdown?.total || '0') || 0;
+  const amountPaid = paymentData?.deposit_amount || total * 0.5;
   const balanceDue = total - amountPaid;
 
   const handleCopyReference = async () => {
@@ -106,7 +117,7 @@ export function ConfirmationStep({
         </View>
         <Text style={styles.successTitle}>Booking Confirmed!</Text>
         <Text style={styles.successMessage}>
-          {confirmation_message ||
+          {custom_success_message ||
             'Thank you for your booking. We\'ve sent a confirmation email with all the details.'}
         </Text>
       </View>
@@ -146,14 +157,16 @@ export function ConfirmationStep({
           </View>
         )}
 
-        {venue && (
+        {venueIds && venueIds.length > 0 && (
           <View style={styles.detailRow}>
             <View style={styles.detailIcon}>
               <MapPin size={20} color={colors.tertiary.teal} />
             </View>
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Venue</Text>
-              <Text style={styles.detailValue}>{venue.name}</Text>
+              <Text style={styles.detailValue}>
+                {venueIds.length === 1 ? '1 venue selected' : `${venueIds.length} venues selected`}
+              </Text>
             </View>
           </View>
         )}
@@ -222,7 +235,7 @@ export function ConfirmationStep({
 
       {/* Quick Actions */}
       <View style={styles.actionsSection}>
-        {show_calendar_link && (
+        {show_add_to_calendar && (
           <TouchableOpacity
             style={styles.actionButton}
             onPress={handleAddToCalendar}
@@ -233,7 +246,7 @@ export function ConfirmationStep({
           </TouchableOpacity>
         )}
 
-        {show_share_options && (
+        {show_share_buttons && (
           <TouchableOpacity
             style={styles.actionButton}
             onPress={handleShare}
@@ -471,7 +484,7 @@ const styles = StyleSheet.create({
     borderRadius: layout.borderRadius.md,
     padding: spacing.md,
     gap: spacing.md,
-    ...shadows.xs,
+    ...shadows.sm,
   },
   actionButtonText: {
     ...typeScale.labelMedium,

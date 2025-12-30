@@ -5,7 +5,7 @@
  * This is an example pattern for testing hooks that use React Query.
  */
 
-import { renderHook, waitFor } from '@testing-library/react-hooks';
+import { renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { useDashboard, dashboardKeys } from '../useDashboard';

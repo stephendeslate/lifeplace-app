@@ -20,7 +20,7 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   CaretLeft,
@@ -55,7 +55,7 @@ export default function VenueDetailScreen() {
   const pricing = rentableVenue ? getVenueEffectivePricing(rentableVenue) : null;
 
   const handleStartBooking = () => {
-    router.push('/booking' as never);
+    router.push('/booking' as Href);
   };
 
   if (venueLoading) {

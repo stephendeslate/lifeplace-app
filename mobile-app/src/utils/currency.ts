@@ -1,7 +1,21 @@
 /**
  * Currency Utilities
  * PHP currency formatting with multi-currency support
+ *
+ * PRICE TYPE CONVENTION:
+ * - API responses use string prices (e.g., "50000.00") for decimal precision
+ * - Use `Price` type alias for price fields in types
+ * - Use `toPrice()` to convert numbers to price strings
+ * - Use `fromPrice()` to convert price strings to numbers for calculations
+ * - Use `formatPrice()` for display formatting
  */
+
+/**
+ * Price as a string for decimal precision.
+ * Backend returns prices as strings (e.g., "50000.00").
+ * Use toPrice() and fromPrice() for conversions.
+ */
+export type Price = string;
 
 /**
  * Supported currency configurations
@@ -65,11 +79,14 @@ export function formatCurrency(
     return showSymbol ? `${config.symbol}0` : '0';
   }
 
+  // Ensure maximumFractionDigits >= minimumFractionDigits
+  const minDecimals = minimumFractionDigits ?? config.decimals;
+  const maxDecimals = maximumFractionDigits ?? config.decimals;
   const formatOptions: Intl.NumberFormatOptions = {
     style: 'currency',
     currency: config.code,
-    minimumFractionDigits: minimumFractionDigits ?? config.decimals,
-    maximumFractionDigits: maximumFractionDigits ?? config.decimals,
+    minimumFractionDigits: minDecimals,
+    maximumFractionDigits: Math.max(minDecimals, maxDecimals),
   };
 
   if (compact && Math.abs(numAmount) >= 1000) {
@@ -142,7 +159,8 @@ export function parseCurrencyInput(
   if (!value) return 0;
 
   // Remove currency symbols and whitespace
-  let cleaned = value.replace(/[₱$€£¥S\s]/g, '');
+  // Note: S$ (Singapore), HK$ and A$ are multi-char symbols, handle them first
+  let cleaned = value.replace(/S\$|HK\$|A\$/g, '').replace(/[₱$€£¥\s]/g, '');
 
   // Remove currency codes
   cleaned = cleaned.replace(/PHP|USD|EUR|SGD|HKD|JPY|GBP|AUD/gi, '');
@@ -249,7 +267,7 @@ export function calculateTax(
  * Sum multiple amounts
  */
 export function sumAmounts(...amounts: (number | string)[]): number {
-  return amounts.reduce((sum, amount) => {
+  return amounts.reduce<number>((sum, amount) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
     return sum + (isNaN(num) ? 0 : num);
   }, 0);
@@ -263,4 +281,66 @@ export function formatCompact(
   currency: CurrencyCode = DEFAULT_CURRENCY
 ): string {
   return formatCurrency(amount, { currency, compact: true });
+}
+
+// =============================================================================
+// PRICE TYPE CONVERSIONS
+// =============================================================================
+
+/**
+ * Convert a number to a Price string with 2 decimal places.
+ * Use this when creating/updating price values.
+ *
+ * @example
+ * toPrice(50000) // "50000.00"
+ * toPrice(50000.5) // "50000.50"
+ */
+export function toPrice(amount: number): Price {
+  if (isNaN(amount)) return '0.00';
+  return amount.toFixed(2);
+}
+
+/**
+ * Convert a Price string to a number for calculations.
+ * Use this when doing math with price values.
+ *
+ * @example
+ * fromPrice("50000.00") // 50000
+ * fromPrice("50000.50") // 50000.5
+ */
+export function fromPrice(price: Price | number | null | undefined): number {
+  if (price === null || price === undefined) return 0;
+  if (typeof price === 'number') return price;
+  const parsed = parseFloat(price);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
+ * Check if a value is a valid price string.
+ */
+export function isValidPrice(value: unknown): value is Price {
+  if (typeof value !== 'string') return false;
+  const num = parseFloat(value);
+  return !isNaN(num);
+}
+
+/**
+ * Add two prices together, returning a Price string.
+ */
+export function addPrices(a: Price | number, b: Price | number): Price {
+  return toPrice(fromPrice(a) + fromPrice(b));
+}
+
+/**
+ * Subtract prices (a - b), returning a Price string.
+ */
+export function subtractPrices(a: Price | number, b: Price | number): Price {
+  return toPrice(fromPrice(a) - fromPrice(b));
+}
+
+/**
+ * Multiply a price by a quantity, returning a Price string.
+ */
+export function multiplyPrice(price: Price | number, quantity: number): Price {
+  return toPrice(fromPrice(price) * quantity);
 }

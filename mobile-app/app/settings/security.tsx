@@ -19,11 +19,11 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import {
   ShieldCheck,
   Fingerprint,
-  FaceScan,
+  Scan,
   Clock,
   CaretRight,
   CheckCircle,
@@ -41,13 +41,19 @@ import { useSecurity } from '@/providers/SecurityProvider';
 export default function SecuritySettingsScreen() {
   const router = useRouter();
   const { isAvailable, isEnabled, biometricName, capabilities } = useBiometrics();
-  const { isInitialized } = useSecurity();
+  const { isInitialized, lockApp } = useSecurity();
+
+  const handleLockNow = () => {
+    if (isEnabled) {
+      lockApp();
+    }
+  };
 
   // Determine icon based on biometric type
   const isFaceID = capabilities?.biometricTypes.includes('facial');
 
   const navigateToBiometrics = () => {
-    router.push('/settings/biometric');
+    router.push('/settings/biometric' as Href);
   };
 
   return (
@@ -96,7 +102,7 @@ export default function SecuritySettingsScreen() {
         >
           <View style={styles.settingIconContainer}>
             {isFaceID ? (
-              <FaceScan size={24} color={colors.primary.black} />
+              <Scan size={24} color={colors.primary.black} />
             ) : (
               <Fingerprint size={24} color={colors.primary.black} />
             )}
@@ -166,6 +172,18 @@ export default function SecuritySettingsScreen() {
             thumbColor={colors.neutral.white}
           />
         </View>
+
+        {/* Lock Now Button */}
+        {isEnabled && (
+          <TouchableOpacity
+            style={styles.lockNowButton}
+            onPress={handleLockNow}
+            activeOpacity={0.7}
+          >
+            <LockSimple size={20} color={colors.neutral.white} weight="bold" />
+            <Text style={styles.lockNowButtonText}>Lock Now</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Security Tips */}
         <View style={styles.tipsSection}>
@@ -332,5 +350,21 @@ const styles = StyleSheet.create({
     color: colors.neutral.darkGray,
     flex: 1,
     lineHeight: 20,
+  },
+  lockNowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary.forest,
+    borderRadius: layout.borderRadius.md,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  lockNowButtonText: {
+    ...typeScale.labelLarge,
+    color: colors.neutral.white,
+    fontWeight: '600',
   },
 });

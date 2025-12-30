@@ -83,6 +83,7 @@ export interface VenueSelectionStepConfiguration {
   show_included_hours: boolean;
   show_bundle_discount: boolean;
   bundle_discount_percent: number;
+  bundle_discount_percentage?: number; // Alias for bundle_discount_percent
   show_package_recommendations: boolean;
   filter_by_event_type: boolean;
   show_capacity: boolean;
@@ -196,6 +197,13 @@ export interface ContactInfoStepConfiguration {
   };
   show_welcome_back_for_authenticated: boolean;
   prefill_from_profile: boolean;
+  // Additional fields used by components
+  required_fields?: string[];
+  show_company_fields?: boolean;
+  show_address_fields?: boolean;
+  collect_emergency_contact?: boolean;
+  terms_url?: string;
+  privacy_url?: string;
 }
 
 /**
@@ -280,6 +288,10 @@ export interface PricingSummaryStepConfiguration {
   allow_contact_edit: boolean;
   header_text?: string;
   footer_text?: string;
+  // Additional fields used by components
+  show_itemized?: boolean;
+  show_payment_schedule?: boolean;
+  allow_promo_code?: boolean;
 }
 
 /**

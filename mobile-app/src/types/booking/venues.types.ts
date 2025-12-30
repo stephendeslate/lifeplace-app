@@ -58,6 +58,10 @@ export interface RentableVenue extends VenuePublic {
   is_featured?: boolean;
   is_active: boolean;
   available_for_custom_packages: boolean;
+  // Standalone pricing (when not part of an event type)
+  standalone_base_price?: string;
+  standalone_included_hours?: number;
+  standalone_excess_hour_price?: string;
 }
 
 /**
@@ -74,6 +78,13 @@ export interface EventTypePricing {
  */
 export interface RentableVenueWithEventType extends RentableVenue {
   event_type_pricing?: EventTypePricing;
+  // Effective pricing (merged from event type or standalone)
+  has_event_type_config?: boolean;
+  effective_base_price?: string;
+  effective_included_hours?: number;
+  effective_excess_hour_price?: string;
+  // Operating rules can be at venue level too
+  is_all_day_access?: boolean;
 }
 
 /**
@@ -154,6 +165,7 @@ export interface VenueSelectionStepConfiguration {
   show_included_hours: boolean;
   show_bundle_discount: boolean;
   bundle_discount_percent: number;
+  bundle_discount_percentage?: number; // Alias for bundle_discount_percent
   show_package_recommendations: boolean;
   filter_by_event_type: boolean;
 }
@@ -196,11 +208,14 @@ export interface CustomPackageEstimate {
     excess_hour_rate: string;
   }>;
   subtotal: string;
-  bundle_discount: string;
-  bundle_discount_percent: number;
-  total: string;
-  total_included_hours: number;
-  is_multi_venue: boolean;
+  bundle_discount?: string;
+  bundle_discount_percent?: number;
+  multi_venue_discount?: string; // Alias for bundle_discount
+  discount_percentage?: number; // Alias for bundle_discount_percent
+  total?: string;
+  total_price?: string; // Alias for total
+  total_included_hours?: number;
+  is_multi_venue?: boolean;
 }
 
 /**
