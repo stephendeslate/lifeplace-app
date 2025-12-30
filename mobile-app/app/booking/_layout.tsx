@@ -1,0 +1,135 @@
+/**
+ * Booking Flow Layout
+ *
+ * Wraps all booking screens with BookingProvider and handles session recovery.
+ */
+
+import React, { useEffect } from 'react';
+import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BookingProvider, useBookingContext } from '@/contexts/BookingContext';
+import { SessionRecoverySheet } from '@/components/booking';
+import { colors } from '@/theme';
+
+function BookingLayoutContent() {
+  const { state, actions } = useBookingContext();
+
+  // Check for recoverable session on mount
+  useEffect(() => {
+    actions.checkForRecoverableSession();
+  }, []);
+
+  const handleResumeSession = async () => {
+    if (state.recoverableSession) {
+      await actions.recoverSession(state.recoverableSession.sessionId);
+    }
+  };
+
+  const handleDiscardSession = async () => {
+    await actions.discardRecoverableSession();
+  };
+
+  const handleDismissRecovery = () => {
+    actions.clearRecoverableSession();
+  };
+
+  return (
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.neutral.white },
+          animation: 'slide_from_right',
+        }}
+      >
+        <Stack.Screen
+          name="index"
+          options={{
+            title: 'Choose Event Type',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/index"
+          options={{
+            title: 'Booking',
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/venue"
+          options={{
+            title: 'Select Venue',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/datetime"
+          options={{
+            title: 'Select Date & Time',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/package"
+          options={{
+            title: 'Select Package',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/addons"
+          options={{
+            title: 'Add-ons',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/questionnaire"
+          options={{
+            title: 'Event Details',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/summary"
+          options={{
+            title: 'Review & Summary',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/contact"
+          options={{
+            title: 'Contact Information',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/payment"
+          options={{
+            title: 'Payment',
+          }}
+        />
+        <Stack.Screen
+          name="[flowId]/confirmation"
+          options={{
+            title: 'Confirmation',
+            gestureEnabled: false,
+          }}
+        />
+      </Stack>
+
+      {/* Session Recovery Sheet */}
+      <SessionRecoverySheet
+        visible={state.showRecoveryPrompt}
+        session={state.recoverableSession}
+        onResume={handleResumeSession}
+        onDiscard={handleDiscardSession}
+        onDismiss={handleDismissRecovery}
+      />
+    </>
+  );
+}
+
+export default function BookingLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BookingProvider>
+        <BookingLayoutContent />
+      </BookingProvider>
+    </GestureHandlerRootView>
+  );
+}
