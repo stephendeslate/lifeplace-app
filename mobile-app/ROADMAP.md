@@ -894,6 +894,7 @@ Reference: [MOBILE_VERSION_API.md](../docs/api/MOBILE_VERSION_API.md)
 - [STYLING_GUIDE.md](STYLING_GUIDE.md) - Design system details
 - [BOOKING_IMPLEMENTATION.md](BOOKING_IMPLEMENTATION.md) - Booking flow code examples
 - [BOOKING_FLOW_GAP_ANALYSIS.md](BOOKING_FLOW_GAP_ANALYSIS.md) - Feature parity requirements
+- Other documentation can be found in the /docs directory
 
 ### Client-Portal Reference (Source of Truth)
 - `frontend/client-portal/src/apis/booking/` - API layer (9 files)
