@@ -5,10 +5,11 @@
  */
 
 import React, { useCallback } from 'react';
-import { View, StyleSheet, StatusBar } from 'react-native';
+import { View, StyleSheet, StatusBar, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, type Href } from 'expo-router';
-import { colors, spacing } from '@/theme';
+import { X } from 'phosphor-react-native';
+import { colors, spacing, typeScale, layout } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { EventTypeSelection } from '@/components/booking';
 import type { EventType } from '@/types/booking';
@@ -50,9 +51,26 @@ export default function BookingIndexScreen() {
     }
   }, [actions, state.availableFlows]);
 
+  const handleClose = useCallback(() => {
+    router.back();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.neutral.cream} />
+
+      {/* Header with Close Button */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Book an Event</Text>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={handleClose}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <X size={20} color={colors.neutral.darkGray} weight="bold" />
+        </TouchableOpacity>
+      </View>
+
       <EventTypeSelection
         onSelectEventType={handleSelectEventType}
         selectedEventTypeId={state.selectedEventType?.id}
@@ -67,5 +85,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.neutral.cream,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.neutral.cream,
+  },
+  headerTitle: {
+    ...typeScale.titleMedium,
+    color: colors.primary.black,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: layout.borderRadius.full,
+    backgroundColor: colors.neutral.sand,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
