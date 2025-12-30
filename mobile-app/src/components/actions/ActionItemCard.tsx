@@ -5,7 +5,7 @@
  * with urgency indicator and relevant details.
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import {
   FileText,
@@ -39,7 +39,7 @@ interface ActionItemCardProps {
   testID?: string;
 }
 
-export function ActionItemCard({ action, onPress, testID }: ActionItemCardProps) {
+export const ActionItemCard = memo(function ActionItemCard({ action, onPress, testID }: ActionItemCardProps) {
   const typeConfig = ACTION_TYPE_CONFIGS[action.type];
   const urgencyConfig = URGENCY_CONFIGS[action.urgency];
 
@@ -233,7 +233,7 @@ export function ActionItemCard({ action, onPress, testID }: ActionItemCardProps)
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -327,3 +327,6 @@ const styles = StyleSheet.create({
 });
 
 export default ActionItemCard;
+
+// Display name for debugging
+ActionItemCard.displayName = 'ActionItemCard';

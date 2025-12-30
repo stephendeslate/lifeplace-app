@@ -4,7 +4,7 @@
  * Card for displaying an event in the events list.
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { StyleSheet, Text, View, Pressable, type ViewStyle, type StyleProp } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Calendar, MapPin, Clock, Users, Warning } from 'phosphor-react-native';
@@ -36,7 +36,7 @@ export interface EventCardProps {
   testID?: string;
 }
 
-export function EventCard({ event, onPress, compact = false, style, testID }: EventCardProps) {
+export const EventCard = memo(function EventCard({ event, onPress, compact = false, style, testID }: EventCardProps) {
   const scale = useSharedValue(1);
   const countdown = getEventCountdown(event.start_date);
   const requiresAttention = eventRequiresAttention(event);
@@ -222,7 +222,7 @@ export function EventCard({ event, onPress, compact = false, style, testID }: Ev
       </View>
     </AnimatedPressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -371,3 +371,6 @@ const styles = StyleSheet.create({
 });
 
 export default EventCard;
+
+// Display name for debugging
+EventCard.displayName = 'EventCard';

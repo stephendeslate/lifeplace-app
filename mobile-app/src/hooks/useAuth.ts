@@ -20,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AuthAPI } from '@/apis/auth.api';
 import { useAuthStore } from '@/stores/authStore';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { queryKeys } from '@/utils/queryClient';
 import type {
@@ -88,6 +89,7 @@ export function useRegister() {
  */
 export function useLogout() {
   const { clearAuth } = useAuthStore();
+  const { clearAllFavorites } = useFavoritesStore();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -95,6 +97,8 @@ export function useLogout() {
     onSettled: () => {
       // Always clear auth state, even if API call fails
       clearAuth();
+      // Clear favorites on logout
+      clearAllFavorites();
       queryClient.clear();
     },
   });

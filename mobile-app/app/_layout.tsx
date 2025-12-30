@@ -26,19 +26,38 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { queryClient } from '@/utils/queryClient';
+import { asyncStoragePersister, shouldPersistQuery } from '@/utils/queryPersister';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { StripeProvider } from '@/providers/StripeProvider';
+import { SecurityProvider } from '@/providers/SecurityProvider';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { OfflineBanner } from '@/components/common/OfflineBanner';
 import { useAuthStore } from '@/stores/authStore';
 import { useDeepLinking } from '@/hooks/useDeepLinking';
+import { useNotifications } from '@/hooks/useNotifications';
+import { crashReporter } from '@/utils/crashReporting';
 import { colors } from '@/theme';
 
 // Prevent splash screen from auto-hiding until we're ready
 SplashScreen.preventAutoHideAsync();
+
+// =============================================================================
+// NOTIFICATION INITIALIZER
+// =============================================================================
+
+/**
+ * Initializes push notifications when the app starts.
+ * Must be rendered inside AuthProvider and ToastProvider.
+ */
+function NotificationInitializer() {
+  useNotifications();
+  return null;
+}
 
 // =============================================================================
 // ROOT LAYOUT
@@ -67,59 +86,86 @@ export default function RootLayout() {
   }, [isHydrated]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <StripeProvider>
-            <AuthProvider>
-              <ToastProvider>
-                <StatusBar style="dark" />
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: colors.neutral.cream },
-                    animation: 'slide_from_right',
-                  }}
-                >
-                  {/* Main entry point - will redirect based on auth state */}
-                  <Stack.Screen name="index" />
+    <ErrorBoundary
+      onError={(error) => {
+        crashReporter.captureException(error, { location: 'RootErrorBoundary' });
+      }}
+    >
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <SecurityProvider>
+            <PersistQueryClientProvider
+              client={queryClient}
+              persistOptions={{
+                persister: asyncStoragePersister,
+                maxAge: 1000 * 60 * 60 * 24, // 24 hours
+                dehydrateOptions: {
+                  shouldDehydrateQuery: (query) => {
+                    return (
+                      query.state.status === 'success' &&
+                      shouldPersistQuery(query.queryKey)
+                    );
+                  },
+                },
+              }}
+            >
+              <StripeProvider>
+                <AuthProvider>
+                  <ToastProvider>
+                    <NotificationInitializer />
+                    <OfflineBanner />
+                    <StatusBar style="dark" />
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: colors.neutral.cream },
+                        animation: 'slide_from_right',
+                      }}
+                    >
+                      {/* Main entry point - will redirect based on auth state */}
+                      <Stack.Screen name="index" />
 
-                  {/* Auth screens - fade transition */}
-                  <Stack.Screen
-                    name="(auth)"
-                    options={{
-                      animation: 'fade',
-                    }}
-                  />
+                      {/* Auth screens - fade transition */}
+                      <Stack.Screen
+                        name="(auth)"
+                        options={{
+                          animation: 'fade',
+                        }}
+                      />
 
-                  {/* Main app with tabs - fade transition */}
-                  <Stack.Screen
-                    name="(tabs)"
-                    options={{
-                      animation: 'fade',
-                    }}
-                  />
+                      {/* Main app with tabs - fade transition */}
+                      <Stack.Screen
+                        name="(tabs)"
+                        options={{
+                          animation: 'fade',
+                        }}
+                      />
 
-                  {/* Events section - has its own _layout.tsx for nested routes */}
-                  <Stack.Screen name="events" />
+                      {/* Events section - has its own _layout.tsx for nested routes */}
+                      <Stack.Screen name="events" />
 
-                  {/* Payments section - has its own _layout.tsx for nested routes */}
-                  <Stack.Screen name="payments" />
+                      {/* Payments section - has its own _layout.tsx for nested routes */}
+                      <Stack.Screen name="payments" />
 
-                  {/* Contracts section - has its own _layout.tsx for nested routes */}
-                  <Stack.Screen name="contracts" />
+                      {/* Contracts section - has its own _layout.tsx for nested routes */}
+                      <Stack.Screen name="contracts" />
 
-                  {/* Quotes section - has its own _layout.tsx for nested routes */}
-                  <Stack.Screen name="quotes" />
+                      {/* Quotes section - has its own _layout.tsx for nested routes */}
+                      <Stack.Screen name="quotes" />
 
-                  {/* Action Center */}
-                  <Stack.Screen name="actions" />
-                </Stack>
-              </ToastProvider>
-            </AuthProvider>
-          </StripeProvider>
-        </QueryClientProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+                      {/* Action Center */}
+                      <Stack.Screen name="actions" />
+
+                      {/* Settings */}
+                      <Stack.Screen name="settings" />
+                    </Stack>
+                  </ToastProvider>
+                </AuthProvider>
+              </StripeProvider>
+            </PersistQueryClientProvider>
+          </SecurityProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

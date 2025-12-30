@@ -687,7 +687,7 @@ Reference: [CONSENT_MANAGEMENT_UI.md](../docs/compliance/CONSENT_MANAGEMENT_UI.m
 
 ---
 
-## Phase 12: Messaging System
+## Phase 12: Messaging System [DEFERRED]
 
 ### 12.1 Messages Screen
 - [ ] Create `app/messages/index.tsx`

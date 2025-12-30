@@ -24,6 +24,7 @@ import { MagnifyingGlass, Bell, ArrowRight } from 'phosphor-react-native';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboard } from '@/hooks/useDashboard';
+import { useRentableVenues, useFeaturedPackages, usePrefetchVenue, usePrefetchPackage } from '@/hooks/useExplore';
 import { theme } from '@/theme';
 import { colors, spacing, typeScale, layout } from '@/theme';
 import {
@@ -33,12 +34,22 @@ import {
   QuickActionRow,
 } from '@/components/dashboard';
 import { Skeleton, Card, EmptyState } from '@/components/common';
+import { VenueCard, PackageCard } from '@/components/explore';
 import type { QuickActionType } from '@/components/dashboard';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { data: dashboardData, isLoading, refetch, isRefetching } = useDashboard();
+
+  // Explore data
+  const { data: venues, isLoading: venuesLoading } = useRentableVenues();
+  const { data: featuredPackages, isLoading: packagesLoading } = useFeaturedPackages();
+  const prefetchVenue = usePrefetchVenue();
+  const prefetchPackage = usePrefetchPackage();
+
+  // Featured venues (first 4)
+  const featuredVenues = venues?.slice(0, 4) ?? [];
 
   const handleQuickAction = (action: QuickActionType) => {
     switch (action) {
@@ -255,32 +266,99 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Explore</Text>
 
-          {/* Search Bar */}
-          <Pressable style={styles.searchBar}>
+          {/* Search Bar - navigates to explore screen */}
+          <Pressable
+            style={styles.searchBar}
+            onPress={() => router.push('/explore' as never)}
+          >
             <MagnifyingGlass size={20} color={colors.neutral.gray} />
             <Text style={styles.searchPlaceholder}>
               Search venues, packages...
             </Text>
           </Pressable>
 
-          {/* Featured Venues Placeholder */}
+          {/* Featured Venues */}
           <View style={styles.subsection}>
-            <Text style={styles.subsectionTitle}>Featured Venues</Text>
-            <View style={styles.placeholder}>
-              <Text style={styles.placeholderText}>
-                Venue discovery coming soon
-              </Text>
+            <View style={styles.subsectionHeader}>
+              <Text style={styles.subsectionTitle}>Featured Venues</Text>
+              <Pressable
+                style={styles.viewAllButton}
+                onPress={() => router.push('/explore?tab=venues' as never)}
+              >
+                <Text style={styles.viewAllText}>View All</Text>
+                <ArrowRight size={16} color={theme.colors.primary[600]} />
+              </Pressable>
             </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            >
+              {venuesLoading ? (
+                <>
+                  <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
+                  <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
+                </>
+              ) : featuredVenues.length > 0 ? (
+                featuredVenues.map((venue) => (
+                  <VenueCard
+                    key={venue.id}
+                    venue={venue}
+                    compact
+                    onPress={() => router.push(`/venues/${venue.id}` as never)}
+                    onPressIn={() => prefetchVenue(venue.id)}
+                  />
+                ))
+              ) : (
+                <View style={styles.placeholder}>
+                  <Text style={styles.placeholderText}>
+                    No venues available
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
           </View>
 
-          {/* Popular Packages Placeholder */}
+          {/* Popular Packages */}
           <View style={styles.subsection}>
-            <Text style={styles.subsectionTitle}>Popular Packages</Text>
-            <View style={styles.placeholder}>
-              <Text style={styles.placeholderText}>
-                Package browsing coming soon
-              </Text>
+            <View style={styles.subsectionHeader}>
+              <Text style={styles.subsectionTitle}>Popular Packages</Text>
+              <Pressable
+                style={styles.viewAllButton}
+                onPress={() => router.push('/explore?tab=packages' as never)}
+              >
+                <Text style={styles.viewAllText}>View All</Text>
+                <ArrowRight size={16} color={theme.colors.primary[600]} />
+              </Pressable>
             </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            >
+              {packagesLoading ? (
+                <>
+                  <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
+                  <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
+                </>
+              ) : featuredPackages && featuredPackages.length > 0 ? (
+                featuredPackages.slice(0, 4).map((pkg) => (
+                  <PackageCard
+                    key={pkg.id}
+                    package={pkg}
+                    compact
+                    onPress={() => router.push(`/packages/${pkg.id}` as never)}
+                    onPressIn={() => prefetchPackage(pkg.id)}
+                  />
+                ))
+              ) : (
+                <View style={styles.placeholder}>
+                  <Text style={styles.placeholderText}>
+                    No packages available
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </View>
       </ScrollView>
@@ -356,10 +434,21 @@ const styles = StyleSheet.create({
   subsection: {
     marginBottom: spacing.lg,
   },
+  subsectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
   subsectionTitle: {
     ...typeScale.titleMedium,
     color: theme.colors.neutral[800],
-    marginBottom: spacing.sm,
+  },
+  horizontalList: {
+    paddingRight: spacing.lg,
+  },
+  cardSkeleton: {
+    marginRight: spacing.md,
   },
   searchBar: {
     flexDirection: 'row',

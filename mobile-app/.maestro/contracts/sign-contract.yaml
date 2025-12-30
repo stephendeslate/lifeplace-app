@@ -1,0 +1,76 @@
+# Contract Signing Flow E2E Test
+# Tests the contract viewing and signing flow
+
+appId: com.lifeplace.app
+name: Contract Signing Flow
+tags:
+  - contracts
+  - critical
+---
+# Login first
+- runFlow: ../auth/login.yaml
+
+# Navigate to contracts (via Action Center or Events)
+- tapOn: "Action Center"
+- waitForAnimationToEnd
+
+# Find and tap on a contract action
+- tapOn:
+    text: "Sign Contract"
+    optional: true
+
+# If no pending contracts in action center, try events
+- runFlow:
+    when:
+      notVisible: "Contract Details"
+    flow: navigate-to-contract.yaml
+
+# View contract
+- assertVisible: "Contract Details"
+- scrollUntilVisible:
+    element:
+      id: "contract-sign-button"
+    direction: DOWN
+
+# Start signing
+- tapOn:
+    id: "contract-sign-button"
+
+# Draw signature on canvas
+- assertVisible:
+    id: "contract-signature-pad"
+
+# Simulate signature drawing
+- swipe:
+    start: 20%, 50%
+    end: 80%, 60%
+    duration: 500
+- swipe:
+    start: 80%, 60%
+    end: 40%, 70%
+    duration: 500
+- swipe:
+    start: 40%, 70%
+    end: 60%, 50%
+    duration: 300
+
+# Enter signer name
+- tapOn:
+    id: "contract-signer-name-input"
+- inputText: "Test User"
+
+# Accept terms
+- tapOn:
+    id: "contract-accept-terms"
+
+# Submit signature
+- tapOn:
+    id: "contract-submit-signature"
+
+# Verify success
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Contract Signed"
+    optional: true
+
+- takeScreenshot: contract_signed

@@ -24,6 +24,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { AuthAPI } from '@/apis/auth.api';
 import { queryClient, clearAllQueries } from '@/utils/queryClient';
 import { getErrorMessage } from '@/utils/api';
+import { NotificationService } from '@/services/notifications';
+import { unregisterPushToken } from '@/apis/notifications.api';
+import { clearBadge } from '@/utils/notificationHandler';
 import type {
   User,
   LoginCredentials,
@@ -167,12 +170,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLoading(true);
 
     try {
+      // Get stored push token before clearing auth
+      const pushToken = await NotificationService.getStoredPushToken();
+
+      // Unregister push token from backend
+      if (pushToken) {
+        try {
+          await unregisterPushToken({ token: pushToken });
+        } catch {
+          // Continue with logout even if unregistration fails
+          console.warn('Failed to unregister push token');
+        }
+      }
+
       // Call backend to blacklist the refresh token
       await AuthAPI.logout();
     } catch (error) {
       // Even if logout API fails, we still clear local auth
       console.warn('Logout API failed:', getErrorMessage(error));
     } finally {
+      // Clear stored push token
+      await NotificationService.clearStoredPushToken();
+
+      // Clear badge
+      await clearBadge();
+
       // Clear local auth state
       clearAuth();
 

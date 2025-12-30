@@ -1,0 +1,23 @@
+# Maestro Configuration
+# LifePlace Mobile App E2E Tests
+
+appId: com.lifeplace.app
+name: LifePlace Mobile App E2E Tests
+
+# Global test settings
+initFlow:
+  - launchApp:
+      clearState: true
+      clearKeychain: true
+
+# Test execution configuration
+executionOrder:
+  continueOnFailure: false
+
+# Screenshot settings
+screenshots:
+  enabled: true
+  format: png
+
+# Timeout settings (in milliseconds)
+timeout: 30000

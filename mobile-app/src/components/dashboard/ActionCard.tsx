@@ -4,7 +4,7 @@
  * Card for displaying critical actions that need user attention.
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import {
@@ -62,7 +62,7 @@ const urgencyBgColors = {
   low: theme.colors.neutral[100],
 };
 
-export function ActionCard({
+export const ActionCard = memo(function ActionCard({
   type,
   title,
   subtitle,
@@ -173,7 +173,7 @@ export function ActionCard({
       {content}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -227,3 +227,6 @@ const styles = StyleSheet.create({
 });
 
 export default ActionCard;
+
+// Display name for debugging
+ActionCard.displayName = 'ActionCard';
