@@ -42,6 +42,17 @@ interface AuthState {
 // =============================================================================
 
 /**
+ * Secure storage options for enhanced keychain security.
+ * WHEN_UNLOCKED_THIS_DEVICE_ONLY:
+ * - Data is only accessible when device is unlocked
+ * - Data cannot be transferred to other devices (iCloud backup excluded)
+ * - Most secure option for sensitive tokens
+ */
+const SECURE_OPTIONS: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+};
+
+/**
  * Custom storage adapter for Zustand persist middleware.
  * Uses expo-secure-store for encrypted storage.
  *
@@ -52,7 +63,7 @@ interface AuthState {
 const secureStorage = {
   getItem: async (name: string): Promise<string | null> => {
     try {
-      return await SecureStore.getItemAsync(name);
+      return await SecureStore.getItemAsync(name, SECURE_OPTIONS);
     } catch (error) {
       console.error('SecureStore getItem error:', error);
       return null;
@@ -60,14 +71,14 @@ const secureStorage = {
   },
   setItem: async (name: string, value: string): Promise<void> => {
     try {
-      await SecureStore.setItemAsync(name, value);
+      await SecureStore.setItemAsync(name, value, SECURE_OPTIONS);
     } catch (error) {
       console.error('SecureStore setItem error:', error);
     }
   },
   removeItem: async (name: string): Promise<void> => {
     try {
-      await SecureStore.deleteItemAsync(name);
+      await SecureStore.deleteItemAsync(name, SECURE_OPTIONS);
     } catch (error) {
       console.error('SecureStore removeItem error:', error);
     }

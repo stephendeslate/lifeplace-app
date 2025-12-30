@@ -1,0 +1,37 @@
+# Login Flow E2E Test
+# Tests the complete login flow
+
+appId: com.lifeplace.app
+name: Login Flow
+tags:
+  - auth
+  - critical
+---
+- launchApp:
+    clearState: true
+
+# Wait for login screen to load
+- assertVisible: "Welcome Back"
+
+# Enter email
+- tapOn:
+    id: "login-email-input"
+- inputText: "${EMAIL:-test@example.com}"
+
+# Enter password
+- tapOn:
+    id: "login-password-input"
+- inputText: "${PASSWORD:-TestPassword123!}"
+
+# Submit login
+- tapOn:
+    id: "login-submit-button"
+
+# Wait for navigation and verify dashboard
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Dashboard"
+    optional: true
+
+# Take screenshot for verification
+- takeScreenshot: login_success

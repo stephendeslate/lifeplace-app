@@ -4,7 +4,7 @@
  * Card for displaying the next upcoming event on the dashboard.
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Calendar, MapPin, Clock, ArrowRight, Users } from 'phosphor-react-native';
@@ -31,7 +31,7 @@ export interface EventPreviewCardProps {
   testID?: string;
 }
 
-export function EventPreviewCard({ event, onPress, testID }: EventPreviewCardProps) {
+export const EventPreviewCard = memo(function EventPreviewCard({ event, onPress, testID }: EventPreviewCardProps) {
   const scale = useSharedValue(1);
   const countdown = getEventCountdown(event.start_date);
 
@@ -158,7 +158,7 @@ export function EventPreviewCard({ event, onPress, testID }: EventPreviewCardPro
       </View>
     </AnimatedPressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -243,3 +243,6 @@ const styles = StyleSheet.create({
 });
 
 export default EventPreviewCard;
+
+// Display name for debugging
+EventPreviewCard.displayName = 'EventPreviewCard';

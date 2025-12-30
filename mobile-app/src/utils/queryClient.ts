@@ -10,13 +10,54 @@
  * - The queryClient is passed to QueryClientProvider in _layout.tsx
  */
 
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
+
+import { ErrorHandler } from './errorHandler';
+import { crashReporter } from './crashReporting';
+import { useAuthStore } from '@/stores/authStore';
+
+// =============================================================================
+// GLOBAL ERROR HANDLERS
+// =============================================================================
+
+const onQueryError = (error: unknown) => {
+  // Handle auth errors globally
+  if (ErrorHandler.isAuthError(error)) {
+    useAuthStore.getState().clearAuth();
+    return;
+  }
+
+  // Log network errors
+  if (ErrorHandler.isNetworkError(error)) {
+    console.warn('Network error:', ErrorHandler.extractMessage(error));
+  }
+
+  // Report non-network errors
+  if (!ErrorHandler.isNetworkError(error) && error instanceof Error) {
+    crashReporter.captureException(error, { type: 'query' });
+  }
+};
+
+const onMutationError = (error: unknown) => {
+  console.error('Mutation error:', ErrorHandler.extractMessage(error));
+
+  if (!ErrorHandler.isNetworkError(error) && error instanceof Error) {
+    crashReporter.captureException(error, { type: 'mutation' });
+  }
+};
 
 // =============================================================================
 // QUERY CLIENT
 // =============================================================================
 
 export const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: onQueryError,
+  }),
+  mutationCache: new MutationCache({
+    onError: onMutationError,
+  }),
   defaultOptions: {
     queries: {
       // Data is fresh for 5 minutes (won't refetch during this time)
@@ -25,8 +66,21 @@ export const queryClient = new QueryClient({
       // Keep unused data in cache for 30 minutes
       gcTime: 1000 * 60 * 30,
 
-      // Retry failed requests 3 times with exponential backoff
-      retry: 3,
+      // Custom retry logic
+      retry: (failureCount, error) => {
+        // Don't retry on auth errors
+        if (ErrorHandler.isAuthError(error)) return false;
+
+        // Don't retry on 4xx errors (except timeout/rate limit)
+        if (error instanceof AxiosError) {
+          const status = error.response?.status;
+          if (status && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+            return false;
+          }
+        }
+
+        return failureCount < 3;
+      },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
 
       // Refetch when app comes to foreground
@@ -34,10 +88,14 @@ export const queryClient = new QueryClient({
 
       // Refetch when network reconnects
       refetchOnReconnect: true,
+
+      // Use cached data when offline
+      networkMode: 'offlineFirst',
     },
     mutations: {
       // Only retry mutations once (they're not idempotent)
       retry: 1,
+      networkMode: 'offlineFirst',
     },
   },
 });

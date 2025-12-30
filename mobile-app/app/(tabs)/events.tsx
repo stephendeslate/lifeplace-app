@@ -5,13 +5,8 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -132,14 +127,11 @@ export default function EventsScreen() {
       {isLoading ? (
         renderLoadingState()
       ) : (
-        <FlatList
+        <FlashList
           data={filteredEvents}
           renderItem={renderEventItem}
           keyExtractor={keyExtractor}
-          contentContainerStyle={[
-            styles.listContent,
-            filteredEvents.length === 0 && styles.emptyListContent,
-          ]}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -187,9 +179,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: layout.bottomNavHeight + spacing.xl,
-  },
-  emptyListContent: {
-    flex: 1,
   },
   eventCard: {
     marginBottom: spacing.md,

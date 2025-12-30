@@ -20,7 +20,11 @@
       "bundleIdentifier": "com.lifeplace.app",
       "infoPlist": {
         "NSCameraUsageDescription": "LifePlace needs camera access to upload photos for your event.",
-        "NSPhotoLibraryUsageDescription": "LifePlace needs photo library access to upload photos for your event."
+        "NSPhotoLibraryUsageDescription": "LifePlace needs photo library access to upload photos for your event.",
+        "NSFaceIDUsageDescription": "LifePlace uses Face ID to securely authenticate you and protect your account.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        }
       },
       "associatedDomains": [
         "applinks:app.lifeplace.com",
@@ -102,8 +106,31 @@
           "photosPermission": "LifePlace needs access to your photos to upload event images.",
           "cameraPermission": "LifePlace needs access to your camera to take event photos."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#228B22"
+        }
+      ],
+      "expo-local-authentication",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "networkInspector": false
+          }
+        }
       ]
     ],
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#228B22",
+      "iosDisplayInForeground": true,
+      "androidMode": "default",
+      "androidCollapsedTitle": "LifePlace"
+    },
     "experiments": {
       "typedRoutes": true
     },

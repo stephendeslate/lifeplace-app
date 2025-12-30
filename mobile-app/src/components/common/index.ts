@@ -31,3 +31,10 @@ export type { FilterChipsProps, FilterChip } from './FilterChips';
 // File upload components
 export { FileUploader } from './FileUploader';
 export type { FileUploaderProps } from './FileUploader';
+
+// Error handling components
+export { ErrorBoundary } from './ErrorBoundary';
+export { ErrorFallback } from './ErrorFallback';
+
+// Network status components
+export { OfflineBanner } from './OfflineBanner';

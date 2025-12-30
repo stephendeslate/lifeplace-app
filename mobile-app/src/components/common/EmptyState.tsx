@@ -16,6 +16,8 @@ import {
   User,
   Warning,
   CheckCircle,
+  Buildings,
+  Package,
   type IconProps,
 } from 'phosphor-react-native';
 import { theme } from '@/theme';
@@ -30,7 +32,9 @@ export type EmptyStateIcon =
   | 'search'
   | 'user'
   | 'warning'
-  | 'success';
+  | 'success'
+  | 'building'
+  | 'package';
 
 export interface EmptyStateProps {
   icon?: EmptyStateIcon;
@@ -55,6 +59,8 @@ const iconMap: Record<EmptyStateIcon, React.ComponentType<IconProps>> = {
   user: User,
   warning: Warning,
   success: CheckCircle,
+  building: Buildings,
+  package: Package,
 };
 
 export function EmptyState({
