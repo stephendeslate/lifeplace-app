@@ -7,8 +7,9 @@
  * 1. GestureHandlerRootView - Required for gestures (swipe, pan, etc.)
  * 2. SafeAreaProvider - Provides safe area insets (notch, home indicator)
  * 3. QueryClientProvider - React Query for server state
- * 4. AuthProvider - Authentication state and methods
- * 5. ToastProvider - Global toast notifications
+ * 4. StripeProvider - Stripe payment processing context
+ * 5. AuthProvider - Authentication state and methods
+ * 6. ToastProvider - Global toast notifications
  *
  * NAVIGATION STRUCTURE:
  * - (auth) - Auth screens (login, register) - shown when not authenticated
@@ -31,6 +32,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { queryClient } from '@/utils/queryClient';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
+import { StripeProvider } from '@/providers/StripeProvider';
 import { useAuthStore } from '@/stores/authStore';
 import { useDeepLinking } from '@/hooks/useDeepLinking';
 import { colors } from '@/theme';
@@ -68,52 +70,54 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <ToastProvider>
-              <StatusBar style="dark" />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: colors.neutral.cream },
-                  animation: 'slide_from_right',
-                }}
-              >
-                {/* Main entry point - will redirect based on auth state */}
-                <Stack.Screen name="index" />
-
-                {/* Auth screens - fade transition */}
-                <Stack.Screen
-                  name="(auth)"
-                  options={{
-                    animation: 'fade',
+          <StripeProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <StatusBar style="dark" />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: colors.neutral.cream },
+                    animation: 'slide_from_right',
                   }}
-                />
+                >
+                  {/* Main entry point - will redirect based on auth state */}
+                  <Stack.Screen name="index" />
 
-                {/* Main app with tabs - fade transition */}
-                <Stack.Screen
-                  name="(tabs)"
-                  options={{
-                    animation: 'fade',
-                  }}
-                />
+                  {/* Auth screens - fade transition */}
+                  <Stack.Screen
+                    name="(auth)"
+                    options={{
+                      animation: 'fade',
+                    }}
+                  />
 
-                {/* Events section - has its own _layout.tsx for nested routes */}
-                <Stack.Screen name="events" />
+                  {/* Main app with tabs - fade transition */}
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{
+                      animation: 'fade',
+                    }}
+                  />
 
-                {/* Payments section - has its own _layout.tsx for nested routes */}
-                <Stack.Screen name="payments" />
+                  {/* Events section - has its own _layout.tsx for nested routes */}
+                  <Stack.Screen name="events" />
 
-                {/* Contracts section - has its own _layout.tsx for nested routes */}
-                <Stack.Screen name="contracts" />
+                  {/* Payments section - has its own _layout.tsx for nested routes */}
+                  <Stack.Screen name="payments" />
 
-                {/* Quotes section - has its own _layout.tsx for nested routes */}
-                <Stack.Screen name="quotes" />
+                  {/* Contracts section - has its own _layout.tsx for nested routes */}
+                  <Stack.Screen name="contracts" />
 
-                {/* Action Center */}
-                <Stack.Screen name="actions" />
-              </Stack>
-            </ToastProvider>
-          </AuthProvider>
+                  {/* Quotes section - has its own _layout.tsx for nested routes */}
+                  <Stack.Screen name="quotes" />
+
+                  {/* Action Center */}
+                  <Stack.Screen name="actions" />
+                </Stack>
+              </ToastProvider>
+            </AuthProvider>
+          </StripeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

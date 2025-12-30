@@ -141,6 +141,9 @@ export {
   paymentKeys,
 } from './usePayment';
 
+// Booking Payment (Stripe integration)
+export { useBookingPayment } from './useBookingPayment';
+
 // Confirmation
 export {
   useBookingDetails,
