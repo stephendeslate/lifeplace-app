@@ -53,12 +53,18 @@ export default function BookingFlowScreen() {
     }
   }, [flow, numericFlowId, state.currentSession]);
 
-  // Update progress when flow changes
+  // Update progress when flow is loaded into context and session is ready
   useEffect(() => {
-    if (flow?.steps && flow.steps.length > 0 && state.progress.currentStepIndex === 0) {
+    const steps = state.currentFlow?.enabled_steps || state.currentFlow?.steps;
+    if (
+      steps &&
+      steps.length > 0 &&
+      state.sessionId &&
+      state.progress.currentStepIndex === 0
+    ) {
       actions.goToStep(0);
     }
-  }, [flow?.steps]);
+  }, [state.currentFlow?.enabled_steps, state.currentFlow?.steps, state.sessionId, state.progress.currentStepIndex, actions]);
 
   const handleClose = useCallback(() => {
     router.back();

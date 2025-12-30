@@ -71,7 +71,12 @@ export function QuestionnaireStep({
   // Flatten all fields from all questionnaires
   const allFields = useMemo(() => {
     if (!questionnaires) return [];
-    return questionnaires.flatMap((q) => q.fields || []).sort((a, b) => a.order - b.order);
+    // Handle both array and paginated response formats
+    const questionnaireArray = Array.isArray(questionnaires)
+      ? questionnaires
+      : (questionnaires as { results?: typeof questionnaires })?.results || [];
+    if (!Array.isArray(questionnaireArray)) return [];
+    return questionnaireArray.flatMap((q) => q.fields || []).sort((a, b) => a.order - b.order);
   }, [questionnaires]);
 
   // Calculate completion percentage
@@ -97,7 +102,7 @@ export function QuestionnaireStep({
     );
   }
 
-  if (!questionnaires || questionnaires.length === 0) {
+  if (allFields.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <ClipboardText size={48} color={colors.neutral.gray} />

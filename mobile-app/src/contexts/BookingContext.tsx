@@ -505,9 +505,11 @@ export function BookingProvider({ children }: BookingProviderProps) {
 
   const goToStep = useCallback(
     async (stepIndex: number) => {
-      if (!state.currentFlow?.steps) return;
+      // Use enabled_steps (primary) or fallback to steps (deprecated)
+      const steps = state.currentFlow?.enabled_steps || state.currentFlow?.steps;
+      if (!steps || steps.length === 0) return;
 
-      const step = state.currentFlow.steps[stepIndex];
+      const step = steps[stepIndex];
       if (!step || !state.sessionId) return;
 
       // Verify session hasn't expired before navigating
@@ -517,8 +519,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
         await BookingCoreAPI.goToStep(state.sessionId, step.id);
 
         // Calculate navigation flags
-        const enabledSteps = state.currentFlow.steps.filter((s) => s.is_enabled);
-        const totalSteps = enabledSteps.length;
+        const totalSteps = steps.length;
 
         dispatch({
           type: 'UPDATE_PROGRESS',
@@ -542,7 +543,8 @@ export function BookingProvider({ children }: BookingProviderProps) {
 
   const nextStep = useCallback(async (): Promise<boolean> => {
     const newIndex = state.progress.currentStepIndex + 1;
-    const totalSteps = state.currentFlow?.steps?.length || 0;
+    const steps = state.currentFlow?.enabled_steps || state.currentFlow?.steps;
+    const totalSteps = steps?.length || 0;
 
     if (newIndex >= totalSteps) return false;
 

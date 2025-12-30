@@ -49,65 +49,10 @@ function BookingLayoutContent() {
           }}
         />
         <Stack.Screen
-          name="[flowId]/index"
+          name="[flowId]"
           options={{
             title: 'Booking',
             presentation: 'card',
-          }}
-        />
-        <Stack.Screen
-          name="[flowId]/venue"
-          options={{
-            title: 'Select Venue',
-          }}
-        />
-        <Stack.Screen
-          name="[flowId]/datetime"
-          options={{
-            title: 'Select Date & Time',
-          }}
-        />
-        <Stack.Screen
-          name="[flowId]/package"
-          options={{
-            title: 'Select Package',
-          }}
-        />
-        <Stack.Screen
-          name="[flowId]/addons"
-          options={{
-            title: 'Add-ons',
-          }}
-        />
-        <Stack.Screen
-          name="[flowId]/questionnaire"
-          options={{
-            title: 'Event Details',
-          }}
-        />
-        <Stack.Screen
-          name="[flowId]/summary"
-          options={{
-            title: 'Review & Summary',
-          }}
-        />
-        <Stack.Screen
-          name="[flowId]/contact"
-          options={{
-            title: 'Contact Information',
-          }}
-        />
-        <Stack.Screen
-          name="[flowId]/payment"
-          options={{
-            title: 'Payment',
-          }}
-        />
-        <Stack.Screen
-          name="[flowId]/confirmation"
-          options={{
-            title: 'Confirmation',
-            gestureEnabled: false,
           }}
         />
       </Stack>
