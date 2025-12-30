@@ -80,7 +80,7 @@ export const contractsApi = {
     if (filters?.page_size) params.append('page_size', filters.page_size.toString());
 
     const queryString = params.toString();
-    const url = queryString ? `/contracts/?${queryString}` : '/contracts/';
+    const url = queryString ? `/contracts/client/contracts/?${queryString}` : '/contracts/client/contracts/';
     const response = await api.get<ContractsListResponse>(url);
     return response.data;
   },
@@ -105,7 +105,7 @@ export const contractsApi = {
    * Get a single contract by ID
    */
   getContract: async (id: number): Promise<Contract> => {
-    const response = await api.get<Contract>(`/contracts/${id}/`);
+    const response = await api.get<Contract>(`/contracts/client/contracts/${id}/`);
     return response.data;
   },
 
@@ -113,7 +113,7 @@ export const contractsApi = {
    * Sign a contract
    */
   signContract: async (id: number, data: ContractSignInput): Promise<Contract> => {
-    const response = await api.post<Contract>(`/contracts/${id}/sign/`, data);
+    const response = await api.post<Contract>(`/contracts/client/contracts/${id}/sign/`, data);
     return response.data;
   },
 
@@ -121,7 +121,7 @@ export const contractsApi = {
    * Download contract as PDF
    */
   downloadContract: async (id: number): Promise<Blob> => {
-    const response = await api.get<Blob>(`/contracts/${id}/download/`, {
+    const response = await api.get<Blob>(`/contracts/client/contracts/${id}/download/`, {
       responseType: 'blob',
     });
     return response.data;
@@ -131,7 +131,7 @@ export const contractsApi = {
    * Get contract preview (HTML content)
    */
   getContractPreview: async (id: number): Promise<{ content: string }> => {
-    const response = await api.get<{ content: string }>(`/contracts/${id}/preview/`);
+    const response = await api.get<{ content: string }>(`/contracts/client/contracts/${id}/preview/`);
     return response.data;
   },
 };

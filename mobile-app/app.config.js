@@ -16,9 +16,6 @@ export default ({ config }) => ({
     // Feature Flags
     enablePushNotifications: process.env.EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS === 'true',
     enableAnalytics: process.env.EXPO_PUBLIC_ENABLE_ANALYTICS === 'true',
-    // EAS Configuration
-    eas: {
-      projectId: process.env.EAS_PROJECT_ID,
-    },
+    // EAS Configuration (projectId from app.json is preserved via config.extra spread)
   },
 });
