@@ -94,6 +94,14 @@
           "merchantIdentifier": "merchant.com.lifeplace.app",
           "enableGooglePay": true
         }
+      ],
+      "expo-document-picker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "LifePlace needs access to your photos to upload event images.",
+          "cameraPermission": "LifePlace needs access to your camera to take event photos."
+        }
       ]
     ],
     "experiments": {
