@@ -27,3 +27,7 @@ export type { SkeletonProps, SkeletonVariant } from './Skeleton';
 
 export { FilterChips } from './FilterChips';
 export type { FilterChipsProps, FilterChip } from './FilterChips';
+
+// File upload components
+export { FileUploader } from './FileUploader';
+export type { FileUploaderProps } from './FileUploader';
