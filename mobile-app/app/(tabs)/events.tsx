@@ -126,6 +126,10 @@ function EventsScreenContent() {
       {/* Events List */}
       {isLoading ? (
         renderLoadingState()
+      ) : filteredEvents.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          {renderEmptyState()}
+        </View>
       ) : (
         <FlashList
           data={filteredEvents}
@@ -141,7 +145,6 @@ function EventsScreenContent() {
               tintColor={theme.colors.primary[500]}
             />
           }
-          ListEmptyComponent={renderEmptyState}
         />
       )}
     </SafeAreaView>
@@ -183,6 +186,8 @@ const styles = StyleSheet.create({
   filters: {
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   listContent: {
     paddingHorizontal: spacing.lg,
@@ -194,5 +199,12 @@ const styles = StyleSheet.create({
   loadingContainer: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxxxl,
   },
 });

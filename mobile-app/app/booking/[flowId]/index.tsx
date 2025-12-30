@@ -5,10 +5,12 @@
  * and displays the introduction step.
  */
 
-import React, { useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { colors, spacing, typeScale } from '@/theme';
+import { X } from 'phosphor-react-native';
+import { colors, spacing, typeScale, layout } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { useBookingFlow, useStartSession } from '@/hooks/booking';
 import { BookingContainer } from '@/components/booking';
@@ -58,23 +60,51 @@ export default function BookingFlowScreen() {
     }
   }, [flow?.steps]);
 
+  const handleClose = useCallback(() => {
+    router.back();
+  }, []);
+
   if (flowLoading || startSessionMutation.isPending) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary.black} />
-        <Text style={styles.loadingText}>Loading booking...</Text>
-      </View>
+      <SafeAreaView style={styles.loadingContainer} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Loading...</Text>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleClose}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <X size={20} color={colors.neutral.darkGray} weight="bold" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color={colors.primary.black} />
+          <Text style={styles.loadingText}>Loading booking...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (flowError || !flow) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>Unable to Load Booking</Text>
-        <Text style={styles.errorText}>
-          {flowError?.message || 'The booking flow could not be found. Please try again.'}
-        </Text>
-      </View>
+      <SafeAreaView style={styles.errorContainer} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Error</Text>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleClose}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <X size={20} color={colors.neutral.darkGray} weight="bold" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.errorContent}>
+          <Text style={styles.errorTitle}>Unable to Load Booking</Text>
+          <Text style={styles.errorText}>
+            {flowError?.message || 'The booking flow could not be found. Please try again.'}
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -84,9 +114,12 @@ export default function BookingFlowScreen() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
+    backgroundColor: colors.neutral.sand,
+  },
+  loadingContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.neutral.sand,
     gap: spacing.md,
   },
   loadingText: {
@@ -95,9 +128,12 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
+    backgroundColor: colors.neutral.sand,
+  },
+  errorContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.neutral.sand,
     padding: spacing.xxl,
   },
   errorTitle: {
@@ -110,5 +146,25 @@ const styles = StyleSheet.create({
     ...typeScale.bodyMedium,
     color: colors.neutral.darkGray,
     textAlign: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.neutral.sand,
+  },
+  headerTitle: {
+    ...typeScale.titleMedium,
+    color: colors.primary.black,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: layout.borderRadius.full,
+    backgroundColor: colors.neutral.cream,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -47,6 +47,8 @@ const PUBLIC_ENDPOINTS = [
   '/venues/public/',
   '/payments/public/',
   '/settings/public/',
+  '/products/categories/',  // Categories are public catalog data
+  '/products/products/',    // Products are public catalog data
 ];
 
 const isPublicEndpoint = (url?: string): boolean => {

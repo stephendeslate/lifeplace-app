@@ -33,12 +33,21 @@ class LargePagination(PageNumberPagination):
 class ProductCategoryViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Product Categories
+
+    Permissions:
+    - List/Retrieve: Public (AllowAny) - categories are public catalog data
+    - Create/Update/Delete: Admin only (IsAdmin)
     """
     serializer_class = ProductCategorySerializer
-    permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
     pagination_class = LargePagination  # Use larger pagination for categories
+
+    def get_permissions(self):
+        """Allow public read access, require admin for write operations."""
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        return [IsAdmin()]
     
     def get_queryset(self):
         is_active = self.request.query_params.get('is_active', None)
