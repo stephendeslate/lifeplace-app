@@ -9,6 +9,8 @@
  * Phase 13: Security Hardening
  */
 
+import { securityLogger as logger } from '@/utils/logger';
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -90,47 +92,47 @@ function createThreatCallbacks() {
     // Critical threats - block app
     privilegedAccess: () => {
       detectedThreats.push('privilegedAccess');
-      console.warn('[Security] Device is rooted/jailbroken');
+      logger.warn('Device is rooted/jailbroken');
     },
     hooks: () => {
       detectedThreats.push('hooks');
-      console.warn('[Security] Hooking framework detected (Frida, Xposed, etc.)');
+      logger.warn('Hooking framework detected (Frida, Xposed, etc.)');
     },
     appIntegrity: () => {
       detectedThreats.push('appIntegrity');
-      console.warn('[Security] App integrity compromised');
+      logger.warn('App integrity compromised');
     },
 
     // Warning threats - log but allow
     simulator: () => {
       detectedThreats.push('simulator');
-      console.warn('[Security] Running on simulator/emulator');
+      logger.warn('Running on simulator/emulator');
     },
     debug: () => {
       detectedThreats.push('debug');
-      console.warn('[Security] App is being debugged');
+      logger.warn('App is being debugged');
     },
     deviceBinding: () => {
       detectedThreats.push('deviceBinding');
-      console.warn('[Security] Device binding issue');
+      logger.warn('Device binding issue');
     },
     unofficialStore: () => {
       detectedThreats.push('unofficialStore');
-      console.warn('[Security] App installed from unofficial store');
+      logger.warn('App installed from unofficial store');
     },
 
     // Info threats - log only
     secureHardwareNotAvailable: () => {
       detectedThreats.push('secureHardwareNotAvailable');
-      console.warn('[Security] Secure hardware not available');
+      logger.warn('Secure hardware not available');
     },
     passcode: () => {
       detectedThreats.push('passcode');
-      console.warn('[Security] Device passcode not set');
+      logger.warn('Device passcode not set');
     },
     obfuscationIssues: () => {
       detectedThreats.push('obfuscationIssues');
-      console.warn('[Security] Obfuscation issues detected');
+      logger.warn('Obfuscation issues detected');
     },
   };
 }
@@ -148,24 +150,32 @@ function createThreatCallbacks() {
 export async function initSecurityChecks(): Promise<void> {
   // Skip in development
   if (__DEV__) {
-    console.log('[Security] Checks skipped in development mode');
+    logger.debug('Checks skipped in development mode');
     isInitialized = true;
     return;
   }
 
   try {
     // Dynamic import to avoid issues when not installed
-    const { default: Talsec } = await import('freerasp-react-native');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Talsec = (await import('freerasp-react-native')) as any;
 
     const config = getSecurityConfig();
     const callbacks = createThreatCallbacks();
 
-    await Talsec.start(config, callbacks);
+    // Use the default export's start method (API varies by version)
+    if (Talsec.default?.start) {
+      await Talsec.default.start(config, callbacks);
+    } else if (Talsec.start) {
+      await Talsec.start(config, callbacks);
+    } else {
+      logger.warn('freeRASP API not found, skipping initialization');
+    }
 
-    console.log('[Security] Checks initialized successfully');
+    logger.info('Checks initialized successfully');
     isInitialized = true;
   } catch (error) {
-    console.error('[Security] Initialization failed:', error);
+    logger.error('Initialization failed:', error);
     isInitialized = true; // Still mark as initialized to not block forever
   }
 }

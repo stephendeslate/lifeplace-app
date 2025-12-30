@@ -11,6 +11,7 @@
 
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
+import { biometricLogger as logger } from '@/utils/logger';
 
 // =============================================================================
 // CONSTANTS
@@ -91,7 +92,7 @@ export const BiometricService = {
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
       return hasHardware && isEnrolled;
     } catch (error) {
-      console.error('Biometric availability check failed:', error);
+      logger.error('Availability check failed:', error);
       return false;
     }
   },
@@ -114,7 +115,7 @@ export const BiometricService = {
         securityLevel,
       };
     } catch (error) {
-      console.error('Failed to get biometric capabilities:', error);
+      logger.error('Failed to get capabilities:', error);
       return {
         isAvailable: false,
         isEnrolled: false,
@@ -177,7 +178,7 @@ export const BiometricService = {
         warning,
       };
     } catch (error) {
-      console.error('Biometric authentication error:', error);
+      logger.error('Authentication error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Authentication failed',
@@ -193,7 +194,7 @@ export const BiometricService = {
       const value = await SecureStore.getItemAsync(BIOMETRIC_ENABLED_KEY);
       return value === 'true';
     } catch (error) {
-      console.error('Failed to check biometric enabled status:', error);
+      logger.error('Failed to check enabled status:', error);
       return false;
     }
   },
@@ -231,7 +232,7 @@ export const BiometricService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Failed to set biometric enabled status:', error);
+      logger.error('Failed to set enabled status:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update setting',
@@ -246,7 +247,7 @@ export const BiometricService = {
     try {
       await SecureStore.deleteItemAsync(BIOMETRIC_ENABLED_KEY);
     } catch (error) {
-      console.error('Failed to clear biometric settings:', error);
+      logger.error('Failed to clear settings:', error);
     }
   },
 };

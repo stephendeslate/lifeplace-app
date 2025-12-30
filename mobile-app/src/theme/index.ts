@@ -306,6 +306,15 @@ export const layout = {
 // =============================================================================
 
 export const shadows = {
+  // Extra subtle - Input fields, minimal elevation
+  xs: {
+    shadowColor: colors.primary.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+
   // Subtle - Cards at rest
   sm: {
     shadowColor: colors.primary.black,

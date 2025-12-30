@@ -95,7 +95,7 @@ export const ContactInfoAPI = {
   },
 
   /**
-   * Validate data client-side.
+   * Validate data client-side (synchronous).
    */
   validateData: (
     data: ContactInfoStepData,
@@ -186,6 +186,62 @@ export const ContactInfoAPI = {
 
         if (passwordErrors.length > 0) {
           errors.password = passwordErrors;
+        }
+      }
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors,
+    };
+  },
+
+  /**
+   * Validate data with async checks (email existence).
+   * Call this before saving contact info.
+   */
+  validateDataAsync: async (
+    data: ContactInfoStepData,
+    config?: ContactInfoStepConfiguration,
+    options?: {
+      checkEmailExists?: boolean;
+      skipEmailCheckForLoggedInUser?: boolean;
+      currentUserEmail?: string;
+    }
+  ): Promise<{ isValid: boolean; errors: Record<string, string[]> }> => {
+    // First run synchronous validation
+    const syncResult = ContactInfoAPI.validateData(data, config);
+    const errors = { ...syncResult.errors };
+
+    // Skip async validation if sync validation already failed for email
+    if (errors.email) {
+      return { isValid: Object.keys(errors).length === 0, errors };
+    }
+
+    // Check if email already exists (for new users)
+    if (
+      options?.checkEmailExists !== false &&
+      data.email &&
+      validateEmail(data.email)
+    ) {
+      // Skip check if user is editing their own email
+      if (
+        options?.skipEmailCheckForLoggedInUser &&
+        options?.currentUserEmail &&
+        data.email.toLowerCase() === options.currentUserEmail.toLowerCase()
+      ) {
+        // Same email as logged-in user, no need to check
+      } else {
+        try {
+          const { exists } = await ContactInfoAPI.checkEmailExists(data.email);
+          if (exists) {
+            errors.email = [
+              'This email is already registered. Please use a different email or log in to your existing account.',
+            ];
+          }
+        } catch {
+          // If check fails, allow to proceed (backend will validate)
+          console.warn('Email existence check failed, proceeding with submission');
         }
       }
     }

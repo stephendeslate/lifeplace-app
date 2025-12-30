@@ -398,7 +398,7 @@ export function getStepSchema(stepType: StepType): z.ZodTypeAny {
     introduction: introductionSchema,
     venue_selection: venueSelectionSchema,
     date_time: dateTimeSchema,
-    questionnaire: z.object({ responses: z.record(z.unknown()) }),
+    questionnaire: z.object({ responses: z.record(z.string(), z.unknown()) }),
     package_selection: packageSelectionSchema,
     addon_selection: addonSelectionSchema,
     pricing_summary: pricingSummarySchema,

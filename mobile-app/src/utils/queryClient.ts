@@ -8,6 +8,7 @@
  * - gcTime: How long unused data stays in cache (garbage collection)
  * - Query Keys: Unique identifiers for cached data (like cache keys)
  * - The queryClient is passed to QueryClientProvider in _layout.tsx
+ * - Query keys with object parameters are normalized to prevent cache misses
  */
 
 import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
@@ -16,6 +17,44 @@ import { AxiosError } from 'axios';
 import { ErrorHandler } from './errorHandler';
 import { crashReporter } from './crashReporting';
 import { useAuthStore } from '@/stores/authStore';
+
+// =============================================================================
+// PARAMETER NORMALIZATION
+// =============================================================================
+
+/**
+ * Normalizes query parameters by sorting object keys recursively.
+ *
+ * This ensures consistent cache hits regardless of parameter order.
+ * Example: { status: 'active', type: 'event' } and { type: 'event', status: 'active' }
+ * will produce the same cache key.
+ */
+export function normalizeParams<T>(params: T): T {
+  if (params === null || params === undefined) {
+    return params;
+  }
+
+  // Handle arrays - normalize each element
+  if (Array.isArray(params)) {
+    return params.map((item) => normalizeParams(item)).sort() as T;
+  }
+
+  // Handle objects - sort keys and normalize values recursively
+  if (typeof params === 'object' && params !== null) {
+    const sortedKeys = Object.keys(params).sort();
+    const normalized: Record<string, unknown> = {};
+
+    for (const key of sortedKeys) {
+      const value = (params as Record<string, unknown>)[key];
+      normalized[key] = normalizeParams(value);
+    }
+
+    return normalized as T;
+  }
+
+  // Primitives are returned as-is
+  return params;
+}
 
 // =============================================================================
 // GLOBAL ERROR HANDLERS
@@ -143,7 +182,7 @@ export const queryKeys = {
   events: {
     all: ['events'] as const,
     list: (filters?: Record<string, unknown>) =>
-      ['events', 'list', filters] as const,
+      ['events', 'list', normalizeParams(filters)] as const,
     detail: (id: string) => ['events', 'detail', id] as const,
     timeline: (id: string) => ['events', 'timeline', id] as const,
     tasks: (id: string) => ['events', 'tasks', id] as const,
@@ -194,10 +233,10 @@ export const queryKeys = {
   venues: {
     all: ['venues'] as const,
     list: (filters?: Record<string, unknown>) =>
-      ['venues', 'list', filters] as const,
+      ['venues', 'list', normalizeParams(filters)] as const,
     detail: (id: string) => ['venues', 'detail', id] as const,
     availability: (id: string, dates: string[]) =>
-      ['venues', 'availability', id, dates] as const,
+      ['venues', 'availability', id, normalizeParams(dates)] as const,
   },
 
   // =========================================================================
@@ -206,9 +245,9 @@ export const queryKeys = {
   products: {
     all: ['products'] as const,
     packages: (filters?: Record<string, unknown>) =>
-      ['products', 'packages', filters] as const,
+      ['products', 'packages', normalizeParams(filters)] as const,
     addons: (filters?: Record<string, unknown>) =>
-      ['products', 'addons', filters] as const,
+      ['products', 'addons', normalizeParams(filters)] as const,
     detail: (id: string) => ['products', 'detail', id] as const,
     categories: ['products', 'categories'] as const,
   },
@@ -219,7 +258,7 @@ export const queryKeys = {
   notifications: {
     all: ['notifications'] as const,
     list: (filters?: Record<string, unknown>) =>
-      ['notifications', 'list', filters] as const,
+      ['notifications', 'list', normalizeParams(filters)] as const,
     unread: ['notifications', 'unread'] as const,
     unreadCount: ['notifications', 'unread-count'] as const,
     preferences: ['notifications', 'preferences'] as const,

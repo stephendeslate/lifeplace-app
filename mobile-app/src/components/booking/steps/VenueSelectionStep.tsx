@@ -222,6 +222,7 @@ function VenueCard({
             style={styles.venueImage}
             contentFit="cover"
             transition={200}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={[styles.venueImage, styles.venueImagePlaceholder]}>

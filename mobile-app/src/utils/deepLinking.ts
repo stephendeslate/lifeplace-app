@@ -6,6 +6,7 @@
 
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
+import { useAuthStore } from '@/stores/authStore';
 
 // =============================================================================
 // TYPES
@@ -46,6 +47,32 @@ const SUPPORTED_ROUTES: DeepLinkRoute[] = [
   'payments',
   'events',
 ];
+
+// Store pending deep link for navigation after authentication
+let pendingDeepLink: DeepLinkParams | null = null;
+
+/**
+ * Get pending deep link (if any) and clear it
+ */
+export function getPendingDeepLink(): DeepLinkParams | null {
+  const pending = pendingDeepLink;
+  pendingDeepLink = null;
+  return pending;
+}
+
+/**
+ * Store a deep link for later navigation (after authentication)
+ */
+export function storePendingDeepLink(params: DeepLinkParams): void {
+  pendingDeepLink = params;
+}
+
+/**
+ * Check if there is a pending deep link
+ */
+export function hasPendingDeepLink(): boolean {
+  return pendingDeepLink !== null;
+}
 
 // =============================================================================
 // PARSING FUNCTIONS
@@ -222,6 +249,7 @@ export async function getInitialDeepLink(): Promise<string | null> {
 
 /**
  * Handle an incoming deep link
+ * Checks authentication before navigating to protected routes
  */
 export async function handleDeepLink(url: string): Promise<boolean> {
   const parsed = parseDeepLink(url);
@@ -229,6 +257,20 @@ export async function handleDeepLink(url: string): Promise<boolean> {
   if (!parsed.isValid || !parsed.params) {
     console.warn('Invalid deep link:', url);
     return false;
+  }
+
+  // Check if user is authenticated
+  const authState = useAuthStore.getState();
+  const isAuthenticated = authState.isAuthenticated && authState.accessToken !== null;
+
+  if (!isAuthenticated) {
+    // Store the deep link for navigation after login
+    console.log('User not authenticated, storing deep link for later:', url);
+    storePendingDeepLink(parsed.params);
+
+    // Navigate to login - the pending deep link will be handled after auth
+    router.replace('/(auth)/login');
+    return true; // Return true as we've handled it (stored for later)
   }
 
   return navigateToDeepLink(parsed.params);

@@ -11,7 +11,7 @@ import { CardField, type CardFieldInput } from '@stripe/stripe-react-native';
 import { Warning } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout } from '@/theme';
 
-interface StripeCardFieldProps {
+export interface StripeCardFieldProps {
   onCardChange: (details: CardFieldInput.Details) => void;
   error?: string | null;
   disabled?: boolean;

@@ -309,7 +309,7 @@ export function useFileUpload(options: FileUploadOptions = {}) {
         const file = selectedFiles[i];
         setUploadProgress({
           uploading: true,
-          progress: i / selectedFiles.length,
+          progress: (i + 1) / selectedFiles.length,
           currentFile: file.name,
         });
 

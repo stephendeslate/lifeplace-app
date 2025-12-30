@@ -19,7 +19,7 @@ import { MagnifyingGlass, X } from 'phosphor-react-native';
 
 import { colors, spacing, typeScale, layout } from '@/theme';
 
-interface SearchBarProps {
+export interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;

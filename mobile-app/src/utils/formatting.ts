@@ -6,9 +6,10 @@
 
 import { format, formatDistanceToNow, isValid, parseISO, differenceInDays } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
+import { BUSINESS_TIMEZONE } from './timezone';
 
-// Default timezone for the application
-const DEFAULT_TIMEZONE = 'Asia/Manila';
+// Re-export for backwards compatibility - use BUSINESS_TIMEZONE from timezone.ts
+const DEFAULT_TIMEZONE = BUSINESS_TIMEZONE;
 
 // =============================================================================
 // DATE FORMATTING

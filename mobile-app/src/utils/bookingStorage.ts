@@ -4,8 +4,48 @@
  */
 
 import * as SecureStore from 'expo-secure-store';
-import type { StoredSession, SessionRecoveryInfo, BookingData } from '@/types/booking';
+import type { StoredSession, SessionRecoveryInfo, BookingData, BookingFlow } from '@/types/booking';
 import { isSessionExpired } from './bookingHelpers';
+
+// Cache for flow data to avoid repeated API calls during recovery lookup
+let flowCache: Record<number, BookingFlow> = {};
+
+/**
+ * Set flow data in cache (called when flows are loaded)
+ */
+export function cacheFlowData(flows: BookingFlow[]): void {
+  for (const flow of flows) {
+    flowCache[flow.id] = flow;
+  }
+}
+
+/**
+ * Clear flow cache (called on logout or app reset)
+ */
+export function clearFlowCache(): void {
+  flowCache = {};
+}
+
+/**
+ * Get step name from flow and step ID
+ */
+function getStepName(flowId: number, stepId?: number): string {
+  if (!stepId) return '';
+
+  const flow = flowCache[flowId];
+  if (!flow?.steps) return '';
+
+  const step = flow.steps.find(s => s.id === stepId);
+  return step?.title || step?.step_type_display || step?.step_type || '';
+}
+
+/**
+ * Get flow name from flow ID
+ */
+function getFlowName(flowId: number): string {
+  const flow = flowCache[flowId];
+  return flow?.name || '';
+}
 
 // Storage keys
 const SESSION_KEY_PREFIX = 'booking_session_';
@@ -205,13 +245,16 @@ export async function getRecoverableSession(): Promise<SessionRecoveryInfo | nul
       const session = await loadBookingSession(id);
 
       if (session && !isSessionExpired(session.expires_at)) {
-        // Found a valid session
+        // Found a valid session - look up flow and step names from cache
+        const flowName = getFlowName(session.booking_flow_id);
+        const stepName = getStepName(session.booking_flow_id, session.current_step_id);
+
         return {
           session_id: session.session_id,
           booking_flow_id: session.booking_flow_id,
-          booking_flow_name: '', // Would need to look up
+          booking_flow_name: flowName,
           event_type_name: session.booking_data.event_type_name || '',
-          current_step_name: '', // Would need to look up
+          current_step_name: stepName,
           progress_percentage: calculateProgressPercentage(session),
           last_updated: session.last_synced_at,
           expires_at: session.expires_at,

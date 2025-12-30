@@ -195,23 +195,35 @@ jest.mock('expo-linear-gradient', () => ({
 // Mock react-native-reanimated
 jest.mock('react-native-reanimated', () => {
   const View = require('react-native').View;
-  return {
-    default: {
-      call: jest.fn(),
-      Value: jest.fn(),
-      event: jest.fn(),
-      add: jest.fn(),
-      eq: jest.fn(),
-      set: jest.fn(),
-      cond: jest.fn(),
-      interpolate: jest.fn(),
-      Extrapolate: { CLAMP: 'clamp' },
-      createAnimatedComponent: (component: unknown) => component,
-    },
+  const Text = require('react-native').Text;
+  const ScrollView = require('react-native').ScrollView;
+  const FlatList = require('react-native').FlatList;
+
+  // The default export object (for `import Animated from '...'`)
+  const Animated = {
+    call: jest.fn(),
+    Value: jest.fn(),
+    event: jest.fn(),
+    add: jest.fn(),
+    eq: jest.fn(),
+    set: jest.fn(),
+    cond: jest.fn(),
+    interpolate: jest.fn(),
+    Extrapolate: { CLAMP: 'clamp' },
+    createAnimatedComponent: (component: unknown) => component,
     View,
-    Text: require('react-native').Text,
-    ScrollView: require('react-native').ScrollView,
-    FlatList: require('react-native').FlatList,
+    Text,
+    ScrollView,
+    FlatList,
+  };
+
+  return {
+    __esModule: true,
+    default: Animated,
+    View,
+    Text,
+    ScrollView,
+    FlatList,
     useSharedValue: jest.fn((initial) => ({ value: initial })),
     useAnimatedStyle: jest.fn((fn) => fn()),
     withTiming: jest.fn((value) => value),

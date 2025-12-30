@@ -40,7 +40,7 @@ export function SessionTimer({
 
     const totalMinutes = remaining.hours * 60 + remaining.minutes;
 
-    if (remaining.expired) {
+    if (remaining.isExpired) {
       setTimerState('expired');
       onExpired?.();
     } else if (totalMinutes <= criticalThresholdMinutes) {
@@ -58,7 +58,7 @@ export function SessionTimer({
     return () => clearInterval(interval);
   }, [updateTimer]);
 
-  const formattedTime = formatSessionTime(timeRemaining);
+  const formattedTime = formatSessionTime(expiresAt);
 
   const getStateStyles = () => {
     switch (timerState) {

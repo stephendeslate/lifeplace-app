@@ -18,6 +18,7 @@ import {
   TextInput,
   RefreshControl,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -34,6 +35,7 @@ import { ActionItemCard } from '@/components/actions';
 import { FilterModal } from '@/components/common/FilterModal';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Skeleton } from '@/components/common/Skeleton';
+import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary';
 import type { ActionType, UrgencyLevel, AnyActionItem } from '@/types/action-center.types';
 import { ACTION_TYPE_CONFIGS } from '@/types/action-center.types';
 
@@ -45,7 +47,7 @@ const ACTION_TYPE_FILTERS: Array<{ value: ActionType | 'ALL'; label: string }> =
   { value: 'TASK', label: 'Tasks' },
 ];
 
-export default function ActionCenterScreen() {
+function ActionCenterScreenContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -252,13 +254,13 @@ export default function ActionCenterScreen() {
       />
 
       {/* Actions List */}
-      <FlatList
+      <FlashList
         data={actions}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: insets.bottom + 20 },
-        ]}
+        contentContainerStyle={{
+          paddingHorizontal: theme.layout.screenPaddingHorizontal,
+          paddingBottom: insets.bottom + 20,
+        }}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
@@ -299,6 +301,14 @@ export default function ActionCenterScreen() {
         }}
       />
     </View>
+  );
+}
+
+export default function ActionCenterScreen() {
+  return (
+    <ScreenErrorBoundary screenName="Action Center">
+      <ActionCenterScreenContent />
+    </ScreenErrorBoundary>
   );
 }
 

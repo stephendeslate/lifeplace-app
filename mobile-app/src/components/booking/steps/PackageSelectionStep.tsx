@@ -23,9 +23,9 @@ import type { StepComponentProps } from '../StepRenderer';
 import type {
   PackageSelectionStepData,
   PackageSelectionStepConfiguration,
-  ProductOption,
   SelectedPackage,
 } from '@/types/booking';
+import type { ProductOption } from '@/apis/booking/products.api';
 import * as Haptics from 'expo-haptics';
 
 type PackageSelectionStepProps = StepComponentProps<PackageSelectionStepData, PackageSelectionStepConfiguration>;
@@ -83,11 +83,11 @@ export function PackageSelectionStep({
       const newPackage: SelectedPackage = {
         product_id: pkg.id,
         name: pkg.name,
-        price: pkg.price,
+        price: pkg.base_price,
         quantity: 1,
-        tax_rate: pkg.tax_rate,
-        included_hours: pkg.included_hours,
-        excess_hour_rate: pkg.excess_hour_rate,
+        tax_rate: parseFloat(pkg.tax_rate),
+        included_hours: pkg.included_hours ?? undefined,
+        excess_hour_rate: pkg.excess_hour_price ?? undefined,
       };
 
       if (isMultiSelect) {
@@ -240,14 +240,10 @@ function PackageCard({
   const {
     name,
     description,
-    image_url,
-    price,
+    thumbnail_url,
+    base_price,
     pricing_model,
     included_hours,
-    min_hours,
-    max_hours,
-    is_featured,
-    features = [],
   } = pkg;
 
   return (
@@ -262,24 +258,15 @@ function PackageCard({
       activeOpacity={0.8}
     >
       {/* Image */}
-      {showImage && image_url && (
+      {showImage && thumbnail_url && (
         <Image
-          source={{ uri: image_url }}
+          source={{ uri: thumbnail_url }}
           style={styles.packageImage}
           contentFit="cover"
           transition={200}
+          cachePolicy="memory-disk"
         />
       )}
-
-      {/* Badges */}
-      <View style={styles.packageBadges}>
-        {is_featured && (
-          <View style={styles.featuredBadge}>
-            <Star size={12} color={colors.semantic.warning} weight="fill" />
-            <Text style={styles.featuredBadgeText}>Popular</Text>
-          </View>
-        )}
-      </View>
 
       {/* Content */}
       <View style={styles.packageContent}>
@@ -301,25 +288,12 @@ function PackageCard({
           </Text>
         )}
 
-        {/* Features */}
-        {features.length > 0 && (
-          <View style={styles.packageFeatures}>
-            {features.slice(0, 3).map((feature, index) => (
-              <View key={index} style={styles.featureItem}>
-                <Check size={12} color={colors.secondary.forest} weight="bold" />
-                <Text style={styles.featureText} numberOfLines={1}>{feature}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
         {/* Hours info */}
         {included_hours && (
           <View style={styles.hoursInfo}>
             <Clock size={14} color={colors.neutral.darkGray} />
             <Text style={styles.hoursText}>
               {included_hours} hours included
-              {min_hours && max_hours && ` (${min_hours}-${max_hours} hrs)`}
             </Text>
           </View>
         )}
@@ -328,7 +302,7 @@ function PackageCard({
         {showPricing && (
           <View style={styles.packagePricing}>
             <Text style={styles.packagePrice}>
-              {formatCurrency(parseFloat(price), { currency: 'PHP' })}
+              {formatCurrency(parseFloat(base_price), { currency: 'PHP' })}
             </Text>
             <Text style={styles.packagePriceUnit}>
               {pricing_model === 'HOURLY' ? '/ hour' : '/ package'}

@@ -24,9 +24,10 @@ import { MapPin, Users } from 'phosphor-react-native';
 import { FavoriteButton } from './FavoriteButton';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { formatPrice, formatCapacity, getVenueEffectivePricing } from '@/apis/explore.api';
+import { FALLBACK_IMAGES } from '@/constants/images';
 import type { VenuePublic, RentableVenue, RentableVenueWithEventType } from '@/types/explore.types';
 
-interface VenueCardProps {
+export interface VenueCardProps {
   venue: VenuePublic | RentableVenue | RentableVenueWithEventType;
   onPress: () => void;
   onPressIn?: () => void;
@@ -34,8 +35,6 @@ interface VenueCardProps {
   compact?: boolean;
   style?: ViewStyle;
 }
-
-const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/400x300/FAF9F7/9B9590?text=Venue';
 
 export function VenueCard({
   venue,
@@ -65,10 +64,11 @@ export function VenueCard({
       {/* Image Container */}
       <View style={[styles.imageContainer, { height: imageHeight }]}>
         <Image
-          source={{ uri: venue.featured_image || PLACEHOLDER_IMAGE }}
+          source={{ uri: venue.featured_image || FALLBACK_IMAGES.venue }}
           style={styles.image}
           contentFit="cover"
           transition={200}
+          cachePolicy="memory-disk"
         />
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.6)']}

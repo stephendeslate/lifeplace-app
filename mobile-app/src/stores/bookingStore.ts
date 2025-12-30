@@ -21,6 +21,53 @@ import type {
 } from '@/types/api';
 
 // =============================================================================
+// CONSTANTS
+// =============================================================================
+
+/**
+ * Maximum number of items to cache for each entity type.
+ * This prevents memory leaks from unbounded cache growth.
+ */
+const MAX_CACHE_SIZE = 50;
+
+/**
+ * Limit cache size by removing oldest entries (LRU-style).
+ * Keeps the most recently added items up to maxSize.
+ */
+function limitCacheSize<T>(
+  cache: Record<string, T>,
+  newItems: Record<string, T>,
+  maxSize: number
+): Record<string, T> {
+  const merged = { ...cache, ...newItems };
+  const keys = Object.keys(merged);
+
+  if (keys.length <= maxSize) {
+    return merged;
+  }
+
+  // Keep only the newest entries (those in newItems take priority)
+  const newKeys = Object.keys(newItems);
+  const oldKeys = keys.filter(k => !newKeys.includes(k));
+
+  // Calculate how many old keys we can keep
+  const oldKeysToKeep = maxSize - newKeys.length;
+
+  // Keep newest old keys (those at the end of the array)
+  const keysToKeep = [
+    ...oldKeys.slice(-Math.max(0, oldKeysToKeep)),
+    ...newKeys,
+  ];
+
+  const limited: Record<string, T> = {};
+  for (const key of keysToKeep) {
+    limited[key] = merged[key];
+  }
+
+  return limited;
+}
+
+// =============================================================================
 // TYPES
 // =============================================================================
 
@@ -191,17 +238,17 @@ export const useBookingStore = create<BookingState>((set, get) => ({
 
   setVenueDetails: (venues) =>
     set((state) => ({
-      venueDetails: { ...state.venueDetails, ...venues },
+      venueDetails: limitCacheSize(state.venueDetails, venues, MAX_CACHE_SIZE),
     })),
 
   setPackageDetails: (packages) =>
     set((state) => ({
-      packageDetails: { ...state.packageDetails, ...packages },
+      packageDetails: limitCacheSize(state.packageDetails, packages, MAX_CACHE_SIZE),
     })),
 
   setAddonDetails: (addons) =>
     set((state) => ({
-      addonDetails: { ...state.addonDetails, ...addons },
+      addonDetails: limitCacheSize(state.addonDetails, addons, MAX_CACHE_SIZE),
     })),
 
   setError: (error) => set({ error }),
@@ -239,11 +286,28 @@ export const useBookingStore = create<BookingState>((set, get) => ({
 
   // Navigation helpers
   goToNextStep: () => {
-    const { currentFlow, currentStepIndex } = get();
+    const { currentFlow, currentStep } = get();
     if (!currentFlow) return;
 
     const enabledSteps = currentFlow.steps.filter((s) => s.is_enabled);
-    const nextIndex = currentStepIndex + 1;
+
+    // Find current step's actual index in enabledSteps (handles dynamic step changes)
+    const currentIndex = currentStep
+      ? enabledSteps.findIndex((s) => s.id === currentStep.id)
+      : -1;
+
+    // If current step is no longer enabled, go to first enabled step
+    if (currentIndex === -1) {
+      if (enabledSteps.length > 0) {
+        set({
+          currentStep: enabledSteps[0],
+          currentStepIndex: 0,
+        });
+      }
+      return;
+    }
+
+    const nextIndex = currentIndex + 1;
 
     if (nextIndex < enabledSteps.length) {
       set({
@@ -254,11 +318,28 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   },
 
   goToPreviousStep: () => {
-    const { currentFlow, currentStepIndex } = get();
+    const { currentFlow, currentStep } = get();
     if (!currentFlow) return;
 
     const enabledSteps = currentFlow.steps.filter((s) => s.is_enabled);
-    const prevIndex = currentStepIndex - 1;
+
+    // Find current step's actual index in enabledSteps (handles dynamic step changes)
+    const currentIndex = currentStep
+      ? enabledSteps.findIndex((s) => s.id === currentStep.id)
+      : -1;
+
+    // If current step is no longer enabled, go to first enabled step
+    if (currentIndex === -1) {
+      if (enabledSteps.length > 0) {
+        set({
+          currentStep: enabledSteps[0],
+          currentStepIndex: 0,
+        });
+      }
+      return;
+    }
+
+    const prevIndex = currentIndex - 1;
 
     if (prevIndex >= 0) {
       set({

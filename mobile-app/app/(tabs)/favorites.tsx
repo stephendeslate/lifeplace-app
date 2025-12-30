@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { Heart, Buildings, Package } from 'phosphor-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 
 import { useFavoritesWithDetails } from '@/hooks/useFavorites';
 import { VenueCard, PackageCard } from '@/components/explore';
@@ -52,9 +52,9 @@ export default function FavoritesScreen() {
 
   const handleItemPress = (type: FavoriteType, itemId: number) => {
     if (type === 'venue') {
-      router.push(`/venues/${itemId}` as never);
+      router.push(`/venues/${itemId}` as Href);
     } else {
-      router.push(`/packages/${itemId}` as never);
+      router.push(`/packages/${itemId}` as Href);
     }
   };
 
@@ -155,14 +155,13 @@ export default function FavoritesScreen() {
                 : `You haven't saved any ${filter === 'venue' ? 'venues' : 'packages'} yet.`
             }
             actionLabel="Explore"
-            onAction={() => router.push('/explore' as never)}
+            onAction={() => router.push('/explore' as Href)}
           />
         </View>
       ) : (
         <FlashList
           data={filteredFavorites}
           renderItem={renderItem}
-          estimatedItemSize={240}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={

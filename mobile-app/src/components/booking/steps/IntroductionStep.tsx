@@ -86,6 +86,7 @@ export function IntroductionStep({
             style={styles.heroImage}
             contentFit="cover"
             transition={300}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={styles.heroPlaceholder}>

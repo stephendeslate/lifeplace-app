@@ -72,7 +72,7 @@ describe('currency utilities', () => {
 
     it('respects minimumFractionDigits option', () => {
       const result = formatCurrency(1000, { minimumFractionDigits: 2 });
-      expect(result).toContain('.00') || expect(result).toContain(',00');
+      expect(result).toMatch(/[.,]00/);
     });
   });
 

@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
 import { CaretLeft } from 'phosphor-react-native';
 
 import {
@@ -29,11 +29,11 @@ import {
   usePrefetchPackage,
 } from '@/hooks/useExplore';
 import { VenueCard, PackageCard, SearchBar, CategoryChips } from '@/components/explore';
-import { Skeleton, EmptyState } from '@/components/common';
+import { Skeleton, EmptyState, ScreenErrorBoundary } from '@/components/common';
 import { colors, spacing, typeScale, layout } from '@/theme';
 import type { ExploreTab, RentableVenueWithEventType, PackagePublic } from '@/types/explore.types';
 
-export default function ExploreScreen() {
+function ExploreScreenContent() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab?: string }>();
 
@@ -116,11 +116,11 @@ export default function ExploreScreen() {
   }, [refetchVenues, refetchPackages]);
 
   const handleVenuePress = (venueId: number) => {
-    router.push(`/venues/${venueId}` as never);
+    router.push(`/venues/${venueId}` as Href);
   };
 
   const handlePackagePress = (packageId: number) => {
-    router.push(`/packages/${packageId}` as never);
+    router.push(`/packages/${packageId}` as Href);
   };
 
   // Render venue item
@@ -237,7 +237,6 @@ export default function ExploreScreen() {
         <FlashList
           data={data as (RentableVenueWithEventType | PackagePublic)[]}
           renderItem={renderItem as (props: { item: RentableVenueWithEventType | PackagePublic }) => React.ReactElement}
-          estimatedItemSize={240}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -246,6 +245,14 @@ export default function ExploreScreen() {
         />
       )}
     </SafeAreaView>
+  );
+}
+
+export default function ExploreScreen() {
+  return (
+    <ScreenErrorBoundary screenName="Explore">
+      <ExploreScreenContent />
+    </ScreenErrorBoundary>
   );
 }
 

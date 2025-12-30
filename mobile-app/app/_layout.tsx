@@ -21,7 +21,7 @@
  * - actions - Action center
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -31,15 +31,18 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { queryClient } from '@/utils/queryClient';
 import { asyncStoragePersister, shouldPersistQuery } from '@/utils/queryPersister';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, useAuthContext } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { StripeProvider } from '@/providers/StripeProvider';
 import { SecurityProvider } from '@/providers/SecurityProvider';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { OfflineBanner } from '@/components/common/OfflineBanner';
+import { SessionTimeoutWarning } from '@/components/common/SessionTimeoutWarning';
 import { useAuthStore } from '@/stores/authStore';
 import { useDeepLinking } from '@/hooks/useDeepLinking';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+import { useOfflineMutations } from '@/hooks/useOfflineMutations';
 import { crashReporter } from '@/utils/crashReporting';
 import { colors } from '@/theme';
 
@@ -57,6 +60,69 @@ SplashScreen.preventAutoHideAsync();
 function NotificationInitializer() {
   useNotifications();
   return null;
+}
+
+// =============================================================================
+// OFFLINE MUTATIONS PROCESSOR
+// =============================================================================
+
+/**
+ * Processes queued offline mutations when the device comes back online.
+ * Must be rendered inside ToastProvider.
+ */
+function OfflineMutationsProcessor() {
+  useOfflineMutations();
+  return null;
+}
+
+// =============================================================================
+// SESSION TIMEOUT MANAGER
+// =============================================================================
+
+/**
+ * Manages session timeout with warning modal.
+ * Must be rendered inside AuthProvider and ToastProvider.
+ */
+function SessionTimeoutManager() {
+  const { logout } = useAuthContext();
+  const [showWarning, setShowWarning] = useState(false);
+  const [remainingMs, setRemainingMs] = useState(0);
+
+  const handleWarning = useCallback((remaining: number) => {
+    setRemainingMs(remaining);
+    setShowWarning(true);
+  }, []);
+
+  const handleTimeout = useCallback(() => {
+    setShowWarning(false);
+  }, []);
+
+  const { updateActivity } = useSessionTimeout({
+    enabled: true,
+    timeoutMs: 30 * 60 * 1000, // 30 minutes
+    warningMs: 5 * 60 * 1000, // 5 minutes before timeout
+    onWarning: handleWarning,
+    onTimeout: handleTimeout,
+  });
+
+  const handleContinue = useCallback(async () => {
+    await updateActivity();
+    setShowWarning(false);
+  }, [updateActivity]);
+
+  const handleLogout = useCallback(async () => {
+    setShowWarning(false);
+    await logout();
+  }, [logout]);
+
+  return (
+    <SessionTimeoutWarning
+      visible={showWarning}
+      remainingMs={remainingMs}
+      onContinue={handleContinue}
+      onLogout={handleLogout}
+    />
+  );
 }
 
 // =============================================================================
@@ -113,6 +179,8 @@ export default function RootLayout() {
                 <AuthProvider>
                   <ToastProvider>
                     <NotificationInitializer />
+                    <OfflineMutationsProcessor />
+                    <SessionTimeoutManager />
                     <OfflineBanner />
                     <StatusBar style="dark" />
                     <Stack

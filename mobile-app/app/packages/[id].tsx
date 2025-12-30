@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   CaretLeft,
@@ -49,7 +49,7 @@ export default function PackageDetailScreen() {
   const { data: pkg, isLoading } = usePackage(packageId);
 
   const handleBookNow = () => {
-    router.push('/booking' as never);
+    router.push('/booking' as Href);
   };
 
   const getPricingModelLabel = () => {
@@ -111,6 +111,7 @@ export default function PackageDetailScreen() {
             style={styles.image}
             contentFit="cover"
             transition={200}
+            cachePolicy="memory-disk"
           />
           <LinearGradient
             colors={['rgba(0,0,0,0.4)', 'transparent', 'rgba(0,0,0,0.4)']}

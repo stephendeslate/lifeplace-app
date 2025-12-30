@@ -10,10 +10,10 @@ import {
   StyleSheet,
   Text,
   View,
-  FlatList,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -38,6 +38,7 @@ import {
 import { Card } from '@/components/common/Card';
 import { Skeleton } from '@/components/common/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
+import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary';
 import { formatCurrency } from '@/utils/formatting';
 import type { Invoice, Payment, InvoiceStatus } from '@/apis/payments.api';
 
@@ -70,7 +71,7 @@ const INVOICE_FILTERS: InvoiceFilter[] = [
   { id: 'paid', label: 'Paid', status: 'PAID' },
 ];
 
-export default function FinancialPortalScreen() {
+function FinancialPortalScreenContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -265,7 +266,7 @@ export default function FinancialPortalScreen() {
     }
 
     return (
-      <FlatList
+      <FlashList
         data={filteredInvoices}
         renderItem={renderInvoiceItem}
         keyExtractor={(item) => item.id.toString()}
@@ -304,7 +305,7 @@ export default function FinancialPortalScreen() {
     }
 
     return (
-      <FlatList
+      <FlashList
         data={payments}
         renderItem={renderPaymentItem}
         keyExtractor={(item) => item.id.toString()}
@@ -385,6 +386,14 @@ export default function FinancialPortalScreen() {
         <View style={styles.tabContent}>{renderTabContent()}</View>
       </View>
     </>
+  );
+}
+
+export default function FinancialPortalScreen() {
+  return (
+    <ScreenErrorBoundary screenName="Financial Portal">
+      <FinancialPortalScreenContent />
+    </ScreenErrorBoundary>
   );
 }
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors, spacing, typeScale } from '@/theme';
 
@@ -6,16 +5,14 @@ export interface LoadingScreenProps {
   message?: string;
 }
 
-export const LoadingScreen: React.FC<LoadingScreenProps> = ({
-  message = 'Loading...',
-}) => {
+export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={colors.primary.black} />
       {message && <Text style={styles.message}>{message}</Text>}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

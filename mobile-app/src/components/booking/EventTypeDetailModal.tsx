@@ -77,6 +77,7 @@ export function EventTypeDetailModal({
               style={styles.heroImage}
               contentFit="cover"
               transition={300}
+              cachePolicy="memory-disk"
             />
           ) : (
             <View style={[styles.heroImage, styles.heroPlaceholder]}>
@@ -159,6 +160,7 @@ export function EventTypeDetailModal({
                       style={styles.galleryImage}
                       contentFit="cover"
                       transition={200}
+                      cachePolicy="memory-disk"
                     />
                   </TouchableOpacity>
                 ))}

@@ -1,12 +1,13 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
   StyleSheet,
-  ViewStyle,
-  TextStyle,
-  TouchableOpacityProps,
+  type ViewStyle,
+  type TextStyle,
+  type TouchableOpacityProps,
+  type GestureResponderEvent,
 } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -20,7 +21,7 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 export type ButtonVariant = 'primary' | 'secondary' | 'cta' | 'accent';
 
 export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: ButtonVariant;
   loading?: boolean;
   fullWidth?: boolean;
@@ -28,7 +29,7 @@ export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
   textStyle?: TextStyle;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export function Button({
   children,
   variant = 'primary',
   loading = false,
@@ -39,21 +40,21 @@ export const Button: React.FC<ButtonProps> = ({
   onPressIn,
   onPressOut,
   ...rest
-}) => {
+}: ButtonProps) {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
-  const handlePressIn = (e: any) => {
+  const handlePressIn = (e: GestureResponderEvent) => {
     scale.value = withTiming(animation.buttonPress.scale, {
       duration: animation.buttonPress.duration,
     });
     onPressIn?.(e);
   };
 
-  const handlePressOut = (e: any) => {
+  const handlePressOut = (e: GestureResponderEvent) => {
     scale.value = withTiming(1, {
       duration: animation.buttonPress.duration,
     });
@@ -93,7 +94,7 @@ export const Button: React.FC<ButtonProps> = ({
       )}
     </AnimatedTouchable>
   );
-};
+}
 
 const getVariantStyles = (variant: ButtonVariant) => {
   switch (variant) {

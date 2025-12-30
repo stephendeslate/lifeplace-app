@@ -2,14 +2,24 @@
  * SignatureField - Signature Capture Field
  *
  * Touch-based signature capture with clear and redo options.
+ * Uses a WebView-based HTML5 Canvas for cross-platform signature capture.
  */
 
-import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Signature, Eraser, Warning, Check } from 'phosphor-react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  Image,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Signature, Eraser, Warning, Check, X } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import type { QuestionnaireField, QuestionnaireFieldResponse } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
+import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
 
 interface SignatureFieldProps {
   field: QuestionnaireField;
@@ -19,7 +29,8 @@ interface SignatureFieldProps {
 }
 
 export function SignatureField({ field, value, onChange, error }: SignatureFieldProps) {
-  const [isSigned, setIsSigned] = useState(!!value);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [signatureData, setSignatureData] = useState<string | undefined>(value);
 
   const {
     label,
@@ -27,40 +38,37 @@ export function SignatureField({ field, value, onChange, error }: SignatureField
     is_required,
   } = field;
 
-  const handleCapture = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // In production, this would open a signature capture modal
-    // For now, simulate signature capture
-    Alert.alert(
-      'Signature Capture',
-      'A signature capture canvas would appear here.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Accept',
-          onPress: () => {
-            const mockSignature = `data:image/png;base64,signature_${Date.now()}`;
-            setIsSigned(true);
-            onChange({
-              field_id: field.id,
-              field_type: field.field_type,
-              value: mockSignature,
-            });
-          },
-        },
-      ]
-    );
-  };
+  const isSigned = !!signatureData;
 
-  const handleClear = async () => {
+  const handleOpenModal = useCallback(async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsModalVisible(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalVisible(false);
+  }, []);
+
+  const handleSignatureCapture = useCallback((data: string) => {
+    setSignatureData(data);
+    setIsModalVisible(false);
+    onChange({
+      field_id: field.id,
+      field_type: field.field_type,
+      value: data,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [field.id, field.field_type, onChange]);
+
+  const handleClear = useCallback(async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setIsSigned(false);
+    setSignatureData(undefined);
     onChange({
       field_id: field.id,
       field_type: field.field_type,
       value: undefined,
     });
-  };
+  }, [field.id, field.field_type, onChange]);
 
   return (
     <View style={styles.container}>
@@ -72,14 +80,18 @@ export function SignatureField({ field, value, onChange, error }: SignatureField
 
       {/* Signature Area */}
       <View style={[styles.signatureContainer, error && styles.signatureContainerError]}>
-        {isSigned ? (
+        {isSigned && signatureData ? (
           <View style={styles.signedContent}>
             <View style={styles.signedBadge}>
               <Check size={16} color={colors.secondary.forest} weight="bold" />
               <Text style={styles.signedText}>Signature captured</Text>
             </View>
-            <View style={styles.signaturePlaceholder}>
-              <Signature size={48} color={colors.neutral.gray} />
+            <View style={styles.signaturePreview}>
+              <Image
+                source={{ uri: signatureData }}
+                style={styles.signatureImage}
+                resizeMode="contain"
+              />
             </View>
             <TouchableOpacity
               style={styles.clearButton}
@@ -92,7 +104,7 @@ export function SignatureField({ field, value, onChange, error }: SignatureField
         ) : (
           <TouchableOpacity
             style={styles.captureButton}
-            onPress={handleCapture}
+            onPress={handleOpenModal}
           >
             <Signature size={32} color={colors.neutral.darkGray} />
             <Text style={styles.captureText}>Tap to sign</Text>
@@ -115,6 +127,35 @@ export function SignatureField({ field, value, onChange, error }: SignatureField
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
+
+      {/* Signature Modal */}
+      <Modal
+        visible={isModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseModal}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Sign Here</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleCloseModal}
+            >
+              <X size={24} color={colors.neutral.darkGray} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.modalContent}>
+            <SignatureCanvas
+              onSignatureCapture={handleSignatureCapture}
+              onClear={() => {}}
+              height={250}
+              penColor={colors.primary.black}
+              backgroundColor={colors.neutral.white}
+            />
+          </View>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
@@ -181,13 +222,16 @@ const styles = StyleSheet.create({
     color: colors.secondary.forest,
     fontWeight: '600',
   },
-  signaturePlaceholder: {
+  signaturePreview: {
     width: '100%',
     height: 100,
     backgroundColor: colors.neutral.sand,
     borderRadius: layout.borderRadius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  signatureImage: {
+    width: '100%',
+    height: '100%',
   },
   clearButton: {
     flexDirection: 'row',
@@ -213,6 +257,35 @@ const styles = StyleSheet.create({
   errorText: {
     ...typeScale.labelSmall,
     color: colors.semantic.error,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.neutral.cream,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.neutral.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.neutral.warmGray,
+  },
+  modalTitle: {
+    ...typeScale.titleMedium,
+    color: colors.primary.black,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: layout.borderRadius.full,
+  },
+  modalContent: {
+    flex: 1,
+    padding: spacing.lg,
   },
 });
 

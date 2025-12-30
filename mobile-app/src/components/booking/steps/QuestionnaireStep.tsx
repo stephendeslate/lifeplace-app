@@ -25,6 +25,7 @@ import type {
   QuestionnaireStepConfiguration,
   QuestionnaireField,
   QuestionnaireFieldType,
+  QuestionnaireFieldValues,
 } from '@/types/booking';
 
 type QuestionnaireStepProps = StepComponentProps<QuestionnaireStepData, QuestionnaireStepConfiguration>;
@@ -41,19 +42,22 @@ export function QuestionnaireStep({
 
   const { data: questionnaires, isLoading } = useQuestionnaires(eventTypeId);
 
-  const [responses, setResponses] = useState<Record<string, unknown>>(data || {});
+  const [responses, setResponses] = useState<QuestionnaireFieldValues>(data?.responses || {});
 
   const { allow_file_uploads = true, max_file_size_mb = 10 } = configuration || {};
 
   useEffect(() => {
-    setResponses(data || {});
+    setResponses(data?.responses || {});
   }, [data]);
 
   const handleFieldChange = useCallback((fieldId: number, value: unknown) => {
     const fieldKey = `field_${fieldId}`;
-    const newResponses = { ...responses, [fieldKey]: value };
+    const newResponses: QuestionnaireFieldValues = {
+      ...responses,
+      [fieldKey]: value as QuestionnaireFieldValues[string]
+    };
     setResponses(newResponses);
-    onDataChange(newResponses);
+    onDataChange({ responses: newResponses });
   }, [responses, onDataChange]);
 
   const getFieldValue = (fieldId: number): unknown => {
@@ -221,8 +225,8 @@ function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
             style={styles.checkboxContainer}
             onPress={() => onChange(!value)}
           >
-            <View style={[styles.checkbox, value && styles.checkboxChecked]}>
-              {value && <Check size={14} color={colors.neutral.white} weight="bold" />}
+            <View style={[styles.checkbox, !!value && styles.checkboxChecked]}>
+              {!!value && <Check size={14} color={colors.neutral.white} weight="bold" />}
             </View>
             <Text style={styles.checkboxLabel}>{label}</Text>
           </TouchableOpacity>

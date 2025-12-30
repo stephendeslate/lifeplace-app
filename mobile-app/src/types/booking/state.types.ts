@@ -4,11 +4,75 @@
  * Adapted from: frontend/client-portal/src/types/booking/state.types.ts
  */
 
-import type { BookingFlow, EventType, BookingFlowStep } from './core.types';
+import type { BookingFlow, EventType, BookingFlowStep, StepType } from './core.types';
 import type { BookingSession, BookingData, SessionRecoveryInfo } from './bookingData.types';
 import type { PaymentGateway } from './payment.types';
-import type { PricingCalculation, SelectedPackage, SelectedAddon } from './stepData.types';
+import type {
+  PricingCalculation,
+  SelectedPackage,
+  SelectedAddon,
+  IntroductionStepData,
+  DateTimeStepData,
+  VenueSelectionStepData,
+  PackageSelectionStepData,
+  AddonSelectionStepData,
+  QuestionnaireStepData,
+  PricingSummaryStepData,
+  ContactInfoStepData,
+  PaymentStepData,
+  ConfirmationStepData,
+} from './stepData.types';
 import type { BookingCompletionResult, StepValidationResult } from './api.types';
+
+/**
+ * Maps step types to their corresponding data interfaces
+ */
+export interface StepDataMap {
+  introduction: IntroductionStepData;
+  venue_selection: VenueSelectionStepData;
+  date_time: DateTimeStepData;
+  questionnaire: QuestionnaireStepData;
+  package_selection: PackageSelectionStepData;
+  addon_selection: AddonSelectionStepData;
+  pricing_summary: PricingSummaryStepData;
+  contact_info: ContactInfoStepData;
+  payment_info: PaymentStepData;
+  confirmation: ConfirmationStepData;
+}
+
+/**
+ * Union type of all step data types for runtime flexibility
+ */
+export type AnyStepData =
+  | Partial<IntroductionStepData>
+  | Partial<DateTimeStepData>
+  | Partial<VenueSelectionStepData>
+  | Partial<PackageSelectionStepData>
+  | Partial<AddonSelectionStepData>
+  | Partial<QuestionnaireStepData>
+  | Partial<PricingSummaryStepData>
+  | Partial<ContactInfoStepData>
+  | Partial<PaymentStepData>
+  | Partial<ConfirmationStepData>;
+
+/**
+ * Partial step data state - allows any step type to have partial data
+ * Uses string index to support dynamic step type access at runtime
+ */
+export interface PartialStepDataState {
+  introduction?: Partial<IntroductionStepData>;
+  venue_selection?: Partial<VenueSelectionStepData>;
+  date_time?: Partial<DateTimeStepData>;
+  questionnaire?: Partial<QuestionnaireStepData>;
+  package_selection?: Partial<PackageSelectionStepData>;
+  addon_selection?: Partial<AddonSelectionStepData>;
+  pricing_summary?: Partial<PricingSummaryStepData>;
+  contact_info?: Partial<ContactInfoStepData>;
+  payment_info?: Partial<PaymentStepData>;
+  confirmation?: Partial<ConfirmationStepData>;
+  // Allow string index for dynamic access
+  [key: string]: AnyStepData | undefined;
+}
 
 /**
  * Booking flow progress tracking
@@ -65,7 +129,7 @@ export interface BookingState {
   sessionId: string | null;
 
   // Step Data (local state before sync)
-  stepData: Record<string, unknown>;
+  stepData: PartialStepDataState;
   pendingChanges: boolean;
 
   // Progress Tracking
@@ -103,9 +167,9 @@ export interface BookingActions {
   // Session Management
   startSession: (flowId: number) => Promise<string>;
   loadSession: (sessionId: string) => Promise<void>;
-  updateStepData: (stepType: string, data: Record<string, unknown>) => void;
-  saveStepData: (stepId: number, data: Record<string, unknown>, markCompleted?: boolean) => Promise<void>;
-  validateStep: (stepId: number, data: Record<string, unknown>) => Promise<StepValidationResult>;
+  updateStepData: (stepType: StepType | string, data: AnyStepData) => void;
+  saveStepData: (stepId: number, data: AnyStepData, markCompleted?: boolean) => Promise<void>;
+  validateStep: (stepId: number, data: AnyStepData) => Promise<StepValidationResult>;
   abandonSession: (reason?: string) => Promise<void>;
 
   // Navigation

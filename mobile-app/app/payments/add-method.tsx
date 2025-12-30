@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CaretLeft, Check } from 'phosphor-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { StripeCardField } from '@/components/payment/StripeCardField';
+import { StripeCardField } from '@/components/payments';
 import { Button } from '@/components/common/Button';
 import { colors, spacing, typeScale, layout } from '@/theme';
 import { useToast } from '@/contexts/ToastContext';

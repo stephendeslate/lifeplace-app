@@ -65,6 +65,7 @@ export function EventTypeCard({
             style={styles.compactImage}
             contentFit="cover"
             transition={200}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={[styles.compactImage, styles.compactImagePlaceholder]}>
@@ -142,6 +143,7 @@ export function EventTypeCard({
           style={styles.image}
           contentFit="cover"
           transition={200}
+          cachePolicy="memory-disk"
         />
       ) : (
         <View style={[styles.image, styles.imagePlaceholder]}>

@@ -224,6 +224,32 @@ export class ErrorHandler {
       isNetworkError: info.isNetworkError,
     });
   }
+
+  /**
+   * Handle error with optional notification and logging
+   */
+  static handle(
+    error: unknown,
+    options?: {
+      context?: string;
+      showNotification?: boolean;
+      logError?: boolean;
+    }
+  ): ErrorInfo {
+    const info = this.getErrorInfo(error);
+    const { context, showNotification = false, logError = true } = options || {};
+
+    if (logError) {
+      this.logError(error, context);
+    }
+
+    if (showNotification) {
+      // In a real app, this would show a toast/notification
+      console.warn(`[Notification] ${info.message}`);
+    }
+
+    return info;
+  }
 }
 
 // Convenience function exports

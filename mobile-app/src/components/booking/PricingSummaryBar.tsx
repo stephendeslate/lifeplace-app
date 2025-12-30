@@ -29,7 +29,7 @@ interface PricingSummaryBarProps {
   tax?: number | string;
   discount?: number | string;
   total: number | string;
-  currency?: string;
+  currency?: 'PHP' | 'USD' | 'EUR' | 'SGD' | 'HKD' | 'JPY' | 'GBP' | 'AUD';
   discountCode?: string;
   expandable?: boolean;
   showTaxBreakdown?: boolean;

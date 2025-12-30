@@ -18,7 +18,7 @@ import { Shield, X, Check, Warning } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { formatCurrency, type CurrencyCode } from '@/utils/currency';
 
-interface PaymentConfirmationModalProps {
+export interface PaymentConfirmationModalProps {
   visible: boolean;
   onClose: () => void;
   onConfirm: () => void;

@@ -275,8 +275,13 @@ interface UseActionCenterReturn {
   isRefetching: boolean;
   error: string | null;
 
-  // Actions
+  // Actions - prefer type-specific refetch for targeted invalidation
   refetch: () => void;
+  refetchByType: (type: ActionType) => void;
+  refetchQuotes: () => void;
+  refetchContracts: () => void;
+  refetchPayments: () => void;
+  refetchTasks: () => void;
 
   // Computed
   hasActions: boolean;
@@ -463,13 +468,49 @@ export function useActionCenter(options: UseActionCenterOptions = {}): UseAction
       .sort((a, b) => b.actionCount - a.actionCount);
   }, [allActions]);
 
-  // Refetch all data
-  const refetch = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['quotes'] });
-    queryClient.invalidateQueries({ queryKey: ['contracts'] });
-    queryClient.invalidateQueries({ queryKey: ['payments'] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  // Type-specific refetch functions for targeted cache invalidation
+  const refetchQuotes = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['quotes', 'pending'] });
   }, [queryClient]);
+
+  const refetchContracts = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['contracts', 'pending'] });
+  }, [queryClient]);
+
+  const refetchPayments = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['payments', 'overdue'] });
+    queryClient.invalidateQueries({ queryKey: ['invoices'] });
+  }, [queryClient]);
+
+  const refetchTasks = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['dashboard', 'urgent-tasks'] });
+  }, [queryClient]);
+
+  // Refetch by action type - more targeted than full refetch
+  const refetchByType = useCallback((type: ActionType) => {
+    switch (type) {
+      case 'QUOTE':
+        refetchQuotes();
+        break;
+      case 'CONTRACT':
+        refetchContracts();
+        break;
+      case 'PAYMENT':
+        refetchPayments();
+        break;
+      case 'TASK':
+        refetchTasks();
+        break;
+    }
+  }, [refetchQuotes, refetchContracts, refetchPayments, refetchTasks]);
+
+  // Refetch all data - use sparingly, prefer type-specific refetch
+  const refetch = useCallback(() => {
+    refetchQuotes();
+    refetchContracts();
+    refetchPayments();
+    refetchTasks();
+  }, [refetchQuotes, refetchContracts, refetchPayments, refetchTasks]);
 
   return {
     actions: sortedActions,
@@ -481,6 +522,11 @@ export function useActionCenter(options: UseActionCenterOptions = {}): UseAction
     isRefetching,
     error,
     refetch,
+    refetchByType,
+    refetchQuotes,
+    refetchContracts,
+    refetchPayments,
+    refetchTasks,
     hasActions: allActions.length > 0,
     hasCriticalActions: counts.critical > 0,
   };

@@ -10,7 +10,7 @@ import { theme } from '@/theme';
 import { formatCurrency } from '@/utils/formatting';
 import type { InvoiceLineItem as InvoiceLineItemType } from '@/apis/payments.api';
 
-interface InvoiceLineItemProps {
+export interface InvoiceLineItemProps {
   item: InvoiceLineItemType;
   currency: string;
 }

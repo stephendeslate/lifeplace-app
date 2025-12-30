@@ -30,7 +30,7 @@ import { theme } from '@/theme';
 import { useDocuments } from '@/hooks/useDocuments';
 import { useDocumentDownload } from '@/hooks/useDocumentDownload';
 import { DocumentCard } from '@/components/documents';
-import { EmptyState, Skeleton } from '@/components/common';
+import { EmptyState, Skeleton, ScreenErrorBoundary } from '@/components/common';
 import type {
   DocumentItem,
   DocumentType,
@@ -61,7 +61,7 @@ const SORT_OPTIONS: { value: DocumentSortOption; label: string }[] = [
 // COMPONENT
 // =============================================================================
 
-export default function DocumentsScreen() {
+function DocumentsScreenContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
@@ -344,6 +344,14 @@ export default function DocumentsScreen() {
         }
       />
     </View>
+  );
+}
+
+export default function DocumentsScreen() {
+  return (
+    <ScreenErrorBoundary screenName="Documents">
+      <DocumentsScreenContent />
+    </ScreenErrorBoundary>
   );
 }
 

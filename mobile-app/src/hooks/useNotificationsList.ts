@@ -9,6 +9,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 import {
   getNotifications,
@@ -183,21 +184,21 @@ export function useUnreadNotifications(limit: number = 10) {
  * Hook to get notification counts with polling
  */
 export function useNotificationCounts() {
-  const queryClient = useQueryClient();
-
   const query = useQuery({
     queryKey: queryKeys.notifications.unreadCount,
     queryFn: getNotificationCounts,
     refetchInterval: 60000, // Poll every minute
   });
 
-  // Update badge when counts change
+  // Extract unread count from query data
   const unreadCount = query.data?.unread ?? 0;
 
-  // Update badge count when unread count changes
-  if (query.isSuccess && query.data) {
-    updateBadgeCount(unreadCount);
-  }
+  // Update badge count when unread count changes (moved to useEffect to avoid side effects during render)
+  useEffect(() => {
+    if (query.isSuccess && query.data) {
+      updateBadgeCount(unreadCount);
+    }
+  }, [query.isSuccess, query.data, unreadCount]);
 
   return {
     ...query,

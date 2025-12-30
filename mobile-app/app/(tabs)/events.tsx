@@ -8,14 +8,14 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
 import { useEventsList } from '@/hooks/useEvents';
 import { theme } from '@/theme';
 import { colors, spacing, typeScale, layout } from '@/theme';
 import { EventCard } from '@/components/events';
-import { FilterChips, EmptyState, SkeletonEventCard } from '@/components/common';
+import { FilterChips, EmptyState, SkeletonEventCard, ScreenErrorBoundary } from '@/components/common';
 import { filterEventsByStatus, sortEventsByDate } from '@/utils/eventHelpers';
 import type { Event, EventStatus } from '@/types/events.types';
 import type { FilterChip } from '@/components/common';
@@ -24,13 +24,13 @@ type FilterValue = EventStatus | 'all';
 
 const FILTER_OPTIONS: FilterChip<FilterValue>[] = [
   { id: 'all', label: 'All', value: 'all' },
+  { id: 'lead', label: 'Pending', value: 'LEAD' },
   { id: 'confirmed', label: 'Upcoming', value: 'CONFIRMED' },
-  { id: 'in-progress', label: 'In Progress', value: 'IN_PROGRESS' },
   { id: 'completed', label: 'Completed', value: 'COMPLETED' },
   { id: 'cancelled', label: 'Cancelled', value: 'CANCELLED' },
 ];
 
-export default function EventsScreen() {
+function EventsScreenContent() {
   const router = useRouter();
   const { data: events, isLoading, refetch, isRefetching } = useEventsList();
 
@@ -90,7 +90,7 @@ export default function EventsScreen() {
         title="No Events Yet"
         description="Start planning your next event with LifePlace!"
         actionLabel="Book an Event"
-        onAction={() => router.push('/booking' as never)}
+        onAction={() => router.push('/booking' as Href)}
       />
     );
   };
@@ -151,6 +151,14 @@ export default function EventsScreen() {
 function getFilterLabel(filter: FilterValue): string {
   const option = FILTER_OPTIONS.find((f) => f.value === filter);
   return option?.label || 'All';
+}
+
+export default function EventsScreen() {
+  return (
+    <ScreenErrorBoundary screenName="My Events" showBackButton={false}>
+      <EventsScreenContent />
+    </ScreenErrorBoundary>
+  );
 }
 
 const styles = StyleSheet.create({

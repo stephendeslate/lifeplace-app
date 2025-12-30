@@ -12,14 +12,12 @@ import { AppState, AppStateStatus } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 import { useAuthContext } from '@/contexts/AuthContext';
-
-// =============================================================================
-// CONSTANTS
-// =============================================================================
-
-const LAST_ACTIVITY_KEY = 'last_activity_timestamp';
-const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-const DEFAULT_WARNING_MS = 5 * 60 * 1000; // 5 minutes before timeout
+import {
+  SESSION_TIMEOUT_MS,
+  SESSION_WARNING_MS,
+  LAST_ACTIVITY_KEY,
+  SESSION_CHECK_INTERVAL_MS,
+} from '@/constants/session';
 
 // =============================================================================
 // TYPES
@@ -55,8 +53,8 @@ export function useSessionTimeout(
   config: SessionTimeoutConfig = {}
 ): SessionTimeoutReturn {
   const {
-    timeoutMs = DEFAULT_TIMEOUT_MS,
-    warningMs = DEFAULT_WARNING_MS,
+    timeoutMs = SESSION_TIMEOUT_MS,
+    warningMs = SESSION_WARNING_MS,
     onWarning,
     onTimeout,
     enabled = true,
@@ -65,7 +63,7 @@ export function useSessionTimeout(
   const { isAuthenticated, logout } = useAuthContext();
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const warningShownRef = useRef(false);
-  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
    * Update the last activity timestamp
@@ -172,12 +170,12 @@ export function useSessionTimeout(
       return;
     }
 
-    // Check every minute while app is active
+    // Check periodically while app is active
     checkIntervalRef.current = setInterval(() => {
       if (AppState.currentState === 'active') {
         checkSession();
       }
-    }, 60 * 1000);
+    }, SESSION_CHECK_INTERVAL_MS);
 
     return () => {
       if (checkIntervalRef.current) {

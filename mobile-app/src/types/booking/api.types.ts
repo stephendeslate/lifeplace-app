@@ -16,6 +16,8 @@ export interface BookingSessionCreate {
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
+  ip_address?: string;
+  user_agent?: string;
 }
 
 /**
@@ -23,7 +25,7 @@ export interface BookingSessionCreate {
  */
 export interface BookingSessionUpdate {
   step_id: number;
-  booking_data: Record<string, unknown>;
+  booking_data: Partial<BookingData>;
   mark_completed?: boolean;
 }
 
@@ -33,8 +35,13 @@ export interface BookingSessionUpdate {
 export interface BookingSessionStartResponse {
   session_id: string;
   current_step: BookingFlowStep;
+  current_step_id?: number;
   expires_at: string;
   progress_percentage: number;
+  booking_flow_id?: number;
+  completed_steps?: number[];
+  booking_data?: Partial<BookingData>;
+  total_price?: string;
 }
 
 /**
@@ -56,9 +63,11 @@ export interface BookingSessionUpdateResponse {
   total_price: string;
   updated_at: string;
   current_step?: BookingFlowStep;
+  current_step_id?: number;
   progress_percentage: number;
   validation_errors?: Record<string, string[]>;
   completed_steps?: number[];
+  booking_data?: Partial<BookingData>;
 }
 
 /**
@@ -75,7 +84,7 @@ export interface ValidationError {
  */
 export interface StepValidationResult {
   isValid: boolean;
-  errors: ValidationError[];
+  errors: ValidationError[] | Record<string, string[]>;
   warnings?: ValidationError[];
 }
 
@@ -87,8 +96,12 @@ export interface BookingCompletionResult {
   event_id?: number;
   booking_reference: string;
   quote_reference?: string;
-  status: 'confirmed' | 'pending' | 'pending_payment' | 'quote_requested' | 'failed';
+  status: 'confirmed' | 'pending' | 'pending_payment' | 'quote_requested' | 'completed' | 'failed';
   message: string;
+  payment_status?: 'pending' | 'partial' | 'paid' | 'failed' | 'refunded';
+  payment_type?: 'payment' | 'quote';
+  balance_due?: string;
+  contract_required?: boolean;
   event_details?: {
     id: number;
     name: string;

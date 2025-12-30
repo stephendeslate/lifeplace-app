@@ -67,6 +67,13 @@ export interface PaymentGatewayPublicConfig {
   min_amount?: number;
   max_amount?: number;
   bank_details?: BankTransferDetails;
+  environment?: 'test' | 'live' | 'sandbox';
+  supports_apple_pay?: boolean;
+  supports_google_pay?: boolean;
+  supports_saved_methods?: boolean;
+  supports_recurring?: boolean;
+  supports_refunds?: boolean;
+  supports_partial_payments?: boolean;
 }
 
 /**

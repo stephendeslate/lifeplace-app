@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Check, Circle, Warning } from 'phosphor-react-native';
+import { Check, RadioButton, Warning } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout } from '@/theme';
 import type { QuestionnaireField, QuestionnaireFieldResponse } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
