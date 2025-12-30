@@ -235,7 +235,7 @@ export const createInitialBookingState = (): BookingState => ({
     totalSteps: 0,
     completedSteps: [],
     canGoBack: false,
-    canGoNext: false,
+    canGoNext: true,
     canSkip: false,
     progressPercentage: 0,
   },
