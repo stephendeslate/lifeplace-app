@@ -1,77 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="158" failures="0" errors="0" time="2.122">
-  <testsuite name="Badge" errors="0" failures="0" skipped="0" timestamp="2025-12-30T17:56:44" time="1.205" tests="13">
-    <testcase classname="Badge rendering renders with label" name="Badge rendering renders with label" time="0.049">
+<testsuites name="jest tests" tests="158" failures="0" errors="0" time="2.458">
+  <testsuite name="currency utilities" errors="0" failures="0" skipped="0" timestamp="2025-12-30T23:04:22" time="1.037" tests="45">
+    <testcase classname="currency utilities formatCurrency formats PHP currency correctly" name="currency utilities formatCurrency formats PHP currency correctly" time="0.039">
     </testcase>
-    <testcase classname="Badge rendering renders with testID" name="Badge rendering renders with testID" time="0.004">
+    <testcase classname="currency utilities formatCurrency formats with custom currency" name="currency utilities formatCurrency formats with custom currency" time="0.001">
     </testcase>
-    <testcase classname="Badge rendering renders with icon" name="Badge rendering renders with icon" time="0.003">
+    <testcase classname="currency utilities formatCurrency handles zero values" name="currency utilities formatCurrency handles zero values" time="0.001">
     </testcase>
-    <testcase classname="Badge variants renders default variant" name="Badge variants renders default variant" time="0.002">
-    </testcase>
-    <testcase classname="Badge variants renders primary variant" name="Badge variants renders primary variant" time="0.003">
-    </testcase>
-    <testcase classname="Badge variants renders success variant" name="Badge variants renders success variant" time="0.003">
-    </testcase>
-    <testcase classname="Badge variants renders warning variant" name="Badge variants renders warning variant" time="0.003">
-    </testcase>
-    <testcase classname="Badge variants renders error variant" name="Badge variants renders error variant" time="0.003">
-    </testcase>
-    <testcase classname="Badge variants renders info variant" name="Badge variants renders info variant" time="0.003">
-    </testcase>
-    <testcase classname="Badge sizes renders small size" name="Badge sizes renders small size" time="0.002">
-    </testcase>
-    <testcase classname="Badge sizes renders medium size (default)" name="Badge sizes renders medium size (default)" time="0.002">
-    </testcase>
-    <testcase classname="Badge sizes renders large size" name="Badge sizes renders large size" time="0.003">
-    </testcase>
-    <testcase classname="Badge styling accepts custom style prop" name="Badge styling accepts custom style prop" time="0.002">
-    </testcase>
-  </testsuite>
-  <testsuite name="currency utilities" errors="0" failures="0" skipped="0" timestamp="2025-12-30T17:56:44" time="1.287" tests="45">
-    <testcase classname="currency utilities formatCurrency formats PHP currency correctly" name="currency utilities formatCurrency formats PHP currency correctly" time="0.02">
-    </testcase>
-    <testcase classname="currency utilities formatCurrency formats with custom currency" name="currency utilities formatCurrency formats with custom currency" time="0.002">
-    </testcase>
-    <testcase classname="currency utilities formatCurrency handles zero values" name="currency utilities formatCurrency handles zero values" time="0.002">
-    </testcase>
-    <testcase classname="currency utilities formatCurrency handles negative values" name="currency utilities formatCurrency handles negative values" time="0.002">
+    <testcase classname="currency utilities formatCurrency handles negative values" name="currency utilities formatCurrency handles negative values" time="0.001">
     </testcase>
     <testcase classname="currency utilities formatCurrency handles string amounts" name="currency utilities formatCurrency handles string amounts" time="0.001">
     </testcase>
-    <testcase classname="currency utilities formatCurrency handles invalid string amounts" name="currency utilities formatCurrency handles invalid string amounts" time="0.002">
+    <testcase classname="currency utilities formatCurrency handles invalid string amounts" name="currency utilities formatCurrency handles invalid string amounts" time="0.001">
     </testcase>
-    <testcase classname="currency utilities formatCurrency respects showSymbol option" name="currency utilities formatCurrency respects showSymbol option" time="0.002">
+    <testcase classname="currency utilities formatCurrency respects showSymbol option" name="currency utilities formatCurrency respects showSymbol option" time="0.003">
     </testcase>
-    <testcase classname="currency utilities formatCurrency formats compact numbers when enabled" name="currency utilities formatCurrency formats compact numbers when enabled" time="0.002">
+    <testcase classname="currency utilities formatCurrency formats compact numbers when enabled" name="currency utilities formatCurrency formats compact numbers when enabled" time="0.003">
     </testcase>
-    <testcase classname="currency utilities formatCurrency respects minimumFractionDigits option" name="currency utilities formatCurrency respects minimumFractionDigits option" time="0.002">
+    <testcase classname="currency utilities formatCurrency respects minimumFractionDigits option" name="currency utilities formatCurrency respects minimumFractionDigits option" time="0.001">
     </testcase>
-    <testcase classname="currency utilities formatPrice formats price with default currency" name="currency utilities formatPrice formats price with default currency" time="0.002">
+    <testcase classname="currency utilities formatPrice formats price with default currency" name="currency utilities formatPrice formats price with default currency" time="0.005">
     </testcase>
     <testcase classname="currency utilities formatPrice formats price with specified currency" name="currency utilities formatPrice formats price with specified currency" time="0.001">
     </testcase>
-    <testcase classname="currency utilities formatPriceRange formats price range correctly" name="currency utilities formatPriceRange formats price range correctly" time="0.002">
+    <testcase classname="currency utilities formatPriceRange formats price range correctly" name="currency utilities formatPriceRange formats price range correctly" time="0.001">
     </testcase>
     <testcase classname="currency utilities formatPriceRange returns single price when min equals max" name="currency utilities formatPriceRange returns single price when min equals max" time="0.002">
     </testcase>
     <testcase classname="currency utilities formatPriceRange handles string amounts" name="currency utilities formatPriceRange handles string amounts" time="0.001">
     </testcase>
-    <testcase classname="currency utilities parseCurrencyInput parses plain numbers" name="currency utilities parseCurrencyInput parses plain numbers" time="0.002">
+    <testcase classname="currency utilities parseCurrencyInput parses plain numbers" name="currency utilities parseCurrencyInput parses plain numbers" time="0.001">
     </testcase>
-    <testcase classname="currency utilities parseCurrencyInput parses numbers with comma thousand separators" name="currency utilities parseCurrencyInput parses numbers with comma thousand separators" time="0.001">
+    <testcase classname="currency utilities parseCurrencyInput parses numbers with comma thousand separators" name="currency utilities parseCurrencyInput parses numbers with comma thousand separators" time="0.002">
     </testcase>
     <testcase classname="currency utilities parseCurrencyInput parses numbers with currency symbol" name="currency utilities parseCurrencyInput parses numbers with currency symbol" time="0.002">
     </testcase>
-    <testcase classname="currency utilities parseCurrencyInput parses European format (comma as decimal)" name="currency utilities parseCurrencyInput parses European format (comma as decimal)" time="0.002">
+    <testcase classname="currency utilities parseCurrencyInput parses European format (comma as decimal)" name="currency utilities parseCurrencyInput parses European format (comma as decimal)" time="0.001">
     </testcase>
-    <testcase classname="currency utilities parseCurrencyInput parses US format (period as decimal)" name="currency utilities parseCurrencyInput parses US format (period as decimal)" time="0.001">
+    <testcase classname="currency utilities parseCurrencyInput parses US format (period as decimal)" name="currency utilities parseCurrencyInput parses US format (period as decimal)" time="0.002">
     </testcase>
     <testcase classname="currency utilities parseCurrencyInput handles empty input" name="currency utilities parseCurrencyInput handles empty input" time="0.001">
     </testcase>
-    <testcase classname="currency utilities parseCurrencyInput handles invalid input" name="currency utilities parseCurrencyInput handles invalid input" time="0.001">
+    <testcase classname="currency utilities parseCurrencyInput handles invalid input" name="currency utilities parseCurrencyInput handles invalid input" time="0.002">
     </testcase>
-    <testcase classname="currency utilities parseCurrencyInput handles currency code in input" name="currency utilities parseCurrencyInput handles currency code in input" time="0.001">
+    <testcase classname="currency utilities parseCurrencyInput handles currency code in input" name="currency utilities parseCurrencyInput handles currency code in input" time="0.002">
     </testcase>
     <testcase classname="currency utilities getCurrencySymbol returns PHP symbol by default" name="currency utilities getCurrencySymbol returns PHP symbol by default" time="0.001">
     </testcase>
@@ -79,89 +51,173 @@
     </testcase>
     <testcase classname="currency utilities getCurrencyConfig returns PHP config by default" name="currency utilities getCurrencyConfig returns PHP config by default" time="0.001">
     </testcase>
-    <testcase classname="currency utilities getCurrencyConfig returns correct config for specified currency" name="currency utilities getCurrencyConfig returns correct config for specified currency" time="0.002">
+    <testcase classname="currency utilities getCurrencyConfig returns correct config for specified currency" name="currency utilities getCurrencyConfig returns correct config for specified currency" time="0">
     </testcase>
-    <testcase classname="currency utilities getCurrencyOptions returns array of currency options" name="currency utilities getCurrencyOptions returns array of currency options" time="0.001">
+    <testcase classname="currency utilities getCurrencyOptions returns array of currency options" name="currency utilities getCurrencyOptions returns array of currency options" time="0.002">
     </testcase>
     <testcase classname="currency utilities getCurrencyOptions each option has required properties" name="currency utilities getCurrencyOptions each option has required properties" time="0.003">
     </testcase>
-    <testcase classname="currency utilities getCurrencyOptions includes PHP currency" name="currency utilities getCurrencyOptions includes PHP currency" time="0.002">
+    <testcase classname="currency utilities getCurrencyOptions includes PHP currency" name="currency utilities getCurrencyOptions includes PHP currency" time="0.001">
     </testcase>
     <testcase classname="currency utilities calculatePercentage calculates percentage correctly" name="currency utilities calculatePercentage calculates percentage correctly" time="0.002">
     </testcase>
     <testcase classname="currency utilities calculatePercentage handles string amounts" name="currency utilities calculatePercentage handles string amounts" time="0.001">
     </testcase>
-    <testcase classname="currency utilities calculatePercentage handles decimal percentages" name="currency utilities calculatePercentage handles decimal percentages" time="0.002">
+    <testcase classname="currency utilities calculatePercentage handles decimal percentages" name="currency utilities calculatePercentage handles decimal percentages" time="0.001">
     </testcase>
-    <testcase classname="currency utilities calculatePercentage handles invalid input" name="currency utilities calculatePercentage handles invalid input" time="0.001">
+    <testcase classname="currency utilities calculatePercentage handles invalid input" name="currency utilities calculatePercentage handles invalid input" time="0.002">
     </testcase>
     <testcase classname="currency utilities calculateTax calculates tax exclusive (add tax)" name="currency utilities calculateTax calculates tax exclusive (add tax)" time="0.001">
     </testcase>
-    <testcase classname="currency utilities calculateTax calculates tax inclusive (extract tax)" name="currency utilities calculateTax calculates tax inclusive (extract tax)" time="0.001">
+    <testcase classname="currency utilities calculateTax calculates tax inclusive (extract tax)" name="currency utilities calculateTax calculates tax inclusive (extract tax)" time="0.002">
     </testcase>
     <testcase classname="currency utilities calculateTax handles string amounts" name="currency utilities calculateTax handles string amounts" time="0.002">
     </testcase>
     <testcase classname="currency utilities calculateTax handles invalid input" name="currency utilities calculateTax handles invalid input" time="0.001">
     </testcase>
-    <testcase classname="currency utilities sumAmounts sums multiple numbers" name="currency utilities sumAmounts sums multiple numbers" time="0.001">
+    <testcase classname="currency utilities sumAmounts sums multiple numbers" name="currency utilities sumAmounts sums multiple numbers" time="0.002">
     </testcase>
-    <testcase classname="currency utilities sumAmounts handles string amounts" name="currency utilities sumAmounts handles string amounts" time="0.002">
+    <testcase classname="currency utilities sumAmounts handles string amounts" name="currency utilities sumAmounts handles string amounts" time="0.001">
     </testcase>
-    <testcase classname="currency utilities sumAmounts handles mixed valid and invalid" name="currency utilities sumAmounts handles mixed valid and invalid" time="0.001">
+    <testcase classname="currency utilities sumAmounts handles mixed valid and invalid" name="currency utilities sumAmounts handles mixed valid and invalid" time="0.002">
     </testcase>
-    <testcase classname="currency utilities sumAmounts handles empty input" name="currency utilities sumAmounts handles empty input" time="0.002">
+    <testcase classname="currency utilities sumAmounts handles empty input" name="currency utilities sumAmounts handles empty input" time="0.001">
     </testcase>
-    <testcase classname="currency utilities formatCompact formats large numbers in compact notation" name="currency utilities formatCompact formats large numbers in compact notation" time="0.001">
+    <testcase classname="currency utilities formatCompact formats large numbers in compact notation" name="currency utilities formatCompact formats large numbers in compact notation" time="0.003">
     </testcase>
     <testcase classname="currency utilities formatCompact handles small numbers" name="currency utilities formatCompact handles small numbers" time="0.002">
     </testcase>
     <testcase classname="currency utilities constants has PHP as default currency" name="currency utilities constants has PHP as default currency" time="0.001">
     </testcase>
-    <testcase classname="currency utilities constants has supported currencies defined" name="currency utilities constants has supported currencies defined" time="0.002">
+    <testcase classname="currency utilities constants has supported currencies defined" name="currency utilities constants has supported currencies defined" time="0.005">
     </testcase>
   </testsuite>
-  <testsuite name="timezone utilities" errors="0" failures="0" skipped="0" timestamp="2025-12-30T17:56:44" time="1.331" tests="33">
-    <testcase classname="timezone utilities constants has correct business timezone" name="timezone utilities constants has correct business timezone" time="0.007">
+  <testsuite name="Badge" errors="0" failures="0" skipped="0" timestamp="2025-12-30T23:04:22" time="1.055" tests="13">
+    <testcase classname="Badge rendering renders with label" name="Badge rendering renders with label" time="0.03">
     </testcase>
-    <testcase classname="timezone utilities constants has correct timezone display name" name="timezone utilities constants has correct timezone display name" time="0.002">
+    <testcase classname="Badge rendering renders with testID" name="Badge rendering renders with testID" time="0.003">
     </testcase>
-    <testcase classname="timezone utilities formatPhilippinesTime formats a Date object" name="timezone utilities formatPhilippinesTime formats a Date object" time="0.003">
+    <testcase classname="Badge rendering renders with icon" name="Badge rendering renders with icon" time="0.002">
+    </testcase>
+    <testcase classname="Badge variants renders default variant" name="Badge variants renders default variant" time="0.001">
+    </testcase>
+    <testcase classname="Badge variants renders primary variant" name="Badge variants renders primary variant" time="0.002">
+    </testcase>
+    <testcase classname="Badge variants renders success variant" name="Badge variants renders success variant" time="0.001">
+    </testcase>
+    <testcase classname="Badge variants renders warning variant" name="Badge variants renders warning variant" time="0.003">
+    </testcase>
+    <testcase classname="Badge variants renders error variant" name="Badge variants renders error variant" time="0.009">
+    </testcase>
+    <testcase classname="Badge variants renders info variant" name="Badge variants renders info variant" time="0.002">
+    </testcase>
+    <testcase classname="Badge sizes renders small size" name="Badge sizes renders small size" time="0.003">
+    </testcase>
+    <testcase classname="Badge sizes renders medium size (default)" name="Badge sizes renders medium size (default)" time="0.003">
+    </testcase>
+    <testcase classname="Badge sizes renders large size" name="Badge sizes renders large size" time="0.002">
+    </testcase>
+    <testcase classname="Badge styling accepts custom style prop" name="Badge styling accepts custom style prop" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="Input" errors="0" failures="0" skipped="0" timestamp="2025-12-30T23:04:22" time="1.128" tests="27">
+    <testcase classname="Input rendering renders correctly without label" name="Input rendering renders correctly without label" time="0.062">
+    </testcase>
+    <testcase classname="Input rendering renders with label" name="Input rendering renders with label" time="0.004">
+    </testcase>
+    <testcase classname="Input rendering renders with value" name="Input rendering renders with value" time="0.004">
+    </testcase>
+    <testcase classname="Input rendering renders with left icon" name="Input rendering renders with left icon" time="0.003">
+    </testcase>
+    <testcase classname="Input rendering renders with right icon" name="Input rendering renders with right icon" time="0.007">
+    </testcase>
+    <testcase classname="Input rendering renders with both icons" name="Input rendering renders with both icons" time="0.001">
+    </testcase>
+    <testcase classname="Input interactions calls onChangeText when text changes" name="Input interactions calls onChangeText when text changes" time="0.003">
+    </testcase>
+    <testcase classname="Input interactions calls onFocus when focused" name="Input interactions calls onFocus when focused" time="0.002">
+    </testcase>
+    <testcase classname="Input interactions calls onBlur when blurred" name="Input interactions calls onBlur when blurred" time="0.003">
+    </testcase>
+    <testcase classname="Input interactions updates focus state on focus/blur" name="Input interactions updates focus state on focus/blur" time="0.002">
+    </testcase>
+    <testcase classname="Input error state displays error message when error prop is provided" name="Input error state displays error message when error prop is provided" time="0.002">
+    </testcase>
+    <testcase classname="Input error state does not display error message when error is not provided" name="Input error state does not display error message when error is not provided" time="0.002">
+    </testcase>
+    <testcase classname="Input error state applies error styling when error is present" name="Input error state applies error styling when error is present" time="0.002">
+    </testcase>
+    <testcase classname="Input input types renders as email input" name="Input input types renders as email input" time="0.002">
+    </testcase>
+    <testcase classname="Input input types renders as secure text entry (password)" name="Input input types renders as secure text entry (password)" time="0.002">
+    </testcase>
+    <testcase classname="Input input types renders as phone input" name="Input input types renders as phone input" time="0.002">
+    </testcase>
+    <testcase classname="Input input types renders as numeric input" name="Input input types renders as numeric input" time="0.002">
+    </testcase>
+    <testcase classname="Input editable state is editable by default" name="Input editable state is editable by default" time="0.002">
+    </testcase>
+    <testcase classname="Input editable state is not editable when editable is false" name="Input editable state is not editable when editable is false" time="0.002">
+    </testcase>
+    <testcase classname="Input accessibility uses label text for accessibility" name="Input accessibility uses label text for accessibility" time="0.002">
+    </testcase>
+    <testcase classname="Input accessibility accepts custom accessibilityLabel" name="Input accessibility accepts custom accessibilityLabel" time="0.003">
+    </testcase>
+    <testcase classname="Input accessibility accepts custom accessibilityHint" name="Input accessibility accepts custom accessibilityHint" time="0.002">
+    </testcase>
+    <testcase classname="Input styling accepts custom containerStyle" name="Input styling accepts custom containerStyle" time="0.002">
+    </testcase>
+    <testcase classname="Input styling accepts custom inputContainerStyle" name="Input styling accepts custom inputContainerStyle" time="0.002">
+    </testcase>
+    <testcase classname="Input styling accepts custom labelStyle" name="Input styling accepts custom labelStyle" time="0.002">
+    </testcase>
+    <testcase classname="Input styling accepts custom input style" name="Input styling accepts custom input style" time="0.001">
+    </testcase>
+    <testcase classname="Input ref forwarding forwards ref to TextInput" name="Input ref forwarding forwards ref to TextInput" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="timezone utilities" errors="0" failures="0" skipped="0" timestamp="2025-12-30T23:04:22" time="1.187" tests="33">
+    <testcase classname="timezone utilities constants has correct business timezone" name="timezone utilities constants has correct business timezone" time="0.003">
+    </testcase>
+    <testcase classname="timezone utilities constants has correct timezone display name" name="timezone utilities constants has correct timezone display name" time="0.001">
+    </testcase>
+    <testcase classname="timezone utilities formatPhilippinesTime formats a Date object" name="timezone utilities formatPhilippinesTime formats a Date object" time="0.002">
     </testcase>
     <testcase classname="timezone utilities formatPhilippinesTime formats an ISO string" name="timezone utilities formatPhilippinesTime formats an ISO string" time="0.002">
     </testcase>
     <testcase classname="timezone utilities formatPhilippinesTime uses custom format string" name="timezone utilities formatPhilippinesTime uses custom format string" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities formatBookingTime returns object with primary, timezone, and full properties" name="timezone utilities formatBookingTime returns object with primary, timezone, and full properties" time="0.002">
+    <testcase classname="timezone utilities formatBookingTime returns object with primary, timezone, and full properties" name="timezone utilities formatBookingTime returns object with primary, timezone, and full properties" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities formatBookingTime includes PHT in timezone string" name="timezone utilities formatBookingTime includes PHT in timezone string" time="0.002">
+    <testcase classname="timezone utilities formatBookingTime includes PHT in timezone string" name="timezone utilities formatBookingTime includes PHT in timezone string" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities formatBookingTime full contains date and time" name="timezone utilities formatBookingTime full contains date and time" time="0.002">
+    <testcase classname="timezone utilities formatBookingTime full contains date and time" name="timezone utilities formatBookingTime full contains date and time" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities formatDateRange formats single date when no end date" name="timezone utilities formatDateRange formats single date when no end date" time="0.002">
+    <testcase classname="timezone utilities formatDateRange formats single date when no end date" name="timezone utilities formatDateRange formats single date when no end date" time="0.001">
     </testcase>
     <testcase classname="timezone utilities formatDateRange formats single date when start equals end" name="timezone utilities formatDateRange formats single date when start equals end" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities formatDateRange formats date range with different dates" name="timezone utilities formatDateRange formats date range with different dates" time="0.002">
+    <testcase classname="timezone utilities formatDateRange formats date range with different dates" name="timezone utilities formatDateRange formats date range with different dates" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities formatDateRange formats date range across months" name="timezone utilities formatDateRange formats date range across months" time="0.001">
+    <testcase classname="timezone utilities formatDateRange formats date range across months" name="timezone utilities formatDateRange formats date range across months" time="0.007">
     </testcase>
     <testcase classname="timezone utilities getTimezoneNotice returns booking notice" name="timezone utilities getTimezoneNotice returns booking notice" time="0.001">
     </testcase>
     <testcase classname="timezone utilities getTimezoneNotice returns confirmation notice" name="timezone utilities getTimezoneNotice returns confirmation notice" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities getTimezoneNotice returns calendar notice" name="timezone utilities getTimezoneNotice returns calendar notice" time="0.002">
+    <testcase classname="timezone utilities getTimezoneNotice returns calendar notice" name="timezone utilities getTimezoneNotice returns calendar notice" time="0.001">
     </testcase>
     <testcase classname="timezone utilities getTimezoneNotice returns general notice by default" name="timezone utilities getTimezoneNotice returns general notice by default" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities formatDateForPicker formats date as YYYY-MM-DD" name="timezone utilities formatDateForPicker formats date as YYYY-MM-DD" time="0.001">
+    <testcase classname="timezone utilities formatDateForPicker formats date as YYYY-MM-DD" name="timezone utilities formatDateForPicker formats date as YYYY-MM-DD" time="0.002">
     </testcase>
-    <testcase classname="timezone utilities formatDateForPicker returns correct date components" name="timezone utilities formatDateForPicker returns correct date components" time="0.002">
+    <testcase classname="timezone utilities formatDateForPicker returns correct date components" name="timezone utilities formatDateForPicker returns correct date components" time="0.001">
     </testcase>
     <testcase classname="timezone utilities formatTimeForPicker formats time as HH:mm" name="timezone utilities formatTimeForPicker formats time as HH:mm" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities formatTimeForPicker returns correct time components" name="timezone utilities formatTimeForPicker returns correct time components" time="0.002">
+    <testcase classname="timezone utilities formatTimeForPicker returns correct time components" name="timezone utilities formatTimeForPicker returns correct time components" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities formatTimeForPicker pads single digit hours and minutes" name="timezone utilities formatTimeForPicker pads single digit hours and minutes" time="0.001">
+    <testcase classname="timezone utilities formatTimeForPicker pads single digit hours and minutes" name="timezone utilities formatTimeForPicker pads single digit hours and minutes" time="0.002">
     </testcase>
     <testcase classname="timezone utilities parseTimeString parses HH:mm format" name="timezone utilities parseTimeString parses HH:mm format" time="0.001">
     </testcase>
@@ -177,7 +233,7 @@
     </testcase>
     <testcase classname="timezone utilities calculateDurationHours handles overnight events" name="timezone utilities calculateDurationHours handles overnight events" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities calculateDurationHours handles same start and end time" name="timezone utilities calculateDurationHours handles same start and end time" time="0.001">
+    <testcase classname="timezone utilities calculateDurationHours handles same start and end time" name="timezone utilities calculateDurationHours handles same start and end time" time="0.002">
     </testcase>
     <testcase classname="timezone utilities addHoursToTime adds whole hours" name="timezone utilities addHoursToTime adds whole hours" time="0.001">
     </testcase>
@@ -185,105 +241,49 @@
     </testcase>
     <testcase classname="timezone utilities addHoursToTime handles wraparound past midnight" name="timezone utilities addHoursToTime handles wraparound past midnight" time="0.001">
     </testcase>
-    <testcase classname="timezone utilities addHoursToTime handles subtracting hours (negative)" name="timezone utilities addHoursToTime handles subtracting hours (negative)" time="0.002">
+    <testcase classname="timezone utilities addHoursToTime handles subtracting hours (negative)" name="timezone utilities addHoursToTime handles subtracting hours (negative)" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Input" errors="0" failures="0" skipped="0" timestamp="2025-12-30T17:56:44" time="1.338" tests="27">
-    <testcase classname="Input rendering renders correctly without label" name="Input rendering renders correctly without label" time="0.051">
+  <testsuite name="Card" errors="0" failures="0" skipped="0" timestamp="2025-12-30T23:04:22" time="1.201" tests="11">
+    <testcase classname="Card rendering renders children correctly" name="Card rendering renders children correctly" time="0.009">
     </testcase>
-    <testcase classname="Input rendering renders with label" name="Input rendering renders with label" time="0.003">
+    <testcase classname="Card rendering renders with testID" name="Card rendering renders with testID" time="0.002">
     </testcase>
-    <testcase classname="Input rendering renders with value" name="Input rendering renders with value" time="0.002">
-    </testcase>
-    <testcase classname="Input rendering renders with left icon" name="Input rendering renders with left icon" time="0.002">
-    </testcase>
-    <testcase classname="Input rendering renders with right icon" name="Input rendering renders with right icon" time="0.003">
-    </testcase>
-    <testcase classname="Input rendering renders with both icons" name="Input rendering renders with both icons" time="0.002">
-    </testcase>
-    <testcase classname="Input interactions calls onChangeText when text changes" name="Input interactions calls onChangeText when text changes" time="0.003">
-    </testcase>
-    <testcase classname="Input interactions calls onFocus when focused" name="Input interactions calls onFocus when focused" time="0.003">
-    </testcase>
-    <testcase classname="Input interactions calls onBlur when blurred" name="Input interactions calls onBlur when blurred" time="0.002">
-    </testcase>
-    <testcase classname="Input interactions updates focus state on focus/blur" name="Input interactions updates focus state on focus/blur" time="0.003">
-    </testcase>
-    <testcase classname="Input error state displays error message when error prop is provided" name="Input error state displays error message when error prop is provided" time="0.002">
-    </testcase>
-    <testcase classname="Input error state does not display error message when error is not provided" name="Input error state does not display error message when error is not provided" time="0.002">
-    </testcase>
-    <testcase classname="Input error state applies error styling when error is present" name="Input error state applies error styling when error is present" time="0.002">
-    </testcase>
-    <testcase classname="Input input types renders as email input" name="Input input types renders as email input" time="0.002">
-    </testcase>
-    <testcase classname="Input input types renders as secure text entry (password)" name="Input input types renders as secure text entry (password)" time="0.001">
-    </testcase>
-    <testcase classname="Input input types renders as phone input" name="Input input types renders as phone input" time="0.002">
-    </testcase>
-    <testcase classname="Input input types renders as numeric input" name="Input input types renders as numeric input" time="0.002">
-    </testcase>
-    <testcase classname="Input editable state is editable by default" name="Input editable state is editable by default" time="0.002">
-    </testcase>
-    <testcase classname="Input editable state is not editable when editable is false" name="Input editable state is not editable when editable is false" time="0.002">
-    </testcase>
-    <testcase classname="Input accessibility uses label text for accessibility" name="Input accessibility uses label text for accessibility" time="0.002">
-    </testcase>
-    <testcase classname="Input accessibility accepts custom accessibilityLabel" name="Input accessibility accepts custom accessibilityLabel" time="0.003">
-    </testcase>
-    <testcase classname="Input accessibility accepts custom accessibilityHint" name="Input accessibility accepts custom accessibilityHint" time="0.004">
-    </testcase>
-    <testcase classname="Input styling accepts custom containerStyle" name="Input styling accepts custom containerStyle" time="0.002">
-    </testcase>
-    <testcase classname="Input styling accepts custom inputContainerStyle" name="Input styling accepts custom inputContainerStyle" time="0.003">
-    </testcase>
-    <testcase classname="Input styling accepts custom labelStyle" name="Input styling accepts custom labelStyle" time="0.002">
-    </testcase>
-    <testcase classname="Input styling accepts custom input style" name="Input styling accepts custom input style" time="0.002">
-    </testcase>
-    <testcase classname="Input ref forwarding forwards ref to TextInput" name="Input ref forwarding forwards ref to TextInput" time="0.001">
-    </testcase>
-  </testsuite>
-  <testsuite name="Card" errors="0" failures="0" skipped="0" timestamp="2025-12-30T17:56:44" time="1.359" tests="11">
-    <testcase classname="Card rendering renders children correctly" name="Card rendering renders children correctly" time="0.012">
-    </testcase>
-    <testcase classname="Card rendering renders with testID" name="Card rendering renders with testID" time="0.003">
-    </testcase>
-    <testcase classname="Card rendering renders with default variant" name="Card rendering renders with default variant" time="0.003">
+    <testcase classname="Card rendering renders with default variant" name="Card rendering renders with default variant" time="0.002">
     </testcase>
     <testcase classname="Card rendering renders with elevated variant" name="Card rendering renders with elevated variant" time="0.002">
     </testcase>
-    <testcase classname="Card rendering renders with outlined variant" name="Card rendering renders with outlined variant" time="0.002">
+    <testcase classname="Card rendering renders with outlined variant" name="Card rendering renders with outlined variant" time="0.001">
     </testcase>
-    <testcase classname="Card rendering renders with filled variant" name="Card rendering renders with filled variant" time="0.002">
+    <testcase classname="Card rendering renders with filled variant" name="Card rendering renders with filled variant" time="0.003">
     </testcase>
-    <testcase classname="Card interactions calls onPress when pressed" name="Card interactions calls onPress when pressed" time="0.003">
+    <testcase classname="Card interactions calls onPress when pressed" name="Card interactions calls onPress when pressed" time="0.005">
     </testcase>
-    <testcase classname="Card interactions does not call onPress when disabled" name="Card interactions does not call onPress when disabled" time="0.003">
+    <testcase classname="Card interactions does not call onPress when disabled" name="Card interactions does not call onPress when disabled" time="0.002">
     </testcase>
     <testcase classname="Card interactions renders as non-pressable View when no onPress" name="Card interactions renders as non-pressable View when no onPress" time="0.002">
     </testcase>
-    <testcase classname="Card styling accepts custom style prop" name="Card styling accepts custom style prop" time="0.003">
+    <testcase classname="Card styling accepts custom style prop" name="Card styling accepts custom style prop" time="0.002">
     </testcase>
-    <testcase classname="Card styling accepts custom contentStyle prop" name="Card styling accepts custom contentStyle prop" time="0.003">
+    <testcase classname="Card styling accepts custom contentStyle prop" name="Card styling accepts custom contentStyle prop" time="0.002">
     </testcase>
   </testsuite>
-  <testsuite name="Button" errors="0" failures="0" skipped="0" timestamp="2025-12-30T17:56:44" time="1.413" tests="22">
-    <testcase classname="Button rendering renders correctly with text children" name="Button rendering renders correctly with text children" time="0.05">
+  <testsuite name="Button" errors="0" failures="0" skipped="0" timestamp="2025-12-30T23:04:22" time="1.226" tests="22">
+    <testcase classname="Button rendering renders correctly with text children" name="Button rendering renders correctly with text children" time="0.012">
     </testcase>
     <testcase classname="Button rendering renders with primary variant by default" name="Button rendering renders with primary variant by default" time="0.003">
     </testcase>
-    <testcase classname="Button rendering renders with secondary variant" name="Button rendering renders with secondary variant" time="0.003">
+    <testcase classname="Button rendering renders with secondary variant" name="Button rendering renders with secondary variant" time="0.004">
     </testcase>
-    <testcase classname="Button rendering renders with cta variant" name="Button rendering renders with cta variant" time="0.002">
+    <testcase classname="Button rendering renders with cta variant" name="Button rendering renders with cta variant" time="0.003">
     </testcase>
     <testcase classname="Button rendering renders with accent variant" name="Button rendering renders with accent variant" time="0.003">
     </testcase>
-    <testcase classname="Button interactions calls onPress when pressed" name="Button interactions calls onPress when pressed" time="0.002">
+    <testcase classname="Button interactions calls onPress when pressed" name="Button interactions calls onPress when pressed" time="0.003">
     </testcase>
-    <testcase classname="Button interactions does not call onPress when disabled" name="Button interactions does not call onPress when disabled" time="0.003">
+    <testcase classname="Button interactions does not call onPress when disabled" name="Button interactions does not call onPress when disabled" time="0.001">
     </testcase>
-    <testcase classname="Button interactions does not call onPress when loading" name="Button interactions does not call onPress when loading" time="0.044">
+    <testcase classname="Button interactions does not call onPress when loading" name="Button interactions does not call onPress when loading" time="0.006">
     </testcase>
     <testcase classname="Button interactions calls onPressIn handler" name="Button interactions calls onPressIn handler" time="0.002">
     </testcase>
@@ -299,7 +299,7 @@
     </testcase>
     <testcase classname="Button accessibility has button accessibility role" name="Button accessibility has button accessibility role" time="0.002">
     </testcase>
-    <testcase classname="Button accessibility indicates disabled state to screen readers" name="Button accessibility indicates disabled state to screen readers" time="0.001">
+    <testcase classname="Button accessibility indicates disabled state to screen readers" name="Button accessibility indicates disabled state to screen readers" time="0.002">
     </testcase>
     <testcase classname="Button accessibility accepts custom accessibilityLabel" name="Button accessibility accepts custom accessibilityLabel" time="0.002">
     </testcase>
@@ -314,20 +314,20 @@
     <testcase classname="Button styling accepts custom textStyle prop" name="Button styling accepts custom textStyle prop" time="0.002">
     </testcase>
   </testsuite>
-  <testsuite name="useDashboard" errors="0" failures="0" skipped="0" timestamp="2025-12-30T17:56:44" time="1.696" tests="7">
-    <testcase classname="useDashboard query keys has correct dashboard keys structure" name="useDashboard query keys has correct dashboard keys structure" time="0.006">
+  <testsuite name="useDashboard" errors="0" failures="0" skipped="0" timestamp="2025-12-30T23:04:22" time="1.997" tests="7">
+    <testcase classname="useDashboard query keys has correct dashboard keys structure" name="useDashboard query keys has correct dashboard keys structure" time="0.003">
     </testcase>
-    <testcase classname="useDashboard data aggregation returns loading state initially" name="useDashboard data aggregation returns loading state initially" time="0.076">
+    <testcase classname="useDashboard data aggregation returns loading state initially" name="useDashboard data aggregation returns loading state initially" time="0.117">
     </testcase>
-    <testcase classname="useDashboard data aggregation aggregates data from multiple sources" name="useDashboard data aggregation aggregates data from multiple sources" time="0.056">
+    <testcase classname="useDashboard data aggregation aggregates data from multiple sources" name="useDashboard data aggregation aggregates data from multiple sources" time="0.117">
     </testcase>
-    <testcase classname="useDashboard data aggregation provides refetch function" name="useDashboard data aggregation provides refetch function" time="0.034">
+    <testcase classname="useDashboard data aggregation provides refetch function" name="useDashboard data aggregation provides refetch function" time="0.059">
     </testcase>
-    <testcase classname="useDashboard error handling handles API errors gracefully" name="useDashboard error handling handles API errors gracefully" time="0.056">
+    <testcase classname="useDashboard error handling handles API errors gracefully" name="useDashboard error handling handles API errors gracefully" time="0.114">
     </testcase>
-    <testcase classname="useDashboard data structure criticalActions has expected shape" name="useDashboard data structure criticalActions has expected shape" time="0.055">
+    <testcase classname="useDashboard data structure criticalActions has expected shape" name="useDashboard data structure criticalActions has expected shape" time="0.117">
     </testcase>
-    <testcase classname="useDashboard data structure limits critical actions to 5 items each" name="useDashboard data structure limits critical actions to 5 items each" time="0.055">
+    <testcase classname="useDashboard data structure limits critical actions to 5 items each" name="useDashboard data structure limits critical actions to 5 items each" time="0.114">
     </testcase>
   </testsuite>
 </testsuites>

@@ -28,7 +28,7 @@ import {
   clearBookingSession,
   getRecoverableSession,
 } from '@/utils/bookingStorage';
-import { isSessionExpired } from '@/utils/bookingHelpers';
+import { isSessionExpired, canSkipStep } from '@/utils/bookingHelpers';
 import { useToast } from '@/contexts/ToastContext';
 import type {
   EventType,
@@ -143,7 +143,7 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
           totalSteps: 0,
           completedSteps: [],
           canGoBack: false,
-          canGoNext: false,
+          canGoNext: true,
           canSkip: false,
           progressPercentage: 0,
         },
@@ -516,12 +516,20 @@ export function BookingProvider({ children }: BookingProviderProps) {
       try {
         await BookingCoreAPI.goToStep(state.sessionId, step.id);
 
+        // Calculate navigation flags
+        const enabledSteps = state.currentFlow.steps.filter((s) => s.is_enabled);
+        const totalSteps = enabledSteps.length;
+
         dispatch({
           type: 'UPDATE_PROGRESS',
           payload: {
             currentStepIndex: stepIndex,
             currentStepId: step.id,
             currentStepType: step.step_type,
+            totalSteps,
+            canGoBack: stepIndex > 0,
+            canGoNext: true, // Always allow proceeding; validation happens on click
+            canSkip: canSkipStep(step),
           },
         });
       } catch (error) {
