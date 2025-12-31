@@ -118,6 +118,16 @@ export async function getPackages(): Promise<PackagePublic[]> {
 }
 
 /**
+ * Get featured venues
+ */
+export async function getFeaturedVenues(): Promise<RentableVenueWithEventType[]> {
+  const venues = await getRentableVenues();
+  return venues
+    .filter((venue) => venue.is_featured)
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
+/**
  * Get featured packages
  */
 export async function getFeaturedPackages(): Promise<PackagePublic[]> {

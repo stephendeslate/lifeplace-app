@@ -35,6 +35,7 @@ class Venue(BaseModel):
         default=True,
         help_text="Whether this venue can be booked via client portal"
     )
+    is_featured = models.BooleanField(default=False)
 
     # Display
     location_description = models.TextField(blank=True, help_text="Description of venue location")

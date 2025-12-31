@@ -47,7 +47,7 @@ class VenueSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'code', 'description', 'is_overnight',
             'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
-            'is_active', 'is_bookable',
+            'is_active', 'is_bookable', 'is_featured',
             'location_description', 'featured_image', 'gallery_images',
             'sort_order',
             # Standalone pricing
@@ -96,7 +96,7 @@ class VenueListSerializer(serializers.ModelSerializer):
         model = Venue
         fields = [
             'id', 'name', 'code', 'is_overnight', 'is_active', 'is_bookable',
-            'minimum_capacity', 'maximum_capacity',
+            'is_featured', 'minimum_capacity', 'maximum_capacity',
             'featured_image', 'sort_order', 'is_rentable_standalone',
             # Standalone pricing fields for editing
             'standalone_base_price', 'standalone_included_hours',
@@ -159,7 +159,7 @@ class VenueWithRulesSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'code', 'description', 'is_overnight',
             'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
-            'is_active', 'is_bookable',
+            'is_active', 'is_bookable', 'is_featured',
             'location_description', 'featured_image', 'gallery_images',
             'sort_order',
             # Standalone pricing
@@ -404,8 +404,10 @@ class RentableVenueSerializer(serializers.ModelSerializer):
         model = Venue
         fields = [
             'id', 'name', 'code', 'description',
+            'is_overnight',
             'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
             'location_description', 'featured_image', 'gallery_images',
+            'is_featured', 'sort_order',
             # Standalone pricing
             'standalone_base_price', 'standalone_included_hours',
             'standalone_excess_hour_price',
@@ -446,8 +448,10 @@ class RentableVenueWithEventTypeSerializer(serializers.ModelSerializer):
         model = Venue
         fields = [
             'id', 'name', 'code', 'description',
+            'is_overnight',
             'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
             'location_description', 'featured_image', 'gallery_images',
+            'is_featured', 'sort_order',
             # Default standalone pricing (for reference)
             'standalone_base_price', 'standalone_included_hours',
             'standalone_excess_hour_price',

@@ -46,6 +46,7 @@ interface VenueFormData {
   // Status
   is_active: boolean;
   is_bookable: boolean;
+  is_featured: boolean;
   // Display
   location_description: string;
   sort_order: string;
@@ -134,6 +135,7 @@ const defaultFormData: VenueFormData = {
   recommended_capacity: '',
   is_active: true,
   is_bookable: true,
+  is_featured: false,
   location_description: '',
   sort_order: '0',
   // Standalone pricing defaults
@@ -172,6 +174,7 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
           recommended_capacity: venue.recommended_capacity?.toString() || '',
           is_active: venue.is_active ?? true,
           is_bookable: venue.is_bookable ?? true,
+          is_featured: venue.is_featured ?? false,
           location_description: venue.location_description || '',
           sort_order: venue.sort_order?.toString() || '0',
           // Standalone pricing
@@ -347,6 +350,7 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
       recommended_capacity: formData.recommended_capacity ? parseInt(formData.recommended_capacity) : null,
       is_active: formData.is_active,
       is_bookable: formData.is_bookable,
+      is_featured: formData.is_featured,
       location_description: formData.location_description.trim(),
       sort_order: parseInt(formData.sort_order) || 0,
       // Standalone pricing
@@ -501,6 +505,15 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
                       />
                     }
                     label="Bookable"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.is_featured}
+                        onChange={handleSwitchChange('is_featured')}
+                      />
+                    }
+                    label="Featured"
                   />
                 </Box>
 

@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getVenues,
   getRentableVenues,
+  getFeaturedVenues,
   getVenueById,
   getVenueAvailability,
   searchVenues,
@@ -32,6 +33,7 @@ export const exploreKeys = {
     [...exploreKeys.venues(), 'list', filters] as const,
   venuesRentable: (eventTypeId?: number) =>
     [...exploreKeys.venues(), 'rentable', eventTypeId] as const,
+  venuesFeatured: () => [...exploreKeys.venues(), 'featured'] as const,
   venueDetail: (id: number) => [...exploreKeys.venues(), 'detail', id] as const,
   venueAvailability: (id: number, start: string, end: string) =>
     [...exploreKeys.venues(), 'availability', id, start, end] as const,
@@ -68,6 +70,17 @@ export function useRentableVenues(eventTypeId?: number) {
   return useQuery({
     queryKey: exploreKeys.venuesRentable(eventTypeId),
     queryFn: () => getRentableVenues(eventTypeId),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Get featured venues
+ */
+export function useFeaturedVenues() {
+  return useQuery({
+    queryKey: exploreKeys.venuesFeatured(),
+    queryFn: getFeaturedVenues,
     staleTime: 5 * 60 * 1000,
   });
 }
