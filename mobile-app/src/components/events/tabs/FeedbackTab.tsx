@@ -1,10 +1,11 @@
 /**
  * FeedbackTab Component
  *
- * Displays event feedback form and submitted feedback.
+ * Displays event feedback form and submitted feedback with edit capability.
+ * Matches client-portal EventFeedback patterns.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,9 +17,9 @@ import {
   Pressable,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Star, ChatCircle, CheckCircle } from 'phosphor-react-native';
+import { Star, CheckCircle, PencilSimple } from 'phosphor-react-native';
 import { theme } from '@/theme';
-import { useEventFeedback, useSubmitEventFeedback } from '@/hooks/useEvents';
+import { useEventFeedback, useSubmitEventFeedback, useUpdateEventFeedback } from '@/hooks/useEvents';
 import { Skeleton, EmptyState, Card, Button } from '@/components/common';
 import { formatCardDate } from '@/utils/formatting';
 import type { EventStatus } from '@/types/events.types';
@@ -31,11 +32,23 @@ export interface FeedbackTabProps {
 export function FeedbackTab({ eventId, eventStatus = 'CONFIRMED' }: FeedbackTabProps) {
   const { data: feedback, isLoading, refetch, isRefetching } = useEventFeedback(eventId);
   const submitFeedback = useSubmitEventFeedback();
+  const updateFeedback = useUpdateEventFeedback();
 
+  const [isEditing, setIsEditing] = useState(false);
   const [rating, setRating] = useState(0);
   const [comments, setComments] = useState('');
   const [testimonial, setTestimonial] = useState('');
   const [isPublic, setIsPublic] = useState(false);
+
+  // Initialize form with existing feedback when entering edit mode
+  useEffect(() => {
+    if (feedback && isEditing) {
+      setRating(feedback.overall_rating);
+      setComments(feedback.comments || '');
+      setTestimonial(feedback.testimonial || '');
+      setIsPublic(feedback.is_public);
+    }
+  }, [feedback, isEditing]);
 
   const canSubmitFeedback =
     eventStatus === 'COMPLETED' || eventStatus === 'IN_PROGRESS';
@@ -45,20 +58,62 @@ export function FeedbackTab({ eventId, eventStatus = 'CONFIRMED' }: FeedbackTabP
     setRating(value);
   };
 
+  const handleEditPress = () => {
+    Haptics.selectionAsync();
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    Haptics.selectionAsync();
+    setIsEditing(false);
+    // Reset form values
+    if (feedback) {
+      setRating(feedback.overall_rating);
+      setComments(feedback.comments || '');
+      setTestimonial(feedback.testimonial || '');
+      setIsPublic(feedback.is_public);
+    }
+  };
+
   const handleSubmit = () => {
     if (rating === 0) return;
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    submitFeedback.mutate({
-      eventId,
-      data: {
-        overall_rating: rating,
-        comments,
-        testimonial,
-        is_public: isPublic,
-      },
-    });
+
+    if (feedback && isEditing) {
+      // Update existing feedback
+      updateFeedback.mutate(
+        {
+          eventId,
+          feedbackId: feedback.id,
+          data: {
+            overall_rating: rating,
+            comments,
+            testimonial,
+            is_public: isPublic,
+          },
+        },
+        {
+          onSuccess: () => {
+            setIsEditing(false);
+          },
+        }
+      );
+    } else {
+      // Submit new feedback
+      submitFeedback.mutate({
+        eventId,
+        data: {
+          overall_rating: rating,
+          comments,
+          testimonial,
+          is_public: isPublic,
+        },
+      });
+    }
   };
+
+  const isSubmitting = submitFeedback.isPending || updateFeedback.isPending;
 
   if (isLoading) {
     return (
@@ -68,8 +123,8 @@ export function FeedbackTab({ eventId, eventStatus = 'CONFIRMED' }: FeedbackTabP
     );
   }
 
-  // Show submitted feedback
-  if (feedback) {
+  // Show submitted feedback (with edit capability)
+  if (feedback && !isEditing) {
     return (
       <ScrollView
         style={styles.flex}
@@ -143,13 +198,25 @@ export function FeedbackTab({ eventId, eventStatus = 'CONFIRMED' }: FeedbackTabP
               )}
             </View>
           )}
+
+          {/* Edit Button */}
+          <Button
+            onPress={handleEditPress}
+            variant="secondary"
+            style={styles.editButton}
+          >
+            <View style={styles.editButtonContent}>
+              <PencilSimple size={18} color={theme.colors.primary[600]} />
+              <Text style={styles.editButtonText}>Edit Feedback</Text>
+            </View>
+          </Button>
         </Card>
       </ScrollView>
     );
   }
 
-  // Show feedback form
-  if (!canSubmitFeedback) {
+  // Show feedback form (only for new feedback, not edit mode which is handled below)
+  if (!canSubmitFeedback && !isEditing) {
     return (
       <EmptyState
         icon="calendar"
@@ -159,6 +226,7 @@ export function FeedbackTab({ eventId, eventStatus = 'CONFIRMED' }: FeedbackTabP
     );
   }
 
+  // Show feedback form (for new submission or editing)
   return (
     <ScrollView
       style={styles.flex}
@@ -166,9 +234,13 @@ export function FeedbackTab({ eventId, eventStatus = 'CONFIRMED' }: FeedbackTabP
       keyboardShouldPersistTaps="handled"
     >
       <Card style={styles.formCard}>
-        <Text style={styles.formTitle}>Share Your Experience</Text>
+        <Text style={styles.formTitle}>
+          {isEditing ? 'Edit Your Feedback' : 'Share Your Experience'}
+        </Text>
         <Text style={styles.formDescription}>
-          We'd love to hear about your experience. Your feedback helps us improve!
+          {isEditing
+            ? 'Update your feedback below.'
+            : "We'd love to hear about your experience. Your feedback helps us improve!"}
         </Text>
 
         {/* Rating */}
@@ -254,16 +326,28 @@ export function FeedbackTab({ eventId, eventStatus = 'CONFIRMED' }: FeedbackTabP
           />
         </View>
 
-        {/* Submit */}
-        <Button
-          onPress={handleSubmit}
-          variant="primary"
-          disabled={rating === 0}
-          loading={submitFeedback.isPending}
-          style={styles.submitButton}
-        >
-          Submit Feedback
-        </Button>
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          {isEditing && (
+            <Button
+              onPress={handleCancelEdit}
+              variant="secondary"
+              disabled={isSubmitting}
+              style={styles.cancelButton}
+            >
+              Cancel
+            </Button>
+          )}
+          <Button
+            onPress={handleSubmit}
+            variant="primary"
+            disabled={rating === 0 || isSubmitting}
+            loading={isSubmitting}
+            style={isEditing ? styles.saveButton : styles.submitButton}
+          >
+            {isEditing ? 'Save Changes' : 'Submit Feedback'}
+          </Button>
+        </View>
       </Card>
     </ScrollView>
   );
@@ -403,6 +487,32 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: theme.spacing.md,
+    flex: 1,
+  },
+  editButton: {
+    marginTop: theme.spacing.lg,
+  },
+  editButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+  },
+  editButtonText: {
+    fontFamily: theme.typography.fonts.medium,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.primary[600],
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.md,
+  },
+  cancelButton: {
+    flex: 1,
+  },
+  saveButton: {
+    flex: 2,
   },
 });
 

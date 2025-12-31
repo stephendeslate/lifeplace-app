@@ -24,3 +24,6 @@ export type { FeedbackTabProps } from './FeedbackTab';
 
 export { NotesTab } from './NotesTab';
 export type { NotesTabProps } from './NotesTab';
+
+export { CheckInTab } from './CheckInTab';
+export type { CheckInTabProps } from './CheckInTab';
