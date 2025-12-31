@@ -2,9 +2,16 @@
  * VenueSelectionStep
  *
  * Multi-venue selection with pricing and capacity display.
+ * Features:
+ * - Event-type-specific pricing via getEffectivePricing
+ * - Support for config-provided available_venues_details
+ * - Validation indicator during validation
+ * - Selection summary with venue names
+ *
+ * Adapted from: frontend/client-portal/src/components/booking/steps/VenueSelectionStep.tsx
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,20 +21,25 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Check, MapPin, Users, Clock, Star } from 'phosphor-react-native';
+import { Check, MapPin, Users, Clock, Star, Info } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useRentableVenues } from '@/hooks/booking';
 import { useBookingContext } from '@/contexts/BookingContext';
+import { VenuesAPI } from '@/apis/booking/venues.api';
 import { formatCurrency } from '@/utils/currency';
 import type { StepComponentProps } from '../StepRenderer';
 import type {
   VenueSelectionStepData,
   VenueSelectionStepConfiguration,
   RentableVenue,
+  RentableVenueWithEventType,
 } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
 
-type VenueSelectionStepProps = StepComponentProps<VenueSelectionStepData, VenueSelectionStepConfiguration>;
+type VenueSelectionStepProps = StepComponentProps<VenueSelectionStepData, VenueSelectionStepConfiguration> & {
+  /** Whether step is currently being validated */
+  isValidating?: boolean;
+};
 
 export function VenueSelectionStep({
   step,
@@ -35,11 +47,12 @@ export function VenueSelectionStep({
   configuration,
   onDataChange,
   validationErrors,
+  isValidating = false,
 }: VenueSelectionStepProps) {
   const { state } = useBookingContext();
   const eventTypeId = state.selectedEventType?.id;
 
-  const { data: venues, isLoading, error } = useRentableVenues(eventTypeId);
+  const { data: apiVenues, isLoading, error } = useRentableVenues(eventTypeId);
 
   const [selectedVenueIds, setSelectedVenueIds] = useState<number[]>(
     data.selected_venue_ids || []
@@ -52,7 +65,20 @@ export function VenueSelectionStep({
     bundle_discount_percentage = 10,
     show_pricing = true,
     show_included_hours = true,
+    title = 'Select Your Venue',
+    description,
+    available_venues_details,
   } = configuration || {};
+
+  // Use configured venues if available, otherwise use API-fetched venues
+  const venues = useMemo((): RentableVenueWithEventType[] => {
+    return available_venues_details || apiVenues || [];
+  }, [available_venues_details, apiVenues]);
+
+  // Get selected venue objects for display
+  const selectedVenueObjects = useMemo(() => {
+    return venues.filter((v) => selectedVenueIds.includes(v.id));
+  }, [venues, selectedVenueIds]);
 
   const isMultiSelect = max_venues > 1;
 
@@ -90,7 +116,8 @@ export function VenueSelectionStep({
     return null;
   };
 
-  if (isLoading) {
+  // Only show loading if we don't have config-provided venues
+  if (isLoading && !available_venues_details) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary.black} />
@@ -99,12 +126,23 @@ export function VenueSelectionStep({
     );
   }
 
-  if (error || !venues) {
+  if (error && !available_venues_details) {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorTitle}>Couldn't Load Venues</Text>
         <Text style={styles.errorText}>
           There was a problem loading available venues. Please try again.
+        </Text>
+      </View>
+    );
+  }
+
+  if (venues.length === 0) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>No Venues Available</Text>
+        <Text style={styles.errorText}>
+          No spaces are currently available for selection.
         </Text>
       </View>
     );
@@ -118,11 +156,11 @@ export function VenueSelectionStep({
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Select Your Venue</Text>
+        <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>
-          {isMultiSelect
+          {description || (isMultiSelect
             ? `Choose up to ${max_venues} venues for your event`
-            : 'Choose where you want to host your event'}
+            : 'Choose where you want to host your event')}
         </Text>
       </View>
 
@@ -160,18 +198,42 @@ export function VenueSelectionStep({
         ))}
       </View>
 
+      {/* Selection summary */}
+      {selectedVenueIds.length > 0 && (
+        <View style={styles.selectionSummary}>
+          <View style={styles.selectionSummaryHeader}>
+            <Info size={18} color={colors.secondary.forest} />
+            <Text style={styles.selectionSummaryLabel}>Selected:</Text>
+          </View>
+          <Text style={styles.selectionSummaryText}>
+            {selectedVenueObjects.map((v) => v.name).join(', ')}
+          </Text>
+          <Text style={styles.selectionSummaryHint}>
+            You'll choose your package in the next step.
+          </Text>
+        </View>
+      )}
+
       {/* Validation message */}
       {(validationErrors?.selected_venue_ids || getValidationMessage()) && (
         <Text style={styles.validationError}>
           {validationErrors?.selected_venue_ids?.[0] || getValidationMessage()}
         </Text>
       )}
+
+      {/* Validation indicator */}
+      {isValidating && (
+        <View style={styles.validatingContainer}>
+          <ActivityIndicator size="small" color={colors.neutral.darkGray} />
+          <Text style={styles.validatingText}>Validating selection...</Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
 
 interface VenueCardProps {
-  venue: RentableVenue;
+  venue: RentableVenue | RentableVenueWithEventType;
   selected: boolean;
   onPress: () => void;
   showPricing?: boolean;
@@ -194,14 +256,11 @@ function VenueCard({
     location_description,
     capacity_min,
     capacity_max,
-    base_price,
-    included_hours,
-    excess_hour_rate,
     is_featured,
-    operating_rules,
   } = venue;
 
-  const isAllDayAccess = operating_rules?.is_all_day_access;
+  // Use getEffectivePricing for event-type-specific pricing
+  const pricing = VenuesAPI.getEffectivePricing(venue);
 
   return (
     <TouchableOpacity
@@ -282,26 +341,26 @@ function VenueCard({
             <View style={styles.venueMetaItem}>
               <Clock size={14} color={colors.neutral.darkGray} />
               <Text style={styles.venueMetaText}>
-                {isAllDayAccess ? 'All-day access' : `${included_hours || 0} hrs included`}
+                {pricing.isAllDayAccess ? 'All-day access' : `${pricing.includedHours || 0} hrs included`}
               </Text>
             </View>
           )}
         </View>
 
-        {/* Pricing */}
-        {showPricing && base_price && (
+        {/* Pricing - using effective pricing from API */}
+        {showPricing && pricing.basePrice && (
           <View style={styles.venuePricing}>
             <View style={styles.venuePriceMain}>
               <Text style={styles.venuePrice}>
-                {formatCurrency(parseFloat(base_price), { currency: 'PHP' })}
+                {formatCurrency(parseFloat(pricing.basePrice), { currency: 'PHP' })}
               </Text>
               <Text style={styles.venuePriceUnit}>
-                {isAllDayAccess ? '/ day' : `/ ${included_hours || 0} hrs`}
+                {pricing.isAllDayAccess ? '/ day' : `/ ${pricing.includedHours || 0} hrs`}
               </Text>
             </View>
-            {!isAllDayAccess && excess_hour_rate && (
+            {!pricing.isAllDayAccess && pricing.excessHourPrice && (
               <Text style={styles.venueExcessRate}>
-                +{formatCurrency(parseFloat(excess_hour_rate), { currency: 'PHP' })}/hr extra
+                +{formatCurrency(parseFloat(pricing.excessHourPrice), { currency: 'PHP' })}/hr extra
               </Text>
             )}
           </View>
@@ -502,6 +561,43 @@ const styles = StyleSheet.create({
     color: colors.semantic.error,
     marginTop: spacing.md,
     textAlign: 'center',
+  },
+  selectionSummary: {
+    backgroundColor: colors.secondary.forestSubtle,
+    borderRadius: layout.borderRadius.md,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+  },
+  selectionSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  selectionSummaryLabel: {
+    ...typeScale.labelMedium,
+    color: colors.secondary.forest,
+    fontWeight: '600',
+  },
+  selectionSummaryText: {
+    ...typeScale.bodySmall,
+    color: colors.primary.black,
+    marginBottom: spacing.xs,
+  },
+  selectionSummaryHint: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+  },
+  validatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  validatingText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
   },
 });
 

@@ -261,3 +261,45 @@ export interface EventsListResponse {
   previous: string | null;
   results: Event[];
 }
+
+// =============================================================================
+// EVENT AVAILABILITY (Public Booking Calendar)
+// =============================================================================
+
+/**
+ * Event data returned for availability calendar.
+ * Used by booking flow to show blocked/unavailable dates.
+ */
+export interface EventAvailabilityData {
+  id: number;
+  name: string;
+  event_type_name: string | null;
+  status: string;
+  start_date: string;
+  end_date: string | null;
+  payment_status: string;
+  /** Whether this event's date is officially blocked (first-to-pay-wins) */
+  date_blocked?: boolean;
+}
+
+/**
+ * Summary data for a specific date.
+ */
+export interface DateSummaryData {
+  date: string;
+  date_blocked: boolean;
+  event_count: number;
+  events: EventAvailabilityData[];
+}
+
+/**
+ * Response from the public event availability endpoint.
+ */
+export interface EventAvailabilityResponse {
+  events: EventAvailabilityData[];
+  date_summary: DateSummaryData[];
+  blocked_dates: string[];
+  start_date: string;
+  end_date: string;
+  event_count: number;
+}

@@ -38,7 +38,7 @@ export default function Index() {
   // Redirect based on auth state
   // Note: Using "/" redirects to (tabs)/index, "/login" to (auth)/login
   if (isAuthenticated) {
-    return <Redirect href="/profile" />;
+    return <Redirect href="/(tabs)" />;
   }
 
   return <Redirect href="/login" />;

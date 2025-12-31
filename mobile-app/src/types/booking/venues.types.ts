@@ -158,7 +158,10 @@ export interface VenueSelectionStepData {
  * Venue selection step configuration
  */
 export interface VenueSelectionStepConfiguration {
+  title?: string;
+  description?: string;
   available_venues?: RentableVenue[];
+  available_venues_details?: RentableVenueWithEventType[];
   min_venues: number;
   max_venues: number;
   show_pricing: boolean;

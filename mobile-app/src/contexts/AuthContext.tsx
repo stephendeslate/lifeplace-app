@@ -132,8 +132,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Navigate to the pending deep link destination
           navigateToDeepLink(pendingDeepLink);
         } else {
-          // Navigate to main app (using /profile as valid typed route)
-          router.replace('/profile');
+          // Navigate to main app (Explore tab)
+          router.replace('/(tabs)');
         }
       } catch (error) {
         throw new Error(getErrorMessage(error));
@@ -165,8 +165,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Navigate to the pending deep link destination
           navigateToDeepLink(pendingDeepLink);
         } else {
-          // Navigate to main app (using /profile as valid typed route)
-          router.replace('/profile');
+          // Navigate to main app (Explore tab)
+          router.replace('/(tabs)');
         }
       } catch (error) {
         throw new Error(getErrorMessage(error));

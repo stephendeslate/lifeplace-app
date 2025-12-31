@@ -65,12 +65,13 @@ export interface SelectedPackage {
   quantity: number;
   tax_rate?: number;
   price_with_tax?: string;
-  included_hours?: number;
+  included_hours?: number | string; // Can be string "All day" for all-day access
   excess_hours?: number;
   excess_hour_rate?: string;
   excess_hour_cost?: string;
   is_custom_bundle?: boolean;
   bundle_discount?: string;
+  venue_ids?: number[]; // Selected venue IDs for custom bundles
   venues?: Array<{
     id: number;
     name: string;
@@ -188,6 +189,7 @@ export interface PaymentStepData {
   completion_type?: 'payment' | 'quote';
   quote_message?: string;
   deposit_amount?: number;
+  deposit_percentage?: number;
   balance_due_days?: number;
 }
 

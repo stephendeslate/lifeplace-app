@@ -1,8 +1,9 @@
 /**
  * PricingSummaryStep
  *
- * Displays complete pricing breakdown with packages, addons, taxes, and discounts.
- * Uses backend pricing calculation for consistency with client-portal.
+ * Complete pricing breakdown with packages, addons, taxes, discounts,
+ * booking review, and terms acceptance.
+ * Aligned with: frontend/client-portal/src/components/booking/steps/PricingSummaryStep.tsx
  */
 
 import React, { useMemo, useEffect, useCallback, useState } from 'react';
@@ -13,6 +14,8 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
+  Linking,
 } from 'react-native';
 import {
   Receipt,
@@ -24,11 +27,20 @@ import {
   CaretDown,
   CaretUp,
   Check,
+  User,
+  Calendar,
+  Clock,
+  CheckSquare,
+  Square,
+  Note,
+  Warning,
 } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatCurrency } from '@/utils/currency';
-import { useCalculatePricing } from '@/hooks/booking/usePricing';
+import { useSimplePricing } from '@/hooks/booking/useSimplePricing';
+import { usePaymentPlanSettings } from '@/hooks/usePaymentPlanSettings';
+import { format, parseISO } from 'date-fns';
 import type { StepComponentProps } from '../StepRenderer';
 import type {
   PricingSummaryStepData,
@@ -37,7 +49,8 @@ import type {
   SelectedAddon,
   PackageSelectionStepData,
   AddonSelectionStepData,
-  PricingCalculation,
+  ContactInfoStepData,
+  DateTimeStepData,
 } from '@/types/booking';
 
 type PricingSummaryStepProps = StepComponentProps<PricingSummaryStepData, PricingSummaryStepConfiguration>;
@@ -51,43 +64,61 @@ export function PricingSummaryStep({
   validationErrors,
 }: PricingSummaryStepProps) {
   const { state } = useBookingContext();
-  const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
-    new Set(['packages', 'addons'])
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(['packages', 'addons', 'review'])
   );
-
-  // Use backend pricing calculation
-  const calculatePricingMutation = useCalculatePricing();
-  const [backendPricing, setBackendPricing] = useState<PricingCalculation | null>(null);
-  const [isPricingLoading, setIsPricingLoading] = useState(true);
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   const {
     show_itemized = true,
     show_tax_breakdown = true,
     show_payment_schedule = true,
     allow_promo_code = true,
+    show_booking_review = true,
+    show_event_details = true,
+    show_contact_details = true,
+    show_special_requests = true,
+    show_terms_checkbox = true,
+    show_marketing_consent = true,
+    require_terms_acceptance = true,
+    terms_text,
+    terms_url,
+    privacy_url,
   } = configuration || {};
 
-  // Fetch backend pricing on mount and when discount changes
-  const fetchPricing = useCallback(async () => {
-    if (!sessionId) return;
+  // Get packages and addons from booking state
+  const packageStepData = state.stepData.package_selection as PackageSelectionStepData | undefined;
+  const addonStepData = state.stepData.addon_selection as AddonSelectionStepData | undefined;
+  const contactData = state.stepData.contact_info as ContactInfoStepData | undefined;
+  const dateTimeData = state.stepData.date_time as DateTimeStepData | undefined;
 
-    setIsPricingLoading(true);
-    try {
-      const result = await calculatePricingMutation.mutateAsync({
-        sessionId,
-        discountCode: data.promo_code || undefined,
-      });
-      setBackendPricing(result);
-    } catch (error) {
-      console.error('Failed to calculate pricing:', error);
-    } finally {
-      setIsPricingLoading(false);
-    }
-  }, [sessionId, data.promo_code]);
+  const selectedPackages: SelectedPackage[] = packageStepData?.selected_packages || [];
+  const selectedAddons: SelectedAddon[] = addonStepData?.selected_addons || [];
 
-  useEffect(() => {
-    fetchPricing();
-  }, [fetchPricing]);
+  // Get venue_additional_hours from addon_selection or package_selection
+  const venueAdditionalHours = addonStepData?.venue_additional_hours ||
+    packageStepData?.venue_additional_hours ||
+    undefined;
+
+  // Use simplified unified pricing hook
+  const {
+    pricing,
+    loading: calculatingPricing,
+    error: pricingError,
+    hasItems,
+    recalculate,
+  } = useSimplePricing(
+    selectedPackages,
+    selectedAddons,
+    data.promo_code || data.applied_discount_code,
+    venueAdditionalHours
+  );
+
+  // Get payment plan settings for deposit percentage
+  const { data: paymentSettings } = usePaymentPlanSettings();
+  const depositPercentage = paymentSettings?.default_deposit_percentage || 50;
+  const balanceDueDays = paymentSettings?.balance_due_days || 7;
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
@@ -101,69 +132,95 @@ export function PricingSummaryStep({
     });
   };
 
-  // Get packages and addons from booking state for display
-  const { packages, addons } = useMemo(() => {
-    const packageStepData = state.stepData.package_selection as PackageSelectionStepData | undefined;
-    const addonStepData = state.stepData.addon_selection as AddonSelectionStepData | undefined;
+  // Handle terms acceptance change
+  const handleTermsChange = useCallback((accepted: boolean) => {
+    onDataChange({
+      ...data,
+      terms_accepted: accepted,
+    });
+  }, [data, onDataChange]);
 
-    return {
-      packages: packageStepData?.selected_packages || [],
-      addons: addonStepData?.selected_addons || [],
-    };
-  }, [state.stepData]);
+  // Handle marketing consent change
+  const handleMarketingConsentChange = useCallback((consent: boolean) => {
+    onDataChange({
+      ...data,
+      marketing_consent: consent,
+    });
+  }, [data, onDataChange]);
 
-  // Use backend pricing if available, otherwise fall back to local calculation
-  const pricing = useMemo(() => {
-    if (backendPricing) {
-      return {
-        packages,
-        addons,
-        packageSubtotal: parseFloat(backendPricing.subtotal) - addons.reduce((sum, a) => sum + parseFloat(a.price) * a.quantity, 0),
-        addonSubtotal: addons.reduce((sum, addon) => sum + parseFloat(addon.price) * addon.quantity, 0),
-        subtotal: parseFloat(backendPricing.subtotal),
-        taxRate: backendPricing.tax_rate,
-        taxAmount: parseFloat(backendPricing.tax),
-        discountAmount: parseFloat(backendPricing.discount) || 0,
-        total: parseFloat(backendPricing.total),
-        lineItems: backendPricing.lineItems || [],
-      };
+  // Handle special requests change
+  const handleSpecialRequestsChange = useCallback((text: string) => {
+    onDataChange({
+      ...data,
+      special_requests: text,
+    });
+  }, [data, onDataChange]);
+
+  // Handle promo code application
+  const handleApplyPromoCode = useCallback(() => {
+    if (!promoCodeInput.trim()) return;
+
+    setPromoError(null);
+    // For now, just apply the code - in production this would validate via API
+    onDataChange({
+      ...data,
+      promo_code: promoCodeInput.trim(),
+      applied_discount_code: promoCodeInput.trim(),
+    });
+    setPromoCodeInput('');
+    recalculate?.();
+  }, [promoCodeInput, data, onDataChange, recalculate]);
+
+  // Handle promo code removal
+  const handleRemovePromoCode = useCallback(() => {
+    onDataChange({
+      ...data,
+      promo_code: undefined,
+      applied_discount_code: undefined,
+      discount_amount: undefined,
+    });
+    setPromoError(null);
+    recalculate?.();
+  }, [data, onDataChange, recalculate]);
+
+  // Format date helper
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return 'Not specified';
+    try {
+      return format(parseISO(dateString), 'EEEE, MMMM d, yyyy');
+    } catch {
+      return dateString;
     }
+  };
 
-    // Fallback to local calculation if backend pricing not available
-    const packageSubtotal = packages.reduce<number>((sum, pkg) => {
-      return sum + parseFloat(pkg.price) * pkg.quantity;
-    }, 0);
+  // Open terms/privacy links
+  const openLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Failed to open link:', error);
+    }
+  };
 
-    const addonSubtotal = addons.reduce<number>((sum, addon) => {
-      return sum + parseFloat(addon.price) * addon.quantity;
-    }, 0);
-
-    const subtotal = packageSubtotal + addonSubtotal;
-    const taxRate = 0.12;
-    const taxAmount = subtotal * taxRate;
-    const discountAmount = typeof data.discount_amount === 'number' ? data.discount_amount : 0;
-    const total = subtotal + taxAmount - discountAmount;
-
-    return {
-      packages,
-      addons,
-      packageSubtotal,
-      addonSubtotal,
-      subtotal,
-      taxRate,
-      taxAmount,
-      discountAmount,
-      total,
-      lineItems: [],
-    };
-  }, [backendPricing, packages, addons, data.discount_amount]);
-
-  // Show loading state while fetching backend pricing
-  if (isPricingLoading && !backendPricing) {
+  // Show loading state
+  if (calculatingPricing && !hasItems) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary.black} />
         <Text style={styles.loadingText}>Calculating pricing...</Text>
+      </View>
+    );
+  }
+
+  // Show error if no items
+  if (!hasItems && !calculatingPricing) {
+    return (
+      <View style={styles.errorContainer}>
+        <Warning size={48} color={colors.semantic.warning} />
+        <Text style={styles.errorTitle}>No Items Selected</Text>
+        <Text style={styles.errorText}>
+          Please go back and select packages or add-ons to see the pricing summary.
+        </Text>
       </View>
     );
   }
@@ -178,12 +235,20 @@ export function PricingSummaryStep({
       <View style={styles.header}>
         <Text style={styles.title}>Pricing Summary</Text>
         <Text style={styles.subtitle}>
-          Review your booking details and pricing
+          Review your booking details and confirm your selection
         </Text>
       </View>
 
+      {/* Pricing Error Warning */}
+      {pricingError && hasItems && (
+        <View style={styles.warningBanner}>
+          <Warning size={16} color={colors.semantic.warning} />
+          <Text style={styles.warningText}>{pricingError}</Text>
+        </View>
+      )}
+
       {/* Packages Section */}
-      {show_itemized && pricing.packages.length > 0 && (
+      {show_itemized && selectedPackages.length > 0 && (
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeader}
@@ -193,12 +258,15 @@ export function PricingSummaryStep({
               <Package size={20} color={colors.accent.wood} />
               <Text style={styles.sectionTitle}>Packages</Text>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{pricing.packages.length}</Text>
+                <Text style={styles.badgeText}>{selectedPackages.length}</Text>
               </View>
             </View>
             <View style={styles.sectionHeaderRight}>
               <Text style={styles.sectionTotal}>
-                {formatCurrency(pricing.packageSubtotal, { currency: 'PHP' })}
+                {pricing?.formattedSubtotal || formatCurrency(
+                  selectedPackages.reduce((sum, pkg) => sum + parseFloat(pkg.price) * pkg.quantity, 0),
+                  { currency: 'PHP' }
+                )}
               </Text>
               {expandedSections.has('packages') ? (
                 <CaretUp size={20} color={colors.neutral.darkGray} />
@@ -210,14 +278,17 @@ export function PricingSummaryStep({
 
           {expandedSections.has('packages') && (
             <View style={styles.sectionContent}>
-              {pricing.packages.map((pkg, index) => (
+              {selectedPackages.map((pkg, index) => (
                 <View key={`pkg-${index}`} style={styles.lineItem}>
                   <View style={styles.lineItemLeft}>
                     <Text style={styles.lineItemName}>{pkg.name}</Text>
                     {pkg.quantity > 1 && (
-                      <Text style={styles.lineItemQuantity}>
-                        × {pkg.quantity}
-                      </Text>
+                      <Text style={styles.lineItemQuantity}>× {pkg.quantity}</Text>
+                    )}
+                    {pkg.is_custom_bundle && (
+                      <View style={styles.customBundleBadge}>
+                        <Text style={styles.customBundleBadgeText}>Custom</Text>
+                      </View>
                     )}
                   </View>
                   <Text style={styles.lineItemPrice}>
@@ -231,7 +302,7 @@ export function PricingSummaryStep({
       )}
 
       {/* Addons Section */}
-      {show_itemized && pricing.addons.length > 0 && (
+      {show_itemized && selectedAddons.length > 0 && (
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeader}
@@ -241,12 +312,15 @@ export function PricingSummaryStep({
               <Tag size={20} color={colors.tertiary.teal} />
               <Text style={styles.sectionTitle}>Add-ons</Text>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{pricing.addons.length}</Text>
+                <Text style={styles.badgeText}>{selectedAddons.length}</Text>
               </View>
             </View>
             <View style={styles.sectionHeaderRight}>
               <Text style={styles.sectionTotal}>
-                {formatCurrency(pricing.addonSubtotal, { currency: 'PHP' })}
+                {formatCurrency(
+                  selectedAddons.reduce((sum, addon) => sum + parseFloat(addon.price) * addon.quantity, 0),
+                  { currency: 'PHP' }
+                )}
               </Text>
               {expandedSections.has('addons') ? (
                 <CaretUp size={20} color={colors.neutral.darkGray} />
@@ -258,14 +332,12 @@ export function PricingSummaryStep({
 
           {expandedSections.has('addons') && (
             <View style={styles.sectionContent}>
-              {pricing.addons.map((addon, index) => (
+              {selectedAddons.map((addon, index) => (
                 <View key={`addon-${index}`} style={styles.lineItem}>
                   <View style={styles.lineItemLeft}>
                     <Text style={styles.lineItemName}>{addon.name}</Text>
                     {addon.quantity > 1 && (
-                      <Text style={styles.lineItemQuantity}>
-                        × {addon.quantity}
-                      </Text>
+                      <Text style={styles.lineItemQuantity}>× {addon.quantity}</Text>
                     )}
                   </View>
                   <Text style={styles.lineItemPrice}>
@@ -285,20 +357,39 @@ export function PricingSummaryStep({
             <Percent size={18} color={colors.secondary.forest} />
             <Text style={styles.promoTitle}>Promo Code</Text>
           </View>
-          {data.promo_code ? (
+          {data.promo_code || data.applied_discount_code ? (
             <View style={styles.promoApplied}>
               <View style={styles.promoCodeBadge}>
                 <Check size={14} color={colors.secondary.forest} weight="bold" />
-                <Text style={styles.promoCodeText}>{data.promo_code}</Text>
+                <Text style={styles.promoCodeText}>
+                  {data.promo_code || data.applied_discount_code}
+                </Text>
               </View>
-              <Text style={styles.promoDiscount}>
-                -{formatCurrency(pricing.discountAmount, { currency: 'PHP' })}
-              </Text>
+              <TouchableOpacity onPress={handleRemovePromoCode}>
+                <Text style={styles.promoRemove}>Remove</Text>
+              </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity style={styles.promoButton}>
-              <Text style={styles.promoButtonText}>Add promo code</Text>
-            </TouchableOpacity>
+            <View style={styles.promoInputRow}>
+              <TextInput
+                style={styles.promoInput}
+                placeholder="Enter promo code"
+                placeholderTextColor={colors.neutral.gray}
+                value={promoCodeInput}
+                onChangeText={setPromoCodeInput}
+                autoCapitalize="characters"
+              />
+              <TouchableOpacity
+                style={[styles.promoApplyButton, !promoCodeInput && styles.promoApplyButtonDisabled]}
+                onPress={handleApplyPromoCode}
+                disabled={!promoCodeInput}
+              >
+                <Text style={styles.promoApplyButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {promoError && (
+            <Text style={styles.promoErrorText}>{promoError}</Text>
           )}
         </View>
       )}
@@ -307,12 +398,10 @@ export function PricingSummaryStep({
       <View style={styles.totalsSection}>
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Subtotal</Text>
-          <Text style={styles.totalValue}>
-            {formatCurrency(pricing.subtotal, { currency: 'PHP' })}
-          </Text>
+          <Text style={styles.totalValue}>{pricing?.formattedSubtotal}</Text>
         </View>
 
-        {show_tax_breakdown && (
+        {show_tax_breakdown && pricing?.tax > 0 && (
           <View style={styles.totalRow}>
             <View style={styles.taxLabelContainer}>
               <Text style={styles.totalLabel}>VAT ({(pricing.taxRate * 100).toFixed(0)}%)</Text>
@@ -320,17 +409,15 @@ export function PricingSummaryStep({
                 <Info size={14} color={colors.neutral.gray} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.totalValue}>
-              {formatCurrency(pricing.taxAmount, { currency: 'PHP' })}
-            </Text>
+            <Text style={styles.totalValue}>{pricing?.formattedTax}</Text>
           </View>
         )}
 
-        {pricing.discountAmount > 0 && (
+        {pricing?.discount > 0 && (
           <View style={styles.totalRow}>
             <Text style={[styles.totalLabel, styles.discountLabel]}>Discount</Text>
             <Text style={[styles.totalValue, styles.discountValue]}>
-              -{formatCurrency(pricing.discountAmount, { currency: 'PHP' })}
+              -{pricing?.formattedDiscount}
             </Text>
           </View>
         )}
@@ -339,14 +426,12 @@ export function PricingSummaryStep({
 
         <View style={styles.grandTotalRow}>
           <Text style={styles.grandTotalLabel}>Total</Text>
-          <Text style={styles.grandTotalValue}>
-            {formatCurrency(pricing.total, { currency: 'PHP' })}
-          </Text>
+          <Text style={styles.grandTotalValue}>{pricing?.formattedTotal}</Text>
         </View>
       </View>
 
       {/* Payment Schedule */}
-      {show_payment_schedule && (
+      {show_payment_schedule && pricing?.total > 0 && (
         <View style={styles.paymentSchedule}>
           <View style={styles.paymentScheduleHeader}>
             <Calculator size={18} color={colors.primary.black} />
@@ -358,11 +443,13 @@ export function PricingSummaryStep({
                 <View style={[styles.paymentDot, styles.paymentDotDue]} />
                 <View>
                   <Text style={styles.paymentItemLabel}>Due Now</Text>
-                  <Text style={styles.paymentItemDesc}>Reservation fee (50%)</Text>
+                  <Text style={styles.paymentItemDesc}>
+                    Reservation fee ({depositPercentage}%)
+                  </Text>
                 </View>
               </View>
               <Text style={styles.paymentItemAmount}>
-                {formatCurrency(pricing.total * 0.5, { currency: 'PHP' })}
+                {formatCurrency(pricing.total * (depositPercentage / 100), { currency: 'PHP' })}
               </Text>
             </View>
             <View style={styles.paymentItem}>
@@ -370,15 +457,171 @@ export function PricingSummaryStep({
                 <View style={[styles.paymentDot, styles.paymentDotFuture]} />
                 <View>
                   <Text style={styles.paymentItemLabel}>Balance</Text>
-                  <Text style={styles.paymentItemDesc}>Due 7 days before event</Text>
+                  <Text style={styles.paymentItemDesc}>
+                    Due {balanceDueDays} days before event
+                  </Text>
                 </View>
               </View>
               <Text style={styles.paymentItemAmount}>
-                {formatCurrency(pricing.total * 0.5, { currency: 'PHP' })}
+                {formatCurrency(pricing.total * ((100 - depositPercentage) / 100), { currency: 'PHP' })}
               </Text>
             </View>
           </View>
         </View>
+      )}
+
+      {/* Booking Review Section */}
+      {show_booking_review && (
+        <>
+          {/* Event Details */}
+          {show_event_details && dateTimeData?.start_date && (
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewSectionHeader}>
+                <Calendar size={18} color={colors.tertiary.teal} />
+                <Text style={styles.reviewSectionTitle}>Event Details</Text>
+              </View>
+              <View style={styles.reviewContent}>
+                <View style={styles.reviewRow}>
+                  <Text style={styles.reviewLabel}>Event Type</Text>
+                  <Text style={styles.reviewValue}>
+                    {state.currentFlow?.event_type?.name || 'Not specified'}
+                  </Text>
+                </View>
+                <View style={styles.reviewRow}>
+                  <Text style={styles.reviewLabel}>Event Date</Text>
+                  <Text style={styles.reviewValue}>
+                    {formatDate(dateTimeData.start_date)}
+                  </Text>
+                </View>
+                {dateTimeData.end_date && dateTimeData.end_date !== dateTimeData.start_date && (
+                  <View style={styles.reviewRow}>
+                    <Text style={styles.reviewLabel}>End Date</Text>
+                    <Text style={styles.reviewValue}>
+                      {formatDate(dateTimeData.end_date)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Contact Information */}
+          {show_contact_details && contactData?.full_name && (
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewSectionHeader}>
+                <User size={18} color={colors.tertiary.teal} />
+                <Text style={styles.reviewSectionTitle}>Contact Information</Text>
+              </View>
+              <View style={styles.reviewContent}>
+                <View style={styles.reviewRow}>
+                  <Text style={styles.reviewLabel}>Name</Text>
+                  <Text style={styles.reviewValue}>{contactData.full_name}</Text>
+                </View>
+                {contactData.email && (
+                  <View style={styles.reviewRow}>
+                    <Text style={styles.reviewLabel}>Email</Text>
+                    <Text style={styles.reviewValue}>{contactData.email}</Text>
+                  </View>
+                )}
+                {contactData.phone && (
+                  <View style={styles.reviewRow}>
+                    <Text style={styles.reviewLabel}>Phone</Text>
+                    <Text style={styles.reviewValue}>{contactData.phone}</Text>
+                  </View>
+                )}
+                {contactData.company && (
+                  <View style={styles.reviewRow}>
+                    <Text style={styles.reviewLabel}>Company</Text>
+                    <Text style={styles.reviewValue}>{contactData.company}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Special Requests */}
+          {show_special_requests && (
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewSectionHeader}>
+                <Note size={18} color={colors.tertiary.teal} />
+                <Text style={styles.reviewSectionTitle}>Special Requests</Text>
+              </View>
+              <TextInput
+                style={styles.specialRequestsInput}
+                placeholder="Any additional requests or special requirements..."
+                placeholderTextColor={colors.neutral.gray}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                value={data.special_requests || ''}
+                onChangeText={handleSpecialRequestsChange}
+              />
+            </View>
+          )}
+
+          {/* Terms and Conditions */}
+          {show_terms_checkbox && (
+            <View style={styles.termsSection}>
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => handleTermsChange(!data.terms_accepted)}
+                activeOpacity={0.7}
+              >
+                {data.terms_accepted ? (
+                  <CheckSquare size={24} color={colors.secondary.forest} weight="fill" />
+                ) : (
+                  <Square size={24} color={colors.neutral.gray} />
+                )}
+                <Text style={styles.termsText}>
+                  {terms_text || (
+                    <>
+                      I agree to the{' '}
+                      <Text
+                        style={styles.termsLink}
+                        onPress={() => openLink(terms_url || '/terms')}
+                      >
+                        Terms of Service
+                      </Text>
+                      {' '}and{' '}
+                      <Text
+                        style={styles.termsLink}
+                        onPress={() => openLink(privacy_url || '/privacy')}
+                      >
+                        Privacy Policy
+                      </Text>
+                    </>
+                  )}
+                </Text>
+              </TouchableOpacity>
+
+              {require_terms_acceptance && validationErrors?.terms_accepted && (
+                <View style={styles.termsError}>
+                  <Warning size={14} color={colors.semantic.error} />
+                  <Text style={styles.termsErrorText}>
+                    {validationErrors.terms_accepted[0]}
+                  </Text>
+                </View>
+              )}
+
+              {show_marketing_consent && (
+                <TouchableOpacity
+                  style={[styles.checkboxRow, styles.marketingCheckbox]}
+                  onPress={() => handleMarketingConsentChange(!data.marketing_consent)}
+                  activeOpacity={0.7}
+                >
+                  {data.marketing_consent ? (
+                    <CheckSquare size={24} color={colors.secondary.forest} weight="fill" />
+                  ) : (
+                    <Square size={24} color={colors.neutral.gray} />
+                  )}
+                  <Text style={styles.marketingText}>
+                    I would like to receive marketing updates and special offers (optional)
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </>
       )}
 
       {/* Info Note */}
@@ -411,6 +654,22 @@ const styles = StyleSheet.create({
     ...typeScale.bodyMedium,
     color: colors.neutral.darkGray,
   },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xxl,
+    gap: spacing.md,
+  },
+  errorTitle: {
+    ...typeScale.titleMedium,
+    color: colors.primary.black,
+  },
+  errorText: {
+    ...typeScale.bodyMedium,
+    color: colors.neutral.darkGray,
+    textAlign: 'center',
+  },
   header: {
     marginBottom: spacing.lg,
   },
@@ -422,6 +681,20 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typeScale.bodyMedium,
     color: colors.neutral.darkGray,
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.semantic.warning + '15',
+    padding: spacing.md,
+    borderRadius: layout.borderRadius.md,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  warningText: {
+    ...typeScale.labelSmall,
+    color: colors.semantic.warning,
+    flex: 1,
   },
   section: {
     backgroundColor: colors.neutral.white,
@@ -496,6 +769,17 @@ const styles = StyleSheet.create({
     ...typeScale.bodyMedium,
     color: colors.primary.black,
   },
+  customBundleBadge: {
+    backgroundColor: colors.tertiary.teal + '20',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: layout.borderRadius.xs,
+  },
+  customBundleBadgeText: {
+    ...typeScale.labelSmall,
+    color: colors.tertiary.teal,
+    fontWeight: '600',
+  },
   promoSection: {
     backgroundColor: colors.neutral.white,
     borderRadius: layout.cardBorderRadius,
@@ -532,22 +816,43 @@ const styles = StyleSheet.create({
     color: colors.secondary.forest,
     fontWeight: '600',
   },
-  promoDiscount: {
-    ...typeScale.titleSmall,
-    color: colors.secondary.forest,
-    fontWeight: '600',
+  promoRemove: {
+    ...typeScale.labelMedium,
+    color: colors.semantic.error,
   },
-  promoButton: {
+  promoInputRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  promoInput: {
+    flex: 1,
     borderWidth: 1,
     borderColor: colors.neutral.warmGray,
-    borderStyle: 'dashed',
     borderRadius: layout.borderRadius.sm,
-    padding: spacing.sm,
-    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    ...typeScale.bodyMedium,
+    color: colors.primary.black,
   },
-  promoButtonText: {
+  promoApplyButton: {
+    backgroundColor: colors.primary.black,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: layout.borderRadius.sm,
+    justifyContent: 'center',
+  },
+  promoApplyButtonDisabled: {
+    backgroundColor: colors.neutral.gray,
+  },
+  promoApplyButtonText: {
     ...typeScale.labelMedium,
-    color: colors.tertiary.teal,
+    color: colors.neutral.white,
+    fontWeight: '600',
+  },
+  promoErrorText: {
+    ...typeScale.labelSmall,
+    color: colors.semantic.error,
+    marginTop: spacing.xs,
   },
   totalsSection: {
     backgroundColor: colors.neutral.white,
@@ -652,6 +957,100 @@ const styles = StyleSheet.create({
     ...typeScale.titleSmall,
     color: colors.primary.black,
     fontWeight: '600',
+  },
+  reviewSection: {
+    backgroundColor: colors.neutral.white,
+    borderRadius: layout.cardBorderRadius,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    ...shadows.sm,
+  },
+  reviewSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.neutral.warmGray,
+  },
+  reviewSectionTitle: {
+    ...typeScale.titleSmall,
+    color: colors.primary.black,
+    fontWeight: '600',
+  },
+  reviewContent: {
+    gap: spacing.sm,
+  },
+  reviewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  reviewLabel: {
+    ...typeScale.labelMedium,
+    color: colors.neutral.gray,
+  },
+  reviewValue: {
+    ...typeScale.bodyMedium,
+    color: colors.primary.black,
+    fontWeight: '500',
+    textAlign: 'right',
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  specialRequestsInput: {
+    borderWidth: 1,
+    borderColor: colors.neutral.warmGray,
+    borderRadius: layout.borderRadius.sm,
+    padding: spacing.sm,
+    minHeight: 80,
+    ...typeScale.bodyMedium,
+    color: colors.primary.black,
+  },
+  termsSection: {
+    backgroundColor: colors.neutral.white,
+    borderRadius: layout.cardBorderRadius,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    ...shadows.sm,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  marketingCheckbox: {
+    marginTop: spacing.md,
+  },
+  termsText: {
+    ...typeScale.bodySmall,
+    color: colors.primary.black,
+    flex: 1,
+    lineHeight: 20,
+  },
+  termsLink: {
+    color: colors.tertiary.teal,
+    textDecorationLine: 'underline',
+  },
+  marketingText: {
+    ...typeScale.bodySmall,
+    color: colors.neutral.darkGray,
+    flex: 1,
+    lineHeight: 20,
+  },
+  termsError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    backgroundColor: colors.semantic.error + '10',
+    padding: spacing.sm,
+    borderRadius: layout.borderRadius.sm,
+  },
+  termsErrorText: {
+    ...typeScale.labelSmall,
+    color: colors.semantic.error,
   },
   infoNote: {
     flexDirection: 'row',

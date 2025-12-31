@@ -2,6 +2,12 @@
  * AddonSelectionStep
  *
  * Optional add-on selection with quantity controls.
+ * Features:
+ * - Venue additional hours management (sync from package step)
+ * - Per-addon tax_rate and price_with_tax display
+ * - Validation indicator during validation
+ *
+ * Adapted from: frontend/client-portal/src/components/booking/steps/AddonSelectionStep.tsx
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -14,20 +20,27 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Plus, Minus, Check, ShoppingBag, Tag } from 'phosphor-react-native';
+import { Plus, Minus, Check, ShoppingBag, Tag, Clock, Sun } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
-import { useAddons } from '@/hooks/booking';
+import { useAddons, useRentableVenues } from '@/hooks/booking';
+import { useBookingContext } from '@/contexts/BookingContext';
+import { VenuesAPI } from '@/apis/booking/venues.api';
 import { formatCurrency } from '@/utils/currency';
 import type { StepComponentProps } from '../StepRenderer';
 import type {
   AddonSelectionStepData,
   AddonSelectionStepConfiguration,
   SelectedAddon,
+  PackageSelectionStepData,
+  VenueSelectionStepData,
 } from '@/types/booking';
 import type { ProductOption } from '@/apis/booking/products.api';
 import * as Haptics from 'expo-haptics';
 
-type AddonSelectionStepProps = StepComponentProps<AddonSelectionStepData, AddonSelectionStepConfiguration>;
+type AddonSelectionStepProps = StepComponentProps<AddonSelectionStepData, AddonSelectionStepConfiguration> & {
+  /** Whether step is currently being validated */
+  isValidating?: boolean;
+};
 
 export function AddonSelectionStep({
   step,
@@ -35,28 +48,109 @@ export function AddonSelectionStep({
   configuration,
   onDataChange,
   validationErrors,
+  isValidating = false,
 }: AddonSelectionStepProps) {
+  const { state } = useBookingContext();
   const { data: addons, isLoading, error } = useAddons();
+
+  // Get selected venue IDs from venue selection step
+  const venueSelectionData = state.stepData.venue_selection as VenueSelectionStepData | undefined;
+  const selectedVenueIds = venueSelectionData?.selected_venue_ids || [];
+
+  // Get event type ID from flow for fetching venues with correct pricing
+  const eventTypeId = state.currentFlow?.event_type?.id;
+
+  // Fetch rentable venues with event-type-specific pricing
+  const { data: allVenues } = useRentableVenues(eventTypeId);
+
+  // Get actual venue objects from IDs
+  const selectedVenues = useMemo(() => {
+    if (!allVenues || selectedVenueIds.length === 0) return [];
+    return allVenues.filter((v) => selectedVenueIds.includes(v.id));
+  }, [allVenues, selectedVenueIds]);
+
+  // Get venue additional hours from package selection step
+  const packageStepData = state.stepData.package_selection as PackageSelectionStepData | undefined;
+  const venueAdditionalHoursFromPackage = packageStepData?.venue_additional_hours || {};
 
   const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>(
     data.selected_addons || []
   );
+
+  // Venue additional hours state (convert string keys to number keys)
+  const [venueAdditionalHours, setVenueAdditionalHours] = useState<Record<number, number>>(() => {
+    return Object.entries(venueAdditionalHoursFromPackage).reduce((acc, [key, value]) => ({
+      ...acc,
+      [parseInt(key, 10)]: value,
+    }), {});
+  });
 
   const {
     min_selection = 0,
     max_selection = 99,
     group_by_category = true,
     show_recommendations = true,
+    title = 'Add Extras',
+    description,
   } = configuration || {};
 
   useEffect(() => {
     setSelectedAddons(data.selected_addons || []);
   }, [data.selected_addons]);
 
+  // Sync venue hours from package step data when they change
+  useEffect(() => {
+    const packageHours = Object.entries(venueAdditionalHoursFromPackage).reduce((acc, [key, value]) => ({
+      ...acc,
+      [parseInt(key, 10)]: value,
+    }), {} as Record<number, number>);
+
+    // Only update if package step has hours that aren't in local state
+    const hasNewHours = Object.keys(packageHours).length > 0 &&
+      Object.keys(venueAdditionalHours).length === 0;
+    if (hasNewHours) {
+      setVenueAdditionalHours(packageHours);
+    }
+  }, [venueAdditionalHoursFromPackage]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const getAddonQuantity = (addonId: number): number => {
     const addon = selectedAddons.find((a) => a.product_id === addonId);
     return addon?.quantity || 0;
   };
+
+  // Helper to build complete data with venue hours
+  const buildCompleteData = useCallback((addons: SelectedAddon[]): AddonSelectionStepData => {
+    const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
+      ...acc,
+      [key]: value, // Keep as string key for API
+    }), {} as Record<string, number>);
+
+    const dataToSend: AddonSelectionStepData = {
+      selected_addons: addons,
+    };
+
+    if (selectedVenues.length > 0 && Object.keys(venueHoursForApi).length > 0) {
+      dataToSend.venue_additional_hours = venueHoursForApi;
+    }
+
+    return dataToSend;
+  }, [venueAdditionalHours, selectedVenues.length]);
+
+  // Handle venue hours change
+  const handleVenueHoursChange = useCallback(async (venueId: number, hours: number) => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setVenueAdditionalHours((prev) => ({
+      ...prev,
+      [venueId]: hours,
+    }));
+  }, []);
+
+  // Effect to update venue hours when they change (without changing addons)
+  useEffect(() => {
+    if (selectedVenues.length > 0) {
+      onDataChange(buildCompleteData(selectedAddons));
+    }
+  }, [venueAdditionalHours]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleQuantityChange = useCallback(async (addon: ProductOption, delta: number) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -70,13 +164,15 @@ export function AddonSelectionStep({
       // Remove addon
       newSelection = selectedAddons.filter((a) => a.product_id !== addon.id);
     } else if (currentQty === 0) {
-      // Add new addon
+      // Add new addon with tax information
       const newAddon: SelectedAddon = {
         product_id: addon.id,
         name: addon.name,
         price: addon.base_price,
         quantity: newQty,
-        tax_rate: parseFloat(addon.tax_rate),
+        // Include tax information for proper pricing calculation
+        tax_rate: typeof addon.tax_rate === 'string' ? parseFloat(addon.tax_rate) : addon.tax_rate,
+        price_with_tax: addon.price_with_tax,
         category_id: addon.category_id ?? undefined,
       };
       newSelection = [...selectedAddons, newAddon];
@@ -88,8 +184,8 @@ export function AddonSelectionStep({
     }
 
     setSelectedAddons(newSelection);
-    onDataChange({ selected_addons: newSelection });
-  }, [selectedAddons, onDataChange]);
+    onDataChange(buildCompleteData(newSelection));
+  }, [selectedAddons, onDataChange, buildCompleteData]);
 
   const totalItems = useMemo(() => {
     return selectedAddons.reduce((sum, addon) => sum + addon.quantity, 0);
@@ -156,11 +252,92 @@ export function AddonSelectionStep({
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
+      {/* Venue Additional Hours Section */}
+      {selectedVenues.length > 0 && (
+        <View style={styles.venueHoursSection}>
+          <Text style={styles.sectionTitle}>Additional Hours</Text>
+          <Text style={styles.sectionSubtitle}>
+            Extend your time at any venue. These hours are in addition to what's included in your package.
+          </Text>
+
+          {selectedVenues.map((venue) => {
+            const pricing = VenuesAPI.getEffectivePricing(venue);
+            const additionalHours = venueAdditionalHours[venue.id] || 0;
+            const excessPrice = parseFloat(pricing.excessHourPrice || '0');
+            const includedHours = pricing.includedHours || 0;
+            const totalCost = additionalHours * excessPrice;
+
+            // All-day access venues don't need additional hours
+            if (pricing.isAllDayAccess) {
+              return (
+                <View key={venue.id} style={styles.venueHoursCardAllDay}>
+                  <View style={styles.venueHoursInfo}>
+                    <Text style={styles.venueHoursName}>{venue.name}</Text>
+                    <View style={styles.allDayBadge}>
+                      <Sun size={14} color={colors.secondary.forest} weight="fill" />
+                      <Text style={styles.allDayText}>All-day access included</Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            }
+
+            return (
+              <View key={venue.id} style={styles.venueHoursCard}>
+                <View style={styles.venueHoursInfo}>
+                  <Text style={styles.venueHoursName}>{venue.name}</Text>
+                  <Text style={styles.venueHoursIncluded}>
+                    Includes {includedHours} hours
+                  </Text>
+                </View>
+
+                <View style={styles.venueHoursControls}>
+                  <TouchableOpacity
+                    style={[styles.hoursButton, additionalHours === 0 && styles.hoursButtonDisabled]}
+                    onPress={() => handleVenueHoursChange(venue.id, Math.max(0, additionalHours - 1))}
+                    disabled={additionalHours === 0}
+                  >
+                    <Minus size={16} color={additionalHours === 0 ? colors.neutral.gray : colors.primary.black} weight="bold" />
+                  </TouchableOpacity>
+
+                  <Text style={styles.hoursValue}>+{additionalHours}</Text>
+
+                  <TouchableOpacity
+                    style={[styles.hoursButton, additionalHours >= 10 && styles.hoursButtonDisabled]}
+                    onPress={() => handleVenueHoursChange(venue.id, Math.min(10, additionalHours + 1))}
+                    disabled={additionalHours >= 10}
+                  >
+                    <Plus size={16} color={additionalHours >= 10 ? colors.neutral.gray : colors.primary.black} weight="bold" />
+                  </TouchableOpacity>
+
+                  {additionalHours > 0 && (
+                    <View style={styles.hoursCostBadge}>
+                      <Text style={styles.hoursCostText}>
+                        +{formatCurrency(totalCost, { currency: 'PHP' })}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <Text style={styles.excessRateText}>
+                  {formatCurrency(excessPrice, { currency: 'PHP' })}/hr for additional hours
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* Divider between sections */}
+      {selectedVenues.length > 0 && addons && addons.length > 0 && (
+        <View style={styles.sectionDivider} />
+      )}
+
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Add Extras</Text>
+        <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>
-          Enhance your event with optional add-ons
+          {description || 'Enhance your event with optional add-ons'}
         </Text>
       </View>
 
@@ -192,6 +369,7 @@ export function AddonSelectionStep({
                 addon={addon}
                 quantity={getAddonQuantity(addon.id)}
                 onQuantityChange={(delta) => handleQuantityChange(addon, delta)}
+                showTax={true}
               />
             ))}
           </View>
@@ -204,6 +382,14 @@ export function AddonSelectionStep({
           Add-ons are optional. You can skip this step if you don't need any extras.
         </Text>
       </View>
+
+      {/* Validation indicator */}
+      {isValidating && (
+        <View style={styles.validatingContainer}>
+          <ActivityIndicator size="small" color={colors.neutral.darkGray} />
+          <Text style={styles.validatingText}>Validating selection...</Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -212,11 +398,17 @@ interface AddonCardProps {
   addon: ProductOption;
   quantity: number;
   onQuantityChange: (delta: number) => void;
+  showTax?: boolean;
 }
 
-function AddonCard({ addon, quantity, onQuantityChange }: AddonCardProps) {
-  const { name, description, thumbnail_url, base_price } = addon;
+function AddonCard({ addon, quantity, onQuantityChange, showTax = false }: AddonCardProps) {
+  const { name, description, thumbnail_url, base_price, tax_rate, price_with_tax } = addon;
   const isSelected = quantity > 0;
+
+  // Calculate tax display
+  const hasTax = showTax && tax_rate && parseFloat(String(tax_rate)) > 0;
+  const taxRateValue = typeof tax_rate === 'string' ? parseFloat(tax_rate) : (tax_rate || 0);
+  const priceWithTaxValue = price_with_tax ? parseFloat(price_with_tax) : null;
 
   return (
     <View style={[styles.addonCard, isSelected && styles.addonCardSelected]}>
@@ -248,9 +440,18 @@ function AddonCard({ addon, quantity, onQuantityChange }: AddonCardProps) {
         )}
 
         <View style={styles.addonFooter}>
-          <Text style={styles.addonPrice}>
-            {formatCurrency(parseFloat(base_price), { currency: 'PHP' })}
-          </Text>
+          <View style={styles.addonPriceContainer}>
+            <Text style={styles.addonPrice}>
+              {formatCurrency(parseFloat(base_price), { currency: 'PHP' })}
+            </Text>
+            {hasTax && (
+              <Text style={styles.addonTaxText}>
+                {priceWithTaxValue
+                  ? `${formatCurrency(priceWithTaxValue, { currency: 'PHP' })} incl. ${taxRateValue}% tax`
+                  : `+${taxRateValue}% tax`}
+              </Text>
+            )}
+          </View>
 
           {/* Quantity Controls */}
           <View style={styles.quantityControls}>
@@ -492,6 +693,122 @@ const styles = StyleSheet.create({
     ...typeScale.bodySmall,
     color: colors.neutral.darkGray,
     textAlign: 'center',
+  },
+  // Venue hours section styles
+  venueHoursSection: {
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    ...typeScale.titleMedium,
+    color: colors.primary.black,
+    marginBottom: spacing.xs,
+  },
+  sectionSubtitle: {
+    ...typeScale.bodySmall,
+    color: colors.neutral.darkGray,
+    marginBottom: spacing.md,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: colors.neutral.warmGray,
+    marginVertical: spacing.lg,
+  },
+  venueHoursCard: {
+    backgroundColor: colors.neutral.white,
+    borderRadius: layout.borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    ...shadows.sm,
+  },
+  venueHoursCardAllDay: {
+    backgroundColor: colors.secondary.forestSubtle,
+    borderWidth: 1,
+    borderColor: colors.secondary.forest,
+    borderRadius: layout.borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  venueHoursInfo: {
+    marginBottom: spacing.sm,
+  },
+  venueHoursName: {
+    ...typeScale.titleSmall,
+    color: colors.primary.black,
+    fontWeight: '600',
+  },
+  venueHoursIncluded: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+  },
+  allDayBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    marginTop: spacing.xs,
+  },
+  allDayText: {
+    ...typeScale.labelSmall,
+    color: colors.secondary.forest,
+    fontWeight: '500',
+  },
+  venueHoursControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  hoursButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.neutral.warmGray,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hoursButtonDisabled: {
+    opacity: 0.5,
+  },
+  hoursValue: {
+    ...typeScale.titleSmall,
+    color: colors.primary.black,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  hoursCostBadge: {
+    backgroundColor: colors.secondary.forestSubtle,
+    paddingVertical: spacing.xxs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: layout.borderRadius.sm,
+  },
+  hoursCostText: {
+    ...typeScale.labelSmall,
+    color: colors.secondary.forest,
+    fontWeight: '600',
+  },
+  excessRateText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+  },
+  // Tax display styles
+  addonPriceContainer: {
+    flex: 1,
+  },
+  addonTaxText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
+    marginTop: spacing.xxs,
+  },
+  // Validation indicator
+  validatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  validatingText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
   },
 });
 
