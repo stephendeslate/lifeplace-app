@@ -171,12 +171,15 @@ export interface RentableVenue {
   name: string;
   code: string;
   description: string;
+  is_overnight: boolean;
   minimum_capacity: number;
   maximum_capacity: number;
   recommended_capacity: number | null;
   location_description: string;
   featured_image: string | null;
   gallery_images: string[];
+  is_featured: boolean;
+  sort_order: number;
   standalone_base_price: string;
   standalone_included_hours: string;
   standalone_excess_hour_price: string;

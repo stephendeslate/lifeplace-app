@@ -8,6 +8,8 @@ import {
   WbSunny as DayIcon,
   People as CapacityIcon,
   Settings as RulesIcon,
+  Star as StarIcon,
+  StarBorder as StarBorderIcon,
 } from '@mui/icons-material';
 import type { VenueListItem } from '../../types/venues.types';
 import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
@@ -107,6 +109,21 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
       render: (_, row) => {
         const venue = row as unknown as VenueListItem;
         return getStatusChip(venue.is_active, venue.is_bookable);
+      },
+    },
+    {
+      key: 'is_featured',
+      label: 'Featured',
+      align: 'center',
+      render: (_, row) => {
+        const venue = row as unknown as VenueListItem;
+        return venue.is_featured ? (
+          <Tooltip title="Featured venue">
+            <StarIcon color="warning" />
+          </Tooltip>
+        ) : (
+          <StarBorderIcon color="disabled" />
+        );
       },
     },
     {

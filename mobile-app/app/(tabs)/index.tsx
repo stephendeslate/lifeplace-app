@@ -24,7 +24,7 @@ import { MagnifyingGlass, Bell, ArrowRight } from 'phosphor-react-native';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboard } from '@/hooks/useDashboard';
-import { useRentableVenues, useFeaturedPackages, usePrefetchVenue, usePrefetchPackage } from '@/hooks/useExplore';
+import { useFeaturedVenues, useFeaturedPackages, usePrefetchVenue, usePrefetchPackage } from '@/hooks/useExplore';
 import { theme } from '@/theme';
 import { colors, spacing, typeScale, layout } from '@/theme';
 import {
@@ -43,13 +43,10 @@ export default function DashboardScreen() {
   const { data: dashboardData, isLoading, refetch, isRefetching } = useDashboard();
 
   // Explore data
-  const { data: venues, isLoading: venuesLoading } = useRentableVenues();
+  const { data: featuredVenues, isLoading: venuesLoading } = useFeaturedVenues();
   const { data: featuredPackages, isLoading: packagesLoading } = useFeaturedPackages();
   const prefetchVenue = usePrefetchVenue();
   const prefetchPackage = usePrefetchPackage();
-
-  // Featured venues (first 4)
-  const featuredVenues = venues?.slice(0, 4) ?? [];
 
   const handleQuickAction = (action: QuickActionType) => {
     switch (action) {
@@ -299,8 +296,8 @@ export default function DashboardScreen() {
                   <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
                   <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
                 </>
-              ) : featuredVenues.length > 0 ? (
-                featuredVenues.map((venue) => (
+              ) : featuredVenues && featuredVenues.length > 0 ? (
+                featuredVenues.slice(0, 4).map((venue) => (
                   <VenueCard
                     key={venue.id}
                     venue={venue}
@@ -312,7 +309,7 @@ export default function DashboardScreen() {
               ) : (
                 <View style={styles.placeholder}>
                   <Text style={styles.placeholderText}>
-                    No venues available
+                    No featured venues available
                   </Text>
                 </View>
               )}

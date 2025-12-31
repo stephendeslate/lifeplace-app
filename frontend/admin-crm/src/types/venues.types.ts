@@ -67,6 +67,7 @@ export interface Venue {
   recommended_capacity: number | null;
   is_active: boolean;
   is_bookable: boolean;
+  is_featured: boolean;
   location_description: string;
   featured_image: string | null;
   gallery_images: string[];
@@ -89,6 +90,7 @@ export interface VenueListItem {
   is_overnight: boolean;
   is_active: boolean;
   is_bookable: boolean;
+  is_featured: boolean;
   minimum_capacity: number;
   maximum_capacity: number;
   featured_image: string | null;
@@ -126,6 +128,7 @@ export interface CreateVenueData {
   recommended_capacity?: number | null;
   is_active?: boolean;
   is_bookable?: boolean;
+  is_featured?: boolean;
   location_description?: string;
   featured_image?: string | null;
   gallery_images?: string[];

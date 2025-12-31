@@ -72,10 +72,10 @@ class VenueEventTypeConfigurationInline(admin.TabularInline):
 @admin.register(Venue)
 class VenueAdmin(admin.ModelAdmin):
     list_display = ('name', 'code', 'is_overnight', 'maximum_capacity',
-                   'is_active', 'is_bookable', 'has_operating_rules', 'sort_order')
-    list_filter = ('is_active', 'is_bookable', 'is_overnight')
+                   'is_active', 'is_bookable', 'is_featured', 'has_operating_rules', 'sort_order')
+    list_filter = ('is_active', 'is_bookable', 'is_featured', 'is_overnight')
     search_fields = ('name', 'code', 'description')
-    list_editable = ('is_active', 'is_bookable', 'sort_order')
+    list_editable = ('is_active', 'is_bookable', 'is_featured', 'sort_order')
     ordering = ('sort_order', 'name')
 
     fieldsets = (
@@ -86,7 +86,7 @@ class VenueAdmin(admin.ModelAdmin):
             'fields': ('minimum_capacity', 'maximum_capacity', 'recommended_capacity')
         }),
         ('Status', {
-            'fields': ('is_active', 'is_bookable')
+            'fields': ('is_active', 'is_bookable', 'is_featured')
         }),
         ('Standalone Pricing (Default)', {
             'fields': (

@@ -57,6 +57,7 @@ export interface VenuePublic {
   location_description: string;
   featured_image: string | null;
   gallery_images?: string[];
+  is_featured: boolean;
   sort_order: number;
   operating_rules: VenueOperatingRules | null;
 }
