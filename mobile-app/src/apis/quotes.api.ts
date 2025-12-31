@@ -20,12 +20,22 @@ export interface Quote {
     name: string;
   };
   status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+  version?: number;
+  subtotal?: string;
+  tax_amount?: string;
+  discount_amount?: string;
   total_amount: string;
   currency: string;
   valid_until: string | null;
+  sent_at?: string;
+  accepted_at?: string;
+  rejected_at?: string;
+  rejection_reason?: string;
+  client_message?: string;
   created_at: string;
   updated_at: string;
   line_items: QuoteLineItem[];
+  options?: QuoteOption[];
   notes?: string;
   terms_and_conditions?: string;
 }
@@ -35,7 +45,27 @@ export interface QuoteLineItem {
   description: string;
   quantity: number;
   unit_price: string;
+  tax_rate?: string;
   total_price: string;
+  product?: number;
+  notes?: string;
+}
+
+export interface QuoteOptionItem {
+  id: number;
+  description: string;
+  quantity: number;
+  unit_price: string;
+  total: string;
+}
+
+export interface QuoteOption {
+  id: number;
+  name: string;
+  description?: string;
+  total_price: string;
+  is_selected: boolean;
+  items: QuoteOptionItem[];
 }
 
 export interface QuotesListResponse {
@@ -74,23 +104,26 @@ export const quotesApi = {
   },
 
   /**
-   * Get pending quotes (status = SENT)
+   * Get pending quotes (status = SENT) that are actionable
+   * Matches client-portal pattern: filters by isQuoteActionable()
    */
   getPendingQuotes: async (): Promise<PendingQuote[]> => {
     const response = await quotesApi.getQuotes({ status: 'SENT' });
-    return response.results.map((quote) => ({
-      id: quote.id,
-      quote_number: quote.quote_number,
-      event_id: quote.event_details.id,
-      event_name: quote.event_details.name,
-      total_amount: parseFloat(quote.total_amount),
-      currency: quote.currency,
-      valid_until: quote.valid_until || '',
-      status: quote.status,
-      created_at: quote.created_at,
-      urgency_score: calculateUrgencyScore(quote.valid_until),
-      days_until_expiry: calculateDaysUntilExpiry(quote.valid_until),
-    }));
+    return response.results
+      .filter((quote) => isQuoteActionable(quote))
+      .map((quote) => ({
+        id: quote.id,
+        quote_number: quote.quote_number,
+        event_id: quote.event_details.id,
+        event_name: quote.event_details.name,
+        total_amount: parseFloat(quote.total_amount),
+        currency: quote.currency,
+        valid_until: quote.valid_until || '',
+        status: quote.status,
+        created_at: quote.created_at,
+        urgency_score: calculateUrgencyScore(quote.valid_until),
+        days_until_expiry: calculateDaysUntilExpiry(quote.valid_until),
+      }));
   },
 
   /**
@@ -124,11 +157,76 @@ export const quotesApi = {
     const response = await api.post<Quote>(`/sales/client/quotes/${id}/reject/`, data);
     return response.data;
   },
+
+  /**
+   * Download quote as PDF
+   */
+  downloadQuote: async (id: number): Promise<Blob> => {
+    const response = await api.get<Blob>(`/sales/client/quotes/${id}/download/`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  /**
+   * Get the PDF download URL for a quote
+   * This returns the URL that can be used with a PDF viewer
+   */
+  getQuotePdfUrl: (id: number): string => {
+    const baseUrl = api.defaults.baseURL || '';
+    return `${baseUrl}/sales/client/quotes/${id}/download/`;
+  },
 };
 
 // =============================================================================
-// HELPERS
+// VALIDATION & HELPERS
 // =============================================================================
+
+/**
+ * Quote validation result
+ */
+interface QuoteValidation {
+  isValid: boolean;
+  isExpired: boolean;
+  daysUntilExpiry: number;
+  canBeAccepted: boolean;
+  canBeRejected: boolean;
+}
+
+/**
+ * Validate quote status and expiry
+ * Matches client-portal pattern: frontend/client-portal/src/apis/quotes.api.ts
+ */
+function validateQuote(quote: Quote): QuoteValidation {
+  const now = new Date();
+  const validUntil = quote.valid_until ? new Date(quote.valid_until) : null;
+
+  const isExpired = validUntil ? validUntil < now : false;
+  const daysUntilExpiry = validUntil
+    ? Math.ceil((validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  const canBeAccepted = quote.status === 'SENT' && !isExpired;
+  const canBeRejected = quote.status === 'SENT' && !isExpired;
+  const isValid = quote.status !== 'DRAFT' && !isExpired;
+
+  return {
+    isValid,
+    isExpired,
+    daysUntilExpiry,
+    canBeAccepted,
+    canBeRejected,
+  };
+}
+
+/**
+ * Check if quote is actionable by client
+ * Matches client-portal pattern: frontend/client-portal/src/apis/quotes.api.ts
+ */
+function isQuoteActionable(quote: Quote): boolean {
+  const validation = validateQuote(quote);
+  return validation.canBeAccepted || validation.canBeRejected;
+}
 
 function calculateUrgencyScore(validUntil: string | null): number {
   if (!validUntil) return 0;

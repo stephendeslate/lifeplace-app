@@ -23,6 +23,7 @@ interface BookingNavigationProps {
   backLabel?: string;
   skipLabel?: string;
   showBack?: boolean;
+  showNext?: boolean;
   showSkip?: boolean;
   variant?: 'standard' | 'floating' | 'sticky';
 }
@@ -40,6 +41,7 @@ export function BookingNavigation({
   backLabel = 'Back',
   skipLabel = 'Skip',
   showBack = true,
+  showNext = true,
   showSkip = false,
   variant = 'standard',
 }: BookingNavigationProps) {
@@ -114,29 +116,31 @@ export function BookingNavigation({
       )}
 
       {/* Next Button */}
-      <TouchableOpacity
-        style={[
-          styles.nextButton,
-          (!canGoNext || isLoading || isValidating) && styles.nextButtonDisabled,
-        ]}
-        onPress={handleNext}
-        disabled={!canGoNext || isLoading || isValidating}
-        activeOpacity={0.8}
-      >
-        {isLoading || isValidating ? (
-          <>
-            <ActivityIndicator size="small" color={colors.neutral.white} />
-            <Text style={styles.nextButtonText}>
-              {isValidating ? 'Validating...' : 'Processing...'}
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.nextButtonText}>{nextLabel}</Text>
-            <ArrowRight size={20} color={colors.neutral.white} weight="bold" />
-          </>
-        )}
-      </TouchableOpacity>
+      {showNext && (
+        <TouchableOpacity
+          style={[
+            styles.nextButton,
+            (!canGoNext || isLoading || isValidating) && styles.nextButtonDisabled,
+          ]}
+          onPress={handleNext}
+          disabled={!canGoNext || isLoading || isValidating}
+          activeOpacity={0.8}
+        >
+          {isLoading || isValidating ? (
+            <>
+              <ActivityIndicator size="small" color={colors.neutral.white} />
+              <Text style={styles.nextButtonText}>
+                {isValidating ? 'Validating...' : 'Processing...'}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.nextButtonText}>{nextLabel}</Text>
+              <ArrowRight size={20} color={colors.neutral.white} weight="bold" />
+            </>
+          )}
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

@@ -202,7 +202,7 @@ function transformInvoiceToAction(invoice: Invoice): PaymentActionItem {
     invoiceId: invoice.id,
     invoiceNumber: invoice.invoice_number,
     amount: invoice.total_amount,
-    amountDue: invoice.amount_due,
+    amountDue: invoice.remaining_amount,
     currency: invoice.currency,
     daysPastDue,
     isOverdue,
@@ -360,7 +360,7 @@ export function useActionCenter(options: UseActionCenterOptions = {}): UseAction
         const isAlreadyOverdue = overduePayments.some(
           (op) => op.id === invoice.id
         );
-        return !isAlreadyOverdue && parseFloat(invoice.amount_due) > 0;
+        return !isAlreadyOverdue && parseFloat(invoice.remaining_amount) > 0;
       })
       .forEach((invoice) => {
         actions.push(transformInvoiceToAction(invoice));

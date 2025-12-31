@@ -18,6 +18,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import {
@@ -197,7 +198,43 @@ export function ContractSigningSheet({
 
               {contract.content && (
                 <View style={styles.contractContent}>
-                  <Text style={styles.contractText}>{contract.content}</Text>
+                  <WebView
+                    source={{
+                      html: `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                          <style>
+                            body {
+                              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                              padding: 0;
+                              margin: 0;
+                              color: ${theme.colors.neutral[700]};
+                              line-height: 1.6;
+                              font-size: 14px;
+                            }
+                            h1, h2, h3 { color: ${theme.colors.neutral[800]}; margin-top: 16px; }
+                            h1 { font-size: 20px; }
+                            h2 { font-size: 18px; }
+                            h3 { font-size: 16px; }
+                            p { margin: 8px 0; }
+                            ul, ol { margin: 8px 0; padding-left: 20px; }
+                            table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+                            th, td { border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-size: 13px; }
+                            th { background-color: #f5f5f5; }
+                          </style>
+                        </head>
+                        <body>${contract.content}</body>
+                        </html>
+                      `,
+                    }}
+                    style={styles.contractWebView}
+                    scrollEnabled={true}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                    originWhitelist={['*']}
+                  />
                 </View>
               )}
             </Card>
@@ -610,11 +647,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.neutral[200],
   },
-  contractText: {
-    fontFamily: theme.typography.fonts.regular,
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.neutral[700],
-    lineHeight: 20,
+  contractWebView: {
+    height: 350,
+    backgroundColor: 'transparent',
   },
   infoBox: {
     backgroundColor: theme.colors.primary[50],

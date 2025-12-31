@@ -29,6 +29,7 @@ import { StepRenderer } from './StepRenderer';
 import { PricingSummaryBar } from './PricingSummaryBar';
 import { BreadcrumbNavigation, type BreadcrumbItem } from '@/components/common';
 import { formatCurrency } from '@/utils/currency';
+import type { ConfirmationStepData } from '@/types/booking';
 
 interface BookingContainerProps {
   children?: React.ReactNode;
@@ -126,32 +127,17 @@ export function BookingContainer({
   }, [actions, progress.currentStepIndex]);
 
   // Handle close/exit
+  // Note: Don't show a dialog here - the beforeRemove listener handles confirmation
+  // for all exit paths (X button, hardware back, swipe gesture) to avoid double dialogs
   const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
     } else {
-      // Show confirmation if there's an active session with progress
-      if (currentSession && progress.currentStepIndex > 0) {
-        Alert.alert(
-          'Exit Booking?',
-          'Your booking progress will be saved. You can resume later from where you left off.',
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-            {
-              text: 'Exit',
-              style: 'destructive',
-              onPress: () => router.back(),
-            },
-          ]
-        );
-      } else {
-        router.back();
-      }
+      // Just call router.back() - the beforeRemove listener will intercept
+      // and show confirmation if there's unsaved progress
+      router.back();
     }
-  }, [onClose, currentSession, progress.currentStepIndex]);
+  }, [onClose]);
 
   // Handle session expiry
   const handleSessionExpired = useCallback(() => {
@@ -321,25 +307,64 @@ export function BookingContainer({
         )}
 
         {/* Navigation Footer */}
-        {customFooter || (showNavigation && (
-          <BookingNavigation
-            onBack={handleBack}
-            onNext={handleNext}
-            onSkip={handleSkip}
-            canGoBack={progress.canGoBack}
-            canGoNext={progress.canGoNext}
-            canSkip={progress.canSkip}
-            isLoading={ui.isSubmitting}
-            isValidating={ui.isValidating}
-            showBack={progress.currentStepIndex > 0}
-            showSkip={progress.canSkip}
-            nextLabel={
-              progress.currentStepIndex === steps.length - 1
-                ? 'Complete Booking'
-                : 'Continue'
+        {customFooter || (showNavigation && (() => {
+          const isConfirmationStep = currentStep?.step_type === 'confirmation';
+          const confirmationData = state.stepData.confirmation as ConfirmationStepData | undefined;
+          const completionStatus = confirmationData?.completion_status || 'pending';
+
+          // On confirmation step: show Back only when pending/processing, show "Return Home" when completed
+          if (isConfirmationStep) {
+            if (completionStatus === 'completed') {
+              return (
+                <BookingNavigation
+                  onBack={handleBack}
+                  onNext={handleClose}
+                  canGoBack={false}
+                  canGoNext={true}
+                  canSkip={false}
+                  isLoading={false}
+                  isValidating={false}
+                  showBack={false}
+                  showSkip={false}
+                  nextLabel="Return Home"
+                />
+              );
             }
-          />
-        ))}
+            // Show only Back button when pending/processing/failed (step has its own confirm button)
+            return (
+              <BookingNavigation
+                onBack={handleBack}
+                onNext={handleNext}
+                canGoBack={progress.canGoBack}
+                canGoNext={false}
+                canSkip={false}
+                isLoading={false}
+                isValidating={false}
+                showBack={true}
+                showNext={false}
+                showSkip={false}
+                nextLabel=""
+              />
+            );
+          }
+
+          // Normal navigation for all other steps
+          return (
+            <BookingNavigation
+              onBack={handleBack}
+              onNext={handleNext}
+              onSkip={handleSkip}
+              canGoBack={progress.canGoBack}
+              canGoNext={progress.canGoNext}
+              canSkip={progress.canSkip}
+              isLoading={ui.isSubmitting}
+              isValidating={ui.isValidating}
+              showBack={progress.currentStepIndex > 0}
+              showSkip={progress.canSkip}
+              nextLabel="Continue"
+            />
+          );
+        })())}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

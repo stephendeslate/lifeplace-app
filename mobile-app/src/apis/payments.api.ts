@@ -50,7 +50,10 @@ export interface Invoice {
   discount_amount: string;
   total_amount: string;
   amount_paid: string;
-  amount_due: string;
+  /** @deprecated Use remaining_amount instead - amount_due is not returned by backend */
+  amount_due?: string;
+  /** Remaining amount to be paid (total_amount - paid_amount) */
+  remaining_amount: string;
   currency: string;
   due_date: string;
   issued_date: string;
@@ -137,27 +140,27 @@ export const paymentsApi = {
     let nextPaymentDue: FinancialOverview['next_payment_due'] = null;
 
     for (const invoice of invoices) {
-      const amountDue = parseFloat(invoice.amount_due) || 0;
+      const remainingAmount = parseFloat(invoice.remaining_amount) || 0;
       const amountPaid = parseFloat(invoice.amount_paid) || 0;
       currency = invoice.currency || currency;
 
       totalPaid += amountPaid;
 
       if (invoice.status === 'OVERDUE') {
-        totalOverdue += amountDue;
-        totalOutstanding += amountDue;
+        totalOverdue += remainingAmount;
+        totalOutstanding += remainingAmount;
         overdueCount++;
       } else if (['ISSUED', 'PARTIALLY_PAID'].includes(invoice.status)) {
-        totalOutstanding += amountDue;
+        totalOutstanding += remainingAmount;
         pendingCount++;
 
         // Track next payment due (earliest due date with amount due)
-        if (amountDue > 0 && invoice.due_date) {
+        if (remainingAmount > 0 && invoice.due_date) {
           const dueDate = new Date(invoice.due_date);
           if (dueDate >= now) {
             if (!nextPaymentDue || dueDate < new Date(nextPaymentDue.due_date)) {
               nextPaymentDue = {
-                amount: invoice.amount_due,
+                amount: invoice.remaining_amount,
                 due_date: invoice.due_date,
                 invoice_id: invoice.id,
               };
@@ -225,7 +228,7 @@ export const paymentsApi = {
         payment_number: invoice.invoice_number,
         event_id: invoice.event,
         event_name: invoice.event_name,
-        amount: parseFloat(invoice.amount_due),
+        amount: parseFloat(invoice.remaining_amount) || 0,
         currency: invoice.currency,
         due_date: invoice.due_date,
         status: 'OVERDUE' as const,
@@ -311,6 +314,15 @@ export const paymentsApi = {
       responseType: 'blob',
     });
     return response.data;
+  },
+
+  /**
+   * Get the PDF download URL for an invoice
+   * This returns the URL that can be used with a PDF viewer
+   */
+  getInvoicePdfUrl: (id: number): string => {
+    const baseUrl = api.defaults.baseURL || '';
+    return `${baseUrl}/payments/client/invoices/${id}/download/`;
   },
 
   // ===========================================================================

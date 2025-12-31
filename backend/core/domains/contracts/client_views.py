@@ -51,10 +51,22 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """Get contracts accessible to the current client"""
         user = self.request.user
-        
+
         # Admin users can see all contracts
         if hasattr(user, 'role') and user.role == 'ADMIN':
-            return EventContract.objects.select_related(
+            queryset = EventContract.objects.select_related(
+                'event', 'template'
+            ).prefetch_related(
+                'signatures__signer',
+                'documents',
+                'notes'
+            ).order_by('-created_at')
+        else:
+            # Client users see contracts from their events (including expired for visibility)
+            queryset = EventContract.objects.filter(
+                event__client=user,
+                status__in=['SENT', 'PARTIALLY_SIGNED', 'SIGNED', 'EXPIRED']
+            ).select_related(
                 'event', 'template'
             ).prefetch_related(
                 'signatures__signer',
@@ -62,17 +74,20 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
                 'notes'
             ).order_by('-created_at')
 
-        # Client users see contracts from their events (including expired for visibility)
-        return EventContract.objects.filter(
-            event__client=user,
-            status__in=['SENT', 'PARTIALLY_SIGNED', 'SIGNED', 'EXPIRED']
-        ).select_related(
-            'event', 'template'
-        ).prefetch_related(
-            'signatures__signer',
-            'documents',
-            'notes'
-        ).order_by('-created_at')
+        # Apply event filter from query params (server-side filtering)
+        event_id = self.request.query_params.get('event')
+        if event_id:
+            try:
+                queryset = queryset.filter(event_id=int(event_id))
+            except (ValueError, TypeError):
+                pass  # Invalid event_id, skip filtering
+
+        # Apply status filter from query params
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        return queryset
     
     def get_serializer_class(self):
         # Use detailed serializer for both list and retrieve to ensure 

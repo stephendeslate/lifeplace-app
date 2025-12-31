@@ -1,10 +1,11 @@
 /**
  * ContractsTab Component
  *
- * Displays event contracts with signing status.
+ * Displays event contracts with signing status, view details, and PDF viewing.
+ * Matches client-portal EventContracts patterns.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,20 +13,26 @@ import {
   FlatList,
   RefreshControl,
   Alert,
+  Pressable,
+  Linking,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {
   FileText,
-  PenNib,
   CheckCircle,
-  Clock,
   Warning,
+  Eye,
+  DownloadSimple,
 } from 'phosphor-react-native';
 import { theme } from '@/theme';
 import { useEventContracts } from '@/hooks/useContracts';
-import { Skeleton, EmptyState, Card, Badge, Button } from '@/components/common';
+import { contractsApi } from '@/apis/contracts.api';
+import { Skeleton, EmptyState, Card, Badge, Button, PDFViewerModal } from '@/components/common';
 import { formatCardDate } from '@/utils/formatting';
-import { getContractStatusLabel, getContractStatusColor } from '@/utils/eventHelpers';
+import { getContractStatusLabel } from '@/utils/eventHelpers';
+import { useAuthStore } from '@/stores/authStore';
+import api from '@/utils/api';
 import type { Contract } from '@/apis/contracts.api';
 
 export interface ContractsTabProps {
@@ -34,7 +41,21 @@ export interface ContractsTabProps {
 }
 
 export function ContractsTab({ eventId, onSignContract }: ContractsTabProps) {
+  const router = useRouter();
   const { data: contracts, isLoading, refetch, isRefetching } = useEventContracts(eventId);
+  const { accessToken } = useAuthStore();
+
+  // PDF viewer state
+  const [pdfViewerVisible, setPdfViewerVisible] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+
+  // Get auth headers for PDF download
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    if (accessToken) {
+      return { Authorization: `Bearer ${accessToken}` };
+    }
+    return {};
+  };
 
   const handleSign = (contract: Contract) => {
     if (!contract.can_client_sign) return;
@@ -50,6 +71,38 @@ export function ContractsTab({ eventId, onSignContract }: ContractsTabProps) {
         [{ text: 'OK' }]
       );
     }
+  };
+
+  const handleViewDetails = (contract: Contract) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/contracts/${contract.id}`);
+  };
+
+  const handleViewPdf = (contract: Contract) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedContract(contract);
+    setPdfViewerVisible(true);
+  };
+
+  const handleClosePdf = () => {
+    setPdfViewerVisible(false);
+    setSelectedContract(null);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!selectedContract) return;
+    // For contracts, we'll open in external browser for download
+    try {
+      const pdfUrl = getContractPdfUrl(selectedContract.id);
+      await Linking.openURL(pdfUrl);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to download the contract.');
+    }
+  };
+
+  const getContractPdfUrl = (contractId: number): string => {
+    const baseUrl = api.defaults.baseURL || '';
+    return `${baseUrl}/contracts/client/contracts/${contractId}/download_pdf/`;
   };
 
   const getStatusBadgeVariant = (status: Contract['status']) => {
@@ -95,6 +148,7 @@ export function ContractsTab({ eventId, onSignContract }: ContractsTabProps) {
   const renderItem = ({ item: contract }: { item: Contract }) => {
     const progress = contract.signature_progress;
     const progressPercent = progress?.percentage || 0;
+    const isSigned = contract.status === 'SIGNED';
 
     return (
       <Card style={styles.contractCard}>
@@ -150,46 +204,88 @@ export function ContractsTab({ eventId, onSignContract }: ContractsTabProps) {
           </View>
         )}
 
-        {/* Actions */}
-        {contract.can_client_sign && (
-          <Button
-            onPress={() => handleSign(contract)}
-            variant="primary"
-            style={styles.signButton}
-          >
-            Sign Contract
-          </Button>
-        )}
-
-        {contract.status === 'SIGNED' && (
+        {/* Signed Banner */}
+        {isSigned && (
           <View style={styles.signedBanner}>
             <CheckCircle size={18} color={theme.colors.success[600]} weight="fill" />
             <Text style={styles.signedText}>Contract fully signed</Text>
           </View>
         )}
+
+        {/* Action Buttons */}
+        <View style={styles.actionsContainer}>
+          {/* View Details / View PDF Row */}
+          <View style={styles.viewActionsRow}>
+            <Pressable
+              onPress={() => handleViewDetails(contract)}
+              style={[styles.viewButton, !isSigned && styles.viewButtonFull]}
+            >
+              <Eye size={18} color={theme.colors.primary[500]} />
+              <Text style={styles.viewButtonText}>View Details</Text>
+            </Pressable>
+            {/* Only show View PDF for signed contracts */}
+            {isSigned && (
+              <Pressable
+                onPress={() => handleViewPdf(contract)}
+                style={styles.viewButton}
+              >
+                <DownloadSimple size={18} color={theme.colors.primary[500]} />
+                <Text style={styles.viewButtonText}>View PDF</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Sign Button */}
+          {contract.can_client_sign && (
+            <Button
+              onPress={() => handleSign(contract)}
+              variant="primary"
+              style={styles.signButton}
+            >
+              Sign Contract
+            </Button>
+          )}
+        </View>
       </Card>
     );
   };
 
   return (
-    <FlatList
-      data={contracts}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={styles.listContainer}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={refetch}
-          colors={[theme.colors.primary[500]]}
-          tintColor={theme.colors.primary[500]}
+    <View style={styles.flex}>
+      <FlatList
+        data={contracts}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            colors={[theme.colors.primary[500]]}
+            tintColor={theme.colors.primary[500]}
+          />
+        }
+      />
+
+      {/* PDF Viewer Modal */}
+      {selectedContract && (
+        <PDFViewerModal
+          visible={pdfViewerVisible}
+          onClose={handleClosePdf}
+          title={`Contract: ${selectedContract.template.name}`}
+          pdfUrl={getContractPdfUrl(selectedContract.id)}
+          onDownload={handleDownloadPdf}
+          getAuthHeaders={getAuthHeaders}
         />
-      }
-    />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: theme.spacing.md,
@@ -270,9 +366,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.warning[700],
   },
-  signButton: {
-    marginTop: theme.spacing.sm,
-  },
   signedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -281,12 +374,44 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.success[50],
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
-    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
   signedText: {
     fontFamily: theme.typography.fonts.medium,
     fontSize: theme.typography.sizes.md,
     color: theme.colors.success[700],
+  },
+  actionsContainer: {
+    gap: theme.spacing.sm,
+  },
+  viewActionsRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  viewButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.primary[200],
+    backgroundColor: theme.colors.primary[50],
+  },
+  viewButtonFull: {
+    flex: undefined,
+    width: '100%',
+  },
+  viewButtonText: {
+    fontFamily: theme.typography.fonts.medium,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.primary[600],
+  },
+  signButton: {
+    width: '100%',
   },
   skeletonItem: {
     padding: theme.spacing.md,

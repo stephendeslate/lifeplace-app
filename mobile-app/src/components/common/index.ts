@@ -45,6 +45,10 @@ export type { BreadcrumbItem, BreadcrumbNavigationProps } from './BreadcrumbNavi
 // Network status components
 export { OfflineBanner } from './OfflineBanner';
 
+// PDF/Document viewer components
+export { PDFViewerModal } from './PDFViewerModal';
+export type { PDFViewerModalProps } from './PDFViewerModal';
+
 // Screen-level skeleton components
 export {
   SkeletonHeader,

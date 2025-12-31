@@ -115,10 +115,37 @@ export function PricingSummaryStep({
     venueAdditionalHours
   );
 
-  // Get payment plan settings for deposit percentage
+  // Get payment plan settings
   const { data: paymentSettings } = usePaymentPlanSettings();
-  const depositPercentage = paymentSettings?.default_deposit_percentage || 50;
-  const balanceDueDays = paymentSettings?.balance_due_days || 7;
+
+  // Get payment step configuration from the flow for effective_payment_terms
+  const paymentStepConfig = useMemo(() => {
+    const steps = state.currentFlow?.enabled_steps || state.currentFlow?.steps;
+    const paymentStep = steps?.find(s => s.step_type === 'payment_info');
+    return paymentStep?.configuration as { effective_payment_terms?: { deposit_percentage?: number; balance_due_days?: number } } | undefined;
+  }, [state.currentFlow]);
+
+  // Get deposit percentage - priority: payment step config > payment settings > default
+  const depositPercentage = useMemo(() => {
+    if (paymentStepConfig?.effective_payment_terms?.deposit_percentage) {
+      return paymentStepConfig.effective_payment_terms.deposit_percentage;
+    }
+    if (paymentSettings?.default_deposit_percentage) {
+      return paymentSettings.default_deposit_percentage;
+    }
+    return 50;
+  }, [paymentStepConfig, paymentSettings]);
+
+  // Get balance due days - priority: payment step config > payment settings > default
+  const balanceDueDays = useMemo(() => {
+    if (paymentStepConfig?.effective_payment_terms?.balance_due_days) {
+      return paymentStepConfig.effective_payment_terms.balance_due_days;
+    }
+    if (paymentSettings?.balance_due_days) {
+      return paymentSettings.balance_due_days;
+    }
+    return 7;
+  }, [paymentStepConfig, paymentSettings]);
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
