@@ -341,7 +341,11 @@ function VenueCard({
             <View style={styles.venueMetaItem}>
               <Clock size={14} color={colors.neutral.darkGray} />
               <Text style={styles.venueMetaText}>
-                {pricing.isAllDayAccess ? 'All-day access' : `${pricing.includedHours || 0} hrs included`}
+                {pricing.isOvernight
+                  ? 'Overnight'
+                  : pricing.isAllDayAccess
+                    ? 'All-day access'
+                    : `${pricing.includedHours || 0} hrs included`}
               </Text>
             </View>
           )}
@@ -355,10 +359,14 @@ function VenueCard({
                 {formatCurrency(parseFloat(pricing.basePrice), { currency: 'PHP' })}
               </Text>
               <Text style={styles.venuePriceUnit}>
-                {pricing.isAllDayAccess ? '/ day' : `/ ${pricing.includedHours || 0} hrs`}
+                {pricing.isOvernight
+                  ? '/ night'
+                  : pricing.isAllDayAccess
+                    ? '/ day'
+                    : `/ ${pricing.includedHours || 0} hrs`}
               </Text>
             </View>
-            {!pricing.isAllDayAccess && pricing.excessHourPrice && (
+            {!pricing.isAllDayAccess && !pricing.isOvernight && pricing.excessHourPrice && (
               <Text style={styles.venueExcessRate}>
                 +{formatCurrency(parseFloat(pricing.excessHourPrice), { currency: 'PHP' })}/hr extra
               </Text>

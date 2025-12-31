@@ -37,6 +37,7 @@ interface VenuePublic {
   amenities?: string[] | Array<{ name: string; icon: string }>;
   operating_rules: VenueOperatingRulesPublic;
   is_active?: boolean;
+  is_overnight?: boolean;
 }
 
 interface CalculateTimesRequest {
@@ -110,8 +111,10 @@ export const VenuesAPI = {
     includedHours: number;
     excessHourPrice: string;
     isAllDayAccess: boolean;
+    isOvernight: boolean;
   } => {
     const venueWithEventType = venue as RentableVenueWithEventType;
+    const isOvernight = 'is_overnight' in venue ? (venue.is_overnight ?? false) : false;
 
     // If venue has event-type-specific config, use effective_* fields
     if (venueWithEventType.has_event_type_config) {
@@ -121,6 +124,7 @@ export const VenuesAPI = {
         excessHourPrice:
           venueWithEventType.effective_excess_hour_price || venue.standalone_excess_hour_price || venue.excess_hour_rate,
         isAllDayAccess: venueWithEventType.is_all_day_access || false,
+        isOvernight,
       };
     }
 
@@ -130,6 +134,7 @@ export const VenuesAPI = {
       includedHours: venue.standalone_included_hours ?? venue.included_hours,
       excessHourPrice: venue.standalone_excess_hour_price || venue.excess_hour_rate,
       isAllDayAccess: false,
+      isOvernight,
     };
   },
 
