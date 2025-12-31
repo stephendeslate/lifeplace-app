@@ -1,8 +1,10 @@
 /**
  * Event Detail Screen
  *
- * Displays comprehensive event details with 9 tabs:
- * Timeline, Tasks, Documents, Invoices, Contracts, Quotes, Questionnaires, Feedback, Notes
+ * Displays comprehensive event details with 10 tabs:
+ * Timeline, Tasks, Documents, Invoices, Contracts, Quotes, Questionnaires, Feedback, Check-In, Notes
+ *
+ * Matches client-portal EventDetail patterns.
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -13,7 +15,6 @@ import {
   ScrollView,
   Pressable,
   Dimensions,
-  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -34,11 +35,15 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useEvent } from '@/hooks/useEvents';
+import { useWorkflowProgress } from '@/hooks/useWorkflowProgress';
+import { contractsApi, type Contract } from '@/apis/contracts.api';
 import { theme } from '@/theme';
-import { spacing, typeScale, layout } from '@/theme';
+import { spacing, typeScale } from '@/theme';
 import { EventStatusBadge } from '@/components/events';
 import { Skeleton } from '@/components/common';
+import { ContractSigningSheet } from '@/components/contracts/ContractSigningSheet';
 import type { EventStatus } from '@/types/events.types';
+import type { WorkflowProgress } from '@/apis/workflows.api';
 import {
   TimelineTab,
   TasksTab,
@@ -49,15 +54,21 @@ import {
   QuestionnairesTab,
   FeedbackTab,
   NotesTab,
+  CheckInTab,
 } from '@/components/events/tabs';
 import { formatEventDate, formatTime } from '@/utils/formatting';
+import { useToast } from '@/contexts/ToastContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface Tab {
   id: string;
   label: string;
-  component: React.ComponentType<{ eventId: number; eventStatus?: EventStatus }>;
+  component: React.ComponentType<{
+    eventId: number;
+    eventStatus?: EventStatus;
+    workflowProgress?: WorkflowProgress | null;
+  }>;
 }
 
 const TABS: Tab[] = [
@@ -69,6 +80,7 @@ const TABS: Tab[] = [
   { id: 'quotes', label: 'Quotes', component: QuotesTab },
   { id: 'questionnaires', label: 'Forms', component: QuestionnairesTab },
   { id: 'feedback', label: 'Feedback', component: FeedbackTab },
+  { id: 'checkin', label: 'Check-In', component: CheckInTab },
   { id: 'notes', label: 'Notes', component: NotesTab },
 ];
 
@@ -76,8 +88,14 @@ export default function EventDetailScreen() {
   const router = useRouter();
   const { id, tab: initialTab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const eventId = parseInt(id, 10);
+  const { showToast } = useToast();
 
   const { data: event, isLoading, refetch, isRefetching } = useEvent(eventId);
+  const { data: workflowProgress } = useWorkflowProgress(eventId);
+
+  // Contract signing state
+  const [signingSheetVisible, setSigningSheetVisible] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
   // Find initial tab index from URL param or default to 0
   const initialTabIndex = useMemo(() => {
@@ -106,11 +124,40 @@ export default function EventDetailScreen() {
     router.back();
   }, [router]);
 
+  // Contract signing handlers
+  const handleSignContract = useCallback(async (contract: Contract) => {
+    try {
+      // Fetch full contract details before opening signing sheet
+      const fullContract = await contractsApi.getContract(contract.id);
+      setSelectedContract(fullContract);
+      setSigningSheetVisible(true);
+    } catch (error) {
+      showToast('Failed to load contract details', 'error');
+    }
+  }, [showToast]);
+
+  const handleSignComplete = useCallback((signedContract: Contract) => {
+    showToast('Contract signed successfully!', 'success');
+    refetch();
+    setSigningSheetVisible(false);
+    setSelectedContract(null);
+  }, [showToast, refetch]);
+
+  const handleSignError = useCallback((error: string) => {
+    showToast(error, 'error');
+  }, [showToast]);
+
+  const handleCloseSigningSheet = useCallback(() => {
+    setSigningSheetVisible(false);
+    setSelectedContract(null);
+  }, []);
+
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tabIndicatorPosition.value }],
   }));
 
   const ActiveTabComponent = TABS[activeTabIndex].component;
+  const activeTabId = TABS[activeTabIndex].id;
 
   if (isLoading) {
     return (
@@ -245,21 +292,31 @@ export default function EventDetailScreen() {
       </View>
 
       {/* Tab Content */}
-      <ScrollView
-        style={styles.tabContent}
-        contentContainerStyle={styles.tabContentContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            colors={[theme.colors.primary[500]]}
-            tintColor={theme.colors.primary[500]}
+      <View style={styles.tabContent}>
+        {/* Tab Component with contract signing support */}
+        {activeTabId === 'contracts' ? (
+          <ContractsTab
+            eventId={eventId}
+            onSignContract={handleSignContract}
           />
-        }
-      >
-        <ActiveTabComponent eventId={eventId} eventStatus={event.status} />
-      </ScrollView>
+        ) : activeTabId === 'timeline' ? (
+          <TimelineTab
+            eventId={eventId}
+            workflowProgress={workflowProgress}
+          />
+        ) : (
+          <ActiveTabComponent eventId={eventId} eventStatus={event.status} />
+        )}
+      </View>
+
+      {/* Contract Signing Sheet */}
+      <ContractSigningSheet
+        visible={signingSheetVisible}
+        onClose={handleCloseSigningSheet}
+        contract={selectedContract}
+        onSignComplete={handleSignComplete}
+        onError={handleSignError}
+      />
     </View>
   );
 }
@@ -358,9 +415,6 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     flex: 1,
-  },
-  tabContentContainer: {
-    flexGrow: 1,
   },
   loadingContent: {
     padding: spacing.lg,

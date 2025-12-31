@@ -18,11 +18,14 @@ import {
 import { theme } from '@/theme';
 import { useEventTimeline } from '@/hooks/useEvents';
 import { Skeleton, EmptyState } from '@/components/common';
+import { WorkflowProgressStepper } from '@/components/events/WorkflowProgressStepper';
 import { getRelativeTime } from '@/utils/formatting';
 import type { EventTimeline } from '@/types/events.types';
+import type { WorkflowProgress } from '@/apis/workflows.api';
 
 export interface TimelineTabProps {
   eventId: number;
+  workflowProgress?: WorkflowProgress | null;
 }
 
 const actionTypeConfig: Record<
@@ -42,7 +45,7 @@ const actionTypeConfig: Record<
   STATUS_CHANGED: { icon: Info, color: theme.colors.warning[500] },
 };
 
-export function TimelineTab({ eventId }: TimelineTabProps) {
+export function TimelineTab({ eventId, workflowProgress }: TimelineTabProps) {
   const { data: timeline, isLoading, refetch, isRefetching } = useEventTimeline(eventId);
 
   if (isLoading) {
@@ -102,12 +105,19 @@ export function TimelineTab({ eventId }: TimelineTabProps) {
     );
   };
 
+  const ListHeader = workflowProgress ? (
+    <View style={styles.workflowContainer}>
+      <WorkflowProgressStepper progress={workflowProgress} variant="stepper" />
+    </View>
+  ) : null;
+
   return (
     <FlatList
       data={timeline}
       renderItem={renderItem}
       keyExtractor={(item) => item.id.toString()}
       contentContainerStyle={styles.listContainer}
+      ListHeaderComponent={ListHeader}
       refreshControl={
         <RefreshControl
           refreshing={isRefetching}
@@ -186,6 +196,9 @@ const styles = StyleSheet.create({
   skeletonContent: {
     flex: 1,
     gap: theme.spacing.xs,
+  },
+  workflowContainer: {
+    marginBottom: theme.spacing.md,
   },
 });
 

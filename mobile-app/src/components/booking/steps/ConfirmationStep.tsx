@@ -111,10 +111,11 @@ export function ConfirmationStep({
   const { allowRefunds, refundPercentage, refundDeadlineHours, refundPolicyText } = useRefundPolicy();
 
   // Get step data from booking state
+  // NOTE: Step data keys must match StepDataMap types (e.g., payment_info, not payment)
   const dateTimeData = state.stepData.date_time as DateTimeStepData | undefined;
   const venueData = state.stepData.venue_selection as VenueSelectionStepData | undefined;
   const contactInfo = state.stepData.contact_info as ContactInfoStepData | undefined;
-  const paymentData = state.stepData.payment as PaymentStepData | undefined;
+  const paymentData = state.stepData.payment_info as PaymentStepData | undefined;
   const packageData = state.stepData.package_selection as PackageSelectionStepData | undefined;
   const addonData = state.stepData.addon_selection as AddonSelectionStepData | undefined;
   const pricingData = state.stepData.pricing_summary as PricingSummaryStepData | undefined;

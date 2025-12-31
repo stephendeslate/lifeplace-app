@@ -21,6 +21,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  Switch,
 } from 'react-native';
 import {
   CreditCard,
@@ -195,6 +196,9 @@ export function PaymentStep({
   const [isAddingNewMethod, setIsAddingNewMethod] = useState(!isAuthenticated);
   const [paymentMethodCreated, setPaymentMethodCreated] = useState(false);
 
+  // Save payment method preference (for authenticated users)
+  const [savePaymentMethod, setSavePaymentMethod] = useState(data.save_payment_method ?? true);
+
   // Calculate amounts from booking state
   const totalAmount = parseFloat(state.pricingBreakdown?.total || '0') || 0;
   const depositAmount = totalAmount * (depositPercentage / 100);
@@ -265,11 +269,26 @@ export function PaymentStep({
       onDataChange({
         ...data,
         payment_method: 'CREDIT_CARD',
+        save_payment_method: isAuthenticated ? savePaymentMethod : false,
       });
       // Show success feedback when card is validated
       setPaymentMethodCreated(true);
     }
-  }, [cardComplete, selectedGateway]);
+  }, [cardComplete, selectedGateway, savePaymentMethod, isAuthenticated]);
+
+  // Handle save payment method toggle
+  const handleSavePaymentMethodToggle = useCallback(
+    (value: boolean) => {
+      setSavePaymentMethod(value);
+      if (cardComplete) {
+        onDataChange({
+          ...data,
+          save_payment_method: value,
+        });
+      }
+    },
+    [data, onDataChange, cardComplete]
+  );
 
   const handleGatewaySelect = useCallback(
     async (gateway: GatewayOption) => {
@@ -876,6 +895,27 @@ export function PaymentStep({
               disabled={isPaymentLoading}
             />
           )}
+
+          {/* Save Payment Method Toggle - Only for authenticated users */}
+          {isAuthenticated && (
+            <View style={styles.saveMethodToggle}>
+              <View style={styles.saveMethodInfo}>
+                <Text style={styles.saveMethodLabel}>Save payment method</Text>
+                <Text style={styles.saveMethodDescription}>
+                  Securely save for faster checkout next time
+                </Text>
+              </View>
+              <Switch
+                value={savePaymentMethod}
+                onValueChange={handleSavePaymentMethodToggle}
+                trackColor={{
+                  false: colors.neutral.warmGray,
+                  true: colors.secondary.forest + '80',
+                }}
+                thumbColor={savePaymentMethod ? colors.secondary.forest : colors.neutral.gray}
+              />
+            </View>
+          )}
         </View>
       )}
 
@@ -1463,6 +1503,29 @@ const styles = StyleSheet.create({
   },
   cardFieldSection: {
     marginBottom: spacing.lg,
+  },
+  saveMethodToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.neutral.sand,
+    padding: spacing.md,
+    borderRadius: layout.borderRadius.md,
+    marginTop: spacing.md,
+  },
+  saveMethodInfo: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  saveMethodLabel: {
+    ...typeScale.labelMedium,
+    color: colors.primary.black,
+    fontWeight: '600',
+  },
+  saveMethodDescription: {
+    ...typeScale.bodySmall,
+    color: colors.neutral.darkGray,
+    marginTop: spacing.xxs,
   },
   loadingCardContainer: {
     flexDirection: 'row',
