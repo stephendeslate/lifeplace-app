@@ -41,6 +41,19 @@ export const QuestionnaireAPI = {
   },
 
   /**
+   * Get questionnaire detail with fields for booking flow.
+   * Uses public endpoint that doesn't require authentication.
+   *
+   * GET /bookingflow/public/flows/questionnaires/:questionnaireId/
+   */
+  getQuestionnaireDetail: async (questionnaireId: number): Promise<Questionnaire> => {
+    const response = await api.get<Questionnaire>(
+      `/bookingflow/public/flows/questionnaires/${questionnaireId}/`
+    );
+    return response.data;
+  },
+
+  /**
    * Get questionnaire fields.
    *
    * GET /questionnaires/fields/?questionnaire=:questionnaireId

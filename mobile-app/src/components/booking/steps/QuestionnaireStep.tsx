@@ -2,9 +2,10 @@
  * QuestionnaireStep
  *
  * Dynamic questionnaire with all 14 field types.
+ * Loads questionnaires from step configuration (questionnaire_items).
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,10 +16,9 @@ import {
   ActivityIndicator,
   Switch,
 } from 'react-native';
-import { ClipboardText, Check, Star, Upload, CaretDown } from 'phosphor-react-native';
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
-import { useQuestionnaires, useQuestionnaireFields } from '@/hooks/booking';
-import { useBookingContext } from '@/contexts/BookingContext';
+import { ClipboardText, Check, Star, Upload } from 'phosphor-react-native';
+import { colors, spacing, typeScale, layout } from '@/theme';
+import { QuestionnaireAPI } from '@/apis/booking/questionnaire.api';
 import type { StepComponentProps } from '../StepRenderer';
 import type {
   QuestionnaireStepData,
@@ -26,6 +26,7 @@ import type {
   QuestionnaireField,
   QuestionnaireFieldType,
   QuestionnaireFieldValues,
+  Questionnaire,
 } from '@/types/booking';
 
 type QuestionnaireStepProps = StepComponentProps<QuestionnaireStepData, QuestionnaireStepConfiguration>;
@@ -37,20 +38,72 @@ export function QuestionnaireStep({
   onDataChange,
   validationErrors,
 }: QuestionnaireStepProps) {
-  const { state } = useBookingContext();
-  const eventTypeId = state.selectedEventType?.id;
-
-  const { data: questionnaires, isLoading } = useQuestionnaires(eventTypeId);
-
   const [responses, setResponses] = useState<QuestionnaireFieldValues>(data?.responses || {});
+  const [loadedQuestionnaires, setLoadedQuestionnaires] = useState<Map<number, Questionnaire>>(new Map());
+  const [loadingQuestionnaires, setLoadingQuestionnaires] = useState<Set<number>>(new Set());
+  const [loadErrors, setLoadErrors] = useState<Map<number, string>>(new Map());
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  // Track if user has started editing to prevent overwriting their changes
+  const isUserEditing = useRef(false);
 
-  const { allow_file_uploads = true, max_file_size_mb = 10 } = configuration || {};
+  const { allow_file_uploads = true, max_file_size_mb = 10, questionnaire_items = [] } = configuration || {};
 
+  // Load questionnaire details from configuration
+  const loadQuestionnaireDetails = useCallback(async (questionnaireId: number) => {
+    if (loadedQuestionnaires.has(questionnaireId) || loadingQuestionnaires.has(questionnaireId)) {
+      return;
+    }
+
+    setLoadingQuestionnaires(prev => new Set(prev).add(questionnaireId));
+
+    try {
+      const questionnaire = await QuestionnaireAPI.getQuestionnaireDetail(questionnaireId);
+      setLoadedQuestionnaires(prev => new Map(prev).set(questionnaireId, questionnaire));
+      setLoadErrors(prev => {
+        const next = new Map(prev);
+        next.delete(questionnaireId);
+        return next;
+      });
+    } catch (error) {
+      console.error(`Failed to load questionnaire ${questionnaireId}:`, error);
+      setLoadErrors(prev => new Map(prev).set(questionnaireId, 'Failed to load questionnaire'));
+    } finally {
+      setLoadingQuestionnaires(prev => {
+        const next = new Set(prev);
+        next.delete(questionnaireId);
+        return next;
+      });
+    }
+  }, [loadedQuestionnaires, loadingQuestionnaires]);
+
+  // Load all questionnaires from configuration on mount
   useEffect(() => {
-    setResponses(data?.responses || {});
+    if (questionnaire_items && questionnaire_items.length > 0) {
+      const loadAll = async () => {
+        setIsInitialLoading(true);
+        for (const item of questionnaire_items) {
+          await loadQuestionnaireDetails(item.questionnaire);
+        }
+        setIsInitialLoading(false);
+      };
+      loadAll();
+    } else {
+      setIsInitialLoading(false);
+    }
+  }, [questionnaire_items]);
+
+  // Sync responses from saved data (e.g., when navigating back to this step)
+  // Only update if user hasn't started editing in this session
+  useEffect(() => {
+    if (!isUserEditing.current && data?.responses && Object.keys(data.responses).length > 0) {
+      setResponses(data.responses);
+    }
   }, [data]);
 
   const handleFieldChange = useCallback((fieldId: number, value: unknown) => {
+    // Mark that user has started editing to prevent data sync from overwriting
+    isUserEditing.current = true;
+
     const fieldKey = `field_${fieldId}`;
     const newResponses: QuestionnaireFieldValues = {
       ...responses,
@@ -68,30 +121,22 @@ export function QuestionnaireStep({
     return validationErrors?.[`field_${fieldId}`]?.[0];
   };
 
-  // Flatten all fields from all questionnaires
+  // Flatten all fields from loaded questionnaires, sorted by order
   const allFields = useMemo(() => {
-    if (!questionnaires) return [];
-    // Handle both array and paginated response formats
-    const questionnaireArray = Array.isArray(questionnaires)
-      ? questionnaires
-      : (questionnaires as { results?: typeof questionnaires })?.results || [];
-    if (!Array.isArray(questionnaireArray)) return [];
-    return questionnaireArray.flatMap((q) => q.fields || []).sort((a, b) => a.order - b.order);
-  }, [questionnaires]);
+    const fields: QuestionnaireField[] = [];
 
-  // Calculate completion percentage
-  const completionPercentage = useMemo(() => {
-    if (allFields.length === 0) return 100;
-    const requiredFields = allFields.filter((f) => f.is_required);
-    if (requiredFields.length === 0) return 100;
+    // Use questionnaire_items order to maintain proper ordering
+    for (const item of questionnaire_items) {
+      const questionnaire = loadedQuestionnaires.get(item.questionnaire);
+      if (questionnaire?.fields) {
+        fields.push(...questionnaire.fields);
+      }
+    }
 
-    const completedRequired = requiredFields.filter((f) => {
-      const value = getFieldValue(f.id);
-      return value !== undefined && value !== null && value !== '';
-    });
+    return fields.sort((a, b) => a.order - b.order);
+  }, [questionnaire_items, loadedQuestionnaires]);
 
-    return Math.round((completedRequired.length / requiredFields.length) * 100);
-  }, [allFields, responses]);
+  const isLoading = isInitialLoading || loadingQuestionnaires.size > 0;
 
   if (isLoading) {
     return (
@@ -102,7 +147,7 @@ export function QuestionnaireStep({
     );
   }
 
-  if (allFields.length === 0) {
+  if (questionnaire_items.length === 0 || allFields.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <ClipboardText size={48} color={colors.neutral.gray} />
@@ -129,14 +174,6 @@ export function QuestionnaireStep({
         </Text>
       </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${completionPercentage}%` }]} />
-        </View>
-        <Text style={styles.progressText}>{completionPercentage}% complete</Text>
-      </View>
-
       {/* Fields */}
       <View style={styles.fieldsList}>
         {allFields.map((field) => (
@@ -161,10 +198,24 @@ interface FieldRendererProps {
 }
 
 function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
-  const { field_type, label, placeholder, help_text, is_required, options = [] } = field;
+  // Handle both backend format (name, type, required) and expected format (label, field_type, is_required)
+  const fieldType = (field.field_type || (field as unknown as { type?: string }).type || 'text').toLowerCase();
+  const fieldLabel = field.label || (field as unknown as { name?: string }).name || 'Field';
+  const isRequired = field.is_required ?? (field as unknown as { required?: boolean }).required ?? false;
+  const placeholder = field.placeholder;
+  const helpText = field.help_text;
+
+  // Handle options - backend returns string[], type expects FieldOption[]
+  const rawOptions = field.options || [];
+  const options = rawOptions.map((opt) => {
+    if (typeof opt === 'string') {
+      return { value: opt, label: opt };
+    }
+    return opt;
+  });
 
   const renderField = () => {
-    switch (field_type) {
+    switch (fieldType) {
       case 'text':
       case 'email':
       case 'phone':
@@ -173,13 +224,13 @@ function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
             style={[styles.textInput, error && styles.inputError]}
             value={(value as string) || ''}
             onChangeText={onChange}
-            placeholder={placeholder || `Enter ${label.toLowerCase()}`}
+            placeholder={placeholder || `Enter ${fieldLabel.toLowerCase()}`}
             placeholderTextColor={colors.neutral.gray}
             keyboardType={
-              field_type === 'email' ? 'email-address' :
-              field_type === 'phone' ? 'phone-pad' : 'default'
+              fieldType === 'email' ? 'email-address' :
+              fieldType === 'phone' ? 'phone-pad' : 'default'
             }
-            autoCapitalize={field_type === 'email' ? 'none' : 'sentences'}
+            autoCapitalize={fieldType === 'email' ? 'none' : 'sentences'}
           />
         );
 
@@ -189,7 +240,7 @@ function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
             style={[styles.textInput, styles.textareaInput, error && styles.inputError]}
             value={(value as string) || ''}
             onChangeText={onChange}
-            placeholder={placeholder || `Enter ${label.toLowerCase()}`}
+            placeholder={placeholder || `Enter ${fieldLabel.toLowerCase()}`}
             placeholderTextColor={colors.neutral.gray}
             multiline
             numberOfLines={4}
@@ -233,7 +284,7 @@ function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
             <View style={[styles.checkbox, !!value && styles.checkboxChecked]}>
               {!!value && <Check size={14} color={colors.neutral.white} weight="bold" />}
             </View>
-            <Text style={styles.checkboxLabel}>{label}</Text>
+            <Text style={styles.checkboxLabel}>{fieldLabel}</Text>
           </TouchableOpacity>
         );
 
@@ -261,6 +312,7 @@ function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
         );
 
       case 'multi_select':
+      case 'multi-select':
         const selectedValues = (value as string[]) || [];
         return (
           <View style={styles.multiSelectContainer}>
@@ -342,7 +394,7 @@ function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
             style={[styles.textInput, error && styles.inputError]}
             value={(value as string) || ''}
             onChangeText={onChange}
-            placeholder={field_type === 'date' ? 'YYYY-MM-DD' : 'HH:MM'}
+            placeholder={fieldType === 'date' ? 'YYYY-MM-DD' : 'HH:MM'}
             placeholderTextColor={colors.neutral.gray}
           />
         );
@@ -363,7 +415,7 @@ function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
             style={[styles.textInput, error && styles.inputError]}
             value={(value as string) || ''}
             onChangeText={onChange}
-            placeholder={placeholder || `Enter ${label.toLowerCase()}`}
+            placeholder={placeholder || `Enter ${fieldLabel.toLowerCase()}`}
             placeholderTextColor={colors.neutral.gray}
           />
         );
@@ -371,11 +423,11 @@ function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
   };
 
   // For checkbox, the label is already shown inline
-  if (field_type === 'checkbox') {
+  if (fieldType === 'checkbox') {
     return (
       <View style={styles.fieldContainer}>
         {renderField()}
-        {help_text && <Text style={styles.helpText}>{help_text}</Text>}
+        {helpText && <Text style={styles.helpText}>{helpText}</Text>}
         {error && <Text style={styles.errorText}>{error}</Text>}
       </View>
     );
@@ -384,10 +436,10 @@ function FieldRenderer({ field, value, onChange, error }: FieldRendererProps) {
   return (
     <View style={styles.fieldContainer}>
       <View style={styles.labelContainer}>
-        <Text style={styles.label}>{label}</Text>
-        {is_required && <Text style={styles.requiredIndicator}>*</Text>}
+        <Text style={styles.label}>{fieldLabel}</Text>
+        {isRequired && <Text style={styles.requiredIndicator}>*</Text>}
       </View>
-      {help_text && <Text style={styles.helpText}>{help_text}</Text>}
+      {helpText && <Text style={styles.helpText}>{helpText}</Text>}
       {renderField()}
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
@@ -439,26 +491,6 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typeScale.bodyMedium,
     color: colors.neutral.darkGray,
-  },
-  progressContainer: {
-    marginBottom: spacing.xl,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: colors.neutral.warmGray,
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: spacing.xs,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.secondary.forest,
-    borderRadius: 3,
-  },
-  progressText: {
-    ...typeScale.labelSmall,
-    color: colors.neutral.darkGray,
-    textAlign: 'right',
   },
   fieldsList: {
     gap: spacing.lg,

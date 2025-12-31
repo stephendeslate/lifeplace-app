@@ -542,15 +542,67 @@ export function BookingProvider({ children }: BookingProviderProps) {
   );
 
   const nextStep = useCallback(async (): Promise<boolean> => {
-    const newIndex = state.progress.currentStepIndex + 1;
     const steps = state.currentFlow?.enabled_steps || state.currentFlow?.steps;
     const totalSteps = steps?.length || 0;
+    const newIndex = state.progress.currentStepIndex + 1;
 
     if (newIndex >= totalSteps) return false;
+    if (!state.sessionId) return false;
+
+    // Get current step to save its data before navigating
+    const currentStep = steps?.[state.progress.currentStepIndex];
+    if (currentStep) {
+      // Get the step data from local state
+      const stepData = state.stepData[currentStep.step_type];
+
+      if (stepData && Object.keys(stepData).length > 0) {
+        // Cast to Record for dynamic access - StepRenderer wraps data under step keys
+        const stepDataRecord = stepData as Record<string, unknown>;
+
+        // Extract the actual data from nested structure
+        // StepRenderer wraps data under step_type key, so we need to flatten
+        const nestedData = (
+          stepDataRecord[currentStep.step_type] ||
+          stepDataRecord[`step_${currentStep.id}`] ||
+          stepDataRecord
+        ) as Record<string, unknown>;
+
+        // Build the data to send - extract key fields at root level for backend
+        const dataToSave: Record<string, unknown> = { ...nestedData };
+
+        // Extract selected_packages if present (for package_selection step)
+        if (nestedData.selected_packages) {
+          dataToSave.selected_packages = nestedData.selected_packages;
+        }
+
+        // Extract selected_addons if present (for addon_selection step)
+        if (nestedData.selected_addons) {
+          dataToSave.selected_addons = nestedData.selected_addons;
+        }
+
+        // Extract venue_additional_hours if present
+        if (nestedData.venue_additional_hours) {
+          dataToSave.venue_additional_hours = nestedData.venue_additional_hours;
+        }
+
+        try {
+          // Save current step data to backend before navigating
+          await BookingCoreAPI.updateSessionData(
+            state.sessionId,
+            currentStep.id,
+            dataToSave,
+            true // markCompleted
+          );
+        } catch (error) {
+          console.warn('Failed to save step data before navigation:', error);
+          // Still allow navigation even if save fails
+        }
+      }
+    }
 
     await goToStep(newIndex);
     return true;
-  }, [state.progress.currentStepIndex, state.currentFlow, goToStep]);
+  }, [state.progress.currentStepIndex, state.currentFlow, state.stepData, state.sessionId, goToStep]);
 
   const previousStep = useCallback(() => {
     const newIndex = state.progress.currentStepIndex - 1;
