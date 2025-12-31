@@ -37,22 +37,25 @@ export interface ProductOption {
   category_id: number | null;
   category_name: string | null;
   base_price: string;
+  price_with_tax?: string;
   tax_rate: string;
   currency: string;
   pricing_model: 'FIXED' | 'HOURLY' | 'DAILY' | 'CUSTOM';
   unit_label: string | null;
   has_excess_hours: boolean;
-  included_hours: number | null;
+  included_hours: number | string | null;
   excess_hour_price: string | null;
   minimum_quantity: number;
   maximum_quantity: number | null;
   is_active: boolean;
+  is_featured?: boolean;
   sort_order: number;
   thumbnail_url: string | null;
   images: Array<{ id: number; image_url: string; alt_text: string }>;
   advance_booking_days: number | null;
   maximum_booking_days: number | null;
   included_venues: Array<{ venue_id: number; venue_name: string }>;
+  event_days?: number | null;
 }
 
 export interface Discount {

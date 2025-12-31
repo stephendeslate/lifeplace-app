@@ -297,6 +297,9 @@ export interface PricingSummaryStepConfiguration {
   show_itemized?: boolean;
   show_payment_schedule?: boolean;
   allow_promo_code?: boolean;
+  show_booking_review?: boolean;
+  show_event_details?: boolean;
+  show_contact_details?: boolean;
 }
 
 /**

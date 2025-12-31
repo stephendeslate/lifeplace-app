@@ -45,6 +45,7 @@ export type {
   PaymentType,
   PaymentSelection,
   PaymentCalculation,
+  PaymentPlanSettings,
   BankTransferDetails,
 } from './payment.types';
 

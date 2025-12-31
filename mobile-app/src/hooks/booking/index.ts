@@ -114,6 +114,8 @@ export {
   useFormatContactInfo,
   useMaskEmail,
   useMaskPhone,
+  useContactInfoManager,
+  useContactInfoValidation,
 } from './useContactInfo';
 
 // Payment
@@ -159,7 +161,9 @@ export {
   useNextSteps,
   useIsFullyConfirmed,
   useInvalidateConfirmations,
+  useConfirmationManager,
   confirmationKeys,
+  type CompletionStatus,
 } from './useConfirmation';
 
 // Pricing
@@ -178,3 +182,11 @@ export {
   useFormattedPricingSummary,
   useValidatePricingSummaryData,
 } from './usePricing';
+
+// Simple Pricing (unified pricing hook)
+export {
+  useSimplePricing,
+  useOptimisticPricing,
+  type SimplePricingBreakdown,
+  type UseSimplePricingOptions,
+} from './useSimplePricing';

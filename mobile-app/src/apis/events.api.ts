@@ -21,6 +21,7 @@ import type {
   TaskUpdate,
   CreateNoteInput,
   FeedbackSubmission,
+  EventAvailabilityResponse,
 } from '@/types/events.types';
 
 export const eventsApi = {
@@ -208,6 +209,40 @@ export const eventsApi = {
    */
   getEventsByStatus: async (status: string): Promise<Event[]> => {
     return eventsApi.getEvents({ status: status as Event['status'] });
+  },
+
+  // ==========================================================================
+  // PUBLIC AVAILABILITY ENDPOINTS
+  // ==========================================================================
+
+  /**
+   * Get public event availability for booking flow calendars.
+   *
+   * Returns events and blocked dates for the specified date range.
+   * Uses the date_blocked field to determine true availability:
+   * - date_blocked=true: Date is taken (first-to-pay-wins was won)
+   * - date_blocked=false: Date has pending bookings but is still available
+   *
+   * GET /events/public/availability/
+   */
+  getPublicEventAvailability: async (params: {
+    start_date: string;
+    end_date: string;
+    event_type_id?: number;
+  }): Promise<EventAvailabilityResponse> => {
+    const queryParams = new URLSearchParams({
+      start_date: params.start_date,
+      end_date: params.end_date,
+    });
+
+    if (params.event_type_id) {
+      queryParams.append('event_type_id', params.event_type_id.toString());
+    }
+
+    const response = await api.get<EventAvailabilityResponse>(
+      `/events/public/availability/?${queryParams.toString()}`
+    );
+    return response.data;
   },
 
   // ==========================================================================

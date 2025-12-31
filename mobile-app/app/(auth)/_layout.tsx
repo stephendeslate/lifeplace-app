@@ -46,7 +46,7 @@ export default function AuthLayout() {
 
   // If authenticated, redirect to main app
   if (isAuthenticated) {
-    return <Redirect href="/profile" />;
+    return <Redirect href="/(tabs)" />;
   }
 
   // Show auth screens

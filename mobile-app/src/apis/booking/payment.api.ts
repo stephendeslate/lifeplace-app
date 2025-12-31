@@ -15,6 +15,7 @@ import type {
   PaymentStepData,
   StepValidationResult,
   PaymentType,
+  PaymentPlanSettings,
   PAYMENT_GATEWAY_LABELS,
   PAYMENT_GATEWAY_ICONS,
 } from '@/types/booking';
@@ -24,6 +25,18 @@ import type {
 // =============================================================================
 
 export const PaymentAPI = {
+  /**
+   * Get payment plan settings (deposit percentage, balance due days, refund policy, etc.)
+   * CONSOLIDATED: Single source of truth for payment plan configuration.
+   * Uses public endpoint (no authentication required) for booking flows.
+   *
+   * GET /payments/public/settings/1/
+   */
+  getPaymentPlanSettings: async (): Promise<PaymentPlanSettings> => {
+    const response = await api.get<PaymentPlanSettings>('/payments/public/settings/1/');
+    return response.data;
+  },
+
   /**
    * Get available payment gateways for a booking flow.
    *

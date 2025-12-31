@@ -25,13 +25,18 @@ import type {
 interface VenuePublic {
   id: number;
   name: string;
-  description: string;
-  capacity: number;
-  thumbnail_url: string | null;
-  images: Array<{ id: number; image_url: string; alt_text: string }>;
-  amenities: Array<{ name: string; icon: string }>;
-  operating_rules: VenueOperatingRulesPublic | null;
-  is_active: boolean;
+  description?: string;
+  location_description?: string;
+  capacity?: number;
+  capacity_min: number;
+  capacity_max: number;
+  featured_image_url?: string;
+  thumbnail_url?: string | null;
+  gallery_images?: string[];
+  images?: Array<{ id: number; image_url: string; alt_text: string }>;
+  amenities?: string[] | Array<{ name: string; icon: string }>;
+  operating_rules: VenueOperatingRulesPublic;
+  is_active?: boolean;
 }
 
 interface CalculateTimesRequest {

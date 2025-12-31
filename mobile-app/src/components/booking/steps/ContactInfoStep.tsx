@@ -2,6 +2,14 @@
  * ContactInfoStep
  *
  * Contact information collection with validation.
+ * Features:
+ * - Auto-prefill from authenticated user
+ * - Real-time validation states (validating/valid/invalid)
+ * - Phone number formatting for Philippines
+ * - Full name validation (first + last name)
+ * - Validation strength indicators
+ *
+ * Adapted from: frontend/client-portal/src/components/booking/steps/EnhancedContactInfoStep.tsx
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -14,6 +22,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import {
   User,
@@ -24,14 +33,85 @@ import {
   IdentificationCard,
   Warning,
   Check,
+  CheckCircle,
+  Star,
+  Spinner,
 } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
+import { useContactInfoManager } from '@/hooks/booking/useContactInfo';
 import type { StepComponentProps } from '../StepRenderer';
 import type { ContactInfoStepData, ContactInfoStepConfiguration } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
 
-type ContactInfoStepProps = StepComponentProps<ContactInfoStepData, ContactInfoStepConfiguration>;
+// =============================================================================
+// TYPES
+// =============================================================================
+
+type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid';
+
+interface FieldValidationStates {
+  full_name: ValidationState;
+  email: ValidationState;
+  phone: ValidationState;
+}
+
+type ContactInfoStepProps = StepComponentProps<ContactInfoStepData, ContactInfoStepConfiguration> & {
+  /** Whether step is currently being validated */
+  isValidating?: boolean;
+};
+
+// =============================================================================
+// UTILITIES
+// =============================================================================
+
+/**
+ * Format phone number for Philippines format.
+ * Converts to +63 XXX XXX XXXX format as user types.
+ */
+const formatPhoneNumber = (value: string): string => {
+  const cleaned = value.replace(/\D/g, '');
+
+  if (cleaned.length <= 4) return cleaned;
+  if (cleaned.length <= 7) return `${cleaned.slice(0, 4)}-${cleaned.slice(4)}`;
+  if (cleaned.length <= 11) {
+    return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+  }
+
+  // For international format starting with 63
+  if (cleaned.startsWith('63')) {
+    return `+63 ${cleaned.slice(2, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8, 12)}`;
+  }
+
+  return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 7)}-${cleaned.slice(7, 11)}`;
+};
+
+/**
+ * Validate email format.
+ */
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+/**
+ * Validate phone number for Philippines.
+ */
+const validatePhoneNumber = (phone: string): boolean => {
+  const cleaned = phone.replace(/\D/g, '');
+  // Accept 10-11 digit numbers, or international format starting with 63
+  return (
+    cleaned.length >= 10 &&
+    (cleaned.length <= 11 || (cleaned.startsWith('63') && cleaned.length === 12))
+  );
+};
+
+/**
+ * Validate full name (should have at least first and last name).
+ */
+const validateFullName = (name: string): boolean => {
+  return name.trim().length > 0 && name.includes(' ');
+};
 
 interface FormField {
   key: string;
@@ -50,8 +130,17 @@ export function ContactInfoStep({
   configuration,
   onDataChange,
   validationErrors,
+  isValidating = false,
 }: ContactInfoStepProps) {
   const { state } = useBookingContext();
+
+  // Use the contact info manager for auth prefill
+  const {
+    getInitialData,
+    isAuthenticated,
+    user,
+    fieldRequirements,
+  } = useContactInfoManager(configuration);
 
   const {
     required_fields = ['first_name', 'last_name', 'email', 'phone'],
@@ -60,19 +149,86 @@ export function ContactInfoStep({
     collect_emergency_contact = false,
     terms_url,
     privacy_url,
+    title = 'Contact Information',
+    description,
   } = configuration || {};
 
-  const [formData, setFormData] = useState<ContactInfoStepData>(data);
+  // Initialize form data with auth prefill if available
+  const [formData, setFormData] = useState<ContactInfoStepData>(() => {
+    // If we have existing data, use it
+    if (data && Object.keys(data).length > 0) {
+      return data;
+    }
+    // Otherwise try to prefill from authenticated user
+    return getInitialData();
+  });
+
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [validationStates, setValidationStates] = useState<FieldValidationStates>({
+    full_name: 'idle',
+    email: 'idle',
+    phone: 'idle',
+  });
+  const [fieldStrengths, setFieldStrengths] = useState({
+    email: 0,
+    phone: 0,
+  });
+
+  // Sync prefilled data to parent on mount for authenticated users
+  useEffect(() => {
+    if (isAuthenticated && user && (!data || Object.keys(data).length === 0)) {
+      onDataChange(formData);
+    }
+  }, []); // Only run on mount
 
   useEffect(() => {
-    setFormData(data);
+    // Only update if data changed from parent
+    if (data && JSON.stringify(data) !== JSON.stringify(formData)) {
+      setFormData(data);
+    }
   }, [data]);
 
   const handleFieldChange = useCallback((field: string, value: string) => {
-    const newData = { ...formData, [field]: value };
+    let processedValue = value;
+
+    // Format phone number as user types
+    if (field === 'phone') {
+      processedValue = formatPhoneNumber(value);
+    }
+
+    const newData = { ...formData, [field]: processedValue };
     setFormData(newData);
     onDataChange(newData);
+
+    // Real-time validation for specific fields
+    if (field === 'email') {
+      setValidationStates((prev) => ({ ...prev, email: 'validating' }));
+      setTimeout(() => {
+        const isValid = validateEmail(processedValue);
+        setValidationStates((prev) => ({ ...prev, email: isValid ? 'valid' : 'invalid' }));
+        setFieldStrengths((prev) => ({
+          ...prev,
+          email: isValid ? (processedValue.includes('.com') ? 100 : 80) : 0,
+        }));
+      }, 500);
+    }
+
+    if (field === 'phone') {
+      setValidationStates((prev) => ({ ...prev, phone: 'validating' }));
+      setTimeout(() => {
+        const isValid = validatePhoneNumber(processedValue);
+        setValidationStates((prev) => ({ ...prev, phone: isValid ? 'valid' : 'invalid' }));
+        setFieldStrengths((prev) => ({ ...prev, phone: isValid ? 100 : 0 }));
+      }, 500);
+    }
+
+    if (field === 'full_name') {
+      setValidationStates((prev) => ({ ...prev, full_name: 'validating' }));
+      setTimeout(() => {
+        const hasFullName = validateFullName(processedValue);
+        setValidationStates((prev) => ({ ...prev, full_name: hasFullName ? 'valid' : 'invalid' }));
+      }, 300);
+    }
   }, [formData, onDataChange]);
 
   const handleFieldFocus = (field: string) => {
@@ -90,6 +246,26 @@ export function ContactInfoStep({
   const getFieldError = (field: string): string | undefined => {
     const fieldErrors = validationErrors?.[field];
     return fieldErrors?.[0];
+  };
+
+  // Get validation state icon for a field
+  const getValidationIcon = (field: keyof FieldValidationStates) => {
+    const state = validationStates[field];
+    switch (state) {
+      case 'validating':
+        return <ActivityIndicator size="small" color={colors.tertiary.teal} />;
+      case 'valid':
+        return <CheckCircle size={18} color={colors.secondary.forest} weight="fill" />;
+      case 'invalid':
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  // Get field strength indicator
+  const getFieldStrength = (field: 'email' | 'phone'): number => {
+    return fieldStrengths[field];
   };
 
   const personalFields: FormField[] = [
@@ -170,6 +346,10 @@ export function ContactInfoStep({
     const error = getFieldError(field.key);
     const isFocused = focusedField === field.key;
     const hasValue = !!formData[field.key];
+    const fieldKey = field.key as keyof FieldValidationStates;
+    const isValidatedField = ['full_name', 'email', 'phone'].includes(field.key);
+    const validationIcon = isValidatedField ? getValidationIcon(fieldKey) : null;
+    const strength = (field.key === 'email' || field.key === 'phone') ? getFieldStrength(field.key) : 0;
 
     return (
       <View key={field.key} style={styles.fieldContainer}>
@@ -183,6 +363,7 @@ export function ContactInfoStep({
             isFocused && styles.inputContainerFocused,
             error && styles.inputContainerError,
             hasValue && !error && styles.inputContainerFilled,
+            validationStates[fieldKey] === 'valid' && styles.inputContainerValid,
           ]}
         >
           {field.icon}
@@ -199,14 +380,31 @@ export function ContactInfoStep({
             multiline={field.multiline}
             numberOfLines={field.multiline ? 3 : 1}
           />
-          {hasValue && !error && (
+          {validationIcon || (hasValue && !error && !isValidatedField && (
             <Check size={18} color={colors.secondary.forest} weight="bold" />
-          )}
+          ))}
         </View>
         {error && (
           <View style={styles.errorRow}>
             <Warning size={14} color={colors.semantic.error} />
             <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+        {/* Strength indicator for email and phone */}
+        {strength > 0 && (
+          <View style={styles.strengthContainer}>
+            <View style={styles.strengthBar}>
+              <View
+                style={[
+                  styles.strengthFill,
+                  { width: `${strength}%` },
+                  strength > 80 ? styles.strengthFillStrong : styles.strengthFillGood,
+                ]}
+              />
+            </View>
+            <Text style={[styles.strengthText, strength > 80 ? styles.strengthTextStrong : styles.strengthTextGood]}>
+              {strength > 80 ? 'Strong' : 'Good'}
+            </Text>
           </View>
         )}
       </View>
@@ -227,11 +425,63 @@ export function ContactInfoStep({
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Contact Information</Text>
+          <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>
-            Please provide your contact details for booking confirmation
+            {description || 'Please provide your contact details for booking confirmation'}
           </Text>
         </View>
+
+        {/* Validation Status Chips */}
+        <View style={styles.validationChips}>
+          {[
+            { key: 'full_name', label: 'Name', icon: <User size={14} /> },
+            { key: 'email', label: 'Email', icon: <Envelope size={14} /> },
+            { key: 'phone', label: 'Phone', icon: <Phone size={14} /> },
+          ].map((item) => (
+            <View
+              key={item.key}
+              style={[
+                styles.validationChip,
+                validationStates[item.key as keyof FieldValidationStates] === 'valid' &&
+                  styles.validationChipValid,
+              ]}
+            >
+              {validationStates[item.key as keyof FieldValidationStates] === 'valid' ? (
+                <CheckCircle size={14} color={colors.secondary.forest} weight="fill" />
+              ) : (
+                item.icon
+              )}
+              <Text
+                style={[
+                  styles.validationChipText,
+                  validationStates[item.key as keyof FieldValidationStates] === 'valid' &&
+                    styles.validationChipTextValid,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Authenticated User Banner */}
+        {isAuthenticated && user && (
+          <View style={styles.authBanner}>
+            <View style={styles.authBannerIcon}>
+              <CheckCircle size={24} color={colors.secondary.forest} weight="fill" />
+            </View>
+            <View style={styles.authBannerContent}>
+              <Text style={styles.authBannerTitle}>Welcome back, {user.first_name}!</Text>
+              <Text style={styles.authBannerSubtitle}>
+                We've pre-filled your information from your account
+              </Text>
+            </View>
+            <View style={styles.authBannerBadge}>
+              <Star size={12} color={colors.secondary.forest} weight="fill" />
+              <Text style={styles.authBannerBadgeText}>Verified</Text>
+            </View>
+          </View>
+        )}
 
         {/* Personal Information */}
         <View style={styles.section}>
@@ -314,6 +564,14 @@ export function ContactInfoStep({
             <Text style={styles.requiredMark}>*</Text> Required fields
           </Text>
         </View>
+
+        {/* Validation indicator */}
+        {isValidating && (
+          <View style={styles.validatingContainer}>
+            <ActivityIndicator size="small" color={colors.neutral.darkGray} />
+            <Text style={styles.validatingText}>Validating information...</Text>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -396,6 +654,10 @@ const styles = StyleSheet.create({
   inputContainerFilled: {
     borderColor: colors.secondary.forest,
   },
+  inputContainerValid: {
+    borderColor: colors.secondary.forest,
+    backgroundColor: colors.secondary.forestSubtle,
+  },
   textAreaContainer: {
     alignItems: 'flex-start',
     paddingVertical: spacing.md,
@@ -444,6 +706,124 @@ const styles = StyleSheet.create({
   requiredNoteText: {
     ...typeScale.labelSmall,
     color: colors.neutral.gray,
+  },
+  // Validation chips
+  validationChips: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  validationChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.alpha.black05,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: layout.borderRadius.full,
+    gap: spacing.xxs,
+  },
+  validationChipValid: {
+    backgroundColor: colors.secondary.forestSubtle,
+  },
+  validationChipText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
+  },
+  validationChipTextValid: {
+    color: colors.secondary.forest,
+    fontWeight: '600',
+  },
+  // Auth banner
+  authBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.secondary.forestSubtle,
+    borderWidth: 1,
+    borderColor: colors.secondary.forest + '40',
+    borderRadius: layout.borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  authBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.secondary.forest + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authBannerContent: {
+    flex: 1,
+  },
+  authBannerTitle: {
+    ...typeScale.labelMedium,
+    color: colors.primary.black,
+    fontWeight: '600',
+  },
+  authBannerSubtitle: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+  },
+  authBannerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.secondary.forest + '20',
+    paddingVertical: spacing.xxs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: layout.borderRadius.sm,
+    gap: spacing.xxs,
+  },
+  authBannerBadgeText: {
+    ...typeScale.labelSmall,
+    color: colors.secondary.forest,
+    fontWeight: '600',
+  },
+  // Strength indicators
+  strengthContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  strengthBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: colors.alpha.black10,
+    borderRadius: 2,
+  },
+  strengthFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  strengthFillStrong: {
+    backgroundColor: colors.secondary.forest,
+  },
+  strengthFillGood: {
+    backgroundColor: colors.semantic.warning,
+  },
+  strengthText: {
+    ...typeScale.labelSmall,
+  },
+  strengthTextStrong: {
+    color: colors.secondary.forest,
+  },
+  strengthTextGood: {
+    color: colors.semantic.warning,
+  },
+  // Validation indicator
+  validatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  validatingText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
   },
 });
 
