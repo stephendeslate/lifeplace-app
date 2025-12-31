@@ -187,7 +187,8 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
       return {
         ...state,
         totalPrice: action.payload.total,
-        pricingBreakdown: action.payload.breakdown,
+        // Preserve existing breakdown if null is passed (allows updating just the total)
+        pricingBreakdown: action.payload.breakdown ?? state.pricingBreakdown,
       };
 
     case 'SET_TAX_RATE':
@@ -691,8 +692,10 @@ export function BookingProvider({ children }: BookingProviderProps) {
   );
 
   const updateTotalPrice = useCallback((price: string) => {
-    dispatch({ type: 'SET_PRICING', payload: { total: price, breakdown: state.pricingBreakdown } });
-  }, [state.pricingBreakdown]);
+    // Note: Only updates total, preserving existing breakdown via functional dispatch pattern
+    // This avoids dependency on state.pricingBreakdown which would cause infinite re-renders
+    dispatch({ type: 'SET_PRICING', payload: { total: price, breakdown: null } });
+  }, []);
 
   const setTaxRate = useCallback((rate: number) => {
     dispatch({ type: 'SET_TAX_RATE', payload: rate });

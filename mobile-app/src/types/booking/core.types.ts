@@ -145,7 +145,10 @@ export interface BookingFlow {
   name: string;
   slug: string;
   description?: string;
-  event_type: EventType;
+  /** Event type ID (API returns ID, not the full object) */
+  event_type?: number;
+  /** Event type name for display (denormalized from event type) */
+  event_type_name: string | null;
   enabled_steps: BookingFlowStep[];
   /** @deprecated Use enabled_steps instead. Kept for backward compatibility */
   steps?: BookingFlowStep[];

@@ -22,9 +22,9 @@ export default function BookingIndexScreen() {
       // Select the event type and fetch available flows
       await actions.selectEventType(eventType);
 
-      // Get the first available flow for this event type
+      // Get the first available flow for this event type (event_type is the ID directly)
       const flows = state.availableFlows.filter(
-        (flow) => flow.event_type?.id === eventType.id || !flow.event_type
+        (flow) => flow.event_type === eventType.id || !flow.event_type
       );
 
       if (flows.length === 1) {

@@ -200,6 +200,22 @@ export const useSimplePricing = (
       );
 
       setPricing(fallbackPricing);
+
+      // Also sync fallback pricing to context so PricingSummaryBar appears
+      if (actions.setPricingBreakdown) {
+        actions.setPricingBreakdown({
+          subtotal: fallbackPricing.subtotal.toString(),
+          tax: fallbackPricing.tax.toString(),
+          tax_rate: fallbackPricing.taxRate,
+          discount: fallbackPricing.discount.toString(),
+          total: fallbackPricing.total.toString(),
+          formattedSubtotal: fallbackPricing.formattedSubtotal,
+          formattedTax: fallbackPricing.formattedTax,
+          formattedDiscount: fallbackPricing.formattedDiscount,
+          formattedTotal: fallbackPricing.formattedTotal,
+          lineItems: fallbackPricing.lineItems,
+        });
+      }
     } finally {
       setLoading(false);
     }

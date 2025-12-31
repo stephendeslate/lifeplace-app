@@ -309,8 +309,8 @@ export function BookingContainer({
           ))}
         </ScrollView>
 
-        {/* Pricing Summary Bar */}
-        {showPricing && pricingBreakdown && (
+        {/* Pricing Summary Bar - shown as soon as totalPrice > 0 (follows client-portal pattern) */}
+        {showPricing && totalPrice && totalPrice !== '0.00' && pricingBreakdown && (
           <PricingSummaryBar
             subtotal={pricingBreakdown.subtotal}
             tax={pricingBreakdown.tax}

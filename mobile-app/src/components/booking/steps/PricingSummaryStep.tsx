@@ -484,7 +484,7 @@ export function PricingSummaryStep({
                 <View style={styles.reviewRow}>
                   <Text style={styles.reviewLabel}>Event Type</Text>
                   <Text style={styles.reviewValue}>
-                    {state.currentFlow?.event_type?.name || 'Not specified'}
+                    {state.currentFlow?.event_type_name || 'Not specified'}
                   </Text>
                 </View>
                 <View style={styles.reviewRow}>

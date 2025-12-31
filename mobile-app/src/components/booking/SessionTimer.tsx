@@ -4,7 +4,7 @@
  * Session expiry countdown display with warning states.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Timer, Warning } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
@@ -34,15 +34,35 @@ export function SessionTimer({
   const [timeRemaining, setTimeRemaining] = useState(() => getSessionRemainingTime(expiresAt));
   const [timerState, setTimerState] = useState<TimerState>('normal');
 
+  // Use ref for onExpired to avoid recreating updateTimer when the callback changes
+  const onExpiredRef = useRef(onExpired);
+  onExpiredRef.current = onExpired;
+
+  // Track if we've already called onExpired to prevent multiple calls
+  const hasExpiredRef = useRef(false);
+
   const updateTimer = useCallback(() => {
     const remaining = getSessionRemainingTime(expiresAt);
-    setTimeRemaining(remaining);
+
+    // Only update state if values actually changed
+    setTimeRemaining(prev => {
+      if (prev.hours === remaining.hours &&
+          prev.minutes === remaining.minutes &&
+          prev.seconds === remaining.seconds &&
+          prev.isExpired === remaining.isExpired) {
+        return prev;
+      }
+      return remaining;
+    });
 
     const totalMinutes = remaining.hours * 60 + remaining.minutes;
 
     if (remaining.isExpired) {
       setTimerState('expired');
-      onExpired?.();
+      if (!hasExpiredRef.current) {
+        hasExpiredRef.current = true;
+        onExpiredRef.current?.();
+      }
     } else if (totalMinutes <= criticalThresholdMinutes) {
       setTimerState('critical');
     } else if (totalMinutes <= warningThresholdMinutes) {
@@ -50,9 +70,11 @@ export function SessionTimer({
     } else {
       setTimerState('normal');
     }
-  }, [expiresAt, warningThresholdMinutes, criticalThresholdMinutes, onExpired]);
+  }, [expiresAt, warningThresholdMinutes, criticalThresholdMinutes]);
 
   useEffect(() => {
+    // Reset expired state when expiresAt changes
+    hasExpiredRef.current = false;
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
