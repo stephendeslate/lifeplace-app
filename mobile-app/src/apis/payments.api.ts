@@ -1,11 +1,17 @@
 /**
  * Payments API
  *
- * API calls for payments and invoices.
+ * API calls for payments, invoices, and saved payment methods.
  */
 
 import api from '@/utils/api';
 import type { FinancialSummary, OverduePayment } from '@/types/dashboard.types';
+import type {
+  ClientPaymentMethod,
+  PaymentMethodFormData,
+  PaginatedPaymentMethodsResponse,
+  SetupIntentResponse,
+} from '@/types/booking';
 
 // =============================================================================
 // TYPES
@@ -304,6 +310,92 @@ export const paymentsApi = {
     const response = await api.get<Blob>(`/payments/client/invoices/${id}/download/`, {
       responseType: 'blob',
     });
+    return response.data;
+  },
+
+  // ===========================================================================
+  // SAVED PAYMENT METHODS
+  // ===========================================================================
+
+  /**
+   * Get client's saved payment methods
+   * GET /payments/client/payment-methods/
+   */
+  getPaymentMethods: async (): Promise<ClientPaymentMethod[]> => {
+    const response = await api.get<PaginatedPaymentMethodsResponse>(
+      '/payments/client/payment-methods/'
+    );
+    return response.data.results || [];
+  },
+
+  /**
+   * Get a single payment method by ID
+   * GET /payments/client/payment-methods/:id/
+   */
+  getPaymentMethod: async (id: number): Promise<ClientPaymentMethod> => {
+    const response = await api.get<ClientPaymentMethod>(
+      `/payments/client/payment-methods/${id}/`
+    );
+    return response.data;
+  },
+
+  /**
+   * Create a new payment method
+   * POST /payments/client/payment-methods/
+   */
+  createPaymentMethod: async (
+    data: PaymentMethodFormData
+  ): Promise<ClientPaymentMethod> => {
+    const response = await api.post<ClientPaymentMethod>(
+      '/payments/client/payment-methods/',
+      data
+    );
+    return response.data;
+  },
+
+  /**
+   * Update a payment method
+   * PATCH /payments/client/payment-methods/:id/
+   */
+  updatePaymentMethod: async (
+    id: number,
+    data: Partial<PaymentMethodFormData>
+  ): Promise<ClientPaymentMethod> => {
+    const response = await api.patch<ClientPaymentMethod>(
+      `/payments/client/payment-methods/${id}/`,
+      data
+    );
+    return response.data;
+  },
+
+  /**
+   * Delete a payment method
+   * DELETE /payments/client/payment-methods/:id/
+   */
+  deletePaymentMethod: async (id: number): Promise<void> => {
+    await api.delete(`/payments/client/payment-methods/${id}/`);
+  },
+
+  /**
+   * Set a payment method as default
+   * POST /payments/client/payment-methods/:id/set_default/
+   */
+  setDefaultPaymentMethod: async (id: number): Promise<ClientPaymentMethod> => {
+    const response = await api.post<ClientPaymentMethod>(
+      `/payments/client/payment-methods/${id}/set_default/`
+    );
+    return response.data;
+  },
+
+  /**
+   * Create Stripe setup intent for saving payment methods
+   * POST /payments/client/payment-methods/setup_intent/
+   */
+  createStripeSetupIntent: async (): Promise<SetupIntentResponse> => {
+    const response = await api.post<SetupIntentResponse>(
+      '/payments/client/payment-methods/setup_intent/',
+      { gateway_code: 'stripe' }
+    );
     return response.data;
   },
 };

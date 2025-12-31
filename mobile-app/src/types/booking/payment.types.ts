@@ -198,3 +198,86 @@ export interface PaymentPlanSettings {
   created_at?: string;
   updated_at?: string;
 }
+
+// =============================================================================
+// CLIENT PAYMENT METHOD TYPES
+// Types for saved payment methods (from /payments/client/payment-methods/)
+// =============================================================================
+
+/**
+ * Payment method type codes
+ */
+export type PaymentMethodType =
+  | 'CREDIT_CARD'
+  | 'BANK_TRANSFER'
+  | 'DIGITAL_WALLET'
+  | 'CHECK'
+  | 'CASH'
+  | 'MANUAL';
+
+/**
+ * Gateway details for a payment method
+ */
+export interface PaymentMethodGatewayDetails {
+  id: number;
+  name: string;
+  code: string;
+}
+
+/**
+ * Client payment method (saved to database)
+ * Matches backend PaymentMethod model serialization
+ */
+export interface ClientPaymentMethod {
+  id: number;
+  type: PaymentMethodType;
+  type_display: string;
+  nickname?: string;
+  last_four?: string;
+  card_brand?: string;
+  exp_month?: number;
+  exp_year?: number;
+  is_default: boolean;
+  is_active: boolean;
+  gateway?: number;
+  gateway_details?: PaymentMethodGatewayDetails;
+  stripe_payment_method_id?: string;
+  instructions?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Form data for creating a new payment method
+ */
+export interface PaymentMethodFormData {
+  type: PaymentMethodType;
+  nickname?: string;
+  is_default?: boolean;
+  gateway?: number;
+  instructions?: string;
+  // Stripe-specific fields
+  stripe_payment_method_id?: string;
+  last_four?: string;
+  card_brand?: string;
+  exp_month?: number;
+  exp_year?: number;
+}
+
+/**
+ * Response from Stripe setup intent creation
+ */
+export interface SetupIntentResponse {
+  client_secret: string;
+  setup_intent_id: string;
+}
+
+/**
+ * Paginated response for payment methods
+ */
+export interface PaginatedPaymentMethodsResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: ClientPaymentMethod[];
+}

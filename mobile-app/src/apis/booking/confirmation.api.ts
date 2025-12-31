@@ -62,23 +62,59 @@ export const ConfirmationAPI = {
   /**
    * Get booking details after completion.
    *
-   * GET /bookingflow/public/flows/session/:sessionId/details/
+   * Uses the main session endpoint to get session status.
+   * Note: The public session endpoint returns minimal data (no booking_data).
+   * Full booking details (contact info, dates, etc.) should come from
+   * local state in the ConfirmationStep component.
+   *
+   * GET /bookingflow/public/flows/session/:sessionId/
    */
   getBookingDetails: async (sessionId: string): Promise<BookingDetails> => {
-    const response = await api.get<BookingDetails>(
-      `/bookingflow/public/flows/session/${sessionId}/details/`
-    );
-    return response.data;
+    const response = await api.get<{
+      session_id: string;
+      booking_flow: number;
+      progress_percentage: number;
+      expires_at: string;
+      is_completed: boolean;
+      is_abandoned: boolean;
+      total_price: string;
+    }>(`/bookingflow/public/flows/session/${sessionId}/`);
+
+    const session = response.data;
+
+    // Return basic session info - full details come from local state
+    return {
+      booking_reference: session.session_id.slice(0, 8).toUpperCase(),
+      event_id: 0,
+      event_name: '',
+      event_date: '',
+      venue_name: '',
+      total_amount: session.total_price,
+      deposit_amount: null,
+      balance_due: null,
+      payment_status: session.is_completed ? 'paid' : 'pending',
+      confirmation_sent: session.is_completed,
+      calendar_links: {
+        google: '',
+        outlook: '',
+        ical: '',
+      },
+      contact_info: {
+        full_name: '',
+        email: '',
+        phone: null,
+      },
+    };
   },
 
   /**
    * Resend confirmation email.
    *
-   * POST /bookingflow/public/flows/session/:sessionId/resend-confirmation/
+   * POST /bookingflow/public/flows/session/:sessionId/send-confirmation/
    */
   resendConfirmation: async (sessionId: string): Promise<{ success: boolean; message: string }> => {
     const response = await api.post<{ success: boolean; message: string }>(
-      `/bookingflow/public/flows/session/${sessionId}/resend-confirmation/`
+      `/bookingflow/public/flows/session/${sessionId}/send-confirmation/`
     );
     return response.data;
   },
@@ -86,13 +122,14 @@ export const ConfirmationAPI = {
   /**
    * Get downloadable receipt/invoice.
    *
-   * GET /bookingflow/public/flows/session/:sessionId/receipt/
+   * Note: This endpoint is not yet implemented in the backend.
+   * Returns a placeholder for now.
    */
-  getReceiptUrl: async (sessionId: string): Promise<{ url: string }> => {
-    const response = await api.get<{ url: string }>(
-      `/bookingflow/public/flows/session/${sessionId}/receipt/`
-    );
-    return response.data;
+  getReceiptUrl: async (_sessionId: string): Promise<{ url: string }> => {
+    // Receipt endpoint not yet implemented in backend
+    // When implemented, use: `/bookingflow/public/flows/session/${sessionId}/receipt/`
+    console.warn('Receipt URL endpoint not yet implemented');
+    return { url: '' };
   },
 
   /**

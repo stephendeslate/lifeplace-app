@@ -41,7 +41,7 @@ import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { useAuthStore, selectIsAuthenticated } from '@/stores/authStore';
 import { formatCurrency } from '@/utils/currency';
-import { StripeCardField } from '@/components/payments';
+import { StripeCardField, PaymentMethodSelector } from '@/components/payments';
 import { useBookingPayment } from '@/hooks/booking/useBookingPayment';
 import { useFlowPaymentGateways } from '@/hooks/booking/usePayment';
 import { usePaymentPlanSettings, useRefundPolicy } from '@/hooks/usePaymentPlanSettings';
@@ -50,6 +50,7 @@ import type {
   PaymentStepData,
   PaymentInfoStepConfiguration,
   PaymentGateway,
+  ClientPaymentMethod,
 } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
 
@@ -189,6 +190,11 @@ export function PaymentStep({
   );
   const [quoteMessage, setQuoteMessage] = useState(data.quote_message || '');
 
+  // Saved payment methods state
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<ClientPaymentMethod | null>(null);
+  const [isAddingNewMethod, setIsAddingNewMethod] = useState(!isAuthenticated);
+  const [paymentMethodCreated, setPaymentMethodCreated] = useState(false);
+
   // Calculate amounts from booking state
   const totalAmount = parseFloat(state.pricingBreakdown?.total || '0') || 0;
   const depositAmount = totalAmount * (depositPercentage / 100);
@@ -225,6 +231,17 @@ export function PaymentStep({
     }
   }, [completionChoice, selectedGateway, availableGateways]);
 
+  // When quote requests are not allowed, default to payment completion
+  useEffect(() => {
+    if (!allowQuoteRequest && !data.completion_type) {
+      setCompletionChoice('payment');
+      onDataChange({
+        ...data,
+        completion_type: 'payment',
+      });
+    }
+  }, [allowQuoteRequest, data.completion_type]);
+
   // Sync deposit values to stepData
   useEffect(() => {
     const shouldUpdate =
@@ -249,6 +266,8 @@ export function PaymentStep({
         ...data,
         payment_method: 'CREDIT_CARD',
       });
+      // Show success feedback when card is validated
+      setPaymentMethodCreated(true);
     }
   }, [cardComplete, selectedGateway]);
 
@@ -363,6 +382,59 @@ export function PaymentStep({
     },
     [data, onDataChange]
   );
+
+  // Handle saved payment method selection
+  const handleSavedPaymentMethodSelect = useCallback(
+    async (method: ClientPaymentMethod | null) => {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setSelectedPaymentMethod(method);
+      setIsAddingNewMethod(false);
+      setPaymentMethodCreated(false);
+
+      if (method) {
+        // Use saved payment method - set payment_method_id
+        onDataChange({
+          ...data,
+          payment_method_id: method.id.toString(),
+          payment_method: method.type,
+          payment_gateway_id: method.gateway || undefined,
+          completion_type: 'payment',
+        });
+
+        // Auto-select the gateway that matches this payment method
+        if (method.gateway && availableGateways.length > 0) {
+          const matchingGateway = availableGateways.find(g => g.id === method.gateway);
+          if (matchingGateway) {
+            setSelectedGateway(matchingGateway);
+          }
+        }
+      }
+    },
+    [data, onDataChange, availableGateways]
+  );
+
+  // Handle "Add New Payment Method" click
+  const handleAddNewMethodClick = useCallback(async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsAddingNewMethod(true);
+    setSelectedPaymentMethod(null);
+    setPaymentMethodCreated(false);
+
+    // Clear payment_method_id since we're adding a new method
+    onDataChange({
+      ...data,
+      payment_method_id: undefined,
+    });
+  }, [data, onDataChange]);
+
+  // Handle "Use Different Payment Method" (reset from success state)
+  const handleUseDifferentMethod = useCallback(async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPaymentMethodCreated(false);
+    setSelectedPaymentMethod(null);
+    setIsAddingNewMethod(false);
+    setSelectedGateway(null);
+  }, []);
 
   const handleBackToOptions = useCallback(async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -681,63 +753,116 @@ export function PaymentStep({
         </View>
       )}
 
-      {/* Payment Methods */}
+      {/* Payment Methods Section */}
       <View style={styles.methodsSection}>
         <Text style={styles.sectionTitle}>Payment Method</Text>
 
-        {availableGateways.length === 0 ? (
-          <View style={styles.noGatewaysMessage}>
-            <Info size={20} color={colors.neutral.darkGray} />
-            <Text style={styles.noGatewaysText}>
-              No payment methods available. Please contact support.
-            </Text>
+        {/* Success Feedback - When payment method is validated/selected */}
+        {(paymentMethodCreated || selectedPaymentMethod) && !isAddingNewMethod && (
+          <View style={styles.successCard}>
+            <View style={styles.successHeader}>
+              <CheckCircle size={24} color={colors.secondary.forest} weight="fill" />
+              <View style={styles.successContent}>
+                <Text style={styles.successTitle}>
+                  {selectedPaymentMethod
+                    ? 'Payment Method Selected'
+                    : isAuthenticated
+                    ? 'Payment Method Secured!'
+                    : 'Card Validated!'}
+                </Text>
+                <Text style={styles.successDescription}>
+                  {selectedPaymentMethod
+                    ? `Using ${selectedPaymentMethod.nickname || selectedPaymentMethod.type_display}${
+                        selectedPaymentMethod.last_four ? ` •••• ${selectedPaymentMethod.last_four}` : ''
+                      }`
+                    : 'Your card details have been verified and are ready for payment.'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.useDifferentButton}
+              onPress={handleUseDifferentMethod}
+            >
+              <Text style={styles.useDifferentButtonText}>Use Different Payment Method</Text>
+            </TouchableOpacity>
           </View>
-        ) : (
-          <View style={styles.methodsList}>
-            {availableGateways.map((gateway) => (
-              <TouchableOpacity
-                key={gateway.id}
-                style={[
-                  styles.methodCard,
-                  selectedGateway?.id === gateway.id && styles.methodCardSelected,
-                ]}
-                onPress={() => handleGatewaySelect(gateway)}
-              >
-                <View style={styles.methodLeft}>
-                  <View
-                    style={[
-                      styles.methodIcon,
-                      selectedGateway?.id === gateway.id && styles.methodIconSelected,
-                    ]}
-                  >
-                    {gateway.icon}
-                  </View>
-                  <View style={styles.methodInfo}>
-                    <Text style={styles.methodName}>{gateway.name}</Text>
-                    <Text style={styles.methodDesc}>{gateway.description}</Text>
-                    {gateway.fees && (
-                      <Text style={styles.methodFees}>{gateway.fees}</Text>
-                    )}
-                  </View>
+        )}
+
+        {/* Saved Payment Methods - For authenticated users who haven't selected yet */}
+        {isAuthenticated && !selectedPaymentMethod && !paymentMethodCreated && (
+          <PaymentMethodSelector
+            selectedMethodId={null}
+            onMethodSelect={handleSavedPaymentMethodSelect}
+            isAuthenticated={isAuthenticated}
+            showAddNew={true}
+            onAddNewClick={handleAddNewMethodClick}
+            disabled={isPaymentLoading}
+          />
+        )}
+
+        {/* Gateway Selection - For new payment methods */}
+        {(isAddingNewMethod || !isAuthenticated) && !paymentMethodCreated && (
+          <>
+            {availableGateways.length === 0 ? (
+              <View style={styles.noGatewaysMessage}>
+                <Info size={20} color={colors.neutral.darkGray} />
+                <Text style={styles.noGatewaysText}>
+                  No payment methods available. Please contact support.
+                </Text>
+              </View>
+            ) : (
+              <>
+                {isAuthenticated && isAddingNewMethod && (
+                  <Text style={styles.newMethodLabel}>Add New Payment Method</Text>
+                )}
+                <View style={styles.methodsList}>
+                  {availableGateways.map((gateway) => (
+                    <TouchableOpacity
+                      key={gateway.id}
+                      style={[
+                        styles.methodCard,
+                        selectedGateway?.id === gateway.id && styles.methodCardSelected,
+                      ]}
+                      onPress={() => handleGatewaySelect(gateway)}
+                    >
+                      <View style={styles.methodLeft}>
+                        <View
+                          style={[
+                            styles.methodIcon,
+                            selectedGateway?.id === gateway.id && styles.methodIconSelected,
+                          ]}
+                        >
+                          {gateway.icon}
+                        </View>
+                        <View style={styles.methodInfo}>
+                          <Text style={styles.methodName}>{gateway.name}</Text>
+                          <Text style={styles.methodDesc}>{gateway.description}</Text>
+                          {gateway.fees && (
+                            <Text style={styles.methodFees}>{gateway.fees}</Text>
+                          )}
+                        </View>
+                      </View>
+                      <View
+                        style={[
+                          styles.checkCircle,
+                          selectedGateway?.id === gateway.id && styles.checkCircleSelected,
+                        ]}
+                      >
+                        {selectedGateway?.id === gateway.id && (
+                          <Check size={14} color={colors.neutral.white} weight="bold" />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-                <View
-                  style={[
-                    styles.checkCircle,
-                    selectedGateway?.id === gateway.id && styles.checkCircleSelected,
-                  ]}
-                >
-                  {selectedGateway?.id === gateway.id && (
-                    <Check size={14} color={colors.neutral.white} weight="bold" />
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+              </>
+            )}
+          </>
         )}
       </View>
 
-      {/* Stripe Card Field - Only show when Stripe is selected */}
-      {selectedGateway?.code === 'stripe' && (
+      {/* Stripe Card Field - Only show when Stripe is selected and adding new method */}
+      {selectedGateway?.code === 'stripe' && (isAddingNewMethod || !isAuthenticated) && !paymentMethodCreated && (
         <View style={styles.cardFieldSection}>
           {isPaymentLoading && !clientSecret ? (
             <View style={styles.loadingCardContainer}>
@@ -1213,6 +1338,51 @@ const styles = StyleSheet.create({
   },
   methodsSection: {
     marginBottom: spacing.lg,
+  },
+  // Success feedback styles
+  successCard: {
+    backgroundColor: colors.secondary.forestSubtle,
+    borderRadius: layout.cardBorderRadius,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.secondary.forest,
+  },
+  successHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  successContent: {
+    flex: 1,
+  },
+  successTitle: {
+    ...typeScale.titleSmall,
+    color: colors.secondary.forest,
+    fontWeight: '700',
+    marginBottom: spacing.xxs,
+  },
+  successDescription: {
+    ...typeScale.bodySmall,
+    color: colors.secondary.forestDark,
+  },
+  useDifferentButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.secondary.forest + '30',
+    marginTop: spacing.xs,
+  },
+  useDifferentButtonText: {
+    ...typeScale.labelMedium,
+    color: colors.secondary.forest,
+    fontWeight: '600',
+  },
+  newMethodLabel: {
+    ...typeScale.labelMedium,
+    color: colors.neutral.darkGray,
+    marginBottom: spacing.sm,
   },
   noGatewaysMessage: {
     flexDirection: 'row',

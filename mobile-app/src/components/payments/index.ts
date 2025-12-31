@@ -16,6 +16,7 @@ export { InvoiceLineItem } from './InvoiceLineItem';
 // Payment flow components
 export { StripeCardField } from './StripeCardField';
 export { SavedPaymentMethods } from './SavedPaymentMethods';
+export { PaymentMethodSelector } from './PaymentMethodSelector';
 export { PaymentConfirmationModal } from './PaymentConfirmationModal';
 
 // Payment plan components
@@ -32,6 +33,7 @@ export type { InvoiceStatusBadgeProps } from './InvoiceStatusBadge';
 export type { InvoiceLineItemProps } from './InvoiceLineItem';
 export type { StripeCardFieldProps } from './StripeCardField';
 export type { SavedPaymentMethodsProps } from './SavedPaymentMethods';
+export type { PaymentMethodSelectorProps } from './PaymentMethodSelector';
 export type { PaymentConfirmationModalProps } from './PaymentConfirmationModal';
 export type { PaymentPlanCardProps } from './PaymentPlanCard';
 export type { InstallmentScheduleProps } from './InstallmentSchedule';

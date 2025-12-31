@@ -47,6 +47,13 @@ export type {
   PaymentCalculation,
   PaymentPlanSettings,
   BankTransferDetails,
+  // Client payment method types (for saved methods)
+  PaymentMethodType,
+  PaymentMethodGatewayDetails,
+  ClientPaymentMethod,
+  PaymentMethodFormData,
+  SetupIntentResponse,
+  PaginatedPaymentMethodsResponse,
 } from './payment.types';
 
 export { PAYMENT_GATEWAY_LABELS, PAYMENT_GATEWAY_ICONS } from './payment.types';
