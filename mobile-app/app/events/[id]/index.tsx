@@ -7,14 +7,14 @@
  * Matches client-portal EventDetail patterns.
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   Pressable,
-  Dimensions,
+  LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -59,7 +59,10 @@ import {
 import { formatEventDate, formatTime } from '@/utils/formatting';
 import { useToast } from '@/contexts/ToastContext';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+interface TabMeasurement {
+  x: number;
+  width: number;
+}
 
 interface Tab {
   id: string;
@@ -78,7 +81,7 @@ const TABS: Tab[] = [
   { id: 'invoices', label: 'Invoices', component: InvoicesTab },
   { id: 'contracts', label: 'Contracts', component: ContractsTab },
   { id: 'quotes', label: 'Quotes', component: QuotesTab },
-  { id: 'questionnaires', label: 'Forms', component: QuestionnairesTab },
+  { id: 'questionnaires', label: 'Questionnaires', component: QuestionnairesTab },
   { id: 'feedback', label: 'Feedback', component: FeedbackTab },
   { id: 'checkin', label: 'Check-In', component: CheckInTab },
   { id: 'notes', label: 'Notes', component: NotesTab },
@@ -105,14 +108,27 @@ export default function EventDetailScreen() {
   }, [initialTab]);
 
   const [activeTabIndex, setActiveTabIndex] = useState(initialTabIndex);
-  const tabIndicatorPosition = useSharedValue(initialTabIndex * (SCREEN_WIDTH / TABS.length));
+  const [tabMeasurements, setTabMeasurements] = useState<TabMeasurement[]>([]);
+  const tabIndicatorPosition = useSharedValue(0);
+  const tabIndicatorWidth = useSharedValue(0);
 
+  // Update indicator position when active tab changes or measurements are available
   useEffect(() => {
-    tabIndicatorPosition.value = withTiming(
-      activeTabIndex * (SCREEN_WIDTH / TABS.length),
-      { duration: 200 }
-    );
-  }, [activeTabIndex, tabIndicatorPosition]);
+    if (tabMeasurements.length > 0 && tabMeasurements[activeTabIndex]) {
+      const { x, width } = tabMeasurements[activeTabIndex];
+      tabIndicatorPosition.value = withTiming(x, { duration: 200 });
+      tabIndicatorWidth.value = withTiming(width, { duration: 200 });
+    }
+  }, [activeTabIndex, tabMeasurements, tabIndicatorPosition, tabIndicatorWidth]);
+
+  const handleTabLayout = useCallback((index: number, event: LayoutChangeEvent) => {
+    const { x, width } = event.nativeEvent.layout;
+    setTabMeasurements((prev) => {
+      const updated = [...prev];
+      updated[index] = { x, width };
+      return updated;
+    });
+  }, []);
 
   const handleTabPress = useCallback((index: number) => {
     Haptics.selectionAsync();
@@ -154,6 +170,7 @@ export default function EventDetailScreen() {
 
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tabIndicatorPosition.value }],
+    width: tabIndicatorWidth.value,
   }));
 
   const ActiveTabComponent = TABS[activeTabIndex].component;
@@ -276,6 +293,7 @@ export default function EventDetailScreen() {
                 activeTabIndex === index && styles.tabItemActive,
               ]}
               onPress={() => handleTabPress(index)}
+              onLayout={(e) => handleTabLayout(index, e)}
             >
               <Text
                 style={[
@@ -287,8 +305,9 @@ export default function EventDetailScreen() {
               </Text>
             </Pressable>
           ))}
+          {/* Indicator inside ScrollView so it scrolls with tabs */}
+          <Animated.View style={[styles.tabIndicator, indicatorStyle]} />
         </ScrollView>
-        <Animated.View style={[styles.tabIndicator, indicatorStyle]} />
       </View>
 
       {/* Tab Content */}
@@ -409,8 +428,8 @@ const styles = StyleSheet.create({
   tabIndicator: {
     position: 'absolute',
     bottom: 0,
+    left: 0,
     height: 2,
-    width: SCREEN_WIDTH / TABS.length,
     backgroundColor: theme.colors.primary[600],
   },
   tabContent: {

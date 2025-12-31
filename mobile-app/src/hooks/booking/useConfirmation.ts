@@ -87,6 +87,13 @@ export function useCompleteBooking() {
       queryClient.invalidateQueries({
         queryKey: ['bookingSessions', 'session', variables.sessionId],
       });
+
+      // Invalidate quotes - booking completion may accept quotes automatically
+      queryClient.invalidateQueries({ queryKey: ['quotes', 'pending'] });
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+
+      // Invalidate dashboard data to refresh action items
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { detail?: string } } };
@@ -308,6 +315,14 @@ export function useConfirmationManager(
         queryClient.invalidateQueries({
           queryKey: ['bookingSessions', 'session', sessionId],
         });
+
+        // Invalidate quotes - booking completion may accept quotes automatically
+        // Matches client-portal pattern for cache invalidation
+        queryClient.invalidateQueries({ queryKey: ['quotes', 'pending'] });
+        queryClient.invalidateQueries({ queryKey: ['quotes'] });
+
+        // Invalidate dashboard data to refresh action items
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
         // Show appropriate success message
         if (completionType === 'quote') {

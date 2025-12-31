@@ -38,7 +38,30 @@ export function QuestionnaireStep({
   onDataChange,
   validationErrors,
 }: QuestionnaireStepProps) {
-  const [responses, setResponses] = useState<QuestionnaireFieldValues>(data?.responses || {});
+  // Extract field values from data - handles both:
+  // - Flat structure (new): { field_1: value, field_2: value }
+  // - Wrapped structure (old): { responses: { field_1: value, field_2: value } }
+  // This ensures backward compatibility with existing session data
+  const extractFieldValues = (stepData: QuestionnaireStepData | undefined): QuestionnaireFieldValues => {
+    if (!stepData) return {};
+
+    // Check for wrapped structure first (backward compatibility)
+    if (stepData.responses && typeof stepData.responses === 'object') {
+      return stepData.responses;
+    }
+
+    // Otherwise extract flat field values (new pattern matching client portal)
+    const fieldValues: QuestionnaireFieldValues = {};
+    const dataRecord = stepData as unknown as Record<string, unknown>;
+    for (const key of Object.keys(dataRecord)) {
+      if (key.startsWith('field_')) {
+        fieldValues[key] = dataRecord[key] as QuestionnaireFieldValues[string];
+      }
+    }
+    return fieldValues;
+  };
+
+  const [responses, setResponses] = useState<QuestionnaireFieldValues>(extractFieldValues(data));
   const [loadedQuestionnaires, setLoadedQuestionnaires] = useState<Map<number, Questionnaire>>(new Map());
   const [loadingQuestionnaires, setLoadingQuestionnaires] = useState<Set<number>>(new Set());
   const [loadErrors, setLoadErrors] = useState<Map<number, string>>(new Map());
@@ -95,8 +118,11 @@ export function QuestionnaireStep({
   // Sync responses from saved data (e.g., when navigating back to this step)
   // Only update if user hasn't started editing in this session
   useEffect(() => {
-    if (!isUserEditing.current && data?.responses && Object.keys(data.responses).length > 0) {
-      setResponses(data.responses);
+    if (!isUserEditing.current && data) {
+      const fieldValues = extractFieldValues(data);
+      if (Object.keys(fieldValues).length > 0) {
+        setResponses(fieldValues);
+      }
     }
   }, [data]);
 
@@ -110,7 +136,8 @@ export function QuestionnaireStep({
       [fieldKey]: value as QuestionnaireFieldValues[string]
     };
     setResponses(newResponses);
-    onDataChange({ responses: newResponses });
+    // Send field values directly (not wrapped in { responses: ... }) to match client portal pattern
+    onDataChange(newResponses);
   }, [responses, onDataChange]);
 
   const getFieldValue = (fieldId: number): unknown => {

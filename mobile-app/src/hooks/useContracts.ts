@@ -56,15 +56,38 @@ export function usePendingContracts() {
 }
 
 /**
- * Fetch contracts for a specific event
+ * Fetch all contracts for the current client
  */
-export function useEventContracts(eventId: number) {
+export function useAllContracts() {
   return useQuery({
-    queryKey: contractKeys.event(eventId),
-    queryFn: () => contractsApi.getEventContracts(eventId),
-    enabled: eventId > 0,
+    queryKey: contractKeys.lists(),
+    queryFn: async () => {
+      const response = await contractsApi.getContracts();
+      return response.results;
+    },
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
+}
+
+/**
+ * Fetch contracts for a specific event
+ * Follows client-portal pattern: fetches all contracts and filters client-side
+ */
+export function useEventContracts(eventId: number) {
+  const { data: allContracts, isLoading, refetch, isRefetching } = useAllContracts();
+
+  // Filter contracts client-side for this specific event
+  // This matches the client-portal pattern for consistent behavior
+  const contracts = allContracts?.filter(
+    (contract) => contract.event.id === eventId
+  ) || [];
+
+  return {
+    data: contracts,
+    isLoading,
+    refetch,
+    isRefetching,
+  };
 }
 
 /**

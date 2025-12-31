@@ -58,7 +58,7 @@ export default function InvoiceDetailScreen() {
   const discountAmount = invoice ? parseFloat(invoice.discount_amount) : 0;
   const totalAmount = invoice ? parseFloat(invoice.total_amount) : 0;
   const amountPaid = invoice ? parseFloat(invoice.amount_paid) : 0;
-  const amountDue = invoice ? parseFloat(invoice.amount_due) : 0;
+  const amountDue = invoice ? parseFloat(invoice.remaining_amount) || 0 : 0;
   const paymentProgress = totalAmount > 0 ? (amountPaid / totalAmount) * 100 : 0;
 
   const daysUntilDue = invoice?.due_date ? getDaysUntil(invoice.due_date) : null;

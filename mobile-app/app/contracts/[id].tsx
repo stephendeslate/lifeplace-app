@@ -312,11 +312,9 @@ export default function ContractDetailScreen() {
                 <WebView
                   source={{ html: contractHTML }}
                   style={styles.contractWebView}
-                  scrollEnabled={false}
-                  showsVerticalScrollIndicator={false}
-                  onContentSizeChange={(e) => {
-                    // Adjust height based on content
-                  }}
+                  scrollEnabled={true}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
                 />
               </Card>
             </>
@@ -637,7 +635,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   contractWebView: {
-    minHeight: 400,
+    height: 450,
     backgroundColor: 'transparent',
   },
   sectionTitle: {

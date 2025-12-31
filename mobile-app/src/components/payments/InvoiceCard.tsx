@@ -19,7 +19,7 @@ export interface InvoiceCardProps {
 }
 
 export const InvoiceCard = React.memo(function InvoiceCard({ invoice, onPress, testID }: InvoiceCardProps) {
-  const amountDue = parseFloat(invoice.amount_due);
+  const amountDue = parseFloat(invoice.remaining_amount) || 0;
   const totalAmount = parseFloat(invoice.total_amount);
   const amountPaid = parseFloat(invoice.amount_paid);
   const paymentProgress = totalAmount > 0 ? (amountPaid / totalAmount) * 100 : 0;

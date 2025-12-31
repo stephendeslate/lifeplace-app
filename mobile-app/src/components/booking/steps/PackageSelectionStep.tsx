@@ -230,7 +230,7 @@ function PackageCard({
       )}
 
       {/* Content */}
-      <View style={styles.packageContent}>
+      <View style={[styles.packageContent, isCustomBundle && styles.packageContentCustomBundle]}>
         <View style={styles.packageHeader}>
           <View style={styles.packageTitleRow}>
             <Package size={20} color={isCustomBundle ? colors.tertiary.teal : colors.accent.wood} />
@@ -961,6 +961,9 @@ const styles = StyleSheet.create({
   packageContent: {
     padding: spacing.md,
     gap: spacing.sm,
+  },
+  packageContentCustomBundle: {
+    paddingTop: spacing.xl + spacing.sm,
   },
   packageHeader: {
     flexDirection: 'row',
