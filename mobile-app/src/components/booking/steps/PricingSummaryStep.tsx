@@ -2,15 +2,17 @@
  * PricingSummaryStep
  *
  * Displays complete pricing breakdown with packages, addons, taxes, and discounts.
+ * Uses backend pricing calculation for consistency with client-portal.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import {
   Receipt,
@@ -26,6 +28,7 @@ import {
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatCurrency } from '@/utils/currency';
+import { useCalculatePricing } from '@/hooks/booking/usePricing';
 import type { StepComponentProps } from '../StepRenderer';
 import type {
   PricingSummaryStepData,
@@ -34,12 +37,14 @@ import type {
   SelectedAddon,
   PackageSelectionStepData,
   AddonSelectionStepData,
+  PricingCalculation,
 } from '@/types/booking';
 
 type PricingSummaryStepProps = StepComponentProps<PricingSummaryStepData, PricingSummaryStepConfiguration>;
 
 export function PricingSummaryStep({
   step,
+  sessionId,
   data,
   configuration,
   onDataChange,
@@ -50,12 +55,39 @@ export function PricingSummaryStep({
     new Set(['packages', 'addons'])
   );
 
+  // Use backend pricing calculation
+  const calculatePricingMutation = useCalculatePricing();
+  const [backendPricing, setBackendPricing] = useState<PricingCalculation | null>(null);
+  const [isPricingLoading, setIsPricingLoading] = useState(true);
+
   const {
     show_itemized = true,
     show_tax_breakdown = true,
     show_payment_schedule = true,
     allow_promo_code = true,
   } = configuration || {};
+
+  // Fetch backend pricing on mount and when discount changes
+  const fetchPricing = useCallback(async () => {
+    if (!sessionId) return;
+
+    setIsPricingLoading(true);
+    try {
+      const result = await calculatePricingMutation.mutateAsync({
+        sessionId,
+        discountCode: data.promo_code || undefined,
+      });
+      setBackendPricing(result);
+    } catch (error) {
+      console.error('Failed to calculate pricing:', error);
+    } finally {
+      setIsPricingLoading(false);
+    }
+  }, [sessionId, data.promo_code]);
+
+  useEffect(() => {
+    fetchPricing();
+  }, [fetchPricing]);
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
@@ -69,14 +101,35 @@ export function PricingSummaryStep({
     });
   };
 
-  // Calculate pricing from booking state
-  const pricing = useMemo(() => {
+  // Get packages and addons from booking state for display
+  const { packages, addons } = useMemo(() => {
     const packageStepData = state.stepData.package_selection as PackageSelectionStepData | undefined;
     const addonStepData = state.stepData.addon_selection as AddonSelectionStepData | undefined;
 
-    const packages: SelectedPackage[] = packageStepData?.selected_packages || [];
-    const addons: SelectedAddon[] = addonStepData?.selected_addons || [];
+    return {
+      packages: packageStepData?.selected_packages || [],
+      addons: addonStepData?.selected_addons || [],
+    };
+  }, [state.stepData]);
 
+  // Use backend pricing if available, otherwise fall back to local calculation
+  const pricing = useMemo(() => {
+    if (backendPricing) {
+      return {
+        packages,
+        addons,
+        packageSubtotal: parseFloat(backendPricing.subtotal) - addons.reduce((sum, a) => sum + parseFloat(a.price) * a.quantity, 0),
+        addonSubtotal: addons.reduce((sum, addon) => sum + parseFloat(addon.price) * addon.quantity, 0),
+        subtotal: parseFloat(backendPricing.subtotal),
+        taxRate: backendPricing.tax_rate,
+        taxAmount: parseFloat(backendPricing.tax),
+        discountAmount: parseFloat(backendPricing.discount) || 0,
+        total: parseFloat(backendPricing.total),
+        lineItems: backendPricing.lineItems || [],
+      };
+    }
+
+    // Fallback to local calculation if backend pricing not available
     const packageSubtotal = packages.reduce<number>((sum, pkg) => {
       return sum + parseFloat(pkg.price) * pkg.quantity;
     }, 0);
@@ -86,14 +139,9 @@ export function PricingSummaryStep({
     }, 0);
 
     const subtotal = packageSubtotal + addonSubtotal;
-
-    // Calculate tax (simplified - in production, use actual tax rates)
-    const taxRate = 0.12; // 12% VAT
+    const taxRate = 0.12;
     const taxAmount = subtotal * taxRate;
-
-    // Discount (would come from promo code)
     const discountAmount = typeof data.discount_amount === 'number' ? data.discount_amount : 0;
-
     const total = subtotal + taxAmount - discountAmount;
 
     return {
@@ -106,8 +154,19 @@ export function PricingSummaryStep({
       taxAmount,
       discountAmount,
       total,
+      lineItems: [],
     };
-  }, [state.stepData, data.discount_amount]);
+  }, [backendPricing, packages, addons, data.discount_amount]);
+
+  // Show loading state while fetching backend pricing
+  if (isPricingLoading && !backendPricing) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary.black} />
+        <Text style={styles.loadingText}>Calculating pricing...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -340,6 +399,17 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingBottom: spacing.xxxl,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xxl,
+    gap: spacing.md,
+  },
+  loadingText: {
+    ...typeScale.bodyMedium,
+    color: colors.neutral.darkGray,
   },
   header: {
     marginBottom: spacing.lg,

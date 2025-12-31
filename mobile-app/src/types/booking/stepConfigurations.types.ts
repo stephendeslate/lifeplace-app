@@ -93,17 +93,22 @@ export interface VenueSelectionStepConfiguration {
 
 /**
  * Questionnaire step configuration
+ * Matches backend QuestionnaireStepConfigurationSerializer response
  */
 export interface QuestionnaireStepConfiguration {
+  id?: number;
+  step?: number;
   title?: string;
   description?: string;
-  questionnaires: QuestionnaireStepItem[];
+  questionnaire_items: QuestionnaireStepItem[];
   allow_file_uploads: boolean;
   max_file_size_mb: number;
   allowed_file_types?: string[];
-  show_progress_bar: boolean;
-  group_by_section: boolean;
-  validate_on_blur: boolean;
+  show_progress_bar?: boolean;
+  group_by_section?: boolean;
+  validate_on_blur?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 /**

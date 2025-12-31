@@ -189,19 +189,32 @@ export interface Questionnaire {
 }
 
 /**
+ * Basic questionnaire details returned by the API
+ */
+export interface QuestionnaireBasicDetails {
+  id: number;
+  name: string;
+  event_type: number | null;
+  is_active: boolean;
+  order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
  * Questionnaire assignment within a step configuration
+ * Matches backend QuestionnaireStepItemSerializer response
  */
 export interface QuestionnaireStepItem {
-  questionnaire_id: number;
-  questionnaire_name: string;
-  questionnaire_title?: string;
-  is_required: boolean;
+  id: number;
+  configuration: number;
+  questionnaire: number; // The questionnaire ID
+  questionnaire_details: QuestionnaireBasicDetails;
   order: number;
-  conditional_display?: {
-    show_when_event_type?: number;
-    show_when_package_selected?: number;
-    show_when_addon_selected?: number;
-  };
+  is_conditional: boolean;
+  show_conditions: Record<string, string | number | boolean>;
+  created_at?: string;
+  updated_at?: string;
 }
 
 /**
@@ -265,14 +278,19 @@ export interface FormattedQuestionnaireResponse {
 
 /**
  * Questionnaire step configuration
+ * Matches backend QuestionnaireStepConfigurationSerializer response
  */
 export interface QuestionnaireStepConfiguration {
-  questionnaires: QuestionnaireStepItem[];
+  id?: number;
+  step?: number;
+  questionnaire_items: QuestionnaireStepItem[];
   allow_file_uploads: boolean;
   max_file_size_mb: number;
   allowed_file_types?: string[];
-  show_progress_bar: boolean;
-  group_by_section: boolean;
+  show_progress_bar?: boolean;
+  group_by_section?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 /**

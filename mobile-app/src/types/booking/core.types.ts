@@ -113,7 +113,10 @@ export interface BookingFlowStep {
   is_skippable: boolean;
   is_enabled: boolean;
   display_conditions?: StepDisplayCondition[];
+  /** @deprecated Use configuration_data for step-specific configuration */
   configuration: StepConfiguration;
+  /** Step-specific configuration data returned by the API */
+  configuration_data?: Record<string, unknown>;
   validation_rules?: StepValidationRules;
 }
 

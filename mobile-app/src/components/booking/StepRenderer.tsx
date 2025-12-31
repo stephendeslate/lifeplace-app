@@ -90,19 +90,16 @@ export function StepRenderer({
   const currentStepData = stepData[`step_${step.id}`] || stepData[step.step_type] || {};
 
   // Handle data changes for this specific step
+  // Only pass the merged step data, not all stepData - BookingContainer handles storage
   const handleDataChange = (newData: Record<string, unknown>) => {
     onDataChange({
-      ...stepData,
-      [`step_${step.id}`]: {
-        ...currentStepData,
-        ...newData,
-      },
-      [step.step_type]: {
-        ...currentStepData,
-        ...newData,
-      },
+      ...currentStepData,
+      ...newData,
     });
   };
+
+  // Use configuration_data (step-specific config from API) instead of generic configuration
+  const stepConfiguration = step.configuration_data || step.configuration || {};
 
   return (
     <Suspense fallback={<StepLoadingFallback />}>
@@ -110,7 +107,7 @@ export function StepRenderer({
         step={step}
         sessionId={sessionId}
         data={currentStepData}
-        configuration={step.configuration || {}}
+        configuration={stepConfiguration}
         onDataChange={handleDataChange}
         onValidate={onValidate}
         onComplete={onComplete}
