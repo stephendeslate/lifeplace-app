@@ -5,7 +5,7 @@
  * Aligned with: frontend/client-portal/src/components/booking/steps/CleanPackageSelectionStep.tsx
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -318,7 +318,12 @@ export function PackageSelectionStep({
   onDataChange,
   validationErrors,
 }: PackageSelectionStepProps) {
-  const { state } = useBookingContext();
+  const { state, actions } = useBookingContext();
+
+  // Use refs for action functions to avoid them being dependencies in useEffect
+  // This prevents infinite loops when actions object changes
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
 
   const { data: packages, isLoading, error } = usePackages();
 
@@ -349,8 +354,8 @@ export function PackageSelectionStep({
   const selectedVenueIds = state.stepData.venue_selection?.selected_venue_ids || [];
   const hasVenueSelection = selectedVenueIds.length > 0;
 
-  // Get event type ID from flow
-  const eventTypeId = state.currentFlow?.event_type?.id;
+  // Get event type ID from flow (event_type is the ID directly)
+  const eventTypeId = state.currentFlow?.event_type;
 
   // Fetch rentable venues with event-type-specific pricing
   const { data: allVenues } = useRentableVenues(eventTypeId);
@@ -589,12 +594,14 @@ export function PackageSelectionStep({
     [venueAdditionalHours, selectedPackages, onDataChange]
   );
 
-  const totalPrice = useMemo(() => {
+  // Calculate subtotal for display (packages + excess hours)
+  // Follows client-portal pattern: CleanPackageSelectionStep.tsx
+  const subtotalPrice = useMemo(() => {
     const packagesPrice = selectedPackages.reduce((sum, pkg) => {
       return sum + parseFloat(pkg.price) * pkg.quantity;
     }, 0);
 
-    // Add excess hours cost
+    // Add excess hours cost for selected venues (using effective pricing)
     const excessHoursCost = selectedVenues.reduce((sum, venue) => {
       const additionalHours = venueAdditionalHours[venue.id] || 0;
       const effectivePricing = VenuesAPI.getEffectivePricing(venue);
@@ -604,6 +611,36 @@ export function PackageSelectionStep({
 
     return packagesPrice + excessHoursCost;
   }, [selectedPackages, selectedVenues, venueAdditionalHours]);
+
+  // Calculate total with tax for display (using configured rate from context)
+  const totalPrice = useMemo(() => {
+    const tax = subtotalPrice * (state.taxRate || 0.12);
+    return subtotalPrice + tax;
+  }, [subtotalPrice, state.taxRate]);
+
+  // Update global price immediately for optimistic UI (footer display)
+  // Follows client-portal pattern: triggers PricingSummaryBar as soon as packages selected
+  useEffect(() => {
+    if (totalPrice > 0) {
+      const taxRate = state.taxRate || 0.12;
+      const tax = subtotalPrice * taxRate;
+
+      // Update pricing breakdown for detailed footer display
+      // Using ref to avoid infinite loops when actions object changes
+      actionsRef.current.setPricingBreakdown({
+        subtotal: subtotalPrice.toFixed(2),
+        tax: tax.toFixed(2),
+        tax_rate: taxRate,
+        discount: '0.00',
+        total: totalPrice.toFixed(2),
+        formattedSubtotal: formatCurrency(subtotalPrice, { currency: 'PHP' }),
+        formattedTax: formatCurrency(tax, { currency: 'PHP' }),
+        formattedDiscount: '',
+        formattedTotal: formatCurrency(totalPrice, { currency: 'PHP' }),
+        lineItems: [],
+      });
+    }
+  }, [totalPrice, subtotalPrice, state.taxRate]);
 
   const isCustomBundleSelected = isPackageSelected(-1);
 

@@ -10,7 +10,7 @@
  * Adapted from: frontend/client-portal/src/components/booking/steps/AddonSelectionStep.tsx
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -50,15 +50,20 @@ export function AddonSelectionStep({
   validationErrors,
   isValidating = false,
 }: AddonSelectionStepProps) {
-  const { state } = useBookingContext();
+  const { state, actions } = useBookingContext();
   const { data: addons, isLoading, error } = useAddons();
+
+  // Use refs for action functions to avoid them being dependencies in useEffect
+  // This prevents infinite loops when actions object changes
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
 
   // Get selected venue IDs from venue selection step
   const venueSelectionData = state.stepData.venue_selection as VenueSelectionStepData | undefined;
   const selectedVenueIds = venueSelectionData?.selected_venue_ids || [];
 
-  // Get event type ID from flow for fetching venues with correct pricing
-  const eventTypeId = state.currentFlow?.event_type?.id;
+  // Get event type ID from flow for fetching venues with correct pricing (event_type is the ID directly)
+  const eventTypeId = state.currentFlow?.event_type;
 
   // Fetch rentable venues with event-type-specific pricing
   const { data: allVenues } = useRentableVenues(eventTypeId);
@@ -191,11 +196,68 @@ export function AddonSelectionStep({
     return selectedAddons.reduce((sum, addon) => sum + addon.quantity, 0);
   }, [selectedAddons]);
 
+  // Get selected packages from package selection step for combined pricing
+  const selectedPackagesFromState = packageStepData?.selected_packages || [];
+
+  // Calculate combined subtotal (packages + addons + excess hours)
+  // Follows client-portal pattern for optimistic pricing
+  const subtotalPrice = useMemo(() => {
+    // Packages total
+    const packagesTotal = selectedPackagesFromState.reduce((sum, pkg) => {
+      return sum + parseFloat(pkg.price) * pkg.quantity;
+    }, 0);
+
+    // Addons total
+    const addonsTotal = selectedAddons.reduce((sum, addon) => {
+      return sum + parseFloat(addon.price) * addon.quantity;
+    }, 0);
+
+    // Excess hours cost for selected venues
+    const excessHoursCost = selectedVenues.reduce((sum, venue) => {
+      const additionalHours = venueAdditionalHours[venue.id] || 0;
+      const effectivePricing = VenuesAPI.getEffectivePricing(venue);
+      const excessPrice = parseFloat(effectivePricing.excessHourPrice || '0');
+      return sum + additionalHours * excessPrice;
+    }, 0);
+
+    return packagesTotal + addonsTotal + excessHoursCost;
+  }, [selectedPackagesFromState, selectedAddons, selectedVenues, venueAdditionalHours]);
+
+  // Calculate total with tax (using configured rate from context)
   const totalPrice = useMemo(() => {
+    const tax = subtotalPrice * (state.taxRate || 0.12);
+    return subtotalPrice + tax;
+  }, [subtotalPrice, state.taxRate]);
+
+  // Addons-only subtotal for display in summary bar
+  const addonsOnlyTotal = useMemo(() => {
     return selectedAddons.reduce((sum, addon) => {
       return sum + parseFloat(addon.price) * addon.quantity;
     }, 0);
   }, [selectedAddons]);
+
+  // Update global price immediately for optimistic UI (footer display)
+  // Follows client-portal pattern: triggers PricingSummaryBar update
+  useEffect(() => {
+    if (totalPrice > 0) {
+      const taxRate = state.taxRate || 0.12;
+      const tax = subtotalPrice * taxRate;
+
+      // Update pricing breakdown for detailed footer display
+      actionsRef.current.setPricingBreakdown({
+        subtotal: subtotalPrice.toFixed(2),
+        tax: tax.toFixed(2),
+        tax_rate: taxRate,
+        discount: '0.00',
+        total: totalPrice.toFixed(2),
+        formattedSubtotal: formatCurrency(subtotalPrice, { currency: 'PHP' }),
+        formattedTax: formatCurrency(tax, { currency: 'PHP' }),
+        formattedDiscount: '',
+        formattedTotal: formatCurrency(totalPrice, { currency: 'PHP' }),
+        lineItems: [],
+      });
+    }
+  }, [totalPrice, subtotalPrice, state.taxRate]);
 
   // Group addons by category
   const groupedAddons = useMemo(() => {
@@ -351,7 +413,7 @@ export function AddonSelectionStep({
             </Text>
           </View>
           <Text style={styles.summaryPrice}>
-            {formatCurrency(totalPrice, { currency: 'PHP' })}
+            {formatCurrency(addonsOnlyTotal, { currency: 'PHP' })}
           </Text>
         </View>
       )}

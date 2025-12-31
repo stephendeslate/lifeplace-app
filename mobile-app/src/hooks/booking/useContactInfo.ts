@@ -76,16 +76,17 @@ export function useDefaultContactInfo(): ContactInfoStepData {
   const user = useAuthStore((state) => state.user);
 
   if (user) {
+    // Check both top-level user fields and nested profile fields
     return ContactInfoAPI.getDefaultDataFromUser({
       first_name: user.first_name,
       last_name: user.last_name,
       email: user.email,
-      phone: user.phone,
+      phone: user.phone || user.profile?.phone,
       address: user.address,
       city: user.city,
       postal_code: user.postal_code,
       country: user.country,
-      company: user.company,
+      company: user.company || user.profile?.company,
       job_title: user.job_title,
     });
   }
@@ -152,16 +153,18 @@ export function useContactInfoManager(config?: ContactInfoStepConfiguration) {
   // Get initial data based on authentication status
   const getInitialData = useCallback((): ContactInfoStepData => {
     if (isAuthenticated && user) {
+      // Check both top-level user fields and nested profile fields
+      // Some fields like phone and company can be stored in either location
       return ContactInfoAPI.getDefaultDataFromUser({
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
-        phone: user.phone,
+        phone: user.phone || user.profile?.phone,
         address: user.address,
         city: user.city,
         postal_code: user.postal_code,
         country: user.country,
-        company: user.company,
+        company: user.company || user.profile?.company,
         job_title: user.job_title,
       });
     }

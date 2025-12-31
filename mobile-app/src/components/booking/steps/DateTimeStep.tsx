@@ -63,8 +63,8 @@ export function DateTimeStep({
     buffer_before_hours = 24,
   } = configuration || {};
 
-  // Get event type ID from flow
-  const eventTypeId = state.currentFlow?.event_type?.id;
+  // Get event type ID from flow (event_type is the ID directly)
+  const eventTypeId = state.currentFlow?.event_type;
 
   // Fetch real availability from API
   const {

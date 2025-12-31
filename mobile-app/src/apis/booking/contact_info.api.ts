@@ -286,15 +286,21 @@ export const ContactInfoAPI = {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
 
     return {
+      // Include both full_name and separate first_name/last_name for component compatibility
       full_name: fullName,
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
       email: user.email || '',
       phone: user.phone || '',
       address: user.address || '',
+      address_line1: user.address || '',
       city: user.city || '',
       postal_code: user.postal_code || '',
       country: user.country || 'Philippines',
       company: user.company || '',
+      company_name: user.company || '',
       job_title: user.job_title || '',
+      company_position: user.job_title || '',
       create_account: false,
     };
   },
