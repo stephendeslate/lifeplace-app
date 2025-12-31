@@ -7,10 +7,8 @@
 
 import { useState, useCallback } from 'react';
 import { useStripe, type CardFieldInput } from '@stripe/stripe-react-native';
-import { useMutation } from '@tanstack/react-query';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { useToast } from '@/contexts/ToastContext';
-import api from '@/utils/api';
 
 interface BookingPaymentIntent {
   client_secret: string;
@@ -42,21 +40,10 @@ export function useBookingPayment() {
     clientSecret: null,
   });
 
-  // Create payment intent for booking session
-  const createPaymentIntent = useMutation({
-    mutationFn: async (params: {
-      sessionId: string;
-      amount: number;
-      paymentType: 'FULL' | 'DEPOSIT';
-    }): Promise<BookingPaymentIntent> => {
-      const response = await api.post('/payments/booking/create-intent/', {
-        booking_session_id: params.sessionId,
-        amount: Math.round(params.amount * 100), // Convert to cents
-        payment_type: params.paymentType,
-      });
-      return response.data;
-    },
-  });
+  // NOTE: Payment intents are created at booking completion when an invoice is generated.
+  // During the booking flow, we just collect card details and create a payment method.
+  // The actual payment intent creation happens through the invoice payment endpoint.
+  // This matches the pattern used in client-portal's UnifiedStripePaymentFlow.
 
   // Handle card field change
   const handleCardChange = useCallback(
@@ -71,9 +58,10 @@ export function useBookingPayment() {
     []
   );
 
-  // Initialize payment intent for current booking
+  // Initialize payment - no longer calls backend, just prepares state for payment method creation
+  // Payment intents are created at booking completion when an invoice is generated
   const initializePayment = useCallback(
-    async (amount: number, paymentType: 'FULL' | 'DEPOSIT') => {
+    async (_amount: number, _paymentType: 'FULL' | 'DEPOSIT') => {
       if (!state.currentSession?.session_id) {
         setPaymentState((prev) => ({
           ...prev,
@@ -82,34 +70,17 @@ export function useBookingPayment() {
         return null;
       }
 
-      setPaymentState((prev) => ({ ...prev, isCreatingIntent: true, error: null }));
+      // No backend call needed - payment method will be created via Stripe SDK
+      // and payment intent will be created at booking completion
+      setPaymentState((prev) => ({
+        ...prev,
+        isCreatingIntent: false,
+        error: null,
+      }));
 
-      try {
-        const intent = await createPaymentIntent.mutateAsync({
-          sessionId: state.currentSession.session_id,
-          amount,
-          paymentType,
-        });
-
-        setPaymentState((prev) => ({
-          ...prev,
-          isCreatingIntent: false,
-          paymentIntentId: intent.payment_intent_id,
-          clientSecret: intent.client_secret,
-        }));
-
-        return intent;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to initialize payment';
-        setPaymentState((prev) => ({
-          ...prev,
-          isCreatingIntent: false,
-          error: message,
-        }));
-        return null;
-      }
+      return { success: true };
     },
-    [state.currentSession, createPaymentIntent]
+    [state.currentSession]
   );
 
   // Confirm payment with collected card details
