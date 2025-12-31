@@ -35,6 +35,7 @@ export interface VenuePublic {
   amenities?: string[];
   capacity_min: number;
   capacity_max: number;
+  is_overnight?: boolean;
   operating_rules: VenueOperatingRulesPublic;
 }
 
