@@ -13,7 +13,6 @@ import type {
   EventFile,
   EventTask,
   EventNote,
-  EventQuestionnaire,
   EventFeedback,
   EventFilters,
   EventPreferencesUpdate,
@@ -120,14 +119,6 @@ export const eventsApi = {
    */
   createEventNote: async (id: number, data: CreateNoteInput): Promise<EventNote> => {
     const response = await api.post<EventNote>(`/client/events/${id}/notes/`, data);
-    return response.data;
-  },
-
-  /**
-   * Get questionnaire responses for an event
-   */
-  getEventQuestionnaires: async (id: number): Promise<EventQuestionnaire[]> => {
-    const response = await api.get<EventQuestionnaire[]>(`/client/events/${id}/questionnaires/`);
     return response.data;
   },
 

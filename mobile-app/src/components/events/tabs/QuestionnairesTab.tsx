@@ -21,38 +21,35 @@ import {
   CheckCircle,
   RadioButton,
   PencilSimple,
-  Check,
-  X,
 } from 'phosphor-react-native';
 import { theme } from '@/theme';
-import { useEventQuestionnaires } from '@/hooks/useEvents';
 import {
   useQuestionnairesForEvent,
   useEventResponses,
   useSaveEventResponses,
 } from '@/hooks/useEventQuestionnaires';
 import { Skeleton, EmptyState, Card, Button } from '@/components/common';
-import { formatCardDate } from '@/utils/formatting';
-import type { EventQuestionnaire } from '@/types/events.types';
-import type { Questionnaire, QuestionnaireResponse, QuestionnaireField } from '@/apis/questionnaires.api';
+import type { Questionnaire } from '@/apis/questionnaires.api';
 
 export interface QuestionnairesTabProps {
   eventId: number;
 }
 
 export function QuestionnairesTab({ eventId }: QuestionnairesTabProps) {
-  // Use legacy hook for backward compatibility (displays submitted questionnaires)
-  const { data: submittedQuestionnaires, isLoading: isLoadingSubmitted, refetch, isRefetching } = useEventQuestionnaires(eventId);
-
-  // New hooks for full questionnaire editing (matches client-portal pattern)
-  const { data: questionnaireStructures, isLoading: isLoadingStructures } = useQuestionnairesForEvent(eventId);
+  // Hooks for questionnaire editing (matches client-portal pattern)
+  const {
+    data: questionnaireStructures,
+    isLoading: isLoadingStructures,
+    refetch,
+    isRefetching,
+  } = useQuestionnairesForEvent(eventId);
   const { data: responses, isLoading: isLoadingResponses } = useEventResponses(eventId);
   const saveResponses = useSaveEventResponses();
 
   const [editingQuestionnaireId, setEditingQuestionnaireId] = useState<number | null>(null);
   const [editedResponses, setEditedResponses] = useState<Record<number, string>>({});
 
-  const isLoading = isLoadingSubmitted || isLoadingStructures || isLoadingResponses;
+  const isLoading = isLoadingStructures || isLoadingResponses;
 
   // Build a map of field_id -> response value
   const responseMap = useMemo(() => {
@@ -164,34 +161,13 @@ export function QuestionnairesTab({ eventId }: QuestionnairesTabProps) {
     );
   }
 
-  // Fallback to legacy view (submitted questionnaires without edit)
-  if (!submittedQuestionnaires || submittedQuestionnaires.length === 0) {
-    return (
-      <EmptyState
-        icon="document"
-        title="No Questionnaires"
-        description="No questionnaire responses have been submitted for this event yet."
-      />
-    );
-  }
-
+  // No questionnaires configured for this event
   return (
-    <ScrollView
-      style={styles.flex}
-      contentContainerStyle={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={refetch}
-          colors={[theme.colors.primary[500]]}
-          tintColor={theme.colors.primary[500]}
-        />
-      }
-    >
-      {submittedQuestionnaires.map((questionnaire) => (
-        <LegacyQuestionnaireCard key={questionnaire.id} questionnaire={questionnaire} />
-      ))}
-    </ScrollView>
+    <EmptyState
+      icon="document"
+      title="No Questionnaires"
+      description="No questionnaires have been configured for this event."
+    />
   );
 }
 
@@ -332,84 +308,6 @@ function EditableQuestionnaireCard({
       </View>
     </Card>
   );
-}
-
-// =============================================================================
-// LEGACY QUESTIONNAIRE CARD (backward compatibility)
-// =============================================================================
-
-interface LegacyQuestionnaireCardProps {
-  questionnaire: EventQuestionnaire;
-}
-
-function LegacyQuestionnaireCard({ questionnaire }: LegacyQuestionnaireCardProps) {
-  const isComplete = questionnaire.status === 'COMPLETED';
-
-  return (
-    <Card style={styles.card}>
-      {/* Header */}
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <ClipboardText
-            size={24}
-            color={isComplete ? theme.colors.success[500] : theme.colors.primary[500]}
-            weight="duotone"
-          />
-        </View>
-        <View style={styles.headerContent}>
-          <Text style={styles.cardTitle}>{questionnaire.questionnaire_title}</Text>
-          <Text style={styles.cardDate}>
-            {isComplete ? 'Completed' : 'Submitted'} {formatCardDate(questionnaire.submitted_at)}
-          </Text>
-        </View>
-        {isComplete ? (
-          <CheckCircle size={24} color={theme.colors.success[500]} weight="fill" />
-        ) : (
-          <RadioButton size={24} color={theme.colors.neutral[400]} />
-        )}
-      </View>
-
-      {/* Responses Preview */}
-      {questionnaire.responses && Object.keys(questionnaire.responses).length > 0 && (
-        <View style={styles.responsesSection}>
-          <Text style={styles.sectionLabel}>Responses</Text>
-          {Object.entries(questionnaire.responses)
-            .slice(0, 3)
-            .map(([key, value]) => (
-              <View key={key} style={styles.responseItem}>
-                <Text style={styles.responseLabel}>{formatQuestionLabel(key)}</Text>
-                <Text style={styles.responseValue}>{formatResponseValue(value)}</Text>
-              </View>
-            ))}
-          {Object.keys(questionnaire.responses).length > 3 && (
-            <Text style={styles.moreResponses}>
-              +{Object.keys(questionnaire.responses).length - 3} more responses
-            </Text>
-          )}
-        </View>
-      )}
-    </Card>
-  );
-}
-
-// =============================================================================
-// UTILITIES
-// =============================================================================
-
-function formatQuestionLabel(key: string): string {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, (str) => str.toUpperCase())
-    .trim();
-}
-
-function formatResponseValue(value: unknown): string {
-  if (value === null || value === undefined) return 'No response';
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  if (Array.isArray(value)) return value.join(', ');
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
 }
 
 // =============================================================================
