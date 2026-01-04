@@ -15,7 +15,6 @@ import type {
   EventFile,
   EventTask,
   EventNote,
-  EventQuestionnaire,
   EventFeedback,
   TaskUpdate,
   CreateNoteInput,
@@ -37,7 +36,6 @@ export const eventKeys = {
   documents: (id: number) => [...eventKeys.all, 'documents', id] as const,
   tasks: (id: number) => [...eventKeys.all, 'tasks', id] as const,
   notes: (id: number) => [...eventKeys.all, 'notes', id] as const,
-  questionnaires: (id: number) => [...eventKeys.all, 'questionnaires', id] as const,
   feedback: (id: number) => [...eventKeys.all, 'feedback', id] as const,
   upcoming: () => [...eventKeys.all, 'upcoming'] as const,
 };
@@ -125,18 +123,6 @@ export function useEventNotes(id: number) {
     queryFn: () => eventsApi.getEventNotes(id),
     enabled: id > 0,
     staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-}
-
-/**
- * Fetch event questionnaire responses
- */
-export function useEventQuestionnaires(id: number) {
-  return useQuery({
-    queryKey: eventKeys.questionnaires(id),
-    queryFn: () => eventsApi.getEventQuestionnaires(id),
-    enabled: id > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 

@@ -84,11 +84,6 @@ export function useSaveEventResponses() {
       queryClient.invalidateQueries({
         queryKey: questionnaireKeys.responses(variables.event_id),
       });
-
-      // Also invalidate legacy questionnaires query from useEvents
-      queryClient.invalidateQueries({
-        queryKey: ['events', 'questionnaires', variables.event_id],
-      });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { detail?: string; error?: string } } };
