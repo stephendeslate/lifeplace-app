@@ -64,9 +64,24 @@ class VenueSelectionStepConfigurationSerializer(serializers.ModelSerializer):
 
     def get_available_venues_details(self, obj):
         """Get detailed venue information for available venues"""
-        from core.domains.venues.serializers import RentableVenueSerializer
+        from core.domains.venues.serializers import (
+            RentableVenueSerializer,
+            RentableVenueWithEventTypeSerializer,
+        )
         venues = obj.get_available_venues_queryset()
-        return RentableVenueSerializer(venues, many=True).data
+
+        # Get event_type_id from the booking flow for event-type-specific pricing
+        event_type_id = None
+        if obj.step and obj.step.flow and obj.step.flow.event_type:
+            event_type_id = obj.step.flow.event_type_id
+
+        # Build context with request (for absolute URLs) and event_type_id (for pricing)
+        context = {**self.context, 'event_type_id': event_type_id}
+
+        # Use event-type-aware serializer if we have an event type
+        if event_type_id:
+            return RentableVenueWithEventTypeSerializer(venues, many=True, context=context).data
+        return RentableVenueSerializer(venues, many=True, context=context).data
 
 
 class DateTimeStepConfigurationSerializer(serializers.ModelSerializer):
