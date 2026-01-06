@@ -22,6 +22,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useProductCategories } from '../../hooks/useProducts';
+import { ImageUploadField, GalleryUploadField } from '../common';
 import type {
   ProductOption,
   CreateProductData,
@@ -34,7 +35,7 @@ interface ProductFormDialogProps {
   open: boolean;
   onClose: () => void;
   editingProduct?: ProductOption | null;
-  onSubmit: (data: CreateProductData | UpdateProductData) => void;
+  onSubmit: (data: CreateProductData | UpdateProductData, formData?: FormData) => void;
   isLoading: boolean;
 }
 
@@ -58,6 +59,9 @@ const defaultFormData: ProductFormData = {
   event_days: '',
   sku: '',
   sort_order: '0',
+  // Images
+  featured_image: null,
+  gallery_images: [],
 };
 
 export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
@@ -95,6 +99,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           event_days: editingProduct.event_days?.toString() || '',
           sku: editingProduct.sku || '',
           sort_order: editingProduct.sort_order?.toString() || '0',
+          // Images
+          featured_image: editingProduct.featured_image || null,
+          gallery_images: editingProduct.gallery_images || [],
         });
       } else {
         setFormData(defaultFormData);
@@ -128,6 +135,20 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
     setFormData(prev => ({
       ...prev,
       [field]: event.target.checked,
+    }));
+  };
+
+  const handleFeaturedImageChange = (file: File | null) => {
+    setFormData(prev => ({
+      ...prev,
+      featured_image: file,
+    }));
+  };
+
+  const handleGalleryImagesChange = (files: (File | string)[]) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery_images: files,
     }));
   };
 
@@ -187,7 +208,44 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       sort_order: parseInt(formData.sort_order) || 0,
     };
 
-    onSubmit(submitData);
+    // Check if we need to send FormData (for image uploads)
+    const hasNewFeaturedImage = formData.featured_image instanceof File;
+    const hasNewGalleryImages = formData.gallery_images.some(img => img instanceof File);
+
+    if (hasNewFeaturedImage || hasNewGalleryImages) {
+      // Build FormData for image uploads
+      const formDataObj = new FormData();
+
+      // Add all text fields
+      Object.entries(submitData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formDataObj.append(key, String(value));
+        }
+      });
+
+      // Add featured image if it's a new file
+      if (hasNewFeaturedImage && formData.featured_image instanceof File) {
+        formDataObj.append('featured_image', formData.featured_image);
+      }
+
+      // Add gallery images - new files get uploaded, existing URLs are preserved
+      const existingUrls = formData.gallery_images
+        .filter((img): img is string => typeof img === 'string');
+      if (existingUrls.length > 0) {
+        formDataObj.append('gallery_images', JSON.stringify(existingUrls));
+      }
+
+      // Add new gallery image files
+      formData.gallery_images
+        .filter((img): img is File => img instanceof File)
+        .forEach((file) => {
+          formDataObj.append('gallery_image_files', file);
+        });
+
+      onSubmit(submitData, formDataObj);
+    } else {
+      onSubmit(submitData);
+    }
   };
 
   const handleClose = () => {
@@ -469,11 +527,42 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                 </>
               )}
 
+              {/* Images */}
+              <Typography variant="h6" gutterBottom>
+                Images
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Upload images for this product/package. If not set, images from assigned venues will be used.
+              </Typography>
+
+              <Box display="flex" flexDirection="column" gap={3}>
+                <ImageUploadField
+                  label="Featured Image"
+                  value={formData.featured_image}
+                  onChange={handleFeaturedImageChange}
+                  helperText="Main image shown in listings and cards. Recommended: 800x600px"
+                  maxSizeMB={5}
+                  aspectRatio={4/3}
+                  previewHeight={180}
+                />
+
+                <GalleryUploadField
+                  label="Gallery Images"
+                  value={formData.gallery_images}
+                  onChange={handleGalleryImagesChange}
+                  helperText="Additional images for product detail page"
+                  maxImages={10}
+                  maxSizeMB={5}
+                />
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
               {/* Settings */}
               <Typography variant="h6" gutterBottom>
                 Settings
               </Typography>
-              
+
               <Box display="flex" flexDirection="column" gap={2}>
                 <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
                   <Box flex={1}>

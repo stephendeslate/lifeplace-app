@@ -68,12 +68,30 @@ export const venuesApi = {
     return response.data;
   },
 
-  createVenue: async (data: CreateVenueData): Promise<VenueDetail> => {
+  createVenue: async (data: CreateVenueData, formData?: FormData): Promise<VenueDetail> => {
+    // Use FormData if provided (for image uploads), otherwise use JSON
+    if (formData) {
+      const response = await api.post<VenueDetail>('/venues/venues/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
     const response = await api.post<VenueDetail>('/venues/venues/', data);
     return response.data;
   },
 
-  updateVenue: async (id: number, data: UpdateVenueData): Promise<VenueDetail> => {
+  updateVenue: async (id: number, data: UpdateVenueData, formData?: FormData): Promise<VenueDetail> => {
+    // Use FormData if provided (for image uploads), otherwise use JSON
+    if (formData) {
+      const response = await api.patch<VenueDetail>(`/venues/venues/${id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
     const response = await api.patch<VenueDetail>(`/venues/venues/${id}/`, data);
     return response.data;
   },

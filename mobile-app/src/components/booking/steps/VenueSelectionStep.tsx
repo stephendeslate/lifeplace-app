@@ -252,7 +252,7 @@ function VenueCard({
   const {
     name,
     description,
-    featured_image_url,
+    featured_image,
     location_description,
     capacity_min,
     capacity_max,
@@ -275,9 +275,9 @@ function VenueCard({
     >
       {/* Image */}
       <View style={styles.venueImageContainer}>
-        {featured_image_url ? (
+        {featured_image ? (
           <Image
-            source={{ uri: featured_image_url }}
+            source={{ uri: featured_image }}
             style={styles.venueImage}
             contentFit="cover"
             transition={200}

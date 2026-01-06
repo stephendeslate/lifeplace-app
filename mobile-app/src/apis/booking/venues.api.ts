@@ -30,7 +30,7 @@ interface VenuePublic {
   capacity?: number;
   capacity_min: number;
   capacity_max: number;
-  featured_image_url?: string;
+  featured_image?: string;
   thumbnail_url?: string | null;
   gallery_images?: string[];
   images?: Array<{ id: number; image_url: string; alt_text: string }>;

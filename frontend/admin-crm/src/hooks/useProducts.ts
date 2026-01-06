@@ -8,6 +8,7 @@ import type {
   CategoryFilters,
   DiscountFilters,
   UpdateCategoryData,
+  CreateProductData,
   UpdateProductData,
   UpdateDiscountData,
   ValidateDiscountData,
@@ -194,7 +195,8 @@ export const useProducts = (filters?: ProductFilters & { use_pagination?: boolea
 
   // Mutations
   const createProductMutation = useMutation({
-    mutationFn: productsApi.createProduct,
+    mutationFn: ({ data, formData }: { data: CreateProductData; formData?: FormData }) =>
+      productsApi.createProduct(data, formData),
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       showSuccess('Product Created', `${newProduct.name} has been created successfully.`);
@@ -208,8 +210,8 @@ export const useProducts = (filters?: ProductFilters & { use_pagination?: boolea
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateProductData }) => 
-      productsApi.updateProduct(id, data),
+    mutationFn: ({ id, data, formData }: { id: number; data: UpdateProductData; formData?: FormData }) =>
+      productsApi.updateProduct(id, data, formData),
     onSuccess: (updatedProduct) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product', updatedProduct.id] });

@@ -116,3 +116,9 @@ export {
   PaymentPlanStatusChip,
   InstallmentStatusChip,
 } from './StatusChips';
+
+// Image Upload Components
+export { ImageUploadField } from './ImageUploadField';
+export type { ImageUploadFieldProps } from './ImageUploadField';
+export { GalleryUploadField } from './GalleryUploadField';
+export type { GalleryUploadFieldProps } from './GalleryUploadField';

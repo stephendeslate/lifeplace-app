@@ -192,6 +192,8 @@ const defaultProduct: ProductOption = {
   event_type: null,
   formatted_price: '$0.00',
   price_with_tax: null,
+  featured_image: null,
+  gallery_images: [],
   created_at: '',
   updated_at: '',
 };
@@ -274,7 +276,7 @@ export const Products = () => {
     };
 
     return new Promise<void>((resolve, reject) => {
-      createProduct(createData, {
+      createProduct({ data: createData }, {
         onSuccess: () => resolve(),
         onError: reject,
       });

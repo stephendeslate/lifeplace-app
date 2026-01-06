@@ -16,7 +16,7 @@ import {
   Alert,
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { ModernDialog, createDialogActions } from '../common';
+import { ModernDialog, createDialogActions, ImageUploadField, GalleryUploadField } from '../common';
 import type {
   VenueListItem,
   VenueDetail,
@@ -29,7 +29,7 @@ interface VenueFormDialogProps {
   open: boolean;
   onClose: () => void;
   editingVenue?: VenueListItem | VenueDetail | null;
-  onSubmit: (data: CreateVenueData | UpdateVenueData) => void;
+  onSubmit: (data: CreateVenueData | UpdateVenueData, formData?: FormData) => void;
   isLoading: boolean;
 }
 
@@ -50,6 +50,9 @@ interface VenueFormData {
   // Display
   location_description: string;
   sort_order: string;
+  // Images
+  featured_image: File | string | null;
+  gallery_images: (File | string)[];
   // Standalone pricing (for custom package curation)
   is_rentable_standalone: boolean;
   standalone_base_price: string;
@@ -138,6 +141,9 @@ const defaultFormData: VenueFormData = {
   is_featured: false,
   location_description: '',
   sort_order: '0',
+  // Images
+  featured_image: null,
+  gallery_images: [],
   // Standalone pricing defaults
   is_rentable_standalone: false,
   standalone_base_price: '',
@@ -177,6 +183,9 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
           is_featured: venue.is_featured ?? false,
           location_description: venue.location_description || '',
           sort_order: venue.sort_order?.toString() || '0',
+          // Images
+          featured_image: venue.featured_image || null,
+          gallery_images: venue.gallery_images || [],
           // Standalone pricing
           is_rentable_standalone: venue.is_rentable_standalone ?? false,
           standalone_base_price: venue.standalone_base_price?.toString() || '',
@@ -281,6 +290,20 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
     );
   };
 
+  const handleFeaturedImageChange = (file: File | null) => {
+    setFormData(prev => ({
+      ...prev,
+      featured_image: file,
+    }));
+  };
+
+  const handleGalleryImagesChange = (files: (File | string)[]) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery_images: files,
+    }));
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -340,6 +363,60 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
       latest_checkout_time: rules.late_checkout_allowed ? rules.latest_checkout_time : null,
     };
 
+    // Build FormData for image upload support
+    const formDataObj = new FormData();
+    formDataObj.append('name', formData.name.trim());
+    formDataObj.append('code', formData.code.trim().toUpperCase());
+    formDataObj.append('description', formData.description.trim());
+    formDataObj.append('is_overnight', String(formData.is_overnight));
+    formDataObj.append('minimum_capacity', String(parseInt(formData.minimum_capacity) || 1));
+    formDataObj.append('maximum_capacity', String(parseInt(formData.maximum_capacity)));
+    if (formData.recommended_capacity) {
+      formDataObj.append('recommended_capacity', String(parseInt(formData.recommended_capacity)));
+    }
+    formDataObj.append('is_active', String(formData.is_active));
+    formDataObj.append('is_bookable', String(formData.is_bookable));
+    formDataObj.append('is_featured', String(formData.is_featured));
+    formDataObj.append('location_description', formData.location_description.trim());
+    formDataObj.append('sort_order', String(parseInt(formData.sort_order) || 0));
+
+    // Featured image
+    if (formData.featured_image instanceof File) {
+      formDataObj.append('featured_image', formData.featured_image);
+    } else if (formData.featured_image === null && editingVenue) {
+      // Clear the image if it was removed
+      formDataObj.append('featured_image', '');
+    }
+
+    // Gallery images - for new files, append them; for existing URLs, keep them as JSON
+    const existingGalleryUrls: string[] = [];
+    formData.gallery_images.forEach((item, index) => {
+      if (item instanceof File) {
+        formDataObj.append(`gallery_image_${index}`, item);
+      } else if (typeof item === 'string') {
+        existingGalleryUrls.push(item);
+      }
+    });
+    if (existingGalleryUrls.length > 0) {
+      formDataObj.append('existing_gallery_images', JSON.stringify(existingGalleryUrls));
+    }
+
+    // Standalone pricing
+    formDataObj.append('is_rentable_standalone', String(formData.is_rentable_standalone));
+    if (formData.standalone_base_price) {
+      formDataObj.append('standalone_base_price', formData.standalone_base_price);
+    }
+    if (formData.standalone_included_hours) {
+      formDataObj.append('standalone_included_hours', formData.standalone_included_hours);
+    }
+    if (formData.standalone_excess_hour_price) {
+      formDataObj.append('standalone_excess_hour_price', formData.standalone_excess_hour_price);
+    }
+
+    // Operating rules as JSON
+    formDataObj.append('operating_rules', JSON.stringify(operatingRulesData));
+
+    // Also create the standard JSON data for backward compatibility
     const submitData: CreateVenueData | UpdateVenueData = {
       name: formData.name.trim(),
       code: formData.code.trim().toUpperCase(),
@@ -361,7 +438,12 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
       operating_rules: operatingRulesData,
     };
 
-    onSubmit(submitData);
+    // Check if we have any files to upload
+    const hasFiles = formData.featured_image instanceof File ||
+      formData.gallery_images.some(item => item instanceof File);
+
+    // Pass both the FormData and the regular data - let the API decide which to use
+    onSubmit(submitData, hasFiles ? formDataObj : undefined);
   };
 
   const handleClose = () => {
@@ -524,6 +606,38 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
                   type="number"
                   helperText="Lower numbers appear first"
                   sx={{ width: 150 }}
+                />
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Images */}
+          <Accordion
+            expanded={expandedSections.includes('images')}
+            onChange={() => toggleSection('images')}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Images</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack spacing={3}>
+                <ImageUploadField
+                  label="Featured Image"
+                  value={formData.featured_image}
+                  onChange={handleFeaturedImageChange}
+                  helperText="Main image shown in listings and cards. Recommended: 800x600px"
+                  maxSizeMB={5}
+                  aspectRatio={4/3}
+                  previewHeight={180}
+                />
+
+                <GalleryUploadField
+                  label="Gallery Images"
+                  value={formData.gallery_images}
+                  onChange={handleGalleryImagesChange}
+                  helperText="Additional images for venue detail page"
+                  maxImages={10}
+                  maxSizeMB={5}
                 />
               </Stack>
             </AccordionDetails>

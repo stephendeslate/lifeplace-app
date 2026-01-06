@@ -2,45 +2,25 @@
  * Image Constants
  *
  * Centralized fallback and placeholder images.
- * Replace these URLs with CDN-hosted images when available.
+ * Using local bundled asset for offline support.
  */
 
-// Fallback placeholder configuration
-// TODO: Replace with CDN-hosted branded fallback images
-// Example: 'https://cdn.lifeplace.com/placeholders/venue.jpg'
-
-const PLACEHOLDER_BASE_COLOR = 'FAF9F7';
-const PLACEHOLDER_TEXT_COLOR = '9B9590';
+/**
+ * Single branded placeholder image for all fallback scenarios.
+ * Bundled locally for reliability and offline access.
+ */
+const PLACEHOLDER_IMAGE = require('../../assets/placeholder.png');
 
 /**
  * Fallback images for when content images are unavailable.
- * Using data URIs for reliability - no external dependencies.
+ * All point to the same branded placeholder for consistency.
  */
 export const FALLBACK_IMAGES = {
-  /**
-   * Fallback for venue images
-   */
-  venue: `https://placehold.co/400x300/${PLACEHOLDER_BASE_COLOR}/${PLACEHOLDER_TEXT_COLOR}?text=Venue`,
-
-  /**
-   * Fallback for package images
-   */
-  package: `https://placehold.co/400x300/${PLACEHOLDER_BASE_COLOR}/${PLACEHOLDER_TEXT_COLOR}?text=Package`,
-
-  /**
-   * Fallback for event images
-   */
-  event: `https://placehold.co/400x300/${PLACEHOLDER_BASE_COLOR}/${PLACEHOLDER_TEXT_COLOR}?text=Event`,
-
-  /**
-   * Fallback for user profile images
-   */
-  avatar: `https://placehold.co/200x200/${PLACEHOLDER_BASE_COLOR}/${PLACEHOLDER_TEXT_COLOR}?text=User`,
-
-  /**
-   * Generic fallback image
-   */
-  generic: `https://placehold.co/400x300/${PLACEHOLDER_BASE_COLOR}/${PLACEHOLDER_TEXT_COLOR}?text=Image`,
+  venue: PLACEHOLDER_IMAGE,
+  package: PLACEHOLDER_IMAGE,
+  event: PLACEHOLDER_IMAGE,
+  avatar: PLACEHOLDER_IMAGE,
+  generic: PLACEHOLDER_IMAGE,
 } as const;
 
 /**

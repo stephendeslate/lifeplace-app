@@ -327,7 +327,7 @@ const EventInvoices: React.FC<EventInvoicesProps> = ({ eventId }) => {
           open={paymentDialogOpen}
           onClose={handlePaymentDialogClose}
           invoice={selectedInvoice}
-          onSuccess={handlePaymentSuccess}
+          onPaymentSuccess={handlePaymentSuccess}
         />
       )}
     </Box>

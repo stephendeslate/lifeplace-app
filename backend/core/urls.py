@@ -40,3 +40,7 @@ urlpatterns = [
     # Client-specific endpoint routing for frontend compatibility
     path('api/client/', include('core.domains.events.client_urls')),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
