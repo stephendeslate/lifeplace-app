@@ -72,8 +72,8 @@ class VenueSelectionStepConfigurationSerializer(serializers.ModelSerializer):
 
         # Get event_type_id from the booking flow for event-type-specific pricing
         event_type_id = None
-        if obj.step and obj.step.flow and obj.step.flow.event_type:
-            event_type_id = obj.step.flow.event_type_id
+        if obj.step and obj.step.booking_flow and obj.step.booking_flow.event_type:
+            event_type_id = obj.step.booking_flow.event_type_id
 
         # Build context with request (for absolute URLs) and event_type_id (for pricing)
         context = {**self.context, 'event_type_id': event_type_id}
