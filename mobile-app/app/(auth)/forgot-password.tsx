@@ -17,7 +17,7 @@ import { ArrowLeft, Envelope, CheckCircle } from 'phosphor-react-native';
 
 import { AuthAPI } from '@/apis/auth.api';
 import { useToast } from '@/contexts/ToastContext';
-import { Input, Button } from '@/components/common';
+import { Input, Button, Logo } from '@/components/common';
 import { colors, spacing, typeScale, layout } from '@/theme';
 
 const forgotPasswordSchema = z.object({
@@ -129,6 +129,9 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Logo */}
+          <Logo variant="full" color="dark" size="md" style={styles.logo} />
+
           {/* Title */}
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Reset Password</Text>
@@ -212,6 +215,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxxl,
+  },
+  logo: {
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
   },
   titleContainer: {
     marginBottom: spacing.xxl,

@@ -16,7 +16,7 @@ import { Envelope, Lock } from 'phosphor-react-native';
 
 import { useAuthContext as useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { Input, PasswordInput, Button } from '@/components/common';
+import { Input, PasswordInput, Button, Logo } from '@/components/common';
 import { colors, spacing, typeScale, layout } from '@/theme';
 
 const loginSchema = z.object({
@@ -66,6 +66,9 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Logo */}
+        <Logo variant="full" color="dark" size="lg" style={styles.logo} />
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Welcome Back</Text>
@@ -164,6 +167,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: spacing.xl,
+  },
+  logo: {
+    alignSelf: 'center',
+    marginBottom: spacing.xl,
   },
   header: {
     alignItems: 'center',

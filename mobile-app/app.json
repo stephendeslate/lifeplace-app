@@ -5,12 +5,12 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAF9F7"
+      "backgroundColor": "#B5CAA0"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -37,7 +37,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FAF9F7"
+        "backgroundColor": "#B5CAA0"
       },
       "package": "com.lifeplace.app",
       "edgeToEdgeEnabled": true,
@@ -92,7 +92,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FAF9F7",
+          "backgroundColor": "#B5CAA0",
           "image": "./assets/splash-icon.png",
           "imageWidth": 200
         }

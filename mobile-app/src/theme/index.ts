@@ -50,11 +50,18 @@ export const colors = {
   neutral: {
     white: '#FFFFFF',
     beige: '#F5F5DC', // Section backgrounds
-    cream: '#FAF9F7', // Page backgrounds
+    cream: '#B5CAA0', // App backgrounds (light sage green)
     sand: '#F5F3EF', // Card backgrounds
     warmGray: '#E8E5E0', // Borders, dividers
     gray: '#9B9590', // Placeholder text
     darkGray: '#6B6560', // Secondary text
+  },
+
+  // Brand Sage Colors
+  sage: {
+    light: '#B5CAA0', // Backgrounds
+    dark: '#91AD70', // Foreground/accents
+    darker: '#7A9660', // Pressed states
   },
 
   // Semantic Colors
@@ -767,6 +774,7 @@ const themeObject = {
     accent: colors.accent,
     secondary: colors.secondary,
     tertiary: colors.tertiary,
+    sage: colors.sage,
     semantic: colors.semantic,
     alpha: colors.alpha,
     // Semantic shortcuts
