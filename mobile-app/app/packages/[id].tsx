@@ -107,7 +107,7 @@ export default function PackageDetailScreen() {
         {/* Image Header */}
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: pkg.featured_image || PLACEHOLDER_IMAGE }}
+            source={{ uri: pkg.effective_featured_image || pkg.featured_image || PLACEHOLDER_IMAGE }}
             style={styles.image}
             contentFit="cover"
             transition={200}

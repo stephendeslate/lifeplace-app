@@ -1,10 +1,14 @@
 # backend/core/domains/venues/views.py
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+import json
+import uuid
 
 from core.utils.permissions import IsAdmin
 from django.db import transaction
 from django.utils import timezone
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -82,6 +86,38 @@ class VenueViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    def _process_gallery_images(self, request, venue):
+        """Process gallery image uploads and merge with existing URLs."""
+        gallery_images = []
+
+        # Get existing gallery images from request (JSON string)
+        existing_gallery_json = request.data.get('existing_gallery_images', '[]')
+        if isinstance(existing_gallery_json, str):
+            try:
+                existing_urls = json.loads(existing_gallery_json)
+                if isinstance(existing_urls, list):
+                    gallery_images.extend(existing_urls)
+            except json.JSONDecodeError:
+                pass
+
+        # Process uploaded gallery image files (gallery_image_0, gallery_image_1, etc.)
+        for key in request.FILES:
+            if key.startswith('gallery_image_'):
+                file = request.FILES[key]
+                # Generate unique filename
+                ext = file.name.split('.')[-1] if '.' in file.name else 'jpg'
+                filename = f"venues/gallery/{venue.id}/{uuid.uuid4().hex}.{ext}"
+                # Save file
+                saved_path = default_storage.save(filename, ContentFile(file.read()))
+                # Build URL
+                file_url = request.build_absolute_uri(f'/media/{saved_path}')
+                gallery_images.append(file_url)
+
+        # Update venue's gallery_images if we have any
+        if gallery_images or 'existing_gallery_images' in request.data:
+            venue.gallery_images = gallery_images
+            venue.save(update_fields=['gallery_images'])
+
     def create(self, request, *args, **kwargs):
         """Create a venue with optional operating rules"""
         serializer = self.get_serializer(data=request.data)
@@ -89,6 +125,8 @@ class VenueViewSet(viewsets.ModelViewSet):
 
         with transaction.atomic():
             venue = serializer.save()
+            # Process gallery images after venue is created
+            self._process_gallery_images(request, venue)
 
         logger.info(f"Venue created: {venue.name} ({venue.code}) by {request.user}")
 
@@ -106,6 +144,8 @@ class VenueViewSet(viewsets.ModelViewSet):
 
         with transaction.atomic():
             venue = serializer.save()
+            # Process gallery images after venue is updated
+            self._process_gallery_images(request, venue)
 
         logger.info(f"Venue updated: {venue.name} ({venue.code}) by {request.user}")
 
@@ -135,7 +175,7 @@ class VenueViewSet(viewsets.ModelViewSet):
             standalone_base_price__isnull=False,
         ).select_related('venue_operating_rules').order_by('sort_order', 'name')
 
-        serializer = RentableVenueSerializer(venues, many=True)
+        serializer = RentableVenueSerializer(venues, many=True, context={'request': request})
         return Response(serializer.data)
 
     @action(detail=True, methods=['get', 'put', 'patch'])
@@ -458,13 +498,13 @@ class PublicVenueViewSet(viewsets.ReadOnlyModelViewSet):
                 serializer = RentableVenueWithEventTypeSerializer(
                     venues,
                     many=True,
-                    context={'event_type_id': event_type_id}
+                    context={'event_type_id': event_type_id, 'request': request}
                 )
             except (ValueError, TypeError):
                 # Invalid event_type_id, use default serializer
-                serializer = RentableVenueSerializer(venues, many=True)
+                serializer = RentableVenueSerializer(venues, many=True, context={'request': request})
         else:
-            serializer = RentableVenueSerializer(venues, many=True)
+            serializer = RentableVenueSerializer(venues, many=True, context={'request': request})
 
         return Response(serializer.data)
 

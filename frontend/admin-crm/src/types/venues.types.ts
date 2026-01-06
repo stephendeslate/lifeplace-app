@@ -87,19 +87,24 @@ export interface VenueListItem {
   id: number;
   name: string;
   code: string;
+  description: string;
   is_overnight: boolean;
   is_active: boolean;
   is_bookable: boolean;
   is_featured: boolean;
   minimum_capacity: number;
   maximum_capacity: number;
+  recommended_capacity: number | null;
+  location_description: string;
   featured_image: string | null;
+  gallery_images: string[];
   sort_order: number;
   is_rentable_standalone: boolean;
   // Standalone pricing fields for editing
   standalone_base_price: string | null;
   standalone_included_hours: string | null;
   standalone_excess_hour_price: string | null;
+  operating_rules: VenueOperatingRules | null;
   has_operating_rules: boolean;
   packages_count: number;
 }

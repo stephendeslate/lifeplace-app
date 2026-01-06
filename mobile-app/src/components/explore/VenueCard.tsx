@@ -64,7 +64,7 @@ export function VenueCard({
       {/* Image Container */}
       <View style={[styles.imageContainer, { height: imageHeight }]}>
         <Image
-          source={{ uri: venue.featured_image || FALLBACK_IMAGES.venue }}
+          source={venue.featured_image ? { uri: venue.featured_image } : FALLBACK_IMAGES.venue}
           style={styles.image}
           contentFit="cover"
           transition={200}

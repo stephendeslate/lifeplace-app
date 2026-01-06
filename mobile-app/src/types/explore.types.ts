@@ -104,6 +104,9 @@ export interface PackagePublic {
   excess_hour_price: string | null;
   featured_image: string | null;
   gallery_images?: string[];
+  // Effective images with venue fallback (for packages)
+  effective_featured_image: string | null;
+  effective_gallery_images?: string[];
   is_featured: boolean;
   sort_order: number;
   minimum_capacity: number | null;
