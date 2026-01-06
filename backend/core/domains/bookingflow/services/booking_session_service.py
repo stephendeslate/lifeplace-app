@@ -261,10 +261,16 @@ class BookingSessionService:
                                 )
                         else:
                             # Parse full_name into first_name and last_name
+                            # Also support direct first_name/last_name fields as fallback
                             full_name = step_data.get('full_name', '').strip()
-                            name_parts = full_name.split(' ', 1) if full_name else ['', '']
-                            first_name = name_parts[0]
-                            last_name = name_parts[1] if len(name_parts) > 1 else ''
+                            if full_name:
+                                name_parts = full_name.split(' ', 1)
+                                first_name = name_parts[0]
+                                last_name = name_parts[1] if len(name_parts) > 1 else ''
+                            else:
+                                # Fallback: use separate first_name/last_name if provided
+                                first_name = step_data.get('first_name', '').strip()
+                                last_name = step_data.get('last_name', '').strip()
 
                             # Build base user data
                             user_data = {
@@ -1460,7 +1466,36 @@ class BookingSessionService:
                             # Already a datetime or date object
                             event_data['end_date'] = end_date
                         # If invalid format or empty string, don't set end_date (optional field)
-        
+
+        # AUTO-GENERATE EVENT NAME: "First Name Last Name Event Type Date"
+        # Only generate if event_name was not explicitly provided in booking data
+        if event_data.get('name') == 'Booking from Client Portal':
+            name_parts = []
+
+            # Get client name (first name + last name)
+            if session.client:
+                client_name = session.client.get_full_name()
+                if client_name:
+                    name_parts.append(client_name)
+
+            # Get event type name
+            if session.booking_flow and session.booking_flow.event_type:
+                event_type_name = session.booking_flow.event_type.name
+                if event_type_name:
+                    name_parts.append(event_type_name)
+
+            # Get formatted date (e.g., "January 15, 2026")
+            start_date = event_data.get('start_date')
+            if start_date:
+                if hasattr(start_date, 'strftime'):
+                    formatted_date = start_date.strftime('%B %d, %Y')
+                    name_parts.append(formatted_date)
+
+            # Combine parts into final name
+            if name_parts:
+                event_data['name'] = ' '.join(name_parts)
+                logger.info(f"AUTO_EVENT_NAME: Generated event name: '{event_data['name']}'")
+
         # Use centralized calculation instead of manual calculation
         # This ensures consistency with BookingSession.calculate_total_price() and includes tax
         total_price = session.calculate_total_price()
