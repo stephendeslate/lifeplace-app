@@ -230,6 +230,9 @@ class InvoiceService:
             else:
                 logger.info(f"Invoice due date adjusted to {due_date} (was in the past, bounded by event date)")
 
+        # Generate human-readable payment terms from configuration
+        payment_terms_text = PaymentTermsResolver.generate_terms_text(terms)
+
         # Generate unique invoice ID
         base_invoice_id = f"INV-{timezone.now().strftime('%Y%m%d')}-{quote.event.id}-{quote.id}"
         invoice_id = base_invoice_id
@@ -252,7 +255,8 @@ class InvoiceService:
             due_date=due_date,
             status='DRAFT',
             notes=f"Invoice generated from quote #{quote.id}",
-            quote=quote
+            quote=quote,
+            payment_terms=payment_terms_text
         )
         
         # Create line items from quote - preserve all data including enhanced pricing fields
