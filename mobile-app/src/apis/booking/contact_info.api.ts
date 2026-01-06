@@ -77,8 +77,13 @@ export const ContactInfoAPI = {
    * Format step data for submission.
    */
   formatStepData: (data: ContactInfoStepData): ContactInfoStepData => {
+    // Combine first_name and last_name into full_name if not directly provided
+    // This handles the case where the component uses separate name fields
+    const fullName = data.full_name?.trim() ||
+      [data.first_name?.trim(), data.last_name?.trim()].filter(Boolean).join(' ');
+
     return {
-      full_name: data.full_name?.trim() || '',
+      full_name: fullName,
       email: data.email?.trim().toLowerCase() || '',
       phone: data.phone ? formatPhoneNumber(data.phone) : undefined,
       address: data.address?.trim(),
