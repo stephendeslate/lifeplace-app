@@ -31,6 +31,9 @@ class ClientEventSerializer(serializers.ModelSerializer):
     contracts = serializers.SerializerMethodField()
     pending_signature_required = serializers.SerializerMethodField()
     can_rebook = serializers.SerializerMethodField()
+    # Venue info for display
+    venue_name = serializers.SerializerMethodField()
+    venue_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -40,7 +43,9 @@ class ClientEventSerializer(serializers.ModelSerializer):
             'contracts', 'pending_signature_required',
             # Date blocking and cancellation fields
             'date_blocked', 'date_blocked_at', 'downpayment_deadline',
-            'cancelled_reason', 'cancelled_at', 'can_rebook'
+            'cancelled_reason', 'cancelled_at', 'can_rebook',
+            # Venue info
+            'venue_name', 'venue_image_url'
         ]
 
     def get_can_rebook(self, obj):
@@ -119,6 +124,54 @@ class ClientEventSerializer(serializers.ModelSerializer):
                 return True
 
         return False
+
+    def get_venue_name(self, obj):
+        """Get venue name if event has a venue assigned"""
+        if obj.venue:
+            return obj.venue.name
+        return None
+
+    def get_venue_image_url(self, obj):
+        """
+        Get image URL with cascade fallback:
+        1. Event's venue featured image
+        2. Event's package featured image (first PACKAGE type product)
+        3. None (frontend shows placeholder)
+        """
+        request = self.context.get('request')
+
+        # 1. Try venue featured image
+        if obj.venue and obj.venue.featured_image:
+            if request:
+                return request.build_absolute_uri(obj.venue.featured_image.url)
+            return obj.venue.featured_image.url
+
+        # 2. Try package featured image (from event's product_options)
+        # Look for the first PACKAGE type product that has an image
+        event_products = obj.event_products.select_related(
+            'product_option'
+        ).filter(
+            product_option__type='PACKAGE',
+            product_option__is_active=True
+        ).order_by('id')
+
+        for event_product in event_products:
+            product = event_product.product_option
+            # Check product's own featured image first
+            if product.featured_image:
+                if request:
+                    return request.build_absolute_uri(product.featured_image.url)
+                return product.featured_image.url
+            # For packages, try primary venue's image
+            if hasattr(product, 'package_venues'):
+                primary_venue = product.package_venues.filter(is_primary=True).first()
+                if primary_venue and primary_venue.venue.featured_image:
+                    if request:
+                        return request.build_absolute_uri(primary_venue.venue.featured_image.url)
+                    return primary_venue.venue.featured_image.url
+
+        # 3. No image available
+        return None
 
 
 class ClientEventDetailSerializer(ClientEventSerializer):

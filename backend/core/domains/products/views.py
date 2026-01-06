@@ -1,7 +1,12 @@
 # backend/core/domains/products/views.py
+import json
+import uuid
+
 from core.utils.permissions import IsAdmin
 from django.db import transaction
 from django.utils import timezone
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -189,31 +194,68 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
             category_id=category_id,
             is_featured=is_featured
         )
-    
+
+    def _process_gallery_images(self, request, product):
+        """Process gallery image uploads and merge with existing URLs."""
+        gallery_images = []
+
+        # Get existing gallery images from request (JSON string)
+        # Frontend sends as 'gallery_images' JSON string
+        existing_gallery_json = request.data.get('gallery_images', '[]')
+        if isinstance(existing_gallery_json, str):
+            try:
+                existing_urls = json.loads(existing_gallery_json)
+                if isinstance(existing_urls, list):
+                    gallery_images.extend(existing_urls)
+            except json.JSONDecodeError:
+                pass
+
+        # Process uploaded gallery image files
+        # Frontend sends multiple files under 'gallery_image_files'
+        gallery_files = request.FILES.getlist('gallery_image_files')
+        for file in gallery_files:
+            # Generate unique filename
+            ext = file.name.split('.')[-1] if '.' in file.name else 'jpg'
+            filename = f"products/gallery/{product.id}/{uuid.uuid4().hex}.{ext}"
+            # Save file
+            saved_path = default_storage.save(filename, ContentFile(file.read()))
+            # Build URL
+            file_url = request.build_absolute_uri(f'/media/{saved_path}')
+            gallery_images.append(file_url)
+
+        # Update product's gallery_images if we have any changes
+        if gallery_images or 'gallery_images' in request.data or 'gallery_image_files' in request.FILES:
+            product.gallery_images = gallery_images
+            product.save(update_fields=['gallery_images'])
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         with transaction.atomic():
             product = ProductService.create_product(serializer.validated_data)
-        
+            # Process gallery images after product is created
+            self._process_gallery_images(request, product)
+
         return Response(
-            self.get_serializer(product).data, 
+            self.get_serializer(product).data,
             status=status.HTTP_201_CREATED
         )
-    
+
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        
+
         with transaction.atomic():
             product = ProductService.update_product(
-                instance.id, 
+                instance.id,
                 serializer.validated_data
             )
-        
+            # Process gallery images after product is updated
+            self._process_gallery_images(request, product)
+
         return Response(self.get_serializer(product).data)
     
     def destroy(self, request, *args, **kwargs):

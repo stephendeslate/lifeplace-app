@@ -458,7 +458,7 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
 
         try:
             events = EventRebookService.get_rebookable_events(request.user)
-            serializer = ClientEventSerializer(events, many=True)
+            serializer = ClientEventSerializer(events, many=True, context={'request': request})
 
             logger.info(f"Client {request.user.id} retrieved {events.count()} rebookable events")
 

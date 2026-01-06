@@ -72,7 +72,9 @@ export function PackageCard({
       {/* Image Container */}
       <View style={[styles.imageContainer, { height: imageHeight }]}>
         <Image
-          source={{ uri: pkg.featured_image || FALLBACK_IMAGES.package }}
+          source={pkg.effective_featured_image || pkg.featured_image
+            ? { uri: pkg.effective_featured_image || pkg.featured_image }
+            : FALLBACK_IMAGES.package}
           style={styles.image}
           contentFit="cover"
           transition={200}

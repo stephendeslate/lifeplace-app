@@ -88,20 +88,25 @@ class VenueSerializer(serializers.ModelSerializer):
 
 
 class VenueListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for venue lists"""
+    """Serializer for venue lists - includes fields needed for editing"""
+    operating_rules = VenueOperatingRulesSerializer(
+        source='venue_operating_rules',
+        read_only=True
+    )
     has_operating_rules = serializers.SerializerMethodField()
     packages_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Venue
         fields = [
-            'id', 'name', 'code', 'is_overnight', 'is_active', 'is_bookable',
-            'is_featured', 'minimum_capacity', 'maximum_capacity',
-            'featured_image', 'sort_order', 'is_rentable_standalone',
+            'id', 'name', 'code', 'description', 'is_overnight', 'is_active', 'is_bookable',
+            'is_featured', 'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
+            'location_description', 'featured_image', 'gallery_images', 'sort_order',
+            'is_rentable_standalone',
             # Standalone pricing fields for editing
             'standalone_base_price', 'standalone_included_hours',
             'standalone_excess_hour_price',
-            'has_operating_rules', 'packages_count'
+            'operating_rules', 'has_operating_rules', 'packages_count'
         ]
 
     def get_has_operating_rules(self, obj):
@@ -399,6 +404,8 @@ class RentableVenueSerializer(serializers.ModelSerializer):
     Used by the venue selection booking flow step.
     """
     operating_rules = serializers.SerializerMethodField()
+    featured_image = serializers.SerializerMethodField()
+    gallery_images = serializers.SerializerMethodField()
 
     class Meta:
         model = Venue
@@ -413,6 +420,24 @@ class RentableVenueSerializer(serializers.ModelSerializer):
             'standalone_excess_hour_price',
             'operating_rules'
         ]
+
+    def get_featured_image(self, obj):
+        """Return absolute URL for featured image"""
+        if obj.featured_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.featured_image.url)
+            return obj.featured_image.url
+        return None
+
+    def get_gallery_images(self, obj):
+        """Return absolute URLs for gallery images"""
+        if not obj.gallery_images:
+            return []
+        request = self.context.get('request')
+        if request:
+            return [request.build_absolute_uri(url) for url in obj.gallery_images]
+        return obj.gallery_images
 
     def get_operating_rules(self, obj):
         """Get simplified operating rules for venue selection"""
@@ -437,6 +462,8 @@ class RentableVenueWithEventTypeSerializer(serializers.ModelSerializer):
     Used by the venue selection booking flow step when event_type_id is provided.
     """
     operating_rules = serializers.SerializerMethodField()
+    featured_image = serializers.SerializerMethodField()
+    gallery_images = serializers.SerializerMethodField()
     # These will be populated with event-type-specific values if available
     effective_base_price = serializers.SerializerMethodField()
     effective_included_hours = serializers.SerializerMethodField()
@@ -461,6 +488,24 @@ class RentableVenueWithEventTypeSerializer(serializers.ModelSerializer):
             'has_event_type_config',
             'operating_rules'
         ]
+
+    def get_featured_image(self, obj):
+        """Return absolute URL for featured image"""
+        if obj.featured_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.featured_image.url)
+            return obj.featured_image.url
+        return None
+
+    def get_gallery_images(self, obj):
+        """Return absolute URLs for gallery images"""
+        if not obj.gallery_images:
+            return []
+        request = self.context.get('request')
+        if request:
+            return [request.build_absolute_uri(url) for url in obj.gallery_images]
+        return obj.gallery_images
 
     def get_event_type_config(self, obj):
         """Get event type configuration if available"""

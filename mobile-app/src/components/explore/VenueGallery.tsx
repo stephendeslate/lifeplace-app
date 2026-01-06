@@ -121,19 +121,22 @@ export function VenueGallery({ images, featuredImage }: VenueGalleryProps) {
         statusBarTranslucent
         onRequestClose={() => setModalVisible(false)}
       >
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-          <View style={styles.modalHeader}>
-            <Pressable
-              onPress={() => setModalVisible(false)}
-              style={styles.closeButton}
-            >
-              <X size={24} color={colors.neutral.white} />
-            </Pressable>
-            <Text style={styles.modalCounter}>
-              {currentIndex + 1} / {allImages.length}
-            </Text>
-            <View style={styles.placeholder} />
-          </View>
+        <View style={styles.modalContainer}>
+          <SafeAreaView edges={['top']} style={styles.modalHeaderSafeArea}>
+            <View style={styles.modalHeader}>
+              <Pressable
+                onPress={() => setModalVisible(false)}
+                style={styles.closeButton}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+              >
+                <X size={28} color={colors.neutral.white} weight="bold" />
+              </Pressable>
+              <Text style={styles.modalCounter}>
+                {currentIndex + 1} / {allImages.length}
+              </Text>
+              <View style={styles.placeholder} />
+            </View>
+          </SafeAreaView>
 
           <FlatList
             data={allImages}
@@ -161,7 +164,7 @@ export function VenueGallery({ images, featuredImage }: VenueGalleryProps) {
               </View>
             )}
           />
-        </SafeAreaView>
+        </View>
       </Modal>
     </>
   );
@@ -217,6 +220,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.primary.black,
   },
+  modalHeaderSafeArea: {
+    backgroundColor: colors.primary.black,
+  },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,9 +231,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   closeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -236,7 +243,7 @@ const styles = StyleSheet.create({
     color: colors.neutral.white,
   },
   placeholder: {
-    width: 44,
+    width: 48,
   },
   modalImageWrapper: {
     width: SCREEN_WIDTH,
