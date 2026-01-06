@@ -13,14 +13,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Fingerprint, Scan, LockKey, SignOut } from 'phosphor-react-native';
+import { Fingerprint, Scan, SignOut } from 'phosphor-react-native';
 
 import { colors, spacing, typeScale, layout } from '@/theme';
 import { useBiometrics } from '@/hooks/useBiometrics';
+import { Logo } from '@/components/common';
 
 // =============================================================================
 // TYPES
@@ -74,10 +74,8 @@ export function BiometricLockScreen({
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
-        {/* Logo Area */}
-        <View style={styles.logoContainer}>
-          <LockKey size={40} color={colors.neutral.white} weight="fill" />
-        </View>
+        {/* Logo */}
+        <Logo variant="full" color="white" size="lg" style={styles.logo} />
 
         {/* Title */}
         <Text style={styles.title}>LifePlace is Locked</Text>
@@ -147,14 +145,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
   },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
+  logo: {
+    marginBottom: spacing.lg,
   },
   title: {
     ...typeScale.headlineLarge,

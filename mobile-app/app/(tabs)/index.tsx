@@ -33,7 +33,7 @@ import {
   FinancialSummaryCard,
   QuickActionRow,
 } from '@/components/dashboard';
-import { Skeleton, Card, EmptyState } from '@/components/common';
+import { Skeleton, Card, EmptyState, Logo } from '@/components/common';
 import { VenueCard, PackageCard } from '@/components/explore';
 import type { QuickActionType } from '@/components/dashboard';
 
@@ -109,15 +109,18 @@ export default function DashboardScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>
-              Welcome{user?.first_name ? `, ${user.first_name}` : ''}!
-            </Text>
-            <Text style={styles.subGreeting}>
-              {hasCriticalActions
-                ? 'You have items requiring attention'
-                : 'Your events at a glance'}
-            </Text>
+          <View style={styles.headerLeft}>
+            <Logo variant="icon" color="dark" size="xs" width={32} height={32} />
+            <View>
+              <Text style={styles.greeting}>
+                Welcome{user?.first_name ? `, ${user.first_name}` : ''}!
+              </Text>
+              <Text style={styles.subGreeting}>
+                {hasCriticalActions
+                  ? 'You have items requiring attention'
+                  : 'Your events at a glance'}
+              </Text>
+            </View>
           </View>
           <Pressable style={styles.notificationButton}>
             <Bell size={24} color={colors.primary.black} />
@@ -381,6 +384,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginTop: spacing.md,
     marginBottom: spacing.lg,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   greeting: {
     ...typeScale.headlineLarge,

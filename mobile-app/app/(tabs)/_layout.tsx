@@ -21,10 +21,11 @@
 
 import { Redirect, Tabs } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
-import { House, CalendarBlank, Heart, User } from 'phosphor-react-native';
+import { CalendarBlank, Heart, User } from 'phosphor-react-native';
 
 import { useAuthStore } from '@/stores/authStore';
 import { colors, layout } from '@/theme';
+import { Logo } from '@/components/common';
 
 export default function TabLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -84,12 +85,10 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color, focused }) => (
-            <House
-              size={24}
-              weight={focused ? 'fill' : 'regular'}
-              color={color}
-            />
+          tabBarIcon: ({ focused }) => (
+            <View style={{ opacity: focused ? 1 : 0.75 }}>
+              <Logo variant="icon" color="dark" size="xs" width={24} height={24} />
+            </View>
           ),
         }}
       />

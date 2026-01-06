@@ -15,6 +15,10 @@ export type { LoadingScreenProps } from './LoadingScreen';
 export { Card } from './Card';
 export type { CardProps } from './Card';
 
+// Branding components
+export { Logo } from './Logo';
+export type { LogoProps, LogoVariant, LogoColor, LogoSize } from './Logo';
+
 // Display components
 export { Badge } from './Badge';
 export type { BadgeProps, BadgeVariant, BadgeSize } from './Badge';

@@ -26,7 +26,7 @@ import {
 
 import { useAuthContext as useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { Input, PasswordInput, Button } from '@/components/common';
+import { Input, PasswordInput, Button, Logo } from '@/components/common';
 import { colors, spacing, typeScale, layout } from '@/theme';
 
 const registerSchema = z
@@ -124,6 +124,9 @@ export default function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Logo */}
+          <Logo variant="full" color="dark" size="md" style={styles.logo} />
+
           {/* Title */}
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Create Account</Text>
@@ -357,6 +360,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxxl,
+  },
+  logo: {
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
   },
   titleContainer: {
     marginBottom: spacing.xxl,
