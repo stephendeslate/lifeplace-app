@@ -30,7 +30,7 @@ export interface VenuePublic {
   name: string;
   description?: string;
   location_description?: string;
-  featured_image_url?: string;
+  featured_image?: string;
   gallery_images?: string[];
   amenities?: string[];
   capacity_min: number;

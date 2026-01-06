@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { venuesApi, type VenueFilters, type PackageVenueFilters } from '../apis/venues.api';
 import { useToastActions } from '../contexts/ToastContext';
 import type {
+  CreateVenueData,
   UpdateVenueData,
   CreateOperatingRulesData,
   CreatePackageVenueData,
@@ -52,7 +53,8 @@ export const useVenues = (filters?: VenueFilters) => {
 
   // Mutations
   const createVenueMutation = useMutation({
-    mutationFn: venuesApi.createVenue,
+    mutationFn: ({ data, formData }: { data: CreateVenueData; formData?: FormData }) =>
+      venuesApi.createVenue(data, formData),
     onSuccess: (newVenue) => {
       queryClient.invalidateQueries({ queryKey: ['venues'] });
       showSuccess('Venue Created', `${newVenue.name} has been created successfully.`);
@@ -66,8 +68,8 @@ export const useVenues = (filters?: VenueFilters) => {
   });
 
   const updateVenueMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateVenueData }) =>
-      venuesApi.updateVenue(id, data),
+    mutationFn: ({ id, data, formData }: { id: number; data: UpdateVenueData; formData?: FormData }) =>
+      venuesApi.updateVenue(id, data, formData),
     onSuccess: (updatedVenue) => {
       queryClient.invalidateQueries({ queryKey: ['venues'] });
       queryClient.invalidateQueries({ queryKey: ['venue', updatedVenue.id] });

@@ -189,12 +189,16 @@ function PackageCard({
     name,
     description,
     thumbnail_url,
+    effective_featured_image,
     base_price,
     pricing_model,
     included_hours,
     excess_hour_price,
     has_excess_hours,
   } = pkg;
+
+  // Use effective_featured_image (inherits from venue) or fall back to thumbnail_url
+  const displayImage = effective_featured_image || thumbnail_url;
 
   return (
     <TouchableOpacity
@@ -219,9 +223,9 @@ function PackageCard({
       )}
 
       {/* Image */}
-      {showImage && thumbnail_url && !isCustomBundle && (
+      {showImage && displayImage && !isCustomBundle && (
         <Image
-          source={{ uri: thumbnail_url }}
+          source={{ uri: displayImage }}
           style={styles.packageImage}
           contentFit="cover"
           transition={200}

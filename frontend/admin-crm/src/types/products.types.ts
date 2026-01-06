@@ -61,6 +61,9 @@ export interface ProductOption {
   sku: string | null;
   sort_order: number;
   event_type: number | null;
+  // Images
+  featured_image: string | null;
+  gallery_images: string[];
   formatted_price: string;
   price_with_tax: string | null;
   created_at: string;
@@ -88,9 +91,37 @@ export interface CreateProductData {
   sku?: string | null;
   sort_order?: number;
   event_type?: number | null;
+  // Images
+  featured_image?: string | null;
+  gallery_images?: string[];
 }
 
 export type UpdateProductData = Partial<CreateProductData>;
+
+export interface ProductFormData {
+  name: string;
+  description: string;
+  category: string;
+  pricing_model: PricingModel;
+  base_price: string;
+  currency: string;
+  tax_rate: string;
+  type: ProductType;
+  is_active: boolean;
+  is_featured: boolean;
+  allow_multiple: boolean;
+  requires_approval: boolean;
+  minimum_hours: string;
+  maximum_hours: string;
+  advance_booking_days: string;
+  maximum_booking_days: string;
+  event_days: string;
+  sku: string;
+  sort_order: string;
+  // Images
+  featured_image: File | string | null;
+  gallery_images: (File | string)[];
+}
 
 export type DiscountType = 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS';
 export type ApplicationType = 'AUTOMATIC' | 'CODE_REQUIRED' | 'ADMIN_ONLY';

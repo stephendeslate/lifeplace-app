@@ -117,7 +117,20 @@ class ProductOption(BaseModel):
     # Business metadata
     sku = models.CharField(max_length=50, unique=True, null=True, blank=True)
     sort_order = models.PositiveIntegerField(default=0)
-    
+
+    # Images
+    featured_image = models.ImageField(
+        upload_to='products/images/',
+        null=True,
+        blank=True,
+        help_text="Main image shown in listings and cards"
+    )
+    gallery_images = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of image URLs for product gallery"
+    )
+
     # Event type compatibility (keep for backwards compatibility)
     event_type = models.ForeignKey('events.EventType', on_delete=models.PROTECT, null=True, blank=True)
 

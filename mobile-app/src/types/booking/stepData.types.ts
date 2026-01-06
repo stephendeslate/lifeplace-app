@@ -79,7 +79,7 @@ export interface SelectedPackage {
   }>;
   category_id?: number;
   category_name?: string;
-  featured_image_url?: string;
+  featured_image?: string;
 }
 
 /**
@@ -104,7 +104,7 @@ export interface SelectedAddon {
   price_with_tax?: string;
   category_id?: number;
   category_name?: string;
-  featured_image_url?: string;
+  featured_image?: string;
   min_quantity?: number;
   max_quantity?: number;
 }
@@ -293,7 +293,7 @@ export interface ProductOption {
   type?: 'PACKAGE' | 'PRODUCT';
   is_active: boolean;
   is_featured?: boolean;
-  featured_image_url?: string;
+  featured_image?: string;
   image_url?: string;
   thumbnail_url?: string | null;
   gallery_images?: string[];

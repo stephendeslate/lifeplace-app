@@ -136,12 +136,30 @@ export const productsApi = {
     return response.data;
   },
 
-  createProduct: async (data: CreateProductData): Promise<ProductOption> => {
+  createProduct: async (data: CreateProductData, formData?: FormData): Promise<ProductOption> => {
+    // Use FormData if provided (for image uploads), otherwise use JSON
+    if (formData) {
+      const response = await api.post<ProductOption>('/products/products/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
     const response = await api.post<ProductOption>('/products/products/', data);
     return response.data;
   },
 
-  updateProduct: async (id: number, data: UpdateProductData): Promise<ProductOption> => {
+  updateProduct: async (id: number, data: UpdateProductData, formData?: FormData): Promise<ProductOption> => {
+    // Use FormData if provided (for image uploads), otherwise use JSON
+    if (formData) {
+      const response = await api.patch<ProductOption>(`/products/products/${id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
     const response = await api.patch<ProductOption>(`/products/products/${id}/`, data);
     return response.data;
   },

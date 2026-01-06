@@ -266,11 +266,11 @@ export const ProductsPackages: React.FC = () => {
     }
   };
 
-  const handleProductSubmit = (data: CreateProductData | UpdateProductData) => {
+  const handleProductSubmit = (data: CreateProductData | UpdateProductData, formData?: FormData) => {
     if (editingProduct) {
-      updateProduct({ id: editingProduct.id, data: data as UpdateProductData });
+      updateProduct({ id: editingProduct.id, data: data as UpdateProductData, formData });
     } else {
-      createProduct(data as CreateProductData);
+      createProduct({ data: data as CreateProductData, formData });
     }
     setProductDialogOpen(false);
   };
@@ -330,11 +330,11 @@ export const ProductsPackages: React.FC = () => {
     }
   };
 
-  const handleVenueSubmit = (data: CreateVenueData | UpdateVenueData) => {
+  const handleVenueSubmit = (data: CreateVenueData | UpdateVenueData, formData?: FormData) => {
     if (editingVenue) {
-      updateVenue({ id: editingVenue.id, data: data as UpdateVenueData });
+      updateVenue({ id: editingVenue.id, data: data as UpdateVenueData, formData });
     } else {
-      createVenue(data as CreateVenueData);
+      createVenue({ data: data as CreateVenueData, formData });
     }
     setVenueDialogOpen(false);
   };

@@ -28,6 +28,9 @@ export interface BookingData {
   // Selected products (flattened structure)
   selected_packages?: SelectedPackage[];
   selected_addons?: SelectedAddon[];
+
+  // Additional hours per venue (keyed by venue ID)
+  venue_additional_hours?: Record<string, number>;
   
   // Contact information
   contact_info?: ContactInfoStepData;

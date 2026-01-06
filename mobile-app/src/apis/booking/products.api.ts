@@ -50,8 +50,14 @@ export interface ProductOption {
   is_active: boolean;
   is_featured?: boolean;
   sort_order: number;
+  // Direct image fields
   thumbnail_url: string | null;
+  featured_image?: string | null;
+  gallery_images?: string[];
   images: Array<{ id: number; image_url: string; alt_text: string }>;
+  // Inherited image fields (falls back to venue images for packages)
+  effective_featured_image?: string | null;
+  effective_gallery_images?: string[];
   advance_booking_days: number | null;
   maximum_booking_days: number | null;
   included_venues: Array<{ venue_id: number; venue_name: string }>;

@@ -76,7 +76,10 @@ class ProductOptionSerializer(serializers.ModelSerializer):
     category_path = serializers.CharField(source='category.full_path', read_only=True)
     formatted_price = serializers.CharField(read_only=True)
     price_with_tax = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
-    
+    # Image inheritance fields - fall back to venue images if product has none
+    effective_featured_image = serializers.SerializerMethodField()
+    effective_gallery_images = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductOption
         fields = [
@@ -86,10 +89,77 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',
             'event_days',
             'sku', 'sort_order', 'event_type', 'formatted_price', 'price_with_tax',
+            'featured_image', 'gallery_images',
+            'effective_featured_image', 'effective_gallery_images',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-    
+
+    def get_effective_featured_image(self, obj):
+        """
+        Return the product's featured image if set, otherwise fall back to
+        the primary venue's featured image (for packages).
+        """
+        # If product has its own featured image, use it
+        if obj.featured_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.featured_image.url)
+            return obj.featured_image.url
+
+        # For packages, try to get image from primary venue
+        if obj.type == 'PACKAGE' and hasattr(obj, 'package_venues'):
+            primary_venue = obj.package_venues.filter(is_primary=True).first()
+            if primary_venue and primary_venue.venue.featured_image:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(primary_venue.venue.featured_image.url)
+                return primary_venue.venue.featured_image.url
+
+            # If no primary, try first venue
+            first_venue = obj.package_venues.first()
+            if first_venue and first_venue.venue.featured_image:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(first_venue.venue.featured_image.url)
+                return first_venue.venue.featured_image.url
+
+        return None
+
+    def get_effective_gallery_images(self, obj):
+        """
+        Return the product's gallery images if set, otherwise fall back to
+        collecting images from all associated venues (for packages).
+        """
+        # If product has its own gallery images, use them
+        if obj.gallery_images and len(obj.gallery_images) > 0:
+            return obj.gallery_images
+
+        # For packages, collect images from all venues
+        if obj.type == 'PACKAGE' and hasattr(obj, 'package_venues'):
+            gallery = []
+            request = self.context.get('request')
+
+            for pv in obj.package_venues.select_related('venue').order_by('access_order'):
+                venue = pv.venue
+                # Add venue's featured image
+                if venue.featured_image:
+                    url = venue.featured_image.url
+                    if request:
+                        url = request.build_absolute_uri(url)
+                    gallery.append(url)
+
+                # Add venue's gallery images
+                if venue.gallery_images:
+                    for img_url in venue.gallery_images:
+                        if request and not img_url.startswith('http'):
+                            img_url = request.build_absolute_uri(img_url)
+                        gallery.append(img_url)
+
+            return gallery if gallery else []
+
+        return []
+
     def validate(self, data):
         """Validate product data"""
         # Validate hour constraints
