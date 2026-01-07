@@ -81,14 +81,34 @@ class InvoiceService:
             # Add line items if provided
             line_items = data.get('line_items', [])
             for item_data in line_items:
+                # Get tax rate: use product's tax_rate with global fallback
+                product_id = item_data.get('product')
+                tax_rate = Decimal(str(item_data.get('tax_rate', '0')))
+
+                # If product is provided and no tax_rate specified, get from product
+                if product_id and tax_rate == Decimal('0'):
+                    from core.domains.products.models import ProductOption
+                    try:
+                        product = ProductOption.objects.get(id=product_id)
+                        if getattr(product, 'is_tax_inclusive', False):
+                            tax_rate = Decimal('0')
+                        elif product.tax_rate and Decimal(str(product.tax_rate)) > 0:
+                            tax_rate = Decimal(str(product.tax_rate))
+                        else:
+                            # Fall back to global TaxRate (no hardcoded fallback)
+                            default_tax = TaxRate.objects.filter(is_default=True).first()
+                            tax_rate = default_tax.rate if default_tax else Decimal('0')
+                    except ProductOption.DoesNotExist:
+                        pass  # Keep the provided tax_rate
+
                 InvoiceLineItem.objects.create(
                     invoice=invoice,
                     description=item_data.get('description', ''),
                     quantity=item_data.get('quantity', 1),
                     unit_price=Decimal(str(item_data.get('unit_price', '0'))),
-                    tax_rate=Decimal(str(item_data.get('tax_rate', '0'))),
+                    tax_rate=tax_rate,
                     total=Decimal(str(item_data.get('total', '0'))),
-                    product_id=item_data.get('product')
+                    product_id=product_id
                 )
             # Issue the invoice if status is ISSUED
             if invoice.status == 'ISSUED':
@@ -148,17 +168,37 @@ class InvoiceService:
                 if line_items:
                     # Clear existing line items if new ones are provided
                     invoice.line_items.all().delete()
-                    
+
                     # Add new line items
                     for item_data in line_items:
+                        # Get tax rate: use product's tax_rate with global fallback
+                        product_id = item_data.get('product')
+                        tax_rate = Decimal(str(item_data.get('tax_rate', '0')))
+
+                        # If product is provided and no tax_rate specified, get from product
+                        if product_id and tax_rate == Decimal('0'):
+                            from core.domains.products.models import ProductOption
+                            try:
+                                product = ProductOption.objects.get(id=product_id)
+                                if getattr(product, 'is_tax_inclusive', False):
+                                    tax_rate = Decimal('0')
+                                elif product.tax_rate and Decimal(str(product.tax_rate)) > 0:
+                                    tax_rate = Decimal(str(product.tax_rate))
+                                else:
+                                    # Fall back to global TaxRate (no hardcoded fallback)
+                                    default_tax = TaxRate.objects.filter(is_default=True).first()
+                                    tax_rate = default_tax.rate if default_tax else Decimal('0')
+                            except ProductOption.DoesNotExist:
+                                pass  # Keep the provided tax_rate
+
                         InvoiceLineItem.objects.create(
                             invoice=invoice,
                             description=item_data.get('description', ''),
                             quantity=item_data.get('quantity', 1),
                             unit_price=Decimal(str(item_data.get('unit_price', '0'))),
-                            tax_rate=Decimal(str(item_data.get('tax_rate', '0'))),
+                            tax_rate=tax_rate,
                             total=Decimal(str(item_data.get('total', '0'))),
-                            product_id=item_data.get('product')
+                            product_id=product_id
                         )
             
             return invoice

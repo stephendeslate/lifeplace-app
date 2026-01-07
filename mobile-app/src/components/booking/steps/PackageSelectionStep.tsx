@@ -618,7 +618,7 @@ export function PackageSelectionStep({
 
   // Calculate total with tax for display (using configured rate from context)
   const totalPrice = useMemo(() => {
-    const tax = subtotalPrice * (state.taxRate || 0.12);
+    const tax = subtotalPrice * (state.taxRate || 0);
     return subtotalPrice + tax;
   }, [subtotalPrice, state.taxRate]);
 
@@ -626,7 +626,7 @@ export function PackageSelectionStep({
   // Follows client-portal pattern: triggers PricingSummaryBar as soon as packages selected
   useEffect(() => {
     if (totalPrice > 0) {
-      const taxRate = state.taxRate || 0.12;
+      const taxRate = state.taxRate || 0; // No hardcoded fallback - use backend TaxRate
       const tax = subtotalPrice * taxRate;
 
       // Update pricing breakdown for detailed footer display

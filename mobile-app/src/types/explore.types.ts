@@ -94,6 +94,7 @@ export interface RentableVenueWithEventType extends RentableVenue {
 
 /**
  * Venue included in a package
+ * Enriched with venue details for mini card display
  */
 export interface PackageIncludedVenue {
   id: number;
@@ -101,6 +102,14 @@ export interface PackageIncludedVenue {
   code: string;
   is_primary: boolean;
   is_overnight: boolean;
+  /** Venue featured image URL */
+  featured_image: string | null;
+  /** Minimum guest capacity */
+  minimum_capacity: number;
+  /** Maximum guest capacity */
+  maximum_capacity: number;
+  /** Description of venue location */
+  location_description: string;
 }
 
 /**
@@ -142,6 +151,8 @@ export interface PackagePublic {
   // Pricing behavior
   allow_multiple: boolean;
   requires_approval: boolean;
+  /** Tax rate percentage (e.g., 12.00 for 12% VAT) */
+  tax_rate: string;
   /** If true, base_price already includes tax (no additional VAT) */
   is_tax_inclusive: boolean;
   /** Venues included in this package (for packages only) */

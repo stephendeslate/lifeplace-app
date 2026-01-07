@@ -1248,16 +1248,35 @@ class BookingSessionService:
     
     
     @staticmethod
+    def _get_tax_rate_for_product(product) -> Decimal:
+        """
+        Get appropriate tax rate for a product.
+
+        Priority:
+        1. If tax-inclusive, return 0 (tax already in price)
+        2. Use product's tax_rate if set and > 0
+        3. Fall back to global default TaxRate
+        """
+        from core.domains.payments.models import TaxRate
+
+        # If tax is already included in price, no additional tax
+        if getattr(product, 'is_tax_inclusive', False):
+            return Decimal('0')
+
+        # Use product's tax_rate if set (priority over global)
+        product_tax_rate = getattr(product, 'tax_rate', None)
+        if product_tax_rate is not None and Decimal(str(product_tax_rate)) > 0:
+            return Decimal(str(product_tax_rate))
+
+        # Fall back to global TaxRate (no hardcoded fallback)
+        default_tax = TaxRate.objects.filter(is_default=True).first()
+        return default_tax.rate if default_tax else Decimal('0')
+
+    @staticmethod
     def _add_line_items_to_quote(quote, session):
         """Add line items to quote from session booking data"""
         from core.domains.sales.models import QuoteLineItem
         from core.domains.products.models import ProductOption
-        
-        # Extract selected products/packages from booking data
-        # Get default tax rate for non-tax-inclusive products
-        from core.domains.payments.models import TaxRate
-        default_tax = TaxRate.objects.filter(is_default=True).first()
-        default_tax_rate = default_tax.rate if default_tax else Decimal('0.00')
 
         for step_key, step_data in session.booking_data.items():
             if isinstance(step_data, dict):
@@ -1268,8 +1287,8 @@ class BookingSessionService:
                         for package_id in packages:
                             try:
                                 package = ProductOption.objects.get(id=package_id)
-                                # Set tax_rate based on product's is_tax_inclusive flag
-                                tax_rate = Decimal('0.00') if package.is_tax_inclusive else default_tax_rate
+                                # Get tax_rate using product's tax_rate with global fallback
+                                tax_rate = BookingSessionService._get_tax_rate_for_product(package)
                                 QuoteLineItem.objects.create(
                                     quote=quote,
                                     product=package,
@@ -1291,8 +1310,8 @@ class BookingSessionService:
                         for addon_id in addons:
                             try:
                                 addon = ProductOption.objects.get(id=addon_id)
-                                # Set tax_rate based on product's is_tax_inclusive flag
-                                tax_rate = Decimal('0.00') if addon.is_tax_inclusive else default_tax_rate
+                                # Get tax_rate using product's tax_rate with global fallback
+                                tax_rate = BookingSessionService._get_tax_rate_for_product(addon)
                                 QuoteLineItem.objects.create(
                                     quote=quote,
                                     product=addon,

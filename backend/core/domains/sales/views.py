@@ -614,14 +614,10 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
             if pricing_item:
                 item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
 
-                # Tax rate: 0 if product is tax-inclusive, otherwise system default
-                from core.domains.payments.models import TaxRate
+                # Tax rate: uses product's tax_rate with global fallback
+                from .services import get_tax_rate_for_product
                 is_tax_inclusive = getattr(product, 'is_tax_inclusive', False)
-                if is_tax_inclusive:
-                    tax_rate = Decimal('0')
-                else:
-                    default_tax = TaxRate.objects.filter(is_default=True).first()
-                    tax_rate = default_tax.rate if default_tax else Decimal('0')
+                tax_rate = get_tax_rate_for_product(product)
 
                 return Response({
                     'product_id': product.id,

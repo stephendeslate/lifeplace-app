@@ -11,6 +11,46 @@ from core.domains.venues.models import PackageVenue, VenueEventTypeConfiguration
 logger = logging.getLogger(__name__)
 
 
+def get_default_tax_rate() -> Decimal:
+    """
+    Get tax rate from system default (global TaxRate with is_default=True).
+
+    Returns:
+        Decimal: Default tax rate from TaxRate table, or 0 if none configured.
+                 TaxRate is the ultimate source of truth - no hardcoded fallback.
+    """
+    default_tax = TaxRate.objects.filter(is_default=True).first()
+    return default_tax.rate if default_tax else Decimal('0')
+
+
+def get_tax_rate_for_product(product) -> Decimal:
+    """
+    Get appropriate tax rate for a product/addon.
+
+    Priority:
+    1. If tax-inclusive, return 0 (tax already in price)
+    2. Use product's tax_rate if set and > 0
+    3. Fall back to global default TaxRate
+
+    Args:
+        product: ProductOption instance with tax_rate and is_tax_inclusive fields
+
+    Returns:
+        Decimal: The applicable tax rate percentage (e.g., 12.00 for 12%)
+    """
+    # If tax is already included in price, no additional tax
+    if getattr(product, 'is_tax_inclusive', False):
+        return Decimal('0')
+
+    # Use product's tax_rate if set (priority over global)
+    product_tax_rate = getattr(product, 'tax_rate', None)
+    if product_tax_rate is not None and Decimal(str(product_tax_rate)) > 0:
+        return Decimal(str(product_tax_rate))
+
+    # Fall back to global default
+    return get_default_tax_rate()
+
+
 @dataclass
 class PricingLineItem:
     """Standardized pricing line item"""
@@ -317,30 +357,29 @@ class PricingCalculationService:
             is_custom_bundle = package_data.get('is_custom_bundle', False)
             venue_ids = package_data.get('venue_ids', []) if is_custom_bundle else None
 
-            # Determine tax rate based on product's is_tax_inclusive flag
+            # Determine tax rate using product's tax_rate with global fallback
             tax_rate = Decimal('0.00')
             if product_id and product_id != -1:
                 try:
                     product = ProductOption.objects.get(id=product_id)
-                    if product.is_tax_inclusive:
-                        # Price already includes tax, no additional tax
-                        tax_rate = Decimal('0.00')
-                        logger.info(f"Package {name}: Tax-inclusive, tax_rate=0%")
-                    else:
-                        # Use default tax rate from settings
-                        default_tax = TaxRate.objects.filter(is_default=True).first()
-                        tax_rate = default_tax.rate if default_tax else Decimal('0.00')
-                        logger.info(f"Package {name}: Not tax-inclusive, using default tax_rate={tax_rate}%")
+                    tax_rate = get_tax_rate_for_product(product)
+                    logger.info(f"Package {name}: tax_rate={tax_rate}% (from product)")
                 except ProductOption.DoesNotExist:
-                    logger.warning(f"Product {product_id} not found, defaulting tax_rate=0%")
+                    tax_rate = get_default_tax_rate()
+                    logger.warning(f"Product {product_id} not found, using default tax_rate={tax_rate}%")
             else:
                 # Custom bundle - check if is_tax_inclusive is in package_data
                 if package_data.get('is_tax_inclusive', False):
                     tax_rate = Decimal('0.00')
+                    logger.info(f"Custom bundle {name}: tax-inclusive, tax_rate=0%")
                 else:
-                    default_tax = TaxRate.objects.filter(is_default=True).first()
-                    tax_rate = default_tax.rate if default_tax else Decimal('0.00')
-                logger.info(f"Custom bundle {name}: tax_rate={tax_rate}%")
+                    # Use product's tax_rate from package_data if available, else global default
+                    pkg_tax_rate = package_data.get('tax_rate')
+                    if pkg_tax_rate is not None and Decimal(str(pkg_tax_rate)) > 0:
+                        tax_rate = Decimal(str(pkg_tax_rate))
+                    else:
+                        tax_rate = get_default_tax_rate()
+                    logger.info(f"Custom bundle {name}: tax_rate={tax_rate}%")
 
             # Calculate excess hours using venue-based hours system
             excess_hours = None
@@ -394,27 +433,28 @@ class PricingCalculationService:
             price = Decimal(str(addon_data.get('price', 0)))
             product_id = addon_data.get('product_id')
 
-            # Determine tax rate based on product's is_tax_inclusive flag
+            # Determine tax rate using product's tax_rate with global fallback
             tax_rate = Decimal('0.00')
             if product_id and product_id != -1:
                 try:
                     product = ProductOption.objects.get(id=product_id)
-                    if product.is_tax_inclusive:
-                        # Price already includes tax, no additional tax
-                        tax_rate = Decimal('0.00')
-                        logger.info(f"Add-on {name}: Tax-inclusive, tax_rate=0%")
-                    else:
-                        # Use default tax rate from settings
-                        default_tax = TaxRate.objects.filter(is_default=True).first()
-                        tax_rate = default_tax.rate if default_tax else Decimal('0.00')
-                        logger.info(f"Add-on {name}: Not tax-inclusive, using default tax_rate={tax_rate}%")
+                    tax_rate = get_tax_rate_for_product(product)
+                    logger.info(f"Add-on {name}: tax_rate={tax_rate}% (from product)")
                 except ProductOption.DoesNotExist:
-                    logger.warning(f"Product {product_id} not found, defaulting tax_rate=0%")
+                    tax_rate = get_default_tax_rate()
+                    logger.warning(f"Product {product_id} not found, using default tax_rate={tax_rate}%")
             else:
-                # No product_id - use default tax rate
-                default_tax = TaxRate.objects.filter(is_default=True).first()
-                tax_rate = default_tax.rate if default_tax else Decimal('0.00')
-                logger.info(f"Add-on {name}: No product_id, using default tax_rate={tax_rate}%")
+                # No product_id - check addon_data for tax info, else use global default
+                if addon_data.get('is_tax_inclusive', False):
+                    tax_rate = Decimal('0.00')
+                    logger.info(f"Add-on {name}: tax-inclusive, tax_rate=0%")
+                else:
+                    addon_tax_rate = addon_data.get('tax_rate')
+                    if addon_tax_rate is not None and Decimal(str(addon_tax_rate)) > 0:
+                        tax_rate = Decimal(str(addon_tax_rate))
+                    else:
+                        tax_rate = get_default_tax_rate()
+                    logger.info(f"Add-on {name}: tax_rate={tax_rate}%")
 
             return PricingLineItem(
                 product_id=product_id,
@@ -433,24 +473,14 @@ class PricingCalculationService:
     @staticmethod
     def get_applicable_tax_rate(line_items: List[PricingLineItem]) -> Decimal:
         """
-        Get applicable tax rate from system default (Currency & Taxes settings only).
+        Get applicable tax rate from system default.
 
-        Tax source: System TaxRate with is_default=True
-        Fallback: 0% if no default configured
+        Tax source: System TaxRate with is_default=True (ultimate source of truth)
+        Fallback: 0% if no default configured (no hardcoded assumptions)
 
         Note: Individual line items may have tax_rate=0 if the product is tax-inclusive.
         """
-        try:
-            default_tax_rate = TaxRate.objects.filter(is_default=True).first()
-            if default_tax_rate:
-                logger.info(f"Using default tax rate: {default_tax_rate.rate}% ({default_tax_rate.name})")
-                return default_tax_rate.rate
-        except Exception as e:
-            logger.warning(f"Error fetching default tax rate: {e}")
-
-        # No default configured - return 0%
-        logger.info("No default tax rate configured, using 0%")
-        return Decimal('0')
+        return get_default_tax_rate()
 
     @staticmethod
     def apply_discount(breakdown: PricingBreakdown, discount: Discount):

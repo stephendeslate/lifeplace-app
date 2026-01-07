@@ -67,3 +67,7 @@ export {
   SkeletonBookingStep,
   SkeletonPaymentScreen,
 } from './ScreenSkeletons';
+
+// Modal components
+export { BottomSheet } from './BottomSheet';
+export type { BottomSheetProps, BottomSheetRef } from './BottomSheet';

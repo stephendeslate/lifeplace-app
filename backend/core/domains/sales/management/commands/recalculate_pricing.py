@@ -1,26 +1,36 @@
 from django.core.management.base import BaseCommand
 from core.domains.sales.models import EventQuote
-from core.domains.payments.models import Invoice
+from core.domains.payments.models import Invoice, TaxRate
 
 
 class Command(BaseCommand):
     help = 'Recalculate pricing for existing quotes and invoices using centralized pricing service'
-    
+
+    def _get_default_tax_rate(self):
+        """Get default tax rate from TaxRate table (no hardcoded fallback)"""
+        from decimal import Decimal
+        default_tax = TaxRate.objects.filter(is_default=True).first()
+        return default_tax.rate if default_tax else Decimal('0')
+
     def _calculate_quote_totals_without_save(self, quote):
         """Calculate quote totals without saving to database"""
         from core.domains.sales.pricing_service import PricingCalculationService, PricingLineItem
         from decimal import Decimal
-        
+
+        default_tax_rate = self._get_default_tax_rate()
+
         # Convert line items to pricing format
         pricing_line_items = []
         for item in quote.line_items.all():
+            # Use item's tax_rate if available, otherwise use global default
+            item_tax_rate = item.tax_rate if item.tax_rate else default_tax_rate
             pricing_line_items.append(PricingLineItem(
                 product_id=item.id,
                 name=item.description,
                 description=item.description,
                 base_unit_price=item.unit_price,
                 quantity=item.quantity,
-                tax_rate=Decimal('12.0')
+                tax_rate=item_tax_rate
             ))
         
         if pricing_line_items:
@@ -45,17 +55,21 @@ class Command(BaseCommand):
         """Calculate invoice totals without saving to database"""
         from core.domains.sales.pricing_service import PricingCalculationService, PricingLineItem
         from decimal import Decimal
-        
+
+        default_tax_rate = self._get_default_tax_rate()
+
         # Convert line items to pricing format
         pricing_line_items = []
         for item in invoice.line_items.all():
+            # Use item's tax_rate if available, otherwise use global default
+            item_tax_rate = item.tax_rate if item.tax_rate else default_tax_rate
             pricing_line_items.append(PricingLineItem(
                 product_id=item.id,
                 name=item.description,
                 description=item.description,
                 base_unit_price=item.unit_price,
                 quantity=item.quantity,
-                tax_rate=item.tax_rate if item.tax_rate else Decimal('12.0')
+                tax_rate=item_tax_rate
             ))
         
         if pricing_line_items:

@@ -41,7 +41,7 @@ const initialState: BookingState = {
   paymentGateways: [],
   selectedPaymentGateway: null,
   totalPrice: '0.00',
-  taxRate: 0.12, // Default 12% tax rate, updated from backend
+  taxRate: 0, // No hardcoded default - fetched from backend TaxRate
   pricingBreakdown: {
     subtotal: '0.00',
     tax: '0.00',

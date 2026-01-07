@@ -173,20 +173,45 @@ class ProductOptionSerializer(serializers.ModelSerializer):
 
     def get_included_venues(self, obj):
         """
-        Return list of venues included in this package.
+        Return list of venues included in this package with enriched data.
         Only applicable for packages (type='PACKAGE').
+        Includes venue details needed for mini card display in mobile app.
+
+        Uses the same URL building pattern as RentableVenueSerializer.get_featured_image()
+        to ensure consistent image URL handling across the API.
         """
         if obj.type != 'PACKAGE' or not hasattr(obj, 'package_venues'):
             return []
 
         venues = []
+        request = self.context.get('request')
+
         for pv in obj.package_venues.select_related('venue').order_by('access_order'):
+            venue = pv.venue
+
+            # Build featured image URL using the same pattern as RentableVenueSerializer
+            # The venue.featured_image is an ImageFieldFile - check if it has a file
+            featured_image_url = None
+            try:
+                if venue.featured_image and venue.featured_image.name:
+                    if request:
+                        featured_image_url = request.build_absolute_uri(venue.featured_image.url)
+                    else:
+                        featured_image_url = venue.featured_image.url
+            except (ValueError, AttributeError):
+                # Handle case where ImageField has no associated file
+                featured_image_url = None
+
             venues.append({
-                'id': pv.venue.id,
-                'name': pv.venue.name,
-                'code': pv.venue.code,
+                'id': venue.id,
+                'name': venue.name,
+                'code': venue.code,
                 'is_primary': pv.is_primary,
-                'is_overnight': pv.venue.is_overnight,
+                'is_overnight': venue.is_overnight,
+                'featured_image': featured_image_url,
+                'minimum_capacity': venue.minimum_capacity,
+                'maximum_capacity': venue.maximum_capacity,
+                'location_description': venue.location_description or '',
             })
         return venues
 

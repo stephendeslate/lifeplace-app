@@ -383,6 +383,17 @@ export function formatCapacity(min: number, max: number): string {
 }
 
 /**
+ * Format tax rate for display (e.g., "12" from "12.00")
+ * Removes trailing zeros and decimal point if not needed.
+ * No hardcoded fallback - returns "0" if no tax rate provided.
+ */
+export function formatTaxRate(taxRate: string | number | undefined): string {
+  const rate = typeof taxRate === 'string' ? parseFloat(taxRate) : (taxRate ?? 0);
+  // Remove trailing zeros (12.00 -> 12, 12.50 -> 12.5)
+  return rate % 1 === 0 ? rate.toString() : rate.toFixed(1);
+}
+
+/**
  * Check if package uses per-person pricing
  * Per-person pricing is indicated by allow_multiple=true in the backend
  */
