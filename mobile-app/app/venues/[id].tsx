@@ -30,7 +30,6 @@ import {
   Clock,
   Moon,
   CalendarCheck,
-  Star,
   Check,
   SwimmingPool,
   Car,
@@ -261,14 +260,6 @@ export default function VenueDetailScreen() {
                 {formatCapacity(venue.minimum_capacity, venue.maximum_capacity)}
               </Text>
             </View>
-            {venue.recommended_capacity && (
-              <View style={[styles.badge, styles.badgeRecommended]}>
-                <Star size={16} color={colors.secondary.gold} weight="fill" />
-                <Text style={[styles.badgeText, styles.badgeTextRecommended]}>
-                  {venue.recommended_capacity} ideal
-                </Text>
-              </View>
-            )}
             {venue.is_overnight && (
               <View style={[styles.badge, styles.badgeHighlight]}>
                 <Moon size={16} color={colors.tertiary.teal} />
@@ -557,18 +548,12 @@ const styles = StyleSheet.create({
     borderRadius: layout.borderRadius.full,
     ...shadows.sm,
   },
-  badgeRecommended: {
-    backgroundColor: colors.secondary.goldSubtle,
-  },
   badgeHighlight: {
     backgroundColor: colors.tertiary.tealSubtle,
   },
   badgeText: {
     ...typeScale.labelMedium,
     color: colors.primary.black,
-  },
-  badgeTextRecommended: {
-    color: colors.secondary.gold,
   },
   badgeTextHighlight: {
     color: colors.tertiary.teal,

@@ -108,10 +108,10 @@ export const useSimplePricing = (
       setError('Failed to calculate pricing');
       console.error('Pricing calculation error:', err);
 
-      // Fallback calculation if server fails
+      // Fallback calculation if server fails - use context tax rate, no hardcoded default
       const subtotal = selectedPackages.reduce((sum, pkg) => sum + parseFloat(pkg.price) * pkg.quantity, 0) +
                      selectedAddons.reduce((sum, addon) => sum + parseFloat(addon.price) * addon.quantity, 0);
-      const tax = subtotal * 0.12; // 12% VAT
+      const tax = subtotal * (state.taxRate || 0);
       const total = subtotal + tax;
 
       setPricing({

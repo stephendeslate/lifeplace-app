@@ -11,7 +11,7 @@
  * - Favorite button
  */
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -33,18 +33,18 @@ import {
 } from 'phosphor-react-native';
 
 import { usePackage } from '@/hooks/useExplore';
-import { FavoriteButton } from '@/components/explore';
+import { FavoriteButton, IncludedVenuesSection, IncludedVenuesBottomSheet } from '@/components/explore';
 import { Skeleton, Button } from '@/components/common';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import {
   formatPrice,
+  formatTaxRate,
   isPerPersonPricing,
   formatPerPersonRate,
   formatStartingTotal,
   getDurationLabel,
 } from '@/apis/explore.api';
-
-const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/800x600/FAF9F7/9B9590?text=Package';
+import { FALLBACK_IMAGES } from '@/constants/images';
 
 export default function PackageDetailScreen() {
   const router = useRouter();
@@ -53,6 +53,17 @@ export default function PackageDetailScreen() {
 
   // Fetch package data
   const { data: pkg, isLoading } = usePackage(packageId);
+
+  // State for included venues bottom sheet
+  const [isVenuesSheetOpen, setIsVenuesSheetOpen] = useState(false);
+
+  const handleOpenVenuesSheet = useCallback(() => {
+    setIsVenuesSheetOpen(true);
+  }, []);
+
+  const handleCloseVenuesSheet = useCallback(() => {
+    setIsVenuesSheetOpen(false);
+  }, []);
 
   const handleBookNow = () => {
     // Pass event type and package ID to booking flow for pre-selection
@@ -74,16 +85,16 @@ export default function PackageDetailScreen() {
   const getPricingModelLabel = () => {
     if (!pkg) return '';
     if (isPerPersonPricing(pkg)) {
-      return 'per person';
+      return 'Per Person';
     }
     switch (pkg.pricing_model) {
       case 'HOURLY':
-        return 'per hour';
+        return 'Per Hour';
       case 'CUSTOM':
-        return 'custom quote';
+        return 'Custom Quote';
       case 'FIXED':
       default:
-        return 'fixed price';
+        return 'Fixed Price';
     }
   };
 
@@ -129,7 +140,9 @@ export default function PackageDetailScreen() {
         {/* Image Header */}
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: pkg.effective_featured_image || pkg.featured_image || PLACEHOLDER_IMAGE }}
+            source={pkg.effective_featured_image || pkg.featured_image
+              ? { uri: pkg.effective_featured_image || pkg.featured_image }
+              : FALLBACK_IMAGES.package}
             style={styles.image}
             contentFit="cover"
             transition={200}
@@ -205,6 +218,14 @@ export default function PackageDetailScreen() {
             </View>
           )}
 
+          {/* Included Venues */}
+          {pkg.included_venues && pkg.included_venues.length > 0 && (
+            <IncludedVenuesSection
+              venues={pkg.included_venues}
+              onViewVenues={handleOpenVenuesSheet}
+            />
+          )}
+
           {/* Pricing Details */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Pricing Details</Text>
@@ -237,7 +258,7 @@ export default function PackageDetailScreen() {
                     <>
                       <View style={styles.priceDivider} />
                       <Text style={styles.vatNote}>
-                        12% VAT is not included in the prices shown above
+                        {formatTaxRate(pkg.tax_rate)}% VAT is not included in the prices shown above
                       </Text>
                     </>
                   )}
@@ -334,6 +355,15 @@ export default function PackageDetailScreen() {
           </Button>
         </View>
       </SafeAreaView>
+
+      {/* Included Venues Bottom Sheet - rendered outside ScrollView */}
+      {pkg.included_venues && pkg.included_venues.length > 0 && (
+        <IncludedVenuesBottomSheet
+          isOpen={isVenuesSheetOpen}
+          onClose={handleCloseVenuesSheet}
+          venues={pkg.included_venues}
+        />
+      )}
     </View>
   );
 }

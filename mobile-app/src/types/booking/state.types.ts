@@ -250,7 +250,7 @@ export const createInitialBookingState = (): BookingState => ({
   paymentGateways: [],
   selectedPaymentGateway: null,
   totalPrice: '0.00',
-  taxRate: 0.12,
+  taxRate: 0, // No hardcoded default - fetched from backend TaxRate
   pricingBreakdown: null,
   recoverableSession: null,
   showRecoveryPrompt: false,

@@ -69,7 +69,7 @@ export const useSimplePricing = (
     formattedDiscount: '₱0',
     formattedTotal: '₱0',
     lineItems: [],
-    taxRate: 0.12,
+    taxRate: 0, // No hardcoded default - fetched from backend TaxRate
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +108,7 @@ export const useSimplePricing = (
         formattedDiscount: '₱0',
         formattedTotal: '₱0',
         lineItems: [],
-        taxRate: 0.12,
+        taxRate: state.taxRate || 0, // Use context tax rate, no hardcoded default
       });
       return;
     }
@@ -192,11 +192,11 @@ export const useSimplePricing = (
       console.error('Pricing calculation error:', err);
       setError('Failed to calculate pricing');
 
-      // Fallback calculation if server fails
+      // Fallback calculation if server fails - use context tax rate, no hardcoded default
       const fallbackPricing = calculateFallbackPricing(
         selectedPackages,
         selectedAddons,
-        state.taxRate || 0.12
+        state.taxRate || 0
       );
 
       setPricing(fallbackPricing);
@@ -344,7 +344,7 @@ function calculateFallbackPricing(
 export function useOptimisticPricing(
   packages: SelectedPackage[],
   addons: SelectedAddon[],
-  taxRate: number = 0.12,
+  taxRate: number = 0, // No hardcoded default - callers should pass the actual backend tax rate
   discountPercentage: number = 0
 ) {
   return useMemo(() => {

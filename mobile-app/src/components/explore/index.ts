@@ -17,6 +17,9 @@ export {
   CAMPS_DURATION_OPTIONS,
   TEAM_BUILDING_DURATION_OPTIONS,
 } from './DurationChips';
+export { VenueMiniCard } from './VenueMiniCard';
+export { IncludedVenuesSection } from './IncludedVenuesSection';
+export { IncludedVenuesBottomSheet } from './IncludedVenuesBottomSheet';
 
 // Props types
 export type { VenueCardProps } from './VenueCard';
@@ -27,3 +30,6 @@ export type { CategoryChipsProps } from './CategoryChips';
 export type { VenueGalleryProps } from './VenueGallery';
 export type { EventTypeChipsProps } from './EventTypeChips';
 export type { DurationChipsProps } from './DurationChips';
+export type { VenueMiniCardProps } from './VenueMiniCard';
+export type { IncludedVenuesSectionProps } from './IncludedVenuesSection';
+export type { IncludedVenuesBottomSheetProps } from './IncludedVenuesBottomSheet';
