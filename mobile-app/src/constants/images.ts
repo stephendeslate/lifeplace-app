@@ -9,7 +9,7 @@
  * Single branded placeholder image for all fallback scenarios.
  * Bundled locally for reliability and offline access.
  */
-const PLACEHOLDER_IMAGE = require('../../assets/placeholder.png');
+const PLACEHOLDER_IMAGE = require('../../assets/Fountain-min.png');
 
 /**
  * Fallback images for when content images are unavailable.
