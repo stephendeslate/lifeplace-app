@@ -29,9 +29,15 @@ import {
   usePrefetchPackage,
 } from '@/hooks/useExplore';
 import { VenueCard, PackageCard, SearchBar, CategoryChips } from '@/components/explore';
-import { Skeleton, EmptyState, ScreenErrorBoundary } from '@/components/common';
-import { colors, spacing, typeScale, layout } from '@/theme';
+import { Skeleton, EmptyState, ScreenErrorBoundary, SegmentControl } from '@/components/common';
+import type { Segment } from '@/components/common';
+import { theme } from '@/theme';
 import type { ExploreTab, RentableVenueWithEventType, PackagePublic } from '@/types/explore.types';
+
+const TAB_SEGMENTS: Segment<ExploreTab>[] = [
+  { id: 'venues', label: 'Venues', value: 'venues' },
+  { id: 'packages', label: 'Packages', value: 'packages' },
+];
 
 function ExploreScreenContent() {
   const router = useRouter();
@@ -162,7 +168,7 @@ function ExploreScreenContent() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <CaretLeft size={24} color={colors.primary.black} />
+          <CaretLeft size={24} color={theme.colors.primary.black} />
         </Pressable>
         <Text style={styles.title}>Explore</Text>
         <View style={styles.placeholder} />
@@ -179,26 +185,11 @@ function ExploreScreenContent() {
 
       {/* Tab Switcher */}
       <View style={styles.tabContainer}>
-        <Pressable
-          style={[styles.tab, activeTab === 'venues' && styles.tabActive]}
-          onPress={() => setActiveTab('venues')}
-        >
-          <Text
-            style={[styles.tabText, activeTab === 'venues' && styles.tabTextActive]}
-          >
-            Venues
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, activeTab === 'packages' && styles.tabActive]}
-          onPress={() => setActiveTab('packages')}
-        >
-          <Text
-            style={[styles.tabText, activeTab === 'packages' && styles.tabTextActive]}
-          >
-            Packages
-          </Text>
-        </Pressable>
+        <SegmentControl
+          segments={TAB_SEGMENTS}
+          selectedValue={activeTab}
+          onSelect={setActiveTab}
+        />
       </View>
 
       {/* Category Chips (only for packages) */}
@@ -259,14 +250,14 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral.cream,
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
   },
   backButton: {
     width: 44,
@@ -276,63 +267,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    ...typeScale.titleLarge,
-    color: colors.primary.black,
+    ...theme.typeScale.titleLarge,
+    color: theme.colors.primary.black,
   },
   placeholder: {
     width: 44,
   },
   searchContainer: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
   tabContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-    borderRadius: layout.borderRadius.md,
-    backgroundColor: colors.neutral.sand,
-  },
-  tabActive: {
-    backgroundColor: colors.primary.black,
-  },
-  tabText: {
-    ...typeScale.labelLarge,
-    color: colors.neutral.gray,
-  },
-  tabTextActive: {
-    color: colors.neutral.white,
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
   chipsContainer: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
   loadingContainer: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
   },
   skeleton: {
-    marginBottom: spacing.md,
+    marginBottom: theme.spacing.md,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxxl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingBottom: theme.spacing.xxxxl,
   },
   listContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: layout.bottomNavHeight + spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.layout.bottomNavHeight + theme.spacing.xl,
   },
   cardWrapper: {
-    marginBottom: spacing.md,
+    marginBottom: theme.spacing.md,
   },
   fullWidthCard: {
     width: '100%',
