@@ -169,7 +169,13 @@ export default function VenueDetailScreen() {
   }, []);
 
   const handleStartBooking = () => {
-    router.push('/booking' as Href);
+    // Pass venue ID to booking flow for pre-selection
+    const params = new URLSearchParams();
+    if (venueId) {
+      params.append('venueId', String(venueId));
+    }
+    const queryString = params.toString();
+    router.push(`/booking${queryString ? `?${queryString}` : ''}` as Href);
   };
 
   if (venueLoading) {

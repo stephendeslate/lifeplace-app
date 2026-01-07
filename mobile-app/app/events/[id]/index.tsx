@@ -36,7 +36,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useEvent } from '@/hooks/useEvents';
-import { useWorkflowProgress } from '@/hooks/useWorkflowProgress';
 import { contractsApi, type Contract } from '@/apis/contracts.api';
 import { theme } from '@/theme';
 import { spacing, typeScale } from '@/theme';
@@ -44,7 +43,6 @@ import { EventStatusBadge, EventInfoSheet } from '@/components/events';
 import { Skeleton } from '@/components/common';
 import { ContractSigningSheet } from '@/components/contracts/ContractSigningSheet';
 import type { EventStatus } from '@/types/events.types';
-import type { WorkflowProgress } from '@/apis/workflows.api';
 import {
   TimelineTab,
   TasksTab,
@@ -71,7 +69,6 @@ interface Tab {
   component: React.ComponentType<{
     eventId: number;
     eventStatus?: EventStatus;
-    workflowProgress?: WorkflowProgress | null;
   }>;
 }
 
@@ -95,7 +92,6 @@ export default function EventDetailScreen() {
   const { showToast } = useToast();
 
   const { data: event, isLoading, refetch, isRefetching } = useEvent(eventId);
-  const { data: workflowProgress } = useWorkflowProgress(eventId);
 
   // Contract signing state
   const [signingSheetVisible, setSigningSheetVisible] = useState(false);
@@ -343,7 +339,7 @@ export default function EventDetailScreen() {
         ) : activeTabId === 'timeline' ? (
           <TimelineTab
             eventId={eventId}
-            workflowProgress={workflowProgress}
+            event={event}
           />
         ) : (
           <ActiveTabComponent eventId={eventId} eventStatus={event.status} />

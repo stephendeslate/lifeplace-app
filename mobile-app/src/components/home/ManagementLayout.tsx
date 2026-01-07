@@ -113,6 +113,30 @@ export function ManagementLayout({
     return Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
+  // Helper to format days info text for ActionCards
+  const formatDaysInfo = (
+    days: number | null | undefined,
+    type: 'expiry' | 'overdue' | 'due'
+  ): string | undefined => {
+    if (days === null || days === undefined) return undefined;
+
+    if (type === 'overdue') {
+      if (days === 1) return '1 day overdue';
+      return `${days} days overdue`;
+    }
+    if (type === 'expiry') {
+      if (days < 0) return 'Expired';
+      if (days === 0) return 'Expires today';
+      if (days === 1) return 'Expires tomorrow';
+      return `Expires in ${days} days`;
+    }
+    // type === 'due'
+    if (days < 0) return 'Past due';
+    if (days === 0) return 'Due today';
+    if (days === 1) return 'Due tomorrow';
+    return `Due in ${days} days`;
+  };
+
   // Time-based greeting
   const getTimeGreeting = (): string => {
     const hour = new Date().getHours();
@@ -216,11 +240,12 @@ export function ManagementLayout({
 
       {/* Loading State */}
       {isLoading && (
-        <>
+        <View style={styles.loadingContainer}>
           <Skeleton variant="rounded" height={120} style={styles.skeleton} />
           <Skeleton variant="rounded" height={180} style={styles.skeleton} />
           <Skeleton variant="rounded" height={100} style={styles.skeleton} />
-        </>
+          <Text style={styles.loadingMessage}>Preparing your dashboard...</Text>
+        </View>
       )}
 
       {/* Critical Actions */}
@@ -235,8 +260,14 @@ export function ManagementLayout({
               type="quote"
               title="Quote Ready for Review"
               subtitle={quote.event_name}
-              urgency="medium"
-              onPress={() => handleQuotePress(quote.event_id)}
+              urgency={quote.days_until_expiry <= 1 ? 'high' : 'medium'}
+              primaryActionLabel="Review Quote"
+              onPrimaryAction={() => handleQuotePress(quote.event_id)}
+              metadata={{
+                amount: quote.total_amount,
+                currency: quote.currency,
+                daysInfo: formatDaysInfo(quote.days_until_expiry, 'expiry'),
+              }}
             />
           ))}
 
@@ -247,8 +278,14 @@ export function ManagementLayout({
               type="payment"
               title="Payment Overdue"
               subtitle={payment.event_name}
-              urgency="high"
-              onPress={() => handlePaymentPress(payment.event_id)}
+              urgency={payment.days_past_due > 7 ? 'critical' : 'high'}
+              primaryActionLabel="Pay Now"
+              onPrimaryAction={() => handlePaymentPress(payment.event_id)}
+              metadata={{
+                amount: payment.amount,
+                currency: payment.currency,
+                daysInfo: formatDaysInfo(payment.days_past_due, 'overdue'),
+              }}
             />
           ))}
 
@@ -259,22 +296,49 @@ export function ManagementLayout({
               type="contract"
               title="Contract Awaiting Signature"
               subtitle={contract.event_name}
-              urgency="medium"
-              onPress={() => handleContractPress(contract.event_id)}
+              urgency={
+                contract.days_until_expiry !== null && contract.days_until_expiry <= 3
+                  ? 'high'
+                  : 'medium'
+              }
+              primaryActionLabel="Review & Sign"
+              onPrimaryAction={() => handleContractPress(contract.event_id)}
+              metadata={{
+                signatureProgress: {
+                  signed: contract.signature_progress.signed_count,
+                  total: contract.signature_progress.total_required,
+                },
+                daysInfo: formatDaysInfo(contract.days_until_expiry, 'expiry'),
+              }}
             />
           ))}
 
           {/* Urgent Tasks */}
-          {dashboardData?.criticalActions.urgentTasks.map((task) => (
-            <ActionCard
-              key={`task-${task.id}`}
-              type="task"
-              title={task.title}
-              subtitle={task.event_name}
-              urgency={task.priority === 'URGENT' ? 'high' : 'medium'}
-              onPress={() => handleEventPress(task.event_id)}
-            />
-          ))}
+          {dashboardData?.criticalActions.urgentTasks.map((task) => {
+            // Calculate days until due for tasks
+            const daysUntilDue = task.due_date
+              ? Math.ceil(
+                  (new Date(task.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                )
+              : undefined;
+
+            return (
+              <ActionCard
+                key={`task-${task.id}`}
+                type="task"
+                title={task.title}
+                subtitle={task.event_name}
+                urgency={task.priority === 'URGENT' ? 'high' : 'medium'}
+                primaryActionLabel="View Task"
+                onPrimaryAction={() => handleEventPress(task.event_id)}
+                metadata={
+                  daysUntilDue !== undefined
+                    ? { daysInfo: formatDaysInfo(daysUntilDue, 'due') }
+                    : undefined
+                }
+              />
+            );
+          })}
         </View>
       )}
 
@@ -479,6 +543,15 @@ const styles = StyleSheet.create({
   },
   skeleton: {
     marginBottom: spacing.md,
+  },
+  loadingContainer: {
+    // Container for skeleton placeholders and loading message
+  },
+  loadingMessage: {
+    ...typeScale.bodyMedium,
+    color: theme.colors.neutral[500],
+    textAlign: 'center',
+    marginTop: spacing.md,
   },
   emptyCard: {
     padding: spacing.xl,

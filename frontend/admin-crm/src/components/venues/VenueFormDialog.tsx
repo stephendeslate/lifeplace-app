@@ -313,8 +313,8 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
 
     if (!formData.code.trim()) {
       newErrors.code = 'Code is required';
-    } else if (!/^[A-Z_]+$/.test(formData.code)) {
-      newErrors.code = 'Code must be uppercase letters and underscores only';
+    } else if (!/^[A-Z0-9_]+$/.test(formData.code)) {
+      newErrors.code = 'Code must be uppercase letters, numbers, and underscores only';
     }
 
     if (!formData.maximum_capacity || parseInt(formData.maximum_capacity) <= 0) {
@@ -501,7 +501,7 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
                     value={formData.code}
                     onChange={handleInputChange('code')}
                     error={!!errors.code}
-                    helperText={errors.code || 'Uppercase letters and underscores (e.g., OPEN_FIELD)'}
+                    helperText={errors.code || 'Uppercase letters, numbers, and underscores (e.g., CABANA_3)'}
                     required
                   />
                 </Box>

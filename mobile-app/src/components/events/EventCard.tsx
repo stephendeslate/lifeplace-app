@@ -7,7 +7,7 @@
 import React, { memo } from 'react';
 import { StyleSheet, Text, View, Pressable, type ViewStyle, type StyleProp } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Calendar, MapPin, Clock, Users, Warning } from 'phosphor-react-native';
+import { Calendar, MapPin, Clock, Warning } from 'phosphor-react-native';
 import { Image } from 'expo-image';
 import Animated, {
   useAnimatedStyle,
@@ -19,11 +19,9 @@ import { Badge } from '@/components/common';
 import { formatCardDate, getEventCountdown } from '@/utils/formatting';
 import {
   getEventStatusLabel,
-  getPaymentStatusLabel,
-  getEventStatusColor,
-  getPaymentStatusColor,
   eventRequiresAttention,
 } from '@/utils/eventHelpers';
+import { EventMilestones } from './EventMilestones';
 import type { Event } from '@/types/events.types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -67,19 +65,6 @@ export const EventCard = memo(function EventCard({ event, onPress, compact = fal
       case 'COMPLETED':
         return 'success';
       case 'CANCELLED':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  const getPaymentBadgeVariant = () => {
-    switch (event.payment_status) {
-      case 'PAID':
-        return 'success';
-      case 'PARTIAL':
-        return 'warning';
-      case 'OVERDUE':
         return 'error';
       default:
         return 'default';
@@ -131,7 +116,7 @@ export const EventCard = memo(function EventCard({ event, onPress, compact = fal
       testID={testID}
     >
       <View style={styles.content}>
-        {/* Left side - Date badge */}
+        {/* Left side - Date badge with integrated countdown */}
         <View style={styles.dateBadge}>
           <Text style={styles.dateDay}>
             {new Date(event.start_date).getDate()}
@@ -142,31 +127,24 @@ export const EventCard = memo(function EventCard({ event, onPress, compact = fal
             })}
           </Text>
           {countdown && (
-            <View style={styles.countdownBadge}>
-              <Text style={styles.countdownBadgeText}>
-                {event.days_until_event ?? 0}d
-              </Text>
-            </View>
+            <Text style={styles.countdownText}>
+              {event.days_until_event ?? 0}d
+            </Text>
           )}
         </View>
 
         {/* Main content */}
         <View style={styles.mainContent}>
-          {/* Badges */}
+          {/* Single status badge + action indicator */}
           <View style={styles.badges}>
             <Badge
               label={getEventStatusLabel(event.status)}
               variant={getStatusBadgeVariant()}
               size="small"
             />
-            <Badge
-              label={getPaymentStatusLabel(event.payment_status)}
-              variant={getPaymentBadgeVariant()}
-              size="small"
-            />
             {requiresAttention && (
-              <View style={styles.attentionIndicator}>
-                <Warning size={14} color={theme.colors.error[500]} weight="fill" />
+              <View style={styles.needsActionBadge}>
+                <Text style={styles.needsActionText}>Needs Action</Text>
               </View>
             )}
           </View>
@@ -221,6 +199,11 @@ export const EventCard = memo(function EventCard({ event, onPress, compact = fal
           </View>
         )}
       </View>
+
+      {/* Event Milestones Progress */}
+      <View style={styles.milestonesContainer}>
+        <EventMilestones event={event} />
+      </View>
     </AnimatedPressable>
   );
 });
@@ -250,18 +233,18 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
   },
   dateBadge: {
-    width: 52,
+    width: 60,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.primary[50],
     borderRadius: theme.borderRadius.md,
     paddingVertical: theme.spacing.sm,
-    position: 'relative',
   },
   dateDay: {
     fontFamily: theme.typography.fonts.bold,
-    fontSize: theme.typography.sizes.xl,
+    fontSize: 26,
     color: theme.colors.primary[600],
+    lineHeight: 30,
   },
   dateMonth: {
     fontFamily: theme.typography.fonts.medium,
@@ -269,18 +252,11 @@ const styles = StyleSheet.create({
     color: theme.colors.primary[500],
     textTransform: 'uppercase',
   },
-  countdownBadge: {
-    position: 'absolute',
-    bottom: -8,
-    backgroundColor: theme.colors.primary[500],
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: theme.borderRadius.full,
-  },
-  countdownBadgeText: {
+  countdownText: {
     fontFamily: theme.typography.fonts.semibold,
-    fontSize: 10,
-    color: theme.colors.surface,
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.primary[600],
+    marginTop: 2,
   },
   mainContent: {
     flex: 1,
@@ -291,8 +267,17 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
     alignItems: 'center',
   },
-  attentionIndicator: {
+  needsActionBadge: {
     marginLeft: 'auto',
+    backgroundColor: theme.colors.error[100],
+    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: 2,
+    borderRadius: theme.borderRadius.sm,
+  },
+  needsActionText: {
+    fontFamily: theme.typography.fonts.semibold,
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.error[600],
   },
   title: {
     fontFamily: theme.typography.fonts.semibold,
@@ -334,6 +319,12 @@ const styles = StyleSheet.create({
   thumbnailImage: {
     width: '100%',
     height: '100%',
+  },
+  milestonesContainer: {
+    paddingHorizontal: theme.spacing.md,
+    paddingBottom: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.neutral[100],
   },
   contractWarning: {
     flexDirection: 'row',

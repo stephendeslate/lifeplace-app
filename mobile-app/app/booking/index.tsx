@@ -2,20 +2,30 @@
  * Booking Index Screen
  *
  * Event type selection screen - entry point for booking flow.
+ * Supports pre-selection via URL params:
+ * - eventTypeId: Auto-select event type
+ * - packageId: Store for package pre-selection in later steps
+ * - venueId: Store for venue pre-selection in later steps
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { View, StyleSheet, StatusBar, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, type Href } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { X } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
+import { useEventTypes } from '@/hooks/booking';
 import { EventTypeSelection } from '@/components/booking';
 import type { EventType } from '@/types/booking';
 
 export default function BookingIndexScreen() {
   const { state, actions } = useBookingContext();
+  const { data: eventTypes } = useEventTypes();
+  const { eventTypeId } = useLocalSearchParams<{
+    eventTypeId?: string;
+  }>();
+  const hasAutoSelected = useRef(false);
 
   const handleSelectEventType = useCallback(async (eventType: EventType) => {
     try {
@@ -50,6 +60,19 @@ export default function BookingIndexScreen() {
       console.error('Failed to start booking:', error);
     }
   }, [actions, state.availableFlows]);
+
+  // Auto-select event type if passed via URL (e.g., from package detail screen)
+  useEffect(() => {
+    if (eventTypeId && eventTypes && eventTypes.length > 0 && !hasAutoSelected.current) {
+      const eventType = eventTypes.find(
+        (et: EventType) => et.id === parseInt(eventTypeId, 10)
+      );
+      if (eventType) {
+        hasAutoSelected.current = true;
+        handleSelectEventType(eventType);
+      }
+    }
+  }, [eventTypeId, eventTypes, handleSelectEventType]);
 
   const handleClose = useCallback(() => {
     router.back();

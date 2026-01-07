@@ -19,6 +19,7 @@ import {
   searchPackages,
   getCategories,
   getEventTypes,
+  type GetPackagesParams,
 } from '@/apis/explore.api';
 import type { ExploreFilters } from '@/types/explore.types';
 
@@ -40,6 +41,8 @@ export const exploreKeys = {
   packages: () => [...exploreKeys.all, 'packages'] as const,
   packagesList: (filters?: ExploreFilters) =>
     [...exploreKeys.packages(), 'list', filters] as const,
+  packagesFiltered: (params?: GetPackagesParams) =>
+    [...exploreKeys.packages(), 'filtered', params] as const,
   packagesFeatured: () => [...exploreKeys.packages(), 'featured'] as const,
   packagesByCategory: (categoryId: number) =>
     [...exploreKeys.packages(), 'category', categoryId] as const,
@@ -129,12 +132,12 @@ export function useSearchVenues(filters: ExploreFilters, enabled: boolean = true
 // =============================================================================
 
 /**
- * Get all packages
+ * Get all packages with optional filters
  */
-export function usePackages() {
+export function usePackages(params?: GetPackagesParams) {
   return useQuery({
-    queryKey: exploreKeys.packagesList(),
-    queryFn: getPackages,
+    queryKey: exploreKeys.packagesFiltered(params),
+    queryFn: () => getPackages(params),
     staleTime: 5 * 60 * 1000,
   });
 }

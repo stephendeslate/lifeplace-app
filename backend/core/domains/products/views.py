@@ -174,25 +174,41 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         is_active = self.request.query_params.get('is_active', None)
         category_id = self.request.query_params.get('category_id', None)
         is_featured = self.request.query_params.get('is_featured', None)
-        
+        event_type_id = self.request.query_params.get('event_type_id', None)
+        event_days = self.request.query_params.get('event_days', None)
+
         # Convert string parameters to appropriate types
         if is_active is not None:
             is_active = is_active.lower() == 'true'
-        
+
         if is_featured is not None:
             is_featured = is_featured.lower() == 'true'
-        
+
         if category_id is not None:
             try:
                 category_id = int(category_id)
             except ValueError:
                 category_id = None
-        
+
+        if event_type_id is not None:
+            try:
+                event_type_id = int(event_type_id)
+            except ValueError:
+                event_type_id = None
+
+        if event_days is not None:
+            try:
+                event_days = int(event_days)
+            except ValueError:
+                event_days = None
+
         return ProductService.get_all_products(
             product_type=product_type,
             is_active=is_active,
             category_id=category_id,
-            is_featured=is_featured
+            is_featured=is_featured,
+            event_type_id=event_type_id,
+            event_days=event_days
         )
 
     def _process_gallery_images(self, request, product):

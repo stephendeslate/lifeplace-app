@@ -27,9 +27,10 @@ import { Bell, ArrowRight, MagnifyingGlass, Sparkle } from 'phosphor-react-nativ
 
 import { theme } from '@/theme';
 import { colors, spacing, typeScale, layout } from '@/theme';
-import { useFeaturedVenues, useFeaturedPackages, usePrefetchVenue, usePrefetchPackage } from '@/hooks/useExplore';
+import { useFeaturedVenues, useFeaturedPackages, useEventTypes, usePrefetchVenue, usePrefetchPackage } from '@/hooks/useExplore';
 import { Skeleton, Button } from '@/components/common';
 import { VenueCard, PackageCard } from '@/components/explore';
+import { EventTypeQuickCard } from './EventTypeQuickCard';
 import type { User } from '@/types/auth.types';
 import { getTimeBasedGreeting } from '@/utils/userState';
 
@@ -64,10 +65,16 @@ export function DiscoveryLayout({
   const router = useRouter();
 
   // Explore data hooks
+  const { data: eventTypes, isLoading: eventTypesLoading } = useEventTypes();
   const { data: featuredVenues, isLoading: venuesLoading } = useFeaturedVenues();
   const { data: featuredPackages, isLoading: packagesLoading } = useFeaturedPackages();
   const prefetchVenue = usePrefetchVenue();
   const prefetchPackage = usePrefetchPackage();
+
+  // Navigate to explore with event type pre-selected
+  const navigateToExploreWithType = (eventTypeId: number) => {
+    router.push(`/(tabs)/explore?eventTypeId=${eventTypeId}` as Href);
+  };
 
   // Greeting
   const greeting = getTimeBasedGreeting();
@@ -137,6 +144,31 @@ export function DiscoveryLayout({
           Search venues, packages...
         </Text>
       </Pressable>
+
+      {/* Browse by Event Type */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Browse by Event</Text>
+        </View>
+        <View style={styles.eventTypeGrid}>
+          {eventTypesLoading || isLoading ? (
+            <>
+              <Skeleton variant="rounded" width={80} height={80} style={styles.eventTypeSkeleton} />
+              <Skeleton variant="rounded" width={80} height={80} style={styles.eventTypeSkeleton} />
+              <Skeleton variant="rounded" width={80} height={80} style={styles.eventTypeSkeleton} />
+              <Skeleton variant="rounded" width={80} height={80} style={styles.eventTypeSkeleton} />
+            </>
+          ) : eventTypes && eventTypes.length > 0 ? (
+            eventTypes.slice(0, 4).map((eventType) => (
+              <EventTypeQuickCard
+                key={eventType.id}
+                eventType={eventType}
+                onPress={() => navigateToExploreWithType(eventType.id)}
+              />
+            ))
+          ) : null}
+        </View>
+      </View>
 
       {/* Featured Venues */}
       <View style={styles.section}>
@@ -343,6 +375,14 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: spacing.xl,
+  },
+  eventTypeGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xs,
+  },
+  eventTypeSkeleton: {
+    borderRadius: layout.borderRadius.lg,
   },
   sectionHeader: {
     flexDirection: 'row',

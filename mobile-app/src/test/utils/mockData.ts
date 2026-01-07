@@ -67,8 +67,16 @@ export const mockEvent: Event = {
   payment_status: 'PARTIAL',
   days_until_event: 180,
   venue_name: 'Garden Venue',
-  has_contracts: true,
-  contracts_count: 1,
+  contracts: [
+    {
+      id: '1',
+      status: 'SIGNED',
+      template_name: 'Wedding Contract',
+      can_client_sign: false,
+      expires_at: null,
+      signature_progress: { total_required: 2, signed_count: 2, percentage: 100 },
+    },
+  ],
   pending_signature_required: false,
 };
 

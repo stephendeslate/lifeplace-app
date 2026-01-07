@@ -36,7 +36,13 @@ import { usePackage } from '@/hooks/useExplore';
 import { FavoriteButton } from '@/components/explore';
 import { Skeleton, Button } from '@/components/common';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
-import { formatPrice } from '@/apis/explore.api';
+import {
+  formatPrice,
+  isPerPersonPricing,
+  formatPerPersonRate,
+  formatStartingTotal,
+  getDurationLabel,
+} from '@/apis/explore.api';
 
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/800x600/FAF9F7/9B9590?text=Package';
 
@@ -49,16 +55,32 @@ export default function PackageDetailScreen() {
   const { data: pkg, isLoading } = usePackage(packageId);
 
   const handleBookNow = () => {
-    router.push('/booking' as Href);
+    // Pass event type and package ID to booking flow for pre-selection
+    const params = new URLSearchParams();
+    if (pkg?.event_type_id) {
+      params.append('eventTypeId', String(pkg.event_type_id));
+    }
+    if (pkg?.id) {
+      params.append('packageId', String(pkg.id));
+    }
+    const queryString = params.toString();
+    router.push(`/booking${queryString ? `?${queryString}` : ''}` as Href);
   };
+
+  // Determine pricing type for display
+  const showPerPersonPricing = pkg ? isPerPersonPricing(pkg) && pkg.minimum_guests : false;
+  const showVatExcluded = pkg ? !pkg.is_tax_inclusive && pkg.pricing_model !== 'CUSTOM' : false;
 
   const getPricingModelLabel = () => {
     if (!pkg) return '';
+    if (isPerPersonPricing(pkg)) {
+      return 'per person';
+    }
     switch (pkg.pricing_model) {
       case 'HOURLY':
         return 'per hour';
-      case 'PER_PERSON':
-        return 'per person';
+      case 'CUSTOM':
+        return 'custom quote';
       case 'FIXED':
       default:
         return 'fixed price';
@@ -147,22 +169,30 @@ export default function PackageDetailScreen() {
 
           {/* Quick Info Badges */}
           <View style={styles.badgesRow}>
+            {/* Duration badge for multi-day packages */}
+            {pkg.event_days && pkg.event_days > 0 && (
+              <View style={styles.badge}>
+                <CalendarBlank size={16} color={colors.primary.black} />
+                <Text style={styles.badgeText}>{getDurationLabel(pkg.event_days)}</Text>
+              </View>
+            )}
+            {/* Pricing model badge */}
             <View style={styles.badge}>
               <CurrencyDollar size={16} color={colors.primary.black} />
               <Text style={styles.badgeText}>{getPricingModelLabel()}</Text>
             </View>
-            {pkg.included_hours && (
+            {/* Minimum guests - always show when set */}
+            {pkg.minimum_guests && pkg.minimum_guests > 0 && (
+              <View style={styles.badge}>
+                <Users size={16} color={colors.primary.black} />
+                <Text style={styles.badgeText}>Min {pkg.minimum_guests} pax</Text>
+              </View>
+            )}
+            {/* Included hours for non-per-person packages */}
+            {pkg.included_hours && !showPerPersonPricing && (
               <View style={styles.badge}>
                 <Clock size={16} color={colors.primary.black} />
                 <Text style={styles.badgeText}>{pkg.included_hours}h included</Text>
-              </View>
-            )}
-            {pkg.minimum_capacity && pkg.maximum_capacity && (
-              <View style={styles.badge}>
-                <Users size={16} color={colors.primary.black} />
-                <Text style={styles.badgeText}>
-                  {pkg.minimum_capacity}-{pkg.maximum_capacity} guests
-                </Text>
               </View>
             )}
           </View>
@@ -179,28 +209,73 @@ export default function PackageDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Pricing Details</Text>
             <View style={styles.pricingCard}>
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Base Price</Text>
-                <Text style={styles.priceValue}>{formatPrice(pkg.base_price)}</Text>
-              </View>
-              {pkg.included_hours && (
+              {showPerPersonPricing ? (
+                // Per-person pricing breakdown
                 <>
+                  <View style={styles.priceRow}>
+                    <Text style={styles.priceLabel}>Rate per Person</Text>
+                    <Text style={styles.priceValue}>{formatPerPersonRate(pkg)}</Text>
+                  </View>
                   <View style={styles.priceDivider} />
                   <View style={styles.priceRow}>
-                    <Text style={styles.priceLabel}>Included Hours</Text>
-                    <Text style={styles.priceValue}>{pkg.included_hours} hours</Text>
+                    <Text style={styles.priceLabel}>Minimum Guests</Text>
+                    <Text style={styles.priceValue}>{pkg.minimum_guests} pax</Text>
                   </View>
+                  <View style={styles.priceDivider} />
+                  <View style={styles.priceRow}>
+                    <Text style={styles.priceLabel}>Starting Total</Text>
+                    <View style={styles.priceWithVat}>
+                      <Text style={styles.priceValueHighlight}>
+                        {formatStartingTotal(pkg)}
+                      </Text>
+                      {showVatExcluded && (
+                        <Text style={styles.vatText}>+ VAT</Text>
+                      )}
+                    </View>
+                  </View>
+                  {showVatExcluded && (
+                    <>
+                      <View style={styles.priceDivider} />
+                      <Text style={styles.vatNote}>
+                        12% VAT is not included in the prices shown above
+                      </Text>
+                    </>
+                  )}
                 </>
-              )}
-              {pkg.has_excess_hours && pkg.excess_hour_price && (
+              ) : (
+                // Fixed/hourly/custom pricing
                 <>
-                  <View style={styles.priceDivider} />
                   <View style={styles.priceRow}>
-                    <Text style={styles.priceLabel}>Excess Hour Rate</Text>
-                    <Text style={styles.priceValue}>
-                      {formatPrice(pkg.excess_hour_price)}/hr
+                    <Text style={styles.priceLabel}>
+                      {pkg.pricing_model === 'CUSTOM' ? 'Starting Price' : 'Base Price'}
                     </Text>
+                    <View style={styles.priceWithVat}>
+                      <Text style={styles.priceValue}>{formatPrice(pkg.base_price)}</Text>
+                      {showVatExcluded && (
+                        <Text style={styles.vatText}>+ VAT</Text>
+                      )}
+                    </View>
                   </View>
+                  {pkg.included_hours && (
+                    <>
+                      <View style={styles.priceDivider} />
+                      <View style={styles.priceRow}>
+                        <Text style={styles.priceLabel}>Included Hours</Text>
+                        <Text style={styles.priceValue}>{pkg.included_hours} hours</Text>
+                      </View>
+                    </>
+                  )}
+                  {pkg.has_excess_hours && pkg.excess_hour_price && (
+                    <>
+                      <View style={styles.priceDivider} />
+                      <View style={styles.priceRow}>
+                        <Text style={styles.priceLabel}>Excess Hour Rate</Text>
+                        <Text style={styles.priceValue}>
+                          {formatPrice(pkg.excess_hour_price)}/hr
+                        </Text>
+                      </View>
+                    </>
+                  )}
                 </>
               )}
             </View>
@@ -237,8 +312,22 @@ export default function PackageDetailScreen() {
       <SafeAreaView style={styles.ctaContainer} edges={['bottom']}>
         <View style={styles.ctaContent}>
           <View style={styles.ctaPrice}>
-            <Text style={styles.ctaPriceLabel}>Starting at</Text>
-            <Text style={styles.ctaPriceValue}>{formatPrice(pkg.base_price)}</Text>
+            <Text style={styles.ctaPriceLabel}>Starting from</Text>
+            <View style={styles.ctaPriceRow}>
+              <Text style={styles.ctaPriceValue}>
+                {showPerPersonPricing
+                  ? formatStartingTotal(pkg)
+                  : formatPrice(pkg.base_price)}
+              </Text>
+              {showVatExcluded && (
+                <Text style={styles.ctaVatText}>+ VAT</Text>
+              )}
+            </View>
+            {showPerPersonPricing && (
+              <Text style={styles.ctaPriceBreakdown}>
+                {formatPerPersonRate(pkg)} × {pkg.minimum_guests} pax
+              </Text>
+            )}
           </View>
           <Button variant="primary" onPress={handleBookNow} style={styles.ctaButton}>
             Book Now
@@ -383,6 +472,26 @@ const styles = StyleSheet.create({
     ...typeScale.titleMedium,
     color: colors.primary.black,
   },
+  priceValueHighlight: {
+    ...typeScale.titleMedium,
+    color: colors.secondary.forest,
+    fontWeight: '600',
+  },
+  priceWithVat: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
+  vatText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+  },
+  vatNote: {
+    ...typeScale.bodySmall,
+    color: colors.neutral.gray,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
   priceDivider: {
     height: 1,
     backgroundColor: colors.neutral.warmGray,
@@ -423,14 +532,30 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
   },
-  ctaPrice: {},
+  ctaPrice: {
+    flexShrink: 1,
+  },
   ctaPriceLabel: {
     ...typeScale.labelSmall,
     color: colors.neutral.gray,
   },
+  ctaPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
   ctaPriceValue: {
     ...typeScale.headlineMedium,
     color: colors.secondary.forest,
+  },
+  ctaVatText: {
+    ...typeScale.labelMedium,
+    color: colors.neutral.darkGray,
+  },
+  ctaPriceBreakdown: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
+    marginTop: spacing.xxs,
   },
   ctaButton: {
     flex: 1,

@@ -4,8 +4,11 @@
  * A card component displaying package information with:
  * - Featured image
  * - Package name and category
- * - Price display (base price)
+ * - Price display with pricing model context
  * - Featured badge (if is_featured)
+ * - Duration badge for camps/team building
+ * - Capacity badge for minimum guest requirements
+ * - Quote required indicator for CUSTOM pricing
  * - Included hours indicator
  * - Favorite toggle button
  */
@@ -20,11 +23,22 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Clock, Star } from 'phosphor-react-native';
+import {
+  Clock,
+  Star,
+  Users,
+  CalendarBlank,
+  ChatCircle,
+} from 'phosphor-react-native';
 
 import { FavoriteButton } from './FavoriteButton';
 import { colors, spacing, typeScale, layout, shadows, brandColors } from '@/theme';
-import { formatPrice } from '@/apis/explore.api';
+import {
+  formatPackagePrice,
+  getDurationLabel,
+  isPerPersonPricing,
+  formatPerPersonRate,
+} from '@/apis/explore.api';
 import { FALLBACK_IMAGES } from '@/constants/images';
 import type { PackagePublic } from '@/types/explore.types';
 
@@ -46,17 +60,10 @@ export function PackageCard({
   const cardWidth = compact ? 240 : '100%';
   const imageHeight = compact ? 140 : 180;
 
-  const getPricingModelLabel = () => {
-    switch (pkg.pricing_model) {
-      case 'HOURLY':
-        return '/hour';
-      case 'PER_PERSON':
-        return '/person';
-      case 'FIXED':
-      default:
-        return '';
-    }
-  };
+  // Determine if this is a per-person pricing package
+  const showPerPersonPricing = isPerPersonPricing(pkg) && pkg.minimum_guests;
+  // Check if VAT is excluded (per website: "12% VAT not included")
+  const showVatExcluded = !pkg.is_tax_inclusive && pkg.pricing_model !== 'CUSTOM';
 
   return (
     <Pressable
@@ -101,14 +108,56 @@ export function PackageCard({
 
       {/* Content */}
       <View style={styles.content}>
-        {/* Category */}
-        {pkg.category_name && (
-          <Text style={styles.category}>{pkg.category_name}</Text>
+        {/* Category and Event Type */}
+        {(pkg.category_name || pkg.event_type_name) && (
+          <Text style={styles.category}>
+            {pkg.event_type_name || pkg.category_name}
+          </Text>
         )}
 
         <Text style={styles.name} numberOfLines={2}>
           {pkg.name}
         </Text>
+
+        {/* Info Badges Row */}
+        <View style={styles.badgesRow}>
+          {/* Duration Badge */}
+          {pkg.event_days && pkg.event_days > 0 && (
+            <View style={styles.infoBadge}>
+              <CalendarBlank size={12} color={colors.neutral.gray} />
+              <Text style={styles.infoBadgeText}>
+                {getDurationLabel(pkg.event_days)}
+              </Text>
+            </View>
+          )}
+
+          {/* Minimum Guests Badge - always show when minimum is set */}
+          {pkg.minimum_guests && pkg.minimum_guests > 0 && (
+            <View style={styles.infoBadge}>
+              <Users size={12} color={colors.neutral.gray} />
+              <Text style={styles.infoBadgeText}>
+                Min {pkg.minimum_guests} pax
+              </Text>
+            </View>
+          )}
+
+          {/* Quote Required Badge */}
+          {(pkg.pricing_model === 'CUSTOM' || pkg.requires_approval) && (
+            <View style={[styles.infoBadge, styles.quoteBadge]}>
+              <ChatCircle size={12} color={colors.semantic.warning} />
+              <Text style={[styles.infoBadgeText, styles.quoteText]}>
+                Quote
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Included Venues */}
+        {pkg.included_venues && pkg.included_venues.length > 0 && (
+          <Text style={styles.includedVenues} numberOfLines={1}>
+            Includes: {pkg.included_venues.map(v => v.name).join(', ')}
+          </Text>
+        )}
 
         {/* Rating Row */}
         {pkg.average_rating !== undefined && pkg.average_rating > 0 && (
@@ -126,8 +175,8 @@ export function PackageCard({
         )}
 
         <View style={styles.footer}>
-          {/* Included Hours */}
-          {pkg.included_hours && (
+          {/* Included Hours - only show for non-per-person, non-multi-day packages */}
+          {pkg.included_hours && !pkg.event_days && !showPerPersonPricing && (
             <View style={styles.hoursRow}>
               <Clock size={14} color={colors.neutral.gray} />
               <Text style={styles.hours}>
@@ -136,13 +185,39 @@ export function PackageCard({
             </View>
           )}
 
-          {/* Price */}
+          {/* Price Display */}
           <View style={styles.priceContainer}>
-            <Text style={styles.price}>
-              {formatPrice(pkg.base_price)}
-            </Text>
-            {getPricingModelLabel() && (
-              <Text style={styles.priceUnit}>{getPricingModelLabel()}</Text>
+            {showPerPersonPricing ? (
+              // Per-person pricing: show "Starting from" total with rate breakdown
+              <View style={styles.priceColumn}>
+                <Text style={styles.priceLabel}>Starting from</Text>
+                <View style={styles.priceRow}>
+                  <Text style={styles.price}>
+                    {formatPackagePrice(pkg)}
+                  </Text>
+                  {showVatExcluded && (
+                    <Text style={styles.vatIndicator}>+ VAT</Text>
+                  )}
+                </View>
+                <Text style={styles.priceBreakdown}>
+                  {formatPerPersonRate(pkg)} × {pkg.minimum_guests} pax
+                </Text>
+              </View>
+            ) : pkg.pricing_model === 'CUSTOM' || pkg.requires_approval ? (
+              // Custom/quote pricing
+              <Text style={styles.priceQuote}>
+                {formatPackagePrice(pkg)}
+              </Text>
+            ) : (
+              // Fixed or hourly pricing
+              <View style={styles.priceRow}>
+                <Text style={styles.price}>
+                  {formatPackagePrice(pkg)}
+                </Text>
+                {showVatExcluded && (
+                  <Text style={styles.vatIndicator}>+ VAT</Text>
+                )}
+              </View>
             )}
           </View>
         </View>
@@ -243,16 +318,67 @@ const styles = StyleSheet.create({
     color: colors.neutral.gray,
   },
   priceContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+  },
+  priceColumn: {
+    alignItems: 'flex-end',
+  },
+  priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: spacing.xxs,
+  },
+  priceLabel: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
+    marginBottom: spacing.xxs,
   },
   price: {
     ...typeScale.titleMedium,
     color: colors.secondary.forest,
   },
-  priceUnit: {
+  priceBreakdown: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
+    marginTop: spacing.xxs,
+  },
+  priceQuote: {
+    ...typeScale.titleMedium,
+    color: colors.semantic.warning,
+  },
+  vatIndicator: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  includedVenues: {
     ...typeScale.bodySmall,
     color: colors.neutral.gray,
+    marginBottom: spacing.sm,
+  },
+  infoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    backgroundColor: colors.neutral.sand,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderRadius: layout.borderRadius.sm,
+  },
+  infoBadgeText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
+  },
+  quoteBadge: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+  },
+  quoteText: {
+    color: colors.semantic.warning,
   },
 });

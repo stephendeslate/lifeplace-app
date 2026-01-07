@@ -194,10 +194,8 @@ export interface Event {
   current_stage_name: string;
   payment_status: PaymentStatus;
   days_until_event?: number | null;
-  // Contract information
-  contract_status?: ContractStatus;
-  has_contracts?: boolean;
-  contracts_count?: number;
+  // Contract information (returned by ClientEventSerializer)
+  contracts?: EventContractSummary[];
   pending_signature_required?: boolean;
   contract_expiry_days?: number | null;
   // Date blocking and rebooking

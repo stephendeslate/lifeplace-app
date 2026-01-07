@@ -11,6 +11,12 @@ export { FavoriteButton } from './FavoriteButton';
 export { SearchBar } from './SearchBar';
 export { CategoryChips } from './CategoryChips';
 export { VenueGallery } from './VenueGallery';
+export { EventTypeChips } from './EventTypeChips';
+export {
+  DurationChips,
+  CAMPS_DURATION_OPTIONS,
+  TEAM_BUILDING_DURATION_OPTIONS,
+} from './DurationChips';
 
 // Props types
 export type { VenueCardProps } from './VenueCard';
@@ -19,3 +25,5 @@ export type { FavoriteButtonProps } from './FavoriteButton';
 export type { SearchBarProps } from './SearchBar';
 export type { CategoryChipsProps } from './CategoryChips';
 export type { VenueGalleryProps } from './VenueGallery';
+export type { EventTypeChipsProps } from './EventTypeChips';
+export type { DurationChipsProps } from './DurationChips';

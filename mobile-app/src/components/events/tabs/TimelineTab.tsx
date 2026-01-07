@@ -18,14 +18,14 @@ import {
 import { theme } from '@/theme';
 import { useEventTimeline } from '@/hooks/useEvents';
 import { Skeleton, EmptyState } from '@/components/common';
-import { WorkflowProgressStepper } from '@/components/events/WorkflowProgressStepper';
+import { EventMilestones } from '@/components/events/EventMilestones';
 import { getRelativeTime } from '@/utils/formatting';
-import type { EventTimeline } from '@/types/events.types';
-import type { WorkflowProgress } from '@/apis/workflows.api';
+import type { EventTimeline, Event } from '@/types/events.types';
 
 export interface TimelineTabProps {
   eventId: number;
-  workflowProgress?: WorkflowProgress | null;
+  /** Event data for displaying milestones */
+  event?: Event;
 }
 
 const actionTypeConfig: Record<
@@ -45,7 +45,7 @@ const actionTypeConfig: Record<
   STATUS_CHANGED: { icon: Info, color: theme.colors.warning[500] },
 };
 
-export function TimelineTab({ eventId, workflowProgress }: TimelineTabProps) {
+export function TimelineTab({ eventId, event }: TimelineTabProps) {
   const { data: timeline, isLoading, refetch, isRefetching } = useEventTimeline(eventId);
 
   if (isLoading) {
@@ -105,9 +105,10 @@ export function TimelineTab({ eventId, workflowProgress }: TimelineTabProps) {
     );
   };
 
-  const ListHeader = workflowProgress ? (
-    <View style={styles.workflowContainer}>
-      <WorkflowProgressStepper progress={workflowProgress} variant="stepper" />
+  const ListHeader = event ? (
+    <View style={styles.milestonesContainer}>
+      <Text style={styles.milestonesTitle}>Event Progress</Text>
+      <EventMilestones event={event} />
     </View>
   ) : null;
 
@@ -197,8 +198,19 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: theme.spacing.xs,
   },
-  workflowContainer: {
-    marginBottom: theme.spacing.md,
+  milestonesContainer: {
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.neutral[100],
+  },
+  milestonesTitle: {
+    fontFamily: theme.typography.fonts.semibold,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.neutral[700],
+    marginBottom: theme.spacing.sm,
   },
 });
 
