@@ -188,6 +188,9 @@ class ClientEventDetailSerializer(ClientEventSerializer):
     actual_check_in_time = serializers.DateTimeField(read_only=True)
     can_self_check_in = serializers.SerializerMethodField()
 
+    # Event info for mobile app bottom sheet
+    event_info = serializers.SerializerMethodField()
+
     class Meta(ClientEventSerializer.Meta):
         fields = ClientEventSerializer.Meta.fields + [
             'current_stage', 'total_price', 'preferences',
@@ -195,7 +198,9 @@ class ClientEventDetailSerializer(ClientEventSerializer):
             'has_notes',
             # Check-in fields
             'check_in_status', 'scheduled_check_in_time', 'actual_check_in_time',
-            'can_self_check_in'
+            'can_self_check_in',
+            # Event info sheet data
+            'event_info'
         ]
     
     def get_upcoming_tasks(self, obj):
@@ -263,6 +268,13 @@ class ClientEventDetailSerializer(ClientEventSerializer):
 
         # Check if today matches event date (event day only)
         return now.date() == event_date.date()
+
+    def get_event_info(self, obj):
+        """
+        Get comprehensive event info for the mobile app bottom sheet.
+        Includes venue details, package info, and schedule.
+        """
+        return ClientEventInfoSerializer(obj, context=self.context).data
 
 
 class ClientEventTimelineSerializer(serializers.ModelSerializer):
@@ -406,3 +418,233 @@ class ClientEventFeedbackSerializer(serializers.ModelSerializer):
                         f"Category '{category}' rating must be between 1 and 5"
                     )
         return value
+
+
+# =============================================================================
+# EVENT INFO SHEET SERIALIZERS (for mobile app bottom sheet)
+# =============================================================================
+
+class ClientVenueInfoSerializer(serializers.Serializer):
+    """
+    Venue information for client event info sheet.
+    Shows venue details, images, amenities, and rules.
+    """
+
+    def to_representation(self, instance):
+        """Build representation from venue instance"""
+        request = self.context.get('request')
+
+        # Featured image with absolute URL
+        featured_image = None
+        if instance.featured_image:
+            featured_image = instance.featured_image.url
+            if request:
+                featured_image = request.build_absolute_uri(featured_image)
+
+        # Gallery images with absolute URLs
+        gallery_images = []
+        if instance.gallery_images:
+            for url in instance.gallery_images:
+                if request and not url.startswith('http'):
+                    gallery_images.append(request.build_absolute_uri(url))
+                else:
+                    gallery_images.append(url)
+
+        # Venue rules from operating rules
+        venue_rules = None
+        default_check_in_time = None
+        default_checkout_time = None
+        checkout_next_day = False
+
+        if hasattr(instance, 'venue_operating_rules'):
+            rules = instance.venue_operating_rules
+            default_check_in_time = rules.default_check_in_time
+            default_checkout_time = rules.default_checkout_time
+            checkout_next_day = rules.checkout_next_day
+
+            custom_rules = rules.custom_rules or {}
+            venue_rules = {
+                'policies': custom_rules.get('policies', []),
+                'violation_fees': custom_rules.get('violation_fees', []),
+                'music_curfew': custom_rules.get('music_curfew'),
+                'notes': custom_rules.get('notes'),
+            }
+            # Add latest_end_time as music curfew if not explicitly set
+            if not venue_rules['music_curfew'] and rules.latest_end_time:
+                venue_rules['music_curfew'] = rules.latest_end_time.strftime('%H:%M')
+
+        return {
+            'id': instance.id,
+            'name': instance.name,
+            'description': instance.description or '',
+            'location_description': instance.location_description or '',
+            'is_overnight': instance.is_overnight,
+            'minimum_capacity': instance.minimum_capacity,
+            'maximum_capacity': instance.maximum_capacity,
+            'recommended_capacity': instance.recommended_capacity,
+            'featured_image': featured_image,
+            'gallery_images': gallery_images,
+            'amenities': instance.amenities or [],
+            'default_check_in_time': default_check_in_time,
+            'default_checkout_time': default_checkout_time,
+            'checkout_next_day': checkout_next_day,
+            'venue_rules': venue_rules,
+        }
+
+
+class ClientPackageVenueSerializer(serializers.Serializer):
+    """Simplified venue info for packages with multiple venues"""
+
+    def to_representation(self, instance):
+        """Build representation from PackageVenue instance"""
+        request = self.context.get('request')
+        venue = instance.venue
+
+        featured_image = None
+        if venue.featured_image:
+            featured_image = venue.featured_image.url
+            if request:
+                featured_image = request.build_absolute_uri(featured_image)
+
+        return {
+            'id': venue.id,
+            'name': venue.name,
+            'is_primary': instance.is_primary,
+            'access_order': instance.access_order,
+            'notes': instance.notes or '',
+            'featured_image': featured_image,
+        }
+
+
+class ClientPackageInfoSerializer(serializers.Serializer):
+    """
+    Package information for client event info sheet.
+    Shows package details, images, and included venues.
+    """
+
+    def to_representation(self, instance):
+        """Build representation from EventProductOption instance"""
+        request = self.context.get('request')
+        product = instance.product_option
+
+        # Featured image with venue fallback
+        featured_image = None
+        if product.featured_image:
+            featured_image = product.featured_image.url
+            if request:
+                featured_image = request.build_absolute_uri(featured_image)
+        elif hasattr(product, 'package_venues'):
+            primary_venue = product.package_venues.filter(is_primary=True).first()
+            if primary_venue and primary_venue.venue.featured_image:
+                featured_image = primary_venue.venue.featured_image.url
+                if request:
+                    featured_image = request.build_absolute_uri(featured_image)
+
+        # Gallery images with venue fallback
+        gallery_images = []
+        if product.gallery_images and len(product.gallery_images) > 0:
+            for url in product.gallery_images:
+                if request and not url.startswith('http'):
+                    gallery_images.append(request.build_absolute_uri(url))
+                else:
+                    gallery_images.append(url)
+        elif hasattr(product, 'package_venues'):
+            for pv in product.package_venues.select_related('venue').order_by('access_order'):
+                venue = pv.venue
+                if venue.featured_image:
+                    url = venue.featured_image.url
+                    if request:
+                        url = request.build_absolute_uri(url)
+                    gallery_images.append(url)
+                if venue.gallery_images:
+                    for img_url in venue.gallery_images:
+                        if request and not img_url.startswith('http'):
+                            img_url = request.build_absolute_uri(img_url)
+                        gallery_images.append(img_url)
+
+        # Included venues for multi-venue packages
+        included_venues = []
+        if hasattr(product, 'package_venues'):
+            package_venues = product.package_venues.select_related('venue').order_by('access_order')
+            included_venues = ClientPackageVenueSerializer(
+                package_venues, many=True, context=self.context
+            ).data
+
+        return {
+            'id': product.id,
+            'name': product.name,
+            'description': product.description or '',
+            'event_days': product.event_days,
+            'featured_image': featured_image,
+            'gallery_images': gallery_images,
+            'quantity': instance.quantity,
+            'num_participants': instance.num_participants,
+            'num_nights': instance.num_nights,
+            'included_venues': included_venues,
+        }
+
+
+class ClientScheduleInfoSerializer(serializers.Serializer):
+    """
+    Schedule information for client event info sheet.
+    Shows check-in/out times, program times, and special requests.
+    """
+
+    def to_representation(self, instance):
+        """Build representation from Event instance"""
+        return {
+            'start_date': instance.start_date,
+            'end_date': instance.end_date,
+            'scheduled_check_in_time': instance.scheduled_check_in_time,
+            'scheduled_checkout_time': instance.scheduled_checkout_time,
+            'program_start_time': instance.program_start_time,
+            'program_end_time': instance.program_end_time,
+            'program_duration_hours': instance.program_duration_hours,
+            'early_checkin_requested': instance.early_checkin_requested,
+            'early_checkin_time': instance.early_checkin_time,
+            'late_checkout_requested': instance.late_checkout_requested,
+            'late_checkout_time': instance.late_checkout_time,
+            'ingress_start_time': instance.ingress_start_time,
+            'egress_end_time': instance.egress_end_time,
+        }
+
+
+class ClientEventInfoSerializer(serializers.Serializer):
+    """
+    Combined event info for the mobile app bottom sheet.
+    Includes venue, package, and schedule information.
+    """
+
+    def to_representation(self, instance):
+        """Build complete event info from Event instance"""
+        request = self.context.get('request')
+        context = {'request': request}
+
+        # Venue info
+        venue_data = None
+        if instance.venue:
+            venue_data = ClientVenueInfoSerializer(instance.venue, context=context).data
+
+        # Package info - get all packages linked to this event
+        packages_data = []
+        event_products = instance.event_products.select_related(
+            'product_option__category'
+        ).prefetch_related(
+            'product_option__package_venues__venue'
+        ).filter(
+            product_option__type='PACKAGE'
+        ).order_by('id')
+
+        for ep in event_products:
+            packages_data.append(
+                ClientPackageInfoSerializer(ep, context=context).data
+            )
+
+        # Schedule info
+        schedule_data = ClientScheduleInfoSerializer(instance, context=context).data
+
+        return {
+            'venue': venue_data,
+            'packages': packages_data,
+            'schedule': schedule_data,
+        }

@@ -32,6 +32,9 @@ export type { SkeletonProps, SkeletonVariant } from './Skeleton';
 export { FilterChips } from './FilterChips';
 export type { FilterChipsProps, FilterChip } from './FilterChips';
 
+export { SegmentControl } from './SegmentControl';
+export type { SegmentControlProps, Segment } from './SegmentControl';
+
 // File upload components
 export { FileUploader } from './FileUploader';
 export type { FileUploaderProps } from './FileUploader';

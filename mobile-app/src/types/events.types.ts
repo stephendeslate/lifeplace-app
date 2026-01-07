@@ -238,6 +238,99 @@ export interface EventDetail extends Event {
   guest_count?: number;
   num_participants?: number;
   description?: string;
+  // Event info sheet data
+  event_info?: EventInfo;
+}
+
+// =============================================================================
+// EVENT INFO SHEET TYPES
+// =============================================================================
+
+/**
+ * Venue rules/policies shown to clients
+ */
+export interface VenueRules {
+  policies: Array<{ code: string; description: string }>;
+  violation_fees: Array<{ code: string; description: string; fee: number }>;
+  music_curfew: string | null;
+  notes: string | null;
+}
+
+/**
+ * Venue information for event info sheet
+ */
+export interface VenueInfo {
+  id: number;
+  name: string;
+  description: string;
+  location_description: string;
+  is_overnight: boolean;
+  minimum_capacity: number;
+  maximum_capacity: number;
+  recommended_capacity: number | null;
+  featured_image: string | null;
+  gallery_images: string[];
+  amenities: string[];
+  default_check_in_time: string | null;
+  default_checkout_time: string | null;
+  checkout_next_day: boolean;
+  venue_rules: VenueRules | null;
+}
+
+/**
+ * Simplified venue info for multi-venue packages
+ */
+export interface PackageVenue {
+  id: number;
+  name: string;
+  is_primary: boolean;
+  access_order: number;
+  notes: string;
+  featured_image: string | null;
+}
+
+/**
+ * Package information for event info sheet
+ */
+export interface PackageInfo {
+  id: number;
+  name: string;
+  description: string;
+  event_days: number | null;
+  featured_image: string | null;
+  gallery_images: string[];
+  quantity: number;
+  num_participants: number | null;
+  num_nights: number | null;
+  included_venues: PackageVenue[];
+}
+
+/**
+ * Schedule information for event info sheet
+ */
+export interface ScheduleInfo {
+  start_date: string;
+  end_date: string | null;
+  scheduled_check_in_time: string | null;
+  scheduled_checkout_time: string | null;
+  program_start_time: string | null;
+  program_end_time: string | null;
+  program_duration_hours: number | null;
+  early_checkin_requested: boolean;
+  early_checkin_time: string | null;
+  late_checkout_requested: boolean;
+  late_checkout_time: string | null;
+  ingress_start_time: string | null;
+  egress_end_time: string | null;
+}
+
+/**
+ * Combined event info for bottom sheet
+ */
+export interface EventInfo {
+  venue: VenueInfo | null;
+  packages: PackageInfo[];
+  schedule: ScheduleInfo;
 }
 
 // =============================================================================

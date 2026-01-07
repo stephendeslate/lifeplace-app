@@ -26,6 +26,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import {
   CaretLeft,
+  CaretDown,
   Calendar,
   Clock,
   MapPin,
@@ -39,7 +40,7 @@ import { useWorkflowProgress } from '@/hooks/useWorkflowProgress';
 import { contractsApi, type Contract } from '@/apis/contracts.api';
 import { theme } from '@/theme';
 import { spacing, typeScale } from '@/theme';
-import { EventStatusBadge } from '@/components/events';
+import { EventStatusBadge, EventInfoSheet } from '@/components/events';
 import { Skeleton } from '@/components/common';
 import { ContractSigningSheet } from '@/components/contracts/ContractSigningSheet';
 import type { EventStatus } from '@/types/events.types';
@@ -99,6 +100,9 @@ export default function EventDetailScreen() {
   // Contract signing state
   const [signingSheetVisible, setSigningSheetVisible] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+
+  // Event info sheet state
+  const [infoSheetVisible, setInfoSheetVisible] = useState(false);
 
   // Find initial tab index from URL param or default to 0
   const initialTabIndex = useMemo(() => {
@@ -168,6 +172,16 @@ export default function EventDetailScreen() {
     setSelectedContract(null);
   }, []);
 
+  // Event info sheet handlers
+  const handleOpenInfoSheet = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setInfoSheetVisible(true);
+  }, []);
+
+  const handleCloseInfoSheet = useCallback(() => {
+    setInfoSheetVisible(false);
+  }, []);
+
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tabIndicatorPosition.value }],
     width: tabIndicatorWidth.value,
@@ -229,8 +243,8 @@ export default function EventDetailScreen() {
             </Pressable>
           </View>
 
-          {/* Event Info */}
-          <View style={styles.eventInfo}>
+          {/* Event Info - Tappable to open info sheet */}
+          <Pressable style={styles.eventInfo} onPress={handleOpenInfoSheet}>
             <EventStatusBadge status={event.status} size="medium" />
             <Text style={styles.eventName}>{event.name}</Text>
 
@@ -274,7 +288,15 @@ export default function EventDetailScreen() {
                 </View>
               </View>
             )}
-          </View>
+
+            {/* Chevron indicator - tap for more details */}
+            {event.event_info && (
+              <View style={styles.chevronIndicator}>
+                <CaretDown size={20} color={theme.colors.primary[200]} />
+                <Text style={styles.chevronText}>Tap for venue & package details</Text>
+              </View>
+            )}
+          </Pressable>
         </SafeAreaView>
       </LinearGradient>
 
@@ -335,6 +357,14 @@ export default function EventDetailScreen() {
         contract={selectedContract}
         onSignComplete={handleSignComplete}
         onError={handleSignError}
+      />
+
+      {/* Event Info Sheet */}
+      <EventInfoSheet
+        visible={infoSheetVisible}
+        onClose={handleCloseInfoSheet}
+        eventInfo={event.event_info || null}
+        eventName={event.name}
       />
     </View>
   );
@@ -402,6 +432,21 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fonts.regular,
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.primary[100],
+  },
+  chevronIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  chevronText: {
+    fontFamily: theme.typography.fonts.regular,
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.primary[200],
   },
   tabBarContainer: {
     backgroundColor: theme.colors.surface,
