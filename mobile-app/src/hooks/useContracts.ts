@@ -191,7 +191,7 @@ export function getContractUrgency(
 export function canSignContract(contract: Contract): boolean {
   return (
     contract.can_client_sign &&
-    contract.status === 'SENT' &&
+    (contract.status === 'SENT' || contract.status === 'PARTIALLY_SIGNED') &&
     contract.signature_progress.signed_count < contract.signature_progress.total_required
   );
 }

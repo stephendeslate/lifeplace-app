@@ -135,9 +135,9 @@ export default function ContractDetailScreen() {
     }
   }, []);
 
-  // Get client signature requirement
-  const clientSignature = contract?.signatures.find((s) => s.is_client_signature);
-  const needsClientSignature = clientSignature && !clientSignature.is_signed;
+  // Check if client has already signed (to show correct UI state)
+  const clientSignature = contract?.signatures?.find((s) => s.is_client_signature && s.is_signed);
+  const hasClientSigned = !!clientSignature;
 
   // Loading state
   if (isLoading) {
@@ -400,8 +400,8 @@ export default function ContractDetailScreen() {
           )}
         </ScrollView>
 
-        {/* Sign Button */}
-        {canSign && needsClientSignature && (
+        {/* Sign Button - canSign uses can_client_sign from API which is the source of truth */}
+        {canSign && (
           <View style={[styles.actionBar, { paddingBottom: insets.bottom + 16 }]}>
             <Button
               variant="cta"

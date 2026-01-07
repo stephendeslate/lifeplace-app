@@ -36,6 +36,10 @@ export const colors = {
     forestLight: '#32CD32', // Lime green - hover
     forestDark: '#1B6B1B', // Dark green - pressed
     forestSubtle: '#EDF7ED', // Light green tint
+    gold: '#DAA520', // Goldenrod - highlights, recommendations
+    goldLight: '#FFD700', // Gold - brighter highlight
+    goldDark: '#B8860B', // Dark goldenrod
+    goldSubtle: '#FFF8E7', // Light gold tint for badges
   },
 
   // Tertiary Accent - Serene/Cool (Teal)
@@ -50,7 +54,8 @@ export const colors = {
   neutral: {
     white: '#FFFFFF',
     beige: '#F5F5DC', // Section backgrounds
-    cream: '#B5CAA0', // App backgrounds (light sage green)
+    cream: '#B5CAA0', // DEPRECATED: Use 'sage' - App backgrounds (light sage green)
+    sage: '#B5CAA0', // App backgrounds (light sage green) - renamed from cream
     sand: '#F5F3EF', // Card backgrounds
     warmGray: '#E8E5E0', // Borders, dividers
     gray: '#9B9590', // Placeholder text
@@ -683,7 +688,7 @@ export const colorScales = {
     900: '#0A0A0A',
   },
   neutral: {
-    50: colors.neutral.cream,
+    50: colors.neutral.sage, // Was: colors.neutral.cream (deprecated)
     100: colors.neutral.sand,
     200: colors.neutral.warmGray,
     300: '#D1CCC7',
@@ -764,7 +769,8 @@ const themeObject = {
     neutral: {
       ...colorScales.neutral,
       white: colors.neutral.white,
-      cream: colors.neutral.cream,
+      cream: colors.neutral.cream, // DEPRECATED: Use 'sage' instead
+      sage: colors.neutral.sage, // App background color
       sand: colors.neutral.sand,
       warmGray: colors.neutral.warmGray,
       gray: colors.neutral.gray,

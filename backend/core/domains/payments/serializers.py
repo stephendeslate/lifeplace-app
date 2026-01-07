@@ -503,6 +503,16 @@ class InvoiceSerializer(serializers.ModelSerializer):
     # Effective payment terms (booking flow override or global defaults)
     effective_payment_terms = serializers.SerializerMethodField(read_only=True)
 
+    # Mobile app compatibility fields (aliases for expected field names)
+    event_name = serializers.CharField(source='event.name', read_only=True)
+    invoice_number = serializers.CharField(source='invoice_id', read_only=True)
+    issued_date = serializers.DateField(source='issue_date', read_only=True)
+    payments = serializers.SerializerMethodField(read_only=True)
+    amount_paid = serializers.DecimalField(source='paid_amount', max_digits=10, decimal_places=2, read_only=True)
+    discount_amount = serializers.SerializerMethodField(read_only=True)
+    can_pay_online = serializers.SerializerMethodField(read_only=True)
+    paid_date = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Invoice
         fields = [
@@ -513,6 +523,9 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'related_payments', 'paid_amount', 'remaining_amount',
             'is_fully_paid', 'is_partially_paid', 'effective_payment_terms',
             'created_at', 'updated_at',
+            # Mobile app compatibility fields
+            'event_name', 'invoice_number', 'issued_date', 'payments',
+            'amount_paid', 'discount_amount', 'can_pay_online', 'paid_date',
         ]
         read_only_fields = [
             'id', 'invoice_id', 'paid_amount', 'remaining_amount',
@@ -522,6 +535,40 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def get_related_payments(self, obj):
         payments = obj.related_payments.all()
         return BasicPaymentSerializer(payments, many=True).data
+
+    def get_payments(self, obj):
+        """Alias for related_payments for mobile app compatibility"""
+        payments = obj.related_payments.all()
+        return BasicPaymentSerializer(payments, many=True).data
+
+    def get_can_pay_online(self, obj):
+        """Check if online payment is available for this invoice"""
+        from .models import PaymentGateway
+        # Invoice can be paid online if there's an active payment gateway and invoice is not fully paid
+        return (
+            obj.status in ['ISSUED', 'PARTIALLY_PAID'] and
+            PaymentGateway.objects.filter(is_active=True).exists()
+        )
+
+    def get_paid_date(self, obj):
+        """Get the date when invoice was fully paid"""
+        if obj.status == 'PAID':
+            # Get the latest completed payment date
+            last_payment = obj.related_payments.filter(status='COMPLETED').order_by('-paid_on').first()
+            if last_payment and last_payment.paid_on:
+                return last_payment.paid_on.isoformat() if hasattr(last_payment.paid_on, 'isoformat') else str(last_payment.paid_on)
+        return None
+
+    def get_discount_amount(self, obj):
+        """Get discount amount (calculated from subtotal + tax - total if any discount was applied)"""
+        # If the model has a discount_amount field, use it
+        if hasattr(obj, 'discount_amount') and obj.discount_amount:
+            return str(obj.discount_amount)
+        # Otherwise calculate from subtotal + tax - total (if there's a discount)
+        expected_total = obj.subtotal + obj.tax_amount
+        if expected_total > obj.total_amount:
+            return str(expected_total - obj.total_amount)
+        return '0.00'
 
     def get_effective_payment_terms(self, obj):
         """

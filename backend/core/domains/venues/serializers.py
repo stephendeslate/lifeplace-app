@@ -49,7 +49,7 @@ class VenueSerializer(serializers.ModelSerializer):
             'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
             'is_active', 'is_bookable', 'is_featured',
             'location_description', 'featured_image', 'gallery_images',
-            'sort_order',
+            'amenities', 'sort_order',
             # Standalone pricing
             'is_rentable_standalone', 'standalone_base_price',
             'standalone_included_hours', 'standalone_excess_hour_price',
@@ -101,8 +101,8 @@ class VenueListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'code', 'description', 'is_overnight', 'is_active', 'is_bookable',
             'is_featured', 'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
-            'location_description', 'featured_image', 'gallery_images', 'sort_order',
-            'is_rentable_standalone',
+            'location_description', 'featured_image', 'gallery_images', 'amenities',
+            'sort_order', 'is_rentable_standalone',
             # Standalone pricing fields for editing
             'standalone_base_price', 'standalone_included_hours',
             'standalone_excess_hour_price',
@@ -309,20 +309,6 @@ class VenueBlockedDateSerializer(serializers.ModelSerializer):
 
 # === Public/Client-facing serializers ===
 
-class PublicVenueSerializer(serializers.ModelSerializer):
-    """
-    Public serializer for client-facing venue info.
-    Excludes admin-only fields.
-    """
-    class Meta:
-        model = Venue
-        fields = [
-            'id', 'name', 'code', 'description', 'is_overnight',
-            'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
-            'location_description', 'featured_image', 'gallery_images'
-        ]
-
-
 class PublicVenueOperatingRulesSerializer(serializers.ModelSerializer):
     """
     Public serializer for operating rules shown to clients.
@@ -336,10 +322,31 @@ class PublicVenueOperatingRulesSerializer(serializers.ModelSerializer):
             'is_fixed_duration',
             'ingress_hours', 'egress_hours',
             'earliest_start_time', 'latest_end_time',
+            'hard_cutoff_time', 'hard_cutoff_next_day',
             'early_access_minutes',
             'early_checkin_allowed', 'early_checkin_fee_per_hour', 'earliest_checkin_time',
             'late_checkout_allowed', 'late_checkout_fee_per_hour',
             'late_checkout_max_hours', 'latest_checkout_time',
+        ]
+
+
+class PublicVenueSerializer(serializers.ModelSerializer):
+    """
+    Public serializer for client-facing venue info.
+    Includes operating rules for timing and early/late options.
+    """
+    operating_rules = PublicVenueOperatingRulesSerializer(
+        source='venue_operating_rules',
+        read_only=True
+    )
+
+    class Meta:
+        model = Venue
+        fields = [
+            'id', 'name', 'code', 'description', 'is_overnight',
+            'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
+            'location_description', 'featured_image', 'gallery_images',
+            'amenities', 'is_featured', 'sort_order', 'operating_rules'
         ]
 
 
@@ -414,7 +421,7 @@ class RentableVenueSerializer(serializers.ModelSerializer):
             'is_overnight',
             'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
             'location_description', 'featured_image', 'gallery_images',
-            'is_featured', 'sort_order',
+            'amenities', 'is_featured', 'sort_order',
             # Standalone pricing
             'standalone_base_price', 'standalone_included_hours',
             'standalone_excess_hour_price',
@@ -478,7 +485,7 @@ class RentableVenueWithEventTypeSerializer(serializers.ModelSerializer):
             'is_overnight',
             'minimum_capacity', 'maximum_capacity', 'recommended_capacity',
             'location_description', 'featured_image', 'gallery_images',
-            'is_featured', 'sort_order',
+            'amenities', 'is_featured', 'sort_order',
             # Default standalone pricing (for reference)
             'standalone_base_price', 'standalone_included_hours',
             'standalone_excess_hour_price',

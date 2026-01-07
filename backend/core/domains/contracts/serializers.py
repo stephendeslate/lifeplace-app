@@ -1,19 +1,33 @@
 # backend/core/domains/contracts/serializers.py
 from core.domains.events.basic_serializers import EventTypeSerializer
 from core.domains.events.serializers import EventSerializer
+from core.domains.events.models import Event
 from core.domains.users.serializers import UserSerializer
 from rest_framework import serializers
 from decimal import Decimal
 
 from .basic_serializers import ContractTemplateSerializer, EventContractSerializer
 from .models import (
-    ContractTemplate, 
-    EventContract, 
-    ContractSignature, 
+    ContractTemplate,
+    EventContract,
+    ContractSignature,
     ContractAmendment,
     ContractDocument,
     ContractNote
 )
+
+
+class ContractEventSerializer(serializers.ModelSerializer):
+    """
+    Simplified event serializer for contract responses.
+    Includes 'title' as an alias for 'name' for mobile app compatibility.
+    """
+    title = serializers.CharField(source='name', read_only=True)
+
+    class Meta:
+        model = Event
+        fields = ['id', 'name', 'title', 'status', 'start_date', 'end_date']
+        read_only_fields = fields
 
 
 class ContractTemplateDetailSerializer(ContractTemplateSerializer):
@@ -33,6 +47,11 @@ class ContractSignatureSerializer(serializers.ModelSerializer):
     signer = UserSerializer(read_only=True)
     role_display = serializers.CharField(source='get_role_display', read_only=True)
 
+    # Mobile app compatibility fields
+    signer_role = serializers.CharField(source='role', read_only=True)
+    is_signed = serializers.SerializerMethodField()
+    is_client_signature = serializers.SerializerMethodField()
+
     class Meta:
         model = ContractSignature
         fields = [
@@ -44,9 +63,19 @@ class ContractSignatureSerializer(serializers.ModelSerializer):
             'electronic_consent_timestamp', 'signature_intent_confirmed',
             'signature_metadata', 'signature_confidence_score',
             'ip_address', 'user_agent',
-            'created_at', 'updated_at'
+            'created_at', 'updated_at',
+            # Mobile app compatibility fields
+            'signer_role', 'is_signed', 'is_client_signature',
         ]
         read_only_fields = ['id', 'signed_at', 'created_at', 'updated_at']
+
+    def get_is_signed(self, obj):
+        """Check if signature has been completed"""
+        return obj.signed_at is not None
+
+    def get_is_client_signature(self, obj):
+        """Check if this is a client signature"""
+        return obj.role == 'CLIENT'
 
 
 class ContractSignatureCreateSerializer(serializers.ModelSerializer):
@@ -161,7 +190,8 @@ class ContractNoteSerializer(serializers.ModelSerializer):
 
 class EventContractDetailSerializer(EventContractSerializer):
     """Detailed serializer for EventContract including related objects"""
-    event = EventSerializer(read_only=True)
+    # Use ContractEventSerializer for mobile app compatibility (includes 'title' alias)
+    event = ContractEventSerializer(read_only=True)
     template = ContractTemplateSerializer(read_only=True)
     signatures = ContractSignatureSerializer(many=True, read_only=True)
     amendment_requests = ContractAmendmentSerializer(many=True, read_only=True)

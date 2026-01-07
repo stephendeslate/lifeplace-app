@@ -1,367 +1,58 @@
 /**
- * Dashboard Screen
+ * Home Screen (Dashboard)
  *
- * Hybrid dashboard showing:
- * - Critical actions requiring attention
- * - Next upcoming event preview
- * - Financial summary
- * - Quick actions
- * - Explore section (venues/packages)
+ * State-dependent home screen that renders different layouts based on user activity:
+ * - ManagementLayout: For users with active bookings (event management focus)
+ * - DiscoveryLayout: For new/browsing users (venue discovery focus)
+ *
+ * The layout is determined automatically based on:
+ * - Presence of upcoming events
+ * - Pending quotes, contracts, or payments
+ * - Active tasks
  */
 
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  RefreshControl,
-} from 'react-native';
+import React, { useMemo } from 'react';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, type Href } from 'expo-router';
-import { MagnifyingGlass, Bell, ArrowRight } from 'phosphor-react-native';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboard } from '@/hooks/useDashboard';
-import { useFeaturedVenues, useFeaturedPackages, usePrefetchVenue, usePrefetchPackage } from '@/hooks/useExplore';
+import { useNotificationCounts } from '@/hooks/useNotificationsList';
+import { getUserState } from '@/utils/userState';
+import { ManagementLayout, DiscoveryLayout } from '@/components/home';
 import { theme } from '@/theme';
-import { colors, spacing, typeScale, layout } from '@/theme';
-import {
-  ActionCard,
-  EventPreviewCard,
-  FinancialSummaryCard,
-  QuickActionRow,
-} from '@/components/dashboard';
-import { Skeleton, Card, EmptyState, Logo } from '@/components/common';
-import { VenueCard, PackageCard } from '@/components/explore';
-import type { QuickActionType } from '@/components/dashboard';
 
-export default function DashboardScreen() {
-  const router = useRouter();
+export default function HomeScreen() {
   const { user } = useAuth();
   const { data: dashboardData, isLoading, refetch, isRefetching } = useDashboard();
+  const { unreadCount } = useNotificationCounts();
 
-  // Explore data
-  const { data: featuredVenues, isLoading: venuesLoading } = useFeaturedVenues();
-  const { data: featuredPackages, isLoading: packagesLoading } = useFeaturedPackages();
-  const prefetchVenue = usePrefetchVenue();
-  const prefetchPackage = usePrefetchPackage();
-
-  const handleQuickAction = (action: QuickActionType) => {
-    switch (action) {
-      case 'new-booking':
-        router.push('/booking' as Href);
-        break;
-      case 'my-events':
-        router.push('/events');
-        break;
-      case 'documents':
-        router.push('/events');
-        break;
-      case 'support':
-        // Could open support chat or help screen
-        break;
-    }
-  };
-
-  const handleViewAllEvents = () => {
-    router.push('/events');
-  };
-
-  const handleEventPress = (eventId: number) => {
-    router.push(`/events/${eventId}` as Href);
-  };
-
-  const handleQuotePress = (eventId: number) => {
-    router.push(`/events/${eventId}?tab=quotes` as Href);
-  };
-
-  const handlePaymentPress = (eventId: number) => {
-    router.push(`/events/${eventId}?tab=invoices` as Href);
-  };
-
-  const handleContractPress = (eventId: number) => {
-    router.push(`/events/${eventId}?tab=contracts` as Href);
-  };
-
-  const hasCriticalActions =
-    dashboardData?.criticalActions &&
-    (dashboardData.criticalActions.pendingQuotes.length > 0 ||
-      dashboardData.criticalActions.overduePayments.length > 0 ||
-      dashboardData.criticalActions.pendingContracts.length > 0 ||
-      dashboardData.criticalActions.urgentTasks.length > 0);
+  // Determine user state and layout type
+  const userState = useMemo(
+    () => getUserState(user, dashboardData),
+    [user, dashboardData]
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            colors={[theme.colors.primary[500]]}
-            tintColor={theme.colors.primary[500]}
-          />
-        }
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Logo variant="icon" color="dark" size="xs" width={32} height={32} />
-            <View>
-              <Text style={styles.greeting}>
-                Welcome{user?.first_name ? `, ${user.first_name}` : ''}!
-              </Text>
-              <Text style={styles.subGreeting}>
-                {hasCriticalActions
-                  ? 'You have items requiring attention'
-                  : 'Your events at a glance'}
-              </Text>
-            </View>
-          </View>
-          <Pressable style={styles.notificationButton}>
-            <Bell size={24} color={colors.primary.black} />
-          </Pressable>
-        </View>
-
-        {/* Loading State */}
-        {isLoading && (
-          <>
-            <Skeleton variant="rounded" height={120} style={styles.skeleton} />
-            <Skeleton variant="rounded" height={180} style={styles.skeleton} />
-            <Skeleton variant="rounded" height={100} style={styles.skeleton} />
-          </>
-        )}
-
-        {/* Critical Actions */}
-        {!isLoading && hasCriticalActions && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Action Required</Text>
-
-            {/* Pending Quotes */}
-            {dashboardData?.criticalActions.pendingQuotes.map((quote) => (
-              <ActionCard
-                key={`quote-${quote.id}`}
-                type="quote"
-                title="Quote Ready for Review"
-                subtitle={quote.event_name}
-                urgency="medium"
-                onPress={() => handleQuotePress(quote.event_id)}
-              />
-            ))}
-
-            {/* Overdue Payments */}
-            {dashboardData?.criticalActions.overduePayments.map((payment) => (
-              <ActionCard
-                key={`payment-${payment.id}`}
-                type="payment"
-                title="Payment Overdue"
-                subtitle={payment.event_name}
-                urgency="high"
-                onPress={() => handlePaymentPress(payment.event_id)}
-              />
-            ))}
-
-            {/* Pending Contracts */}
-            {dashboardData?.criticalActions.pendingContracts.map((contract) => (
-              <ActionCard
-                key={`contract-${contract.id}`}
-                type="contract"
-                title="Contract Awaiting Signature"
-                subtitle={contract.event_name}
-                urgency="medium"
-                onPress={() => handleContractPress(contract.event_id)}
-              />
-            ))}
-
-            {/* Urgent Tasks */}
-            {dashboardData?.criticalActions.urgentTasks.map((task) => (
-              <ActionCard
-                key={`task-${task.id}`}
-                type="task"
-                title={task.title}
-                subtitle={task.event_name}
-                urgency={task.priority === 'URGENT' ? 'high' : 'medium'}
-                onPress={() => handleEventPress(task.event_id)}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* Next Event Preview */}
-        {!isLoading && dashboardData?.nextEvent && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Next Event</Text>
-              <Pressable
-                style={styles.viewAllButton}
-                onPress={handleViewAllEvents}
-              >
-                <Text style={styles.viewAllText}>View All</Text>
-                <ArrowRight size={16} color={theme.colors.primary[600]} />
-              </Pressable>
-            </View>
-            <EventPreviewCard
-              event={dashboardData.nextEvent}
-              onPress={() => handleEventPress(dashboardData.nextEvent!.id)}
-            />
-          </View>
-        )}
-
-        {/* No Events State */}
-        {!isLoading && !dashboardData?.nextEvent && !hasCriticalActions && (
-          <View style={styles.section}>
-            <Card style={styles.emptyCard}>
-              <EmptyState
-                icon="calendar"
-                title="No Upcoming Events"
-                description="Start planning your next event with us!"
-                actionLabel="Book Now"
-                onAction={() => router.push('/booking' as Href)}
-              />
-            </Card>
-          </View>
-        )}
-
-        {/* Financial Summary */}
-        {!isLoading && dashboardData?.financialSummary && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Financial Overview</Text>
-            <FinancialSummaryCard summary={dashboardData.financialSummary} />
-          </View>
-        )}
-
-        {/* Quick Actions */}
-        {!isLoading && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <QuickActionRow
-              actions={[
-                {
-                  type: 'new-booking',
-                  label: 'New Booking',
-                },
-                {
-                  type: 'my-events',
-                  label: 'My Events',
-                },
-                {
-                  type: 'documents',
-                  label: 'Documents',
-                },
-                {
-                  type: 'support',
-                  label: 'Get Help',
-                },
-              ]}
-              onActionPress={handleQuickAction}
-            />
-          </View>
-        )}
-
-        {/* Explore Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Explore</Text>
-
-          {/* Search Bar - navigates to explore screen */}
-          <Pressable
-            style={styles.searchBar}
-            onPress={() => router.push('/explore' as Href)}
-          >
-            <MagnifyingGlass size={20} color={colors.neutral.gray} />
-            <Text style={styles.searchPlaceholder}>
-              Search venues, packages...
-            </Text>
-          </Pressable>
-
-          {/* Featured Venues */}
-          <View style={styles.subsection}>
-            <View style={styles.subsectionHeader}>
-              <Text style={styles.subsectionTitle}>Featured Venues</Text>
-              <Pressable
-                style={styles.viewAllButton}
-                onPress={() => router.push('/explore?tab=venues' as Href)}
-              >
-                <Text style={styles.viewAllText}>View All</Text>
-                <ArrowRight size={16} color={theme.colors.primary[600]} />
-              </Pressable>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-            >
-              {venuesLoading ? (
-                <>
-                  <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
-                  <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
-                </>
-              ) : featuredVenues && featuredVenues.length > 0 ? (
-                featuredVenues.slice(0, 4).map((venue) => (
-                  <VenueCard
-                    key={venue.id}
-                    venue={venue}
-                    compact
-                    onPress={() => router.push(`/venues/${venue.id}` as Href)}
-                    onPressIn={() => prefetchVenue(venue.id)}
-                  />
-                ))
-              ) : (
-                <View style={styles.placeholder}>
-                  <Text style={styles.placeholderText}>
-                    No featured venues available
-                  </Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-
-          {/* Popular Packages */}
-          <View style={styles.subsection}>
-            <View style={styles.subsectionHeader}>
-              <Text style={styles.subsectionTitle}>Popular Packages</Text>
-              <Pressable
-                style={styles.viewAllButton}
-                onPress={() => router.push('/explore?tab=packages' as Href)}
-              >
-                <Text style={styles.viewAllText}>View All</Text>
-                <ArrowRight size={16} color={theme.colors.primary[600]} />
-              </Pressable>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-            >
-              {packagesLoading ? (
-                <>
-                  <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
-                  <Skeleton variant="rounded" width={240} height={220} style={styles.cardSkeleton} />
-                </>
-              ) : featuredPackages && featuredPackages.length > 0 ? (
-                featuredPackages.slice(0, 4).map((pkg) => (
-                  <PackageCard
-                    key={pkg.id}
-                    package={pkg}
-                    compact
-                    onPress={() => router.push(`/packages/${pkg.id}` as Href)}
-                    onPressIn={() => prefetchPackage(pkg.id)}
-                  />
-                ))
-              ) : (
-                <View style={styles.placeholder}>
-                  <Text style={styles.placeholderText}>
-                    No packages available
-                  </Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </ScrollView>
+      {userState.layoutType === 'management' ? (
+        <ManagementLayout
+          user={user}
+          dashboardData={dashboardData}
+          isLoading={isLoading}
+          isRefetching={isRefetching}
+          onRefresh={refetch}
+          unreadCount={unreadCount}
+        />
+      ) : (
+        <DiscoveryLayout
+          user={user}
+          isLoading={isLoading}
+          isRefetching={isRefetching}
+          onRefresh={refetch}
+          unreadCount={unreadCount}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -370,124 +61,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: layout.bottomNavHeight + spacing.xl,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  greeting: {
-    ...typeScale.headlineLarge,
-    color: theme.colors.neutral[900],
-  },
-  subGreeting: {
-    ...typeScale.bodyMedium,
-    color: theme.colors.neutral[600],
-    marginTop: spacing.xxs,
-  },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    ...typeScale.titleLarge,
-    color: theme.colors.neutral[900],
-    marginBottom: spacing.md,
-  },
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  viewAllText: {
-    fontFamily: theme.typography.fonts.medium,
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.primary[600],
-  },
-  subsection: {
-    marginBottom: spacing.lg,
-  },
-  subsectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  subsectionTitle: {
-    ...typeScale.titleMedium,
-    color: theme.colors.neutral[800],
-  },
-  horizontalList: {
-    paddingRight: spacing.lg,
-  },
-  cardSkeleton: {
-    marginRight: spacing.md,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.neutral[100],
-    borderRadius: layout.borderRadius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  searchPlaceholder: {
-    ...typeScale.bodyMedium,
-    color: theme.colors.neutral[500],
-  },
-  placeholder: {
-    backgroundColor: theme.colors.surface,
-    padding: spacing.xxl,
-    borderRadius: layout.borderRadius.lg,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  placeholderText: {
-    ...typeScale.bodyMedium,
-    color: theme.colors.neutral[500],
-  },
-  skeleton: {
-    marginBottom: spacing.md,
-  },
-  emptyCard: {
-    padding: spacing.xl,
   },
 });

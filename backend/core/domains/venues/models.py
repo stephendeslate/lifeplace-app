@@ -49,6 +49,11 @@ class Venue(BaseModel):
         blank=True,
         help_text="List of image URLs for venue gallery"
     )
+    amenities = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of amenities (e.g., ['Pool', 'Parking', 'Sound System', 'WiFi'])"
+    )
     sort_order = models.PositiveIntegerField(default=0)
 
     # Standalone rental pricing (for custom package curation)

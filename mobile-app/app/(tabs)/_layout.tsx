@@ -4,9 +4,9 @@
  * Bottom tab navigation for the main app.
  *
  * TABS:
- * 1. Explore (index) - Home/discovery screen
+ * 1. Home (index) - Event management for users with bookings
  * 2. My Events - User's booked events
- * 3. Saved - Favorites/wishlists
+ * 3. Explore - Venue/package discovery and booking
  * 4. Profile - User settings and preferences
  *
  * EXPO ROUTER CONCEPTS:
@@ -21,11 +21,10 @@
 
 import { Redirect, Tabs } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
-import { CalendarBlank, Heart, User } from 'phosphor-react-native';
+import { HouseIcon, CalendarBlankIcon, CompassIcon, UserIcon } from 'phosphor-react-native';
 
 import { useAuthStore } from '@/stores/authStore';
 import { colors, layout } from '@/theme';
-import { Logo } from '@/components/common';
 
 export default function TabLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -84,20 +83,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ focused }) => (
-            <View style={{ opacity: focused ? 1 : 0.75 }}>
-              <Logo variant="icon" color="dark" size="xs" width={24} height={24} />
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="events"
-        options={{
-          title: 'My Events',
+          title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <CalendarBlank
+            <HouseIcon
               size={24}
               weight={focused ? 'fill' : 'regular'}
               color={color}
@@ -106,11 +94,24 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="favorites"
+        name="events"
         options={{
-          title: 'Saved',
+          title: 'My Events',
           tabBarIcon: ({ color, focused }) => (
-            <Heart
+            <CalendarBlankIcon
+              size={24}
+              weight={focused ? 'fill' : 'regular'}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color, focused }) => (
+            <CompassIcon
               size={24}
               weight={focused ? 'fill' : 'regular'}
               color={color}
@@ -123,7 +124,7 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
-            <User
+            <UserIcon
               size={24}
               weight={focused ? 'fill' : 'regular'}
               color={color}

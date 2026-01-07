@@ -125,7 +125,7 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Logo */}
-          <Logo variant="full" color="dark" size="md" style={styles.logo} />
+          <Logo variant="full" color="dark" size="lg" style={styles.logo} />
 
           {/* Title */}
           <View style={styles.titleContainer}>

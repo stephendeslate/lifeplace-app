@@ -318,10 +318,10 @@ export default function InvoiceDetailScreen() {
           </Card>
 
           {/* Payment History */}
-          {invoice.payments.length > 0 && (
+          {invoice.payments?.length > 0 && (
             <Card style={styles.card}>
               <Text style={styles.sectionTitle}>Payment History</Text>
-              {invoice.payments.map((payment) => (
+              {invoice.payments?.map((payment) => (
                 <PaymentHistoryItem key={payment.id} payment={payment} />
               ))}
             </Card>
