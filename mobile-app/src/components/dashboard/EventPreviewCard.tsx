@@ -143,10 +143,10 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.lg,
     overflow: 'hidden',
     shadowColor: theme.colors.neutral[900],
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04, // Reduced for minimal aesthetic
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 2,
   },
   content: {
     padding: theme.spacing.md,

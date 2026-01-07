@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Timer, Warning } from 'phosphor-react-native';
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
+import { colors, spacing, typeScale, layout, shadows, theme } from '@/theme';
 import { getSessionRemainingTime, formatSessionTime } from '@/utils/bookingHelpers';
 
 interface SessionTimerProps {
@@ -169,13 +169,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral.sand,
   },
   containerWarning: {
-    backgroundColor: '#FEF6E7',
+    backgroundColor: theme.colors.warning[50],
   },
   containerCritical: {
-    backgroundColor: '#FCE8E8',
+    backgroundColor: theme.colors.error[50],
   },
   containerExpired: {
-    backgroundColor: '#FCE8E8',
+    backgroundColor: theme.colors.error[50],
   },
   iconContainer: {
     width: 32,
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     color: colors.neutral.darkGray,
   },
   textWarning: {
-    color: '#AA7032',
+    color: theme.colors.warning[600],
   },
   textCritical: {
     color: colors.semantic.error,

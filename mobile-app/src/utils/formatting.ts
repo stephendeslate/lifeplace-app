@@ -142,13 +142,30 @@ export function formatTimeRange(
 // =============================================================================
 
 /**
- * Get relative time from now (e.g., "2 hours ago", "in 3 days")
+ * Get relative time from now (e.g., "2 hours ago")
+ * For future dates, shows the actual time in PHT with timezone label
  */
 export function getRelativeTime(dateString: string | null | undefined): string {
   if (!dateString) return '';
   try {
     const date = parseISO(dateString);
     if (!isValid(date)) return '';
+
+    const now = new Date();
+    // For future dates, show the actual time in PHT
+    if (date > now) {
+      // Check if it's today - just show time
+      const todayStr = formatInTimeZone(now, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
+      const dateStr = formatInTimeZone(date, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
+
+      if (todayStr === dateStr) {
+        return formatInTimeZone(date, BUSINESS_TIMEZONE, 'h:mm a') + ' PHT';
+      }
+      // Different day - show date and time
+      return formatInTimeZone(date, BUSINESS_TIMEZONE, 'MMM d, h:mm a') + ' PHT';
+    }
+
+    // For past dates, use relative time
     return formatDistanceToNow(date, { addSuffix: true });
   } catch {
     return '';

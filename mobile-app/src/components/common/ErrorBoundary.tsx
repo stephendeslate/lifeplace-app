@@ -10,7 +10,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { WarningCircle, ArrowClockwise, House } from 'phosphor-react-native';
 import { router } from 'expo-router';
 
-import { colors, spacing, typeScale } from '@/theme';
+import { colors, spacing, typeScale, colorScales } from '@/theme';
 import { crashReporter } from '@/utils/crashReporting';
 
 interface Props {
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   errorDetails: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colorScales.error[50],
     padding: spacing.md,
     borderRadius: 8,
     marginBottom: spacing.xl,

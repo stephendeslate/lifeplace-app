@@ -24,7 +24,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { HouseIcon, CalendarBlankIcon, CompassIcon, UserIcon } from 'phosphor-react-native';
 
 import { useAuthStore } from '@/stores/authStore';
-import { colors, layout } from '@/theme';
+import { neutralColors, layout } from '@/theme';
 
 export default function TabLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -39,10 +39,10 @@ export default function TabLayout() {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: colors.neutral.cream,
+          backgroundColor: neutralColors[25], // Off-white background
         }}
       >
-        <ActivityIndicator size="large" color={colors.primary.black} />
+        <ActivityIndicator size="large" color={neutralColors[900]} />
       </View>
     );
   }
@@ -57,23 +57,23 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.neutral.white,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          backgroundColor: neutralColors[0], // White
           height: layout.bottomNavHeight,
           paddingTop: 8,
           paddingBottom: 20,
           position: 'absolute',
-          borderTopWidth: 0,
-          // Shadow
-          shadowColor: colors.primary.black,
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 16,
-          elevation: 10,
+          // Minimal line style - subtle top border instead of heavy shadow
+          borderTopWidth: 0.5,
+          borderTopColor: neutralColors[200],
+          // Very subtle shadow
+          shadowColor: neutralColors[900],
+          shadowOffset: { width: 0, height: -1 },
+          shadowOpacity: 0.04,
+          shadowRadius: 8,
+          elevation: 4,
         },
-        tabBarActiveTintColor: colors.primary.black,
-        tabBarInactiveTintColor: colors.neutral.gray,
+        tabBarActiveTintColor: neutralColors[900],
+        tabBarInactiveTintColor: neutralColors[400],
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '500',

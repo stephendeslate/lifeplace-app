@@ -231,8 +231,8 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.lg,
     shadowColor: theme.colors.neutral[900],
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.04, // Reduced for minimal aesthetic
+    shadowRadius: 8,
     elevation: 2,
     marginBottom: theme.spacing.md,
   },

@@ -105,16 +105,16 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     shadowColor: theme.colors.neutral[900],
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.04, // Reduced for minimal aesthetic
+    shadowRadius: 8,
     elevation: 2,
   },
   elevated: {
     backgroundColor: theme.colors.surface,
     shadowColor: theme.colors.neutral[900],
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowOpacity: 0.06, // Reduced for minimal aesthetic
+    shadowRadius: 12,
     elevation: 4,
   },
   outlined: {

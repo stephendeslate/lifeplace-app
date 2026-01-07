@@ -32,7 +32,7 @@ import {
 import { useAccountDeletion } from '@/hooks/usePrivacy';
 import { useAuth } from '@/hooks/useAuth';
 import { DeletionStepIndicator } from '@/components/privacy';
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
+import { colors, spacing, typeScale, layout, shadows, theme } from '@/theme';
 import type { DeletionStep } from '@/types/privacy.types';
 
 // What gets deleted
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: theme.colors.error[50],
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: theme.colors.error[50],
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
@@ -606,7 +606,7 @@ const styles = StyleSheet.create({
   },
   confirmInputValid: {
     borderColor: colors.semantic.error,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: theme.colors.error[50],
   },
   deleteButton: {
     flexDirection: 'row',

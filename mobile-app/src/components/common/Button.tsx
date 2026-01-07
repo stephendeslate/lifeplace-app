@@ -14,15 +14,17 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { colors, spacing, typeScale, layout, animation } from '@/theme';
+import { colors, spacing, typeScale, layout, animation, semanticTokens, brandColors } from '@/theme';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
-export type ButtonVariant = 'primary' | 'secondary' | 'cta' | 'accent';
+export type ButtonVariant = 'primary' | 'secondary' | 'cta' | 'accent' | 'ghost' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
   children: ReactNode;
   variant?: ButtonVariant;
+  size?: ButtonSize;
   loading?: boolean;
   fullWidth?: boolean;
   style?: ViewStyle;
@@ -32,6 +34,7 @@ export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
 export function Button({
   children,
   variant = 'primary',
+  size = 'md',
   loading = false,
   disabled = false,
   fullWidth = true,
@@ -62,12 +65,14 @@ export function Button({
   };
 
   const variantStyles = getVariantStyles(variant);
+  const sizeStyles = getSizeStyles(size);
   const isDisabled = disabled || loading;
 
   return (
     <AnimatedTouchable
       style={[
         styles.base,
+        sizeStyles.container,
         variantStyles.container,
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
@@ -88,7 +93,7 @@ export function Button({
           size="small"
         />
       ) : (
-        <Text style={[styles.text, variantStyles.text, textStyle]}>
+        <Text style={[styles.text, sizeStyles.text, variantStyles.text, textStyle]}>
           {children}
         </Text>
       )}
@@ -113,6 +118,16 @@ const getVariantStyles = (variant: ButtonVariant) => {
         container: styles.accentContainer,
         text: styles.accentText,
       };
+    case 'ghost':
+      return {
+        container: styles.ghostContainer,
+        text: styles.ghostText,
+      };
+    case 'danger':
+      return {
+        container: styles.dangerContainer,
+        text: styles.dangerText,
+      };
     case 'primary':
     default:
       return {
@@ -122,55 +137,120 @@ const getVariantStyles = (variant: ButtonVariant) => {
   }
 };
 
+const getSizeStyles = (size: ButtonSize) => {
+  switch (size) {
+    case 'sm':
+      return {
+        container: styles.sizeSm,
+        text: styles.textSm,
+      };
+    case 'lg':
+      return {
+        container: styles.sizeLg,
+        text: styles.textLg,
+      };
+    case 'md':
+    default:
+      return {
+        container: styles.sizeMd,
+        text: styles.textMd,
+      };
+  }
+};
+
 const styles = StyleSheet.create({
   base: {
     borderRadius: layout.borderRadius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    minHeight: layout.buttonHeight,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    gap: spacing.xs,
   },
   fullWidth: {
     width: '100%',
   },
   disabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   text: {
-    ...typeScale.labelLarge,
     textAlign: 'center',
   },
-  // Primary variant (black)
+
+  // Size variants
+  sizeSm: {
+    paddingVertical: spacing.sm - 2,
+    paddingHorizontal: spacing.md,
+    minHeight: 40,
+  },
+  sizeMd: {
+    paddingVertical: spacing.md - 2,
+    paddingHorizontal: spacing.xl,
+    minHeight: 50,
+  },
+  sizeLg: {
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
+    minHeight: 58,
+  },
+  textSm: {
+    ...typeScale.labelMedium,
+  },
+  textMd: {
+    ...typeScale.labelLarge,
+  },
+  textLg: {
+    ...typeScale.labelLarge,
+    fontSize: 17,
+  },
+
+  // Primary variant (soft black)
   primaryContainer: {
-    backgroundColor: colors.primary.black,
+    backgroundColor: semanticTokens.interactive.primary,
   },
   primaryText: {
-    color: colors.neutral.white,
+    color: semanticTokens.text.inverse,
   },
+
   // Secondary variant (outlined)
   secondaryContainer: {
-    backgroundColor: colors.neutral.white,
+    backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: colors.primary.black,
+    borderColor: semanticTokens.border.strong,
   },
   secondaryText: {
-    color: colors.primary.black,
+    color: semanticTokens.text.primary,
   },
-  // CTA variant (forest green)
+
+  // CTA variant (brand green)
   ctaContainer: {
-    backgroundColor: colors.secondary.forest,
+    backgroundColor: semanticTokens.interactive.accent,
   },
   ctaText: {
-    color: colors.neutral.white,
+    color: semanticTokens.text.inverse,
   },
-  // Accent variant (wood brown)
+
+  // Accent variant (earth brown - use sparingly)
   accentContainer: {
-    backgroundColor: colors.accent.wood,
+    backgroundColor: brandColors.earth[400],
   },
   accentText: {
-    color: colors.neutral.white,
+    color: semanticTokens.text.inverse,
+  },
+
+  // Ghost variant (text only - for tertiary actions)
+  ghostContainer: {
+    backgroundColor: 'transparent',
+  },
+  ghostText: {
+    color: semanticTokens.text.link,
+  },
+
+  // Danger variant (destructive actions)
+  dangerContainer: {
+    backgroundColor: colors.semantic.error,
+  },
+  dangerText: {
+    color: semanticTokens.text.inverse,
   },
 });
 

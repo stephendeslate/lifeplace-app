@@ -12,6 +12,7 @@
 export { InvoiceCard } from './InvoiceCard';
 export { InvoiceStatusBadge } from './InvoiceStatusBadge';
 export { InvoiceLineItem } from './InvoiceLineItem';
+export { InvoiceDetailsModal } from './InvoiceDetailsModal';
 
 // Payment flow components
 export { StripeCardField } from './StripeCardField';
@@ -31,6 +32,7 @@ export { PaymentHistoryItem } from './PaymentHistoryItem';
 export type { InvoiceCardProps } from './InvoiceCard';
 export type { InvoiceStatusBadgeProps } from './InvoiceStatusBadge';
 export type { InvoiceLineItemProps } from './InvoiceLineItem';
+export type { InvoiceDetailsModalProps } from './InvoiceDetailsModal';
 export type { StripeCardFieldProps } from './StripeCardField';
 export type { SavedPaymentMethodsProps } from './SavedPaymentMethods';
 export type { PaymentMethodSelectorProps } from './PaymentMethodSelector';

@@ -28,6 +28,19 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+
+// Custom fonts - Inter (sans-serif) + Fraunces (display serif)
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+import {
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
+} from '@expo-google-fonts/fraunces';
 
 import { queryClient } from '@/utils/queryClient';
 import { asyncStoragePersister, shouldPersistQuery } from '@/utils/queryPersister';
@@ -44,7 +57,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useOfflineMutations } from '@/hooks/useOfflineMutations';
 import { crashReporter } from '@/utils/crashReporting';
-import { colors } from '@/theme';
+import { neutralColors } from '@/theme';
 
 // Prevent splash screen from auto-hiding until we're ready
 SplashScreen.preventAutoHideAsync();
@@ -130,6 +143,18 @@ function SessionTimeoutManager() {
 // =============================================================================
 
 export default function RootLayout() {
+  // Load custom fonts
+  const [fontsLoaded] = useFonts({
+    // Inter - Modern sans-serif for UI
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    // Fraunces - Soft serif for display/headings
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
+  });
+
   // Wait for auth hydration before hiding splash screen
   const isHydrated = useAuthStore((state) => state.isHydrated);
 
@@ -142,14 +167,15 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (isHydrated) {
+    // Wait for both fonts AND auth hydration
+    if (isHydrated && fontsLoaded) {
       // Small delay to ensure smooth transition
       const timer = setTimeout(() => {
         SplashScreen.hideAsync();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [isHydrated]);
+  }, [isHydrated, fontsLoaded]);
 
   return (
     <ErrorBoundary
@@ -186,7 +212,7 @@ export default function RootLayout() {
                     <Stack
                       screenOptions={{
                         headerShown: false,
-                        contentStyle: { backgroundColor: colors.neutral.cream },
+                        contentStyle: { backgroundColor: neutralColors[25] }, // Off-white background
                         animation: 'slide_from_right',
                       }}
                     >

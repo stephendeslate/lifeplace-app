@@ -95,70 +95,108 @@ The LifePlace logo features:
 
 ### Brand Color Philosophy
 
-The LifePlace color palette is **neutral and earth-toned**, emphasizing natural harmony and spirituality. Colors promote a calming aesthetic with high contrast ratios (above 4.5:1) for accessibility. Avoid vibrant colors to maintain the serene brand identity.
+The LifePlace color palette follows a **Clean & Minimal Apple-like aesthetic** while maintaining brand alignment with the website (lifeplacealfonso.com). Colors are neutral with selective green accents for CTAs and interactive elements. The goal is a lighter, more premium feel with reduced visual weight.
 
-### Primary Palette
+### New Color Architecture (January 2026)
 
 ```typescript
-export const colors = {
-  // Primary Brand Colors
-  primary: {
-    black: '#000000',         // Logo text, headings, body copy, navigation links
-    blackLight: '#1A1A1A',    // Secondary text emphasis
+// =============================================================================
+// BRAND COLORS - Derived from website + refined for mobile
+// =============================================================================
+export const brandColors = {
+  // Primary brand green - used sparingly for key actions
+  green: {
+    50: '#F0F7F4',    // Hero backgrounds, subtle tints
+    100: '#D1E7DB',   // Hover states on light
+    200: '#A3D0B8',   // Borders, dividers
+    300: '#75B894',   // Secondary elements
+    400: '#4AA485',   // Website accent - interactive hover
+    500: '#3D9970',   // PRIMARY ACCENT - CTAs, links, active states
+    600: '#357A5C',   // Pressed states
+    700: '#2C5B48',   // Dark mode accent
+    800: '#233C34',   // Dark backgrounds
+    900: '#1A1D1F',   // Near black
   },
 
-  // Accent Colors - Nature Inspired
-  accent: {
-    wood: '#8B4513',          // Saddle Brown - Wood tones, borders, buttons, hover states
-    woodLight: '#A0522D',     // Sienna - Lighter wood accent
-    woodDark: '#654321',      // Dark brown - Pressed states
-    woodSubtle: '#F5EDE5',    // Light wood tint for backgrounds
+  // Nature accent - for warmth and organic feel (use very sparingly)
+  earth: {
+    50: '#FAF8F5',    // Warm off-white backgrounds
+    100: '#F5EDE5',   // Card backgrounds with warmth
+    200: '#E8DCD0',   // Borders with warmth
+    300: '#C4A882',   // Decorative elements
+    400: '#A0522D',   // Sienna - accent details
+    500: '#8B6914',   // Gold - featured badges
+  },
+} as const;
+
+// =============================================================================
+// NEUTRAL PALETTE - Apple-inspired, minimal
+// =============================================================================
+export const neutralColors = {
+  0: '#FFFFFF',       // Pure white - cards, modals
+  25: '#FAFBFC',      // App background - barely off-white
+  50: '#F6F8FA',      // Section backgrounds
+  100: '#EEF1F4',     // Input backgrounds
+  200: '#E1E4E8',     // Borders, dividers
+  300: '#D1D5DA',     // Disabled borders
+  400: '#959DA5',     // Placeholder text, icons
+  500: '#6A737D',     // Secondary text
+  600: '#586069',     // Body text
+  700: '#444D56',     // Primary text
+  800: '#2F363D',     // Headings
+  900: '#1A1A1A',     // Soft black - buttons, emphasis (NOT pure black)
+  1000: '#0D0D0D',    // Pure black (use rarely)
+} as const;
+
+// =============================================================================
+// SEMANTIC TOKENS - Functional color mappings
+// =============================================================================
+export const semanticTokens = {
+  background: {
+    primary: neutralColors[25],     // #FAFBFC - Main app background
+    secondary: neutralColors[0],    // #FFFFFF - Cards, elevated surfaces
+    tertiary: neutralColors[50],    // #F6F8FA - Section backgrounds
+    accent: brandColors.green[50],  // #F0F7F4 - Highlighted sections
+    warm: brandColors.earth[50],    // #FAF8F5 - Warm sections
   },
 
-  // Secondary Accent - Growth/Nature
-  secondary: {
-    forest: '#228B22',        // Forest Green - CTAs, highlights, icons (wheat)
-    forestLight: '#32CD32',   // Lime green - Hover states
-    forestDark: '#1B6B1B',    // Dark green - Pressed states
-    forestSubtle: '#EDF7ED',  // Light green tint for backgrounds
+  text: {
+    primary: neutralColors[900],    // #1A1A1A - Headings, important text
+    secondary: neutralColors[600],  // #586069 - Body text
+    tertiary: neutralColors[500],   // #6A737D - Supporting text
+    placeholder: neutralColors[400],// #959DA5 - Input placeholders
+    inverse: neutralColors[0],      // #FFFFFF - Text on dark backgrounds
+    link: brandColors.green[500],   // #3D9970 - Links, interactive text
   },
 
-  // Tertiary Accent - Serene/Cool
-  tertiary: {
-    teal: '#008080',          // Teal - Secondary accents, links, progress bars
-    tealLight: '#20B2AA',     // Light sea green
-    tealDark: '#006666',      // Dark teal
-    tealSubtle: '#E6F3F3',    // Light teal tint
+  border: {
+    light: neutralColors[100],      // #EEF1F4 - Subtle borders
+    default: neutralColors[200],    // #E1E4E8 - Standard borders
+    strong: neutralColors[300],     // #D1D5DA - Emphasized borders
   },
 
-  // Neutral Palette
-  neutral: {
-    white: '#FFFFFF',         // Page backgrounds, logo base, content sections
-    beige: '#F5F5DC',         // Beige - Section backgrounds, subtle patterns, overlay tints
-    cream: '#FAF9F7',         // Warm off-white backgrounds
-    sand: '#F5F3EF',          // Card backgrounds, sections
-    warmGray: '#E8E5E0',      // Borders, dividers
-    gray: '#9B9590',          // Placeholder text
-    darkGray: '#6B6560',      // Secondary text
-  },
+  interactive: {
+    primary: neutralColors[900],    // #1A1A1A - Primary buttons (soft black)
+    primaryHover: neutralColors[800],
+    primaryPressed: neutralColors[700],
 
-  // Semantic Colors
-  semantic: {
-    success: '#228B22',       // Forest Green - aligned with brand
-    warning: '#E5A84B',       // Warm amber
-    error: '#D64545',         // Soft red
-    info: '#008080',          // Teal - aligned with brand
+    accent: brandColors.green[500], // #3D9970 - CTA buttons, links
+    accentHover: brandColors.green[400],
+    accentPressed: brandColors.green[600],
   },
-
-  // Gradients - Nature Inspired
-  gradients: {
-    imageOverlay: ['transparent', 'rgba(0,0,0,0.7)'],
-    heroFade: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)'],
-    natureFade: ['#FFFFFF', '#90EE90'],  // White to Light Green - Hero banners, background fades
-    premiumCard: ['rgba(139,69,19,0.05)', 'rgba(34,139,34,0.05)'],  // Subtle wood to green
-  },
-};
+} as const;
 ```
+
+### Color Migration Reference
+
+| Old Token | New Token | Hex Value |
+|-----------|-----------|-----------|
+| `colors.primary.black` | `neutralColors[900]` | `#1A1A1A` (soft black) |
+| `colors.neutral.cream` / `sage` | `neutralColors[25]` | `#FAFBFC` (off-white) |
+| `colors.secondary.forest` | `brandColors.green[500]` | `#3D9970` |
+| `colors.tertiary.teal` | `brandColors.green[500]` | `#3D9970` (consolidated) |
+| `colors.accent.wood` | `brandColors.earth[400]` | `#A0522D` (use sparingly) |
+| Featured badge gold | `brandColors.earth[500]` | `#8B6914` |
 
 ### Color Reference Table
 
@@ -196,41 +234,52 @@ export const colors = {
 
 ### Typography Philosophy
 
-LifePlace typography emphasizes **readability**, **warmth**, and **approachability**. The font choices balance organic, personal feels for branding elements with clean, professional sans-serif for content, ensuring high contrast and generous spacing to evoke calm.
+LifePlace typography follows a **modern premium hospitality** approach with two carefully paired fonts:
+- **Fraunces** - Soft serif for display and headings (warmth, elegance)
+- **Inter** - Clean sans-serif for UI and body text (clarity, accessibility)
 
-### Font Stack
+This pairing creates visual hierarchy and brand distinction while maintaining excellent readability.
+
+### Font Stack (January 2026)
 
 ```typescript
-export const typography = {
-  fontFamily: {
-    // Display/Headings - Script-style for branding warmth (logo, special headings)
-    // Note: For logo text "LifePlace", use a script font similar to Brush Script or Pacifico
-    display: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-    }),
-    // Primary - Clean, modern sans-serif for main content
-    primary: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-    }),
-    // Secondary - For body text, readable and clear
-    secondary: Platform.select({
-      ios: 'SF Pro Text',
-      android: 'Roboto',
-    }),
+export const fontFamily = {
+  // Display font - Fraunces (soft serif for headers)
+  display: {
+    semibold: 'Fraunces_600SemiBold',
+    bold: 'Fraunces_700Bold',
   },
-};
+
+  // Sans font - Inter (clean UI font)
+  sans: {
+    regular: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semibold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
+  },
+} as const;
+
+// Font loading in app/_layout.tsx
+const [fontsLoaded] = useFonts({
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
+});
 ```
 
-### Typography Guidelines
+### Typography Guidelines (Updated)
 
-| Element | Style | Weight | Size | Notes |
-|---------|-------|--------|------|-------|
-| Logo "LifePlace" | Script/Cursive | Medium-Bold | 48-72px | Fluid curves, organic feel |
-| Tagline "RETREAT AND EVENT CENTER" | Sans-serif, Uppercase | Bold | 14-18px | Clear, professional |
-| Body text | Sans-serif | Regular | 16-18px | Line-height 1.5-1.8 for easy reading |
-| Subheadings | Sans-serif, Uppercase | Bold | 14-18px | High contrast, generous spacing |
+| Element | Font | Weight | Size | Usage |
+|---------|------|--------|------|-------|
+| Display headings | Fraunces | SemiBold/Bold | 28-36px | Hero text, user name greeting |
+| Screen titles | Inter | SemiBold | 20-24px | Navigation headers |
+| Card titles | Inter | SemiBold | 16-18px | VenueCard, EventCard titles |
+| Body text | Inter | Regular | 14-16px | Main content, descriptions |
+| Labels/Captions | Inter | Medium | 10-12px | Buttons, badges, metadata |
+| Price display | Inter | Bold | 18-24px | Pricing on cards |
 
 ### Type Scale
 
@@ -408,153 +457,180 @@ export const layout = {
 | Input fields | `12px` | Text inputs |
 | Avatars | `50%` | Profile images |
 
-### Shadow System
+### Shadow System (January 2026 - Minimal Aesthetic)
+
+Shadows have been significantly reduced to achieve the Apple-like minimal aesthetic. The goal is subtle depth without heavy visual weight.
 
 ```typescript
 export const shadows = {
-  // Subtle - Cards at rest
+  // Minimal - Standard cards, list items (MOST COMMON)
   sm: {
-    shadowColor: '#32373C',
+    shadowColor: neutralColors[900],  // #1A1A1A
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.04,   // ← Reduced from 0.06
     shadowRadius: 8,
     elevation: 2,
   },
 
-  // Medium - Elevated cards, modals
+  // Subtle elevation - Featured cards, modals
   md: {
-    shadowColor: '#32373C',
+    shadowColor: neutralColors[900],
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
+    shadowOpacity: 0.06,   // ← Reduced from 0.1
+    shadowRadius: 12,
     elevation: 4,
   },
 
-  // Large - Bottom sheets, floating elements
+  // Moderate elevation - Bottom sheets, FABs
   lg: {
-    shadowColor: '#32373C',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowColor: neutralColors[900],
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,   // ← Reduced from 0.15
+    shadowRadius: 16,
+    elevation: 6,
   },
 
-  // Bottom navigation
-  bottomNav: {
-    shadowColor: '#32373C',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 10,
+  // Strong elevation - Floating action buttons (use sparingly)
+  xl: {
+    shadowColor: neutralColors[900],
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,   // Only for FABs needing prominence
+    shadowRadius: 20,
+    elevation: 8,
   },
 };
+```
+
+### Shadow Usage Guidelines
+
+| Component Type | Shadow Level | Opacity |
+|----------------|--------------|---------|
+| Standard cards (VenueCard, EventCard) | `shadows.sm` | 0.04 |
+| Elevated Card variant | `shadows.md` | 0.06 |
+| FABs, Bottom sheets | `shadows.lg` | 0.08 |
+| Prominent FABs | `shadows.xl` | 0.12 |
+| Tab bar | Custom | 0.04 with borderTop |
+
+### Tab Bar Styling
+
+```typescript
+tabBarStyle: {
+  backgroundColor: neutralColors[0],     // White
+  borderTopWidth: 0.5,                   // Minimal line
+  borderTopColor: neutralColors[200],    // Subtle border
+  shadowColor: neutralColors[900],
+  shadowOffset: { width: 0, height: -1 },
+  shadowOpacity: 0.04,                   // Very subtle
+  shadowRadius: 8,
+  elevation: 4,
+}
 ```
 
 ---
 
 ## Components
 
-### Buttons
+### Buttons (January 2026 - Enhanced Variants)
 
-#### Primary Button
+The Button component now supports 6 variants and 3 sizes for flexible usage across the app.
+
+#### Button Variants
+
 ```typescript
-const PrimaryButton = {
-  container: {
-    backgroundColor: colors.primary.black,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: {
-    ...typeScale.labelLarge,
-    color: colors.neutral.white,
-  },
-  pressed: {
-    backgroundColor: colors.primary.blackLight,
-  },
-  disabled: {
-    backgroundColor: colors.neutral.warmGray,
-  },
-};
+export type ButtonVariant = 'primary' | 'secondary' | 'cta' | 'accent' | 'ghost' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 ```
 
-#### Secondary Button
+#### Primary Button (Soft Black)
+The main action button - uses soft black instead of pure black.
+
 ```typescript
-const SecondaryButton = {
-  container: {
-    backgroundColor: colors.neutral.white,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colors.primary.black,
-    paddingVertical: 15,
-    paddingHorizontal: 24,
-    minHeight: 52,
-  },
-  text: {
-    ...typeScale.labelLarge,
-    color: colors.primary.black,
-  },
-};
+primaryContainer: {
+  backgroundColor: semanticTokens.interactive.primary, // neutralColors[900] = #1A1A1A
+},
+primaryText: {
+  color: semanticTokens.text.inverse, // #FFFFFF
+},
 ```
 
-#### CTA Button (Nature Green)
+#### Secondary Button (Outlined)
+For secondary actions - transparent with border.
+
 ```typescript
-const CTAButton = {
-  container: {
-    backgroundColor: colors.secondary.forest,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-  },
-  text: {
-    ...typeScale.labelLarge,
-    color: colors.neutral.white,
-  },
-  pressed: {
-    backgroundColor: colors.secondary.forestDark,
-  },
-};
+secondaryContainer: {
+  backgroundColor: 'transparent',
+  borderWidth: 1.5,
+  borderColor: semanticTokens.border.strong, // neutralColors[300]
+},
+secondaryText: {
+  color: semanticTokens.text.primary, // neutralColors[900]
+},
 ```
 
-#### Accent Button (Warm Wood)
+#### CTA Button (Brand Green)
+For key conversion actions - uses the brand green.
+
 ```typescript
-const AccentButton = {
-  container: {
-    backgroundColor: colors.accent.wood,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-  },
-  text: {
-    ...typeScale.labelLarge,
-    color: colors.neutral.white,
-  },
-  pressed: {
-    backgroundColor: colors.accent.woodDark,
-  },
-};
+ctaContainer: {
+  backgroundColor: semanticTokens.interactive.accent, // brandColors.green[500] = #3D9970
+},
+ctaText: {
+  color: semanticTokens.text.inverse, // #FFFFFF
+},
 ```
 
-#### Icon Button
+#### Accent Button (Earth Brown)
+For special occasions - use sparingly.
+
 ```typescript
-const IconButton = {
-  container: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  icon: {
-    size: 24,
-    color: colors.primary.black,
-  },
-};
+accentContainer: {
+  backgroundColor: brandColors.earth[400], // #A0522D
+},
+accentText: {
+  color: semanticTokens.text.inverse,
+},
+```
+
+#### Ghost Button (Text Only)
+For tertiary actions - no background, just text.
+
+```typescript
+ghostContainer: {
+  backgroundColor: 'transparent',
+},
+ghostText: {
+  color: semanticTokens.text.link, // brandColors.green[500]
+},
+```
+
+#### Danger Button (Destructive)
+For delete/destructive actions.
+
+```typescript
+dangerContainer: {
+  backgroundColor: colors.semantic.error, // #D64545
+},
+dangerText: {
+  color: semanticTokens.text.inverse,
+},
+```
+
+#### Button Sizes
+
+| Size | Min Height | Padding Vertical | Padding Horizontal |
+|------|------------|------------------|-------------------|
+| `sm` | 40px | 10px | 16px |
+| `md` | 50px | 14px | 24px |
+| `lg` | 58px | 20px | 32px |
+
+#### Icon Button (Ghost Style)
+Header buttons now use ghost style without background for cleaner look.
+
+```typescript
+// ManagementLayout notification button
+<Button variant="ghost" size="sm" style={{ width: 44, height: 44 }}>
+  <BellIcon size={24} color={neutralColors[700]} />
+</Button>
 ```
 
 ### Cards
@@ -2129,5 +2205,15 @@ interface EventFeedback {
 
 ---
 
-*Last updated: December 2024*
-*Version: 2.0 - Comprehensive brand identity update with LifePlace business theme, styling overview, and complete color palette*
+*Last updated: January 2026*
+*Version: 3.0 - Clean & Minimal UI modernization with Apple-inspired aesthetic*
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 3.0 | January 2026 | Clean & Minimal modernization: new color system (brandColors, neutralColors, semanticTokens), Fraunces + Inter typography, reduced shadow opacity (0.04), Button variants (ghost, danger), size variants |
+| 2.0 | December 2024 | Comprehensive brand identity update with LifePlace business theme |
+| 1.0 | Initial | Original styling guide |

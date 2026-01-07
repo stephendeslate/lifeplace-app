@@ -22,7 +22,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MapPin, Users, Star } from 'phosphor-react-native';
 
 import { FavoriteButton } from './FavoriteButton';
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
+import { colors, spacing, typeScale, layout, shadows, brandColors } from '@/theme';
 import { formatPrice, formatCapacity, getVenueEffectivePricing } from '@/apis/explore.api';
 import { FALLBACK_IMAGES } from '@/constants/images';
 import type { VenuePublic, RentableVenue, RentableVenueWithEventType } from '@/types/explore.types';
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: spacing.sm,
     left: spacing.sm,
-    backgroundColor: colors.tertiary.teal,
+    backgroundColor: brandColors.green[600], // Brand green for consistency
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
     borderRadius: layout.borderRadius.sm,

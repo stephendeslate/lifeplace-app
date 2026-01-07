@@ -20,7 +20,7 @@ import {
 } from 'react-native';
 import { X, Warning } from 'phosphor-react-native';
 import { router, type Href, useNavigation } from 'expo-router';
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
+import { colors, spacing, typeScale, layout, shadows, colorScales } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { BookingProgressIndicator, type ProgressVariant } from './BookingProgressIndicator';
 import { SessionTimer } from './SessionTimer';
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   errorAlert: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FCE8E8',
+    backgroundColor: colorScales.error[50],
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     marginHorizontal: spacing.lg,

@@ -20,6 +20,8 @@
     "e2e:studio": "maestro studio"
   },
   "dependencies": {
+    "@expo-google-fonts/fraunces": "^0.4.1",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@hookform/resolvers": "^5.2.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "11.4.1",
@@ -85,6 +87,7 @@
     "jest-expo": "~54.0.0",
     "jest-junit": "^16.0.0",
     "msw": "^2.6.9",
+    "react-refresh": "^0.18.0",
     "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
   },

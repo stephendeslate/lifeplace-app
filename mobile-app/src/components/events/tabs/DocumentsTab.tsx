@@ -609,11 +609,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary[500],
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.neutral[900],
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
+    shadowOpacity: 0.12, // Reduced for minimal aesthetic (FAB needs some elevation)
+    shadowRadius: 8,
+    elevation: 6,
   },
   skeletonItem: {
     flexDirection: 'row',
