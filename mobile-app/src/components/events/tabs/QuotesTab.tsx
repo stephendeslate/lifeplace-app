@@ -17,7 +17,6 @@ import {
   TextInput,
   Modal,
   Pressable,
-  Linking,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import {
@@ -28,15 +27,13 @@ import {
   Warning,
   CaretDown,
   CaretUp,
-  Eye,
   ChatText,
   Check,
 } from 'phosphor-react-native';
 import { differenceInDays, isBefore } from 'date-fns';
 import { theme } from '@/theme';
 import { useEventQuotes, useAcceptQuote, useRejectQuote } from '@/hooks/useQuotes';
-import { quotesApi } from '@/apis/quotes.api';
-import { Skeleton, EmptyState, Card, Badge, Button, PDFViewerModal } from '@/components/common';
+import { Skeleton, EmptyState, Card, Badge, Button } from '@/components/common';
 import { formatCurrency, formatCardDate } from '@/utils/formatting';
 import type { Quote, QuoteLineItem, QuoteOption } from '@/apis/quotes.api';
 
@@ -54,9 +51,6 @@ export function QuotesTab({ eventId }: QuotesTabProps) {
   const [rejectReason, setRejectReason] = useState('');
   const [expandedQuotes, setExpandedQuotes] = useState<Set<number>>(new Set());
 
-  // PDF viewer state
-  const [pdfViewerVisible, setPdfViewerVisible] = useState(false);
-  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
 
   const toggleExpanded = (quoteId: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -106,26 +100,6 @@ export function QuotesTab({ eventId }: QuotesTabProps) {
     setRejectReason('');
   };
 
-  const handleViewPdf = (quote: Quote) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedQuote(quote);
-    setPdfViewerVisible(true);
-  };
-
-  const handleClosePdf = () => {
-    setPdfViewerVisible(false);
-    setSelectedQuote(null);
-  };
-
-  const handleDownloadPdf = async () => {
-    if (!selectedQuote) return;
-    const pdfUrl = quotesApi.getQuotePdfUrl(selectedQuote.id);
-    try {
-      await Linking.openURL(pdfUrl);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to download the quote.');
-    }
-  };
 
   const getStatusConfig = (status: Quote['status']) => {
     switch (status) {
@@ -352,38 +326,26 @@ export function QuotesTab({ eventId }: QuotesTabProps) {
         )}
 
         {/* Action Buttons */}
-        <View style={styles.actionsContainer}>
-          {/* View PDF Button */}
-          <Pressable
-            onPress={() => handleViewPdf(quote)}
-            style={styles.viewPdfButton}
-          >
-            <Eye size={18} color={theme.colors.primary[500]} />
-            <Text style={styles.viewPdfText}>View PDF</Text>
-          </Pressable>
-
-          {/* Accept/Decline Actions */}
-          {isPending && (
-            <View style={styles.actions}>
-              <Button
-                onPress={() => handleRejectPress(quote.id)}
-                variant="secondary"
-                style={styles.actionButton}
-                loading={rejectQuote.isPending && selectedQuoteId === quote.id}
-              >
-                Decline
-              </Button>
-              <Button
-                onPress={() => handleAccept(quote)}
-                variant="primary"
-                style={styles.actionButton}
-                loading={acceptQuote.isPending}
-              >
-                Accept
-              </Button>
-            </View>
-          )}
-        </View>
+        {isPending && (
+          <View style={styles.actions}>
+            <Button
+              onPress={() => handleRejectPress(quote.id)}
+              variant="secondary"
+              style={styles.actionButton}
+              loading={rejectQuote.isPending && selectedQuoteId === quote.id}
+            >
+              Decline
+            </Button>
+            <Button
+              onPress={() => handleAccept(quote)}
+              variant="primary"
+              style={styles.actionButton}
+              loading={acceptQuote.isPending}
+            >
+              Accept
+            </Button>
+          </View>
+        )}
       </Card>
     );
   };
@@ -452,17 +414,6 @@ export function QuotesTab({ eventId }: QuotesTabProps) {
           </Pressable>
         </Pressable>
       </Modal>
-
-      {/* PDF Viewer Modal */}
-      {selectedQuote && (
-        <PDFViewerModal
-          visible={pdfViewerVisible}
-          onClose={handleClosePdf}
-          title={`Quote ${selectedQuote.quote_number}`}
-          pdfUrl={quotesApi.getQuotePdfUrl(selectedQuote.id)}
-          onDownload={handleDownloadPdf}
-        />
-      )}
     </View>
   );
 }
@@ -703,26 +654,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.xs,
     color: theme.colors.neutral[500],
     marginTop: 4,
-  },
-  actionsContainer: {
-    gap: theme.spacing.sm,
-  },
-  viewPdfButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.xs,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.primary[200],
-    backgroundColor: theme.colors.primary[50],
-  },
-  viewPdfText: {
-    fontFamily: theme.typography.fonts.medium,
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.primary[600],
   },
   actions: {
     flexDirection: 'row',

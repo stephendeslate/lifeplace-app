@@ -37,7 +37,7 @@ import {
   FinancialSummaryCard,
   QuickActionRow,
 } from '@/components/dashboard';
-import { Skeleton, Card, EmptyState, Logo } from '@/components/common';
+import { Skeleton, Card, EmptyState } from '@/components/common';
 import type { QuickActionType } from '@/components/dashboard';
 import type { User } from '@/types/auth.types';
 import type { DashboardResult } from '@/hooks/useDashboard';
@@ -113,6 +113,14 @@ export function ManagementLayout({
     return Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
+  // Time-based greeting
+  const getTimeGreeting = (): string => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning,';
+    if (hour < 17) return 'Good afternoon,';
+    return 'Good evening,';
+  };
+
   // Contextual sub-greeting based on user state
   const getSubGreeting = (): string => {
     if (hasCriticalActions && dashboardData?.criticalActions) {
@@ -180,22 +188,22 @@ export function ManagementLayout({
         />
       }
     >
-      {/* Header */}
+      {/* Header - Clean & Minimal */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Logo variant="icon" color="dark" size="lg" />
-          <View>
-            <Text style={styles.greeting}>
-              Welcome{user?.first_name ? `, ${user.first_name}` : ''}!
-            </Text>
-            <Text style={styles.subGreeting}>{getSubGreeting()}</Text>
-          </View>
+        <View style={styles.headerContent}>
+          <Text style={styles.greetingLabel}>
+            {getTimeGreeting()}
+          </Text>
+          <Text style={styles.userName}>
+            {user?.first_name || 'there'}
+          </Text>
+          <Text style={styles.subGreeting}>{getSubGreeting()}</Text>
         </View>
         <Pressable
           style={styles.notificationButton}
           onPress={() => router.push('/actions' as Href)}
         >
-          <Bell size={24} color={colors.primary.black} />
+          <Bell size={24} color={colors.primary.black} weight={unreadCount > 0 ? 'fill' : 'regular'} />
           {unreadCount > 0 && (
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>
@@ -375,40 +383,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxl, // More breathing room
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  headerContent: {
+    flex: 1,
   },
-  greeting: {
-    ...typeScale.headlineLarge,
+  greetingLabel: {
+    ...typeScale.bodyMedium,
+    color: theme.colors.neutral[500], // Subtle
+  },
+  userName: {
+    ...typeScale.displaySmall, // Display font for name
     color: theme.colors.neutral[900],
+    marginTop: spacing.xxs,
   },
   subGreeting: {
     ...typeScale.bodyMedium,
     color: theme.colors.neutral[600],
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
   },
+  // Ghost-style notification button (no background)
   notificationButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    // No background, no shadow for minimal look
   },
   notificationBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 4,
+    right: 4,
     backgroundColor: theme.colors.error[500],
     minWidth: 18,
     height: 18,
@@ -416,8 +422,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: theme.colors.surface,
   },
   notificationBadgeText: {
     fontFamily: theme.typography.fonts.semibold,

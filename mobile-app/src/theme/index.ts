@@ -1,10 +1,21 @@
 /**
  * LifePlace Mobile App Theme
  *
- * Design system based on the STYLING_GUIDE.md with nature-inspired,
- * rustic-modern aesthetic aligned with LifePlace brand identity.
+ * Design system for LifePlace mobile application.
  *
- * Brand essence: Serene, premium yet accessible, nature-connected
+ * Design Direction: Clean & Minimal (Apple-inspired)
+ * Brand Essence: Serene, premium yet accessible, nature-connected
+ *
+ * Color Philosophy:
+ * - Near-white backgrounds let content breathe
+ * - Green accent used sparingly for key actions
+ * - Soft blacks instead of pure black for elegance
+ *
+ * Typography:
+ * - Fraunces (serif) for display/headings - brand warmth
+ * - Inter (sans-serif) for UI/body - modern clarity
+ *
+ * @see UI_MODERNIZATION_PLAN.md for full design system documentation
  */
 
 import { Platform, Dimensions } from 'react-native';
@@ -12,69 +23,123 @@ import { Platform, Dimensions } from 'react-native';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // =============================================================================
-// COLORS
+// COLORS - Clean & Minimal System (Apple-inspired)
 // =============================================================================
 
+/**
+ * Brand Colors
+ * Primary green derived from lifeplacealfonso.com (#4AA485)
+ * Refined for mobile with full scale for flexibility
+ */
+export const brandColors = {
+  // Primary brand green - used sparingly for key actions
+  green: {
+    50: '#F0F7F4',
+    100: '#D1E7DB',
+    200: '#A3D0B8',
+    300: '#75B894',
+    400: '#4AA485', // Website accent color
+    500: '#3D9970', // PRIMARY - CTAs, links, active states
+    600: '#357A5C',
+    700: '#2C5B48',
+    800: '#233C34',
+    900: '#1A1D1F',
+  },
+  // Warm earth tones - use very sparingly for premium feel
+  earth: {
+    50: '#FAF8F5',
+    100: '#F5EDE5',
+    200: '#E8DCD0',
+    300: '#C4A882',
+    400: '#A0522D', // Sienna
+    500: '#8B6914', // Gold - featured badges
+  },
+} as const;
+
+/**
+ * Neutral Palette (Apple-inspired)
+ * Near-white backgrounds with subtle warm undertone
+ */
+export const neutralColors = {
+  0: '#FFFFFF',
+  25: '#FAFBFC',     // App background - barely off-white
+  50: '#F6F8FA',     // Section backgrounds
+  100: '#EEF1F4',    // Input backgrounds
+  200: '#E1E4E8',    // Borders, dividers
+  300: '#D1D5DA',    // Disabled borders
+  400: '#959DA5',    // Placeholder text, icons
+  500: '#6A737D',    // Secondary text
+  600: '#586069',    // Body text
+  700: '#444D56',    // Primary text
+  800: '#2F363D',    // Headings
+  900: '#1A1A1A',    // Soft black - buttons, emphasis
+  1000: '#0D0D0D',   // Pure black (use rarely)
+} as const;
+
+/**
+ * Legacy colors - maintained for backwards compatibility
+ * @deprecated Use brandColors, neutralColors, or semanticColors instead
+ */
 export const colors = {
-  // Primary Brand Colors
+  // Primary Brand Colors (updated for softer look)
   primary: {
-    black: '#000000',
-    blackLight: '#1A1A1A',
+    black: neutralColors[900], // Soft black instead of pure black
+    blackLight: neutralColors[800],
   },
 
-  // Accent Colors - Wood/Nature Inspired
+  // Accent Colors - Wood/Nature Inspired (legacy)
   accent: {
-    wood: '#8B4513', // Saddle Brown - primary accent
-    woodLight: '#A0522D', // Sienna - hover states
-    woodDark: '#654321', // Dark brown - pressed states
-    woodSubtle: '#F5EDE5', // Light wood tint for backgrounds
+    wood: brandColors.earth[400],
+    woodLight: '#A0522D',
+    woodDark: '#654321',
+    woodSubtle: brandColors.earth[50],
   },
 
   // Secondary Accent - Growth/Nature (Forest Green)
   secondary: {
-    forest: '#228B22', // Forest Green - CTAs, success
-    forestLight: '#32CD32', // Lime green - hover
-    forestDark: '#1B6B1B', // Dark green - pressed
-    forestSubtle: '#EDF7ED', // Light green tint
-    gold: '#DAA520', // Goldenrod - highlights, recommendations
-    goldLight: '#FFD700', // Gold - brighter highlight
-    goldDark: '#B8860B', // Dark goldenrod
-    goldSubtle: '#FFF8E7', // Light gold tint for badges
+    forest: brandColors.green[500], // Updated to new brand green
+    forestLight: brandColors.green[400],
+    forestDark: brandColors.green[600],
+    forestSubtle: brandColors.green[50],
+    gold: brandColors.earth[500],
+    goldLight: '#FFD700',
+    goldDark: '#B8860B',
+    goldSubtle: '#FFF8E7',
   },
 
-  // Tertiary Accent - Serene/Cool (Teal)
+  // Tertiary Accent - Consolidated into green
   tertiary: {
-    teal: '#008080', // Teal - links, progress
-    tealLight: '#20B2AA', // Light sea green
-    tealDark: '#006666', // Dark teal
-    tealSubtle: '#E6F3F3', // Light teal tint
+    teal: brandColors.green[500], // Map to brand green
+    tealLight: brandColors.green[400],
+    tealDark: brandColors.green[600],
+    tealSubtle: brandColors.green[50],
   },
 
-  // Neutral Palette
+  // Neutral Palette (updated to new system)
   neutral: {
-    white: '#FFFFFF',
-    beige: '#F5F5DC', // Section backgrounds
-    cream: '#B5CAA0', // DEPRECATED: Use 'sage' - App backgrounds (light sage green)
-    sage: '#B5CAA0', // App backgrounds (light sage green) - renamed from cream
-    sand: '#F5F3EF', // Card backgrounds
-    warmGray: '#E8E5E0', // Borders, dividers
-    gray: '#9B9590', // Placeholder text
-    darkGray: '#6B6560', // Secondary text
+    white: neutralColors[0],
+    beige: neutralColors[100],
+    cream: neutralColors[25], // CHANGED: Was sage green, now off-white
+    sage: brandColors.green[50], // Keep sage reference but lighter
+    sand: neutralColors[50],
+    warmGray: neutralColors[200],
+    gray: neutralColors[400],
+    darkGray: neutralColors[600],
   },
 
-  // Brand Sage Colors
+  // Brand Sage Colors (legacy)
   sage: {
-    light: '#B5CAA0', // Backgrounds
-    dark: '#91AD70', // Foreground/accents
-    darker: '#7A9660', // Pressed states
+    light: brandColors.green[50],
+    dark: brandColors.green[400],
+    darker: brandColors.green[600],
   },
 
   // Semantic Colors
   semantic: {
-    success: '#228B22', // Aligned with forest green
-    warning: '#E5A84B', // Warm amber
-    error: '#D64545', // Soft red
-    info: '#008080', // Aligned with teal
+    success: '#28A745',
+    warning: '#F5A623',
+    error: '#DC3545',
+    info: brandColors.green[500],
   },
 
   // Transparency helpers
@@ -88,6 +153,42 @@ export const colors = {
     white80: 'rgba(255, 255, 255, 0.80)',
     white90: 'rgba(255, 255, 255, 0.90)',
     white95: 'rgba(255, 255, 255, 0.95)',
+  },
+} as const;
+
+/**
+ * Semantic Color Tokens
+ * Use these for clear, consistent color application
+ */
+export const semanticTokens = {
+  background: {
+    primary: neutralColors[25],    // Main app background
+    secondary: neutralColors[0],   // Cards, elevated surfaces
+    tertiary: neutralColors[50],   // Section backgrounds, inputs
+    accent: brandColors.green[50], // Highlighted sections
+  },
+  text: {
+    primary: neutralColors[900],   // Headings, important text
+    secondary: neutralColors[600], // Body text
+    tertiary: neutralColors[500],  // Supporting text
+    placeholder: neutralColors[400],
+    inverse: neutralColors[0],     // Text on dark backgrounds
+    link: brandColors.green[500],  // Links, interactive text
+  },
+  border: {
+    light: neutralColors[100],
+    default: neutralColors[200],
+    strong: neutralColors[300],
+  },
+  interactive: {
+    primary: neutralColors[900],         // Primary buttons
+    primaryHover: neutralColors[800],
+    primaryPressed: neutralColors[700],
+    accent: brandColors.green[500],      // CTA buttons
+    accentHover: brandColors.green[400],
+    accentPressed: brandColors.green[600],
+    disabled: neutralColors[200],
+    disabledText: neutralColors[400],
   },
 } as const;
 
@@ -119,7 +220,42 @@ export const gradients = {
 // TYPOGRAPHY
 // =============================================================================
 
+/**
+ * Font Family Configuration
+ *
+ * Display fonts (Fraunces) - Used for hero headings, greetings
+ * Sans fonts (Inter) - Used for UI, body text, buttons
+ *
+ * When fonts are not loaded, falls back to system fonts
+ */
 export const fontFamily = {
+  // Display - Fraunces (soft serif for brand warmth)
+  display: {
+    semibold: 'Fraunces_600SemiBold',
+    bold: 'Fraunces_700Bold',
+  },
+
+  // Sans - Inter (modern, highly legible)
+  sans: {
+    regular: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semibold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
+  },
+
+  // System fallbacks
+  system: Platform.select({
+    ios: 'System',
+    android: 'Roboto',
+    default: 'System',
+  }),
+  systemBold: Platform.select({
+    ios: 'System',
+    android: 'Roboto-Bold',
+    default: 'System',
+  }),
+
+  // Legacy exports for backwards compatibility
   primary: Platform.select({
     ios: 'System',
     android: 'Roboto',
@@ -140,103 +276,121 @@ export const fontWeights = {
 };
 
 export const typeScale = {
-  // Display - Hero sections, welcome screens
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DISPLAY - Hero sections, welcome screens (Fraunces serif for brand warmth)
+  // ═══════════════════════════════════════════════════════════════════════════
   displayLarge: {
-    fontSize: 36,
-    lineHeight: 44,
-    fontWeight: fontWeights.bold,
+    fontFamily: fontFamily.display.bold,
+    fontSize: 40,
+    lineHeight: 48,
     letterSpacing: -0.5,
   },
   displayMedium: {
-    fontSize: 32,
-    lineHeight: 40,
-    fontWeight: fontWeights.bold,
+    fontFamily: fontFamily.display.bold,
+    fontSize: 34,
+    lineHeight: 42,
     letterSpacing: -0.5,
   },
-
-  // Headlines - Section titles, card headers
-  headlineLarge: {
+  displaySmall: {
+    fontFamily: fontFamily.display.semibold,
     fontSize: 28,
     lineHeight: 36,
-    fontWeight: fontWeights.semibold,
     letterSpacing: -0.3,
   },
-  headlineMedium: {
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HEADLINES - Section titles, card headers (Inter Bold/Semibold)
+  // ═══════════════════════════════════════════════════════════════════════════
+  headlineLarge: {
+    fontFamily: fontFamily.sans.bold,
     fontSize: 24,
     lineHeight: 32,
-    fontWeight: fontWeights.semibold,
     letterSpacing: -0.2,
   },
-  headlineSmall: {
+  headlineMedium: {
+    fontFamily: fontFamily.sans.semibold,
     fontSize: 20,
     lineHeight: 28,
-    fontWeight: fontWeights.semibold,
+    letterSpacing: -0.1,
   },
-
-  // Titles - Component headers, list items
-  titleLarge: {
+  headlineSmall: {
+    fontFamily: fontFamily.sans.semibold,
     fontSize: 18,
     lineHeight: 26,
-    fontWeight: fontWeights.semibold,
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TITLES - Component headers, list items (Inter Semibold/Medium)
+  // ═══════════════════════════════════════════════════════════════════════════
+  titleLarge: {
+    fontFamily: fontFamily.sans.semibold,
+    fontSize: 17,
+    lineHeight: 24,
   },
   titleMedium: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: fontWeights.semibold,
+    fontFamily: fontFamily.sans.medium,
+    fontSize: 15,
+    lineHeight: 22,
   },
   titleSmall: {
+    fontFamily: fontFamily.sans.medium,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: fontWeights.semibold,
   },
 
-  // Body - Primary content
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BODY - Primary content (Inter Regular)
+  // ═══════════════════════════════════════════════════════════════════════════
   bodyLarge: {
+    fontFamily: fontFamily.sans.regular,
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: fontWeights.regular,
   },
   bodyMedium: {
+    fontFamily: fontFamily.sans.regular,
     fontSize: 14,
     lineHeight: 22,
-    fontWeight: fontWeights.regular,
   },
   bodySmall: {
-    fontSize: 12,
+    fontFamily: fontFamily.sans.regular,
+    fontSize: 13,
     lineHeight: 18,
-    fontWeight: fontWeights.regular,
   },
 
-  // Labels - Buttons, chips, captions
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LABELS - Buttons, chips, captions (Inter Medium/Semibold)
+  // ═══════════════════════════════════════════════════════════════════════════
   labelLarge: {
-    fontSize: 14,
+    fontFamily: fontFamily.sans.semibold,
+    fontSize: 15,
     lineHeight: 20,
-    fontWeight: fontWeights.medium,
     letterSpacing: 0.1,
   },
   labelMedium: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: fontWeights.medium,
-    letterSpacing: 0.3,
+    fontFamily: fontFamily.sans.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: 0.2,
   },
   labelSmall: {
-    fontSize: 10,
-    lineHeight: 14,
-    fontWeight: fontWeights.medium,
-    letterSpacing: 0.4,
+    fontFamily: fontFamily.sans.medium,
+    fontSize: 11,
+    lineHeight: 16,
+    letterSpacing: 0.3,
   },
 
-  // Price styling
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SPECIAL - Prices, numbers (Inter Bold)
+  // ═══════════════════════════════════════════════════════════════════════════
   priceMain: {
+    fontFamily: fontFamily.sans.bold,
     fontSize: 24,
     lineHeight: 28,
-    fontWeight: fontWeights.bold,
   },
   priceUnit: {
+    fontFamily: fontFamily.sans.regular,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: fontWeights.regular,
   },
 } as const;
 
@@ -320,56 +474,56 @@ export const layout = {
 export const shadows = {
   // Extra subtle - Input fields, minimal elevation
   xs: {
-    shadowColor: colors.primary.black,
+    shadowColor: neutralColors[900],
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03, // Reduced for cleaner look
     shadowRadius: 4,
     elevation: 1,
   },
 
-  // Subtle - Cards at rest
+  // Subtle - Cards at rest (REDUCED for minimal aesthetic)
   sm: {
-    shadowColor: colors.primary.black,
+    shadowColor: neutralColors[900],
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.04, // Reduced from 0.06
     shadowRadius: 8,
     elevation: 2,
   },
 
   // Medium - Elevated cards, modals
   md: {
-    shadowColor: colors.primary.black,
+    shadowColor: neutralColors[900],
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06, // Reduced from 0.1
     shadowRadius: 16,
     elevation: 4,
   },
 
   // Large - Bottom sheets, floating elements
   lg: {
-    shadowColor: colors.primary.black,
+    shadowColor: neutralColors[900],
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.10, // Reduced from 0.15
     shadowRadius: 24,
     elevation: 8,
   },
 
   // Extra large - Overlays
   xl: {
-    shadowColor: colors.primary.black,
+    shadowColor: neutralColors[900],
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15, // Reduced from 0.2
     shadowRadius: 32,
     elevation: 12,
   },
 
-  // Bottom navigation specific
+  // Bottom navigation - minimal line style
   bottomNav: {
-    shadowColor: colors.primary.black,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowColor: neutralColors[900],
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.04, // Very subtle for minimal look
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   // No shadow
@@ -676,56 +830,56 @@ export const componentStyles = {
  */
 export const colorScales = {
   primary: {
-    50: '#F5F5F5',
-    100: '#E8E8E8',
-    200: '#D1D1D1',
-    300: '#A8A8A8',
-    400: '#6B6B6B',
-    500: colors.primary.black, // Base
-    600: colors.primary.black,
-    700: colors.primary.black,
-    800: colors.primary.blackLight,
-    900: '#0A0A0A',
+    50: neutralColors[50],
+    100: neutralColors[100],
+    200: neutralColors[200],
+    300: neutralColors[300],
+    400: neutralColors[500],
+    500: neutralColors[900], // Base - soft black
+    600: neutralColors[900],
+    700: neutralColors[900],
+    800: neutralColors[800],
+    900: neutralColors[1000],
   },
   neutral: {
-    50: colors.neutral.sage, // Was: colors.neutral.cream (deprecated)
-    100: colors.neutral.sand,
-    200: colors.neutral.warmGray,
-    300: '#D1CCC7',
-    400: colors.neutral.gray,
-    500: colors.neutral.gray,
-    600: colors.neutral.darkGray,
-    700: '#4A4540',
-    800: '#2D2A26',
-    900: colors.primary.black,
+    50: neutralColors[25],  // Off-white background
+    100: neutralColors[50],
+    200: neutralColors[200],
+    300: neutralColors[300],
+    400: neutralColors[400],
+    500: neutralColors[500],
+    600: neutralColors[600],
+    700: neutralColors[700],
+    800: neutralColors[800],
+    900: neutralColors[900],
   },
   success: {
-    50: colors.secondary.forestSubtle,
-    100: '#D1EAD1',
-    500: colors.semantic.success,
-    600: colors.secondary.forestDark,
-    700: '#155415',
+    50: '#D4EDDA',
+    100: '#C3E6CB',
+    500: '#28A745',
+    600: '#1E7E34',
+    700: '#155724',
   },
   warning: {
-    50: '#FEF6E7',
-    100: '#FDE8C4',
-    500: colors.semantic.warning,
-    600: '#CC8F3D',
-    700: '#AA7032',
+    50: '#FFF3CD',
+    100: '#FFE8A1',
+    500: '#F5A623',
+    600: '#D48806',
+    700: '#AA6D04',
   },
   error: {
-    50: '#FCE8E8',
-    100: '#F7C4C4',
-    500: colors.semantic.error,
-    600: '#B33636',
-    700: '#8C2A2A',
+    50: '#F8D7DA',
+    100: '#F1AEB5',
+    500: '#DC3545',
+    600: '#BD2130',
+    700: '#9A1C26',
   },
   info: {
-    50: colors.tertiary.tealSubtle,
-    100: '#CCE5E5',
-    500: colors.semantic.info,
-    600: colors.tertiary.tealDark,
-    700: '#004D4D',
+    50: brandColors.green[50],
+    100: brandColors.green[100],
+    500: brandColors.green[500],
+    600: brandColors.green[600],
+    700: brandColors.green[700],
   },
 } as const;
 
@@ -769,8 +923,8 @@ const themeObject = {
     neutral: {
       ...colorScales.neutral,
       white: colors.neutral.white,
-      cream: colors.neutral.cream, // DEPRECATED: Use 'sage' instead
-      sage: colors.neutral.sage, // App background color
+      cream: colors.neutral.cream,
+      sage: colors.neutral.sage,
       sand: colors.neutral.sand,
       warmGray: colors.neutral.warmGray,
       gray: colors.neutral.gray,
@@ -783,11 +937,15 @@ const themeObject = {
     sage: colors.sage,
     semantic: colors.semantic,
     alpha: colors.alpha,
-    // Semantic shortcuts
-    surface: colors.neutral.white,
-    background: colors.neutral.cream,
-    border: colors.neutral.warmGray,
+    // NEW: Brand colors for direct access
+    brand: brandColors,
+    // Semantic shortcuts - UPDATED for clean minimal look
+    surface: neutralColors[0],           // White cards
+    background: neutralColors[25],       // Off-white app background (#FAFBFC)
+    border: neutralColors[200],          // Subtle borders
   },
+  // NEW: Semantic tokens for modern usage
+  tokens: semanticTokens,
   gradients,
   fontFamily,
   fontWeights,

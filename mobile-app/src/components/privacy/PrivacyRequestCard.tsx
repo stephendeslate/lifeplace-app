@@ -15,7 +15,7 @@ import {
   DownloadSimple,
 } from 'phosphor-react-native';
 
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
+import { colors, spacing, typeScale, layout, shadows, colorScales } from '@/theme';
 import type { PrivacyRequest, PrivacyRequestStatus, PrivacyRequestType } from '@/types/privacy.types';
 
 interface PrivacyRequestCardProps {
@@ -40,7 +40,7 @@ const STATUS_CONFIG: Record<PrivacyRequestStatus, {
     label: 'Pending',
     icon: Clock,
     color: colors.semantic.warning,
-    bgColor: '#FEF3C7',
+    bgColor: colorScales.warning[50],
   },
   PROCESSING: {
     label: 'Processing',
@@ -58,7 +58,7 @@ const STATUS_CONFIG: Record<PrivacyRequestStatus, {
     label: 'Rejected',
     icon: XCircle,
     color: colors.semantic.error,
-    bgColor: '#FEE2E2',
+    bgColor: colorScales.error[50],
   },
 };
 

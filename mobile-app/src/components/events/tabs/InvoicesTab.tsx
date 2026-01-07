@@ -31,7 +31,9 @@ import { theme } from '@/theme';
 import { useEventInvoices } from '@/hooks/useFinancial';
 import { paymentsApi } from '@/apis/payments.api';
 import { Skeleton, EmptyState, Card, Badge, Button, PDFViewerModal } from '@/components/common';
+import { InvoiceDetailsModal } from '@/components/payments';
 import { formatCurrency, formatCardDate } from '@/utils/formatting';
+import { useAuthStore } from '@/stores/authStore';
 import type { Invoice } from '@/apis/payments.api';
 
 export interface InvoicesTabProps {
@@ -40,10 +42,23 @@ export interface InvoicesTabProps {
 
 export function InvoicesTab({ eventId }: InvoicesTabProps) {
   const { data: invoices, isLoading, refetch, isRefetching } = useEventInvoices(eventId);
+  const { accessToken } = useAuthStore();
 
   // PDF viewer state
   const [pdfViewerVisible, setPdfViewerVisible] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+  // Details modal state
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [detailsInvoice, setDetailsInvoice] = useState<Invoice | null>(null);
+
+  // Get auth headers for PDF download
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    if (accessToken) {
+      return { Authorization: `Bearer ${accessToken}` };
+    }
+    return {};
+  };
 
   // Calculate overdue count
   const overdueCount = useMemo(() => {
@@ -82,6 +97,17 @@ export function InvoicesTab({ eventId }: InvoicesTabProps) {
     } catch (error) {
       Alert.alert('Error', 'Failed to download the invoice.');
     }
+  };
+
+  const handleViewDetails = (invoice: Invoice) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDetailsInvoice(invoice);
+    setDetailsModalVisible(true);
+  };
+
+  const handleCloseDetails = () => {
+    setDetailsModalVisible(false);
+    setDetailsInvoice(null);
   };
 
   const getStatusConfig = (invoice: Invoice) => {
@@ -240,21 +266,33 @@ export function InvoicesTab({ eventId }: InvoicesTabProps) {
         )}
 
         {/* Actions */}
-        <View style={styles.actionsRow}>
-          {/* View PDF button */}
-          <Pressable
-            onPress={() => handleViewPdf(invoice)}
-            style={styles.viewPdfButton}
-          >
-            <Eye size={18} color={theme.colors.primary[500]} />
-            <Text style={styles.viewPdfText}>View PDF</Text>
-          </Pressable>
+        <View style={styles.actionsContainer}>
+          {/* View Actions Row */}
+          <View style={styles.viewActionsRow}>
+            {isPaid ? (
+              <Pressable
+                onPress={() => handleViewPdf(invoice)}
+                style={styles.viewButton}
+              >
+                <DownloadSimple size={18} color={theme.colors.primary[500]} />
+                <Text style={styles.viewButtonText}>View PDF</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => handleViewDetails(invoice)}
+                style={styles.viewButton}
+              >
+                <Eye size={18} color={theme.colors.primary[500]} />
+                <Text style={styles.viewButtonText}>View Details</Text>
+              </Pressable>
+            )}
+          </View>
 
           {/* Pay button */}
           {invoice.can_pay_online && amountDue > 0 && (
             <Button
               onPress={() => handlePayNow(invoice)}
-              variant={isOverdue ? 'primary' : 'primary'}
+              variant="primary"
               style={styles.payButton}
             >
               Pay Now
@@ -300,8 +338,16 @@ export function InvoicesTab({ eventId }: InvoicesTabProps) {
           title={`Invoice ${selectedInvoice.invoice_number}`}
           pdfUrl={paymentsApi.getInvoicePdfUrl(selectedInvoice.id)}
           onDownload={handleDownloadPdf}
+          getAuthHeaders={getAuthHeaders}
         />
       )}
+
+      {/* Invoice Details Modal */}
+      <InvoiceDetailsModal
+        visible={detailsModalVisible}
+        onClose={handleCloseDetails}
+        invoice={detailsInvoice}
+      />
     </View>
   );
 }
@@ -464,16 +510,19 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.success[500],
     borderRadius: 3,
   },
-  actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  actionsContainer: {
+    gap: theme.spacing.sm,
     marginTop: theme.spacing.md,
-    gap: theme.spacing.md,
   },
-  viewPdfButton: {
+  viewActionsRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  viewButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: theme.spacing.xs,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
@@ -482,13 +531,13 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary[200],
     backgroundColor: theme.colors.primary[50],
   },
-  viewPdfText: {
+  viewButtonText: {
     fontFamily: theme.typography.fonts.medium,
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.primary[600],
   },
   payButton: {
-    flex: 1,
+    width: '100%',
   },
   skeletonItem: {
     padding: theme.spacing.md,

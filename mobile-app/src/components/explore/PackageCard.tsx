@@ -23,7 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Clock, Star } from 'phosphor-react-native';
 
 import { FavoriteButton } from './FavoriteButton';
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
+import { colors, spacing, typeScale, layout, shadows, brandColors } from '@/theme';
 import { formatPrice } from '@/apis/explore.api';
 import { FALLBACK_IMAGES } from '@/constants/images';
 import type { PackagePublic } from '@/types/explore.types';
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.sm,
     left: spacing.sm,
-    backgroundColor: colors.accent.wood,
+    backgroundColor: brandColors.earth[500], // Gold for premium featured badge
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
     borderRadius: layout.borderRadius.sm,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   category: {
     ...typeScale.labelSmall,
-    color: colors.tertiary.teal,
+    color: brandColors.green[500], // Brand green for category labels
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.xxs,

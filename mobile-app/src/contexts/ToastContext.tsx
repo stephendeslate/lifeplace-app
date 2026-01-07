@@ -41,7 +41,7 @@ import {
   X,
 } from 'phosphor-react-native';
 
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
+import { colors, spacing, typeScale, layout, shadows, colorScales } from '@/theme';
 
 // =============================================================================
 // TYPES
@@ -69,8 +69,8 @@ const DEFAULT_DURATION = 4000; // 4 seconds
 
 const TOAST_COLORS: Record<ToastType, { bg: string; icon: string }> = {
   success: { bg: colors.secondary.forestSubtle, icon: colors.secondary.forest },
-  error: { bg: '#FEE2E2', icon: colors.semantic.error },
-  warning: { bg: '#FEF3C7', icon: colors.semantic.warning },
+  error: { bg: colorScales.error[50], icon: colors.semantic.error },
+  warning: { bg: colorScales.warning[50], icon: colors.semantic.warning },
   info: { bg: colors.tertiary.tealSubtle, icon: colors.semantic.info },
 };
 

@@ -28,7 +28,7 @@ import { Bell, ArrowRight, MagnifyingGlass, Sparkle } from 'phosphor-react-nativ
 import { theme } from '@/theme';
 import { colors, spacing, typeScale, layout } from '@/theme';
 import { useFeaturedVenues, useFeaturedPackages, usePrefetchVenue, usePrefetchPackage } from '@/hooks/useExplore';
-import { Skeleton, Logo, Button } from '@/components/common';
+import { Skeleton, Button } from '@/components/common';
 import { VenueCard, PackageCard } from '@/components/explore';
 import type { User } from '@/types/auth.types';
 import { getTimeBasedGreeting } from '@/utils/userState';
@@ -87,22 +87,18 @@ export function DiscoveryLayout({
         />
       }
     >
-      {/* Header */}
+      {/* Header - Clean & Minimal */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Logo variant="icon" color="dark" size="lg" />
-          <View>
-            <Text style={styles.greeting}>
-              {greeting}, {userName}!
-            </Text>
-            <Text style={styles.subGreeting}>Find your perfect venue</Text>
-          </View>
+        <View style={styles.headerContent}>
+          <Text style={styles.greetingLabel}>{greeting},</Text>
+          <Text style={styles.userName}>{userName}</Text>
+          <Text style={styles.subGreeting}>Find your perfect venue</Text>
         </View>
         <Pressable
           style={styles.notificationButton}
           onPress={() => router.push('/actions' as Href)}
         >
-          <Bell size={24} color={colors.primary.black} />
+          <Bell size={24} color={colors.primary.black} weight={unreadCount > 0 ? 'fill' : 'regular'} />
           {unreadCount > 0 && (
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>
@@ -113,22 +109,21 @@ export function DiscoveryLayout({
         </Pressable>
       </View>
 
-      {/* Hero Section */}
+      {/* Hero Section - Full width with gradient */}
       <Pressable
         style={styles.heroCard}
         onPress={() => router.push('/booking' as Href)}
       >
         <View style={styles.heroContent}>
-          <View style={styles.heroIconContainer}>
-            <Sparkle size={32} color={theme.colors.primary[600]} weight="fill" />
+          <Sparkle size={40} color={theme.colors.brand.green[500]} weight="fill" />
+          <Text style={styles.heroTitle}>Plan Your{'\n'}Perfect Event</Text>
+          <Text style={styles.heroSubtitle}>
+            Browse venues, packages, and start booking today
+          </Text>
+          <View style={styles.heroCTA}>
+            <Text style={styles.heroCTAText}>Get Started</Text>
+            <ArrowRight size={20} color={theme.colors.brand.green[600]} />
           </View>
-          <View style={styles.heroText}>
-            <Text style={styles.heroTitle}>Start Planning Your Event</Text>
-            <Text style={styles.heroSubtitle}>
-              Discover beautiful venues and curated packages
-            </Text>
-          </View>
-          <ArrowRight size={24} color={theme.colors.primary[600]} />
         </View>
       </Pressable>
 
@@ -257,40 +252,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  headerContent: {
+    flex: 1,
   },
-  greeting: {
-    ...typeScale.headlineLarge,
+  greetingLabel: {
+    ...typeScale.bodyMedium,
+    color: theme.colors.neutral[500],
+  },
+  userName: {
+    ...typeScale.displaySmall,
     color: theme.colors.neutral[900],
+    marginTop: spacing.xxs,
   },
   subGreeting: {
     ...typeScale.bodyMedium,
     color: theme.colors.neutral[600],
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
   },
   notificationButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   notificationBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 4,
+    right: 4,
     backgroundColor: theme.colors.error[500],
     minWidth: 18,
     height: 18,
@@ -298,8 +289,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: theme.colors.surface,
   },
   notificationBadgeText: {
     fontFamily: theme.typography.fonts.semibold,
@@ -307,37 +296,36 @@ const styles = StyleSheet.create({
     color: theme.colors.surface,
   },
   heroCard: {
-    backgroundColor: theme.colors.primary[50],
-    borderRadius: layout.borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.primary[100],
+    backgroundColor: theme.colors.brand.green[50],
+    borderRadius: layout.borderRadius.xl,
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
   },
   heroContent: {
-    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  heroIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: layout.borderRadius.md,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroText: {
-    flex: 1,
-  },
   heroTitle: {
-    ...typeScale.titleLarge,
+    ...typeScale.displaySmall,
     color: theme.colors.neutral[900],
-    marginBottom: spacing.xxs,
+    textAlign: 'center',
   },
   heroSubtitle: {
-    ...typeScale.bodySmall,
+    ...typeScale.bodyMedium,
     color: theme.colors.neutral[600],
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  heroCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  heroCTAText: {
+    ...typeScale.labelLarge,
+    color: theme.colors.brand.green[600],
   },
   searchBar: {
     flexDirection: 'row',
@@ -387,9 +375,9 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
     borderRadius: layout.borderRadius.lg,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.neutral[900],
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },

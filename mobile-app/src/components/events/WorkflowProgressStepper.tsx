@@ -21,6 +21,13 @@ export interface WorkflowProgressStepperProps {
   variant?: 'stepper' | 'compact';
 }
 
+// Stage type priority for sorting (LEAD first, then PRODUCTION, then POST_PRODUCTION)
+const stageTypePriority: Record<WorkflowStageProgress['stage'], number> = {
+  LEAD: 1,
+  PRODUCTION: 2,
+  POST_PRODUCTION: 3,
+};
+
 export function WorkflowProgressStepper({
   progress,
   variant = 'stepper',
@@ -28,6 +35,16 @@ export function WorkflowProgressStepper({
   if (!progress || progress.total_stages === 0) {
     return null;
   }
+
+  // Sort stages: by stage type priority first, then by order within each type
+  const sortedStages = [...progress.stages].sort((a, b) => {
+    const typePriorityA = stageTypePriority[a.stage] ?? 99;
+    const typePriorityB = stageTypePriority[b.stage] ?? 99;
+    if (typePriorityA !== typePriorityB) {
+      return typePriorityA - typePriorityB;
+    }
+    return a.order - b.order;
+  });
 
   if (variant === 'compact') {
     return (
@@ -69,11 +86,11 @@ export function WorkflowProgressStepper({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.stepsContainer}
       >
-        {progress.stages.map((stage, index) => (
+        {sortedStages.map((stage, index) => (
           <StepItem
             key={stage.id}
             stage={stage}
-            isLast={index === progress.stages.length - 1}
+            isLast={index === sortedStages.length - 1}
           />
         ))}
       </ScrollView>
@@ -185,11 +202,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowColor: theme.colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   header: {
     marginBottom: theme.spacing.md,

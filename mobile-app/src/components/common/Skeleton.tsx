@@ -209,8 +209,8 @@ const skeletonStyles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: theme.colors.neutral[900],
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.06, // Slightly higher for skeleton visibility
+    shadowRadius: 8,
     elevation: 2,
   },
   cardContent: {
@@ -223,8 +223,8 @@ const skeletonStyles = StyleSheet.create({
     padding: theme.spacing.md,
     shadowColor: theme.colors.neutral[900],
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.06, // Slightly higher for skeleton visibility
+    shadowRadius: 8,
     elevation: 2,
   },
   eventRow: {
