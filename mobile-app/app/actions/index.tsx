@@ -13,7 +13,6 @@ import {
   StyleSheet,
   Text,
   View,
-  FlatList,
   TouchableOpacity,
   TextInput,
   RefreshControl,
@@ -28,6 +27,7 @@ import {
   Clock,
   CheckCircle,
   X,
+  CaretLeft,
 } from 'phosphor-react-native';
 import { theme } from '@/theme';
 import { useActionCenter } from '@/hooks/useActionCenter';
@@ -36,15 +36,17 @@ import { FilterModal } from '@/components/common/FilterModal';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Skeleton } from '@/components/common/Skeleton';
 import { ScreenErrorBoundary } from '@/components/common/ScreenErrorBoundary';
+import { FilterChips, type FilterChip } from '@/components/common';
 import type { ActionType, UrgencyLevel, AnyActionItem } from '@/types/action-center.types';
-import { ACTION_TYPE_CONFIGS } from '@/types/action-center.types';
 
-const ACTION_TYPE_FILTERS: Array<{ value: ActionType | 'ALL'; label: string }> = [
-  { value: 'ALL', label: 'All' },
-  { value: 'QUOTE', label: 'Quotes' },
-  { value: 'CONTRACT', label: 'Contracts' },
-  { value: 'PAYMENT', label: 'Payments' },
-  { value: 'TASK', label: 'Tasks' },
+type FilterValue = ActionType | 'ALL';
+
+const ACTION_TYPE_FILTERS: FilterChip<FilterValue>[] = [
+  { id: 'all', label: 'All', value: 'ALL' },
+  { id: 'quote', label: 'Quotes', value: 'QUOTE' },
+  { id: 'contract', label: 'Contracts', value: 'CONTRACT' },
+  { id: 'payment', label: 'Payments', value: 'PAYMENT' },
+  { id: 'task', label: 'Tasks', value: 'TASK' },
 ];
 
 function ActionCenterScreenContent() {
@@ -52,7 +54,7 @@ function ActionCenterScreenContent() {
   const insets = useSafeAreaInsets();
 
   // Filter state
-  const [selectedTypeFilter, setSelectedTypeFilter] = useState<ActionType | 'ALL'>('ALL');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<FilterValue>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<ActionType[]>([]);
@@ -158,10 +160,14 @@ function ActionCenterScreenContent() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Action Center</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <CaretLeft size={24} color={theme.colors.primary.black} />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>Action Center</Text>
 
-        {/* Summary counts */}
-        <View style={styles.summaryRow}>
+          {/* Summary counts */}
+          <View style={styles.summaryRow}>
           {counts.critical > 0 && (
             <View style={styles.summaryItem}>
               <Warning size={16} color={theme.colors.semantic.error} weight="fill" />
@@ -186,6 +192,7 @@ function ActionCenterScreenContent() {
               </Text>
             </View>
           )}
+          </View>
         </View>
       </View>
 
@@ -221,36 +228,11 @@ function ActionCenterScreenContent() {
       </View>
 
       {/* Type Filter Tabs */}
-      <FlatList
-        horizontal
-        data={ACTION_TYPE_FILTERS}
-        keyExtractor={(item) => item.value}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.typeTabs}
-        renderItem={({ item }) => {
-          const isActive = selectedTypeFilter === item.value;
-          const count =
-            item.value === 'ALL'
-              ? counts.total
-              : counts[item.value.toLowerCase() as keyof typeof counts];
-          return (
-            <TouchableOpacity
-              style={[styles.typeTab, isActive && styles.typeTabActive]}
-              onPress={() => setSelectedTypeFilter(item.value)}
-            >
-              <Text style={[styles.typeTabText, isActive && styles.typeTabTextActive]}>
-                {item.label}
-              </Text>
-              {typeof count === 'number' && count > 0 && (
-                <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
-                  <Text style={[styles.countText, isActive && styles.countTextActive]}>
-                    {count}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        }}
+      <FilterChips
+        chips={ACTION_TYPE_FILTERS}
+        selectedValue={selectedTypeFilter}
+        onSelect={setSelectedTypeFilter}
+        style={styles.filters}
       />
 
       {/* Actions List */}
@@ -318,9 +300,23 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.neutral.cream,
   },
   header: {
-    paddingHorizontal: theme.layout.screenPaddingHorizontal,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.neutral.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...theme.shadows.sm,
+  },
+  headerContent: {
+    flex: 1,
+    marginLeft: theme.spacing.md,
   },
   title: {
     ...theme.typeScale.headlineLarge,
@@ -370,47 +366,11 @@ const styles = StyleSheet.create({
   filterButtonActive: {
     backgroundColor: theme.colors.primary.black,
   },
-  typeTabs: {
+  filters: {
     paddingHorizontal: theme.layout.screenPaddingHorizontal,
-    paddingBottom: theme.spacing.md,
-    gap: theme.spacing.sm,
-  },
-  typeTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: 24,
-    backgroundColor: theme.colors.neutral.white,
-    gap: theme.spacing.xs,
-  },
-  typeTabActive: {
-    backgroundColor: theme.colors.primary.black,
-  },
-  typeTabText: {
-    ...theme.typeScale.labelMedium,
-    color: theme.colors.primary.black,
-  },
-  typeTabTextActive: {
-    color: theme.colors.neutral.white,
-  },
-  countBadge: {
-    backgroundColor: theme.colors.neutral.warmGray,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    minWidth: 20,
-    alignItems: 'center',
-  },
-  countBadgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  countText: {
-    ...theme.typeScale.labelSmall,
-    color: theme.colors.primary.black,
-  },
-  countTextActive: {
-    color: theme.colors.neutral.white,
+    marginBottom: theme.spacing.md,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   listContent: {
     paddingHorizontal: theme.layout.screenPaddingHorizontal,

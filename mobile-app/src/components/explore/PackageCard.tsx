@@ -110,6 +110,21 @@ export function PackageCard({
           {pkg.name}
         </Text>
 
+        {/* Rating Row */}
+        {pkg.average_rating !== undefined && pkg.average_rating > 0 && (
+          <View style={styles.ratingRow}>
+            <Star size={14} weight="fill" color={colors.semantic.warning} />
+            <Text style={styles.rating}>
+              {pkg.average_rating.toFixed(1)}
+            </Text>
+            {pkg.review_count !== undefined && pkg.review_count > 0 && (
+              <Text style={styles.reviewCount}>
+                ({pkg.review_count} {pkg.review_count === 1 ? 'review' : 'reviews'})
+              </Text>
+            )}
+          </View>
+        )}
+
         <View style={styles.footer}>
           {/* Included Hours */}
           {pkg.included_hours && (
@@ -197,7 +212,21 @@ const styles = StyleSheet.create({
   name: {
     ...typeScale.titleMedium,
     color: colors.primary.black,
+    marginBottom: spacing.xs,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
     marginBottom: spacing.sm,
+  },
+  rating: {
+    ...typeScale.labelMedium,
+    color: colors.primary.black,
+  },
+  reviewCount: {
+    ...typeScale.bodySmall,
+    color: colors.neutral.gray,
   },
   footer: {
     flexDirection: 'row',

@@ -67,7 +67,7 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Logo */}
-        <Logo variant="full" color="dark" size="lg" style={styles.logo} />
+        <Logo variant="full" color="dark" size="xl" style={styles.logo} />
 
         {/* Header */}
         <View style={styles.header}>

@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MapPin, Users } from 'phosphor-react-native';
+import { MapPin, Users, Star } from 'phosphor-react-native';
 
 import { FavoriteButton } from './FavoriteButton';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
@@ -103,6 +103,21 @@ export function VenueCard({
           </View>
         )}
 
+        {/* Rating Row */}
+        {venue.average_rating !== undefined && venue.average_rating > 0 && (
+          <View style={styles.ratingRow}>
+            <Star size={14} weight="fill" color={colors.semantic.warning} />
+            <Text style={styles.rating}>
+              {venue.average_rating.toFixed(1)}
+            </Text>
+            {venue.review_count !== undefined && venue.review_count > 0 && (
+              <Text style={styles.reviewCount}>
+                ({venue.review_count} {venue.review_count === 1 ? 'review' : 'reviews'})
+              </Text>
+            )}
+          </View>
+        )}
+
         <View style={styles.footer}>
           {/* Capacity */}
           <View style={styles.capacityRow}>
@@ -182,12 +197,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xxs,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   location: {
     ...typeScale.bodySmall,
     color: colors.neutral.gray,
     flex: 1,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    marginBottom: spacing.sm,
+  },
+  rating: {
+    ...typeScale.labelMedium,
+    color: colors.primary.black,
+  },
+  reviewCount: {
+    ...typeScale.bodySmall,
+    color: colors.neutral.gray,
   },
   footer: {
     flexDirection: 'row',

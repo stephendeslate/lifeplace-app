@@ -57,9 +57,15 @@ export interface VenuePublic {
   location_description: string;
   featured_image: string | null;
   gallery_images?: string[];
+  /** List of amenity names (e.g., ['Pool', 'Parking', 'Sound System']) */
+  amenities?: string[];
   is_featured: boolean;
   sort_order: number;
   operating_rules: VenueOperatingRules | null;
+  /** Average rating (0-5 scale) - optional, added when reviews enabled */
+  average_rating?: number;
+  /** Number of reviews - optional, added when reviews enabled */
+  review_count?: number;
 }
 
 /**
@@ -114,6 +120,10 @@ export interface PackagePublic {
   is_active: boolean;
   advance_booking_days: number | null;
   maximum_booking_days: number | null;
+  /** Average rating (0-5 scale) - optional, added when reviews enabled */
+  average_rating?: number;
+  /** Number of reviews - optional, added when reviews enabled */
+  review_count?: number;
 }
 
 /**

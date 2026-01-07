@@ -28,13 +28,28 @@ class ContractSignatureBasicSerializer(serializers.ModelSerializer):
     """Basic serializer for the ContractSignature model"""
     role_display = serializers.CharField(source='get_role_display', read_only=True)
     signer_name = serializers.CharField(read_only=True)
-    
+
+    # Mobile app compatibility fields
+    signer_role = serializers.CharField(source='role', read_only=True)
+    is_signed = serializers.SerializerMethodField()
+    is_client_signature = serializers.SerializerMethodField()
+
     class Meta:
         model = ContractSignature
         fields = [
-            'id', 'role', 'role_display', 'signer_name', 'signed_at', 'is_verified'
+            'id', 'role', 'role_display', 'signer_name', 'signer_email', 'signed_at', 'is_verified',
+            # Mobile app compatibility fields
+            'signer_role', 'is_signed', 'is_client_signature',
         ]
         read_only_fields = ['id', 'signed_at']
+
+    def get_is_signed(self, obj):
+        """Check if signature has been completed"""
+        return obj.signed_at is not None
+
+    def get_is_client_signature(self, obj):
+        """Check if this is a client signature"""
+        return obj.role == 'CLIENT'
 
 
 class EventContractSerializer(serializers.ModelSerializer):
@@ -49,6 +64,10 @@ class EventContractSerializer(serializers.ModelSerializer):
     expiry_urgency = serializers.SerializerMethodField()
     sign_disabled_reason = serializers.SerializerMethodField()
 
+    # Mobile app compatibility fields
+    expires_at = serializers.DateField(source='valid_until', read_only=True)
+    signed_at = serializers.DateTimeField(source='fully_signed_at', read_only=True)
+
     class Meta:
         model = EventContract
         fields = [
@@ -57,7 +76,9 @@ class EventContractSerializer(serializers.ModelSerializer):
             'currency', 'is_amendment', 'amendment_number', 'signature_count',
             'is_fully_signed', 'contract_type', 'is_expired', 'is_expiring_soon',
             'days_until_expiry', 'expiry_urgency', 'sign_disabled_reason',
-            'created_at', 'updated_at'
+            'created_at', 'updated_at',
+            # Mobile app compatibility fields
+            'expires_at', 'signed_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
