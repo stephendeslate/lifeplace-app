@@ -10,12 +10,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ImageBackground,
 } from 'react-native';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Check, ArrowRight, Star } from 'phosphor-react-native';
-import { colors, spacing, typeScale, layout, shadows, gradients } from '@/theme';
+import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { formatCurrency } from '@/utils/currency';
 import type { EventType } from '@/types/booking';
 
@@ -37,8 +34,6 @@ export function EventTypeCard({
   const {
     name,
     description,
-    icon,
-    image_url,
     features = [],
     starting_price,
   } = eventType;
@@ -59,19 +54,6 @@ export function EventTypeCard({
         onPress={handlePress}
         activeOpacity={0.8}
       >
-        {image_url ? (
-          <Image
-            source={{ uri: image_url }}
-            style={styles.compactImage}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-          />
-        ) : (
-          <View style={[styles.compactImage, styles.compactImagePlaceholder]}>
-            <Text style={styles.placeholderIcon}>{icon || '🎉'}</Text>
-          </View>
-        )}
         <View style={styles.compactContent}>
           <Text style={styles.compactName} numberOfLines={1}>{name}</Text>
           {starting_price && (
@@ -97,34 +79,25 @@ export function EventTypeCard({
         onPress={handlePress}
         activeOpacity={0.9}
       >
-        <ImageBackground
-          source={{ uri: image_url || '' }}
-          style={styles.featuredImage}
-          imageStyle={styles.featuredImageStyle}
-        >
-          <LinearGradient
-            colors={gradients.heroFade.colors}
-            style={styles.featuredGradient}
-          >
-            <View style={styles.featuredBadge}>
-              <Star size={14} color={colors.semantic.warning} weight="fill" />
-              <Text style={styles.featuredBadgeText}>Featured</Text>
-            </View>
-            <View style={styles.featuredContent}>
-              <Text style={styles.featuredName}>{name}</Text>
-              {description && (
-                <Text style={styles.featuredDescription} numberOfLines={2}>
-                  {description}
-                </Text>
-              )}
-              {starting_price && (
-                <Text style={styles.featuredPrice}>
-                  Starting at {formatCurrency(parseFloat(starting_price), { currency: 'PHP' })}
-                </Text>
-              )}
-            </View>
-          </LinearGradient>
-        </ImageBackground>
+        <View style={styles.featuredContentWrapper}>
+          <View style={styles.featuredBadge}>
+            <Star size={14} color={colors.semantic.warning} weight="fill" />
+            <Text style={styles.featuredBadgeText}>Featured</Text>
+          </View>
+          <View style={styles.featuredContent}>
+            <Text style={styles.featuredNameNoImage}>{name}</Text>
+            {description && (
+              <Text style={styles.featuredDescriptionNoImage} numberOfLines={2}>
+                {description}
+              </Text>
+            )}
+            {starting_price && (
+              <Text style={styles.featuredPriceNoImage}>
+                Starting at {formatCurrency(parseFloat(starting_price), { currency: 'PHP' })}
+              </Text>
+            )}
+          </View>
+        </View>
       </TouchableOpacity>
     );
   }
@@ -136,21 +109,6 @@ export function EventTypeCard({
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      {/* Image */}
-      {image_url ? (
-        <Image
-          source={{ uri: image_url }}
-          style={styles.image}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="memory-disk"
-        />
-      ) : (
-        <View style={[styles.image, styles.imagePlaceholder]}>
-          <Text style={styles.placeholderIcon}>{icon || '🎉'}</Text>
-        </View>
-      )}
-
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.header}>
@@ -361,27 +319,20 @@ const styles = StyleSheet.create({
 
   // Featured variant
   featuredContainer: {
+    backgroundColor: colors.neutral.white,
     borderRadius: layout.cardBorderRadiusLarge,
     overflow: 'hidden',
     ...shadows.md,
   },
-  featuredImage: {
-    width: '100%',
-    height: 240,
-  },
-  featuredImageStyle: {
-    borderRadius: layout.cardBorderRadiusLarge,
-  },
-  featuredGradient: {
-    flex: 1,
-    justifyContent: 'space-between',
+  featuredContentWrapper: {
     padding: spacing.lg,
+    gap: spacing.md,
   },
   featuredBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: colors.alpha.black60,
+    backgroundColor: colors.semantic.warning,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     borderRadius: layout.borderRadius.full,
@@ -389,23 +340,23 @@ const styles = StyleSheet.create({
   },
   featuredBadgeText: {
     ...typeScale.labelSmall,
-    color: colors.neutral.white,
+    color: colors.primary.black,
     fontWeight: '600',
   },
   featuredContent: {
     gap: spacing.xs,
   },
-  featuredName: {
+  featuredNameNoImage: {
     ...typeScale.headlineMedium,
-    color: colors.neutral.white,
+    color: colors.primary.black,
   },
-  featuredDescription: {
+  featuredDescriptionNoImage: {
     ...typeScale.bodyMedium,
-    color: colors.alpha.white80,
+    color: colors.neutral.darkGray,
   },
-  featuredPrice: {
+  featuredPriceNoImage: {
     ...typeScale.labelLarge,
-    color: colors.neutral.white,
+    color: colors.primary.black,
     fontWeight: '600',
   },
 });
