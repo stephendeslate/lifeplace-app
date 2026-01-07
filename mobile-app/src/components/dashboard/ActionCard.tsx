@@ -23,10 +23,25 @@ import Animated, {
 } from 'react-native-reanimated';
 import { theme } from '@/theme';
 import { Button } from '@/components/common';
+import { formatCurrency } from '@/utils/formatting';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export type ActionType = 'quote' | 'payment' | 'contract' | 'task';
+
+export interface ActionCardMetadata {
+  /** Amount to display (e.g., quote total, payment due) */
+  amount?: number;
+  /** Currency code for amount formatting */
+  currency?: string;
+  /** Days info text (e.g., "Expires in 3 days", "5 days overdue") */
+  daysInfo?: string;
+  /** Signature progress for contracts */
+  signatureProgress?: {
+    signed: number;
+    total: number;
+  };
+}
 
 export interface ActionCardProps {
   type: ActionType;
@@ -38,6 +53,8 @@ export interface ActionCardProps {
   onSecondaryAction?: () => void;
   primaryActionLabel?: string;
   secondaryActionLabel?: string;
+  /** Optional metadata to display (amount, due date, signature progress) */
+  metadata?: ActionCardMetadata;
   testID?: string;
 }
 
@@ -72,6 +89,7 @@ export const ActionCard = memo(function ActionCard({
   onSecondaryAction,
   primaryActionLabel,
   secondaryActionLabel,
+  metadata,
   testID,
 }: ActionCardProps) {
   const scale = useSharedValue(1);
@@ -108,6 +126,13 @@ export const ActionCard = memo(function ActionCard({
     onSecondaryAction?.();
   };
 
+  // Check if we have any metadata to display
+  const hasMetadata = metadata && (
+    (metadata.amount !== undefined && metadata.currency) ||
+    metadata.daysInfo ||
+    metadata.signatureProgress
+  );
+
   const content = (
     <>
       <View style={styles.header}>
@@ -127,13 +152,43 @@ export const ActionCard = memo(function ActionCard({
         )}
       </View>
 
+      {/* Metadata Row */}
+      {hasMetadata && (
+        <View style={styles.metadataRow}>
+          {metadata.amount !== undefined && metadata.currency && (
+            <View style={styles.metadataItem}>
+              <Text style={styles.metadataLabel}>Amount</Text>
+              <Text style={[styles.metadataValue, { color }]}>
+                {formatCurrency(metadata.amount, metadata.currency)}
+              </Text>
+            </View>
+          )}
+          {metadata.signatureProgress && (
+            <View style={styles.metadataItem}>
+              <Text style={styles.metadataLabel}>Signatures</Text>
+              <Text style={[styles.metadataValue, { color }]}>
+                {metadata.signatureProgress.signed}/{metadata.signatureProgress.total}
+              </Text>
+            </View>
+          )}
+          {metadata.daysInfo && (
+            <View style={styles.metadataItem}>
+              <Text style={styles.metadataLabel}>Due</Text>
+              <Text style={[styles.metadataValue, { color }]}>
+                {metadata.daysInfo}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {(onPrimaryAction || onSecondaryAction) && (
         <View style={styles.actions}>
           {onSecondaryAction && secondaryActionLabel && (
             <Button
               variant="secondary"
+              size="sm"
               onPress={handleSecondaryAction}
-              style={styles.actionButton}
               fullWidth={false}
             >
               {secondaryActionLabel}
@@ -142,8 +197,8 @@ export const ActionCard = memo(function ActionCard({
           {onPrimaryAction && primaryActionLabel && (
             <Button
               variant="primary"
+              size="sm"
               onPress={handlePrimaryAction}
-              style={styles.actionButton}
               fullWidth={false}
             >
               {primaryActionLabel}
@@ -160,7 +215,7 @@ export const ActionCard = memo(function ActionCard({
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={[styles.container, animatedStyle]}
+        style={[styles.container, { borderLeftColor: color }, animatedStyle]}
         testID={testID}
       >
         {content}
@@ -169,7 +224,7 @@ export const ActionCard = memo(function ActionCard({
   }
 
   return (
-    <View style={styles.container} testID={testID}>
+    <View style={[styles.container, { borderLeftColor: color }]} testID={testID}>
       {content}
     </View>
   );
@@ -180,11 +235,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
     shadowColor: theme.colors.neutral[900],
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04, // Reduced for minimal aesthetic
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
+    borderLeftWidth: 4,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -211,18 +269,35 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fonts.medium,
     fontSize: theme.typography.sizes.sm,
   },
+  metadataRow: {
+    flexDirection: 'row',
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.neutral[100],
+    gap: theme.spacing.lg,
+  },
+  metadataItem: {
+    flex: 1,
+  },
+  metadataLabel: {
+    fontFamily: theme.typography.fonts.regular,
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.neutral[500],
+    marginBottom: 2,
+  },
+  metadataValue: {
+    fontFamily: theme.typography.fonts.semibold,
+    fontSize: theme.typography.sizes.md,
+  },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     gap: theme.spacing.sm,
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
     borderTopColor: theme.colors.neutral[100],
-  },
-  actionButton: {
-    flex: 1,
-    maxWidth: 140,
   },
 });
 

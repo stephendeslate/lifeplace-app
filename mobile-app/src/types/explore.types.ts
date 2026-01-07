@@ -93,6 +93,17 @@ export interface RentableVenueWithEventType extends RentableVenue {
 // =============================================================================
 
 /**
+ * Venue included in a package
+ */
+export interface PackageIncludedVenue {
+  id: number;
+  name: string;
+  code: string;
+  is_primary: boolean;
+  is_overnight: boolean;
+}
+
+/**
  * Package/Product for explore listing
  */
 export interface PackagePublic {
@@ -104,7 +115,7 @@ export interface PackagePublic {
   category_id: number | null;
   category_name: string | null;
   base_price: string;
-  pricing_model: 'FIXED' | 'HOURLY' | 'PER_PERSON';
+  pricing_model: 'FIXED' | 'HOURLY' | 'TIERED' | 'CUSTOM';
   has_excess_hours: boolean;
   included_hours: number | null;
   excess_hour_price: string | null;
@@ -120,6 +131,21 @@ export interface PackagePublic {
   is_active: boolean;
   advance_booking_days: number | null;
   maximum_booking_days: number | null;
+  // Event type association
+  event_type_id: number | null;
+  event_type_name: string | null;
+  // Duration in days (1=Day Trip, 2=2D1N, 3=3D2N, 4=4D3N)
+  event_days: number | null;
+  // Capacity fields
+  minimum_guests: number | null;
+  maximum_guests: number | null;
+  // Pricing behavior
+  allow_multiple: boolean;
+  requires_approval: boolean;
+  /** If true, base_price already includes tax (no additional VAT) */
+  is_tax_inclusive: boolean;
+  /** Venues included in this package (for packages only) */
+  included_venues?: PackageIncludedVenue[];
   /** Average rating (0-5 scale) - optional, added when reviews enabled */
   average_rating?: number;
   /** Number of reviews - optional, added when reviews enabled */
@@ -192,14 +218,32 @@ export interface FavoritesState {
  */
 export interface ExploreFilters {
   search?: string;
-  eventTypeId?: number;
-  categoryId?: number;
+  eventTypeId?: number | null;
+  categoryId?: number | null;
+  eventDays?: number | null;
   minCapacity?: number;
   maxCapacity?: number;
   priceRange?: {
     min: number;
     max: number;
   };
+}
+
+/**
+ * Duration option for camps/team building packages
+ */
+export interface DurationOption {
+  id: number | null;
+  label: string;
+  days: number | null;
+}
+
+/**
+ * Event type with package/venue counts
+ */
+export interface EventTypeWithCounts extends EventType {
+  package_count?: number;
+  venue_count?: number;
 }
 
 /**

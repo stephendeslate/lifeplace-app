@@ -133,10 +133,21 @@ class ProductService:
     """Service for managing products"""
     
     @staticmethod
-    def get_all_products(search_query=None, product_type=None, is_active=None, category_id=None, is_featured=None):
-        """Get all products with filtering options"""
+    def get_all_products(search_query=None, product_type=None, is_active=None, category_id=None,
+                         is_featured=None, event_type_id=None, event_days=None):
+        """Get all products with filtering options
+
+        Args:
+            search_query: Search text for name, description, or SKU
+            product_type: Filter by PRODUCT or PACKAGE type
+            is_active: Filter by active status
+            category_id: Filter by category
+            is_featured: Filter by featured status
+            event_type_id: Filter by event type (Wedding, Camps, Team Building, etc.)
+            event_days: Filter by duration in days (1=Day Trip, 2=2D1N, 3=3D2N, 4=4D3N)
+        """
         queryset = ProductOption.objects.select_related('category', 'event_type').all()
-        
+
         # Apply filters if provided
         if search_query:
             queryset = queryset.filter(
@@ -144,19 +155,25 @@ class ProductService:
                 Q(description__icontains=search_query) |
                 Q(sku__icontains=search_query)
             )
-        
+
         if product_type:
             queryset = queryset.filter(type=product_type)
-            
+
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active)
-        
+
         if category_id:
             queryset = queryset.filter(category_id=category_id)
-        
+
         if is_featured is not None:
             queryset = queryset.filter(is_featured=is_featured)
-            
+
+        if event_type_id is not None:
+            queryset = queryset.filter(event_type_id=event_type_id)
+
+        if event_days is not None:
+            queryset = queryset.filter(event_days=event_days)
+
         # Order by category, then sort order, then name
         return queryset.order_by('category__sort_order', 'sort_order', 'name')
     

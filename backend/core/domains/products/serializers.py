@@ -76,21 +76,32 @@ class ProductOptionSerializer(serializers.ModelSerializer):
     category_path = serializers.CharField(source='category.full_path', read_only=True)
     formatted_price = serializers.CharField(read_only=True)
     price_with_tax = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    # Event type fields for filtering
+    event_type_name = serializers.CharField(source='event_type.name', read_only=True, allow_null=True)
+    event_type_id = serializers.IntegerField(source='event_type.id', read_only=True, allow_null=True)
+    # Capacity fields
+    minimum_guests = serializers.IntegerField(read_only=True, allow_null=True)
+    maximum_guests = serializers.IntegerField(read_only=True, allow_null=True)
     # Image inheritance fields - fall back to venue images if product has none
     effective_featured_image = serializers.SerializerMethodField()
     effective_gallery_images = serializers.SerializerMethodField()
+    # Package inclusions - venues included in this package
+    included_venues = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductOption
         fields = [
             'id', 'name', 'description', 'category', 'category_name', 'category_path',
             'pricing_model', 'pricing_model_display', 'base_price', 'currency', 'tax_rate',
+            'is_tax_inclusive',  # Critical: indicates if base_price already includes tax
             'type', 'type_display', 'is_active', 'is_featured', 'allow_multiple', 'requires_approval',
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',
-            'event_days',
-            'sku', 'sort_order', 'event_type', 'formatted_price', 'price_with_tax',
+            'event_days', 'minimum_guests', 'maximum_guests',
+            'sku', 'sort_order', 'event_type', 'event_type_id', 'event_type_name',
+            'formatted_price', 'price_with_tax',
             'featured_image', 'gallery_images',
             'effective_featured_image', 'effective_gallery_images',
+            'included_venues',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -159,6 +170,25 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             return gallery if gallery else []
 
         return []
+
+    def get_included_venues(self, obj):
+        """
+        Return list of venues included in this package.
+        Only applicable for packages (type='PACKAGE').
+        """
+        if obj.type != 'PACKAGE' or not hasattr(obj, 'package_venues'):
+            return []
+
+        venues = []
+        for pv in obj.package_venues.select_related('venue').order_by('access_order'):
+            venues.append({
+                'id': pv.venue.id,
+                'name': pv.venue.name,
+                'code': pv.venue.code,
+                'is_primary': pv.is_primary,
+                'is_overnight': pv.venue.is_overnight,
+            })
+        return venues
 
     def validate(self, data):
         """Validate product data"""

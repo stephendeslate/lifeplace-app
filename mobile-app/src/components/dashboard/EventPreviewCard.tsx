@@ -20,6 +20,7 @@ import {
   getEventStatusLabel,
   getPaymentStatusLabel,
 } from '@/utils/eventHelpers';
+import { EventMilestones } from '@/components/events/EventMilestones';
 import type { Event } from '@/types/events.types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -128,6 +129,11 @@ export const EventPreviewCard = memo(function EventPreviewCard({ event, onPress,
           )}
         </View>
 
+        {/* Event Milestones Progress */}
+        <View style={styles.milestonesContainer}>
+          <EventMilestones event={event} />
+        </View>
+
         {/* Arrow indicator */}
         <View style={styles.arrowContainer}>
           <ArrowRight size={20} color={theme.colors.primary[500]} />
@@ -170,6 +176,12 @@ const styles = StyleSheet.create({
   },
   details: {
     gap: theme.spacing.xs,
+  },
+  milestonesContainer: {
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.neutral[100],
   },
   detailRow: {
     flexDirection: 'row',

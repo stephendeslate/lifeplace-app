@@ -234,7 +234,7 @@ export function getPaymentStatusLabel(status: PaymentStatus): string {
     case 'PAID':
       return 'Paid';
     case 'PARTIALLY_PAID':
-      return 'Partially Paid';
+      return 'Balance Due';
     case 'UNPAID':
       return 'Unpaid';
     default:

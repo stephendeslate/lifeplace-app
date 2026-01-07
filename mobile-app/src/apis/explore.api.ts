@@ -105,14 +105,46 @@ export async function searchVenues(
 // =============================================================================
 
 /**
- * Get all active packages
+ * Parameters for fetching packages with filters
  */
-export async function getPackages(): Promise<PackagePublic[]> {
+export interface GetPackagesParams {
+  eventTypeId?: number | null;
+  eventDays?: number | null;
+  categoryId?: number | null;
+  isActive?: boolean;
+  isFeatured?: boolean;
+}
+
+/**
+ * Get all active packages with optional filters
+ */
+export async function getPackages(params?: GetPackagesParams): Promise<PackagePublic[]> {
+  const queryParams: Record<string, string | boolean> = {
+    is_active: params?.isActive ?? true,
+    type: 'PACKAGE',
+  };
+
+  if (params?.eventTypeId) {
+    queryParams.event_type_id = String(params.eventTypeId);
+  }
+
+  if (params?.eventDays) {
+    queryParams.event_days = String(params.eventDays);
+  }
+
+  if (params?.categoryId) {
+    queryParams.category_id = String(params.categoryId);
+  }
+
+  if (params?.isFeatured !== undefined) {
+    queryParams.is_featured = params.isFeatured;
+  }
+
   const response = await api.get<{
     count: number;
     results: PackagePublic[];
   }>('/products/products/', {
-    params: { is_active: true, type: 'PACKAGE' },
+    params: queryParams,
   });
   return response.data.results || [];
 }
@@ -348,4 +380,115 @@ export function formatCapacity(min: number, max: number): string {
     return `${min} guests`;
   }
   return `${min}-${max} guests`;
+}
+
+/**
+ * Check if package uses per-person pricing
+ * Per-person pricing is indicated by allow_multiple=true in the backend
+ */
+export function isPerPersonPricing(pkg: PackagePublic): boolean {
+  return pkg.allow_multiple === true;
+}
+
+/**
+ * Format the per-person rate (e.g., "₱640/person")
+ */
+export function formatPerPersonRate(pkg: PackagePublic): string {
+  return `${formatPrice(pkg.base_price)}/person`;
+}
+
+/**
+ * Calculate the starting total for per-person packages
+ * Total = base_price × minimum_guests
+ */
+export function calculateStartingTotal(pkg: PackagePublic): number | null {
+  if (!isPerPersonPricing(pkg) || !pkg.minimum_guests) {
+    return null;
+  }
+  const basePrice = parseFloat(pkg.base_price);
+  return basePrice * pkg.minimum_guests;
+}
+
+/**
+ * Format the starting total price for per-person packages
+ * Returns "₱51,200" for base_price=640 × minimum_guests=80
+ */
+export function formatStartingTotal(pkg: PackagePublic): string | null {
+  const total = calculateStartingTotal(pkg);
+  if (total === null) {
+    return null;
+  }
+  return formatPrice(total);
+}
+
+/**
+ * Format package price with pricing model context
+ * For per-person packages (allow_multiple=true), shows "Starting from ₱X"
+ * For hourly packages, shows "₱X/hour"
+ * For custom packages, shows "Request Quote"
+ * For fixed packages, shows the base price
+ */
+export function formatPackagePrice(pkg: PackagePublic): string {
+  // Per-person pricing: show starting total
+  if (isPerPersonPricing(pkg)) {
+    const startingTotal = formatStartingTotal(pkg);
+    if (startingTotal) {
+      return startingTotal;
+    }
+    // Fallback if no minimum_guests set
+    return `${formatPrice(pkg.base_price)}/person`;
+  }
+
+  if (pkg.pricing_model === 'HOURLY') {
+    return `${formatPrice(pkg.base_price)}/hour`;
+  }
+
+  if (pkg.pricing_model === 'CUSTOM') {
+    return 'Request Quote';
+  }
+
+  return formatPrice(pkg.base_price);
+}
+
+/**
+ * Get duration label from event_days
+ */
+export function getDurationLabel(days: number): string {
+  switch (days) {
+    case 1:
+      return 'Day Trip';
+    case 2:
+      return '2D1N';
+    case 3:
+      return '3D2N';
+    case 4:
+      return '4D3N';
+    default:
+      return `${days} days`;
+  }
+}
+
+/**
+ * Get package tier from category name
+ */
+export function getPackageTier(categoryName: string | null): string | null {
+  if (!categoryName) return null;
+  if (categoryName.includes('Budget')) return 'Budget';
+  if (categoryName.includes('Basic')) return 'Basic';
+  if (categoryName.includes('Premium')) return 'Premium';
+  if (categoryName.includes('Facilitation')) return 'Facilitation';
+  if (categoryName.includes('All-In')) return 'All-In';
+  return null;
+}
+
+/**
+ * Check if event type uses per-person pricing
+ */
+export function isPerPersonEventType(eventTypeName: string | null): boolean {
+  if (!eventTypeName) return false;
+  return (
+    eventTypeName === 'Camps & Retreats' ||
+    eventTypeName === 'Team Building' ||
+    eventTypeName === 'Workshops'
+  );
 }

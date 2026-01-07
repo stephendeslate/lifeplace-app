@@ -3,68 +3,154 @@
  *
  * Venue and package discovery with:
  * - Tab navigation (Venues / Packages)
+ * - Event type filtering (primary)
+ * - Duration filtering for Camps/Team Building
  * - Search with debounce
- * - Category filter chips (packages only)
  * - Pull-to-refresh
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
+import { Info } from 'phosphor-react-native';
 
 import {
   useRentableVenues,
   usePackages,
-  useCategories,
+  useEventTypes,
   usePrefetchVenue,
   usePrefetchPackage,
 } from '@/hooks/useExplore';
-import { VenueCard, PackageCard, SearchBar, CategoryChips } from '@/components/explore';
-import { Skeleton, EmptyState, ScreenErrorBoundary, SegmentControl } from '@/components/common';
-import type { Segment } from '@/components/common';
-import { theme } from '@/theme';
-import type { ExploreTab, RentableVenueWithEventType, PackagePublic } from '@/types/explore.types';
+import {
+  VenueCard,
+  PackageCard,
+  SearchBar,
+  CAMPS_DURATION_OPTIONS,
+  TEAM_BUILDING_DURATION_OPTIONS,
+} from '@/components/explore';
+import { Skeleton, EmptyState, ScreenErrorBoundary, FilterChips } from '@/components/common';
+import type { FilterChip } from '@/components/common';
+import { theme, colors, spacing, typeScale, layout } from '@/theme';
+import type { ExploreTab, RentableVenueWithEventType, PackagePublic, DurationOption } from '@/types/explore.types';
 
-const TAB_SEGMENTS: Segment<ExploreTab>[] = [
+const TAB_CHIPS: FilterChip<ExploreTab>[] = [
   { id: 'venues', label: 'Venues', value: 'venues' },
   { id: 'packages', label: 'Packages', value: 'packages' },
 ];
 
 function ExploreTabContent() {
   const router = useRouter();
+  const { eventTypeId: initialEventTypeId } = useLocalSearchParams<{ eventTypeId?: string }>();
 
   // State
   const [activeTab, setActiveTab] = useState<ExploreTab>('venues');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedEventTypeId, setSelectedEventTypeId] = useState<number | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Handle deep link with pre-selected event type
+  useEffect(() => {
+    if (initialEventTypeId) {
+      setSelectedEventTypeId(parseInt(initialEventTypeId, 10));
+      setActiveTab('packages'); // Switch to packages tab when event type is pre-selected
+    }
+  }, [initialEventTypeId]);
+
+  // Reset duration when event type changes
+  useEffect(() => {
+    setSelectedDuration(null);
+  }, [selectedEventTypeId]);
+
   // Data hooks
+  const { data: eventTypes, refetch: refetchEventTypes } = useEventTypes();
   const {
     data: venues,
     isLoading: venuesLoading,
     refetch: refetchVenues,
-  } = useRentableVenues();
+  } = useRentableVenues(selectedEventTypeId ?? undefined);
   const {
     data: packages,
     isLoading: packagesLoading,
     refetch: refetchPackages,
-  } = usePackages();
-  const { data: categories } = useCategories();
+  } = usePackages({
+    eventTypeId: selectedEventTypeId,
+    eventDays: selectedDuration,
+  });
 
   // Prefetch
   const prefetchVenue = usePrefetchVenue();
   const prefetchPackage = usePrefetchPackage();
 
-  // Filter venues
+  // Get selected event type name
+  const selectedEventType = useMemo(() => {
+    if (!selectedEventTypeId || !eventTypes) return null;
+    return eventTypes.find((et) => et.id === selectedEventTypeId);
+  }, [selectedEventTypeId, eventTypes]);
+
+  // Create event type filter chips
+  const eventTypeChips: FilterChip<number | null>[] = useMemo(() => {
+    const chips: FilterChip<number | null>[] = [
+      { id: 'all', label: 'All', value: null },
+    ];
+    if (eventTypes) {
+      eventTypes.forEach((et) => {
+        chips.push({
+          id: String(et.id),
+          label: et.name,
+          value: et.id,
+        });
+      });
+    }
+    return chips;
+  }, [eventTypes]);
+
+  // Determine if duration filter should be shown (only for Camps/Team Building in packages tab)
+  const showDurationFilter = useMemo(() => {
+    if (activeTab !== 'packages') return false;
+    if (!selectedEventType) return false;
+    return (
+      selectedEventType.name === 'Camps & Retreats' ||
+      selectedEventType.name === 'Team Building'
+    );
+  }, [activeTab, selectedEventType]);
+
+  // Get duration filter chips based on selected event type
+  const durationChips: FilterChip<number | null>[] = useMemo(() => {
+    if (!selectedEventType) return [];
+
+    let options: DurationOption[] = [];
+    if (selectedEventType.name === 'Camps & Retreats') {
+      options = CAMPS_DURATION_OPTIONS;
+    } else if (selectedEventType.name === 'Team Building') {
+      options = TEAM_BUILDING_DURATION_OPTIONS;
+    }
+
+    return options.map((opt) => ({
+      id: opt.id !== null ? String(opt.id) : 'all',
+      label: opt.label,
+      value: opt.days,
+    }));
+  }, [selectedEventType]);
+
+  // Check if this is a per-person pricing event type
+  const isPerPersonEventType = useMemo(() => {
+    if (!selectedEventType) return false;
+    return (
+      selectedEventType.name === 'Camps & Retreats' ||
+      selectedEventType.name === 'Team Building' ||
+      selectedEventType.name === 'Workshops'
+    );
+  }, [selectedEventType]);
+
+  // Filter venues by search only (API handles event type filtering)
   const filteredVenues = useMemo(() => {
     if (!venues) return [];
 
@@ -82,7 +168,7 @@ function ExploreTabContent() {
     });
   }, [venues, searchQuery]);
 
-  // Filter packages
+  // Filter packages by search only (API handles event type and duration filtering)
   const filteredPackages = useMemo(() => {
     if (!packages) return [];
 
@@ -95,27 +181,25 @@ function ExploreTabContent() {
           return false;
         }
       }
-
-      if (selectedCategoryId && pkg.category_id !== selectedCategoryId) {
-        return false;
-      }
-
       return true;
     });
-  }, [packages, searchQuery, selectedCategoryId]);
-
-  // Category options for chips
-  const categoryOptions = useMemo(() => {
-    if (!categories) return [];
-    return categories.map((cat) => ({ id: cat.id, name: cat.name }));
-  }, [categories]);
+  }, [packages, searchQuery]);
 
   // Handlers
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchVenues(), refetchPackages()]);
+    await Promise.all([refetchVenues(), refetchPackages(), refetchEventTypes()]);
     setRefreshing(false);
-  }, [refetchVenues, refetchPackages]);
+  }, [refetchVenues, refetchPackages, refetchEventTypes]);
+
+  const handleEventTypeSelect = useCallback((id: number | null) => {
+    setSelectedEventTypeId(id);
+    // Duration will be reset by the useEffect above
+  }, []);
+
+  const handleDurationSelect = useCallback((days: number | null) => {
+    setSelectedDuration(days);
+  }, []);
 
   const handleVenuePress = (venueId: number) => {
     router.push(`/venues/${venueId}` as Href);
@@ -176,23 +260,41 @@ function ExploreTabContent() {
         />
       </View>
 
-      {/* Tab Switcher */}
-      <View style={styles.tabContainer}>
-        <SegmentControl
-          segments={TAB_SEGMENTS}
-          selectedValue={activeTab}
-          onSelect={setActiveTab}
+      {/* Event Type Filter (primary filter) */}
+      {eventTypeChips.length > 1 && (
+        <FilterChips
+          chips={eventTypeChips}
+          selectedValue={selectedEventTypeId}
+          onSelect={handleEventTypeSelect}
+          style={styles.filters}
         />
-      </View>
+      )}
 
-      {/* Category Chips (only for packages) */}
-      {activeTab === 'packages' && categoryOptions.length > 0 && (
-        <View style={styles.chipsContainer}>
-          <CategoryChips
-            options={categoryOptions}
-            selectedId={selectedCategoryId}
-            onSelect={setSelectedCategoryId}
-          />
+      {/* Tab Switcher */}
+      <FilterChips
+        chips={TAB_CHIPS}
+        selectedValue={activeTab}
+        onSelect={setActiveTab}
+        style={styles.filters}
+      />
+
+      {/* Duration Filter (only for Camps/Team Building packages) */}
+      {showDurationFilter && durationChips.length > 0 && (
+        <FilterChips
+          chips={durationChips}
+          selectedValue={selectedDuration}
+          onSelect={handleDurationSelect}
+          style={styles.filters}
+        />
+      )}
+
+      {/* Per-person pricing info banner */}
+      {activeTab === 'packages' && isPerPersonEventType && selectedEventTypeId && (
+        <View style={styles.infoBanner}>
+          <Info size={16} color={colors.semantic.info} />
+          <Text style={styles.infoText}>
+            These packages are priced per person. Minimum group size varies by package.
+          </Text>
         </View>
       )}
 
@@ -207,20 +309,32 @@ function ExploreTabContent() {
         <View style={styles.emptyContainer}>
           <EmptyState
             icon={activeTab === 'venues' ? 'building' : 'package'}
-            title={searchQuery ? 'No Results Found' : `No ${activeTab === 'venues' ? 'Venues' : 'Packages'}`}
+            title={searchQuery || selectedEventTypeId ? 'No Results Found' : `No ${activeTab === 'venues' ? 'Venues' : 'Packages'}`}
             description={
               searchQuery
                 ? `We couldn't find any ${activeTab} matching "${searchQuery}"`
-                : `No ${activeTab} are currently available.`
+                : selectedEventTypeId
+                  ? `No ${activeTab === 'venues' ? 'venues' : 'packages'} available for ${selectedEventType?.name || 'this event type'}${selectedDuration ? ` with ${durationChips.find(d => d.value === selectedDuration)?.label || ''} duration` : ''}.`
+                  : `No ${activeTab} are currently available.`
             }
-            actionLabel={searchQuery ? 'Clear Search' : undefined}
-            onAction={searchQuery ? () => setSearchQuery('') : undefined}
+            actionLabel={searchQuery ? 'Clear Search' : selectedEventTypeId ? 'View All' : undefined}
+            onAction={
+              searchQuery
+                ? () => setSearchQuery('')
+                : selectedEventTypeId
+                  ? () => {
+                      setSelectedEventTypeId(null);
+                      setSelectedDuration(null);
+                    }
+                  : undefined
+            }
           />
         </View>
       ) : (
         <FlashList
           data={data as (RentableVenueWithEventType | PackagePublic)[]}
           renderItem={renderItem as (props: { item: RentableVenueWithEventType | PackagePublic }) => React.ReactElement}
+          drawDistance={500}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -263,13 +377,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
-  tabContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
+  filters: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    flexGrow: 0,
+    flexShrink: 0,
   },
-  chipsContainer: {
-    paddingHorizontal: theme.spacing.lg,
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.layout.borderRadius.md,
+    gap: theme.spacing.sm,
+  },
+  infoText: {
+    ...theme.typeScale.bodySmall,
+    color: colors.semantic.info,
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,

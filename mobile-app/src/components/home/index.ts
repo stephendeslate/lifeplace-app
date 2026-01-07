@@ -11,3 +11,6 @@ export type { ManagementLayoutProps } from './ManagementLayout';
 
 export { DiscoveryLayout } from './DiscoveryLayout';
 export type { DiscoveryLayoutProps } from './DiscoveryLayout';
+
+export { EventTypeQuickCard } from './EventTypeQuickCard';
+export type { EventTypeQuickCardProps } from './EventTypeQuickCard';
