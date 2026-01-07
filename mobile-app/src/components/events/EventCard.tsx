@@ -8,7 +8,6 @@ import React, { memo } from 'react';
 import { StyleSheet, Text, View, Pressable, type ViewStyle, type StyleProp } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Calendar, MapPin, Clock, Warning } from 'phosphor-react-native';
-import { Image } from 'expo-image';
 import Animated, {
   useAnimatedStyle,
   withSpring,
@@ -186,18 +185,6 @@ export const EventCard = memo(function EventCard({ event, onPress, compact = fal
           )}
         </View>
 
-        {/* Image thumbnail (if available) */}
-        {event.venue_image_url && (
-          <View style={styles.thumbnail}>
-            <Image
-              source={{ uri: event.venue_image_url }}
-              style={styles.thumbnailImage}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
-          </View>
-        )}
       </View>
 
       {/* Event Milestones Progress */}
