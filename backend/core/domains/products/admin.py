@@ -53,11 +53,16 @@ class ProductOptionAdmin(admin.ModelAdmin):
             'fields': ('advance_booking_days', 'maximum_booking_days')
         }),
         ('Metadata', {
-            'fields': ('sku', 'sort_order', 'event_type')
+            'fields': ('sku', 'sort_order')
+        }),
+        ('Event Types', {
+            'fields': ('event_types',),
+            'description': 'Select which event types this package is available for. Leave empty to hide when filtering by event type.'
         }),
     )
-    
+
     readonly_fields = ('formatted_price',)
+    filter_horizontal = ('event_types',)  # Better UI for ManyToMany selection
 
 @admin.register(Discount)
 class DiscountAdmin(admin.ModelAdmin):

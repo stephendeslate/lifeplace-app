@@ -405,7 +405,7 @@ class ProductCacheService:
             # Cache featured and active products
             products = ProductOption.objects.filter(
                 models.Q(is_featured=True) | models.Q(is_active=True)
-            ).select_related('category', 'event_type')
+            ).select_related('category').prefetch_related('event_types')
         
         for product in products:
             serializer = ProductOptionSerializer(product)

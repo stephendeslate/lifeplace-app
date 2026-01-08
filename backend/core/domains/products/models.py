@@ -131,8 +131,14 @@ class ProductOption(BaseModel):
         help_text="List of image URLs for product gallery"
     )
 
-    # Event type compatibility (keep for backwards compatibility)
-    event_type = models.ForeignKey('events.EventType', on_delete=models.PROTECT, null=True, blank=True)
+    # Event type compatibility - packages can be available for multiple event types
+    # If empty, package is hidden when filter_by_event_type is enabled
+    event_types = models.ManyToManyField(
+        'events.EventType',
+        blank=True,
+        related_name='packages',
+        help_text="Event types this package is available for. Empty = hidden when filtering by event type."
+    )
 
     # Custom package tracking (for venue selection curation)
     is_custom = models.BooleanField(

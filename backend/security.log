@@ -1961,3 +1961,4 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2026-01-08 04:32:00,601 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
 🔒 SECURITY 2026-01-08 04:58:53,167 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
 🔒 SECURITY 2026-01-08 08:34:42,387 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-08 09:56:16,477 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
